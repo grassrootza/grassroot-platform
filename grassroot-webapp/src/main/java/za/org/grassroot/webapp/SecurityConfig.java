@@ -6,6 +6,8 @@ import org.springframework.boot.autoconfigure.security.SecurityProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.core.env.Environment;
+import org.springframework.security.authentication.RememberMeAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -14,8 +16,10 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.authentication.RememberMeServices;
 import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.rememberme.JdbcTokenRepositoryImpl;
+import org.springframework.security.web.authentication.rememberme.PersistentTokenBasedRememberMeServices;
 import org.springframework.security.web.authentication.rememberme.PersistentTokenRepository;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
@@ -38,6 +42,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Autowired
     private DataSource dataSource;
 
+    @Autowired
+    private Environment environment;
+
     @Override
     public void configure(WebSecurity web) throws Exception {
         web.ignoring()
@@ -51,46 +58,42 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/sms/**")
                 .antMatchers("/image/**")
                 .antMatchers("/404")
-                .antMatchers("/500").
-                antMatchers("/403");
+                .antMatchers("/500")
+                .antMatchers("/403");
     }
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
 
         http
-                .formLogin()
-                .successHandler(savedRequestAwareAuthenticationSuccessHandler())
-                .defaultSuccessUrl("/home")
-                .loginPage("/login")
-                .permitAll()
-                .and()
-                .logout()
-                .logoutRequestMatcher(new AntPathRequestMatcher("/logout"))
-                .logoutSuccessUrl("/")
-                .permitAll()
-                .and()
                 .authorizeRequests()
-                .antMatchers("/signup").permitAll()
-                .antMatchers("/index").permitAll()
-                .antMatchers("/home").permitAll()
-                .antMatchers("/accounts/recovery").permitAll()
-                .antMatchers("/accounts/recovery/success").permitAll()
-                .antMatchers("/grass-root-verification/*").permitAll()
-                .antMatchers("/ussd/**").hasIpAddress(System.getenv("USSD_GATEWAY"))
-                .anyRequest()
-                .fullyAuthenticated()
-                .and()
+                    .antMatchers("/signup").permitAll()
+                    .antMatchers("/index").permitAll()
+                    .antMatchers("/accounts/recovery").permitAll()
+                    .antMatchers("/accounts/recovery/success").permitAll()
+                    .antMatchers("/grass-root-verification/*").permitAll()
+                    .antMatchers("/ussd/**").hasIpAddress(System.getenv("USSD_GATEWAY"))
+                    .anyRequest().authenticated()
+                    .and()
+                .formLogin()
+                    .successHandler(savedRequestAwareAuthenticationSuccessHandler())
+                    .defaultSuccessUrl("/home")
+                    .loginPage("/login")
+                    .permitAll()
+                    .and()
+                .logout()
+                    .logoutRequestMatcher(new AntPathRequestMatcher("/logout"))
+                    .logoutSuccessUrl("/login")
+                    .permitAll().and()
                 .rememberMe()
-                .tokenRepository(persistentTokenRepository())
-                .tokenValiditySeconds(1209600);
+                    .rememberMeServices(rememberMeServices());
                 // .useSecureCookie(true);
-
     }
 
     @Override
     public void configure(AuthenticationManagerBuilder auth) throws Exception {
         auth
+                .authenticationProvider(rememberMeAuthenticationProvider())
                 .userDetailsService(userDetailsService)
                 .passwordEncoder(passwordEncoder);
     }
@@ -105,11 +108,26 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Bean
     public SavedRequestAwareAuthenticationSuccessHandler
     savedRequestAwareAuthenticationSuccessHandler() {
-
         SavedRequestAwareAuthenticationSuccessHandler auth
                 = new SavedRequestAwareAuthenticationSuccessHandler();
         auth.setTargetUrlParameter("targetUrl");
         return auth;
+    }
+
+    @Bean
+    public RememberMeServices rememberMeServices() {
+        PersistentTokenBasedRememberMeServices services = new PersistentTokenBasedRememberMeServices(
+                environment.getProperty("RM_KEY", "grassrootremembers"),
+                userDetailsService, persistentTokenRepository());
+        services.setTokenValiditySeconds(1209600); // two weeks
+        return services;
+    }
+
+    @Bean
+    public RememberMeAuthenticationProvider rememberMeAuthenticationProvider() {
+        RememberMeAuthenticationProvider rememberMeAuthenticationProvider = new RememberMeAuthenticationProvider(
+                environment.getProperty("RM_KEY", "grassrootremembers"));
+        return rememberMeAuthenticationProvider;
     }
 
     @Bean

@@ -49,10 +49,10 @@
           </div>
           <div class="collapse navbar-collapse navbar-responsive-collapse">
             <ul class="nav navbar-nav">
-              <li sec:authorize="isFullyAuthenticated()" class="active"><a href="javascript:void(0)" th:href="@{/group/create}"><span class="white-text">Start Group</span></a></li>
-              <li sec:authorize="isFullyAuthenticated()" class="active"><a href="javascript:void(0)" th:href="@{/meeting/create}"><span class="white-text">Call Meeting</span></a></li>
-              <li sec:authorize="isFullyAuthenticated()" class="active"><a href="javascript:void(0)" th:href="@{/vote/create}"><span class="white-text">Take Vote</span></a></li>
-              <li sec:authorize="isFullyAuthenticated()" class="active"><a href="javascript:void(0)" th:href="@{/todo/create}"><span class="white-text">Create to-do</span></a></li>
+              <li sec:authorize="isAuthenticated()" class="active"><a href="javascript:void(0)" th:href="@{/group/create}"><span class="white-text">Start Group</span></a></li>
+              <li sec:authorize="isAuthenticated()" class="active"><a href="javascript:void(0)" th:href="@{/meeting/create}"><span class="white-text">Call Meeting</span></a></li>
+              <li sec:authorize="isAuthenticated()" class="active"><a href="javascript:void(0)" th:href="@{/vote/create}"><span class="white-text">Take Vote</span></a></li>
+              <li sec:authorize="isAuthenticated()" class="active"><a href="javascript:void(0)" th:href="@{/todo/create}"><span class="white-text">Create to-do</span></a></li>
               <li sec:authorize="hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')" class="active"><a href="javascript:void(0)" th:href="@{/meeting/free}"><span class="white-text">Send Message</span></a></li>
               <li sec:authorize="hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')" class="active"><a href="javascript:void(0)" th:href="@{/paid_account/index}"><span class="white-text">Manage account</span></a></li>
               <li sec:authorize="hasRole('ROLE_SYSTEM_ADMIN')" class="active white-text"><a href="javascript:void(0)" th:href="@{/admin/home}"><span class="white-text">System admin</span></a></li>
@@ -64,7 +64,7 @@
               <li sec:authorize="isAnonymous()" class="active"><a href="javascript:void(0)" th:href="@{/signup}"><span class="white-text">Register</span></a></li>
             </ul>
 
-            <ul sec:authorize="isFullyAuthenticated()" class="nav navbar-nav navbar-right">
+            <ul sec:authorize="isAuthenticated()" class="nav navbar-nav navbar-right">
               <li class="dropdown">
                 <a href="javascript:void(0)" data-target="#" class="dropdown-toggle white-text" data-toggle="dropdown" aria-expanded="false">My Profile <b class="caret"></b><div class="ripple-wrapper"></div></a>
                 <ul class="dropdown-menu">
@@ -133,11 +133,7 @@
       <div class="container-fluid">
         <div class="row-fluid">
           <div class="span8">
-            <!-- &copy; <span th:text="${#calendars.format(#calendars.createToday(),'yyyy')}">2015</span> <a href="http://www.grassroot.org.za/">Grassroot</a>. All Rights Reserved.
-
-            <span id='authentication' sec:authorize="isFullyAuthenticated()">
-              [<a th:href="@{/logout}">Sign out</a>]
-            </span> -->
+            <!-- // might use for copyright or terms of use in future -->
           </div>
 
         </div>
@@ -147,7 +143,7 @@
   </div>
 
 
-  <div sec:authorize="isFullyAuthenticated()" >
+  <div sec:authorize="isAuthenticated()" >
     <form id="logoutForm"  th:action="@{/logout}" method="post">
       <fieldset>
         <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />

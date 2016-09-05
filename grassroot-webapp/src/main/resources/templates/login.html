@@ -38,8 +38,8 @@
 
           <form id="signin-form" action="login" th:action="@{/login}" method="post" autocomplete="off">
 
-            <div th:class="${error}? 'alert alert-danger alert-dismissable' : 'hide'">
-              <h5 th:if="${error}">Sorry, invalid phone number or password.<span th:text="${error}"></span></h5>
+            <div th:class="${(param.error != null)}? 'alert alert-danger alert-dismissable' : 'hide'">
+              <h5 th:if="${(param.error != null)}">Sorry, invalid phone number or password.<span th:text="${error}"></span></h5>
             </div>
 
             <div class="form-group">
@@ -78,6 +78,15 @@
             </div>
 
           </form>
+
+          <div class="row top-buffer">
+            <div class="col-md-6 col-md-offset-3">
+            <a href="https://play.google.com/store/apps/details?id=za.org.grassroot.android&amp;utm_source=global_co&amp;utm_medium=prtnr&amp;utm_content=Mar2515&amp;utm_campaign=PartBadge&amp;pcampaignid=MKT-Other-global-all-co-prtnr-py-PartBadge-Mar2515-1">
+              <img class="img-responsive" alt="Get it on Google Play" src="https://play.google.com/intl/en_us/badges/images/generic/en_badge_web_generic.png"/>
+            </a>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>

@@ -106,6 +106,7 @@ public class MVCConfig extends WebMvcConfigurerAdapter {
     @Override
     public void addViewControllers(ViewControllerRegistry registry) {
         try {
+            registry.addViewController("/login");
             for (StaticPagePathFinder.PagePaths paths : staticPagePathFinder.findPaths()) {
                 String urlPath = paths.getUrlPath();
                 registry.addViewController(urlPath).setViewName("pages" + paths.getFilePath());
@@ -113,17 +114,13 @@ public class MVCConfig extends WebMvcConfigurerAdapter {
                     registry.addViewController(urlPath + "/").setViewName("pages" + paths.getFilePath());
                 }
             }
-
         } catch (IOException e) {
             throw new UnsupportedOperationException("Unable to locate static pages: " + e.getMessage(), e);
         }
     }
+
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // Resources without Spring Security. No cache control response headers.
-        registry.addResourceHandler("/static/public/**")
-                .addResourceLocations("classpath:/static/public/");
-
         // Resources controlled by Spring Security, which
         // adds "Cache-Control: must-revalidate".
         registry.addResourceHandler("/static/**")

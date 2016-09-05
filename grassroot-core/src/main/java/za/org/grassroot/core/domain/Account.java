@@ -202,7 +202,6 @@ public class Account implements Serializable {
 
     /*
     Helper methods for adding and removing administrators and groups
-    todo: check for duplicates in all the adding methods, and that entity is in list for remove methods
      */
 
     public void addAdministrator(User administrator) {
