@@ -5,8 +5,8 @@ package za.org.grassroot.services.enums;
  */
 public enum GroupPermissionTemplate {
     DEFAULT_GROUP("default_group"),
-    CLOSED_GROUP("closed_group"),
-    OPEN_GROUP("open_group");
+    CLOSED_GROUP("closed_group");
+    // OPEN_GROUP("open_group");
 
     private final String text;
 

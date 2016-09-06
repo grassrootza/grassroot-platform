@@ -2,6 +2,7 @@ package za.org.grassroot.services;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.Membership;
 import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.domain.User;
@@ -124,6 +125,12 @@ public class MembershipInfo implements Comparable<MembershipInfo> {
     @Override
     public int compareTo(MembershipInfo m) {
         String otherRole = m.getRoleName();
-        return Role.compareRoleNames(this.roleName, otherRole);
+        if (!StringUtils.isEmpty(roleName) && !roleName.equals(otherRole)) {
+            return Role.compareRoleNames(roleName, otherRole);
+        } else {
+            return StringUtils.isEmpty(displayName) ? -1 :
+                    StringUtils.isEmpty(m.getDisplayName()) ? 1 :
+                            displayName.compareTo(m.getDisplayName());
+        }
     }
 }

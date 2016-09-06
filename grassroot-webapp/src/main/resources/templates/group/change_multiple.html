@@ -53,10 +53,10 @@ future to close that off (need a way that mistakes can be corrected, but not to 
             <td>
               <select th:field="*{listOfMembers[__${iterStat.index}__].roleName}" class="form-control"
                       th:disabled="${(groupModifier.canUpdateDetails == false) or (member.getPhoneNumberWithCCode() == currentUser.getUsername())}">
-                <option th:each="role : ${roles}"
-                        th:value="${role[0]}"
-                        th:text="${role[1]}"
-                        th:selected="${#strings.equals(member.roleName, role[0])}"></option>
+                <option th:each="role : ${T(za.org.grassroot.core.domain.BaseRoles).groupRoles}"
+                        th:value="${role}"
+                        th:text="#{web.group.role.__${role}__}"
+                        th:selected="${#strings.equals(member.roleName, role)}"></option>
               </select>
             </td>
             <td>

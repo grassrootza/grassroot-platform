@@ -12,7 +12,6 @@ import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.MembershipInfo;
-import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.GroupWrapper;
 
@@ -89,78 +88,6 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
     }
 
     @Test
-    public void startGroupIndexWorksWithoutParentId() throws Exception {
-
-        GroupWrapper dummyGroupCreator = new GroupWrapper();
-        dummyGroupCreator.setGroupName("DummyGroup");
-        dummyGroupCreator.addMember(new MembershipInfo(sessionTestUser));
-        mockMvc.perform(get("/group/create"))
-                .andExpect(view().name("group/create"))
-                .andExpect(model().attribute("groupCreator", hasProperty("addedMembers", hasSize(dummyGroupCreator.getAddedMembers().size()))));
-    }
-
-    @Test
-    public void startGroupIndexWorksWithParentId() throws Exception {
-        Group dummyGroup = Group.makeEmpty();
-
-        when(groupBrokerMock.load(dummyGroup.getUid())).thenReturn(dummyGroup);
-        mockMvc.perform(get("/group/create").param("parent", dummyGroup.getUid()))
-                .andExpect(view().name("group/create"))
-                .andExpect(model().attribute("groupCreator", hasProperty("parent", is(dummyGroup))));
-        verify(groupBrokerMock, times(1)).load(dummyGroup.getUid());
-        verifyNoMoreInteractions(userManagementServiceMock);
-    }
-
-    @Test
-    public void createGroupWorks() throws Exception {
-
-        GroupWrapper dummyGroupCreator = new GroupWrapper();
-        dummyGroupCreator.setGroupName("DummyGroup");
-        MembershipInfo organizer = new MembershipInfo(sessionTestUser.getPhoneNumber(),
-                                                      BaseRoles.ROLE_GROUP_ORGANIZER, sessionTestUser.getDisplayName());
-        dummyGroupCreator.addMember(organizer);
-        Group dummyGroup = new Group(dummyGroupCreator.getGroupName(), sessionTestUser);
-        dummyGroup.addMember(sessionTestUser);
-
-        when(groupBrokerMock.create(sessionTestUser.getUid(), dummyGroupCreator.getGroupName(), null,
-                                    new HashSet<>(dummyGroupCreator.getAddedMembers()),
-                                    GroupPermissionTemplate.DEFAULT_GROUP, null, (60 * 24), true)).thenReturn(dummyGroup);
-
-        when((userManagementServiceMock.loadOrSaveUser(sessionTestUser.getPhoneNumber()))).thenReturn(sessionTestUser);
-        when(userManagementServiceMock.save(sessionTestUser)).thenReturn(sessionTestUser);
-
-        mockMvc.perform(post("/group/create").sessionAttr("groupCreator", dummyGroupCreator).
-                param("groupTemplate", GroupPermissionTemplate.DEFAULT_GROUP.toString()))
-                .andExpect(view().name("redirect:view"))
-                .andExpect(model().attribute("groupUid", dummyGroup.getUid()))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("view?groupUid=" + dummyGroup.getUid()));
-
-        verifyNoMoreInteractions(userManagementServiceMock);
-    }
-
-    @Test
-    public void addMemberWorks() throws Exception {
-        GroupWrapper groupCreator = new GroupWrapper();
-        mockMvc.perform(post("/group/create").param("addMember", "").sessionAttr("groupCreator", groupCreator))
-                .andExpect(status().isOk())
-                .andExpect(model().attribute("groupCreator", instanceOf(GroupWrapper.class)))
-                .andExpect(view().name("group/create"));
-    }
-
-    @Test
-    public void addMemberFailsValidation() throws Exception {
-        GroupWrapper groupCreator = new GroupWrapper();
-        User user = new User("100001");
-        groupCreator.addMember(new MembershipInfo(user));
-        mockMvc.perform(post("/group/create").param("addMember", "")
-                .sessionAttr("groupCreator", groupCreator))
-                .andExpect(status().isOk())
-                .andExpect(view().name("group/create"));
-
-    }
-
-    @Test
     public void modifyGroupWorks() throws Exception {
         Group dummyGroup = new Group("Dummy Group", new User("234345345"));
         dummyGroup.addMember(sessionTestUser);
@@ -184,14 +111,6 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         verifyNoMoreInteractions(userManagementServiceMock);
     }
 
-    @Test
-    public void removeMemberWorks() throws Exception {
-        GroupWrapper groupCreator = new GroupWrapper();
-        groupCreator.addMember(new MembershipInfo("100001", null, ""));
-        mockMvc.perform(post("/group/create").param("removeMember", String.valueOf(0)).param("removeMember", "")
-                .sessionAttr("groupCreator", groupCreator))
-                .andExpect(status().isOk()).andExpect(view().name("group/create"));
-    }
 
     @Test
     public void addMemberModifyWorks() throws Exception {

@@ -443,9 +443,9 @@
                   <div class="form-group">
                     <label for="new-member-role" class="control-label">Role</label>
                     <select class="form-control" id="new-member-role" name="roleName">
-                    <option th:each="role : ${roles}"
-                            th:value="${role[0]}"
-                            th:text="${role[1]}"></option>
+                    <option th:each="role : ${T(za.org.grassroot.core.domain.BaseRoles).groupRoles}"
+                            th:value="${role}"
+                            th:text="#{web.group.role.__${role}__}"></option>
                     </select>
                   </div>
                 </div>

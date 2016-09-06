@@ -777,6 +777,10 @@ public class GroupBrokerImpl implements GroupBroker {
         User user = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
 
+        // cases where a user will have update details but not add member will be few, but given sensitivity here, double checking
+        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER);
+
         JoinTokenOpeningResult result = openJoinTokenInternal(user, group, expiryDateTime);
 
         logActionLogsAfterCommit(Collections.singleton(result.getGroupLog()));

@@ -27,7 +27,6 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -62,11 +61,6 @@ public class AdminController extends BaseController {
 
     @Autowired
     private AdminService adminService;
-
-    // todo : move this to a common interface
-    private final static List<String[]> roleDescriptions = Arrays.asList(new String[]{BaseRoles.ROLE_ORDINARY_MEMBER, "Ordinary member"},
-            new String[]{BaseRoles.ROLE_COMMITTEE_MEMBER, "Committee member"},
-            new String[]{BaseRoles.ROLE_GROUP_ORGANIZER, "Group organizer"});
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping("/admin/home")
@@ -156,7 +150,6 @@ public class AdminController extends BaseController {
             addMessage(model, MessageType.ERROR, "no.one.found", request);
             pageToDisplay = "admin/users/home";
         } else if (foundUsers.size() == 1) {
-            // display just that user, todo: rethink this once refactored all to Uids
             User user = userManagementService.load(foundUsers.get(0).getUid());
             model.addAttribute("user", foundUsers.get(0));
             model.addAttribute("numberGroups", permissionBroker.getActiveGroupDTOs(user, null).size());
@@ -186,7 +179,7 @@ public class AdminController extends BaseController {
         String tsQuery = FullTextSearchUtils.encodeAsTsQueryText(searchTerm);
         List<Group> possibleGroups = groupRepository.findByGroupNameContainingIgnoreCase(tsQuery);
         model.addAttribute("possibleGroups", possibleGroups);
-        model.addAttribute("roles", roleDescriptions);
+        model.addAttribute("roles", BaseRoles.groupRoles);
         return "admin/groups/search_result";
     }
 

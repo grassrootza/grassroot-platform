@@ -57,10 +57,10 @@
             </td>
             <td>
               <select th:field="*{listOfMembers[__${iterStat.index}__].roleName}" class="form-control">
-                <option th:each="role : ${roles}"
-                        th:value="${role[0]}"
-                        th:text="${role[1]}"
-                        th:selected="${#strings.equals(member.roleName, role[0])}"></option>
+                <option th:each="role : ${T(za.org.grassroot.core.domain.BaseRoles).groupRoles}"
+                        th:value="${role}"
+                        th:text="#{web.group.role.__${role}__}"
+                        th:selected="${#strings.equals(member.roleName, role)}"></option>
               </select>
             </td>
             <td>
@@ -84,9 +84,9 @@
           <div class="col-md-offset-2 col-md-8">
             <label for="groupTemplate" class="control-label">Who will be able to call meetings, events, etc?</label>
             <select name="groupTemplate" id="groupTemplate" class="form-control">
-              <option th:each="template : ${permissionTemplates}"
-                      th:value="${template[0]}"
-                      th:text="${template[1]}"></option>
+              <option th:each="template : ${T(za.org.grassroot.services.enums.GroupPermissionTemplate).values()}"
+                      th:value="${template}"
+                      th:text="#{web.group.permissions.__${template}__}"></option>
             </select>
           </div>
         </div>
