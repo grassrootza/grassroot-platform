@@ -2,16 +2,16 @@ package za.org.grassroot.core.repository;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.SpringApplicationConfiguration;
+import org.springframework.data.domain.Sort;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventLogType;
+import za.org.grassroot.core.util.DateTimeUtil;
 
 import javax.transaction.Transactional;
 import java.time.Instant;
@@ -32,8 +32,6 @@ import static org.junit.Assert.*;
 @Transactional
 @ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
 public class EventRepositoryTest {
-
-    private final static Logger log = LoggerFactory.getLogger(EventRepositoryTest.class);
 
     @Autowired
     private EventRepository eventRepository;
@@ -74,30 +72,52 @@ public class EventRepositoryTest {
         assertNotNull(eventFromDb.getId());
         assertNotNull(eventFromDb.getCreatedDateTime());
 
-//        assertThat(eventFromDb.getParentParentGroup().getGroupName(), is("Test Group"));
+        assertThat(eventFromDb.getAncestorGroup().getGroupName(), is("Test Group"));
         assertThat(eventFromDb.getCreatedByUser().getPhoneNumber(), is("55555"));
         assertThat(eventFromDb.getEventStartDateTime(), is(meetingStartDateTime));
     }
 
-    /*@Test
+    @Test
     public void shouldReturnEventsForGroupAfterDate() {
-        User user = userRepository.save(new User("0827654321"));
+        User user = userRepository.save(new User("27827654321"));
         Group group = groupRepository.save(new Group("events for group test",user));
 
-        Instant pastDate = Instant.now().minus(10, MINUTES);
+        Instant pastDate = Instant.now().minus(10, ChronoUnit.MINUTES);
         Event pastEvent = eventRepository.save(new Meeting("past event", pastDate, user, group,"someLoc", false));
-        Instant futureDate = pastDate.plus(20, MINUTES);
         eventRepository.save(pastEvent);
-        Event futureEvent = eventRepository.save(new Meeting("future event", futureDate, user,group,"someLoc"));
+
+        Instant futureDate = Instant.now().plus(20, ChronoUnit.MINUTES);
+        Event futureEvent = eventRepository.save(new Meeting("future event", futureDate, user, group, "someLoc"));
         eventRepository.save(futureEvent);
+
         Event futureEventCancelled = eventRepository.save(new Meeting("future event cancelled", futureDate, user, group, "someLocation"));
         futureEventCancelled.setCanceled(true);
         eventRepository.save(futureEventCancelled);
 
+        List<Event> firstSet = eventRepository.findByParentGroupAndCanceledFalse(group);
+        List<Event> secondSet = eventRepository.findByParentGroupAndEventStartDateTimeBetweenAndCanceledFalse(group,
+                Instant.now(), DateTimeUtil.getVeryLongAwayInstant(), new Sort(Sort.Direction.ASC, "EventStartDateTime"));
+
+        assertNotNull(firstSet);
+        assertNotNull(secondSet);
+        assertEquals(2, firstSet.size());
+        assertEquals(1, secondSet.size());
+
+        assertFalse(firstSet.contains(futureEventCancelled));
+        assertTrue(firstSet.contains(pastEvent));
+        assertTrue(firstSet.contains(futureEvent));
+        assertFalse(secondSet.contains(pastEvent));
+        assertFalse(secondSet.contains(futureEventCancelled));
+        assertTrue(secondSet.contains(futureEvent));
+
+        /*
+        todo : fix / diagnore this (currently set returns 0) before using new design in production code
         Set<Event> list = group.getUpcomingEvents(event -> true);
         assertEquals(1, list.size());
         assertEquals("future event", list.iterator().next().getName());
-    }*/
+        */
+
+    }
 
     @Test
     public void shouldReturnSameObjectOnSecondUpdate() {
@@ -107,7 +127,6 @@ public class EventRepositoryTest {
         event.setEventLocation("dup location");
         Event event2 = eventRepository.save(event);
         assertEquals(event.getId(),event2.getId());
-
     }
 
     @Test
@@ -119,7 +138,7 @@ public class EventRepositoryTest {
 
         Event vote = eventRepository.save(new Vote("testing vote query", expiry, user, group, true));
 
-        vote = eventRepository.save(vote);
+        eventRepository.save(vote);
         List<Event> list = eventRepository.findAllVotesAfterTimeStamp(Instant.now());
         assertEquals(1,list.size());
 
@@ -132,7 +151,7 @@ public class EventRepositoryTest {
 
         Instant expiry = Instant.now().truncatedTo(HOURS);
         Event vote = eventRepository.save(new Vote("testing vote query", expiry, user, group, true));
-        vote = eventRepository.save(vote);
+        eventRepository.save(vote);
         List<Event> list = eventRepository.findAllVotesAfterTimeStamp(Instant.now());
         assertEquals(0,list.size());
     }
@@ -145,7 +164,7 @@ public class EventRepositoryTest {
         Instant expiry = Instant.now().truncatedTo(HOURS).plus(1, HOURS);
 
         Event meeting = eventRepository.save(new Meeting("testing vote query", expiry, user, group, "somewhere"));
-        meeting = eventRepository.save(meeting);
+        eventRepository.save(meeting);
         List<Event> list = eventRepository.findAllVotesAfterTimeStamp(Instant.now());
         assertEquals(0,list.size());
     }
@@ -206,7 +225,12 @@ public class EventRepositoryTest {
         event3.setCanceled(true);
         eventRepository.save(event3);
 
-        // todo : actually test
+        List<Event> events = eventRepository.findByParentGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceledFalse(user, Instant.now());
+        assertNotNull(events);
+        assertEquals(1, events.size());
+        assertFalse(events.contains(event2));
+        assertFalse(events.contains(event3));
+        assertTrue(events.contains(event1));
     }
 
     @Test

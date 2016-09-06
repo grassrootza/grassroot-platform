@@ -69,7 +69,7 @@ public class NotificationToGcmXmppTransformer {
                 break;
 
             case ACCOUNT:
-                title = "Grassroot Message"; // todo : need to put group in here
+                title = notification.getAccountLog().getAccount().getAccountName();
                 body = notification.getMessage();
                 break;
 

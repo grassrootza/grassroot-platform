@@ -225,7 +225,7 @@ public class Account implements Serializable {
         if (this == o) {
             return true;
         }
-        if (o == null || !(o instanceof Account)) {
+        if (!(o instanceof Account)) {
             return false;
         }
 

@@ -107,9 +107,9 @@ public class AdminController extends BaseController {
         model.addAttribute("votesLastMonth", adminService.countEventsCreatedInInterval(month, now, EventType.VOTE));
         model.addAttribute("votesTotal", adminService.countAllEvents(EventType.VOTE));
 
-        model.addAttribute("todosLastWeek", adminService.countLogBooksRecordedInInterval(week, now));
-        model.addAttribute("todosLastMonth", adminService.countLogBooksRecordedInInterval(month, now));
-        model.addAttribute("todosTotal", adminService.countAllLogBooks());
+        model.addAttribute("todosLastWeek", adminService.countTodosRecordedInInterval(week, now));
+        model.addAttribute("todosLastMonth", adminService.countTodosRecordedInInterval(month, now));
+        model.addAttribute("todosTotal", adminService.countAllTodos());
 
         return "admin/home";
 

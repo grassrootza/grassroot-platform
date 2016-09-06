@@ -58,7 +58,6 @@ public interface EventManagementService {
 
     /*
     Methods to retrive information used for account pages
-    todo: handle sub-groups
      */
 
     List<Event> getGroupEventsInPeriod(Group group, LocalDateTime periodStart, LocalDateTime periodEnd);

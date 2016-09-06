@@ -5,9 +5,16 @@ package za.org.grassroot.core.enums;
  */
 public enum MeetingImportance {
 
-    // todo : leave as strings but add integer values (for comparing to notification priorities)
+    ORDINARY(1),
+    SPECIAL(2);
 
-    SPECIAL,
-    ORDINARY
+    private final int priority;
+
+    MeetingImportance(final int priority) { this.priority = priority; }
+
+	public int getPriority() { return priority; }
+
+	@Override
+	public String toString() { return name(); }
 
 }

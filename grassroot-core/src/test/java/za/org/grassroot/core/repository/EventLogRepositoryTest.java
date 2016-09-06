@@ -16,6 +16,7 @@ import java.time.Instant;
 
 import static org.junit.Assert.assertEquals;
 
+// todo : copy pattern of these tests to notification repository test to generate proper coverage there
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = TestContextConfiguration.class)
@@ -34,7 +35,6 @@ public class EventLogRepositoryTest {
 
     @Autowired
     private EventLogRepository eventLogRepository;
-
 
     @Test
     public void shouldSaveAndRetrieveEventLogEventNotification() throws Exception {
@@ -80,9 +80,9 @@ public class EventLogRepositoryTest {
         group.addMember(user2);
         groupRepository.save(group);
         Event event = eventRepository.save(new Meeting("test meeting 5", Instant.now(), user, group, "someLoc"));
-        eventLogRepository.save(new EventLog(user, event, EventLogType.REMINDER));
-//        Boolean reminderSent = eventLogRepository.reminderSent(event, user);
-        Boolean reminderSent = true; // todo: chenge to use notifications
+        EventLog eventLog = new EventLog(user, event, EventLogType.REMINDER);
+        eventLogRepository.save(eventLog);
+        Boolean reminderSent = eventLogRepository.findByEventAndUserAndEventLogType(event, user, EventLogType.REMINDER) != null;
         assertEquals(true, Boolean.parseBoolean(reminderSent.toString()));
     }
 
@@ -94,24 +94,26 @@ public class EventLogRepositoryTest {
         User user2 = userRepository.save(new User("00111110"));
         group.addMember(user2);
         Event event = eventRepository.save(new Meeting("test meeting 6", Instant.now(), user, group, "someLoc"));
-        eventLogRepository.save(new EventLog(user2, event, EventLogType.REMINDER));
-        Boolean aBoolean = false;         // todo: chenge to use notifications
-
+        Boolean aBoolean = eventLogRepository.findByEventAndUserAndEventLogType(event, user2, EventLogType.REMINDER) != null;
         assertEquals(false, Boolean.parseBoolean(aBoolean.toString()));
-        Boolean sent = true;              // todo: chenge to use notifications
-
+        eventLogRepository.save(new EventLog(user2, event, EventLogType.REMINDER));
+        Boolean sent = eventLogRepository.findByEventAndUserAndEventLogType(event, user2, EventLogType.REMINDER) != null;
         assertEquals(true, Boolean.parseBoolean(sent.toString()));
     }
 
     @Test
-    public void shouldReturnMinutesForEvent() {
+    public void shouldStoreCancelledStatus() {
         User user = userRepository.save(new User("001111120"));
         Group group = groupRepository.save(new Group("test minutes 1", user));
         User user2 = userRepository.save(new User("001111121"));
         group.addMember(user2);
         Event event = eventRepository.save(new Meeting("test meeting 7", Instant.now(), user, group, "someLoc"));
-        EventLog elog1 = eventLogRepository.save(new EventLog(user, event, EventLogType.MINUTES));
-        EventLog elog2 = eventLogRepository.save(new EventLog(user, event, EventLogType.MINUTES));
-        EventLog enot = eventLogRepository.save(new EventLog(user, event, EventLogType.CREATED));
+        event.setCanceled(true);
+        eventRepository.save(event);
+        eventLogRepository.save(new EventLog(user, event, EventLogType.CANCELLED));
+        assertEquals(true, (eventLogRepository.findByEventAndUserAndEventLogType(event, user, EventLogType.CANCELLED)) != null);
+        assertEquals(false, (eventLogRepository.findByEventAndUserAndEventLogType(event, user2, EventLogType.CANCELLED) != null));
+        eventLogRepository.save(new EventLog(user2, event, EventLogType.CANCELLED));
+        assertEquals(true, (eventLogRepository.findByEventAndUserAndEventLogType(event, user2, EventLogType.CANCELLED) != null));
     }
 }

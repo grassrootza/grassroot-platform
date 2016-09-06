@@ -183,7 +183,6 @@ public class AccountRepositoryTest {
 
     }
 
-    // todo: check why findByAdministrators is not working
     @Test
     @Rollback
     public void shouldSaveAndFindAdministrator() {
@@ -195,6 +194,9 @@ public class AccountRepositoryTest {
         Account account = new Account(accountName, testAdmin);
         accountRepository.save(account);
 
+        testAdmin.setAccountAdministered(account);
+        userRepository.save(testAdmin);
+
         Account accountFromDbByName = accountRepository.findByAccountName(accountName).get(0);
         assertNotNull(accountFromDbByName);
         assertThat(accountFromDbByName.getAdministrators().size(), is(1));
@@ -203,8 +205,7 @@ public class AccountRepositoryTest {
         assertThat(adminFromAccount.getPhoneNumber(), is("0505550000"));
 
         Account accountFromDbByAdmin = accountRepository.findByAdministrators(testAdmin);
-        // assertNotNull(accountFromDbByAdmin); // note: this is returning null for some reason
-
+        assertNotNull(accountFromDbByAdmin);
     }
 
     @Test

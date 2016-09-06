@@ -149,7 +149,7 @@ public class PaidGroup {
         if (this == o) {
             return true;
         }
-        if (o == null || !(o instanceof PaidGroup)) {
+        if (!(o instanceof PaidGroup)) {
             return false;
         }
 

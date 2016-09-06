@@ -2,8 +2,6 @@ package za.org.grassroot.core.repository;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.data.domain.Sort;
@@ -36,8 +34,6 @@ import static za.org.grassroot.core.enums.UserLogType.*;
 @Transactional
 @ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
 public class UserLogRepositoryTest {
-
-    private static final Logger log = LoggerFactory.getLogger(UserLogRepositoryTest.class);
 
     @Autowired
     private UserRepository userRepository;

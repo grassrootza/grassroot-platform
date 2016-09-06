@@ -95,7 +95,7 @@ public class USSDController {
 
     @Autowired
     @Qualifier("messageSource")
-    MessageSource messageSource;
+    protected MessageSource messageSource;
 
     /*
     Simple helper method for mocking and unit test
@@ -175,7 +175,7 @@ public class USSDController {
     }
 
     // todo move this somewhere else, and/or clean up nullability in User class, but if put it there, confuses Hibernate (wants a setter)
-    protected String getLanguage(User user) {
+    private String getLanguage(User user) {
         // todo some validation on the locale code, above just checking it's not null
         return (user.getLanguageCode() == null) ? Locale.US.getLanguage(): user.getLanguageCode();
     }

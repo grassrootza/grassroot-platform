@@ -38,17 +38,7 @@ public class HttpConfig {
 
     @Bean
     public RestTemplate restTemplate() {
-        RestTemplate restTemplate = new RestTemplate(httpRequestFactory());
-
-        /* todo: later
-        List<HttpMessageConverter<?>> converters = restTemplate.getMessageConverters();
-        for (HttpMessageConverter<?> converter : converters) {
-            if (converter instanceof MappingJackson2HttpMessageConverter) {
-                MappingJackson2HttpMessageConverter jsonConverter = (MappingJackson2HttpMessageConverter) converter;
-                jsonConverter.setObjectMapper();
-            }
-        }*/
-        return restTemplate;
+        return new RestTemplate(httpRequestFactory());
     }
 
     @Bean
@@ -75,8 +65,7 @@ public class HttpConfig {
 
     @Bean
     public AsyncRestTemplate asyncRestTemplate() {
-        AsyncRestTemplate restTemplate = new AsyncRestTemplate(asyncHttpRequestFactory(), restTemplate());
-        return restTemplate;
+        return new AsyncRestTemplate(asyncHttpRequestFactory(), restTemplate());
     }
 
     @Bean

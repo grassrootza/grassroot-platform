@@ -220,12 +220,12 @@ public class AdminManager implements AdminService {
      */
 
     @Override
-    public Long countAllLogBooks() {
+    public Long countAllTodos() {
         return todoRepository.count();
     }
 
     @Override
-    public Long countLogBooksRecordedInInterval(LocalDateTime start, LocalDateTime end) {
+    public Long countTodosRecordedInInterval(LocalDateTime start, LocalDateTime end) {
         return todoRepository.countByCreatedDateTimeBetween(start.toInstant(ZoneOffset.UTC),
                 end.toInstant(ZoneOffset.UTC));
     }

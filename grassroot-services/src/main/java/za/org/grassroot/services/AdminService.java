@@ -12,7 +12,6 @@ import java.util.Map;
 
 /**
  * Created by luke on 2016/02/04.
- * major todo: annotate all of this with system admin
  */
 public interface AdminService {
 
@@ -20,8 +19,10 @@ public interface AdminService {
     Methods to return masked user entities for system analysis
      */
 
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     Long countAllUsers();
 
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     List<MaskedUserDTO> searchByInputNumberOrDisplayName(String inputNumber);
 
     int countUsersCreatedInInterval(LocalDateTime start, LocalDateTime end);
@@ -68,18 +69,17 @@ public interface AdminService {
     int countEventsCreatedInInterval(LocalDateTime start, LocalDateTime end, EventType eventType);
 
     /*
-    Methods to analyze Todo entries (to add masks)
+    Methods to analyze to-do entries (to add masks)
      */
 
-    Long countAllLogBooks();
+    Long countAllTodos();
 
-    Long countLogBooksRecordedInInterval(LocalDateTime start, LocalDateTime end);
-
-    List<KeywordDTO> getKeywordStats(LocalDateTime from);
+    Long countTodosRecordedInInterval(LocalDateTime start, LocalDateTime end);
 
     /*
     Methods for closer analysis of user sessions etc
      */
+    List<KeywordDTO> getKeywordStats(LocalDateTime from);
 
     long getMaxSessionsInLastMonth();
 
