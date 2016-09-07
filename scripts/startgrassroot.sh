@@ -6,6 +6,6 @@
 
 CURR=$PWD
 cd /var/grassroot
-nohup java  -Dspring.profiles.active=$PROFILE -jar grassroot-webapp/target/grassroot-webapp-1.0.0.M1.jar  `cat /home/ubuntu/cmd_line_arguments` > grassroot-app.log 2>&1 &
+nohup java  -Dspring.profiles.active=$PROFILE -jar grassroot-webapp/target/grassroot-webapp-1.0.0.M2.jar  `cat /home/ubuntu/cmd_line_arguments` > grassroot-app.log 2>&1 &
 echo $! > .pid
 cd $CURR
