@@ -1,0 +1,75 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorator="layout">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Adding group to account</title>
+</head>
+
+<body>
+
+<div layout:fragment="header">
+  <h2><span  th:text="${account.accountName}">account name</span></h2>
+</div>
+
+<div layout:fragment="overview">Designate a group as paid for by your account</div>
+
+<div layout:fragment="content">
+  <div class="well">
+    <div class="row">
+      <div class="col-md-4 form-group">
+        <span class="text-normal">Designate a group you are part of:</span>
+      </div>
+    </div>
+    <div class="row">
+      <form th:action="@{designate}" method="post">
+        <input type="hidden" name="accountId" th:value="${account.id}" />
+          <div class="row col-md-8">
+            <label for="groupSelector" class="col-md-2 control-label">Group:</label>
+            <div class="col-md-8">
+              <select name="groupId" id="groupSelector">
+                <option th:each="group : ${candidateGroups}"
+                      th:value="${group.id}"
+                      th:text="${group.getName('')}">
+                </option>
+              </select>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-4"></div>
+            <div class="col-md-8 form-group">
+              <button type="submit" class="btn-primary">Submit</button>
+              <a th:href="@{/paid_account/view(accountId=${account.id})}">Back</a>
+            </div>
+          </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="well">
+    <p>Search for a group by name or join code</p>
+    <form th:action="@{search}" method="post">
+      <input type="hidden" name="accountId" th:value="${account.id}" />
+      <div class="form-group">
+        <label for="searchTerm" class="col-md-2 control-label">Search term</label>
+        <div class="col-md-4">
+          <input name="searchTerm" class= "form-control" type="text" id="searchTerm" placeholder="Enter group name or join code" />
+        </div>
+      </div>
+      <div class="form-group row">
+        <br/><label for="tokenSearch" class="col-md-2 control-label">Search by:</label>
+        <div class="col-md-4 row">
+          <input type="radio" id="tokenSearch" name="tokenSearch" value="on" checked="checked"/>Join code
+          <input type="radio" name="tokenSearch" value="off" />Group name
+        </div>
+      </div>
+      <div class="form-group">
+        <button type="submit" class="btn-primary">Search</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+</body>
+</html>

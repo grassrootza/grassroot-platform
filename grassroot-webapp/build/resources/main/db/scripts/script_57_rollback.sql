@@ -1,0 +1,1 @@
+ALTER TABLE group_profile drop COLUMN join_approver_id;

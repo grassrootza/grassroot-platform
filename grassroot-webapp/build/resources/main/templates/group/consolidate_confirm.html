@@ -1,0 +1,51 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorator="layout">
+<head>
+  <title>GrassRoot - Consolidate groups</title>
+</head>
+<body>
+
+<div layout:fragment="header">
+  <h2 class="text-center">Confirm group merging</h2>
+</div>
+
+<div layout:fragment="overview">
+  <h4 class="text-center">Are you sure you want to merge these groups?</h4>
+</div>
+
+<!-- todo: turn this into just a modal confirm on prior page, once rest done -->
+
+<div layout:fragment="content">
+  <div layout:fragment="messages"></div>
+  <div class="well">
+    <div class="row">
+      <div class="col-md-8 col-md-offset-2">
+        <form th:action="@{/group/consolidate/do}" method="post" class="form-vertical">
+          <input type="hidden" name="groupInto" th:value="${groupInto.uid}" />
+          <input type="hidden" name="groupFrom" th:value="${groupFrom.uid}" />
+          <input type="hidden" name="leaveActive" th:value="${leaveActive}" />
+          <div class="form-group">
+            <label for="confirm_field">
+              <p>You are merging <span th:text="${numberFrom}">X</span> members from
+              "<span th:text="${groupFrom.getName('')}">group name</span>", into
+              "<span th:text="${groupInto.getName('')}">group name</span>".
+              <span th:unless="${leaveActive}">
+                After the merge, <span th:text="${groupFrom.getName('')}">group name</span> will be deactivated.
+              </span></p>
+              <small>To confirm, please type "merge" below.</small>
+            </label>
+            <input type="text" class="form-control" id="confirm_field" name="confirm_field" autocomplete="off" />
+          </div>
+          <div clas="form-group">
+            <a th:href="@{/group/view(groupUid=${groupFrom.Uid})}" role="button" class="btn btn-default">Cancel</a>
+            <button type="submit" class="btn btn-primary">Confirm</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

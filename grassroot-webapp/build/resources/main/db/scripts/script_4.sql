@@ -1,0 +1,1 @@
+ALTER TABLE user_profile ADD COLUMN last_ussd_menu character varying(100);

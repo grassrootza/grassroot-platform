@@ -1,0 +1,90 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorator="layout">
+<head>
+  <title>Grassroot - View Logbook Entry</title>
+</head>
+<body>
+
+<div layout:fragment="header">
+  <h2>Displaying details for logbook entry</h2>
+</div>
+<div layout:fragment="overview" th:if="${parentEntry != null}">
+  Action replicated from entry in parent group <span th:value="${parentEntryGroup.groupName}">name</span>.
+</div>
+
+<div layout:fragment="content">
+  <div layout:fragment="messages"></div>
+
+  <div class="well">
+    <ul class="list-group">
+      <li class="list-group-item" th:classappend="${isComplete} ? list-group-item-success : list-group-item-warning">
+        Logbook entry: "<span th:text="${entry.message}"></span>".
+      </li>
+      <li class="list-group-item" th:unless="${isComplete}">
+        Action not done yet, due date is <span th:text="${#dates.format(entry.actionByDate, 'dd MMM yyyy')}">Date</span>
+      </li>
+      <li class="list-group-item" th:if="${isComplete}">
+        Action completed on <span th:text="${#dates.format(entry.completedDate, 'dd MMM yyyy')}">Date</span>
+      </li>
+      <li class="list-group-item">
+        Recorded on date: <span th:text="${#dates.format(entry.createdDateTime, 'dd MMM yyyy, HH:mm')}"></span>
+      </li>
+      <li class="list-group-item">
+        Recorded by: <span th:text="${creatingUser.nameToDisplay()}"></span>
+      </li>
+      <li class="list-group-item" th:if="${isComplete}">
+        Original deadline was <span th:text="${#dates.format(entry.actionByDate, 'dd MMM yyyy')}">Date</span>
+      </li>
+      <li class="list-group-item" th:if="${assignedToUser != null}">
+        Action was assigned to member <mark class="text-primary" th:text="${assignedToUser.nameToDisplay()}">Name</mark>
+      </li>
+      <li class="list-group-item" th:if="${parentEntry != null}">
+        <a th:href="@{details(logBookId=${parentEntry.id})}">
+          View entry in parent group <span th:text="${parentEntryGroup.groupName}">name</span>
+        </a>
+      </li>
+    </ul>
+    <div th:unless="${isComplete}"> <!-- redundancy here but putting unless clase in <a> or <button> not working -->
+      <a th:href="@{complete(logBookUid=${entry.uid})}"><button class="btn-primary">Mark as complete</button></a>
+      <a th:href="@{modify(logBookUid=${entry.uid})}"><button class="btn-info">Modify to-do</button></a>
+      <a th:href="@{view(groupUid=${entry.parent.uid})}"><button class="btn-info">Back to group logbook</button></a>
+    </div>
+    <div th:if="${isComplete}">
+      <a th:href="@{view(groupUid=${entry.parent.uid})}"><button class="btn-info">Back to group logbook</button></a>
+    </div>
+  </div>
+
+  <div class="well" th:if="${hasReplicatedEntries}">
+    <div class="row list-group">
+      <h3>This entry was cascaded to subgroups, with this status:</h3>
+    </div>
+    <div class="row list-group-item">
+      <table class="table table-striped">
+        <thead>
+          <th>Group name</th>
+          <th>Completed yet?</th>
+          <th>Completed date</th>
+        </thead>
+        <tbody>
+        <tr th:each="entry, iterStat: ${replicatedEntries}">
+          <td>
+            <a th:href="@{details(logBookId=${entry.id})}">
+            <span th:text="${replicatedGroups.get(iterStat.index).getName('')}">Group name</span>
+            </a>
+          </td>
+          <td><span th:text="${entry.completed}">Completed?</span></td>
+          <td>
+            <span th:if="${entry.completed}" th:text="${#dates.format(entry.completedDate, 'dd MMM yyyy')}">Date</span>
+            <span th:unless="${entry.completed}">N/A</span>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

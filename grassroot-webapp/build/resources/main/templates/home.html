@@ -1,0 +1,407 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" xmlns:data="http://www.w3.org/1999/xhtml"
+      layout:decorator="layout">
+<head>
+    <title>Grassroot Platform</title>
+
+  <meta property="og:title" content="grassroot.org.za"/>
+  <meta property="og:image" content="/img/grass.png"/>
+  <meta property="og:description" content="The Grassroot Platform."/>
+
+  <!-- need these for ajax, though there may be a more elegant way to do it (maybe just call the Thymeleaf in the CSRF -->
+  <meta name="_csrf" th:content="${_csrf.token}"/>
+  <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+
+</head>
+
+<body>
+
+<div layout:fragment="header">
+    <!--<h2 th:text="#{home.welcome.message}">welcome headline</h2>-->
+</div>
+<div layout:fragment="overview"></div>
+
+<div layout:fragment="content">
+    <!-- Central text header -->
+
+  <div class="row">
+    <div class="col-md-12">
+      <h1 th:text="#{web.home.banner}" class="text-center">Meet, vote act</h1>
+      <!-- Insert user's name -->
+      <h4 th:text="#{web.home.welcome(${currentUser.displayName})}" class="text-center">Welcome back to Grassroot, Luke</h4>
+    </div>
+  </div>
+
+  <div class="well" th:if="${not #lists.isEmpty(joinRequestsPending)}">
+    <div class="row">
+      <div class="col-md-8 col-md-offset-2">
+        <h5><b>People have asked to join some of your groups:</b></h5>
+        <ul class="list-group">
+          <li th:each="request : ${joinRequestsPending}" class="list-group-item" >
+            <div class="row">
+              <div class="col-md-8">
+                <span th:text="${request.requestor.getName('')}">Name</span> has asked to join
+                "<span th:text="${request.group.getName('')}">group name</span>".
+              </div>
+              <div class="col-md-4 pull-right">
+                <a th:href="@{/group/join/approve(requestUid=${request.uid})}">
+                  <button class="btn btn-default btn-sm" type="submit">Approve</button></a>
+                <a th:href="@{/group/join/decline(requestUid=${request.uid})}">
+                  <button class="btn btn-default btn-sm" type="submit">Reject</button></a>
+                <button type="button" class="btn btn-default btn-sm" data-toggle="modal" data-target="#joinReqDetailsModal"
+                   data:description="${request.description}" data:uid="${request.uid}" data:name="${request.requestor.getName('')}"
+                        data:phone="${request.requestor.phoneNumber}" >
+                  See details</button>
+              </div>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div th:if="${not #lists.isEmpty(joinRequestsPending)}" class="modal fade" id="joinReqDetailsModal"
+       tabindex="-1" role="dialog" aria-labelledby="joinModalLabel">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title" id="joinModalLabel">
+            Join request details
+          </h4>
+        </div>
+        <div class="modal-body">
+          <p><label>Name:</label><span id="requestorName">Person</span></p>
+          <p><label>Number:</label><span id="requestorPhone">Phone number</span></p>
+          <!-- <p><label>Date: </label> <span id="dateRequested">Some time</span></p> --> <!-- toDo : insert later, when needed -->
+          <p><label>Message: </label> <span id="requestDescription">Description</span></p>
+        </div>
+        <div class="modal-footer">
+          <a th:href="@{/group/join/approve}" id="approveLink">
+            <button class="btn btn-default btn-sm" type="submit">Approve</button></a>
+          <a th:href="@{/group/join/decline}" id="declineLink">
+            <button class="btn btn-default btn-sm" type="submit">Reject</button></a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div th:if="${not #lists.isEmpty(upcomingTasks)}">
+    <div class="well">
+      <div class="row">
+        <div class="col-md-8 col-md-offset-2">
+          <h5><b>You have events and to-dos coming up:</b></h5>
+          <li th:each="task : ${upcomingTasks}" class="list-group-item">
+            <div class="row">
+              <!-- LHS: Description of task -->
+              <div class="col-md-8">
+                <p class="list-group-item-text">
+                  <a href="#" th:href="'javascript:fetchTaskDescription(\'' + ${task.taskUid} + '\', \'' + ${task.type} + '\')'">
+                    <strong th:text="${task.type}">Meeting</strong>: <span th:text="${task.title}">Title</span>
+                  </a>
+                  <br/>
+                  <small th:text="#{web.home.__${task.type}__.description(${task.parentName},
+                  ${#temporals.format(task.getDeadlineDateTime(),'h:mm a, dd MMMM')})}">Description</small>
+                </p>
+              </div>
+
+              <!-- RHS: Actions on task -->
+              <div class="col-md-4 pull-right text-right">
+
+                <div th:unless="${task.hasResponded}">
+                  <div th:switch="${task.type}">
+                    <div th:case="MEETING">
+                      <a th:href="@{meeting/rsvp(eventUid=${task.taskUid},answer=yes)}">
+                        <button class="btn btn-primary btn-sm">I'll attend</button>
+                      </a>
+                      <a th:href="@{meeting/rsvp(eventUid=${task.taskUid},answer=no)}">
+                        <button class="btn btn-danger btn-sm">I can't make it</button>
+                      </a>
+                    </div>
+                    <div th:case="VOTE">
+                      <a th:href="@{vote/answer(eventUid=${task.taskUid},answer=yes)}" class="btn btn-primary btn-sm">Vote yes</a>
+                      <a th:href="@{vote/answer(eventUid=${task.taskUid},answer=no)}" class="btn btn-danger btn-sm">Vote no</a>
+                      <a th:href="@{vote/answer(eventUid=${task.taskUid},answer=maybe)}" class="btn btn-default btn-sm">Abstain</a>
+                    </div>
+                    <div th:case="TODO">
+                      <a th:href="@{log/complete(logBookUid=${task.taskUid})}" class="btn btn-default btn-sm">Mark complete</a>
+                    </div>
+                  </div>
+                </div>
+
+                <div th:if="${task.hasResponded}">
+                  <div th:switch="${task.type}">
+                      <div th:case="MEETING">
+                        <a href="#" th:href="'javascript:fetchTaskDescription(\'' + ${task.taskUid} + '\', \'' + ${task.type} + '\')'">
+                          <span class="badge" th:if="${#strings.equalsIgnoreCase(task.reply, 'Yes')}">You're attending</span>
+                          <span class="badge" th:if="${#strings.equalsIgnoreCase(task.reply, 'No')}">You're not attending</span>
+                        </a>
+                      </div>
+                      <div th:case="VOTE">
+                        <a href="#" th:href="'javascript:fetchTaskDescription(\'' + ${task.taskUid} + '\', \'' + ${task.type} + '\')'">
+                          <span class="badge" th:text="#{web.home.vote.answer(${#strings.toLowerCase(task.reply)})}">ABC</span>
+                        </a>
+                      </div>
+                      <div th:case="TODO">
+                        <a href="#" th:href="'javascript:fetchTaskDescription(\'' + ${task.taskUid} + '\', \'' + ${task.type} + '\')'">
+                          <span class="badge">Action complete</span>
+                        </a>
+                      </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </li>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- List of user's groups, if they have any -->
+
+  <!-- form to allow joining a group, if it is flagged as discoverable -->
+  <div class="well">
+    <div class="row">
+      <div class="col-md-8 col-md-offset-2">
+        <form th:action="@{/group/search}" method="get" class="form-vertical">
+          <div class="input-group">
+            <input type="text" name="term" class="form-control" id="searchTerm" placeholder="Enter join code or name to search" />
+            <span class="input-group-btn">
+              <button type="submit" class="btn btn-primary">Search for groups</button>
+            </span>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div th:if="${not #lists.isEmpty(userGroups)}">
+    <div class="col-md-8 col-md-offset-2">
+      <div class="row">
+        <div class="col-md-3">
+          <h5><b>Your groups</b></h5>
+        </div>
+        <div class="col-md-2 pull-right">
+          <a th:href="@{/group/create}" role="button" class="btn btn-default">
+            <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+            New group
+          </a>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-12">
+          <ul class="list-group">
+            <li th:each="group,iterStat : ${userGroups}" class="list-group-item">
+              <a th:href="@{/group/view(groupUid=${group.Uid})}">
+                <span th:text="${group.getDisplayName('')}"></span></a>
+              <span class="badge">
+                <span th:text="${group.getGroupSize()}"></span> Members
+              </span>
+              <small class="clearfix">
+                Est. <span th:text="${#temporals.format(group.getCreatedDateTimeAtSAST(),'d MMM yyyy')}">13 May 2011</span>
+              </small>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Skeleton of modal for displaying upcoming task (content filled by ajax method below) -->
+  <div th:if="${not #lists.isEmpty(upcomingTasks)}" class="modal fade" id="taskModal"
+       tabindex="-1" role="dialog" aria-labelledby="taskModalTitle">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title" id="taskModalTitle">Task title</h4>
+        </div>
+        <div class="modal-body">
+          <p><strong>Summary: </strong><span id="taskModalInfo">Core info</span></p>
+          <p id="taskDescHolder"><strong>Additional notes:</strong>
+            <span id="taskModalDescription"></span></p>
+        </div>
+        <div class="modal-footer">
+          <form id="taskModalNotRespondedForm" action="" method="get"> <!--toDo: switch to post -->
+            <input type="hidden" name="eventUid" id="taskUid" />
+            <button type="close" data-dismiss="modal" class="btn btn-default btn-sm">Close</button>
+            <a href="#" id="taskModalViewDetails" class="btn btn-default btn-sm">View details</a>
+            <button id="taskModalNoButton" type="submit" class="btn btn-danger btn-sm" name="answer" value="no">No</button>
+            <button id="taskModalYesButton" type="submit" class="btn btn-primary btn-sm" name="answer" value="yes">Yes</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="header-container" layout:fragment="script-container">
+
+  <script th:inline="javascript">
+
+    /*<![CDATA[*/
+
+    function fetchTaskDescription(taskUid, taskType) {
+
+      var token = $("meta[name='_csrf']").attr("content");
+      var header = $("meta[name='_csrf_header']").attr("content");
+
+      var param = {};
+      param["taskUid"] = taskUid;
+      param["taskType"] = taskType;
+
+      $.ajax({
+        type : "GET",
+        url : "/ajax/tasks/fetch",
+        data :  param,
+        dataType : "json",
+        beforeSend : function(xhr) {
+          xhr.setRequestHeader(header, token);
+        },
+        success : function(response) {
+          populateAndDisplayTaskModal(response.data);
+        },
+        error : function(xhr, textStatus, errorThrown) {
+          console.log("Error! : " + errorThrown);
+          console.log("Status : " + xhr.status);
+        }
+      });
+
+    }
+
+    function populateAndDisplayTaskModal(task) {
+
+      var uid = task.taskUid;
+      var type = task.type;
+      var deadline = formatDeadline(new Date(task.deadlineAtSAST), task.type);
+      var replied = task.hasResponded;
+      var wholeGroup = task.wholeGroupAssigned;
+      var descriptionExists = task.description != undefined && task.description != "";
+
+      var modal = $('#taskModal');
+      var summary = modal.find("#taskModalInfo");
+      var replyForm = modal.find("#taskModalNotRespondedForm");
+      var detailsButton = modal.find("#taskModalViewDetails");
+
+      if (type == 'MEETING') {
+        var suffix = replied ?
+                "You responded that you will " + (task.reply === 'No' ? "not" : "") + " attend the meeting." :
+                "Will you attend the meeting?";
+        var invited = wholeGroup ? "the whole group is invited to the meeting" : task.memberCount + " members are invited";
+        summary.html("Meeting of " + task.parentName + ", taking place at " + task.location + ". Meeting will be held at "
+                + deadline + ", and " + invited + ". "  + suffix);
+        replyForm.attr("action", "meeting/rsvp");
+        replyForm.find("#taskModalYesButton").text("I'll attend").toggle(!replied);
+        replyForm.find("#taskModalNoButton").text("I can't attend").toggle(!replied);
+        detailsButton.attr('href', "meeting/view?eventUid=" + uid).toggle(replied);
+
+      } else if (type == 'VOTE') {
+        var suffix = replied ? "You voted " + ((typeof task.reply != 'undefined') ? task.reply.toLowerCase() : "") : "What's your vote?";
+        summary.html("Vote of " + task.parentName + ", closing at " + deadline + ". " + suffix);
+        replyForm.attr("action", "vote/answer");
+        replyForm.find("#taskModalYesButton").text("Vote yes").toggle(!replied);
+        replyForm.find("#taskModalNoButton").text("Vote no").toggle(!replied);
+        detailsButton.attr('href', "vote/view?eventUid=" + uid).toggle(replied);
+      } else if (type == 'TODO') {
+        var suffix = replied ? ", and has been completed." : ". Is the action complete yet?";
+        var assigned = wholeGroup ? "The action is assigned to the whole group" :
+          "The action is assigned to " + task.memberCount + " members";
+        summary.html("To-do for " + task.parentName + ", due by " + deadline + ". " + assigned + suffix);
+        replyForm.attr("action", "log/complete");
+        replyForm.find("#taskUid").attr("name", "logBookUid");
+        replyForm.find("#taskModalYesButton").text("Mark completed").toggle(!replied);
+        replyForm.find("#taskModalNoButton").hide();
+        detailsButton.attr("href", "log/details?logBookUid=" + uid).show();
+      }
+
+      modal.find("#taskModalTitle").html(type + ": " + task.title);
+      replyForm.find("#taskUid").val(uid);
+      modal.find("#taskDescHolder").toggle(descriptionExists);
+      if (descriptionExists) modal.find("#taskModalDescription").text(task.description);
+
+      modal.modal();
+    }
+
+    // required due to javascript's incredibly limited date functionality ... replace once/if using jquery UI or other library
+    function formatDeadline(date, type) {
+
+      var weekday = new Array(7), months = new Array(12);
+      weekday[0]="Sunday",weekday[1]="Monday",weekday[2]="Tuesday",weekday[3]="Wednesday",weekday[4]="Thursday",weekday[5]="Friday",weekday[6]="Saturday";
+      months[0]="January",months[1]="February",months[2]="March",months[3]="April",months[4]="May",months[5]="June",months[6]="July",
+              months[7]="August",months[8]="September",months[9]="October",months[10]="November",months[11]="December";
+
+      if (type == "MEETING") {
+        return pad(date.getHours()) + "h" + pad(date.getMinutes()) + " on " + weekday[date.getDay()] + ", " + pad(date.getDate()) + " "
+                + months[date.getMonth()];
+      } else if (type == "VOTE") {
+        return pad(date.getHours()) + "h" + pad(date.getMinutes()) + ", " + pad(date.getDate()) + "-" + pad(date.getMonth() + 1) + "-" + date.getFullYear();
+      } else if(type == "TODO") {
+        return weekday[date.getDay()] + ", " + pad(date.getDate()) + " " + months[date.getMonth()];
+      }
+    }
+
+    // again, insane language that doesn't even have a string format method, so have to hand write this ...
+    function pad(str) { return ("00" + str).slice(-2); }
+
+
+    $('#joinReqDetailsModal').on('show.bs.modal', function (event) {
+      var button = $(event.relatedTarget);
+
+      var group = button.data('uid');
+      var approveHref = "/group/join/approve?requestUid=" + group;
+      var declineHref = "/group/join/decline?requestUid=" + group;
+
+      var name = button.data('name');
+      var description = button.data('description');
+      var phone = button.data('phone');
+
+      console.log("description = " + description);
+      console.log("declineHref = " + declineHref);
+      console.log("name & number = " + name + ", " + phone);
+
+      var modal = $(this);
+      modal.find('#requestorName').text(name);
+      modal.find('#requestorPhone').text(phone);
+      modal.find('#requestDescription').text(description);
+      modal.find('#approveLink').attr('href', approveHref);
+      modal.find('#declineLink').attr('href', declineHref);
+    });
+
+    /*]]>*/
+
+
+  </script>
+
+</div>
+
+</body>
+</html>
+
+<!-- Trying out the group tree view idea - sql version -->
+
+<!-- <div th:if="${not #lists.isEmpty(groupTreesSql)}">
+  <div class="well">
+    <div class="just-padding">
+      <h3>Groups in tree view:</h3>
+      <div class="list-group list-group-root well">
+        <div th:each="groupTreeSql: ${groupTreesSql}" class="list-group-item">
+          <span th:text="${groupTreeSql.groupName}">Group name</span>
+          <ul th:fragment="fragment_nodeSql(groupTreeSql)">
+            <li th:each="subGroupSql : ${groupTreeSql.Subgroups}" th:inline="text" class="list-group-item">
+              [[${subGroupSql.groupName}]] ([[${subGroupSql.level}]])
+              <ul th:replace="this::fragment_node(${subGroupSql})" th:unless="${groupTreeSql.isTerminal()}"></ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div> -->
+
+<!-- <div th:fragment="fragment_node(node)">
+  <li th:each="subGroup : ${node.Subgroups}" th:text="${subGroup.groupName}">
+    <span layout:include="this :: fragment_node(${subGroup})"></span>
+  </li>
+</div> -->

@@ -1,0 +1,188 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>Glassroot Geo Data Test and View</title>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.3/jquery.min.js"></script>
+
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+  <meta name="viewport" content="initial-scale=1.0" />
+  <meta name="_csrf" th:content="${_csrf.token}"/>
+  <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+
+  <style>
+    #map {
+      margin-top: 50px;
+      height: 600px;
+      width: 800px;
+    }
+  </style>
+
+</head>
+
+<body>
+
+  <h1>Here is some data</h1>
+
+  <table>
+
+    <thead>
+      <th>Number</th>
+      <th>Longitude</th>
+      <th>Latitude</th>
+      <th>Number of logs</th>
+    </thead>
+
+    <tbody>
+      <tr th:each="userLoc, iterStat : ${userLocations}">
+        <td><span th:text="${iterStat.index}">X</span></td>
+        <td><span th:text="${userLoc.value.location.longitude}" th:id="longitude_+${iterStat.index}">Longitude</span></td>
+        <td><span th:text="${userLoc.value.location.latitude}" th:id="latitude_+${iterStat.index}">Latitude</span></td>
+        <td><span th:text="${userLoc.value.logCount}">Log count</span></td>
+      </tr>
+    </tbody>
+
+  </table>
+
+  <form>
+    View:
+    <select id="viewType">
+      <option value="0">All</option>
+      <option th:each="userLoc, iterStat : ${userLocations}"
+              th:text="'User Id '+${iterStat.index}"
+              th:value="${userLoc.key.uid}">
+      </option>
+    </select>
+  </form>
+
+  <div id="feedback"></div>
+
+  <div id="map"></div>
+
+  <script th:inline="javascript">
+
+    /*<![CDATA[*/
+
+    var map;
+    var markers = [];
+
+    $(document).ready(function(){
+      $('#viewType').change(function() {
+        var uid = $('#viewType').val();
+        if (!(uid == '0')) {
+          console.log("user selected! " + uid);
+          ajaxGetLocations(uid);
+        } else {
+          console.log("back to view all!");
+          placeAvgMarkers();
+        }
+      });
+
+    });
+
+    function initMap() {
+
+      map = new google.maps.Map(document.getElementById('map'), {
+        center : {lat: parseFloat($("#latitude_0").text()), lng: parseFloat($("#longitude_0").text())},
+        zoom : 8
+      });
+
+      placeAvgMarkers();
+
+      console.log("Exiting initMap!");
+    }
+
+    function clearMarkers() {
+      for (var i = 0; i < markers.length; i++) {
+        markers[i].setMap(null);
+      }
+      markers = [];
+    }
+
+    function placeAvgMarkers() {
+
+      clearMarkers();
+      console.log("Started placing average markers!");
+
+      var numberMarkers = /*[[${userLocations.size()}]]*/ 10;
+      var arrayLatLongs = new Array(numberMarkers);
+      var mapMarkers = new Array(numberMarkers);
+
+      for (i = 0; i < numberMarkers; i++) {
+        arrayLatLongs[i] = {lat: parseFloat($("#latitude_" + i).text()), lng: parseFloat($("#longitude_" + i).text())};
+      }
+
+      for (i = 0; i < numberMarkers; i++) {
+        mapMarkers[i] = new google.maps.Marker({
+          position : arrayLatLongs[i],
+          map: map,
+          title: 'Marker ' + i
+        });
+        markers.push(mapMarkers[i]);
+      }
+
+    }
+
+    function placeMarkers(data) {
+
+      clearMarkers();
+      var arr1 = $.makeArray(data);
+      var mapMarkers = new Array(arr1.length);
+
+      for (i = 0; i < arr1.length; i++) {
+        latLong = { lat: parseFloat(arr1[i][0]), lng: parseFloat(arr1[i][1]) };
+        mapMarkers[i] = new google.maps.Marker({
+          position: latLong,
+          map: map,
+          title: 'Marker ' + i
+        });
+        markers.push(mapMarkers[i]);
+      }
+
+      mapMarkers[0].setIcon('http://maps.google.com/mapfiles/ms/icons/green-dot.png');
+    }
+
+    function ajaxGetLocations(userUid) {
+
+      var token = $("meta[name='_csrf']").attr("content");
+      var header = $("meta[name='_csrf_header']").attr("content");
+
+      $.ajax({
+        type : "GET",
+        contentType : "application/json",
+        url : "/ajax/locations/list",
+        dataType : "json",
+        data : { userUid : userUid },
+        timeout : 100000,
+        beforeSend : function(xhr) {
+          xhr.setRequestHeader(header, token);
+        },
+        success : function(response) {
+          placeMarkers(response.data);
+        },
+        error : function(xhr, textStatus, errorThrown) {
+          console.log("ERROR! : " + errorThrown);
+          console.log("Status : " + textStatus);
+          console.log("xhr: " + xhr.status);
+          display(errorThrown);
+        },
+        done : function(e) {
+          console.log("DONE");
+        }
+      });
+    }
+
+    function display(data) {
+      var json = "<h4>Ajax Response</h4><pre>" + JSON.stringify(data, null, 4) + "</pre>";
+      $("#feedback").html(json);
+    }
+
+    /*]]>*/
+
+  </script>
+  <script th:inline="javascript"
+          type="text/javascript"
+          src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAg4BUZvxZ28C4IFdxAEUGGIqCWGXs1dzc&amp;callback=initMap"
+          async="async" defer="defer" />
+
+</body>
+</html>

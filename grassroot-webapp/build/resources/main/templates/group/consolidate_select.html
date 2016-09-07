@@ -1,0 +1,73 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorator="layout">
+<head>
+  <title>GrassRoot - Consolidate groups</title>
+</head>
+<body>
+
+<div layout:fragment="header">
+  <h2 class="text-center">Consolidate groups</h2>
+</div>
+
+<div layout:fragment="overview">
+  <h5 class="text-center">Merge one group into another</h5>
+</div>
+
+<div layout:fragment="content">
+  <div layout:fragment="messages"></div>
+
+  <div class="well">
+    <div class="row">
+      <div class="col-md-8 col-md-offset-2">
+        <h4>About to merge "<mark th:text="${group1.getName('')}">group name</mark>" with another group</h4>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-8 col-md-offset-2">
+
+        <form th:action="@{/group/consolidate/confirm}" method="post" class="form-vertical">
+          <input type="hidden" name="groupUid1" th:value="${group1.uid}" />
+
+          <div class="form-group">
+            <label for="groupUid2" class="control-label">With which group do you want to merge this one?</label>
+            <select name="groupUid2" id="groupUid2" class="form-control">
+                <option th:each="group: ${candidateGroups}"
+                        th:value="${group.uid}"
+                        th:text="${group.getName('')}"/>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="order" class="control-label">
+              In what order do you want to consolidate?
+            </label>
+            <select name="order" id="order" class="form-control">
+                <option value="small_to_large">Add members from the smaller group to the larger group</option>
+                <option value="2_into_1">Add members from the second group (selected above) to the first group (last page)</option>
+                <option value="1_into_2">Add members from the first group (last page) to this group (selected above)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <div class="checkbox">
+              <label>
+                <input name="leaveActive" id="leaveActive" type="checkbox" />
+                Leave second group active? If you leave this unticked, the group you've merged <em>from</em> will be deactivated.
+              </label>
+            </div>
+          </div>
+          <div class="form-group">
+            <div class="col-lg-12">
+              <a th:href="@{/group/view(groupUid=${group1.uid})}" role="button" class="btn btn-default">Cancel</a>
+              <button type="submit" class="btn btn-primary">Continue</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

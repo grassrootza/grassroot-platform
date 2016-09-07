@@ -1,0 +1,41 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorator="layout">
+<head>
+  <title>GrassRoot - Link a group to a parent</title>
+</head>
+<body>
+
+<!-- Major todo: A lot of error handling, permissions, sending requests to controlling users, etc -->
+
+<div layout:fragment="header">
+  <h2 class="text-center">Link group to parent</h2>
+</div>
+
+<div layout:fragment="content">
+  <div layout:fragment="messages"></div>
+  <div class="well">
+    <div class="col-md-4 col-md-offset-4">
+      <form th:action="@{/group/link}" method="post" autocomplete="off" class="form-vertical">
+        <input type="hidden" name="groupUid" th:value="${group.uid}" />
+        <div class="form-group">
+          <label class="control-label">Select the parent group:</label>
+          <select name="parentUid" id="parentGroup" class="form-control">
+            <option th:each="parent : ${possibleParents}"
+                    th:value="${parent.getUid()}"
+                    th:text="${parent.groupName}">Another parent</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <div class="pull-right">
+            <a th:href="@{/group/view(groupUid=${group.uid})}" class="btn btn-default">Back</a>
+            <button type="submit" class="btn btn-primary">Link</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
