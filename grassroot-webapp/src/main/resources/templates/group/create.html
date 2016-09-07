@@ -67,7 +67,7 @@
               </select>
             </td>
             <td>
-              <button type="submit" name="removeMember" class="btn btn-default" aria-label="Remove"
+              <button type="button" name="removeMember" class="btn btn-default" aria-label="Remove"
                       th:value="${iterStat.index}">
                 <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
               </button>
@@ -140,13 +140,55 @@
       var number_members = member_rows.length;
 
       $('#add_member').click(function() {
-        console.log('Add member clicked!');
         if (creating_form.valid()) {
-          member_table.find('tr:last').after(grassrootJS.assembleMemberRow("listOfMembers", number_members));
-          member_table.find('tr:last').find('[name$="phoneNumber"]').rules('add', grassrootJS.phoneRules);
-          number_members++;
+          addRowToTable();
         }
       });
+
+      function addRowToTable() {
+        var thisRowIndex = number_members;
+
+        member_table.find('tr:last').after(grassrootJS.assembleMemberRow("listOfMembers", thisRowIndex));
+        var newRow = member_table.find('tr:last');
+        newRow.find('[name$="phoneNumber"]').rules('add', grassrootJS.phoneRules);
+
+        // todo : consider intercepting here to add a new row
+        /*newRow.find('.form-control').keypress(function (e) {
+          handleEnter(e);
+        });*/
+
+        newRow.find('#removeMember').click(function () {
+          newRow.remove();
+          reduceIndices(thisRowIndex);
+        });
+        
+        number_members++;
+      }
+
+      function reduceIndices(removedRow) {
+        console.log("reducing indices, from row = " + removedRow);
+        var priorNumber = number_members;
+        var displayName = "\\.displayName";
+        var phoneNumber = "\\.phoneNumber";
+        var roleName = "\\.roleName";
+
+        for (i = removedRow; i < (number_members - 1); i++) {
+
+          var selectorPrefix = "#listOfMembers" + (i + 1);
+          var newPrefix = "listOfMembers[" + i;
+
+          member_table.find(selectorPrefix + displayName).attr('name', newPrefix + "].displayName");
+          member_table.find(selectorPrefix + displayName).attr('id', "listOfMembers" + i + ".displayName");
+
+          member_table.find(selectorPrefix + phoneNumber).attr('name', "listOfMembers[" + i + "].phoneNumber");
+          member_table.find(selectorPrefix + phoneNumber).attr('id', "listOfMembers" + i + ".phoneNumber");
+
+          member_table.find(selectorPrefix + roleName).attr('name', "listOfMembers[" + i + "].roleName");
+          member_table.find(selectorPrefix + roleName).attr('id', "listOfMembers" + i + ".roleName");
+        }
+
+        number_members--;
+      }
 
       creating_form.validate({
         errorClass: 'error-text',

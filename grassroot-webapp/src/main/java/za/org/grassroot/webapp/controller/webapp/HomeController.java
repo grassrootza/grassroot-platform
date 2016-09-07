@@ -44,10 +44,10 @@ public class HomeController extends BaseController {
         Long startTime = System.currentTimeMillis();
         ModelAndView homePageModelAndView;
         log.info("Getting user profile ... ");
-        User user = getUserProfile();
+        User user = userManagementService.load(getUserProfile().getUid());
 
         // will check cache & only log if not called for several hours, i.e., will not log spurious returns to home page
-        userLogger.recordUserSession(getUserProfile().getUid(), UserInterfaceType.WEB);
+        userLogger.recordUserSession(user.getUid(), UserInterfaceType.WEB);
         Long startTimeCountGroups = System.currentTimeMillis();
         log.info(String.format("Getting user profile took %d msecs", startTimeCountGroups - startTime));
 

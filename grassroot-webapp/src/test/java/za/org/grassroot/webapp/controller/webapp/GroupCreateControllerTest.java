@@ -87,6 +87,10 @@ public class GroupCreateControllerTest extends WebAppAbstractUnitTest {
         verifyNoMoreInteractions(userManagementServiceMock);
     }
 
+    /*
+    todo : move these into better testing of the central method (since these are now replaced with client side validation
+    and error handling in the create method)
+    
     @Test
     public void addMemberWorks() throws Exception {
         GroupWrapper groupCreator = new GroupWrapper();
@@ -115,6 +119,6 @@ public class GroupCreateControllerTest extends WebAppAbstractUnitTest {
         mockMvc.perform(post("/group/create").param("removeMember", String.valueOf(0)).param("removeMember", "")
                 .sessionAttr("groupCreator", groupCreator))
                 .andExpect(status().isOk()).andExpect(view().name("group/create"));
-    }
+    }*/
 
 }

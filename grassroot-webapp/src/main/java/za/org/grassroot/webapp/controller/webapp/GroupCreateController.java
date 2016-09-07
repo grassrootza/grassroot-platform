@@ -66,8 +66,6 @@ public class GroupCreateController extends BaseController {
 
 		GroupPermissionTemplate template = GroupPermissionTemplate.fromString(templateRaw); // todo: set in wrapper
 
-		logger.info("creating group ... template = {}", template.toString());
-
 		if (bindingResult.hasErrors()) {
 			model.addAttribute("groupCreator", groupCreator);
 			addMessage(model, BaseController.MessageType.ERROR, "user.enter.error.phoneNumber.invalid", request);
@@ -82,35 +80,12 @@ public class GroupCreateController extends BaseController {
 				new HashSet<>(groupCreator.getAddedMembers()), template, null,
 				groupCreator.getReminderMinutes(), true);
 		timeEnd = System.currentTimeMillis();
+
 		logger.info("User load & group creation: {} msecs", timeEnd - timeStart);
 
 		addMessage(redirectAttributes, BaseController.MessageType.SUCCESS, "group.creation.success", new Object[]{groupCreated.getGroupName()}, request);
 		redirectAttributes.addAttribute("groupUid", groupCreated.getUid());
 		return "redirect:view";
 
-	}
-
-	@RequestMapping(value = "create", params = {"addMember"})
-	public String addMember(Model model, @ModelAttribute("groupCreator") @Validated GroupWrapper groupCreator,
-	                        BindingResult bindingResult, HttpServletRequest request) {
-
-		logger.info("The group wrapper passed back has {} members ...", groupCreator.getAddedMembers().size());
-		if (bindingResult.hasErrors()) {
-			logger.info("binding_error thrown within binding result");
-			addMessage(model, BaseController.MessageType.ERROR, "user.enter.error.phoneNumber.invalid", request);
-		} else {
-			groupCreator.getListOfMembers().add(new MembershipInfo("", BaseRoles.ROLE_ORDINARY_MEMBER, ""));
-		}
-
-		return "group/create";
-	}
-
-	@RequestMapping(value = "create", params = {"removeMember"})
-	public String removeMember(Model model, @ModelAttribute("groupCreator") GroupWrapper groupCreator,
-	                           @RequestParam("removeMember") int memberIndex) {
-
-		// todo : complete shift to client side processing (but will require complex interplay with Spring MVC conversion)
-		groupCreator.getListOfMembers().remove(memberIndex);
-		return "group/create";
 	}
 }

@@ -22,7 +22,7 @@ var grassrootJS = {
         strVar += "              <\/select>";
         strVar += "            <\/td>";
         strVar += "            <td>";
-        strVar += "              <button type=\"button\" name=\"removeMember\" class=\"btn btn-default\" aria-label=\"Remove\" value=\"" + newMemberIndex + "\">";
+        strVar += "              <button type=\"button\" id=\"removeMember\" name=\"removeMember\" class=\"btn btn-default\" aria-label=\"Remove\" value=\"" + newMemberIndex + "\">";
         strVar += "                <span class=\"glyphicon glyphicon-remove\" aria-hidden=\"true\"><\/span>";
         strVar += "              <\/button>";
         strVar += "            <\/td>";
