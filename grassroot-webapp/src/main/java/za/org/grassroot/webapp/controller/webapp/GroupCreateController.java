@@ -54,8 +54,6 @@ public class GroupCreateController extends BaseController {
 		}
 
 		model.addAttribute("groupCreator", groupCreator);
-		model.addAttribute("reminderOptions", reminderMinuteOptions(false));
-
 		return "group/create";
 	}
 
@@ -65,6 +63,7 @@ public class GroupCreateController extends BaseController {
 	                          HttpServletRequest request, RedirectAttributes redirectAttributes) {
 
 		Long timeStart, timeEnd;
+
 		GroupPermissionTemplate template = GroupPermissionTemplate.fromString(templateRaw); // todo: set in wrapper
 
 		logger.info("creating group ... template = {}", template.toString());
@@ -72,7 +71,6 @@ public class GroupCreateController extends BaseController {
 		if (bindingResult.hasErrors()) {
 			model.addAttribute("groupCreator", groupCreator);
 			addMessage(model, BaseController.MessageType.ERROR, "user.enter.error.phoneNumber.invalid", request);
-			model.addAttribute("reminderOptions", reminderMinuteOptions(false)); // todo :create helper method for these
 			return "group/create";
 		}
 
@@ -96,7 +94,6 @@ public class GroupCreateController extends BaseController {
 	public String addMember(Model model, @ModelAttribute("groupCreator") @Validated GroupWrapper groupCreator,
 	                        BindingResult bindingResult, HttpServletRequest request) {
 
-		// major todo: shift this to client side
 		logger.info("The group wrapper passed back has {} members ...", groupCreator.getAddedMembers().size());
 		if (bindingResult.hasErrors()) {
 			logger.info("binding_error thrown within binding result");
@@ -105,7 +102,6 @@ public class GroupCreateController extends BaseController {
 			groupCreator.getListOfMembers().add(new MembershipInfo("", BaseRoles.ROLE_ORDINARY_MEMBER, ""));
 		}
 
-		model.addAttribute("reminderOptions", reminderMinuteOptions(false));
 		return "group/create";
 	}
 
@@ -113,8 +109,8 @@ public class GroupCreateController extends BaseController {
 	public String removeMember(Model model, @ModelAttribute("groupCreator") GroupWrapper groupCreator,
 	                           @RequestParam("removeMember") int memberIndex) {
 
+		// todo : complete shift to client side processing (but will require complex interplay with Spring MVC conversion)
 		groupCreator.getListOfMembers().remove(memberIndex);
-		model.addAttribute("reminderOptions", reminderMinuteOptions(false));
 		return "group/create";
 	}
 }

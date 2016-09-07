@@ -46,6 +46,22 @@ public class BulkUserImportUtil {
         return returnMap;
     }
 
+    public static boolean isNumberValid(String enteredNumber) {
+        try {
+            com.google.i18n.phonenumbers.PhoneNumberUtil phoneNumberUtil = com.google.i18n.phonenumbers.PhoneNumberUtil.getInstance();
+            final String trimmed = enteredNumber.trim();
+            Phonenumber.PhoneNumber phoneNumber = phoneNumberUtil.parse(trimmed, "ZA");
+            if (!phoneNumberUtil.isValidNumber(phoneNumber))
+                return false;
+            else if (trimmed.length() < 10)
+                return false;
+            else
+                return true;
+        } catch (NumberParseException e) {
+            return false;
+        }
+    }
+
     private static String getSeparator(String input){
 
         Character separator = null;

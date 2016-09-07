@@ -206,6 +206,11 @@
     font-family: 'Roboto', sans-serif;
 }
 
+.error-text {
+    color: #ff2a00;
+    font-family: 'Roboto', sans-serif;
+}
+
 .dropdown > a:hover, a:focus {
     background-color: #185625 !important;
     color: white;

@@ -5,6 +5,7 @@
   <title>Grassroot - Modify Group</title>
   <!-- todo: fix whatever is causing on-server glyphicons to not load; this is a temp fix -->
   <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css" rel="stylesheet" />
+  <script th:src="@{/js/grassroot-methods.js}"></script>
 </head>
 <body>
 
@@ -26,7 +27,7 @@ future to close that off (need a way that mistakes can be corrected, but not to 
   <div class="well">
 
     <div class="col-md-8 col-md-offset-2">
-    <form  th:object="${groupModifier}" th:action="@{/group/change_multiple}" method="post" autocomplete="on" class="form-horizontal">
+    <form id="member_entry" th:object="${groupModifier}" th:action="@{/group/change_multiple}" method="post" autocomplete="on" class="form-horizontal">
       <input type="hidden" th:field="*{group.Uid}" th:value="${groupModifier.group.Uid}" />
       <div class="form-group">
         <table class="table col-md-8" id="member-input">
@@ -39,7 +40,7 @@ future to close that off (need a way that mistakes can be corrected, but not to 
           </tr>
           </thead>
           <tbody>
-          <tr th:each="member, iterStat: *{listOfMembers}">
+          <tr th:each="member, iterStat: *{listOfMembers}" class="member_input_row">
             <td>
               <input type="text" th:field="*{listOfMembers[__${iterStat.index}__].displayName}" class="form-control"
                      th:value="${member.displayName}" th:readonly="${member.getPhoneNumberWithCCode() == currentUser.getUsername()}"/>
@@ -60,8 +61,8 @@ future to close that off (need a way that mistakes can be corrected, but not to 
               </select>
             </td>
             <td>
-              <button type="submit" name="removeMember" class="btn btn-default" aria-label="Remove"
-                      th:value="${iterStat.index}" th:if="${groupModifier.canRemoveMembers}"
+              <button th:if="${groupModifier.canRemoveMembers}" type="button" name="removeMember" class="btn btn-default" aria-label="Remove"
+                      th:value="${iterStat.index}" th:id="${'remove' + iterStat.index}"
                       th:unless="${member.getPhoneNumberWithCCode() == currentUser.getUsername()}">
                 <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
               </button>
@@ -72,7 +73,7 @@ future to close that off (need a way that mistakes can be corrected, but not to 
       </div>
       <div class="form-group" th:if="${groupModifier.canAddMembers}">
         <div class="col-md-6 pull-right">
-          <button type="submit" name="addMember" class="btn btn-default">
+          <button type="button" name="addMember" id="add_member" class="btn btn-default">
             <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
             Add another member
           </button>
@@ -92,5 +93,43 @@ future to close that off (need a way that mistakes can be corrected, but not to 
 
   </div>
 </div>
+
+<div class="header-container" layout:fragment="script-container">
+
+  <script th:inline="javascript">
+
+    /*<![CDATA[*/
+
+    $(document).ready(function () {
+
+      var member_form = $('#member_entry');
+
+      var member_table = $('#member-input');
+      var member_rows = member_form.find('.member_input_row');
+      var number_members = member_rows.length;
+
+      $('#add_member').click(function() {
+        if (member_form.valid()) {
+          member_table.find('tr:last').after(grassrootJS.assembleMemberRow("listOfMembers", number_members));
+          member_table.find('tr:last').find('[name$="phoneNumber"]').rules('add', grassrootJS.phoneRules);
+          number_members++;
+        }
+      });
+
+      member_form.validate({
+        errorClass: 'error-text'
+      });
+
+      $('[name$="phoneNumber"]').each(function () {
+        $(this).rules('add', grassrootJS.phoneRules);
+      });
+
+    });
+
+    /*]]>*/
+
+  </script>
+</div>
+
 </body>
 </html>

@@ -129,6 +129,7 @@ public class GroupWrapper {
         }
 
         this.listOfMembers.addAll(MembershipInfo.createFromMembers(groupToModify.getMemberships()));
+        this.listOfMembers.sort(Comparator.reverseOrder());
 
     }
 

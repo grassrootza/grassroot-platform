@@ -462,6 +462,8 @@ public class GroupBrokerImpl implements GroupBroker {
         Objects.requireNonNull(groupUid);
         Objects.requireNonNull(memberUid);
 
+        logger.info("changing member to this role: " + roleName);
+
         if (userUid.equals(memberUid))
             throw new IllegalArgumentException("A user cannot change ther own role: memberUid = " + memberUid);
 
@@ -505,16 +507,17 @@ public class GroupBrokerImpl implements GroupBroker {
                 .filter(membership -> !modifiedPhoneNumbers.contains(membership.getUser().getPhoneNumber()))
                 .collect(Collectors.toSet());
 
-
         Set<MembershipInfo> membersToAdd = new HashSet<>();
         Set<MembershipInfo> currentMembershipInfos = MembershipInfo.createFromMembers(memberships);
+
         for (MembershipInfo m : modifiedMembers) {
             if (currentMembershipInfos.contains(m)) {
                 // todo: this seems incredibly inefficient, figure out how to do without all these entity loads
                 User savedUser = userRepository.findByPhoneNumber(m.getPhoneNumber());
                 Membership savedMembership = group.getMembership(savedUser);
-                if (savedMembership.getRole().getName() != m.getRoleName())
+                if (!savedMembership.getRole().getName().equals(m.getRoleName())) {
                     updateMembershipRole(userUid, groupUid, savedUser.getUid(), m.getRoleName());
+                }
             } else {
                 // note: could also just do this with a removeAll, but since we're running the contain check, may as well
                 membersToAdd.add(m);

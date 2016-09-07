@@ -6,7 +6,6 @@ import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.test.web.servlet.MvcResult;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.core.enums.GroupLogType;
@@ -111,34 +110,6 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         verifyNoMoreInteractions(userManagementServiceMock);
     }
 
-
-    @Test
-    public void addMemberModifyWorks() throws Exception {
-        GroupWrapper groupCreator = new GroupWrapper();
-        groupCreator.addMember(new MembershipInfo(sessionTestUser));
-        mockMvc.perform(post("/group/change_multiple").param("addMember", "")
-                .sessionAttr("groupModifier", groupCreator))
-                .andExpect(status().isOk()).andExpect(view().name("group/change_multiple"));
-
-    }
-
-    @Test
-    public void addMemberModifyFails() throws Exception {
-        GroupWrapper groupCreator = new GroupWrapper();
-        groupCreator.addMember(new MembershipInfo(new User("100001")));
-        MvcResult result = mockMvc.perform(post("/group/change_multiple").param("addMember", "")
-                .sessionAttr("groupModifier", groupCreator))
-                .andExpect(status().isOk())
-                .andExpect(model().attributeHasErrors())
-                .andExpect(view().name("group/change_multiple")).andReturn();
-        Map<String, Object> map = result.getModelAndView().getModel();
-        Set<Map.Entry<String,Object>> entrySet =map.entrySet();
-        Iterator<Map.Entry<String,Object>> iter = entrySet.iterator();
-        while (iter.hasNext()){
-            logger.debug(iter.next().getValue().toString());
-        }
-    }
-
     @Test
     public void removeMemberModifyWorks() throws Exception {
         GroupWrapper groupCreator = new GroupWrapper();
@@ -159,7 +130,8 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
 
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
 
-        mockMvc.perform(post("/group/change_multiple").sessionAttr("groupModifier", groupModifier))
+        mockMvc.perform(post("/group/change_multiple")
+                .sessionAttr("groupModifier", groupModifier))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(view().name("redirect:view"))
                 .andExpect(model().attribute("groupUid", is(testGroup.getUid())));

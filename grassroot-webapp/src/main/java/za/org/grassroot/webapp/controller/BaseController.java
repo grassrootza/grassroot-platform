@@ -77,7 +77,7 @@ public class BaseController {
     }
 
     /* Helper method used in all the meeting/vote/logbook fields */
-    protected List<String[]> reminderMinuteOptions(boolean includeZero) {
+    public static List<String[]> reminderMinuteOptions(boolean includeZero) {
 
         List<String[]> minuteOptions = new ArrayList<>();
 

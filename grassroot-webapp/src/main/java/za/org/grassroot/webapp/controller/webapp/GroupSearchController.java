@@ -25,7 +25,7 @@ import java.util.List;
  * Created by luke on 2016/09/06.
  */
 @Controller
-@RequestMapping("/group/search/")
+@RequestMapping("/group/")
 public class GroupSearchController extends BaseController {
 
 	private static final Logger log = LoggerFactory.getLogger(GroupSearchController.class);
@@ -41,7 +41,7 @@ public class GroupSearchController extends BaseController {
 
 	// todo: prevent a Dos on this / token cycling
 
-	@RequestMapping(value = "/")
+	@RequestMapping(value = "/search")
 	public String searchForGroup(Model model, @RequestParam String term, HttpServletRequest request) {
 
 		if (term.isEmpty()) {

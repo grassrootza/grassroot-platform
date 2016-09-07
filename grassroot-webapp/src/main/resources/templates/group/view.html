@@ -2,7 +2,11 @@
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorator="layout">
 <head>
-    <title>Grassroot - View Group</title>
+
+  <title>Grassroot - View Group</title>
+
+  <script th:src="@{/js/grassroot-methods.js}"></script>
+
 </head>
 <body>
 
@@ -428,7 +432,7 @@
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                 <h4 class="modal-title" id="addModalLabel">Add member to group</h4>
               </div>
-              <form th:action="@{/group/addmember}" method="post">
+              <form th:action="@{/group/addmember}" id="add_member_form" method="post">
                 <input type="hidden" name="groupUid" th:value="${group.getUid()}" />
                 <div class="modal-body">
                   <div class="form-group">
@@ -436,9 +440,8 @@
                     <input type="text" class="form-control" id="new-member-name" name="displayName" />
                   </div>
                   <div class="form-group">
-                    <!-- toDo : client-side within-form validation -->
-                    <label for="new-member-phone" class="control-label">Phone number</label>
-                    <input type="text" class="form-control" id="new-member-phone" name="phoneNumber" />
+                    <label for="newMemberPhone" class="control-label">Phone number</label>
+                    <input type="text" class="form-control" id="newMemberPhone" name="phoneNumber" />
                   </div>
                   <div class="form-group">
                     <label for="new-member-role" class="control-label">Role</label>
@@ -463,7 +466,6 @@
   </div>
 
   <!-- list subgroups -->
-  <!-- toDo: maybe create a fragment to display a list of groups, to be used in a bunch of places -->
   <div th:if="${not #lists.isEmpty(subGroups)}">
     <div class="well">
       <div class="row">
@@ -494,12 +496,26 @@
 
 <div class="header-container" layout:fragment="script-container">
   <script>
+
+    // putting this within document loaded causes errors (likely interplay of bootstrap and jquery), so leaving outside
     $('#rmModal').on('show.bs.modal', function (event) {
       var button = $(event.relatedTarget); // Button that triggered the modal
       var phone = button.data('phone'); // Extract info from data-* attributes
       var modal = $(this);
       modal.find('#msisdn').val(phone);
-    })
+    });
+
+    $(document).ready(function () {
+
+      $('#add_member_form').validate({
+        errorClass: "error-text",
+        rules: {
+          phoneNumber: grassrootJS.phoneRules
+        }
+      });
+
+    });
+
   </script>
 </div>
 

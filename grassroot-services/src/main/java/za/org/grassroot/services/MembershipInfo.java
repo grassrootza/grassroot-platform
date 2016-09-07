@@ -24,6 +24,10 @@ public class MembershipInfo implements Comparable<MembershipInfo> {
     private String roleName; // optional
     private String displayName; // optional
 
+    public MembershipInfo() {
+        // need empty constructor for Spring MVC form submission
+    }
+
     @JsonCreator
     public MembershipInfo(@JsonProperty("phoneNumber") String phoneNumber, @JsonProperty("roleName") String roleName,
                           @JsonProperty("displayName") String displayName) {

@@ -7,9 +7,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.validation.BindingResult;
+import org.springframework.util.StringUtils;
 import org.springframework.validation.Validator;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
@@ -28,6 +27,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author Lesetse Kimwaga
@@ -137,7 +137,8 @@ public class GroupController extends BaseController {
     public String addMember(Model model, @RequestParam String groupUid, @RequestParam String phoneNumber,
                             @RequestParam String displayName, @RequestParam String roleName, HttpServletRequest request) {
 
-        if (PhoneNumberUtil.testInputNumber(phoneNumber)) { //todo: do this client side
+        // note : we validate client side, on length & only chars, but need to check again for slip throughs (e.g., right digits, non-existent network)
+        if (PhoneNumberUtil.testInputNumber(phoneNumber)) {
             MembershipInfo newMember = new MembershipInfo(phoneNumber, roleName, displayName);
             groupBroker.addMembers(getUserProfile().getUid(), groupUid, Sets.newHashSet(newMember), false);
             addMessage(model, MessageType.SUCCESS, "group.addmember.success", request);
@@ -151,7 +152,6 @@ public class GroupController extends BaseController {
     @RequestMapping(value = "rename")
     public String renameGroup(Model model, @RequestParam String groupUid, @RequestParam String groupName,
                               HttpServletRequest request) {
-        // todo: some validation & checking of group name
         groupBroker.updateName(getUserProfile().getUid(), groupUid, groupName);
         addMessage(model, MessageType.SUCCESS, "group.rename.success", request);
         return viewGroupIndex(model, groupUid);
@@ -207,7 +207,6 @@ public class GroupController extends BaseController {
         Group group = groupBroker.load(groupUid);
         User user = userManagementService.load(getUserProfile().getUid());
 
-        // todo : change all in this controller to this pattern
         permissionBroker.validateGroupPermission(user, group, null);
 
         log.info("Okay, modifying this group: " + group.toString());
@@ -225,24 +224,14 @@ public class GroupController extends BaseController {
         return "group/change_multiple";
     }
 
-    @RequestMapping(value = "change_multiple", params = {"addMember"})
-    public String addMemberModify(Model model, @ModelAttribute("groupModifier") @Validated GroupWrapper groupModifier,
-                                  BindingResult bindingResult, HttpServletRequest request) {
-        // todo: check permissions
-        log.info("Inside changeMultiple methods routine ... adding a member to list");
-        if (bindingResult.hasErrors()) {
-            addMessage(model, MessageType.ERROR, "user.enter.error.phoneNumber.invalid", request);
-        } else {
-            groupModifier.getListOfMembers().add(new MembershipInfo("", BaseRoles.ROLE_ORDINARY_MEMBER, ""));
-        }
-
-        return "group/change_multiple";
-    }
-
     @RequestMapping(value = "change_multiple", params = {"removeMember"})
     public String addMemberMmodify(Model model, @ModelAttribute("groupModifier") GroupWrapper groupModifier,
                                    @RequestParam("removeMember") int memberIndex) {
-        groupModifier.getListOfMembers().remove(memberIndex);
+        try {
+            groupModifier.getListOfMembers().remove(memberIndex);
+        } catch (IndexOutOfBoundsException e) {
+            log.info("Need to fix indexing on newly created group wrapper ...");
+        }
         return "group/change_multiple";
     }
 
@@ -250,16 +239,37 @@ public class GroupController extends BaseController {
     public String multipleMemberModify(Model model, @ModelAttribute("groupModifier") GroupWrapper groupModifier,
                                        HttpServletRequest request, RedirectAttributes attributes) {
 
-        // todo: probably needs a confirmation screen
-
         log.info("multipleMemberModify ... got these members back : " + groupModifier.getListOfMembers());
         String groupUid = groupModifier.getGroup().getUid();
-        groupBroker.updateMembers(getUserProfile().getUid(), groupUid, groupModifier.getAddedMembers());
 
-        Group updatedGroup = groupBroker.load(groupUid);
-        addMessage(attributes, MessageType.SUCCESS, "group.update.success", new Object[]{updatedGroup.getGroupName()}, request);
-        attributes.addAttribute("groupUid", updatedGroup.getUid());
-        return "redirect:view";
+        Set<MembershipInfo> validNumberMembers = groupModifier.getAddedMembers().stream()
+                .filter(m -> BulkUserImportUtil.isNumberValid(m.getPhoneNumber()))
+                .collect(Collectors.toSet());
+
+        try {
+            groupBroker.updateMembers(getUserProfile().getUid(), groupUid, validNumberMembers);
+            Group updatedGroup = groupBroker.load(groupUid);
+            attributes.addAttribute("groupUid", updatedGroup.getUid());
+
+            if (validNumberMembers.size() == groupModifier.getAddedMembers().size()) {
+                addMessage(attributes, MessageType.SUCCESS, "group.update.success", new Object[]{updatedGroup.getGroupName()}, request);
+            } else {
+                List<MembershipInfo> invalidMembers = new ArrayList<>(groupModifier.getAddedMembers());
+                invalidMembers.removeAll(validNumberMembers);
+                if (invalidMembers.size() == 1) {
+                    MembershipInfo invalidMember = invalidMembers.get(0);
+                    final String msgField = StringUtils.isEmpty(invalidMember.getDisplayName()) ? invalidMember.getPhoneNumberWithoutCCode() :
+                            invalidMember.getDisplayName();
+                    addMessage(attributes, MessageType.ERROR, "group.update.msisdn.error.one", new String[]{ msgField }, request);
+                } else {
+                    addMessage(attributes, MessageType.ERROR, "group.update.msisdn.error.multi", new Integer[] { invalidMembers.size() }, request);
+                }
+            }
+            return "redirect:view";
+        } catch (IllegalArgumentException e) {
+            addMessage(model, MessageType.ERROR, "group.update.error", request);
+            return "group/change_multiple";
+        }
     }
 
     @RequestMapping(value = "add_bulk")
@@ -295,8 +305,8 @@ public class GroupController extends BaseController {
                                    HttpServletRequest request) {
 
         Group group = groupBroker.load(groupUid);
-        Map<String, List<String>> mapOfNumbers = BulkUserImportUtil.splitPhoneNumbers(list);
 
+        Map<String, List<String>> mapOfNumbers = BulkUserImportUtil.splitPhoneNumbers(list);
         List<String> numbersToBeAdded = mapOfNumbers.get("valid");
 
         if (!numbersToBeAdded.isEmpty()) {
@@ -326,14 +336,15 @@ public class GroupController extends BaseController {
                                    @RequestParam(value = "includeSubGroups", required = false) boolean includeSubGroups,
                                    HttpServletRequest request) {
 
-        // todo: add permissions checking, exception handling, etc.
-
         log.info("Okay, setting the language to: " + locale);
 
         Group group = groupBroker.load(groupUid);
+        User user = userManagementService.load(getUserProfile().getUid());
+
+        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+
         groupBroker.updateGroupDefaultLanguage(getUserProfile().getUid(), group.getUid(), locale, includeSubGroups);
 
-        // todo: there is probably a more efficient way to do this than the redirect
         addMessage(model, MessageType.SUCCESS, "group.language.success", request);
         return viewGroupIndex(model, groupUid);
     }
@@ -382,6 +393,7 @@ public class GroupController extends BaseController {
     @RequestMapping(value = "parent")
     public String listPossibleParents(Model model, @RequestParam String groupUid,
                                       HttpServletRequest request, RedirectAttributes redirectAttributes) {
+
         // todo: check permissions, handle exceptions (in fact, on view group page), etc.
         log.info("Looking for possible parents of group with ID: " + groupUid);
 
