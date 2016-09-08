@@ -1,0 +1,1 @@
+alter table user_profile add column alert_preference integer default 0 not null;

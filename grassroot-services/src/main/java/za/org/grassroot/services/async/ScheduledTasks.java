@@ -7,6 +7,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.repository.*;
+import za.org.grassroot.integration.services.MessengerSettingsService;
 import za.org.grassroot.services.EventBroker;
 import za.org.grassroot.services.GroupBroker;
 import za.org.grassroot.services.SafetyEventBroker;
@@ -61,6 +62,9 @@ public class ScheduledTasks {
 
     @Autowired
     private GroupRepository groupRepository;
+
+    @Autowired
+    private MessengerSettingsService messengerSettingsService;
 
     @Autowired
     private SafetyEventRepository safetyEventRepository;
@@ -155,6 +159,21 @@ public class ScheduledTasks {
                 todoBroker.sendScheduledReminder(todo.getUid());
             } catch (Throwable th) {
                 logger.error("Error while sending reminder for todo " + todo + ": " + th.getMessage(), th);
+            }
+        }
+    }
+
+    @Scheduled(fixedDelay = 300000)
+    public void reactivateMutedUsers(){
+        List<MessengerSettings> messengerSettingses = messengerSettingsService.loadMutedUsersMessengerSettings();
+        for(MessengerSettings messengerSetting: messengerSettingses){
+            String userUid = messengerSetting.getUser().getUid();
+            String groupUid = messengerSetting.getGroup().getUid();
+            try {
+                messengerSettingsService.updateUserGroupMessageSettings(userUid,groupUid,true,true,true, Instant.now());
+            } catch (Exception e) {
+                logger.error("Error while trying unmute user with " + userUid);
+                //unlikely to happen
             }
         }
     }

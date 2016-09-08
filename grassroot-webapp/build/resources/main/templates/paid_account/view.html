@@ -1,0 +1,53 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorator="layout">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Viewing account</title>
+</head>
+
+<body>
+
+<div layout:fragment="header">
+  <h2><span  th:text="${account.accountName}">account name</span></h2>
+</div>
+
+<div layout:fragment="overview">Manage account groups, track records, add and remove groups</div>
+
+<div layout:fragment="content">
+  <div layout:fragment="messages"></div>
+
+  <div class="well">
+    <div class="row"></div>
+      <div th:unless="${#lists.isEmpty(paidGroups)}">
+        <p class="mark">The following groups are designated as part of this account:</p>
+        <table class="table table-striped">
+          <thead>
+            <th>Group name</th>
+            <th># Members</th>
+            <th>Date added to account</th>
+            <th></th>
+            <th></th>
+          </thead>
+          <tbody>
+            <tr th:each="paidGroup : ${paidGroups}">
+              <td><span th:text="${paidGroup.group.getName('')}">Group name</span></td>
+              <td><span th:text="${paidGroup.group.getMembers().size()}">size</span></td> <!-- todo: watch time -->
+              <td><span th:text="${#dates.format(paidGroup.activeDateTime, 'dd-MMM-yyyy')}">date</span></td>
+              <td><a th:href="@{/paid_account/group/view(paidGroupId=${paidGroup.id}, accountId=${account.id})}">View details</a></td>
+              <td><a th:href="@{/paid_account/group/remove(paidGroupId=${paidGroup.id}, accountId=${account.id})}">Remove group</a></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    <a th:href="@{/paid_account/group/designate(accountId=${account.id})}">
+      <button type="submit" class="btn-primary">Add a group to this account</button>
+    </a>
+
+  </div>
+
+</div>
+</body>
+</html>

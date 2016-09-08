@@ -1,0 +1,1 @@
+UPDATE group_profile SET reminderminutes = 0 WHERE reminderminutes = 1440;

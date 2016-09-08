@@ -1,0 +1,69 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorator="layout">
+<head>
+    <title>Grassroot - Bulk Add Members</title>
+</head>
+<body>
+
+<!-- Todo: for now, all, or almost all, elements are open, so this looks like create group, but need to adjust that in
+future to close that off (need a way that mistakes can be corrected, but not to abuse) -->
+
+<div layout:fragment="header">
+    <h2 class="text-center">Add members to group: "<span th:text="${group.groupName}">group</span>"</h2>
+</div>
+
+<div layout:fragment="content">
+  <div layout:fragment="messages"></div>
+  <div class="well">
+    <div class="row">
+      <form th:action="@{/group/add_bulk}" method="post"  class="form-horizontal">
+        <input type="hidden" name="groupUid" th:value="${group.Uid}"/>
+        <div class="row">
+          <div class="col-md-8 col-md-offset-2">
+            <div class="form-group">
+              <label for="number-list">
+                This form allows you to add many members at once.
+              </label>
+              <p>
+                Please paste a list of phone numbers in the box below and they will be added to your group as ordinary
+                members.
+              </p>
+              <textarea name="list" id="number-list" rows="20" cols ="110"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-8 col-md-offset-2">
+            <div class="form-group">
+              <!-- todo: add a link to change permissions -->
+              <span th:if="${closedGroup}">
+                These members will not be able to call meetings or votes or see other members' details.
+              </span>
+              <span th:unless="${closedGroup}">
+                Members are able to:
+                <span th:if="${canCallMeetings}">call meetings, </span>
+                <span th:if="${canCallVotes}">call votes, </span>
+                <span th:if="${canRecordToDos}">record to-dos, </span>
+                <span th:if="${canViewMembers}">see other members</span>.
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-8 col-md-offset-2">
+            <div class="form-group">
+              <div class="col-md-8">
+                <a th:href="@{view(groupUid=${group.Uid})}" role="button" class="btn btn-default">Cancel</a>
+                <button type="submit" class="btn btn-primary">Add Members</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,96 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorator="layout">
+<head>
+  <title>GrassRoot - Modify Group</title>
+  <!-- todo: fix whatever is causing on-server glyphicons to not load; this is a temp fix -->
+  <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css" rel="stylesheet" />
+</head>
+<body>
+
+<!-- Todo: for now, all, or almost all, elements are open, so this looks like create group, but need to adjust that in
+future to close that off (need a way that mistakes can be corrected, but not to abuse) -->
+
+<div layout:fragment="header">
+  <h2 class="text-center">Group: "<span th:text="${groupModifier.groupName}">group</span>"</h2>
+</div>
+
+<div layout:fragment="overview">
+  <h4 class="text-center">Add and modify multiple members for a group</h4>
+  <h5 class="text-center">Note: You cannot change your own role in the group</h5>
+</div>
+
+<div layout:fragment="content">
+
+  <div layout:fragment="messages"></div>
+  <div class="well">
+
+    <div class="col-md-8 col-md-offset-2">
+    <form  th:object="${groupModifier}" th:action="@{/group/change_multiple}" method="post" autocomplete="on" class="form-horizontal">
+      <input type="hidden" th:field="*{group.Uid}" th:value="${groupModifier.group.Uid}" />
+      <div class="form-group">
+        <table class="table col-md-8" id="member-input">
+          <thead>
+          <tr>
+            <th>Name</th>
+            <th>Phone</th>
+            <th>Role</th>
+            <th th:if="${groupModifier.canRemoveMembers}"></th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:each="member, iterStat: *{listOfMembers}">
+            <td>
+              <input type="text" th:field="*{listOfMembers[__${iterStat.index}__].displayName}" class="form-control"
+                     th:value="${member.displayName}" th:readonly="${member.getPhoneNumberWithCCode() == currentUser.getUsername()}"/>
+            </td>
+            <td>
+              <input type="text" th:field="*{listOfMembers[__${iterStat.index}__].phoneNumber}" class="form-control"
+                     th:value="${member.phoneNumber}" th:readonly="${member.getPhoneNumberWithCCode() == currentUser.getUsername()}"/>
+              <span th:if="${#fields.hasErrors('listOfMembers[__${iterStat.index}__].phoneNumber')}"
+                    class="alert has-error">Error!</span>
+            </td>
+            <td>
+              <select th:field="*{listOfMembers[__${iterStat.index}__].roleName}" class="form-control"
+                      th:disabled="${(groupModifier.canUpdateDetails == false) or (member.getPhoneNumberWithCCode() == currentUser.getUsername())}">
+                <option th:each="role : ${roles}"
+                        th:value="${role[0]}"
+                        th:text="${role[1]}"
+                        th:selected="${#strings.equals(member.roleName, role[0])}"></option>
+              </select>
+            </td>
+            <td>
+              <button type="submit" name="removeMember" class="btn btn-default" aria-label="Remove"
+                      th:value="${iterStat.index}" th:if="${groupModifier.canRemoveMembers}"
+                      th:unless="${member.getPhoneNumberWithCCode() == currentUser.getUsername()}">
+                <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
+              </button>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="form-group" th:if="${groupModifier.canAddMembers}">
+        <div class="col-md-6 pull-right">
+          <button type="submit" name="addMember" class="btn btn-default">
+            <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+            Add another member
+          </button>
+          <a th:href="@{add_bulk(groupUid=${groupModifier.group.Uid})}" role="button" class="btn btn-default">
+            <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>Bulk Add Members
+          </a>
+        </div>
+      </div>
+      <div class="form-group">
+        <div class="col-md-4 pull-right">
+          <a th:href="@{view(groupUid=${groupModifier.group.Uid})}" role="button" class="btn btn-default">Cancel</a>
+          <button type="submit" class="btn btn-primary">Submit Group</button>
+        </div>
+      </div>
+    </form>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

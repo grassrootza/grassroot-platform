@@ -1,0 +1,1 @@
+ALTER TABLE paid_account DROP COLUMN logbook_extra;

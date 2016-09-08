@@ -1,0 +1,32 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>Glassroot Geo Data Test and View</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+</head>
+
+<body>
+
+  <h1>Let's manipulate some geospatial data</h1>
+
+  <form th:action="@{user}" method="get">
+
+    <p>There are <span th:text="${groups.size()}">X</span> groups</p>
+
+    <select id="groupSelector" name="groupUid">
+      <option value = "">All groups</option>
+      <option th:each="group : ${groups}"
+              th:value="${group.uid}"
+              th:text="${group.name}">Group name</option>
+    </select>
+
+    <input type="hidden" name="userUid" th:value="${userUid}" />
+
+    <input type="checkbox" name="calculate" />Calculate whn you submit?
+
+    <input type="submit" value="Go" />
+
+  </form>
+
+</body>
+</html>

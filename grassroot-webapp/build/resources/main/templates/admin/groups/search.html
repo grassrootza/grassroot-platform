@@ -1,0 +1,28 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorator="layout">
+<head>
+  <title>Grassroot- System Admin</title>
+</head>
+<body>
+
+<div layout:fragment="content">
+  <div layout:fragment="messages"></div>
+
+  <div class="well">
+    <div class="row">
+      <h2>Search for a group</h2>
+    </div>
+    <div class="row">
+      <form th:action="@{search}" method="post">
+        <input type="text" name="search_term" />
+        <input type="submit" value="Search" />
+      </form>
+    </div>
+  </div>
+
+</div>
+
+
+</body>
+</html>

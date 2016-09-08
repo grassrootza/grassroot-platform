@@ -1,0 +1,3 @@
+DROP FUNCTION getusergroups(bigint);
+
+
