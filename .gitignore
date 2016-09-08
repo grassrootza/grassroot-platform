@@ -46,6 +46,10 @@ atlassian-ide-plugin.xml
 .target/
 target/
 
+## Gradle build folder
+.build/
+build/
+
 # Grassroot.log
 grassroot.log*
 

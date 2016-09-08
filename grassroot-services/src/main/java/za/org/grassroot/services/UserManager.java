@@ -312,15 +312,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
         }
     }
 
-    /**
-     * Methods to keep track also of where a user is in the ussd menu flow, so can return them to that spot if time out
-     */
-
-    private void saveUssdMenu(User user, String menuToSave) {
-        log.info("USSD menu passed to cache: " + menuToSave);
-        cacheUtilService.putUssdMenuForUser(user.getPhoneNumber(), menuToSave);
-    }
-
     /*
     Method to load or save a user and store that they have initiated the session. Putting it in services and making it
     distinct from standard loadOrSaveUser because we may want to optimize it aggressively in future.

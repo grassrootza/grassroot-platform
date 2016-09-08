@@ -1,0 +1,47 @@
+description = 'Grassroot Web Application'
+
+buildscript {
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:1.3.7.RELEASE")
+    }
+
+    repositories {
+        mavenCentral()
+    }
+}
+apply plugin: 'spring-boot'
+
+dependencies {
+    compile project(':grassroot-core')
+    compile project(':grassroot-services')
+    compile project(':grassroot-integration')
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter-security', version: '1.3.7.RELEASE'
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter-thymeleaf', version: '1.3.7.RELEASE'
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter-data-jpa', version: '1.3.7.RELEASE'
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter-web', version: '1.3.7.RELEASE'
+    compile group: 'org.springframework.security', name: 'spring-security-web', version: '4.0.4.RELEASE'
+    compile group: 'org.thymeleaf', name: 'thymeleaf', version: '2.1.5.RELEASE'
+    compile group: 'org.thymeleaf', name: 'thymeleaf-spring4', version: '2.1.5.RELEASE'
+    compile group: 'nz.net.ultraq.thymeleaf', name: 'thymeleaf-layout-dialect', version: '1.3.3'
+    compile group: 'com.github.mxab.thymeleaf.extras', name: 'thymeleaf-extras-data-attribute', version: '1.3'
+    compile group: 'org.thymeleaf.extras', name: 'thymeleaf-extras-springsecurity4', version: '2.1.2.RELEASE'
+    compile group: 'org.thymeleaf.extras', name: 'thymeleaf-extras-java8time', version: '2.1.0.RELEASE'
+    compile group: 'org.liquibase', name: 'liquibase-core', version: '3.4.2'
+    compile group: 'xmlunit', name: 'xmlunit', version: '1.5'
+    compile(group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.2') {
+        exclude(module: 'commons-logging')
+    }
+    compile group: 'com.googlecode.libphonenumber', name: 'libphonenumber', version: '7.0.9'
+    compile(group: 'org.powermock', name: 'powermock-api-mockito', version: '1.6.2') {
+        exclude(module: 'powermock-api-support')
+    }
+    compile group: 'org.springframework.boot', name: 'spring-boot-devtools', version: '1.3.7.RELEASE'
+    testCompile(group: 'org.springframework.boot', name: 'spring-boot-starter-test', version: '1.3.7.RELEASE') {
+        exclude(module: 'commons-logging')
+    }
+    testCompile group: 'org.hsqldb', name: 'hsqldb', version: '2.3.3'
+    testCompile group: 'org.hamcrest', name: 'hamcrest-library', version: '1.3'
+}
+bootRun {
+    systemProperties System.properties
+}
