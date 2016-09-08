@@ -32,6 +32,12 @@ public class XMPPConfiguration {
     @Value("${gcm.connection.port}")
     private int port;
 
+    @Value("${gcm.sender.id}")
+    private String gcmSenderId;
+
+    @Value("${gcm.sender.key}")
+    private String gcmSenderKey;
+
     private Logger log = LoggerFactory.getLogger(XMPPConfiguration.class);
 
     @Bean
@@ -47,11 +53,11 @@ public class XMPPConfiguration {
 
     @Bean(name = "gcmConnection")
     public XmppConnectionFactoryBean xmppConnectionFactoryBean() {
-        log.info("Starting up XMPP connection, for URL={} on port={}", host, port);
+        log.info("Starting up XMPP connection, for URL={} on port={}, with ID={} and key={}", host, port, gcmSenderId, gcmSenderKey);
         XmppConnectionFactoryBean connectionFactoryBean = new XmppConnectionFactoryBean();
         connectionFactoryBean.setConnectionConfiguration(connectionConfiguration());
-        connectionFactoryBean.setUser(System.getenv("GCM_SENDER_ID"));
-        connectionFactoryBean.setPassword(System.getenv("GCM_KEY")); // todo : switch to environment get
+        connectionFactoryBean.setUser(gcmSenderId);
+        connectionFactoryBean.setPassword(gcmSenderKey);
         connectionFactoryBean.setAutoStartup(true);
         log.info("XMPP connection succesfully started up");
         return connectionFactoryBean;

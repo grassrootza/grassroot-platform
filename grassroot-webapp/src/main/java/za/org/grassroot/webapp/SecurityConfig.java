@@ -72,7 +72,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                     .antMatchers("/accounts/recovery").permitAll()
                     .antMatchers("/accounts/recovery/success").permitAll()
                     .antMatchers("/grass-root-verification/*").permitAll()
-                    .antMatchers("/ussd/**").hasIpAddress(System.getenv("USSD_GATEWAY"))
+                    .antMatchers("/ussd/**").hasIpAddress(environment.getProperty("grassroot.ussd.gateway", "127.0.0.1"))
                     .anyRequest().authenticated()
                     .and()
                 .formLogin()

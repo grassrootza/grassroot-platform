@@ -54,7 +54,7 @@ public class USSDAbstractIT {
     @Autowired
     protected EventLogBroker eventLogManager;
 
-    @Value("${local.server.port}")
+    @Value("${grassroot.http.port}")
     protected int port;
 
     //protected RestTemplate template = new TestRestTemplate(TestRestTemplate.HttpClientOption.ENABLE_REDIRECTS);
