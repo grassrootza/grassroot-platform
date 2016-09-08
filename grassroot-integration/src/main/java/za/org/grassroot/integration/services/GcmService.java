@@ -6,6 +6,7 @@ import za.org.grassroot.core.domain.GcmRegistration;
 import za.org.grassroot.core.domain.User;
 
 import java.io.IOException;
+import java.util.List;
 
 /**
  * Created by paballo on 2016/04/05.
@@ -29,4 +30,8 @@ public interface GcmService {
     @Transactional
     @Async
     void unsubScribeFromTopic(String registrationId, String topicId) throws Exception;
+
+    @Transactional
+    @Async
+    void batchAddUsersToTopic(List<String> registrationIds, String topicId) throws Exception;
 }

@@ -41,6 +41,9 @@ public class GcmManager implements GcmService {
     @Autowired
     private RestTemplate restTemplate;
 
+    @Autowired
+    private MessengerSettingsService messengerSettingsService;
+
     private final static String INSTANCE_ID_SERVICE_GATEWAY = "iid.googleapis.com";
     private final static String AUTH_KEY = System.getenv("GCM_KEY");
     private final static String HEADER_AUTH = "Authorization";
@@ -51,9 +54,8 @@ public class GcmManager implements GcmService {
     private final static String DESTINATION = "to";
     private final static String REGISTRATION_TOKENS = "registration_tokens";
     private final static String BATCH_REMOVE= ":batchRemove";
-
-
-
+    private final static String BATCH_ADD= ":batchAdd";
+    private final static String TOPICS = "/topics/";
     private static final ObjectMapper mapper = new ObjectMapper();
 
 
@@ -87,8 +89,17 @@ public class GcmManager implements GcmService {
         List<Group> groupsPartOf = groupRepository.findByMembershipsUserAndActiveTrue(user);
         for (Group group : groupsPartOf) {
             try {
-                subscribeToTopic(registrationId, group.getUid());
-            } catch (IOException ignored) {
+                if(messengerSettingsService.messengerSettingExist(user.getUid(),group.getUid())){
+                    if(messengerSettingsService.isCanReceive(user.getUid(),group.getUid())){
+                        subscribeToTopic(registrationId, group.getUid());
+                    }
+                }else{
+                    //todo introduce role based  group permission for upstream messages?
+                    messengerSettingsService.createUserGroupMessagingSetting(user.getUid(),group.getUid(),true,true,true);
+                    subscribeToTopic(registrationId, group.getUid());
+                }
+
+            } catch (Exception ignored) {
             }
         }
         return gcmRegistrationRepository.save(gcmRegistration);
@@ -122,16 +133,11 @@ public class GcmManager implements GcmService {
         boolean retry;
 
         ResponseEntity<String> response;
-
         do {
             noAttempts++;
             response = restTemplate.exchange(gatewayURI.build().toUri(), POST,
                     new HttpEntity<String>(getHttpHeaders()),
                     String.class);
-
-
-            log.info("uri" + gatewayURI.build().toString());
-            log.info("response" + response);
             retry = (!response.getStatusCode().is2xxSuccessful() && noAttempts <= MAX_RETRIES);
             if (retry) {
                 backoff = exponentialBackoffSleep(backoff);
@@ -139,7 +145,6 @@ public class GcmManager implements GcmService {
         }
         while (retry);
         if (!response.getStatusCode().is2xxSuccessful()) {
-            log.info("error" + response.getBody());
             throw new IOException("Could not send message after " + noAttempts + " attempts");
         }
 
@@ -156,8 +161,7 @@ public class GcmManager implements GcmService {
         boolean retry;
 
         ResponseEntity<String> response;
-
-        String topicName = "/topics/".concat(topicId);
+        String topicName = TOPICS.concat(topicId);
         Map<String, Object> body = new HashMap<>();
         List<String> registrationTokens = Collections.singletonList(registrationId);
         body.put(DESTINATION, topicName);
@@ -175,9 +179,41 @@ public class GcmManager implements GcmService {
         }
         while (retry);
         if (!response.getStatusCode().is2xxSuccessful()) {
-            throw new IOException("Could not send message after " + noAttempts + " attempts");
+            throw new IOException("Could not unsubscibe user after " + noAttempts + " attempts");
         }
+    }
 
+
+    @Override
+    @Transactional
+    @Async
+    public void batchAddUsersToTopic(List<String> registrationIds, String topicId) throws Exception {
+        UriComponentsBuilder gatewayURI = UriComponentsBuilder.newInstance().scheme("https").host(INSTANCE_ID_SERVICE_GATEWAY
+        ).path("/iid/v1".concat(BATCH_ADD));
+        int noAttempts = 0;
+        int backoff = BACKOFF_INITIAL_DELAY;
+        boolean retry;
+
+        ResponseEntity<String> response;
+        String topicName = TOPICS.concat(topicId);
+        Map<String, Object> body = new HashMap<>();
+        body.put(DESTINATION, topicName);
+        body.put(REGISTRATION_TOKENS, registrationIds);
+        HttpEntity<String> entity = new HttpEntity<>(mapper.writeValueAsString(body), getHttpHeaders());
+        do {
+            noAttempts++;
+            response = restTemplate.exchange(gatewayURI.build().toUri(), POST,
+                    entity,
+                    String.class);
+            retry = (!response.getStatusCode().is2xxSuccessful() && noAttempts <= MAX_RETRIES);
+            if (retry) {
+                backoff = exponentialBackoffSleep(backoff);
+            }
+        }
+        while (retry);
+        if (!response.getStatusCode().is2xxSuccessful()) {
+            throw new IOException("Could not batch add users after " + noAttempts + " attempts");
+        }
 
     }
 
@@ -188,7 +224,6 @@ public class GcmManager implements GcmService {
 
         return headers;
     }
-    
 
     private int exponentialBackoffSleep(int backoff) {
         try {

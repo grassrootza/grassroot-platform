@@ -22,6 +22,7 @@ import za.org.grassroot.integration.domain.AndroidClickActionType;
 import za.org.grassroot.integration.domain.GcmUpstreamMessage;
 import za.org.grassroot.integration.services.GcmService;
 import za.org.grassroot.integration.services.MessageSendingService;
+import za.org.grassroot.integration.services.MessengerSettingsService;
 import za.org.grassroot.integration.services.NotificationService;
 
 import java.time.Instant;
@@ -56,10 +57,7 @@ public class InboundGcmMessageHandler {
     private UserRepository userRepository;
 
     @Autowired
-    private GroupRepository groupRepository;
-
-    @Autowired
-    private GcmRegistrationRepository gcmRegistrationRepository;
+    private MessengerSettingsService messengerSettingsService;
 
 
     private static final String ORIGINAL_MESSAGE_ID = "original_message_id";
@@ -163,9 +161,17 @@ public class InboundGcmMessageHandler {
 
     public void handleChatMessage(GcmUpstreamMessage input) {
         String phoneNumber = (String) input.getData().get("phoneNumber");
+        String groupUid = (String) input.getData().get("groupUid");
         User user = userRepository.findByPhoneNumber(phoneNumber);
-        org.springframework.messaging.Message<Message> message = generateChatMessage(user, input);
-        gcmXmppOutboundChannel.send(message);
+
+        try {
+            if(messengerSettingsService.isCanSend(user.getUid(),groupUid)){
+                org.springframework.messaging.Message<Message> message = generateChatMessage(user, input);
+                gcmXmppOutboundChannel.send(message);
+            }
+        } catch (Exception e) {
+            log.info("User with phoneNumber={} is not enabled to sending messages to this group", phoneNumber);
+        }
 
     }
 
