@@ -2,7 +2,7 @@
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorator="layout">
 <head>
-  <title>GrassRoot - View group records</title>
+  <title>Grassroot - View group records</title>
 </head>
 <body>
 
@@ -78,7 +78,7 @@
         <tbody>
         <tr th:each="entry : ${logBooksInPeriod}">
           <td><span th:text="${#dates.format(entry.createdDateTime, 'dd MMM yyyy')}">Date time</span></td>
-          <td><a th:href="@{/log/details(logBookId=${entry.id})}"><span th:text="${entry.message}">Description</span></a></td>
+          <td><a th:href="@{/todo/details(logBookId=${entry.id})}"><span th:text="${entry.message}">Description</span></a></td>
           <td><span th:text="${entry.completed}">Complete or not</span></td>
           <td><span th:text="${#dates.format(entry.actionByDate, 'dd MMM yyyy')}">Due date</span></td>
         </tr>

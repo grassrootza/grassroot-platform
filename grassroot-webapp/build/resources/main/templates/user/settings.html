@@ -1,0 +1,58 @@
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:th="http://www.w3.org/1999/xhtml"
+      layout:decorator="layout">
+<head>
+  <title>Grassroot -- User preferences</title>
+</head>
+<body>
+
+<div layout:fragment="header">
+  <h2 class="text-center"><span th:text="${sessionUser.nameToDisplay()}">Group name</span></h2>
+</div>
+
+<div layout:fragment="overview">
+  <h4 class="text-center">
+    <a th:href="@{password}">Change password</a> | <a th:href="@{/home}">Back home</a>
+  </h4>
+</div>
+
+<div layout:fragment="content">
+  <div layout:fragment="messages"></div>
+
+  <div class="well">
+    <div class="row">
+      <div class="col-md-6 col-md-offset-3">
+        <form class="form-vertical" th:action="@{settings}" method="post" th:object="${sessionUser}">
+          <div class="form-group">
+            <label class="control-label">Your name:</label>
+            <input id="display_name" type="text" class="form-control" maxlength="20" th:field="*{displayName}"/>
+          </div>
+          <div class="form-group">
+            <label class="control-label">Your notification preference:</label>
+            <select name="alertPreference" class="form-control" th:field="*{alertPreference}">
+              <option value="NOTIFY_EVERYTHING">Send me all notifications</option>
+              <option value="NOTIFY_NEW_AND_REMINDERS">Send me only new events and reminders</option>
+              <option value="NOTIFY_ONLY_NEW">Send me only new events</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="control-label">Your SMS and menu language:</label>
+            <select th:field="*{languageCode}" class="form-control">
+              <option th:each="language: ${languages}"
+                      th:value="${language.key}"
+                      th:text="${language.value}" />
+            </select>
+          </div>
+          <div class="form-group pull-right">
+            <button type="submit" class="btn btn-primary">Update</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

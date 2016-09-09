@@ -2,6 +2,7 @@ package za.org.grassroot.integration.services;
 
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.MessengerSettings;
+import za.org.grassroot.integration.exception.MessengerSettingNotFoundException;
 
 import java.time.Instant;
 import java.util.List;
@@ -16,10 +17,13 @@ public interface MessengerSettingsService {
 
 
     @Transactional
-    void updateUserGroupMessageSettings(String userUid, String groupUid, boolean active, boolean canSend, boolean canReceive, Instant reactivationTime) throws Exception;
+    void updateUserGroupMessageSettings(String userUid, String groupUid, boolean active, boolean canSend, boolean canReceive, Instant reactivationTime) throws MessengerSettingNotFoundException;
 
     @Transactional(readOnly = true)
-    boolean isCanSend(String userUid, String groupUid) throws Exception;
+    boolean isCanSend(String userUid, String groupUid) throws MessengerSettingNotFoundException;
+
+    @Transactional
+    void updateActivityStatus(String userUid, String groupUid, boolean active, boolean userInitiated) throws MessengerSettingNotFoundException;
 
     @Transactional(readOnly = true)
     boolean isCanReceive(String userUid, String groupUid) throws Exception;

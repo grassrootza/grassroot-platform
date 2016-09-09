@@ -74,7 +74,7 @@
               <select class="form-control" id="new-member-role" name="roleName">
                 <option th:each="role : ${roles}"
                         th:value="${role[0]}"
-                        th:text="${role[1]}"></option>
+                        th:text="${#{web.group.role.__${role[0]}__}"></option>
               </select>
             </div>
           </div>

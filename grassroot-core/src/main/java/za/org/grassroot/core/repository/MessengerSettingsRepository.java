@@ -17,6 +17,6 @@ public interface MessengerSettingsRepository extends JpaRepository<MessengerSett
 
     List<MessengerSettings> findByUser(User user);
 
-    List<MessengerSettings> findByActiveAndUserInitiatedAndCanSendAndReactivationTimeBefore(boolean active, boolean userInitiated, boolean canSend, Instant reactivationTime);
+    List<MessengerSettings> findByActiveAndUserInitiatedAndReactivationTimeBefore(boolean active, boolean userInitiated, Instant reactivationTime);
 
  }

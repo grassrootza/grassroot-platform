@@ -77,6 +77,13 @@ public class GcmManager implements GcmService {
         return gcmRegistrationRepository.findByUser(user).getRegistrationId();
     }
 
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean hasGcmKey(User user){
+        return gcmRegistrationRepository.findByUser(user) !=null;
+    }
+
     @Override
     @Transactional
     public GcmRegistration registerUser(User user, String registrationId) {
@@ -187,7 +194,7 @@ public class GcmManager implements GcmService {
     @Override
     @Transactional
     @Async
-    public void batchAddUsersToTopic(List<String> registrationIds, String topicId) throws Exception {
+    public void batchAddUsersToTopic(List<String> registrationIds, String topicId) throws IOException {
         UriComponentsBuilder gatewayURI = UriComponentsBuilder.newInstance().scheme("https").host(INSTANCE_ID_SERVICE_GATEWAY
         ).path("/iid/v1".concat(BATCH_ADD));
         int noAttempts = 0;

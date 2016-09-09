@@ -1,19 +1,11 @@
-
-
 .header-container {
     padding-bottom: 20px;
 }
 
 .add-group-preview {
-    /*display: inline-block;*/
     padding: 46px 46px 46px 248px;
-    /*margin: 10px;*/
-    /*background: #D5D5D5;*/
-    /* border-radius: 3px; */
     cursor: pointer;
     border: 1px solid #f0f0f0;
-    /*background-color: #f9f9f9;*/
-    /*width: 228px;*/
 }
 
 .add-group{
@@ -75,7 +67,6 @@
     font-family: 'Roboto', sans-serif;
 }
 
-
 /*
  * Footer
  */
@@ -123,7 +114,7 @@
 .grass-icon-md-48
 {
     font-size: 48px;
-    color: #009688;
+    color: #207A33;
 }
 
 
@@ -187,10 +178,10 @@
     margin-top:20px;
 }
 
-.navbar-colour {
+
+.alert-success {
     background-color: #207A33;
-    border: 0 none;
-    border-radius: 0;
+    color: #FFFFFF;
 }
 
 .alert-danger {
@@ -198,9 +189,16 @@
     border-radius: 2px;
 }
 
-/* This actually has no effect -- FCKING CSS -- have put it in the head */
+/* Navbar styling */
+
+.navbar-colour {
+    background-color: #207A33;
+    border: 0 none;
+    border-radius: 0;
+}
+
 .active > a:hover, a:focus {
-    background-color: #200000 !important;
+    background-color: #185625 !important;
 }
 
 .white-text {
@@ -208,9 +206,23 @@
     font-family: 'Roboto', sans-serif;
 }
 
-.badge {
-    background-color: #207A33;
+.error-text {
+    color: #ff2a00;
+    font-family: 'Roboto', sans-serif;
 }
+
+.dropdown > a:hover, a:focus {
+    background-color: #185625 !important;
+    color: white;
+}
+
+.navbar-colour .navbar-header .navbar-toggle .icon-bar {
+    background-color: white;
+}
+
+/*.badge {
+    background-color: #207A33;
+}*/
 
 .brand-icon {
     width: 100%;

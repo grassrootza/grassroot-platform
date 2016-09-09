@@ -4,7 +4,10 @@
 <head>
   <title>Grassroot - Create Group</title>
   <!-- todo: fix whatever is causing on-server glyphicons to not load; this is a temp fix -->
+
   <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css" rel="stylesheet" />
+  <script th:src="@{/js/grassroot-methods.js}"></script>
+
 </head>
 <body>
 
@@ -17,7 +20,7 @@
   <div layout:fragment="messages"></div>
   <div class="well">
 
-    <form  th:object="${groupCreator}" th:action="@{/group/create}" method="post" autocomplete="on" class="form-horizontal">
+    <form th:object="${groupCreator}" th:action="@{/group/create}" method="post" autocomplete="on" class="form-horizontal" id="group_creator">
       <div th:if="*{hasParent}">
         <input th:field="*{parentId}" type="hidden" th:value="*{parentId}"/>
         <input th:field="*{hasParent}" type="hidden" th:value="*{hasParent}"/>
@@ -27,8 +30,8 @@
         <div class="col-md-offset-2 col-md-8">
           <label for="groupName" class="control-label">What's the group's name?</label>
           <input th:field="*{groupName}" type="text" class="form-control" id="groupName"
-                 placeholder="Please keep to 20 characters or less" maxlength="20" data-toggle="tooltip"
-                 title="Group name may not be longer than 20 characters and must not contain any symbols "/>
+                 placeholder="Please keep to 35 characters or less" maxlength="20" data-toggle="tooltip"
+                 title="Group name may not be longer than 35 characters and must not contain any symbols "/>
         </div>
       </div>
 
@@ -44,7 +47,7 @@
           </tr>
           </thead>
           <tbody>
-          <tr th:each="member, iterStat: *{listOfMembers}">
+          <tr th:each="member, iterStat: *{listOfMembers}" class="member_input_row">
             <td>
               <input type="text" th:field="*{listOfMembers[__${iterStat.index}__].displayName}" class="form-control" placeholder="Member's name"/>
             </td>
@@ -57,14 +60,14 @@
             </td>
             <td>
               <select th:field="*{listOfMembers[__${iterStat.index}__].roleName}" class="form-control">
-                <option th:each="role : ${roles}"
-                        th:value="${role[0]}"
-                        th:text="${role[1]}"
-                        th:selected="${#strings.equals(member.roleName, role[0])}"></option>
+                <option th:each="role : ${T(za.org.grassroot.core.domain.BaseRoles).groupRoles}"
+                        th:value="${role}"
+                        th:text="#{web.group.role.__${role}__}"
+                        th:selected="${#strings.equals(member.roleName, role)}"></option>
               </select>
             </td>
             <td>
-              <button type="submit" name="removeMember" class="btn btn-default" aria-label="Remove"
+              <button type="button" name="removeMember" class="btn btn-default" aria-label="Remove"
                       th:value="${iterStat.index}">
                 <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
               </button>
@@ -72,7 +75,7 @@
           </tr>
           </tbody>
         </table>
-          <button type="submit" name="addMember" class="btn btn-default">
+          <button type="button" name="addMember" id="add_member" class="btn btn-default">
             <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
             Add another member</button>
           <a href="#advancedOptions" class="btn btn-default" role="button" data-toggle="collapse">Advanced options</a>
@@ -84,9 +87,9 @@
           <div class="col-md-offset-2 col-md-8">
             <label for="groupTemplate" class="control-label">Who will be able to call meetings, events, etc?</label>
             <select name="groupTemplate" id="groupTemplate" class="form-control">
-              <option th:each="template : ${permissionTemplates}"
-                      th:value="${template[0]}"
-                      th:text="${template[1]}"></option>
+              <option th:each="template : ${T(za.org.grassroot.services.enums.GroupPermissionTemplate).values()}"
+                      th:value="${template}"
+                      th:text="#{web.group.permissions.__${template}__}"></option>
             </select>
           </div>
         </div>
@@ -94,7 +97,7 @@
           <div class="col-md-offset-2 col-md-8">
             <label for="reminderMinutes" class="control-label">When will reminders be sent, by default?</label>
             <select name="reminderMinutes" id="reminderMinutes" class="form-control" th:field="*{reminderMinutes} ">
-              <option th:each="option : ${reminderOptions}"
+              <option th:each="option : ${T(za.org.grassroot.webapp.controller.BaseController).reminderMinuteOptions(false)}"
                       th:value="${option[0]}"
                       th:text="${option[1]}"></option>
             </select>
@@ -124,7 +127,92 @@
 
 <div class="header-container" layout:fragment="script-container">
 
+  <script th:inline="javascript">
 
+    /*<![CDATA[*/
+
+    $(document).ready(function () {
+
+      var creating_form = $('#group_creator');
+
+      var member_table = $('#member-input');
+      var member_rows = creating_form.find('.member_input_row');
+      var number_members = member_rows.length;
+
+      $('#add_member').click(function() {
+        if (creating_form.valid()) {
+          addRowToTable();
+        }
+      });
+
+      function addRowToTable() {
+        var thisRowIndex = number_members;
+
+        member_table.find('tr:last').after(grassrootJS.assembleMemberRow("listOfMembers", thisRowIndex));
+        var newRow = member_table.find('tr:last');
+        newRow.find('[name$="phoneNumber"]').rules('add', grassrootJS.phoneRules);
+
+        // todo : consider intercepting here to add a new row
+        /*newRow.find('.form-control').keypress(function (e) {
+          handleEnter(e);
+        });*/
+
+        newRow.find('#removeMember').click(function () {
+          newRow.remove();
+          reduceIndices(thisRowIndex);
+        });
+        
+        number_members++;
+      }
+
+      function reduceIndices(removedRow) {
+        console.log("reducing indices, from row = " + removedRow);
+        var priorNumber = number_members;
+        var displayName = "\\.displayName";
+        var phoneNumber = "\\.phoneNumber";
+        var roleName = "\\.roleName";
+
+        for (i = removedRow; i < (number_members - 1); i++) {
+
+          var selectorPrefix = "#listOfMembers" + (i + 1);
+          var newPrefix = "listOfMembers[" + i;
+
+          member_table.find(selectorPrefix + displayName).attr('name', newPrefix + "].displayName");
+          member_table.find(selectorPrefix + displayName).attr('id', "listOfMembers" + i + ".displayName");
+
+          member_table.find(selectorPrefix + phoneNumber).attr('name', "listOfMembers[" + i + "].phoneNumber");
+          member_table.find(selectorPrefix + phoneNumber).attr('id', "listOfMembers" + i + ".phoneNumber");
+
+          member_table.find(selectorPrefix + roleName).attr('name', "listOfMembers[" + i + "].roleName");
+          member_table.find(selectorPrefix + roleName).attr('id', "listOfMembers" + i + ".roleName");
+        }
+
+        number_members--;
+      }
+
+      creating_form.validate({
+        errorClass: 'error-text',
+        rules: {
+          groupName: {
+            required: true,
+            minlength: 2,
+            maxlength: 35
+          }
+        }, messages: {
+          groupName: 'Please enter a name for the group (less than 35 characters)',
+        }
+      });
+
+      $('[name$="phoneNumber"]').each(function () {
+        $(this).rules('add', grassrootJS.phoneRules);
+      });
+
+    });
+
+    /*]]>*/
+
+  </script>
 </div>
+
 </body>
 </html>

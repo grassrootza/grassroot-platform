@@ -7,29 +7,24 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.integration.annotation.ServiceActivator;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.stereotype.Component;
-import za.org.grassroot.core.domain.GcmRegistration;
-import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.NotificationType;
 import za.org.grassroot.core.enums.UserMessagingPreference;
-import za.org.grassroot.core.repository.GcmRegistrationRepository;
-import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 import za.org.grassroot.integration.domain.AndroidClickActionType;
 import za.org.grassroot.integration.domain.GcmUpstreamMessage;
+import za.org.grassroot.integration.exception.MessengerSettingNotFoundException;
 import za.org.grassroot.integration.services.GcmService;
 import za.org.grassroot.integration.services.MessageSendingService;
 import za.org.grassroot.integration.services.MessengerSettingsService;
 import za.org.grassroot.integration.services.NotificationService;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 
 /**
  * Created by paballo on 2016/04/04.
@@ -165,11 +160,12 @@ public class InboundGcmMessageHandler {
         User user = userRepository.findByPhoneNumber(phoneNumber);
 
         try {
+            //todo implement second level caching to the message setting object
             if(messengerSettingsService.isCanSend(user.getUid(),groupUid)){
                 org.springframework.messaging.Message<Message> message = generateChatMessage(user, input);
                 gcmXmppOutboundChannel.send(message);
             }
-        } catch (Exception e) {
+        } catch (MessengerSettingNotFoundException e) {
             log.info("User with phoneNumber={} is not enabled to sending messages to this group", phoneNumber);
         }
 
@@ -189,6 +185,7 @@ public class InboundGcmMessageHandler {
         data.put("uid", input.getMessageId());
         data.put("title", user.nameToDisplay());
         data.put("phone_number", user.getPhoneNumber());
+        data.put("userUid", user.getUid());
         data.put("created_date_time", Instant.now().toString());
         data.put("alert_type", NotificationType.CHAT.toString());
         data.put("entity_type", AndroidClickActionType.CHAT_MESSAGE.toString());

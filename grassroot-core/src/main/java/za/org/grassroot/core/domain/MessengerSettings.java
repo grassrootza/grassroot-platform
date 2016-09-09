@@ -16,12 +16,10 @@ public class MessengerSettings {
     private Long id;
 
     @ManyToOne
-    @Column(name = "user_id", nullable = false)
     @JoinColumn(name="user_id")
     private User user;
 
     @ManyToOne
-    @Column(name ="group_id", nullable = false)
     @JoinColumn(name = "group_id")
     private Group group;
 
@@ -55,6 +53,7 @@ public class MessengerSettings {
         this.userInitiated = userInitiated;
         this.canSend = canSend;
         this.canReceive=canReceive;
+        this.reactivationTime=Instant.now();
 
     }
 

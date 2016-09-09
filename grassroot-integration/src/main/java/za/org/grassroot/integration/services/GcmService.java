@@ -20,7 +20,10 @@ public interface GcmService {
 
     String getGcmKey(User user);
 
-    GcmRegistration registerUser(User user,String registrationId);
+    @Transactional
+    boolean hasGcmKey(User user);
+
+    GcmRegistration registerUser(User user, String registrationId);
 
     void  unregisterUser(User user);
 
@@ -33,5 +36,5 @@ public interface GcmService {
 
     @Transactional
     @Async
-    void batchAddUsersToTopic(List<String> registrationIds, String topicId) throws Exception;
+    void batchAddUsersToTopic(List<String> registrationIds, String topicId) throws IOException;
 }

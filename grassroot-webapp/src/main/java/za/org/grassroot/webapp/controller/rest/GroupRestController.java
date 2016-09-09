@@ -18,6 +18,8 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
 import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
+import za.org.grassroot.integration.exception.MessengerSettingNotFoundException;
+import za.org.grassroot.integration.services.MessengerSettingsService;
 import za.org.grassroot.services.*;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.services.exception.JoinRequestNotOpenException;
@@ -66,6 +68,9 @@ public class GroupRestController {
 
 	@Autowired
 	private GeoLocationBroker geoLocationBroker;
+
+	@Autowired
+	private MessengerSettingsService messengerSettingsService;
 
 	@Autowired
 	@Qualifier("messageSourceAccessor")
@@ -618,6 +623,24 @@ public class GroupRestController {
 		return response;
 	}
 
+	@RequestMapping(value= "messenger/update/{phoneNumber}/{code}", method =RequestMethod.POST)
+	public ResponseEntity<ResponseWrapper> updateMemberGroupChatSetting(@PathVariable String phoneNumber,
+																		@PathVariable String code,
+																		@RequestParam("groupUid") String groupUid,
+																		@RequestParam(value = "userUid",required = false) String userUid,
+																		@RequestParam("active") boolean active,
+																		@RequestParam("userInitiated") boolean userInitiated)
+			throws MessengerSettingNotFoundException {
+
+		User user = userManagementService.findByInputNumber(phoneNumber);
+		String userSettingTobeUpdate = (userInitiated)?user.getUid():userUid;
+
+		messengerSettingsService.updateActivityStatus(userSettingTobeUpdate,groupUid,active,userInitiated);
+		return (!active)?RestUtil.messageOkayResponse(RestMessage.CHAT_DEACTIVATED):
+				RestUtil.messageOkayResponse(RestMessage.CHAT_ACTIVATED);
+
+	}
+
     private GroupResponseWrapper createGroupWrapper(Group group, User caller) {
         Role role = group.getMembership(caller).getRole();
         Event event = eventManagementService.getMostRecentEvent(group);
@@ -659,6 +682,11 @@ public class GroupRestController {
 			}
 		}
 		return ImmutableMap.of("ADDED", permissionsAdded, "REMOVED", permissionsRemoved);
+	}
+
+	@ExceptionHandler(MessengerSettingNotFoundException.class)
+	public ResponseEntity<ResponseWrapper> messageSettingNotFound(){
+		return RestUtil.errorResponse(HttpStatus.NOT_FOUND, RestMessage.MESSAGE_SETTING_NOT_FOUND);
 	}
 
 }

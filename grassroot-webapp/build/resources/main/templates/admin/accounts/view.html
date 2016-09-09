@@ -2,7 +2,7 @@
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorator="layout">
 <head>
-  <title>GrassRoot - View an institutional account</title>
+  <title>Grassroot - View an institutional account</title>
 <script>
 
 
@@ -77,8 +77,8 @@
         </div>
         <div class="col-md-4">
           Log book extra messages:
-          <span class="glyphicon glyphicon-ok" th:if="${account.logbookExtraMessages}"></span>
-          <span class="glyphicon glyphicon-remove" th:unless="${account.logbookExtraMessages}"></span>
+          <span class="glyphicon glyphicon-ok" th:if="${account.todoExtraMessages}"></span>
+          <span class="glyphicon glyphicon-remove" th:unless="${account.todoExtraMessages}"></span>
         </div>
       </div>
       <div class="form-group">
