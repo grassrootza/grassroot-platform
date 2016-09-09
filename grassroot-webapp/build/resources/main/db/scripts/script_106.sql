@@ -1,1 +1,0 @@
-alter table event add column importance integer default 1;

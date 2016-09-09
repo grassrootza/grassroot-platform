@@ -1,3 +1,0 @@
-ALTER TABLE log_book ALTER COLUMN group_id DROP NOT NULL;
-ALTER TABLE event ALTER COLUMN applies_to_group DROP NOT NULL;
-

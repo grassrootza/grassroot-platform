@@ -1,1 +1,0 @@
-INSERT INTO paid_account (id, account_name) VALUES (0, 'null');

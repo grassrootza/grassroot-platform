@@ -1,1 +1,0 @@
-ALTER TABLE paid_group ADD COLUMN archived_account_id BIGINT;

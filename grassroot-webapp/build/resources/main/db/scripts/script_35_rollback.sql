@@ -1,1 +1,0 @@
-ALTER TABLE log_book DROP COLUMN recorded;

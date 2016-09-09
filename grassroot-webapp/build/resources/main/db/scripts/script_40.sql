@@ -1,1 +1,0 @@
-ALTER TABLE group_log ADD COLUMN description character varying(255);

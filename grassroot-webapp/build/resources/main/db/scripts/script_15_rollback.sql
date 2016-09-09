@@ -1,1 +1,0 @@
-ALTER TABLE event DROP COLUMN noreminderssent;

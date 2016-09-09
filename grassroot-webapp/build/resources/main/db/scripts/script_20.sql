@@ -1,1 +1,0 @@
-ALTER TABLE group_profile ALTER COLUMN default_language TYPE character varying(10);
