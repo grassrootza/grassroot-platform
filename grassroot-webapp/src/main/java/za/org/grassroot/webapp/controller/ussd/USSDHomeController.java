@@ -96,7 +96,7 @@ public class USSDHomeController extends USSDController {
     @PostConstruct
     public void init() {
         // Spring initialization stuff...
-        hashPosition = environment.getRequiredProperty("USSD_CODE_LENGTH", Integer.class);
+        hashPosition = environment.getRequiredProperty("grassroot.ussd.code.length", Integer.class);
     }
 
     public USSDMenu welcomeMenu(String opening, User user) {

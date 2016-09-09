@@ -40,7 +40,6 @@ public class USSDEmulatorController extends BaseController {
 	@Autowired
 	Environment environment;
 
-    private static final String BASE = "https://localhost:8443/";
     private static final String phoneNumberParam = "msisdn";
     private static final String inputStringParam = "request";
     private static final String linkParam = "link";
@@ -98,8 +97,7 @@ public class USSDEmulatorController extends BaseController {
     }
 
     private Request getRequestObject(URI url) {
-        logger.info("attempting to get URI : " + url.toASCIIString());
-	    NullHostnameVerifier verifier = new NullHostnameVerifier();
+        NullHostnameVerifier verifier = new NullHostnameVerifier();
         MySimpleClientHttpRequestFactory requestFactory = new MySimpleClientHttpRequestFactory(verifier);
         RestTemplate template = new RestTemplate();
         template.setRequestFactory(requestFactory);

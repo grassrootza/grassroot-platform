@@ -20,6 +20,7 @@ import za.org.grassroot.services.*;
 import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.util.CacheUtilService;
 import za.org.grassroot.webapp.util.USSDGroupUtil;
+import za.org.grassroot.webapp.util.USSDMenuUtil;
 
 import java.time.LocalDate;
 import java.time.Year;
@@ -82,6 +83,9 @@ public abstract class USSDAbstractUnitTest {
     @InjectMocks
     protected USSDGroupUtil ussdGroupUtil;
 
+    @InjectMocks
+    protected USSDMenuUtil ussdMenuUtil;
+
     protected static final String base = "/ussd/";
     protected static final String userChoiceParam = "request";
     protected static final String interruptedChoice = "1";
@@ -124,10 +128,12 @@ public abstract class USSDAbstractUnitTest {
         return messageSource;
     }
 
-    protected void wireUpMessageSourceAndGroupUtil(USSDController controller, USSDGroupUtil groupUtil) {
+    protected void wireUpMessageSourceAndGroupUtil(USSDController controller) {
         controller.setMessageSource(messageSource());
-        groupUtil.setMessageSource(messageSource());
-        controller.setUssdGroupUtil(groupUtil);
+        ussdMenuUtil.setForTests(); // since inject mocks will not autowire
+        ussdGroupUtil.setMessageSource(messageSource());
+        controller.setUssdMenuUtil(ussdMenuUtil);
+        controller.setUssdGroupUtil(ussdGroupUtil);
     }
 
     // helper method to generate a set of membership info ... used often

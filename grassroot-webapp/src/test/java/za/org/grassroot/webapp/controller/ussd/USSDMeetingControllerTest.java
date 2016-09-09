@@ -58,7 +58,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
                 .setViewResolvers(viewResolver())
                 .build();
 
-        wireUpMessageSourceAndGroupUtil(ussdMeetingController, ussdGroupUtil);
+        wireUpMessageSourceAndGroupUtil(ussdMeetingController);
         ussdEventUtil.setMessageSource(messageSource());
         ussdMeetingController.setEventUtil(ussdEventUtil);
     }

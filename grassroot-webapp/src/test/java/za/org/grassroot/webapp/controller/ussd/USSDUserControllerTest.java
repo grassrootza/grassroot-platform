@@ -36,7 +36,7 @@ public class USSDUserControllerTest extends USSDAbstractUnitTest {
                 .setValidator(validator())
                 .setViewResolvers(viewResolver())
                 .build();
-        ussdUserController.setMessageSource(messageSource());
+        wireUpMessageSourceAndGroupUtil(ussdUserController);
         testUser = new User(testUserPhone);
     }
 

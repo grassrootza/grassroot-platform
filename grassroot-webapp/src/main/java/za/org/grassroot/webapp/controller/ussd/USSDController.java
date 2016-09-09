@@ -72,9 +72,15 @@ public class USSDController {
     protected static final DateTimeFormatter dateTimeFormat = DateTimeFormatter.ofPattern("EEE d MMM, h:mm a");
     protected static final DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("EEE d MMM");
     protected static final DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern("h:mm a");
+
+    protected Request tooLongError = new Request("Error! Menu is too long.", new ArrayList<>());
+    protected Request noUserError = new Request("Error! Couldn't find you as a user.", new ArrayList<>());
+
     /*
     Utility classes that pull together some often used methods
      */
+    @Autowired
+    private USSDMenuUtil ussdMenuUtil;
     @Autowired
     protected USSDGroupUtil ussdGroupUtil;
     @Autowired
@@ -98,30 +104,30 @@ public class USSDController {
     protected MessageSource messageSource;
 
     /*
-    Simple helper method for mocking and unit test
+    Setters for mocking and unit test
+     */
+
+    public void setMessageSource(MessageSource messageSource) { this.messageSource = messageSource; }
+    protected void setUssdGroupUtil(USSDGroupUtil ussdGroupUtil) { this.ussdGroupUtil = ussdGroupUtil; }
+    protected void setUssdMenuUtil(USSDMenuUtil ussdMenuUtil) { this.ussdMenuUtil = ussdMenuUtil; }
+
+    /*
+    Methods that form the menu objects
      */
 
     protected Request menuBuilder(USSDMenu ussdMenu) throws URISyntaxException {
-        return USSDMenuUtil.menuBuilder(ussdMenu);
+        return ussdMenuUtil.menuBuilder(ussdMenu, false);
     }
-
 
     protected Request menuBuilder(USSDMenu ussdMenu, boolean isFirstMenu) throws URISyntaxException {
-        return USSDMenuUtil.menuBuilder(ussdMenu, isFirstMenu);
+        return ussdMenuUtil.menuBuilder(ussdMenu, isFirstMenu);
     }
 
-
-    public void setMessageSource(MessageSource messageSource) { this.messageSource = messageSource; }
-    public void setUssdGroupUtil(USSDGroupUtil ussdGroupUtil) {
-        this.ussdGroupUtil = ussdGroupUtil;
-    }
 
     /**
      * Some default menu returns and some frequently used sets of menu options
      */
 
-    protected Request tooLongError = new Request("Error! Menu is too long.", new ArrayList<>());
-    protected Request noUserError = new Request("Error! Couldn't find you as a user.", new ArrayList<>());
 
     protected Map<String, String> optionsHomeExit(User sessionUser) {
         return ImmutableMap.<String, String>builder().

@@ -69,7 +69,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
                 .setValidator(validator())
                 .setViewResolvers(viewResolver())
                 .build();
-        wireUpMessageSourceAndGroupUtil(ussdLogBookController, ussdGroupUtil);
+        wireUpMessageSourceAndGroupUtil(ussdLogBookController);
         testUser = new User(testUserPhone);
     }
 

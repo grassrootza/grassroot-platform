@@ -14,7 +14,10 @@ import za.org.grassroot.services.GroupPage;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -55,7 +58,8 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
                 .setValidator(validator())
                 .setViewResolvers(viewResolver())
                 .build();
-        wireUpMessageSourceAndGroupUtil(ussdHomeController, ussdGroupUtil);
+
+        wireUpMessageSourceAndGroupUtil(ussdHomeController);
 
         /* We use these quite often */
         testUserZu.setLanguageCode("zu");
@@ -68,9 +72,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
 
     @Test
     public void testQuestion() throws Exception {
-
         mockMvc.perform(get("/ussd/test_question")).andExpect(status().isOk());
-
     }
 
     @Test
@@ -322,11 +324,11 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
      */
     @Test
     public void errorPagesShouldBeWellFormed() throws Exception {
-
         resetTestUser();
         when(userManagementServiceMock.findByInputNumber(phoneForTests)).thenReturn(testUser);
-        mockMvc.perform(get("/ussd/error").param(phoneParameter, phoneForTests)).
-                andExpect(status().isOk());
+        mockMvc.perform(get("/ussd/error")
+                .param(phoneParameter, phoneForTests))
+                .andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(phoneForTests);
         verifyNoMoreInteractions(userManagementServiceMock);
 

@@ -4,6 +4,8 @@ import org.apache.catalina.Context;
 import org.apache.catalina.connector.Connector;
 import org.apache.tomcat.util.descriptor.web.SecurityCollection;
 import org.apache.tomcat.util.descriptor.web.SecurityConstraint;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.context.embedded.EmbeddedServletContainerFactory;
@@ -27,6 +29,8 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 public class GrassrootWebApplicationConfig {
 
     // private ApplicationContext applicationContext;
+
+    private static final Logger logger = LoggerFactory.getLogger(GrassrootWebApplicationConfig.class);
 
     @Autowired
     Environment environment;
@@ -76,28 +80,22 @@ public class GrassrootWebApplicationConfig {
             }
         };
 
-        int httpPort = environment.getRequiredProperty("HTTP_PORT", Integer.class);
-        Connector nonSSLConnector;
-        if (environment.acceptsProfiles("localpg")) {
-            nonSSLConnector = createNonSSLConnectorWithoutRedirect(httpPort);
-        } else {
-            Integer httpsPort = environment.getRequiredProperty("HTTPS_PORT", Integer.class);
-            nonSSLConnector = createNonSSLConnectorWithRedirect(httpPort, httpsPort);
+        if (environment.acceptsProfiles("staging", "production")) {
+            Integer httpPort = environment.getRequiredProperty("grassroot.http.port", Integer.class);
+            Integer httpsPort = environment.getRequiredProperty("grassroot.https.port", Integer.class);
+            logger.info("starting up tomcat, http port obtained = {}, and https obtained = {}", httpPort, httpsPort);
+            Connector nonSSLConnector = createNonSSLConnectorWithRedirect(httpPort, httpsPort);
+            tomcat.addAdditionalTomcatConnectors(nonSSLConnector);
         }
-        tomcat.addAdditionalTomcatConnectors(nonSSLConnector);
+
         return tomcat;
     }
 
     private Connector createNonSSLConnectorWithRedirect(int httpPort, int httpsPort) {
+        logger.info("setting non SSL port inside connector");
         Connector connector = new Connector("org.apache.coyote.http11.Http11NioProtocol");
         connector.setPort(httpPort);
         connector.setRedirectPort(httpsPort);
-        return connector;
-    }
-
-    private Connector createNonSSLConnectorWithoutRedirect(int httpPort) {
-        Connector connector = new Connector("org.apache.coyote.http11.Http11NioProtocol");
-        connector.setPort(httpPort);
         return connector;
     }
 

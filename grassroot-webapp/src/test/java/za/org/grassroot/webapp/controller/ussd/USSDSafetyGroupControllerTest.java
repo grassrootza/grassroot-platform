@@ -49,7 +49,7 @@ public class USSDSafetyGroupControllerTest extends USSDAbstractUnitTest {
                 .setValidator(validator())
                 .setViewResolvers(viewResolver())
                 .build();
-        wireUpMessageSourceAndGroupUtil(ussdSafetyGroupController, ussdGroupUtil);
+        wireUpMessageSourceAndGroupUtil(ussdSafetyGroupController);
         testUser = new User(testUserPhone);
         testUser2 = new User(testUser2Phone);
         testGroup = new Group("test group", testUser);

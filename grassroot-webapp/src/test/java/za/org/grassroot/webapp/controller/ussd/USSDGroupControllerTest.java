@@ -56,7 +56,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
                 .setValidator(validator())
                 .setViewResolvers(viewResolver())
                 .build();
-        wireUpMessageSourceAndGroupUtil(ussdGroupController, ussdGroupUtil);
+        wireUpMessageSourceAndGroupUtil(ussdGroupController);
 
         testUser = new User(testUserPhone);
         testGroup = new Group("test group", testUser);
