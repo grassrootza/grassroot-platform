@@ -8,6 +8,7 @@ import za.org.grassroot.core.repository.GcmRegistrationRepository;
 import za.org.grassroot.core.repository.TodoRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.integration.services.GcmService;
+import za.org.grassroot.integration.services.MessengerSettingsService;
 import za.org.grassroot.integration.services.NotificationService;
 import za.org.grassroot.integration.services.SmsSendingService;
 
@@ -48,6 +49,12 @@ public class TestContextConfig {
     public FactoryBean<GcmService> gcmService() {
         return new MockitoFactoryBean<>(GcmService.class);
     }
+
+    @Bean
+    public FactoryBean<MessengerSettingsService> messengerSettingsService() {
+        return new MockitoFactoryBean<>(MessengerSettingsService.class);
+    }
+
 
 
     @Bean(name = "gcmConnection")
