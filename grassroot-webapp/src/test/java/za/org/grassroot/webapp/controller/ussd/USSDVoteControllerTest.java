@@ -54,7 +54,7 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
                 .setValidator(validator())
                 .setViewResolvers(viewResolver())
                 .build();
-        wireUpMessageSourceAndGroupUtil(ussdVoteController, ussdGroupUtil);
+        wireUpMessageSourceAndGroupUtil(ussdVoteController);
         ussdEventUtil.setMessageSource(messageSource());
         ussdVoteController.setEventUtil(ussdEventUtil);
         testUser = new User(testUserPhone);

@@ -35,11 +35,21 @@ public class USSDMenuUtil {
     private static final int enumLength = ("1. ").length();
 
     @PostConstruct
-    public void init() {
+    private void init() {
         baseURI = environment.getRequiredProperty("grassroot.ussd.return.url", String.class);
         maxOpeningMenuLength = environment.getRequiredProperty("grassroot.ussd.menu.length.opening", Integer.class);
         maxMenuLength = environment.getRequiredProperty("grassroot.ussd.menu.length.standard", Integer.class);
         log.info("ussd menu util initialized, baseURI = {}, maxMenuOpen = {}, maxMenuLength = {}...", baseURI, maxOpeningMenuLength, maxMenuLength);
+    }
+
+    // todo : when we move to Spring Boot 1.4 use new constructor patterns to avoid this
+    public void setForTests() {
+        if (environment != null) {
+            throw new UnsupportedOperationException("Error! Can only call this method via tests");
+        }
+        this.baseURI = "http://127.0.0.1/ussd";
+        this.maxOpeningMenuLength = 140;
+        this.maxMenuLength = 160;
     }
 
     private List<Option> createMenu(Map<String, String> menuOptions) throws URISyntaxException {
@@ -68,6 +78,7 @@ public class USSDMenuUtil {
             // note: this runs the risk of cutting off crucial end-of-prompt info, but is 'least bad' option so far (other is just an error message)
             final Integer charsToTrim = thisMenu.getMenuCharLength() - (isFirstMenu ? (maxOpeningMenuLength - 1) : (maxMenuLength - 1)); // adding a character, for safety
             String currentPrompt = thisMenu.getPromptMessage();
+            log.info("about to trim this current prompt = {}, and going to trim this many characters: {}", currentPrompt, charsToTrim);
             String revisedPrompt = currentPrompt.substring(0, currentPrompt.length() - charsToTrim);
             menuRequest = new Request(revisedPrompt, createMenu(thisMenu.getMenuOptions()));
         }

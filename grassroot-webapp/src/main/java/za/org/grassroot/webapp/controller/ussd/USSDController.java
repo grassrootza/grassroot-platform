@@ -104,7 +104,15 @@ public class USSDController {
     protected MessageSource messageSource;
 
     /*
-    Simple helper method for mocking and unit test
+    Setters for mocking and unit test
+     */
+
+    public void setMessageSource(MessageSource messageSource) { this.messageSource = messageSource; }
+    protected void setUssdGroupUtil(USSDGroupUtil ussdGroupUtil) { this.ussdGroupUtil = ussdGroupUtil; }
+    protected void setUssdMenuUtil(USSDMenuUtil ussdMenuUtil) { this.ussdMenuUtil = ussdMenuUtil; }
+
+    /*
+    Methods that form the menu objects
      */
 
     protected Request menuBuilder(USSDMenu ussdMenu) throws URISyntaxException {
@@ -115,10 +123,6 @@ public class USSDController {
         return ussdMenuUtil.menuBuilder(ussdMenu, isFirstMenu);
     }
 
-    public void setMessageSource(MessageSource messageSource) { this.messageSource = messageSource; }
-    public void setUssdGroupUtil(USSDGroupUtil ussdGroupUtil) {
-        this.ussdGroupUtil = ussdGroupUtil;
-    }
 
     /**
      * Some default menu returns and some frequently used sets of menu options

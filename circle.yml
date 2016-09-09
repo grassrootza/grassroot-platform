@@ -1,14 +1,11 @@
 machine:
   java:
     version: oraclejdk8
-  environment:
-    USSD_CODE_LENGTH: 9
-    APP_URL: http://localhost:8080
 test:
   post:
     - mkdir -p $CIRCLE_TEST_REPORTS/junit/
-    - find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp {} $CIRCLE_TEST_REPORTS/junit/ \;
+    - find . -type f -regex ".*/build/test-results/.*xml" -exec cp {} $CIRCLE_TEST_REPORTS/junit/ \;
 general:
   artifacts:
-    - "grassroot-core/target/grassroot-core-1.0-SNAPSHOT.jar"
-    - "grassroot-webapp/target/grassroot-webapp-1.0-SNAPSHOT.jar"
+    - "grassroot-core/target/grassroot-core-1.0.0.M2.jar"
+    - "grassroot-webapp/target/grassroot-webapp-1.0.0.M2.jar"

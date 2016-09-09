@@ -22,7 +22,12 @@ subprojects {
     exclude '**/*IT*'
     testLogging {
       events "failed"
+      exceptionFormat = "full"
     }
+
+    systemProperty "grassroot.sms.gateway", "127.0.0.1"
+    systemProperty "grassroot.sms.gateway.username", "grassrootstest"
+    systemProperty "grassroot.sms.gateway.password", "test"
   }
   
   dependencies {
