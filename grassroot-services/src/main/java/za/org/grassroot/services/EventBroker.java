@@ -1,9 +1,16 @@
 package za.org.grassroot.services;
 
+import org.springframework.data.domain.Page;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.enums.EventRSVPResponse;
+import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.MeetingImportance;
+import za.org.grassroot.services.enums.EventListTimeType;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public interface EventBroker {
@@ -64,4 +71,25 @@ public interface EventBroker {
 	void assignMembers(String userUid, String eventUid, Set<String> assignMemberUids);
 
 	void removeAssignedMembers(String userUid, String eventUid, Set<String> memberUids);
+
+	/*
+	Methods for retrieving lists of upcoming events (all read only)
+	 */
+
+	List<Event> getOutstandingResponseForUser(User user, EventType eventType);
+
+	boolean userHasResponsesOutstanding(User user, EventType eventType);
+
+	EventListTimeType userHasEventsToView(User user, EventType type);
+
+	boolean userHasEventsToView(User user, EventType type, EventListTimeType timeType);
+
+	Map<User, EventRSVPResponse> getRSVPResponses(Event event);
+
+	Page<Event> getEventsUserCanView(User user, EventType eventType, EventListTimeType timeType, int pageNumber, int pageSize);
+
+	// pass null to eventType to get all events, and null to either of the timestamps to leave unlimited (i.e., all the way to future, or all the way to past
+	List<Event> retrieveGroupEvents(Group group, EventType eventType, Instant periodStart, Instant periodEnd);
+
+	Event getMostRecentEvent(String groupUid);
 }

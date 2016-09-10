@@ -71,8 +71,6 @@ public class RestAbstractUnitTest
     @Mock
     protected UserManagementService userManagementServiceMock;
     @Mock
-    protected EventManagementService eventManagementServiceMock;
-    @Mock
     protected PasswordTokenService passwordTokenServiceMock;
     @Mock
     protected GroupJoinRequestService groupJoinRequestServiceMock;

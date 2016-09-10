@@ -3,11 +3,6 @@
       layout:decorator="layout">
 <head>
   <title>Grassroot - Adjust account settings</title>
-<script>
-
-
-
-</script>
 </head>
 <body>
 
@@ -21,7 +16,7 @@
   <div class="well">
     <form th:object="${account}" th:action="@{/admin/accounts/settings}" method="post" class="form-horizontal">
       <!-- todo: provide an option to over-write the current primary email when doing this -->
-      <input type="hidden" th:field="*{id}" />
+      <input type="hidden" th:field="*{uid}" />
       <div class="form-group">
         <div class="col-md-4">
           Free form messages:

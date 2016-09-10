@@ -3,8 +3,6 @@
       layout:decorator="layout">
 <head>
   <title>Grassroot - Record an action</title>
-  <!-- todo: fix whatever is causing on-server glyphicons to not load; this is a temp fix -->
-  <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css" rel="stylesheet" />
 
   <!-- need these for ajax, though there may be a more elegant way to do it (maybe just call the Thymeleaf in the CSRF -->
   <meta name="_csrf" th:content="${_csrf.token}"/>

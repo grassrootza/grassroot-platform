@@ -51,9 +51,6 @@ public class MeetingController extends BaseController {
     private PermissionBroker permissionBroker;
 
     @Autowired
-    private EventManagementService eventManagementService;
-
-    @Autowired
     private EventLogBroker eventLogBroker;
 
     @Autowired
@@ -139,7 +136,7 @@ public class MeetingController extends BaseController {
 
         if (canViewRsvps) {
             // this is clunky, but it's for Thymeleaf
-            Set<Map.Entry<User, EventRSVPResponse>> rsvpResponses = eventManagementService.getRSVPResponses(meeting).entrySet();
+            Set<Map.Entry<User, EventRSVPResponse>> rsvpResponses = eventBroker.getRSVPResponses(meeting).entrySet();
             model.addAttribute("rsvpResponses", rsvpResponses);
         }
 

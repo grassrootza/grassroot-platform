@@ -1,9 +1,8 @@
 package za.org.grassroot.services;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import za.org.grassroot.core.domain.Account;
-import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.PaidGroup;
-import za.org.grassroot.core.domain.User;
 
 import java.util.List;
 
@@ -12,49 +11,35 @@ import java.util.List;
  */
 public interface AccountManagementService {
 
+    Account loadAccount(String accountUid);
+
+    PaidGroup loadPaidGroup(String paidGroupUid);
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    List<Account> loadAllAccounts();
+
     /*
     Methods to create institutional accounts, designate administrators and deactivate them
      */
 
-    Account createAccount(String accountName);
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    String createAccount(String userUid, String accountName, String administratorUid, String billingEmail);
 
-    Account createAccount(String accountName, User administrator);
+    void addAdministrator(String userUid, String accountUid, String administratorUid);
 
-    Account createAccount(String accountName, User administrator, String billingEmail, boolean enabled);
+    void updateBillingEmail(String userUid, String accountUid, String billingEmail);
 
-    Account addAdministrator(Account account, User administrator);
-
-    Account setBillingEmail(Account account, String billingEmail);
-
-    Account adjustSettings(Account changedAccount);
-
-    /*
-    Methods to load, find and save institutional accounts
-     */
-
-    Account loadAccount(Long accountId);
-
-    Account findAccountByAdministrator(User administrator);
-
-    List<Account> loadAllAccounts();
+    void updateSettings(Account changedAccount);
 
     /*
     Methods to designate groups as paid for by accounts (and remove the designation)
      */
 
-    Group addGroupToAccount(Account account, Group group, User addingUser);
+    void addGroupToAccount(String accountUid, String groupUid, String addingUserUid);
 
-    Account findAccountForGroup(Group group);
+    void removeGroupFromAccount(String accountUid, String paidGroupUid, String removingUserUid);
 
-    Account removeGroupFromAccount(Account account, PaidGroup group, User removingUser);
-
-    /*
-    Methods to aggregate information about groups paid for by an account
-     */
-
-    List<PaidGroup> getGroupsPaidForByAccount(Account account);
-
-    PaidGroup loadPaidGroupEntity(Long paidGroupId);
+    Account findAccountForGroup(String groupUid);
 
     /*
     Methods to handle billing for institutional accounts

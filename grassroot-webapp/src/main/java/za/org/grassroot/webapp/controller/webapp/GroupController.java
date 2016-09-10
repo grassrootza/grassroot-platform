@@ -15,6 +15,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.*;
 import za.org.grassroot.webapp.controller.BaseController;
@@ -22,6 +23,7 @@ import za.org.grassroot.webapp.model.web.GroupWrapper;
 import za.org.grassroot.webapp.util.BulkUserImportUtil;
 
 import javax.servlet.http.HttpServletRequest;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -49,7 +51,7 @@ public class GroupController extends BaseController {
     private TaskBroker taskBroker;
 
     @Autowired
-    private EventManagementService eventManagementService;
+    private EventBroker eventBroker;
 
     @Autowired
     private TodoBroker todoBroker;
@@ -534,18 +536,16 @@ public class GroupController extends BaseController {
             endDateTime = startDateTime.plusMonths(1L);
         }
 
-        Long startTime = System.currentTimeMillis();
-        List<Event> eventsInPeriod = eventManagementService.getGroupEventsInPeriod(group, startDateTime, endDateTime);
-        List<Todo> logBooksInPeriod = todoBroker.getTodosInPeriod(group, startDateTime, endDateTime);
+        Instant start = DateTimeUtil.convertToSystemTime(startDateTime, DateTimeUtil.getSAST());
+        Instant end = DateTimeUtil.convertToSystemTime(endDateTime, DateTimeUtil.getSAST());
+        List<Event> eventsInPeriod = eventBroker.retrieveGroupEvents(group, null, start, end);
+        List<Todo> todosInPeriod = todoBroker.getTodosInPeriod(group, startDateTime, endDateTime);
         List<GroupLog> groupLogsInPeriod = groupBroker.getLogsForGroup(group, startDateTime, endDateTime);
         List<LocalDate> monthsActive = groupBroker.getMonthsGroupActive(groupUid);
-        Long endTime = System.currentTimeMillis();
-
-        log.info("Retrieved the events and group log ... time taken: {} msecs", endTime - startTime);
 
         model.addAttribute("group", group);
         model.addAttribute("eventsInPeriod", eventsInPeriod);
-        model.addAttribute("logBooksInPeriod", logBooksInPeriod);
+        model.addAttribute("todosInPeriod", todosInPeriod);
         model.addAttribute("groupLogsInPeriod", groupLogsInPeriod);
         model.addAttribute("monthsToView", monthsActive);
 

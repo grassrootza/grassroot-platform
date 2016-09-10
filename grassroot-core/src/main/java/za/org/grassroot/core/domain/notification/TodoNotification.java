@@ -16,7 +16,7 @@ public abstract class TodoNotification extends Notification {
 
 	@Override
 	public NotificationType getNotificationType() {
-		return NotificationType.LOGBOOK;
+		return NotificationType.TODO;
 	}
 
 	@Override

@@ -6,9 +6,6 @@
 </head>
 <body>
 
-<!-- Todo: for now, all, or almost all, elements are open, so this looks like create group, but need to adjust that in
-future to close that off (need a way that mistakes can be corrected, but not to abuse) -->
-
 <div layout:fragment="header">
     <h2 class="text-center">Add members to group: "<span th:text="${group.groupName}">group</span>"</h2>
 </div>
@@ -36,7 +33,6 @@ future to close that off (need a way that mistakes can be corrected, but not to 
         <div class="row">
           <div class="col-md-8 col-md-offset-2">
             <div class="form-group">
-              <!-- todo: add a link to change permissions -->
               <span th:if="${closedGroup}">
                 These members will not be able to call meetings or votes or see other members' details.
               </span>

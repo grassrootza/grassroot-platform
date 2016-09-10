@@ -118,10 +118,6 @@ public interface GroupBroker {
 
     List<GroupLog> getLogsForGroup(Group group, LocalDateTime periodStart, LocalDateTime periodEnd);
 
-    // pass null to eventType to get all events
-    // pass null to either of the timestamps to leave unlimited (i.e., all the way to future, or all the way to past
-    List<Event> retrieveGroupEvents(Group group, EventType eventType, Instant periodStart, Instant periodEnd);
-
     List<Group> fetchGroupsWithOneCharNames(User creatingUser, int sizeThreshold);
 
     List<GroupDTO> fetchUserCreatedGroups(User user);

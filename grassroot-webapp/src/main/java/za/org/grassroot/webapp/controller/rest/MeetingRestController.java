@@ -58,9 +58,6 @@ public class MeetingRestController {
     private PermissionBroker permissionBroker;
 
     @Autowired
-    private EventManagementService eventManagementService; // todo :really need to migrate from this old thing to broker
-
-    @Autowired
     private EventLogRepository eventLogRepository;
 
     @InitBinder
@@ -170,7 +167,7 @@ public class MeetingRestController {
 
         MeetingRsvpsDTO rsvpsDTO;
         if (canViewRsvps) {
-            rsvpsDTO = new MeetingRsvpsDTO(meetingUid, totals, eventManagementService.getRSVPResponses(meeting));
+            rsvpsDTO = new MeetingRsvpsDTO(meetingUid, totals, eventBroker.getRSVPResponses(meeting));
         } else {
             rsvpsDTO = new MeetingRsvpsDTO(meetingUid, totals);
         }

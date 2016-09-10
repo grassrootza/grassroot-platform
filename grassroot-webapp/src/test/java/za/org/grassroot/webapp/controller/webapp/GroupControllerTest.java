@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.TaskDTO;
+import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.MembershipInfo;
@@ -402,7 +403,8 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
 
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
         when(userManagementServiceMock.load(sessionTestUser.getUid())).thenReturn(sessionTestUser);
-        when(eventManagementServiceMock.getGroupEventsInPeriod(testGroup, start, end)).thenReturn(dummyEvents);
+        when(eventBrokerMock.retrieveGroupEvents(testGroup, EventType.VOTE, DateTimeUtil.convertToSystemTime(start, DateTimeUtil.getSAST()),
+                DateTimeUtil.convertToSystemTime(end, DateTimeUtil.getSAST()))).thenReturn(dummyEvents);
         when(todoBrokerMock.getTodosInPeriod(testGroup, start, end)).thenReturn(dummyLogbooks);
         when(groupBrokerMock.getLogsForGroup(testGroup, start, end)).thenReturn(dummyGroupLogs);
         when(groupBrokerMock.getMonthsGroupActive(testGroup.getUid())).thenReturn(dummyMonths);
@@ -422,8 +424,9 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         verifyNoMoreInteractions(groupBrokerMock);
         verify(userManagementServiceMock, times(1)).load(sessionTestUser.getUid());
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(eventManagementServiceMock, times(1)).getGroupEventsInPeriod(testGroup, start, end);
-        verifyNoMoreInteractions(eventManagementServiceMock);
+        verify(eventBrokerMock, times(1)).retrieveGroupEvents(testGroup, null, DateTimeUtil.convertToSystemTime(start, DateTimeUtil.getSAST()),
+                DateTimeUtil.convertToSystemTime(end, DateTimeUtil.getSAST()));
+        verifyNoMoreInteractions(eventBrokerMock);
         verify(todoBrokerMock, times(1)).getTodosInPeriod(testGroup, start, end);
         verifyNoMoreInteractions(todoBrokerMock);
 
@@ -445,10 +448,12 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
 
         LocalDateTime start = LocalDate.parse("01-" + monthToView, DateTimeFormatter.ofPattern("dd-M-yyyy")).atStartOfDay();
         LocalDateTime end = start.plusMonths(1L);
+        Instant startInst = DateTimeUtil.convertToSystemTime(start, DateTimeUtil.getSAST());
+        Instant endInst = DateTimeUtil.convertToSystemTime(end, DateTimeUtil.getSAST());
 
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
         when(userManagementServiceMock.load(sessionTestUser.getUid())).thenReturn(sessionTestUser);
-        when(eventManagementServiceMock.getGroupEventsInPeriod(testGroup, start, end)).thenReturn(dummyEvents);
+        when(eventBrokerMock.retrieveGroupEvents(testGroup, null, startInst, endInst)).thenReturn(dummyEvents);
         when(todoBrokerMock.getTodosInPeriod(testGroup, start, end)).thenReturn(dummyTodos);
         when(groupBrokerMock.getLogsForGroup(testGroup, start, end)).thenReturn(dummyGroupLogs);
         when(groupBrokerMock.getMonthsGroupActive(testGroup.getUid())).thenReturn(dummyMonths);
@@ -468,8 +473,8 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         verifyNoMoreInteractions(groupBrokerMock);
         verify(userManagementServiceMock, times(1)).load(sessionTestUser.getUid());
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(eventManagementServiceMock, times(1)).getGroupEventsInPeriod(testGroup, start, end);
-        verifyNoMoreInteractions(eventManagementServiceMock);
+        verify(eventBrokerMock, times(1)).retrieveGroupEvents(testGroup, null, startInst, endInst);
+        verifyNoMoreInteractions(eventBrokerMock);
         verify(todoBrokerMock, times(1)).getTodosInPeriod(testGroup, start, end);
         verifyNoMoreInteractions(todoBrokerMock);
 

@@ -14,11 +14,12 @@ import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.core.repository.EventRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
-import za.org.grassroot.services.EventManagementService;
+import za.org.grassroot.services.EventBroker;
 
 import java.util.List;
 
@@ -33,15 +34,15 @@ import static org.junit.Assert.assertNotNull;
 @ContextConfiguration(classes = {GrassrootServicesConfig.class,TestContextConfig.class})
 @Transactional
 @ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
-public class EventManagementServiceTest {
+public class EventBrokerTest {
 
    // @Rule
    // public OutputCapture capture = new OutputCapture();
     
-    private Logger log = LoggerFactory.getLogger(EventManagementServiceTest.class);
+    private Logger log = LoggerFactory.getLogger(EventBrokerTest.class);
 
     @Autowired
-    private EventManagementService eventManagementService;
+    private EventBroker eventBroker;
 
     @Autowired
     UserRepository userRepository;
@@ -144,7 +145,7 @@ public class EventManagementServiceTest {
         User userl2 = userRepository.save(new User("0825555521"));
         grouplevel2.addMember(userl2);
         grouplevel2 = groupRepository.save(grouplevel2);
-        List<Event> outstanding =  eventManagementService.getOutstandingRSVPForUser(userl2);
+        List<Event> outstanding =  eventBroker.getOutstandingResponseForUser(userl2, EventType.MEETING);
         assertNotNull(outstanding);
         assertEquals(0,outstanding.size());
     }

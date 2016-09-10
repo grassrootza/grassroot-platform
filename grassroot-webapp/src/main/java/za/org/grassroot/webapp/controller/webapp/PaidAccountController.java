@@ -15,7 +15,7 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.AccountManagementService;
-import za.org.grassroot.services.EventManagementService;
+import za.org.grassroot.services.EventBroker;
 import za.org.grassroot.services.GroupBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 
@@ -45,7 +45,7 @@ public class PaidAccountController extends BaseController {
     private GroupBroker groupBroker;
 
     @Autowired
-    private EventManagementService eventManagementService;
+    private EventBroker eventBroker;
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping("/index")
@@ -55,30 +55,30 @@ public class PaidAccountController extends BaseController {
             return "paid_account/index";
         } else {
             User user = userManagementService.load(getUserProfile().getUid());
-            Account account = accountManagementService.findAccountByAdministrator(user);
+            Account account = user.getAccountAdministered();
             log.info("Not system admin, but found this account ... " + account);
-            return viewPaidAccount(model, account.getId(), request);
+            return viewPaidAccount(model, account.getUid(), request);
         }
     }
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/view")
-    public String viewPaidAccount(Model model, @RequestParam("accountId") Long accountId, HttpServletRequest request) {
-        Account account = accountManagementService.loadAccount(accountId);
+    public String viewPaidAccount(Model model, @RequestParam("accountUid") String accountUid, HttpServletRequest request) {
+        Account account = accountManagementService.loadAccount(accountUid);
         log.info("We are checking against this account ..." + account);
         /*if (!sessionUserHasAccountPermission(account, request))
             throw new AccessDeniedException("Not an administrator for this account");*/
         model.addAttribute("account", account);
-        model.addAttribute("paidGroups", accountManagementService.getGroupsPaidForByAccount(account));
+        model.addAttribute("paidGroups", account.getPaidGroups());
         return "paid_account/view";
     }
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/group/view")
-    public String viewPaidAccountLogs(Model model, @RequestParam Long accountId, @RequestParam Long paidGroupId,
+    public String viewPaidAccountLogs(Model model, @RequestParam String accountUid, @RequestParam String paidGroupUid,
                                       @RequestParam(value = "monthToView", required = false) String monthToView, HttpServletRequest request) {
 
-        Account account = accountManagementService.loadAccount(accountId);
+        Account account = accountManagementService.loadAccount(accountUid);
         if (!sessionUserHasAccountPermission(account, request)) throw new AccessDeniedException("");
 
         final LocalDateTime beginDate;
@@ -98,7 +98,7 @@ public class PaidAccountController extends BaseController {
         }
 
         final Long timeStart = System.currentTimeMillis();
-        PaidGroup paidGroupRecord = accountManagementService.loadPaidGroupEntity(paidGroupId);
+        PaidGroup paidGroupRecord = accountManagementService.loadPaidGroup(paidGroupUid);
         Group underlyingGroup = paidGroupRecord.getGroup();
 
         addRecordsToModel("meetingsInPeriod", model, underlyingGroup, EventType.MEETING, beginDate, endDate);
@@ -120,8 +120,8 @@ public class PaidAccountController extends BaseController {
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/group/designate")
-    public String designateGroupPaidFor(Model model, @RequestParam("accountId") Long accountId, HttpServletRequest request) {
-        Account account = accountManagementService.loadAccount(accountId);
+    public String designateGroupPaidFor(Model model, @RequestParam("accountId") String accountUid, HttpServletRequest request) {
+        Account account = accountManagementService.loadAccount(accountUid);
         if (!sessionUserHasAccountPermission(account, request)) throw new AccessDeniedException("");
         model.addAttribute("account", account);
         model.addAttribute("candidateGroups", getCandidateGroupsToDesignate(getUserProfile(), account));
@@ -130,9 +130,9 @@ public class PaidAccountController extends BaseController {
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/group/search")
-    public String searchForGroup(Model model, @RequestParam Long accountId, @RequestParam String searchTerm,
+    public String searchForGroup(Model model, @RequestParam String accountUid, @RequestParam String searchTerm,
                                  @RequestParam boolean tokenSearch, HttpServletRequest request) {
-        Account account = accountManagementService.loadAccount(accountId);
+        Account account = accountManagementService.loadAccount(accountUid);
         if (!sessionUserHasAccountPermission(account, request)) throw new AccessDeniedException("");
         model.addAttribute("account", account);
         model.addAttribute("tokenSearch", tokenSearch);
@@ -148,23 +148,23 @@ public class PaidAccountController extends BaseController {
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/group/designate", method = RequestMethod.POST)
-    public String doDesignation(Model model, @RequestParam Long accountId, @RequestParam String groupUid,
+    public String doDesignation(Model model, @RequestParam String accountUid, @RequestParam String groupUid,
                                 HttpServletRequest request) {
         // todo: some form of confirmation screen
-        Account account = accountManagementService.loadAccount(accountId);
+        Account account = accountManagementService.loadAccount(accountUid);
         if (!sessionUserHasAccountPermission(account, request)) throw new AccessDeniedException("");
-        accountManagementService.addGroupToAccount(account, groupBroker.load(groupUid), getUserProfile());
+        accountManagementService.addGroupToAccount(accountUid, groupUid, getUserProfile().getUid());
         addMessage(model, MessageType.SUCCESS, "account.addgroup.success", request);
-        return viewPaidAccount(model, accountId, request);
+        return viewPaidAccount(model, accountUid, request);
     }
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/group/remove")
-    public String confirmRemovePaidFor(Model model, @RequestParam Long accountId, @RequestParam Long paidGroupId,
+    public String confirmRemovePaidFor(Model model, @RequestParam String accountUid, @RequestParam String paidGroupUid,
                                        HttpServletRequest request) {
-        Account account = accountManagementService.loadAccount(accountId);
+        Account account = accountManagementService.loadAccount(accountUid);
         if (!sessionUserHasAccountPermission(account, request)) throw new AccessDeniedException("");
-        PaidGroup paidGroupEntity = accountManagementService.loadPaidGroupEntity(paidGroupId);
+        PaidGroup paidGroupEntity = accountManagementService.loadPaidGroup(paidGroupUid);
         model.addAttribute("account", account);
         model.addAttribute("paidGroup", paidGroupEntity);
         return "paid_account/remove";
@@ -172,20 +172,20 @@ public class PaidAccountController extends BaseController {
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/group/remove", method = RequestMethod.POST)
-    public String removePaidForDesignation(Model model, @RequestParam("accountId") Long accountId,
-                                           @RequestParam("paidGroupId") Long paidGroupId, HttpServletRequest request) {
-        Account account = accountManagementService.loadAccount(accountId);
-        PaidGroup paidGroupRecord = accountManagementService.loadPaidGroupEntity(paidGroupId);
+    public String removePaidForDesignation(Model model, @RequestParam("accountId") String accountUid,
+                                           @RequestParam("paidGroupUid") String paidGroupUid, HttpServletRequest request) {
+        Account account = accountManagementService.loadAccount(accountUid);
+        PaidGroup paidGroupRecord = accountManagementService.loadPaidGroup(paidGroupUid);
         if (!sessionUserHasAccountPermission(account, request)) throw new AccessDeniedException("");
-        accountManagementService.removeGroupFromAccount(account, paidGroupRecord, getUserProfile());
+        accountManagementService.removeGroupFromAccount(accountUid, paidGroupUid, getUserProfile().getUid());
         addMessage(model, MessageType.INFO, "account.remgroup.success", request);
-        return viewPaidAccount(model, accountId, request);
+        return viewPaidAccount(model, accountUid, request);
     }
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/admin/settings", method = RequestMethod.POST)
-    public String changeAccountSettings(Model model, @RequestParam("accountId") Long accountId, HttpServletRequest request) {
-        Account account = accountManagementService.loadAccount(accountId);
+    public String changeAccountSettings(Model model, @RequestParam("accountId") String accountUid, HttpServletRequest request) {
+        Account account = accountManagementService.loadAccount(accountUid);
         if (!sessionUserHasAccountPermission(account, request)) throw new AccessDeniedException("");
         return "paid_account/settings";
     }
@@ -207,7 +207,7 @@ public class PaidAccountController extends BaseController {
     private List<Group> getCandidateGroupsToDesignate(User user, Account account) {
         Long startTime = System.currentTimeMillis();
         Set<Group> groupsPartOf = permissionBroker.getActiveGroupsWithPermission(user, null);
-        List<PaidGroup> alreadyDesignated = accountManagementService.getGroupsPaidForByAccount(account);
+        Set<PaidGroup> alreadyDesignated = account.getPaidGroups();
         for (PaidGroup paidGroup : alreadyDesignated)
             if (groupsPartOf.contains(paidGroup.getGroup())) groupsPartOf.remove(paidGroup.getGroup());
         Long endTime = System.currentTimeMillis();
@@ -216,8 +216,8 @@ public class PaidAccountController extends BaseController {
     }
 
     private Model addRecordsToModel(String attr, Model model, Group group, EventType type, LocalDateTime start, LocalDateTime end) {
-        // todo: this is _very_ expensive, ~150-200 ms, we will need to optimize it
-        List<Event> eventsInPeriod = eventManagementService.getEventsForGroupInTimePeriod(group, type, start, end);
+        List<Event> eventsInPeriod = eventBroker.retrieveGroupEvents(group, type, DateTimeUtil.convertToSystemTime(start, DateTimeUtil.getSAST()),
+                DateTimeUtil.convertToSystemTime(end, DateTimeUtil.getSAST()));
         model.addAttribute(attr, eventsInPeriod);
         return model;
     }

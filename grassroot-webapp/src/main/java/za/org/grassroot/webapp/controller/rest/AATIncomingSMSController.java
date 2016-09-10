@@ -9,9 +9,10 @@ import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventRSVPResponse;
-import za.org.grassroot.services.EventLogBroker;
-import za.org.grassroot.services.EventManagementService;
-import za.org.grassroot.services.UserManagementService;
+import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.integration.services.SmsSendingManager;
+import za.org.grassroot.integration.services.SmsSendingService;
+import za.org.grassroot.services.*;
 
 import java.util.List;
 import java.util.regex.Matcher;
@@ -29,13 +30,19 @@ public class AATIncomingSMSController {
     private static final String patternToMatch = "\\b(?:yes|no|abstain|maybe)\\b";
 
     @Autowired
-    EventManagementService eventManagementService;
+    EventBroker eventBroker;
 
     @Autowired
     UserManagementService userManager;
 
     @Autowired
     EventLogBroker eventLogManager;
+
+    @Autowired
+    MessageAssemblingService messageAssemblingService;
+
+    @Autowired
+    SmsSendingService smsSendingService;
 
     public static final String fromNumber ="fn";
     public static final String message ="ms";
@@ -53,29 +60,37 @@ public class AATIncomingSMSController {
 
         if(user ==null || !isValidInput(trimmedMsg)){
             if (user != null) {
-                eventManagementService.notifyUnableToProcessEventReply(user);
+                notifyUnableToProcessReply(user);
             }
             return;
         }
 
-        boolean needsToVote = userManager.needsToVote(user);
-        boolean needsToRsvp = userManager.needsToRSVP(user);
+        boolean needsToVote = !eventBroker.getOutstandingResponseForUser(user, EventType.VOTE).isEmpty();
+        boolean needsToRsvp = !eventBroker.getOutstandingResponseForUser(user, EventType.MEETING).isEmpty();
 
         if((needsToVote && needsToRsvp)) {
+<<<<<<< HEAD
             eventManagementService.notifyUnableToProcessEventReply(user);;
+=======
+            notifyUnableToProcessReply(user);
+>>>>>>> 6b9ad94... Further into closing stages of cleaning, death of EventManagementService
         } else {
             if (needsToVote) {
-                List<Event> outstandingVotes = eventManagementService.getOutstandingVotesForUser(user);
+                List<Event> outstandingVotes = eventBroker.getOutstandingResponseForUser(user, EventType.VOTE);
                 if (outstandingVotes != null && !outstandingVotes.isEmpty()) {
                     eventLogManager.rsvpForEvent(outstandingVotes.get(0).getUid(), user.getUid(), EventRSVPResponse.fromString(trimmedMsg));
                 }
             }
             else if (needsToRsvp) {
-                String uid = eventManagementService.getOutstandingRSVPForUser(user).get(0).getUid();
+                String uid = eventBroker.getOutstandingResponseForUser(user, EventType.MEETING).get(0).getUid();
                 eventLogManager.rsvpForEvent(uid, user.getUid(), EventRSVPResponse.fromString(trimmedMsg));
             }
         }
+    }
 
+    private void notifyUnableToProcessReply(User user) {
+        String message = messageAssemblingService.createReplyFailureMessage(user);
+        smsSendingService.sendSMS(message, user.getPhoneNumber());
     }
 
     private boolean isValidInput(String message){

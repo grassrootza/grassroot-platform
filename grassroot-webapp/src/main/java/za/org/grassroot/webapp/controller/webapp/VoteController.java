@@ -12,7 +12,10 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
-import za.org.grassroot.services.*;
+import za.org.grassroot.services.EventBroker;
+import za.org.grassroot.services.EventLogBroker;
+import za.org.grassroot.services.GroupBroker;
+import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.EventWrapper;
@@ -43,9 +46,6 @@ public class VoteController extends BaseController {
 
     @Autowired
     private GroupBroker groupBroker;
-
-    @Autowired
-    private EventManagementService eventManagementService;
 
     @Autowired
     private EventLogBroker eventLogBroker;
@@ -104,7 +104,7 @@ public class VoteController extends BaseController {
         boolean canModify = (vote.getCreatedByUser().equals(getUserProfile())
                 && vote.getEventStartDateTime().isAfter(Instant.now())); // todo: make this more nuanced
 
-        ResponseTotalsDTO responses = eventManagementService.getVoteResultsDTO(vote);
+        ResponseTotalsDTO responses = eventLogBroker.getVoteResultsForEvent(vote);
 
         model.addAttribute("vote", new EventWrapper(vote));
         model.addAttribute("yes", responses.getYes());

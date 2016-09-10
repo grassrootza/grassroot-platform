@@ -92,9 +92,8 @@ public class TaskBrokerImpl implements TaskBroker {
         Set<TaskDTO> taskDtos = new HashSet<>();
 
         Instant start = Instant.now();
-        for (Event event : groupBroker.retrieveGroupEvents(group, null, start, null)) {
-            taskDtos.add(new TaskDTO(event, user, eventLogRepository));
-        }
+        eventBroker.retrieveGroupEvents(group, null, start, null)
+                .forEach(e -> new TaskDTO(e, user, eventLogRepository));
 
         // todo : hmm, actually, we may want this to find all incomplete actions, but to consider / adjust in future
         List<Todo> todos = todoRepository.findByParentGroupAndCompletionPercentageLessThanAndActionByDateGreaterThanAndCancelledFalse(group, Todo.COMPLETION_PERCENTAGE_BOUNDARY, start);

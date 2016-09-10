@@ -90,10 +90,6 @@ public interface UserManagementService {
 
     boolean needsToRenameSelf(User sessionUser);
 
-    boolean needsToRSVP(User sessionUser);
-
-    boolean needsToVote(User sessionUser);
-
     boolean needsToRespondToSafetyEvent(User sessionUser);
 
     boolean hasIncompleteLogBooks(String userUid, long daysInPast);

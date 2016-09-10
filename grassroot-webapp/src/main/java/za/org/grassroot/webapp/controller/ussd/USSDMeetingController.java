@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
@@ -115,7 +116,7 @@ public class USSDMeetingController extends USSDController {
 
         USSDMenu returnMenu;
 
-        if (newMeeting || !eventManager.userHasEventsToView(user, EventType.MEETING, EventListTimeType.FUTURE)) {
+        if (newMeeting || !eventBroker.userHasEventsToView(user, EventType.MEETING, EventListTimeType.FUTURE)) {
             returnMenu = ussdGroupUtil.askForGroup(user, thisSection, subjectMenu, newGroupMenu, groupName, true);
         } else {
             String prompt = getMessage(thisSection, startMenu, promptKey + ".new-old", user);
@@ -439,20 +440,16 @@ public class USSDMeetingController extends USSDController {
         String mtgDescription;
 
         if (meeting.isRsvpRequired()) {
-            // todo: use enums instead of literal strings for the map (i.e., switch to RSVP toals DTO
-            Map<String, Integer> rsvpResponses = eventManager.getMeetingRsvpTotals(meeting);
-            int answeredYes = rsvpResponses.get("yes");
-            int answeredNo = rsvpResponses.get("no");
-            int noAnswer = rsvpResponses.get("no_answer");
+            ResponseTotalsDTO rsvpResponses = eventLogBroker.getResponseCountForEvent(meeting);
             Group group = meeting.getAncestorGroup();
             String[] messageFields = new String[]{
                     group.getName(""),
                     meeting.getEventLocation(),
                     convertToUserTimeZone(meeting.getEventStartDateTime(), getSAST()).format(dateTimeFormat),
-                    "" + eventManager.getNumberInvitees(meeting),
-                    "" + answeredYes,
-                    "" + answeredNo,
-                    "" + noAnswer};
+                    String.valueOf(meeting.getMembers().size()),
+                    String.valueOf(rsvpResponses.getYes()),
+                    String.valueOf(rsvpResponses.getNo()),
+                    String.valueOf(rsvpResponses.getNumberNoRSVP())};
             mtgDescription = getMessage(thisSection, viewMeetingDetails, promptKey + ".rsvp", messageFields, sessionUser);
         } else {
             Group group = meeting.getAncestorGroup();
@@ -460,7 +457,7 @@ public class USSDMeetingController extends USSDController {
                     group.getName(""),
                     meeting.getEventLocation(),
                     convertToUserTimeZone(meeting.getEventStartDateTime(), getSAST()).format(dateTimeFormat),
-                    "" + eventManager.getNumberInvitees(meeting)};
+                    String.valueOf(meeting.getMembers().size())};
             mtgDescription = getMessage(thisSection, viewMeetingDetails, promptKey, messageFields, sessionUser);
         }
 

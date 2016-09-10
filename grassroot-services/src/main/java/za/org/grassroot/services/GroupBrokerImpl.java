@@ -31,7 +31,15 @@ import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 import za.org.grassroot.services.util.TokenGeneratorService;
 
+<<<<<<< HEAD
 import java.time.*;
+=======
+import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+>>>>>>> 6b9ad94... Further into closing stages of cleaning, death of EventManagementService
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -59,10 +67,6 @@ public class GroupBrokerImpl implements GroupBroker {
     @Autowired
     private EventRepository eventRepository;
     @Autowired
-    private MeetingRepository meetingRepository;
-    @Autowired
-    private VoteRepository voteRepository;
-    @Autowired
     private GroupLogRepository groupLogRepository;
 
     @Autowired
@@ -79,8 +83,6 @@ public class GroupBrokerImpl implements GroupBroker {
     private GeoLocationBroker geoLocationBroker;
     @Autowired
     private GroupLocationRepository groupLocationRepository;
-    @Autowired
-    private EventManagementService eventManagementService;
     @Autowired
     private EventLogRepository eventLogRepository;
 
@@ -1139,39 +1141,6 @@ public class GroupBrokerImpl implements GroupBroker {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public List<Event> retrieveGroupEvents(Group group, EventType eventType, Instant periodStart, Instant periodEnd) {
-        List<Event> events;
-        Sort sort = new Sort(Sort.Direction.ASC, "EventStartDateTime");
-        Instant beginning, end;
-        if (periodStart == null && periodEnd == null) {
-            beginning = group.getCreatedDateTime();
-            end = convertToSystemTime(getVeryLongTimeAway(), getSAST());
-        } else if (periodStart == null) { // since first condition is false, means period end is not null
-            beginning = group.getCreatedDateTime();
-            end = periodEnd;
-        } else if (periodEnd == null) { // since first & second conditions false, means period start is not null
-            beginning = periodStart;
-            end = getVeryLongTimeAway().toInstant(ZoneOffset.UTC);
-        } else {
-            beginning = periodStart;
-            end = periodEnd;
-        }
-
-        if (eventType == null) {
-            events = eventRepository.findByParentGroupAndEventStartDateTimeBetweenAndCanceledFalse(group, beginning, end, sort);
-        } else if (eventType.equals(EventType.MEETING)) {
-            events = (List) meetingRepository.findByParentGroupAndEventStartDateTimeBetweenAndCanceledFalse(group, beginning, end);
-        } else if (eventType.equals(EventType.VOTE)) {
-            events = (List) voteRepository.findByParentGroupAndEventStartDateTimeBetweenAndCanceledFalse(group, beginning, end);
-        } else {
-            events = eventRepository.findByParentGroupAndEventStartDateTimeBetweenAndCanceledFalse(group, beginning, end, sort);
-        }
-
-        return events;
-    }
-
-    @Override
     @Transactional
     public void calculateGroupLocation(String groupUid, LocalDate localDate) {
         Objects.requireNonNull(groupUid);
@@ -1290,7 +1259,7 @@ public class GroupBrokerImpl implements GroupBroker {
             return true;
         }
 
-        Event mostRecentEvent = eventManagementService.getMostRecentEvent(group);
+        Event mostRecentEvent = eventRepository.findTopByParentGroupAndEventStartDateTimeNotNullOrderByEventStartDateTimeDesc(group);
         if (mostRecentEvent != null) {
             if (mostRecentEvent.getCreatedDateTime().isAfter(changedSince)) {
 				return true;

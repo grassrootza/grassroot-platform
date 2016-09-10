@@ -3,14 +3,9 @@
       layout:decorator="layout">
 <head>
   <title>Grassroot - Modify Group</title>
-  <!-- todo: fix whatever is causing on-server glyphicons to not load; this is a temp fix -->
-  <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css" rel="stylesheet" />
   <script th:src="@{/js/grassroot-methods.js}"></script>
 </head>
 <body>
-
-<!-- Todo: for now, all, or almost all, elements are open, so this looks like create group, but need to adjust that in
-future to close that off (need a way that mistakes can be corrected, but not to abuse) -->
 
 <div layout:fragment="header">
   <h2 class="text-center">Group: "<span th:text="${groupModifier.groupName}">group</span>"</h2>

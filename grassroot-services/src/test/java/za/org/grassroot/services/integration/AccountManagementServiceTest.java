@@ -14,10 +14,11 @@ import za.org.grassroot.GrassrootServicesConfig;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.repository.RoleRepository;
 import za.org.grassroot.services.AccountManagementService;
 import za.org.grassroot.services.GroupBroker;
-import za.org.grassroot.services.RoleManagementService;
 import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.services.exception.GroupAlreadyPaidForException;
 
@@ -36,16 +37,16 @@ public class AccountManagementServiceTest {
     private static final Logger log = LoggerFactory.getLogger(AccountManagementServiceTest.class);
 
     @Autowired
-    AccountManagementService accountManagementService;
+    private AccountManagementService accountManagementService;
 
     @Autowired
-    UserManagementService userManagementService;
+    private UserManagementService userManagementService;
 
     @Autowired
-    GroupBroker groupBroker;
+    private GroupBroker groupBroker;
 
     @Autowired
-    RoleManagementService roleManagementService;
+    private RoleRepository roleRepository;
 
     private final String accountName = "testAccount";
     private final String billingEmail = "billingemail@cso.org";
@@ -58,10 +59,9 @@ public class AccountManagementServiceTest {
 
     @Before
     public void setUp() {
-        log.info("Number of standard roles at set up: " + roleManagementService.getNumberStandardRoles());
         testUser = userManagementService.loadOrSaveUser(userNumber);
         testGroup = groupBroker.create(testUser.getUid(), groupName, null, new HashSet<>(), DEFAULT_GROUP, null, null, false);
-        roleManagementService.createStandardRole(accountAdminRole);
+        roleRepository.save(new Role(accountAdminRole, null));
     }
 
     @Test
@@ -81,7 +81,7 @@ public class AccountManagementServiceTest {
         assertEquals(account.getAdministrators().size(), 1);
         assertEquals(testUser.getId(), account.getAdministrators().iterator().next().getId()); // note: equals on User as whole fails for persistence reasons
         assertEquals(testUser.getAccountAdministered().getId(), account.getId()); // note: as above, full equals fails ... possibly within-test persistence issues
-        assertTrue(testUser.getStandardRoles().contains(roleManagementService.fetchStandardRoleByName(accountAdminRole)));
+        assertTrue(testUser.getStandardRoles().contains(roleRepository.findOneByNameAndRoleType(accountAdminRole, Role.RoleType.STANDARD)));
     }
 
     @Test
@@ -93,7 +93,7 @@ public class AccountManagementServiceTest {
         assertTrue(account.isEnabled());
         assertEquals(testUser.getId(), account.getAdministrators().iterator().next().getId()); // note: equals on User as whole fails for persistence reasons
         assertEquals(testUser.getAccountAdministered().getId(), account.getId()); // note: as above, full equals fails ... possibly within-test persistence issues
-        assertTrue(testUser.getStandardRoles().contains(roleManagementService.fetchStandardRoleByName(accountAdminRole)));
+        assertTrue(testUser.getStandardRoles().contains(roleRepository.findOneByNameAndRoleType(accountAdminRole, Role.RoleType.STANDARD)));
     }
 
     @Test
@@ -104,14 +104,14 @@ public class AccountManagementServiceTest {
         assertEquals(account.getAdministrators().size(), 1);
         assertEquals(account.getAdministrators().iterator().next(), testUser);
         assertEquals(account, testUser.getAccountAdministered());
-        assertTrue(testUser.getStandardRoles().contains(roleManagementService.fetchStandardRoleByName(accountAdminRole)));
+        assertTrue(testUser.getStandardRoles().contains(roleRepository.findOneByNameAndRoleType(accountAdminRole, Role.RoleType.STANDARD)));
     }
 
     @Test
     public void shouldRemoveAdmin() {
         Account account = accountManagementService.createAccount(accountName, testUser);
         assertEquals(account.getAdministrators().size(), 1);
-        assertTrue(testUser.getStandardRoles().contains(roleManagementService.fetchStandardRoleByName(accountAdminRole)));
+        assertTrue(testUser.getStandardRoles().contains(roleRepository.findOneByNameAndRoleType(accountAdminRole, Role.RoleType.STANDARD)));
         // accountManagementService.removeAdministrator(account, testUser); // note: need to fix this */
     }
 

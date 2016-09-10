@@ -50,7 +50,7 @@ public class USSDVoteController extends USSDController {
     private EventRequestBroker eventRequestBroker;
 
     @Autowired
-    private EventLogBroker eventLogManager;
+    private EventLogBroker eventLogBroker;
 
     @Autowired
     private EventLogRepository eventLogRepository;
@@ -75,7 +75,7 @@ public class USSDVoteController extends USSDController {
     public Request votingStart(@RequestParam(value = phoneNumber) String inputNumber) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(inputNumber);
-        EventListTimeType hasVotesToView = eventManager.userHasEventsToView(user, EventType.VOTE);
+        EventListTimeType hasVotesToView = eventBroker.userHasEventsToView(user, EventType.VOTE);
         log.info("Checked for votes to view ... got integer: " + hasVotesToView);
         USSDMenu menu;
 
@@ -297,7 +297,7 @@ public class USSDVoteController extends USSDController {
         User user = userManager.findByInputNumber(inputNumber, saveVoteMenu("details", eventUid) + "&back=" + backMenu  );
         Event vote = eventBroker.load(eventUid);
         boolean futureEvent = vote.getEventStartDateTime().isAfter(Instant.now());
-        ResponseTotalsDTO voteResults = eventManager.getVoteResultsDTO(vote);
+        ResponseTotalsDTO voteResults = eventLogBroker.getVoteResultsForEvent(vote);
 
         USSDMenu menu;
 
@@ -367,7 +367,7 @@ public class USSDVoteController extends USSDController {
             // todo: replace this hack once responses are handled better
             EventRSVPResponse voteResponse = "abstain".equals(response) ? EventRSVPResponse.MAYBE :
                     EventRSVPResponse.fromString(response);
-            eventLogManager.rsvpForEvent(vote.getUid(), user.getUid(), voteResponse);
+            eventLogBroker.rsvpForEvent(vote.getUid(), user.getUid(), voteResponse);
             menu = new USSDMenu(getMessage(thisSection, "change", "done", response, user));
         }
 

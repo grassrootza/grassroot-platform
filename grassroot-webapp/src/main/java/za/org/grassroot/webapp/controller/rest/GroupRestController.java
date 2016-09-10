@@ -50,13 +50,13 @@ public class GroupRestController {
     private static final int groupMemberListPageSizeDefault = 20;
 
     @Autowired
-    private EventManagementService eventManagementService;
-
-    @Autowired
     private UserManagementService userManagementService;
 
     @Autowired
     private GroupBroker groupBroker;
+
+	@Autowired
+	private EventBroker eventBroker;
 
     @Autowired
     private PermissionBroker permissionBroker;
@@ -620,7 +620,7 @@ public class GroupRestController {
 
     private GroupResponseWrapper createGroupWrapper(Group group, User caller) {
         Role role = group.getMembership(caller).getRole();
-        Event event = eventManagementService.getMostRecentEvent(group);
+        Event event = eventBroker.getMostRecentEvent(group.getUid());
         GroupLog groupLog = groupBroker.getMostRecentLog(group);
 
         boolean hasTask = event != null;

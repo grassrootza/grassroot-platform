@@ -3,11 +3,6 @@
       layout:decorator="layout">
 <head>
   <title>Grassroot - View an institutional account</title>
-<script>
-
-
-
-</script>
 </head>
 <body>
 
@@ -82,12 +77,11 @@
         </div>
       </div>
       <div class="form-group">
-        <!-- <input type="hidden" name="accountId" th:value="{account.id}"/> -->
         <div class="col-md-6">
-          <a href="" th:href="@{designate(accountId=${account.id})}"><button type="submit" class="btn btn-primary">Add an administrator</button></a>
+          <a href="" th:href="@{designate(accountUid=${account.uid})}"><button type="submit" class="btn btn-primary">Add an administrator</button></a>
         </div>
         <div class="col-md-6">
-          <a href="" th:href="@{settings(accountId=${account.id})}"><button type="submit" class="btn btn-primary">Change account settings</button></a>
+          <a href="" th:href="@{settings(accountUid=${account.uid})}"><button type="submit" class="btn btn-primary">Change account settings</button></a>
         </div>
       </div>
     </div>

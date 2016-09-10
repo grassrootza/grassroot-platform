@@ -11,11 +11,13 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventRSVPResponse;
+import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.services.EventLogBroker;
 import za.org.grassroot.services.SafetyEventBroker;
 import za.org.grassroot.services.TodoBroker;
+import za.org.grassroot.services.enums.EventListTimeType;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDResponseTypes;
 import za.org.grassroot.webapp.enums.USSDSection;
@@ -196,8 +198,8 @@ public class USSDHomeController extends USSDController {
     private USSDResponseTypes neededResponse(User user) {
 
         if (userManager.needsToRespondToSafetyEvent(user)) return USSDResponseTypes.RESPOND_SAFETY;
-        if (userManager.needsToVote(user)) return USSDResponseTypes.VOTE;
-        if (userManager.needsToRSVP(user)) return USSDResponseTypes.MTG_RSVP;
+        if (eventBroker.userHasResponsesOutstanding(user, EventType.VOTE)) return USSDResponseTypes.VOTE;
+        if (eventBroker.userHasResponsesOutstanding(user, EventType.MEETING)) return USSDResponseTypes.MTG_RSVP;
         if (userManager.hasIncompleteLogBooks(user.getUid(), daysPastLogbooks)) return USSDResponseTypes.RESPOND_TODO;
         if (userManager.needsToRenameSelf(user)) return USSDResponseTypes.RENAME_SELF;
         if (userManager.fetchGroupUserMustRename(user) != null) return USSDResponseTypes.NAME_GROUP;
@@ -296,7 +298,7 @@ public class USSDHomeController extends USSDController {
 
     private USSDMenu assembleVoteMenu(User sessionUser) {
         log.info("Asking for a vote ... from user " + sessionUser);
-        Vote vote = (Vote) eventManager.getOutstandingVotesForUser(sessionUser).get(0);
+        Vote vote = (Vote) eventBroker.getOutstandingResponseForUser(sessionUser, EventType.VOTE).get(0);
 
         final String[] promptFields = new String[]{vote.getAncestorGroup().getName(""),
                 vote.getCreatedByUser().nameToDisplay(),
@@ -315,8 +317,7 @@ public class USSDHomeController extends USSDController {
     }
 
     private USSDMenu assembleRsvpMenu(User sessionUser) {
-        log.info("Asking for rsvp!");
-        Event meeting = eventManager.getOutstandingRSVPForUser(sessionUser).get(0);
+        Event meeting = eventBroker.getOutstandingResponseForUser(sessionUser, EventType.MEETING).get(0);
 
         String[] meetingDetails = new String[]{meeting.getAncestorGroup().getName(""),
                 meeting.getCreatedByUser().nameToDisplay(),
@@ -403,14 +404,11 @@ public class USSDHomeController extends USSDController {
     }
 
     private USSDMenu assemblePanicButtonActivationResponse(User user, SafetyEvent safetyEvent) {
-
         String activateByDisplayName = safetyEvent.getActivatedBy().getDisplayName();
-        USSDMenu menu = new USSDMenu("Did you respond to the panic alert triggered by " + activateByDisplayName + "?");
+        USSDMenu menu = new USSDMenu("Did you respond to the panic alert triggered by " + activateByDisplayName + "?"); // todo : i18n
         menu.addMenuOption(USSDUrlUtil.safetyMenuWithId("record-response", safetyEvent.getUid(), true), "Yes");
         menu.addMenuOption(USSDUrlUtil.safetyMenuWithId("record-response", safetyEvent.getUid(), false), "No");
-
         return menu;
-
     }
 
     private boolean isSafetyActivationCode(String trailingDigits) {
@@ -587,10 +585,11 @@ public class USSDHomeController extends USSDController {
                                          @RequestParam(value = "nextUrl") String nextUrl,
                                          @RequestParam(value = "pastPresentBoth") Integer pastPresentBoth,
                                          @RequestParam(value = "includeGroupName") boolean includeGroupName) throws URISyntaxException {
-        // toto: error handling on the section
+        // todo: error handling on the section and switch to time type on the integer
+        EventListTimeType timeType = pastPresentBoth == 1 ? EventListTimeType.FUTURE : EventListTimeType.PAST;
         return menuBuilder(eventUtil.listPaginatedEvents(
                 userManager.findByInputNumber(inputNumber), fromString(section),
-                prompt, nextUrl, (menuForNew != null), menuForNew, optionForNew, includeGroupName, pastPresentBoth, pageNumber));
+                prompt, nextUrl, (menuForNew != null), menuForNew, optionForNew, includeGroupName, timeType, pageNumber));
     }
 
     @RequestMapping(value = path + U404)

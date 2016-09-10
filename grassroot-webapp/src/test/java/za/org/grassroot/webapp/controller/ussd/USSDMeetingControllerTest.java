@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.services.GroupPage;
 import za.org.grassroot.services.MembershipInfo;
@@ -72,15 +73,15 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(userManagementServiceMock.isPartOfActiveGroups(testUser)).thenReturn(false);
-        when(eventManagementServiceMock.userHasEventsToView(testUser, EventType.MEETING, EventListTimeType.FUTURE)).thenReturn(false);
+        when(eventBrokerMock.userHasEventsToView(testUser, EventType.MEETING, EventListTimeType.FUTURE)).thenReturn(false);
 
         mockMvc.perform(get(path + "start").param(phoneParam, testUserPhone)).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
         verify(userManagementServiceMock, times(1)).isPartOfActiveGroups(testUser);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(eventManagementServiceMock, times(1)).userHasEventsToView(testUser, EventType.MEETING, EventListTimeType.FUTURE);
-        verifyNoMoreInteractions(eventManagementServiceMock);
+        verify(eventBrokerMock, times(1)).userHasEventsToView(testUser, EventType.MEETING, EventListTimeType.FUTURE);
+        verifyNoMoreInteractions(eventBrokerMock);
 
     }
 
@@ -100,7 +101,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         List<Event> emptyMeetingList = new ArrayList<>();
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
-        when(eventManagementServiceMock.userHasEventsToView(testUser, EventType.MEETING, EventListTimeType.FUTURE)).thenReturn(false);
+        when(eventBrokerMock.userHasEventsToView(testUser, EventType.MEETING, EventListTimeType.FUTURE)).thenReturn(false);
         when(userManagementServiceMock.isPartOfActiveGroups(testUser)).thenReturn(true);
         when(permissionBrokerMock.getPageOfGroupDTOs(testUser, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING, 0, 3)).
                 thenReturn(groupPage);
@@ -112,8 +113,8 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(permissionBrokerMock, times(1)).getPageOfGroupDTOs(testUser, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING, 0, 3);
         verifyNoMoreInteractions(permissionBrokerMock);
-        verify(eventManagementServiceMock, times(1)).userHasEventsToView(testUser, EventType.MEETING, EventListTimeType.FUTURE);
-        verifyNoMoreInteractions(eventManagementServiceMock);
+        verify(eventBrokerMock, times(1)).userHasEventsToView(testUser, EventType.MEETING, EventListTimeType.FUTURE);
+        verifyNoMoreInteractions(eventBrokerMock);
 
     }
 
@@ -130,14 +131,14 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
                 new Meeting("meeting3", startTime, testUser, group, "someLocation"));
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
-        when(eventManagementServiceMock.userHasEventsToView(testUser, EventType.MEETING, EventListTimeType.FUTURE)).thenReturn(true);
-        when(eventManagementServiceMock.getEventsUserCanView(testUser, EventType.MEETING, 1, 0, 3)).thenReturn(
+        when(eventBrokerMock.userHasEventsToView(testUser, EventType.MEETING, EventListTimeType.FUTURE)).thenReturn(true);
+        when(eventBrokerMock.getEventsUserCanView(testUser, EventType.MEETING, EventListTimeType.FUTURE, 0, 3)).thenReturn(
                 new PageImpl<Event>(upcomingMeetingList));
 
         mockMvc.perform(get(path + "start").param(phoneParam, testUserPhone)).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
-        verify(eventManagementServiceMock, times(1)).userHasEventsToView(testUser, EventType.MEETING, EventListTimeType.FUTURE);
+        verify(eventBrokerMock, times(1)).userHasEventsToView(testUser, EventType.MEETING, EventListTimeType.FUTURE);
     }
 
     @Test
@@ -352,7 +353,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         verify(userManagementServiceMock, times(2)).findByInputNumber(anyString(), anyString());
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(eventRequestBrokerMock, times(1)).updateMeetingLocation(testUser.getUid(), requestUid, "JoziHub");
-        verifyNoMoreInteractions(eventManagementServiceMock);
+        verifyNoMoreInteractions(eventBrokerMock);
         verifyZeroInteractions(groupBrokerMock);
     }
 
@@ -511,7 +512,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         verify(userManagementServiceMock, times(1)).findByInputNumber(anyString(), anyString());
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(eventRequestBrokerMock, times(1)).finish(testUser.getUid(), requestUid, true);
-        verifyNoMoreInteractions(eventManagementServiceMock);
+        verifyNoMoreInteractions(eventBrokerMock);
         verifyZeroInteractions(groupBrokerMock);
     }
 
@@ -546,16 +547,15 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         meetingDetails.put("location", "JoziHub");
         meetingDetails.put("dateTimeString", "Sat 23 Sep 2055, 11:11 am");
 
-        Map<String, Integer> meetingResults = new HashMap<>();
-        meetingResults.put("yes", 115);
-        meetingResults.put("no", 54);
-        meetingResults.put("no_answer", 546);
+        ResponseTotalsDTO meetingResults = new ResponseTotalsDTO(null, 0);
+        // todo : switch these to cleaned up design
+        // meetingResults.put("yes", 115);
+        // meetingResults.put("no", 54);
+        // meetingResults.put("no_answer", 546);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(eventBrokerMock.loadMeeting(testMeeting.getUid())).thenReturn(testMeeting);
-
-        when(eventManagementServiceMock.getMeetingRsvpTotals(testMeeting)).thenReturn(meetingResults);
-        when(eventManagementServiceMock.getNumberInvitees(testMeeting)).thenReturn(546 + 115 + 54);
+        when(eventLogBrokerMock.getResponseCountForEvent(testMeeting)).thenReturn(meetingResults);
 
         mockMvc.perform(get(path + "details").param(phoneParam, testUserPhone).param("entityUid", testMeeting.getUid())).
                 andExpect(status().isOk());
@@ -563,10 +563,8 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         verify(userManagementServiceMock, times(1)).findByInputNumber(anyString());
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(eventBrokerMock, times(1)).loadMeeting(testMeeting.getUid());
-        verify(eventManagementServiceMock, times(1)).getMeetingRsvpTotals(any(Event.class));
-        verify(eventManagementServiceMock, times(1)).getMeetingRsvpTotals(any(Event.class));
-        verify(eventManagementServiceMock, times(1)).getNumberInvitees(any(Event.class));
-        verifyNoMoreInteractions(eventManagementServiceMock);
+        verify(eventLogBrokerMock, times(1)).getResponseCountForEvent(testMeeting);
+        verifyNoMoreInteractions(eventBrokerMock);
         verifyZeroInteractions(groupBrokerMock);
 
     }
@@ -622,7 +620,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         verifyNoMoreInteractions(cacheUtilManagerMock);
         verify(eventRequestBrokerMock, times(1)).createChangeRequest(testUser.getUid(), testMeeting.getUid());
         verify(eventRequestBrokerMock, times(1)).load(changeRequest.getUid());
-        verifyNoMoreInteractions(eventManagementServiceMock);
+        verifyNoMoreInteractions(eventBrokerMock);
         verifyZeroInteractions(groupBrokerMock);
 
     }

@@ -62,7 +62,7 @@ public class NotificationToGcmXmppTransformer {
                 body = notification.getMessage();
                 break;
 
-            case LOGBOOK:
+            case TODO:
                 Todo todo = notification.getTodoLog().getTodo();
                 title = todo.getAncestorGroup().getGroupName();
                 body = notification.getMessage();
@@ -95,7 +95,7 @@ public class NotificationToGcmXmppTransformer {
 		                .append(groupName)
 		                .toString();
 
-            case LOGBOOK:
+            case TODO:
                 return sb.append(notification.getTodoLog().getTodo().getUid())
 		                .append("_")
 		                .append(notification.getTodoLog().getTodo().getAncestorGroup().getGroupName())
@@ -118,7 +118,7 @@ public class NotificationToGcmXmppTransformer {
 		                notification.getEventLog().getEvent().getEventType().name(),
 		                notification);
 
-	        case LOGBOOK: // todo : switch name to to-do
+	        case TODO:
                 Todo todo = notification.getTodoLog().getTodo();
                 return createDataPart(
 		                todo.getAncestorGroup().getGroupName(),
@@ -249,7 +249,7 @@ public class NotificationToGcmXmppTransformer {
 			            break;
 	            }
                 break;
-            case LOGBOOK:
+            case TODO:
                 TodoLog todoLog = notification.getTodoLog();
 	            switch (todoLog.getType()) {
 		            case CREATED:

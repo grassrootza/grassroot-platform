@@ -57,8 +57,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Autowired
     private PasswordTokenService passwordTokenService;
     @Autowired
-    private EventManagementService eventManagementService;
-    @Autowired
     private CacheUtilService cacheUtilService;
     @Autowired
     private AsyncUserLogger asyncUserService;
@@ -383,18 +381,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
     public boolean needsToRenameSelf(User user) {
         return !user.hasName() && (!asyncUserService.hasSkippedName(user.getUid())
                 && user.getCreatedDateTime().isBefore(Instant.now().minus(3, ChronoUnit.MINUTES)));
-    }
-
-    @Override
-    public boolean needsToRSVP(User sessionUser) {
-        // todo: as noted elsewhere, should optimize this to a count query and move to just event broker
-        return eventManagementService.getOutstandingRSVPForUser(sessionUser).size() > 0;
-    }
-
-    @Override
-    public boolean needsToVote(User sessionUser) {
-        log.info("Checking if vote outstanding for user: " + sessionUser);
-        return eventManagementService.getOutstandingVotesForUser(sessionUser).size() > 0;
     }
 
     @Override

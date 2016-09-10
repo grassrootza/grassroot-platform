@@ -6,6 +6,7 @@ import javax.persistence.*;
 import java.io.Serializable;
 import java.time.Instant;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -25,6 +26,10 @@ public class Account implements Serializable {
 
     @Column(name = "uid", nullable = false, unique = true)
     private String uid;
+
+    @ManyToOne()
+    @JoinColumn(name = "created_by_user", nullable = false, updatable = false)
+    private User createdByUser; // todo : DB script
 
     @Basic
     @Column(name="created_date_time", insertable = true, updatable = false)
@@ -85,42 +90,19 @@ public class Account implements Serializable {
         // For JPA
     }
 
-    public Account(String accountName, User administrator) {
+    public Account(User createdByUser, String accountName) {
+        Objects.requireNonNull(createdByUser);
+        Objects.requireNonNull(accountName);
 
         this.uid = UIDGenerator.generateId();
-        this.accountName = accountName;
 
-        this.administrators.add(administrator);
+        this.accountName = accountName;
+        this.createdByUser = createdByUser;
 
         this.enabled = true;
         this.freeFormMessages = true;
         this.relayableMessages = true;
         this.todoExtraMessages = true;
-
-    }
-
-    public Account(String accountName, boolean enabled) {
-
-        this.uid = UIDGenerator.generateId();
-        this.accountName = accountName;
-        this.enabled = enabled;
-        this.freeFormMessages = enabled;
-        this.relayableMessages = enabled;
-        this.todoExtraMessages = enabled;
-
-    }
-
-    public Account(String accountName, User administrator, String primaryEmail, boolean enabled) {
-
-        this.uid = UIDGenerator.generateId();
-        this.accountName = accountName;
-        this.administrators = new HashSet<>();
-        this.administrators.add(administrator);
-        this.primaryEmail = primaryEmail;
-
-        this.enabled = enabled;
-        this.freeFormMessages = enabled;
-        this.relayableMessages = enabled;
 
     }
 
@@ -138,7 +120,7 @@ public class Account implements Serializable {
         return createdDateTime;
     }
 
-    public void setCreatedDateTime(Instant createdDateTime) { this.createdDateTime = createdDateTime; }
+    public User getCreatedByUser() { return createdByUser; }
 
     public Set<User> getAdministrators() {
         return administrators;
