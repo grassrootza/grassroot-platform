@@ -10,7 +10,6 @@ import za.org.grassroot.core.dto.GroupDTO;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.*;
-import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.services.util.CacheUtilService;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
@@ -295,33 +294,11 @@ public class USSDGroupUtil extends USSDUtil {
         return thisMenu;
     }
 
-
     public USSDMenu invalidGroupNamePrompt(User user, String groupName, USSDSection section, String nextUrl) throws URISyntaxException {
         USSDMenu thisMenu = new USSDMenu(getMessage(section, groupKeyForMessages, promptKey + ".invalid-name", groupName, user));
         thisMenu.setFreeText(true);
         thisMenu.setNextURI(section.toPath() + nextUrl);
         return thisMenu;
-    }
-
-    public String addNumbersToNewGroup(User user, USSDSection section, USSDMenu menu, String userInput, String returnUrl) throws URISyntaxException {
-        String groupUid;
-        final Map<String, List<String>> enteredNumbers = PhoneNumberUtil.splitPhoneNumbers(userInput);
-        log.info("addNumbersToNewGroup ... with user input ... " + userInput);
-
-        if (enteredNumbers.get(validNumbers).isEmpty()) {
-            menu.setPromptMessage(getMessage(section, groupKeyForMessages, promptKey + ".error",
-                    String.join(", ", enteredNumbers.get(invalidNumbers)), user));
-            menu.setNextURI(section.toPath() + returnUrl);
-            groupUid = "";
-        } else {
-            Set<MembershipInfo> members = turnNumbersIntoMembers(enteredNumbers.get(validNumbers));
-            members.add(new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName()));
-            log.info("ZOGG : In GroupUtil ... Calling create with members ... " + members);
-            Group createdGroup = groupBroker.create(user.getUid(), "", null, members, GroupPermissionTemplate.DEFAULT_GROUP, null, null, false);
-            checkForErrorsAndSetPrompt(user, section, menu, createdGroup.getUid(), enteredNumbers.get(invalidNumbers), returnUrl, true);
-            groupUid = createdGroup.getUid();
-        }
-        return groupUid;
     }
 
     private Set<MembershipInfo> turnNumbersIntoMembers(List<String> validNumbers) {
@@ -405,6 +382,7 @@ public class USSDGroupUtil extends USSDUtil {
         } else {
             listMenu.addMenuOption(groupMenuWithId(unsubscribePrompt, groupUid), getMessage(menuKey + unsubscribePrompt, user));
         }
+
         if (user.hasSafetyGroup() && group.equals(user.getSafetyGroup())) {
             listMenu.addMenuOption(SAFETY_GROUP_MANAGER.toPath() + "start", getMessage(GROUP_MANAGER.toString() + ".safety.option", user));
         }
@@ -449,7 +427,6 @@ public class USSDGroupUtil extends USSDUtil {
         return listMenu;
 
     }
-
 
     private String assembleGroupPrompt(Group group, User user, boolean openToken, boolean skippedSelection) {
 

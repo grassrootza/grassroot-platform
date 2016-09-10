@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.core.env.Environment;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -47,6 +48,9 @@ public class GroupBrokerImpl implements GroupBroker {
     private static final float LOCATION_FILTER_SCORE_MIN = 0.2f;
 
     private final Logger logger = LoggerFactory.getLogger(GroupBrokerImpl.class);
+
+    @Autowired
+    private Environment environment;
 
     @Autowired
     private GroupRepository groupRepository;
@@ -205,14 +209,13 @@ public class GroupBrokerImpl implements GroupBroker {
     @Override
     @Transactional(readOnly = true)
     public boolean isDeactivationAvailable(User user, Group group, boolean checkIfWithinTimeWindow) {
-        // todo: Integrate with permission checking -- for now, just checking if group created by user in last 48 hours
-        //todo check with luke if this permission applies or maybe add a new permission for group deletion
-       permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
         boolean isUserGroupCreator = group.getCreatedByUser().equals(user);
         if (!checkIfWithinTimeWindow) {
             return isUserGroupCreator;
         } else {
-            Instant deactivationTimeThreshold = group.getCreatedDateTime().plus(Duration.ofHours(48));
+            Integer timeWindow = environment.getProperty("grassroot.groups.delete.window", Integer.class);
+            Instant deactivationTimeThreshold = group.getCreatedDateTime().plus(Duration.ofHours(timeWindow == null ? 48 : timeWindow));
             boolean isGroupMalformed = (group.getGroupName() == null || group.getGroupName().length() < 2)
 		            && group.getMembers().size() <= 2;
 	        return isUserGroupCreator && (isGroupMalformed || Instant.now().isBefore(deactivationTimeThreshold));
@@ -541,6 +544,8 @@ public class GroupBrokerImpl implements GroupBroker {
         logsAndNotificationsBroker.storeBundle(bundle);
     }
 
+    @Override
+    @Transactional
     public Group merge(String userUid, String firstGroupUid, String secondGroupUid,
                        boolean leaveActive, boolean orderSpecified, boolean createNew, String newGroupName) {
         Objects.requireNonNull(userUid);
@@ -548,6 +553,7 @@ public class GroupBrokerImpl implements GroupBroker {
         Objects.requireNonNull(secondGroupUid);
 
         User user = userRepository.findOneByUid(userUid);
+
         Group firstGroup = groupRepository.findOneByUid(firstGroupUid);
         Group secondGroup = groupRepository.findOneByUid(secondGroupUid);
 
@@ -561,6 +567,11 @@ public class GroupBrokerImpl implements GroupBroker {
         } else {
             groupInto = secondGroup;
             groupFrom = firstGroup;
+        }
+
+        permissionBroker.validateGroupPermission(user, groupInto, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER);
+        if (!leaveActive) {
+            permissionBroker.validateGroupPermission(user, groupFrom, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
         }
 
         Group resultGroup;
@@ -587,8 +598,6 @@ public class GroupBrokerImpl implements GroupBroker {
         }
 
         logger.info("Group from active status is now : {}", groupFrom.isActive());
-        groupRepository.saveAndFlush(groupFrom);
-
         return resultGroup;
     }
 

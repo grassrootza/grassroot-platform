@@ -36,8 +36,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
 
     private static final String testUserPhone = "0601110001";
     private static final String phoneParam = "msisdn";
-    private static final String logBookIdParam = "logbookUid";
-    private static final Long dummyId = 1L;
+    private static final String todoUidParam = "todoUid";
     private static final String dummyUserInput = "blah blah blah blah";
     private static final String groupMenu = "group",
             subjectMenu = "subject",
@@ -163,7 +162,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).
                 thenReturn(testUser);
 
-        mockMvc.perform(get(path + dueDateMenu).param(logBookIdParam, dummyLogBook.getUid()).param(phoneParam, testUserPhone)
+        mockMvc.perform(get(path + dueDateMenu).param(todoUidParam, dummyLogBook.getUid()).param(phoneParam, testUserPhone)
                 .param("prior_input", dummyUserInput).param("interrupted", String.valueOf(true))
                 .param("revising", String.valueOf(false)).param("request", "1")).andExpect(status().isOk());
 
@@ -255,7 +254,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         when(todoRequestBrokerMock.load(dummyLogBook.getUid())).thenReturn(dummyLogBook);
 
-        mockMvc.perform(get(path + confirmMenu).param(logBookIdParam, dummyLogBook.getUid())
+        mockMvc.perform(get(path + confirmMenu).param(todoUidParam, dummyLogBook.getUid())
                 .param(phoneParam, testUserPhone).param("request", "revised message").param("prior_menu", subjectMenu))
                 .andExpect(status().isOk());
         mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param("request", "1"))
@@ -289,7 +288,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
             when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
             when(todoRequestBrokerMock.load(dummyLogBook.getUid())).thenReturn(dummyLogBook);
 
-            mockMvc.perform(get(path + confirmMenu).param(phoneParam, testUserPhone).param(logBookIdParam, dummyLogBook.getUid())
+            mockMvc.perform(get(path + confirmMenu).param(phoneParam, testUserPhone).param(todoUidParam, dummyLogBook.getUid())
                     .param("prior_input", date).param("prior_menu", "due_date").param("request", "1"))
                     .andExpect(status().isOk());
         }
@@ -310,7 +309,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
 
-        mockMvc.perform(get(path + send).param(logBookIdParam, dummyLogBook.getUid())
+        mockMvc.perform(get(path + send).param(todoUidParam, dummyLogBook.getUid())
                 .param(phoneParam, testUserPhone)).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);
@@ -329,7 +328,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
         when(userManagementServiceMock.findByInputNumber(testUserPhone, saveToDoMenu(viewEntryMenu, dummyTodo.getUid()))).thenReturn(testUser);
         when(todoBrokerMock.load(dummyTodo.getUid())).thenReturn(dummyTodo);
 
-        mockMvc.perform(get(path + viewEntryMenu).param(logBookIdParam, dummyTodo.getUid())
+        mockMvc.perform(get(path + viewEntryMenu).param(todoUidParam, dummyTodo.getUid())
                 .param(phoneParam, testUserPhone)).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, saveToDoMenu(viewEntryMenu, dummyTodo.getUid()));
@@ -349,7 +348,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
         when(todoBrokerMock.load(dummyTodo.getUid())).thenReturn(dummyTodo);
 
-        mockMvc.perform(get(path + viewEntryDates).param(logBookIdParam, dummyTodo.getUid())
+        mockMvc.perform(get(path + viewEntryDates).param(todoUidParam, dummyTodo.getUid())
                 .param(phoneParam, testUserPhone)).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);
@@ -371,7 +370,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
         when(todoBrokerMock.load(dummyTodo.getUid())).thenReturn(dummyTodo);
 
-        mockMvc.perform(get(path + viewEntryDates).param(logBookIdParam, dummyTodo.getUid())
+        mockMvc.perform(get(path + viewEntryDates).param(todoUidParam, dummyTodo.getUid())
                 .param(phoneParam, testUserPhone)).andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);
         verify(todoBrokerMock, times(1)).load(dummyTodo.getUid());
@@ -393,7 +392,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
         when(todoBrokerMock.load(dummyTodo.getUid())).thenReturn(dummyTodo);
 
         mockMvc.perform(get(path + viewAssignment).param(phoneParam, testUserPhone)
-                .param(logBookIdParam, dummyTodo.getUid())).andExpect(status().isOk());
+                .param(todoUidParam, dummyTodo.getUid())).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);
         verify(todoBrokerMock, times(1)).load(dummyTodo.getUid());
@@ -418,7 +417,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
         when(todoBrokerMock.load(dummyTodo.getUid())).thenReturn(dummyTodo);
 
         mockMvc.perform(get(path + setCompleteMenu).param(phoneParam, testUserPhone)
-                .param(logBookIdParam, dummyTodo.getUid())).andExpect(status().isOk());
+                .param(todoUidParam, dummyTodo.getUid())).andExpect(status().isOk());
         mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone)).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, urlToSave);
@@ -435,7 +434,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         mockMvc.perform(get(path + completingUser).param(phoneParam, testUserPhone)
-                .param(logBookIdParam, dummyTodo.getUid())).andExpect(status().isOk());
+                .param(todoUidParam, dummyTodo.getUid())).andExpect(status().isOk());
         mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone)).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone,
@@ -460,7 +459,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
                 .thenReturn(testPossibleUsers);
         when(todoBrokerMock.load(dummyTodo.getUid())).thenReturn(dummyTodo);
 
-        mockMvc.perform(get(path + pickCompletor).param(phoneParam, testUserPhone).param(logBookIdParam, dummyTodo.getUid())
+        mockMvc.perform(get(path + pickCompletor).param(phoneParam, testUserPhone).param(todoUidParam, dummyTodo.getUid())
                                 .param("request", testUserPhone)).andExpect(status().isOk());
         mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param("request", "1"))
                 .andExpect(status().isOk());
@@ -482,7 +481,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
 
-        mockMvc.perform(get(path + completedDate).param(phoneParam, testUserPhone).param(logBookIdParam, logBookUid))
+        mockMvc.perform(get(path + completedDate).param(phoneParam, testUserPhone).param(todoUidParam, logBookUid))
                 .andExpect(status().isOk());
         mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param("request", "1"))
                 .andExpect(status().isOk());
@@ -503,7 +502,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
 
-        mockMvc.perform(get(path + confirmCompleteDate).param(phoneParam, testUserPhone).param(logBookIdParam, logBookUid).
+        mockMvc.perform(get(path + confirmCompleteDate).param(phoneParam, testUserPhone).param(todoUidParam, logBookUid).
                 param(userInputParam, priorInput)).andExpect(status().isOk());
         mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param(userInputParam, "1"))
                 .andExpect(status().isOk());
@@ -529,7 +528,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
 
         mockMvc.perform(get(path + setCompleteMenu + "-do").param(phoneParam, testUserPhone).
-                param(logBookIdParam, dummyTodo.getUid()).param("completed_date", completed_date).
+                param(todoUidParam, dummyTodo.getUid()).param("completed_date", completed_date).
                 param(assignUserID, testUser.getUid())).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);

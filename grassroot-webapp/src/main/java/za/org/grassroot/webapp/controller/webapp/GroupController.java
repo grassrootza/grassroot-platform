@@ -225,7 +225,7 @@ public class GroupController extends BaseController {
     }
 
     @RequestMapping(value = "change_multiple", params = {"removeMember"})
-    public String addMemberMmodify(Model model, @ModelAttribute("groupModifier") GroupWrapper groupModifier,
+    public String addMemberModify(Model model, @ModelAttribute("groupModifier") GroupWrapper groupModifier,
                                    @RequestParam("removeMember") int memberIndex) {
         try {
             groupModifier.getListOfMembers().remove(memberIndex);
@@ -361,6 +361,7 @@ public class GroupController extends BaseController {
         Group group = groupBroker.load(groupUid);
 
         if ("delete".equalsIgnoreCase(confirmText)) {
+            // service layer will check permissions for this (as well as whether it is within time window (defined in properties)
             groupBroker.deactivate(getUserProfile().getUid(), group.getUid(), true);
             addMessage(redirectAttributes, MessageType.SUCCESS, "group.delete.success", request);
             return "redirect:/home";
@@ -394,14 +395,10 @@ public class GroupController extends BaseController {
     public String listPossibleParents(Model model, @RequestParam String groupUid,
                                       HttpServletRequest request, RedirectAttributes redirectAttributes) {
 
-        // todo: check permissions, handle exceptions (in fact, on view group page), etc.
-        log.info("Looking for possible parents of group with ID: " + groupUid);
-
+        log.info("Looking for possible parents of group with uid: " + groupUid);
         Group groupToMakeChild = groupBroker.load(groupUid);
         Set<Group> possibleParents = groupBroker.possibleParents(getUserProfile().getUid(), groupUid);
-
         if (!possibleParents.isEmpty()) {
-            log.info("The group (with ID " + groupUid + ") has some possible parents, in fact this many: " + possibleParents.size());
             model.addAttribute("group", groupToMakeChild);
             model.addAttribute("possibleParents", possibleParents);
             return "group/parent";
@@ -417,35 +414,23 @@ public class GroupController extends BaseController {
     @RequestMapping(value = "link", method = RequestMethod.POST)
     public String linkToParent(Model model, @RequestParam String groupUid, @RequestParam String parentUid,
                                RedirectAttributes redirectAttributes, HttpServletRequest request) {
-
-        // todo: permissions, exceptions, etc.
-        // todo: check if need to send a request to parent for permission to bind
-
-        Group group = groupBroker.load(groupUid);
-        Group parent = groupBroker.load(parentUid);
-
-        groupBroker.link(getUserProfile().getUid(), group.getUid(), parent.getUid());
-
-        // addMessage(model, MessageType.SUCCESS, "group.parent.success", request);
+        // call will only succeed if user has requisite permissions (and link is only present on view page if so)
+        groupBroker.link(getUserProfile().getUid(), groupUid, parentUid);
         addMessage(redirectAttributes, MessageType.SUCCESS, "group.parent.success", request);
-        redirectAttributes.addAttribute("groupUid", group.getUid());
+        redirectAttributes.addAttribute("groupUid", groupUid);
         return "redirect:view";
-
     }
 
     /*
     Methods to consolidate groups
-    todo: add role authorizations, etc
-     */
+    */
 
     @RequestMapping(value = "consolidate/select")
     public String selectConsolidate(Model model, @RequestParam String groupUid,
                                     RedirectAttributes redirectAttributes, HttpServletRequest request) {
 
-        User user = getUserProfile();
-
         Group group = groupBroker.load(groupUid);
-        Set<Group> candidateGroups = groupBroker.mergeCandidates(user.getUid(), groupUid);
+        Set<Group> candidateGroups = groupBroker.mergeCandidates(getUserProfile().getUid(), groupUid);
         if (candidateGroups == null || candidateGroups.size() == 0) {
             addMessage(redirectAttributes, MessageType.ERROR, "group.merge.no-candidates", request);
             redirectAttributes.addAttribute("groupUid", groupUid);
@@ -510,7 +495,6 @@ public class GroupController extends BaseController {
                                       @RequestParam(value = "leaveActive", required = false) boolean leaveActive,
                                       @RequestParam(value="confirm_field") String confirmField, RedirectAttributes redirectAttributes, HttpServletRequest request) {
 
-        // todo: add error handling
         if (!confirmField.equalsIgnoreCase("merge")) {
             addMessage(redirectAttributes, MessageType.ERROR, "group.merge.error", request);
             return "redirect:/home";

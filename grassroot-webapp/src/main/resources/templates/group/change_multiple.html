@@ -42,7 +42,7 @@ future to close that off (need a way that mistakes can be corrected, but not to 
           <tbody>
           <tr th:each="member, iterStat: *{listOfMembers}" class="member_input_row">
             <td>
-              <input type="text" th:field="*{listOfMembers[__${iterStat.index}__].displayName}" class="form-control"
+              <input type="text" th:field="*{listOfMembers[__${iterStat.index}__].displayName}" class="form-control" maxlength="25"
                      th:value="${member.displayName}" th:readonly="${member.getPhoneNumberWithCCode() == currentUser.getUsername()}"/>
             </td>
             <td>

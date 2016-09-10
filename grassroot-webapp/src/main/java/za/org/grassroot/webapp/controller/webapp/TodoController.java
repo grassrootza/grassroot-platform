@@ -255,10 +255,8 @@ public class TodoController extends BaseController {
         model.addAttribute("reminderTimeOptions", reminderTimeDescriptions());
 
         // todo: implement this using new design
-/*
-        if (todo.getAssignedToUser() != null)
-            model.addAttribute("assignedUser", todo.getAssignedToUser());
-*/
+        /* if (to-do.getAssignedToUser() != null)
+            model.addAttribute("assignedUser", to-do.getAssignedToUser());*/
 
         return "todo/modify";
     }
@@ -268,7 +266,7 @@ public class TodoController extends BaseController {
     public String changeTodoEntry(Model model, @ModelAttribute("todo") Todo todo,
                                   @RequestParam(value = "assignToUser", required = false) boolean assignToUser, HttpServletRequest request) {
 
-        // may consider doing some of this in services layer, but main point is can't just use todo entity passed
+        // may consider doing some of this in services layer, but main point is can't just use to-do entity passed
         // back from form as thymeleaf whacks all the attributes we don't explicitly code into hidden inputs
 
         Todo savedTodo = todoBroker.load(todo.getUid());
@@ -282,12 +280,11 @@ public class TodoController extends BaseController {
             savedTodo.setReminderMinutes(todo.getReminderMinutes());
 
         // todo: implement this using new design
-/*
-        if (!assignToUser)
+        /* if (!assignToUser)
             savedTodo.setAssignedToUser(null);
         else
-            savedTodo.setAssignedToUser(todo.getAssignedToUser());
-*/
+            savedTodo.setAssignedToUser(to-do.getAssignedToUser());
+        */
 
         savedTodo = todoBroker.update(savedTodo);
 

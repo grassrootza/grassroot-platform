@@ -8,13 +8,17 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.Event;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.Membership;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.integration.services.SmsSendingService;
+import za.org.grassroot.services.enums.EventListTimeType;
 import za.org.grassroot.services.util.CacheUtilService;
 
 import java.time.Instant;
@@ -180,93 +184,36 @@ public class EventManager implements EventManagementService {
     }
 
     @Override
-    public int userHasEventsToView(User user, EventType type) {
-        // todo: this is three DB pings, less expensive than prior iterations over groups, but still expensive, replace with query
-        log.info("Checking what events the user has to view ... ");
-        if (!userHasEventsToView(user, type, false)) return -9;
-        int returnFlag = 0;
-        returnFlag -= userHasPastEventsToView(user, type) ? 1 : 0;
-        returnFlag += userHasFutureEventsToView(user, type) ? 1 : 0;
-        return returnFlag;
-
+    @Transactional(readOnly = true)
+    public EventListTimeType userHasEventsToView(User user, EventType type) {
+        boolean pastEvents = userHasEventsToView(user, type, EventListTimeType.PAST);
+        boolean futureEvents = userHasEventsToView(user, type, EventListTimeType.FUTURE);
+        return (pastEvents && futureEvents) ? EventListTimeType.BOTH
+                : pastEvents ? EventListTimeType.PAST
+                : futureEvents ? EventListTimeType.FUTURE
+                : EventListTimeType.NONE;
     }
 
     @Override
-    public boolean userHasEventsToView(User user, EventType type, boolean upcomingOnly) {
-        // todo: this may be _very_ expensive if Hibernate is looping through lists, replace with a query pronto
-        log.info("Checking on the repository ... for event type: {}", type.toString());
-        if (upcomingOnly) {
-            return userHasFutureEventsToView(user, type);
-        } else {
-            if (type.equals(EventType.MEETING)) {
-                return !meetingRepository.findByParentGroupMembershipsUserAndCanceledOrderByEventStartDateTimeDesc(user, false).isEmpty();
-            } else {
-                log.info("Looking on vote repository, for this user: {}", user);
-                return !voteRepository.findByParentGroupMembershipsUserAndCanceledOrderByEventStartDateTimeDesc(user, false).isEmpty();
-            }
-        }
-    }
-
-    @Override
-    public boolean userHasPastEventsToView(User user, EventType type) {
-        // todo: in future performance tweaking, may turn this into a direct count query
-        if (type.equals(EventType.MEETING)) {
-            return !meetingRepository.
-                    findByParentGroupMembershipsUserAndEventStartDateTimeLessThanAndCanceled(user, Instant.now(), false).
-                    isEmpty();
-        } else {
-            return !voteRepository.
-                    findByParentGroupMembershipsUserAndEventStartDateTimeLessThanAndCanceled(user, Instant.now(), false).
-                    isEmpty();
-        }
-    }
-
-    @Override
-    public boolean userHasFutureEventsToView(User user, EventType type) {
-        log.info("Checking if user has future events to view, of type: {}", type);
-        if (type.equals(EventType.MEETING)) {
-            List<Meeting> events = meetingRepository.findByParentGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceled(user, Instant.now(), false);
-            log.info("List of events returned, with size={}, hence returning={}", events.size(), !events.isEmpty());
-            return !events.isEmpty();
-        } else {
-            return !voteRepository.
-                    findByParentGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceled(user, Instant.now(), false).
-                    isEmpty();
-        }
+    @Transactional(readOnly = true)
+    public boolean userHasEventsToView(User user, EventType type, EventListTimeType timeType) {
+        Instant startTime = timeType.equals(EventListTimeType.FUTURE) ? Instant.now() : DateTimeUtil.getEarliestInstant();
+        Instant endTime = timeType.equals(EventListTimeType.PAST) ? Instant.now() : DateTimeUtil.getVeryLongAwayInstant();
+        return type.equals(EventType.MEETING) ?
+                meetingRepository.countByParentGroupMembershipsUserAndEventStartDateTimeBetweenAndCanceledFalseOrderByEventStartDateTimeDesc(user, startTime, endTime) > 0 :
+                voteRepository.countByParentGroupMembershipsUserAndEventStartDateTimeBetweenAndCanceledFalseOrderByEventStartDateTimeDesc(user, startTime, endTime) > 0;
     }
 
     @Override
     @SuppressWarnings("unchecked") // given the conversion to page, this is otherwise spurious
     public Page<Event> getEventsUserCanView(User user, EventType type, int pastPresentOrBoth, int pageNumber, int pageSize) {
-        // todo: filter for permissions, maybe
-        if (pastPresentOrBoth == -1) {
-            if (type.equals(EventType.MEETING)) {
-                return (Page) meetingRepository.findByParentGroupMembershipsUserAndEventStartDateTimeLessThanAndCanceledOrderByEventStartDateTimeDesc(
-                        user, Instant.now(), false, new PageRequest(pageNumber, pageSize));
-            } else {
-                return (Page) voteRepository.findByParentGroupMembershipsUserAndEventStartDateTimeLessThanAndCanceledOrderByEventStartDateTimeDesc(
-                        user, Instant.now(), false, new PageRequest(pageNumber, pageSize));
-            }
-
-        } else if (pastPresentOrBoth == 1) {
-            if (type.equals(EventType.MEETING)) {
-                return (Page) meetingRepository.findByParentGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceledOrderByEventStartDateTimeDesc(
-                        user, Instant.now(), false, new PageRequest(pageNumber, pageSize));
-            } else {
-                return (Page) voteRepository.findByParentGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceledOrderByEventStartDateTimeDesc(
-                        user, Instant.now(), false, new PageRequest(pageNumber, pageSize));
-            }
-
-        } else {
-            // todo: think about setting a lower bound (e.g., one year ago)
-            if (type.equals(EventType.MEETING)) {
-                return (Page) meetingRepository.findByParentGroupMembershipsUserAndCanceledOrderByEventStartDateTimeDesc(
-                        user, false, new PageRequest(pageNumber, pageSize));
-            } else {
-                return (Page) voteRepository.findByParentGroupMembershipsUserAndCanceledOrderByEventStartDateTimeDesc(
-                        user, false, new PageRequest(pageNumber, pageSize));
-            }
-        }
+        Instant startTime = pastPresentOrBoth <= 0 ? DateTimeUtil.getEarliestInstant() : Instant.now();
+        Instant endTime = pastPresentOrBoth >= 0 ? DateTimeUtil.getVeryLongAwayInstant() : Instant.now();
+        return (type.equals(EventType.MEETING)) ?
+                (Page) meetingRepository.findByParentGroupMembershipsUserAndEventStartDateTimeBetweenAndCanceledFalseOrderByEventStartDateTimeDesc(user, startTime, endTime,
+                        new PageRequest(pageNumber, pageSize)) :
+                (Page) voteRepository.findByParentGroupMembershipsUserAndEventStartDateTimeBetweenAndCanceledFalseOrderByEventStartDateTimeDesc(user, startTime, endTime,
+                        new PageRequest(pageNumber, pageSize));
     }
 
     @Override
@@ -296,6 +243,7 @@ public class EventManager implements EventManagementService {
 
 
     @Override
+    @SuppressWarnings("unchecked")
     public List<Event> getEventsForGroupInTimePeriod(Group group, EventType eventType, LocalDateTime periodStart, LocalDateTime periodEnd) {
         Instant start = convertToSystemTime(periodStart, DateTimeUtil.getSAST());
         Instant end = convertToSystemTime(periodEnd, DateTimeUtil.getSAST());

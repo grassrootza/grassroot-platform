@@ -50,11 +50,11 @@ public class PaidAccountController extends BaseController {
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping("/index")
     public String paidAccountIndex(Model model, HttpServletRequest request) {
-        User user = getUserProfile(); // todo: make sure this is coming from the session, not the DB
         if (request.isUserInRole("ROLE_SYSTEM_ADMIN")) {
             model.addAttribute("accounts", accountManagementService.loadAllAccounts());
             return "paid_account/index";
         } else {
+            User user = userManagementService.load(getUserProfile().getUid());
             Account account = accountManagementService.findAccountByAdministrator(user);
             log.info("Not system admin, but found this account ... " + account);
             return viewPaidAccount(model, account.getId(), request);
@@ -192,7 +192,6 @@ public class PaidAccountController extends BaseController {
 
     /*
         quick private helper method to do role & permission check
-        major todo: cut down the db calls -- the isInRole check takes 0ms, the getUserProfile... takes 19ms!!
         major todo: move this to a service and call it via @preauthorize
     */
     private boolean sessionUserHasAccountPermission(Account account, HttpServletRequest request) {
@@ -217,10 +216,8 @@ public class PaidAccountController extends BaseController {
     }
 
     private Model addRecordsToModel(String attr, Model model, Group group, EventType type, LocalDateTime start, LocalDateTime end) {
-
         // todo: this is _very_ expensive, ~150-200 ms, we will need to optimize it
         List<Event> eventsInPeriod = eventManagementService.getEventsForGroupInTimePeriod(group, type, start, end);
-
         model.addAttribute(attr, eventsInPeriod);
         return model;
     }

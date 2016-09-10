@@ -37,7 +37,8 @@
 
             <div class="form-group" th:class="${#fields.hasErrors('displayName')} ? 'form-group has-error': 'form-group'">
               <label for="displayname" class="control-label">Your name (what people know you by):</label>
-              <input type="text" th:field="*{user.displayName}" class="form-control" id="displayname" placeholder="Siya" />
+              <input type="text" th:field="*{user.displayName}" class="form-control" id="displayname" placeholder="Siya"
+                maxlength="25" />
             </div>
 
             <div class="form-group" th:class="${#fields.hasErrors('username')} ? 'form-group has-error' : 'form-group'">
@@ -73,6 +74,7 @@
             if (user.charAt(0) == '0') {
               user = user.replace("0", "27");
             }
+
             $("#full-mobile-number").val(user);
             // console.log("And username now : " + $("#full-mobile-number").val());
             $( "#register-form" ).submit();

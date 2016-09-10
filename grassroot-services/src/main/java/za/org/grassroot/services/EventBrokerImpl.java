@@ -179,6 +179,11 @@ public class EventBrokerImpl implements EventBroker {
             throw new IllegalStateException("Meeting is canceled: " + meeting);
         }
 
+		if (!meeting.getCreatedByUser().equals(user) ||
+				permissionBroker.isGroupPermissionAvailable(user, meeting.getAncestorGroup(), Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS)) {
+			throw new AccessDeniedException("Error! Only meeting caller or group organizer can change meeting");
+		}
+
         Instant convertedStartDateTime = convertToSystemTime(eventStartDateTime, getSAST());
         boolean startTimeChanged = !convertedStartDateTime.equals(meeting.getEventStartDateTime());
         if (startTimeChanged) {
@@ -217,6 +222,11 @@ public class EventBrokerImpl implements EventBroker {
 
 		if (meeting.isCanceled()) {
 			throw new IllegalStateException("Meeting is canceled: " + meeting);
+		}
+
+		if (!meeting.getCreatedByUser().equals(user) ||
+				permissionBroker.isGroupPermissionAvailable(user, meeting.getAncestorGroup(), Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS)) {
+			throw new AccessDeniedException("Error! Only meeting caller or group organizer can change meeting");
 		}
 
 		Instant convertedStartDateTime = convertToSystemTime(eventStartDateTime, getSAST());
@@ -391,6 +401,11 @@ public class EventBrokerImpl implements EventBroker {
 
 		if (event.isCanceled()) {
 			throw new IllegalStateException("Event is already canceled: " + event);
+		}
+
+		// cancelling has higher permission threshold than changing...only person who called event can do it
+		if (!event.getCreatedByUser().equals(user)) {
+			throw new AccessDeniedException("Error! Only event caller can cancel event");
 		}
 
 		event.setCanceled(true);

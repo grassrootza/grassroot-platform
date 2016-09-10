@@ -2,6 +2,7 @@ package za.org.grassroot.webapp.model.web;
 
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.services.MembershipInfo;
+import za.org.grassroot.services.enums.GroupPermissionTemplate;
 
 import java.util.*;
 
@@ -16,6 +17,7 @@ public class GroupWrapper {
     private Group group;
     private String groupName;
     private String groupDescription;
+    private GroupPermissionTemplate permissionTemplate;
 
     private boolean hasParent;
     private Group parentGroup;
@@ -37,7 +39,7 @@ public class GroupWrapper {
     public GroupWrapper() {
         this.group = Group.makeEmpty();
         this.reminderMinutes = 24 * 60;
-        // this.template = GroupPermissionTemplate.DEFAULT_GROUP;
+        this.permissionTemplate = GroupPermissionTemplate.DEFAULT_GROUP;
     }
 
     public GroupWrapper(Group parentGroup) {
@@ -48,7 +50,6 @@ public class GroupWrapper {
         this.parentId = parentGroup.getId();
         this.parentName = parentGroup.getGroupName();
         this.listOfMembers.addAll(MembershipInfo.createFromMembers(parentGroup.getMemberships()));
-        // this.template = GroupPermissionTemplate.DEFAULT_GROUP; // todo: figure out if/how to store / inherit this
     }
 
     public Group getGroup() { return group; }
@@ -108,6 +109,14 @@ public class GroupWrapper {
     public void setReminderMinutes(int reminderMinutes) { this.reminderMinutes = reminderMinutes; }
 
     public int getReminderMinutes() { return reminderMinutes; }
+
+    public GroupPermissionTemplate getPermissionTemplate() {
+        return permissionTemplate;
+    }
+
+    public void setPermissionTemplate(GroupPermissionTemplate permissionTemplate) {
+        this.permissionTemplate = permissionTemplate;
+    }
 
     /*
     Helper method for quickly populating one, for the group modification

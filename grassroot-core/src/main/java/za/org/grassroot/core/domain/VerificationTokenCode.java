@@ -5,17 +5,24 @@ import za.org.grassroot.core.enums.VerificationCodeType;
 import javax.persistence.*;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Objects;
 
 /**
  * @author Lesetse Kimwaga
  */
 @Entity
 @Table(name = "verification_token_code")
-public class VerificationTokenCode extends BaseEntity {
+public class VerificationTokenCode {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column( name = "id")
+    protected Long id;
 
     @Column(name = "username", nullable = false)
     private String username;
 
+    @Column(name = "code", nullable = false) // todo : write DB update script
     protected String code;
 
     @Column(name = "creation_date", nullable = false)
@@ -40,10 +47,14 @@ public class VerificationTokenCode extends BaseEntity {
     }
 
     public void setCode(String code) {
+        Objects.requireNonNull(code);
         this.code = code;
     }
 
     public VerificationTokenCode(String username, String code, VerificationCodeType type) {
+        Objects.requireNonNull(username);
+        Objects.requireNonNull(code);
+
         this.code = code;
         this.username = username;
         this.type = type;
@@ -104,5 +115,24 @@ public class VerificationTokenCode extends BaseEntity {
         if (expiryDateTime == null) {
             expiryDateTime = createdDateTime.plus(5, ChronoUnit.MINUTES); // default is token lasts 5 mins
         }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        VerificationTokenCode that = (VerificationTokenCode) o;
+
+        return id.equals(that.id);
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + id.hashCode();
+        return result;
     }
 }

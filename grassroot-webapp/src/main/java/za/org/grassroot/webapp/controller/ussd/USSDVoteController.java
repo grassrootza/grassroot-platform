@@ -18,6 +18,7 @@ import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.EventLogBroker;
 import za.org.grassroot.services.EventRequestBroker;
+import za.org.grassroot.services.enums.EventListTimeType;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
@@ -68,23 +69,22 @@ public class USSDVoteController extends USSDController {
     /*
     First menu asks user to select a group. Until we have a "snap voting" functionality worked out, this requires
     the user to have a group already set up (i.e., is different from meeting menu, which allows within-flow group creation
-    Major todo: add menus to see status of vote while in progress, and possibly trigger reminder
      */
     @RequestMapping(value = path + startMenu)
     @ResponseBody
     public Request votingStart(@RequestParam(value = phoneNumber) String inputNumber) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(inputNumber);
-        int hasVotesToView = eventManager.userHasEventsToView(user, EventType.VOTE);
+        EventListTimeType hasVotesToView = eventManager.userHasEventsToView(user, EventType.VOTE);
         log.info("Checked for votes to view ... got integer: " + hasVotesToView);
         USSDMenu menu;
 
-        if (hasVotesToView >= -1) {
+        if (!hasVotesToView.equals(EventListTimeType.NONE)) {
             menu = new USSDMenu(getMessage(thisSection, startMenu, promptKey, user));
             menu.addMenuOption(voteMenus + "new", getMessage(thisSection, startMenu, optionsKey + "new", user));
-            if (hasVotesToView >= 0)
+            if (!hasVotesToView.equals(EventListTimeType.PAST)) // ie is either both or future
                 menu.addMenuOption(voteMenus + "open", getMessage(thisSection, startMenu, optionsKey + "open", user));
-            if (hasVotesToView <= 0)
+            if (!hasVotesToView.equals(EventListTimeType.FUTURE)) // ie is either both or past
                 menu.addMenuOption(voteMenus + "old", getMessage(thisSection, startMenu, optionsKey + "old", user));
             menu.addMenuOption("start", getMessage(USSDSection.VOTES,"start","options.back",user));
         } else {
@@ -186,7 +186,6 @@ public class USSDVoteController extends USSDController {
 
     /*
     Final menu asks for confirmation, then sends out
-    major todo: shift the time strings into messages (and generally do i18n for this)
      */
     @RequestMapping(value = path + "confirm")
     @ResponseBody
@@ -273,7 +272,6 @@ public class USSDVoteController extends USSDController {
     @RequestMapping(value = path + "open")
     @ResponseBody
     public Request viewOpenVotes(@RequestParam(value = phoneNumber) String inputNumber) throws URISyntaxException {
-        // todo: consider doing a save and return
         User user = userManager.findByInputNumber(inputNumber, voteMenus + "open");
         String prompt = getMessage(thisSection, "open", promptKey, user);
         return menuBuilder(eventUtil.listUpcomingEvents(user, thisSection, prompt, "details?back=open", false, null, null));
@@ -452,7 +450,6 @@ public class USSDVoteController extends USSDController {
         EventRequest vote = eventRequestBroker.load(requestUid);
         if (vote.getEventStartDateTime().isBefore(Instant.now().plus(7, ChronoUnit.MINUTES))) {
             // user is manipulating an "instant" vote so need to reset the counter, else may expire before send
-            // todo: make sure this is actually working with timezones
             eventRequestBroker.updateEventDateTime(user.getUid(), requestUid, LocalDateTime.now().plusMinutes(7L));
             dateTime = getMessage(thisSection, "confirm", "time.instant", user);
         } else {

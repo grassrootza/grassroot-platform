@@ -123,11 +123,9 @@ public class USSDController {
         return ussdMenuUtil.menuBuilder(ussdMenu, isFirstMenu);
     }
 
-
     /**
      * Some default menu returns and some frequently used sets of menu options
      */
-
 
     protected Map<String, String> optionsHomeExit(User sessionUser) {
         return ImmutableMap.<String, String>builder().
@@ -180,9 +178,8 @@ public class USSDController {
         return messageSource.getMessage("ussd." + messageKey, null, new Locale(language));
     }
 
-    // todo move this somewhere else, and/or clean up nullability in User class, but if put it there, confuses Hibernate (wants a setter)
+    // provides a null safe helper method to get language code from user
     private String getLanguage(User user) {
-        // todo some validation on the locale code, above just checking it's not null
         return (user.getLanguageCode() == null) ? Locale.US.getLanguage(): user.getLanguageCode();
     }
 

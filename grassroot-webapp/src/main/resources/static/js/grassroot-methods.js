@@ -8,7 +8,8 @@ var grassrootJS = {
         var strVar="";
         strVar += "<tr class=\"member_input_row\">";
         strVar += "            <td>";
-        strVar += "              <input type=\"text\" class=\"form-control\" value=\"\" id=\"" + listName + newMemberIndex + ".displayName\" name=\"" + listName + "[" + newMemberIndex + "].displayName\" \/>";
+        strVar += "              <input type=\"text\" class=\"form-control\" value=\"\" id=\"" + listName + newMemberIndex + ".displayName\" " +
+            "name=\"" + listName + "[" + newMemberIndex + "].displayName\" maxlength='25' \/>";
         strVar += "            <\/td>";
         strVar += "            <td>";
         strVar += "              <input type=\"text\" class=\"form-control\" value=\"\" id=\"" + listName + newMemberIndex + ".phoneNumber\" name=\"" + listName + "[" + newMemberIndex + "].phoneNumber\" \/>";

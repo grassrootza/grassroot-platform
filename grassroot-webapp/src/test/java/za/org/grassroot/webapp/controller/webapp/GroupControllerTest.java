@@ -221,8 +221,6 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
                 .andExpect(redirectedUrl("view?groupUid=" + testGroup.getUid()))
                 .andExpect(model().attribute("groupUid", testGroup.getUid()))
                 .andExpect(flash().attributeExists(BaseController.MessageType.SUCCESS.getMessageKey()));
-        verify(groupBrokerMock, times(1)).load(testGroup.getUid());
-        verify(groupBrokerMock, times(1)).load(testParent.getUid());
         verify(groupBrokerMock, times(1)).link(sessionTestUser.getUid(), testGroup.getUid(), testParent.getUid());
         verifyNoMoreInteractions(groupBrokerMock);
 

@@ -15,21 +15,19 @@ import java.util.List;
 public interface VoteRepository extends JpaRepository<Vote, Long> {
 
 	Vote findOneByUid(String uid);
-
 	int countByCreatedDateTimeBetween(Instant start, Instant end);
+	int countByParentGroupMembershipsUserAndEventStartDateTimeBetweenAndCanceledFalseOrderByEventStartDateTimeDesc(User user, Instant start, Instant end);
 
-	@Transactional
-	@Query(value = "SELECT * FROM event e WHERE start_date_time  between  (current_timestamp - INTERVAL '1 hour') and current_timestamp AND e.type = 'VOTE' AND e.canceled = FALSE AND (SELECT count(*) FROM event_log el WHERE el.event_log_type = 'RESULT' AND e.id = el.event_id) = 0", nativeQuery = true)
-	List<Vote> findUnsentVoteResults();
-
-	/* Several simple queries used in USSD menus*/
-	Page<Vote> findByParentGroupMembershipsUserAndCanceledOrderByEventStartDateTimeDesc(User user, boolean canceled, Pageable page);
-	Page<Vote> findByParentGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceledOrderByEventStartDateTimeDesc(User user, Instant startTime, boolean cancelled, Pageable page);
-	Page<Vote> findByParentGroupMembershipsUserAndEventStartDateTimeLessThanAndCanceledOrderByEventStartDateTimeDesc(User user, Instant startTime, boolean cancelled, Pageable page);
-
+	Page<Vote> findByParentGroupMembershipsUserAndEventStartDateTimeBetweenAndCanceledFalseOrderByEventStartDateTimeDesc(User user, Instant startTime, Instant endTime, Pageable page);
 	List<Vote> findByParentGroupAndEventStartDateTimeBetweenAndCanceledFalse(Group group, Instant startDateTime, Instant endDateTime);
 
-	List<Vote> findByParentGroupMembershipsUserAndCanceledOrderByEventStartDateTimeDesc(User user, boolean canceled);
-	List<Vote> findByParentGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceled(User user, Instant startTime, boolean cancelled);
-	List<Vote> findByParentGroupMembershipsUserAndEventStartDateTimeLessThanAndCanceled(User user, Instant startTime, boolean cancelled);
+	@Transactional
+	@Query(value = "SELECT e FROM Event e " +
+			"WHERE e.class = 'VOTE' AND " +
+			"(e.eventStartDateTime between ?1 and ?2) " +
+			"AND e.canceled = FALSE " +
+			"AND (SELECT count(el) FROM EventLog el WHERE el.eventLogType = za.org.grassroot.core.enums.EventLogType.RESULT AND e = el.event) = 0")
+	List<Vote> findUnsentVoteResults(Instant intervalStart, Instant intervalEnd);
+
+
 }

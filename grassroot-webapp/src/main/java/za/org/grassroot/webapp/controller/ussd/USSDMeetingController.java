@@ -18,6 +18,7 @@ import za.org.grassroot.integration.domain.SeloParseDateTimeFailure;
 import za.org.grassroot.services.EventLogBroker;
 import za.org.grassroot.services.EventRequestBroker;
 import za.org.grassroot.services.MembershipInfo;
+import za.org.grassroot.services.enums.EventListTimeType;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
@@ -114,7 +115,7 @@ public class USSDMeetingController extends USSDController {
 
         USSDMenu returnMenu;
 
-        if (newMeeting || !eventManager.userHasEventsToView(user, EventType.MEETING, true)) {
+        if (newMeeting || !eventManager.userHasEventsToView(user, EventType.MEETING, EventListTimeType.FUTURE)) {
             returnMenu = ussdGroupUtil.askForGroup(user, thisSection, subjectMenu, newGroupMenu, groupName, true);
         } else {
             String prompt = getMessage(thisSection, startMenu, promptKey + ".new-old", user);
@@ -443,7 +444,7 @@ public class USSDMeetingController extends USSDController {
             int answeredYes = rsvpResponses.get("yes");
             int answeredNo = rsvpResponses.get("no");
             int noAnswer = rsvpResponses.get("no_answer");
-            Group group = (Group) meeting.getParent(); // todo: !?!?!?
+            Group group = meeting.getAncestorGroup();
             String[] messageFields = new String[]{
                     group.getName(""),
                     meeting.getEventLocation(),
@@ -454,7 +455,7 @@ public class USSDMeetingController extends USSDController {
                     "" + noAnswer};
             mtgDescription = getMessage(thisSection, viewMeetingDetails, promptKey + ".rsvp", messageFields, sessionUser);
         } else {
-            Group group = (Group) meeting.getParent(); // todo: !?!?!?
+            Group group = meeting.getAncestorGroup();
             String[] messageFields = new String[]{
                     group.getName(""),
                     meeting.getEventLocation(),
@@ -470,10 +471,6 @@ public class USSDMeetingController extends USSDController {
         promptMenu.addMenuOption("exit", getMessage("exit.option", sessionUser)); // exit system
         return menuBuilder(promptMenu);
     }
-
-    /*
-    todo: add logging, etc.
-     */
 
     @RequestMapping(value = path + changeMeetingLocation)
     public Request changeLocation(@RequestParam(value = phoneNumber) String inputNumber,

@@ -7,6 +7,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.services.enums.EventListTimeType;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -26,14 +27,9 @@ public interface EventManagementService {
 
     List<Event> getOutstandingRSVPForUser(User user);
 
-    // -1 : past events; 0: both directions; +1 : future events; -9 no events
-    int userHasEventsToView(User user, EventType type);
+    EventListTimeType userHasEventsToView(User user, EventType type);
 
-    boolean userHasEventsToView(User user, EventType type, boolean upcomingOnly);
-
-    boolean userHasPastEventsToView(User user, EventType type);
-
-    boolean userHasFutureEventsToView(User user, EventType type);
+    boolean userHasEventsToView(User user, EventType type, EventListTimeType timeType);
 
     // third argument: past events = -1 ; future events = 1; both directions = 0;
     Page<Event> getEventsUserCanView(User user, EventType type, int pastPresentOrBoth, int pageNumber, int pageSize);

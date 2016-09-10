@@ -124,7 +124,7 @@ public class USSDUrlUtil {
     }
 
     public static String saveToDoMenu(String menu, String logBookUid) {
-        return USSDSection.TODO.toPath() + menu + "?logbookUid=" + logBookUid + setInterruptedFlag;
+        return USSDSection.TODO.toPath() + menu + "?todoUid=" + logBookUid + setInterruptedFlag;
     }
 
     public static String saveToDoMenu(String menu, String logBookUid, String priorInput) {

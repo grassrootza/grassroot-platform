@@ -96,12 +96,6 @@ public class BaseController {
         return minuteOptions;
     }
 
-    public String getMessage(String id) {
-        Locale locale = LocaleContextHolder.getLocale();
-        return messageSource.getMessage("web." + id, null, locale);
-    }
-
-
     //Methods to help with standalone unit testing
 
     public void setMessageSource(MessageSource messageSource){
@@ -130,36 +124,27 @@ public class BaseController {
      * Convenience method for getting a i18n key's value.  Calling
      * getMessageSourceAccessor() is used because the RequestContext variable
      * is not set in unit tests b/c there's no DispatchServlet Request.
-     *
-     * @param msgKey
-     * @param locale the current locale
-     * @return
-     */
+      */
     public String getText(String msgKey, Locale locale) {
         return messageSourceAccessor.getMessage("web." + msgKey, locale);
+    }
+
+    protected String getMessage(String msgKey) {
+        Locale locale = LocaleContextHolder.getLocale();
+        return messageSource.getMessage("web." + msgKey, null, locale);
     }
 
     /**
      * Convenient method for getting a i18n key's value with a single
      * string argument.
-     *
-     * @param msgKey
-     * @param arg
-     * @param locale the current locale
-     * @return
      */
-    public String getText(String msgKey, String arg, Locale locale) {
-        return getText("web." + msgKey, new Object[]{arg}, locale);
+    protected String getMessage(String msgKey, String arg) {
+        return getText(msgKey, new Object[]{arg}, LocaleContextHolder.getLocale());
     }
 
     /**
      * Convenience method for getting a i18n key's value with arguments.
-     *
-     * @param msgKey
-     * @param args
-     * @param locale the current locale
-     * @return
-     */
+     * */
     public String getText(String msgKey, Object[] args, Locale locale) {
         return messageSourceAccessor.getMessage("web." + msgKey, args, locale);
     }

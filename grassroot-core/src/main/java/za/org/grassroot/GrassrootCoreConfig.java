@@ -1,6 +1,5 @@
 package za.org.grassroot;
 
-
 import net.sf.ehcache.CacheManager;
 import org.springframework.cache.ehcache.EhCacheManagerFactoryBean;
 import org.springframework.context.annotation.*;
@@ -26,7 +25,6 @@ import java.io.IOException;
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 @ComponentScan("za.org.grassroot")
 @Import({StandaloneDatabaseConfig.class, StandaloneLocalPGConfig.class, StagingDatabaseConfig.class, ProductionDatabaseConfig.class})
-
 public class GrassrootCoreConfig {
 
 	@Bean

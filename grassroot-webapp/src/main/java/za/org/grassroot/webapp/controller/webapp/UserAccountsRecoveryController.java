@@ -1,6 +1,7 @@
 package za.org.grassroot.webapp.controller.webapp;
 
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Controller;
@@ -28,7 +29,7 @@ import javax.servlet.http.HttpServletRequest;
 @Controller
 public class UserAccountsRecoveryController extends BaseController {
 
-    private static final Logger log = org.slf4j.LoggerFactory.getLogger(UserAccountsRecoveryController.class);
+    private static final Logger log = LoggerFactory.getLogger(UserAccountsRecoveryController.class);
 
     @Autowired
     private PasswordTokenService  passwordTokenService;
@@ -110,22 +111,12 @@ public class UserAccountsRecoveryController extends BaseController {
 
     }
 
-    /**
-     * @param verificationTokenCode
-     */
     private void temporaryTokenSend(VerificationTokenCode verificationTokenCode) {
-        try {
-
-            if (verificationTokenCode != null && System.getenv("SMSUSER") != null && System.getenv("SMSPASS") != null) {
-                String messageResult = smsSendingService.sendSMS(
-                        "Your Grassroot verification code is: " + verificationTokenCode.getCode(), // todo : externalize
-                        verificationTokenCode.getUsername());
-                log.debug("SMS Send result: {}", messageResult);
-            } else {
-                log.warn("Did not send verification message. No system messaging configuration found.");
-            }
-        } catch (Exception exception) {
-            log.error("Could not send token message", exception);
+        if (verificationTokenCode != null) {
+            // "Your Grassroot verification code is: " +
+            String messageResult = smsSendingService.sendSMS(getMessage("user.profile.token.message", verificationTokenCode.getCode()),
+                    verificationTokenCode.getUsername());
+            log.debug("SMS send result: {}", messageResult);
         }
     }
 }

@@ -388,10 +388,9 @@ public class USSDHomeController extends USSDController {
             if (!isBarred) safetyEventBroker.create(user.getUid(), user.getSafetyGroup().getUid());
             menu = new USSDMenu(message);
         } else {
-            // todo : externalize the option texts
             menu = new USSDMenu(getMessage(thisSection, "safety.not-activated", promptKey, user));
-            menu.addMenuOption(USSDSection.SAFETY_GROUP_MANAGER.toPath() + "pick-group", "Make existing group my safety group");
-            menu.addMenuOption(USSDSection.SAFETY_GROUP_MANAGER.toPath() + "new-group", "Create new group");
+            menu.addMenuOption(USSDSection.SAFETY_GROUP_MANAGER.toPath() + "pick-group", getMessage(thisSection, "safety", optionsKey + "existing", user));
+            menu.addMenuOption(USSDSection.SAFETY_GROUP_MANAGER.toPath() + "new-group", getMessage(thisSection, "safety", optionsKey + "new", user));
             menu.addMenuOption(startMenu, "Main menu");
         }
         return menu;
@@ -455,11 +454,7 @@ public class USSDHomeController extends USSDController {
                                   @RequestParam(value = "response") String response) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(inputNumber);
-        Vote vote = (Vote) eventBroker.load(voteUid);
-
-        // todo: switch this to uid
-        eventLogBroker.rsvpForEvent(vote.getUid(), user.getUid(), EventRSVPResponse.fromString(response));
-
+        eventLogBroker.rsvpForEvent(voteUid, user.getUid(), EventRSVPResponse.fromString(response));
         String prompt = getMessage(thisSection, startMenu, promptKey + ".vote-recorded", user);
         return menuBuilder(new USSDMenu(prompt, optionsHomeExit(user)));
     }
@@ -534,7 +529,6 @@ public class USSDHomeController extends USSDController {
     @ResponseBody
     public Request confirmGroupInactive(@RequestParam(value = phoneNumber) String inputNumber,
                                         @RequestParam(value = groupUidParam) String groupUid) throws URISyntaxException {
-        // todo: another round of checks that this should be allowed
         User user = userManager.findByInputNumber(inputNumber);
         Group group = groupBroker.load(groupUid);
         String sizeOfGroup = "" + (group.getMembers().size() - 1); // subtracting the group creator
@@ -554,7 +548,6 @@ public class USSDHomeController extends USSDController {
     @ResponseBody
     public Request setGroupInactiveAndStart(@RequestParam(value = phoneNumber) String inputNumber,
                                             @RequestParam(value = groupUidParam) String groupUid) throws URISyntaxException {
-        // todo: permission checks
         User sessionUser = userManager.findByInputNumber(inputNumber);
         log.info("At the request of user: " + sessionUser + ", we are setting inactive this group ... " + groupUid);
         groupBroker.deactivate(sessionUser.getUid(), groupUid, true);

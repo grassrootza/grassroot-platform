@@ -49,7 +49,7 @@
           <tbody>
           <tr th:each="member, iterStat: *{listOfMembers}" class="member_input_row">
             <td>
-              <input type="text" th:field="*{listOfMembers[__${iterStat.index}__].displayName}" class="form-control" placeholder="Member's name"/>
+              <input type="text" th:field="*{listOfMembers[__${iterStat.index}__].displayName}" class="form-control" placeholder="Member's name" maxlength="35"/>
             </td>
             <td>
               <div class="form-group" th:class="${#fields.hasErrors('listOfMembers[__${iterStat.index}__].phoneNumber')}? has-error">
@@ -86,7 +86,7 @@
         <div class="form-group">
           <div class="col-md-offset-2 col-md-8">
             <label for="groupTemplate" class="control-label">Who will be able to call meetings, events, etc?</label>
-            <select name="groupTemplate" id="groupTemplate" class="form-control">
+            <select name="groupTemplate" id="groupTemplate" class="form-control" th:field="*{permissionTemplate}">
               <option th:each="template : ${T(za.org.grassroot.services.enums.GroupPermissionTemplate).values()}"
                       th:value="${template}"
                       th:text="#{web.group.permissions.__${template}__}"></option>

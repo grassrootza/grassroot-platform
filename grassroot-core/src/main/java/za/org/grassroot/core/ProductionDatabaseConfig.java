@@ -15,7 +15,6 @@ public class ProductionDatabaseConfig extends  DatabaseConfig {
 
     @Override
     public DataSource dataSource() {
-
         DataSourceBuilder dataSourceBuilder = DataSourceBuilder.create();
         dataSourceBuilder.url(System.getenv("DATABASE_URL"));
         return dataSourceBuilder.build();
