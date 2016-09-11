@@ -46,7 +46,7 @@ public class MeetingRestControllerTest extends RestAbstractUnitTest {
 
         Set<String> membersToAdd = new HashSet<>();
 
-        when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
+        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
         when(eventBrokerMock.createMeeting(sessionTestUser.getUid(), testGroup.getUid(), JpaEntityType.GROUP,
                                            testEventTitle, testDateTime, testEventLocation, false, true, false,
                                            EventReminderType.GROUP_CONFIGURED, -1, testEventDescription, membersToAdd, MeetingImportance.ORDINARY))
@@ -60,7 +60,7 @@ public class MeetingRestControllerTest extends RestAbstractUnitTest {
                                 .param("location", testEventLocation))
                 .andExpect(status().is2xxSuccessful());
 
-        verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
+        verify(userManagementServiceMock).findByInputNumber(testUserPhone);
         verify(eventBrokerMock).createMeeting(sessionTestUser.getUid(), testGroup.getUid(), JpaEntityType.GROUP,
                                               testEventTitle, testDateTime, testEventLocation, false, true, false,
                                               EventReminderType.GROUP_CONFIGURED, -1, testEventDescription, membersToAdd, MeetingImportance.ORDINARY);
@@ -81,12 +81,12 @@ public class MeetingRestControllerTest extends RestAbstractUnitTest {
     @Test
     public void rsvpingShouldWork() throws Exception {
 
-        when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
+        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
         when(eventBrokerMock.loadMeeting(meetingEvent.getUid())).thenReturn(meetingEvent);
         mockMvc.perform(get(path + "/rsvp/{id}/{phoneNumber}/{code}", meetingEvent.getUid(), testUserPhone, testUserCode)
                                 .param("response", "Yes"))
                 .andExpect(status().is2xxSuccessful());
-        verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
+        verify(userManagementServiceMock).findByInputNumber(testUserPhone);
         verify(eventBrokerMock).loadMeeting(meetingEvent.getUid());
     }
 
@@ -96,7 +96,7 @@ public class MeetingRestControllerTest extends RestAbstractUnitTest {
         Role role = new Role("ROLE_GROUP_ORGANIZER", meetingEvent.getUid());
         testGroup.addMember(sessionTestUser, role);
 
-        when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
+        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
         when(eventBrokerMock.loadMeeting(meetingEvent.getUid())).thenReturn(meetingEvent);
         when(eventLogRepositoryMock.findByEventAndUserAndEventLogType(meetingEvent, sessionTestUser, EventLogType.RSVP))
                 .thenReturn(new EventLog(sessionTestUser, meetingEvent, EventLogType.RSVP, EventRSVPResponse.YES));
@@ -104,7 +104,7 @@ public class MeetingRestControllerTest extends RestAbstractUnitTest {
         when(eventLogBrokerMock.getResponseCountForEvent(meetingEvent)).thenReturn(testResponseTotalsDTO);
         mockMvc.perform(get(path + "/view/{id}/{phoneNumber}/{code}", meetingEvent.getUid(), testUserPhone, testUserCode))
                 .andExpect(status().is2xxSuccessful());
-        verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
+        verify(userManagementServiceMock).findByInputNumber(testUserPhone);
         verify(eventBrokerMock).loadMeeting(meetingEvent.getUid());
         verify(eventLogRepositoryMock).findByEventAndUserAndEventLogType(meetingEvent, sessionTestUser, EventLogType.RSVP);
         verify(eventLogBrokerMock).getResponseCountForEvent(meetingEvent);

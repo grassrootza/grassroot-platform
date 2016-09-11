@@ -42,7 +42,7 @@ public class GcmRestController {
     @RequestMapping(value = "/deregister/{phoneNumber}/{code}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> deRegister(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code)
             throws NoSuchProfileException{
-        User user = userManagementService.loadOrSaveUser(phoneNumber);
+        User user = userManagementService.findByInputNumber(phoneNumber);
         userManagementService.setMessagingPreference(user.getUid(), UserMessagingPreference.SMS);
         return RestUtil.messageOkayResponse(RestMessage.DEREGISTERED_FOR_PUSH);
     }

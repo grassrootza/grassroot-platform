@@ -100,7 +100,7 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
         verify(eventBrokerMock, times(1)).createVote(sessionTestUser.getUid(), testGroup.getUid(), JpaEntityType.GROUP, "test vote",
                                                      testTime, false, false, "Abracadabra", Collections.emptySet());
         verifyNoMoreInteractions(groupBrokerMock);
-        verifyNoMoreInteractions(eventManagementServiceMock);
+        verifyNoMoreInteractions(eventBrokerMock);
     }
 
     @Test
@@ -113,7 +113,7 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
         testVoteResults.setMaybe(3);
         testVoteResults.setNumberOfUsers(15);
         when(eventBrokerMock.load(testVote.getUid())).thenReturn(testVote);
-        when(eventManagementServiceMock.getVoteResultsDTO(testVote)).thenReturn(testVoteResults);
+        when(eventLogBrokerMock.getVoteResultsForEvent(testVote)).thenReturn(testVoteResults);
 
         mockMvc.perform(get("/vote/view").param("eventUid", testVote.getUid()))
                 .andExpect(status().isOk()).andExpect(view().name("vote/view"))
@@ -125,8 +125,8 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
 
         verify(eventBrokerMock, times(1)).load(testVote.getUid());
         verifyNoMoreInteractions(eventBrokerMock);
-        verify(eventManagementServiceMock, times(1)).getVoteResultsDTO(testVote);
-        verifyNoMoreInteractions(eventManagementServiceMock);
+        verify(eventLogBrokerMock, times(1)).getVoteResultsForEvent(testVote);
+        verifyNoMoreInteractions(eventLogBrokerMock);
     }
 
     @Test

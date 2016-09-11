@@ -86,8 +86,8 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
     /* @Test
     @Rollback
     public void shouldNotDuplicateMembers() {
-        User user = userManagementService.loadOrSaveUser(testUserBase + "0");
-        User user2 = userManagementService.loadOrSaveUser(testUserBase + "1");
+        User user = userManagementService.loadOrCreateUser(testUserBase + "0");
+        User user2 = userManagementService.loadOrCreateUser(testUserBase + "1");
 
         // todo: swithc these to "true" on roles once set up a user with authorities
         Group group = groupManagementService.createNewGroup(user, Arrays.asList(testUserBase + "1"), false);
@@ -99,7 +99,7 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
     @Test
     @Rollback
     public void shouldAddMultipleNumbersToGroup() {
-        User user = userManagementService.loadOrSaveUser("0810001111");
+        User user = userManagementService.loadOrCreateUser("0810001111");
         Set<MembershipInfo> organizer = Sets.newHashSet(
                 new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, null));
         Group group = groupBroker.create(user.getUid(), "testGroup", null, organizer, DEFAULT_GROUP, null, null, false);
@@ -120,7 +120,7 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
     @Rollback
     public void shouldDeactivateGroup() {
         assertThat(groupRepository.count(), is(0L));
-        User user = userManagementService.loadOrSaveUser(testUserBase + "1");
+        User user = userManagementService.loadOrCreateUser(testUserBase + "1");
         Group group = groupRepository.save(new Group(testGroupBase + "1", user));
         Group group2 = groupRepository.save(new Group(testGroupBase + "2", user));
        // groupBroker.deactivate(user.getUid(), group.getUid(), true);
@@ -136,8 +136,8 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
     @Rollback
     public void shouldOnlyReturnCreatedGroups() {
         assertThat(groupRepository.count(), is(0L));
-        User user1 = userManagementService.loadOrSaveUser(testUserBase + "1");
-        User user2 = userManagementService.loadOrSaveUser(testUserBase + "2");
+        User user1 = userManagementService.loadOrCreateUser(testUserBase + "1");
+        User user2 = userManagementService.loadOrCreateUser(testUserBase + "2");
         MembershipInfo member1 = new MembershipInfo(user1.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER,
                                                     user1.getDisplayName());
         MembershipInfo member1a = new MembershipInfo(user1.getPhoneNumber(), BaseRoles.ROLE_ORDINARY_MEMBER,
@@ -163,7 +163,7 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
     @Rollback
     public void shouldMergeGroups() {
         assertThat(groupRepository.count(), is(0L));
-        User user = userManagementService.loadOrSaveUser(testUserBase + "2");
+        User user = userManagementService.loadOrCreateUser(testUserBase + "2");
 
         Group group1 = groupManagementService.createNewGroup(user, Arrays.asList(testUserBase + "3", testUserBase + "4", testUserBase + "5"), false);
         Group group2 = groupManagementService.createNewGroup(user, Arrays.asList(testUserBase + "6", testUserBase + "7"), false);
@@ -185,7 +185,7 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
     @Rollback
     public void shouldNotFindInactiveGroups() {
         assertThat(groupRepository.count(), is(0L));
-        User user = userManagementService.loadOrSaveUser(testUserBase + "3");
+        User user = userManagementService.loadOrCreateUser(testUserBase + "3");
 
         Group group1 = groupManagementService.createNewGroup(user, Arrays.asList(testUserBase + "4"), false);
         Group group2 = groupManagementService.createNewGroup(user, Arrays.asList(testUserBase + "5"), false);
@@ -207,7 +207,7 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
     @Rollback
     public void mergeSpecificOrderShouldWorkForSmallerGroup() {
         assertThat(groupRepository.count(), is(0L));
-        User user = userManagementService.loadOrSaveUser(testUserBase + "0");
+        User user = userManagementService.loadOrCreateUser(testUserBase + "0");
 
         Group group1 = groupManagementService.createNewGroup(user, Arrays.asList(testUserBase + "3", testUserBase + "4", testUserBase + "5"), false);
         Group group2 = groupManagementService.createNewGroup(user, Arrays.asList(testUserBase + "6", testUserBase + "7"), false);
@@ -226,7 +226,7 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
     @Rollback
     public void groupMergeShouldLeaveActiveIfFlagged() {
         assertThat(groupRepository.count(), is(0L));
-        User user = userManagementService.loadOrSaveUser(testUserBase + "1");
+        User user = userManagementService.loadOrCreateUser(testUserBase + "1");
         Group group1 = groupManagementService.createNewGroup(user, Arrays.asList(testUserBase + "2"), false);
         Group group2 = groupManagementService.createNewGroup(user, Arrays.asList(testUserBase + "3"), false);
         groupManagementService.merge(group1, group2, false, user.getId());
@@ -241,8 +241,8 @@ public class GroupManagementServiceTest extends AbstractTransactionalJUnit4Sprin
     @Rollback
     public void getMergeCandidatesShouldReturnAccurately() {
         assertThat(groupRepository.count(), is(0L));
-        User user = userManagementService.loadOrSaveUser(testUserBase + "1");
-        User user2 = userManagementService.loadOrSaveUser(testUserBase + "2");
+        User user = userManagementService.loadOrCreateUser(testUserBase + "1");
+        User user2 = userManagementService.loadOrCreateUser(testUserBase + "2");
 
         Group group1 = groupManagementService.createNewGroup(user, testGroupBase + "1", false);
         Group group2 = groupManagementService.createNewGroup(user, testGroupBase + "2", false);

@@ -11,6 +11,7 @@ import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 
 import java.net.URISyntaxException;
+import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
@@ -76,12 +77,8 @@ public class USSDUserController extends USSDController {
 
         // todo: add validation and processing of the name that is passed, as well as exception handling etc
 
-        User sessionUser;
-        try { sessionUser = userManager.findByInputNumber(inputNumber); }
-        catch (NoSuchElementException e) { return noUserError; }
-
-        sessionUser.setDisplayName(newName);
-        sessionUser = userManager.save(sessionUser);
+        User sessionUser = userManager.findByInputNumber(inputNumber);
+        userManager.updateDisplayName(sessionUser.getUid(), newName);
 
         return menuBuilder(new USSDMenu(getMessage(thisSection, keyName + doSuffix, promptKey, sessionUser), optionsHomeExit(sessionUser)));
     }
@@ -108,15 +105,11 @@ public class USSDUserController extends USSDController {
     public Request userChangeLanguage(@RequestParam(value= phoneNumber, required=true) String inputNumber,
                                       @RequestParam(value="language", required=true) String language) throws URISyntaxException {
 
-        User sessionUser;
-        try { sessionUser = userManager.findByInputNumber(inputNumber); }
-        catch (NoSuchElementException e) { return noUserError; }
+        User user = userManager.findByInputNumber(inputNumber);
+        user.setLanguageCode(language); // so next prompt shows up without needing repeat DB query
+        userManager.updateUserLanguage(user.getUid(), new Locale(language));
 
-        sessionUser.setLanguageCode(language);
-        sessionUser = userManager.save(sessionUser);
-
-        return menuBuilder(new USSDMenu(getMessage(thisSection, keyLanguage + doSuffix, promptKey, sessionUser),
-                                        optionsHomeExit(sessionUser)));
+        return menuBuilder(new USSDMenu(getMessage(thisSection, keyLanguage + doSuffix, promptKey, user), optionsHomeExit(user)));
     }
     @RequestMapping(value = homePath + userMenus + "link" + doSuffix)
     @ResponseBody

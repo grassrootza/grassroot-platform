@@ -15,6 +15,6 @@ public interface AddressBroker {
 
     void removeAddress(String userUid);
 
-
+    boolean hasAddress(String userUid);
 
 }

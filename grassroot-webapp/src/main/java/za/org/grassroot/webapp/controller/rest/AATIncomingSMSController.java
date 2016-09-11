@@ -1,5 +1,6 @@
 package za.org.grassroot.webapp.controller.rest;
 
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -10,9 +11,11 @@ import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
-import za.org.grassroot.integration.services.SmsSendingManager;
 import za.org.grassroot.integration.services.SmsSendingService;
-import za.org.grassroot.services.*;
+import za.org.grassroot.services.EventBroker;
+import za.org.grassroot.services.EventLogBroker;
+import za.org.grassroot.services.MessageAssemblingService;
+import za.org.grassroot.services.UserManagementService;
 
 import java.util.List;
 import java.util.regex.Matcher;
@@ -26,7 +29,7 @@ import java.util.regex.Pattern;
 @RequestMapping("/sms/")
 public class AATIncomingSMSController {
 
-    private static final org.slf4j.Logger log = LoggerFactory.getLogger(AATIncomingSMSController.class);
+    private static final Logger log = LoggerFactory.getLogger(AATIncomingSMSController.class);
     private static final String patternToMatch = "\\b(?:yes|no|abstain|maybe)\\b";
 
     @Autowired
@@ -55,7 +58,7 @@ public class AATIncomingSMSController {
 
         log.info("Inside AATIncomingSMSController -" + " following param values were received + ms ="+msg+ " fn= "+phoneNumber);
 
-        User user = userManager.loadOrSaveUser(phoneNumber);
+        User user = userManager.findByInputNumber(phoneNumber);
         String trimmedMsg =  msg.toLowerCase().trim();
 
         if(user ==null || !isValidInput(trimmedMsg)){
@@ -69,11 +72,7 @@ public class AATIncomingSMSController {
         boolean needsToRsvp = !eventBroker.getOutstandingResponseForUser(user, EventType.MEETING).isEmpty();
 
         if((needsToVote && needsToRsvp)) {
-<<<<<<< HEAD
-            eventManagementService.notifyUnableToProcessEventReply(user);;
-=======
             notifyUnableToProcessReply(user);
->>>>>>> 6b9ad94... Further into closing stages of cleaning, death of EventManagementService
         } else {
             if (needsToVote) {
                 List<Event> outstandingVotes = eventBroker.getOutstandingResponseForUser(user, EventType.VOTE);

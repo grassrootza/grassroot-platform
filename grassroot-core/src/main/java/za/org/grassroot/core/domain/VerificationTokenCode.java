@@ -22,7 +22,7 @@ public class VerificationTokenCode {
     @Column(name = "username", nullable = false)
     private String username;
 
-    @Column(name = "code", nullable = false) // todo : write DB update script
+    @Column(name = "code", nullable = false)
     protected String code;
 
     @Column(name = "creation_date", nullable = false)

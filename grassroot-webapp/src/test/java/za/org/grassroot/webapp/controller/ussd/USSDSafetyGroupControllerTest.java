@@ -98,10 +98,10 @@ public class USSDSafetyGroupControllerTest extends USSDAbstractUnitTest {
 
         testUser.setSafetyGroup(testGroup);
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
-        when(userManagementServiceMock.hasAddress(testUserUid)).thenReturn(false);
+        when(addressBrokerMock.hasAddress(testUserUid)).thenReturn(false);
         mockMvc.perform(get(path + "start").param(phoneParam, testUserPhone)).andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
-        verify(userManagementServiceMock, times(1)).hasAddress(testUser.getUid());
+        verify(addressBrokerMock, times(1)).hasAddress(testUser.getUid());
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(groupBrokerMock);
 

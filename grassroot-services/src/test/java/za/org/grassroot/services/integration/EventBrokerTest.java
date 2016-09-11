@@ -155,7 +155,7 @@ public class EventBrokerTest {
     @Test
     public void shouldCreateVoteFromEntity() {
         /* assertThat(eventLogRepository.count(), is(0L));
-        User user = userManagementService.loadOrSaveUser("0710001234");
+        User user = userManagementService.loadOrCreateUser("0710001234");
         Group group1 = groupManagementService.createNewGroup(user, Arrays.asList("0701112345"), false);
         Event event = new Event();
         event.setEventType(EventType.Vote);

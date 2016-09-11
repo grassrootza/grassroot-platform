@@ -29,6 +29,7 @@ import java.util.Set;
 
 /**
  * Created by luke on 2016/01/13.
+ * todo : consolidate with files in admin/account ...
  */
 @Controller
 @RequestMapping("/paid_account")

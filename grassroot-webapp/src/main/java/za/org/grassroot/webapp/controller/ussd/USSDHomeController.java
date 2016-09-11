@@ -129,7 +129,7 @@ public class USSDHomeController extends USSDController {
             return menuBuilder(interruptedPrompt(inputNumber));
         }
 
-        User sessionUser = userManager.loadOrSaveUser(inputNumber);
+        User sessionUser = userManager.loadOrCreateUser(inputNumber);
         userLogger.recordUserSession(sessionUser.getUid(), UserInterfaceType.USSD);
 
         /*
@@ -144,7 +144,7 @@ public class USSDHomeController extends USSDController {
             openingMenu = processTrailingDigits(trailingDigits, sessionUser);
         } else {
             if (!sessionUser.isHasInitiatedSession())
-                userManager.setInitiatedSession(sessionUser);
+                userManager.setHasInitiatedUssdSession(sessionUser.getUid());
 
             USSDResponseTypes neededResponse = neededResponse(sessionUser);
             if (!neededResponse.equals(USSDResponseTypes.NONE)) {
@@ -166,7 +166,7 @@ public class USSDHomeController extends USSDController {
     @ResponseBody
     public Request forceStartMenu(@RequestParam(value = phoneNumber) String inputNumber) throws URISyntaxException {
 
-        return menuBuilder(defaultStartMenu(userManager.loadOrSaveUser(inputNumber)));
+        return menuBuilder(defaultStartMenu(userManager.loadOrCreateUser(inputNumber)));
 
     }
 
@@ -197,7 +197,7 @@ public class USSDHomeController extends USSDController {
 
     private USSDResponseTypes neededResponse(User user) {
 
-        if (userManager.needsToRespondToSafetyEvent(user)) return USSDResponseTypes.RESPOND_SAFETY;
+        if (safetyEventBroker.needsToRespondToSafetyEvent(user)) return USSDResponseTypes.RESPOND_SAFETY;
         if (eventBroker.userHasResponsesOutstanding(user, EventType.VOTE)) return USSDResponseTypes.VOTE;
         if (eventBroker.userHasResponsesOutstanding(user, EventType.MEETING)) return USSDResponseTypes.MTG_RSVP;
         if (userManager.hasIncompleteLogBooks(user.getUid(), daysPastLogbooks)) return USSDResponseTypes.RESPOND_TODO;
@@ -430,7 +430,7 @@ public class USSDHomeController extends USSDController {
                                   @RequestParam(value = yesOrNoParam) String attending) throws URISyntaxException {
 
         String welcomeKey;
-        User user = userManager.loadOrSaveUser(inputNumber);
+        User user = userManager.loadOrCreateUser(inputNumber);
         Meeting meeting = eventBroker.loadMeeting(meetingUid);
 
         if ("yes".equals(attending)) {

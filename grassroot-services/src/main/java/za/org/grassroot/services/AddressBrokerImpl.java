@@ -80,4 +80,11 @@ public class AddressBrokerImpl implements AddressBroker {
 
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public boolean hasAddress(String userUid) {
+        User user = userRepository.findOneByUid(userUid);
+        return addressRepository.findOneByResident(user) != null;
+    }
+
 }

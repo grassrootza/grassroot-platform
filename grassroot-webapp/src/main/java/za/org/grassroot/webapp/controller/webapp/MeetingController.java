@@ -242,7 +242,8 @@ public class MeetingController extends BaseController {
         model.addAttribute("includeSubGroups", includeSubgroups);
 
         model.addAttribute("message", message);
-        int recipients = userManagementService.fetchByGroup(groupUid, includeSubgroups).size();
+        Group group = groupBroker.load(groupUid);
+        int recipients = includeSubgroups ? group.getMembersWithChildrenIncluded().size() : group.getMembers().size();
         model.addAttribute("recipients", recipients);
         model.addAttribute("cost", recipients * 0.2);
         return "meeting/remind_confirm";

@@ -72,7 +72,6 @@ public class SafetyEventBrokerImpl implements SafetyEventBroker {
                 cacheUtilService.putSafetyEventResponseForUser(respondent, safetyEvent);
                 String message = messageAssemblingService.createSafetyEventMessage(respondent, requestor, address, false);
                 sendMessage(respondent,message);
-             //   smsSendingService.sendSMS(message, respondent.getPhoneNumber());
             }
         }
 
@@ -84,7 +83,6 @@ public class SafetyEventBrokerImpl implements SafetyEventBroker {
     public SafetyEvent load(String safetyEventUid) {
         return safetyEventRepository.findOneByUid(safetyEventUid);
     }
-
 
     @Override
     @Transactional
@@ -140,6 +138,11 @@ public class SafetyEventBrokerImpl implements SafetyEventBroker {
         User user = userRepository.findOneByUid(userUid);
         return cacheUtilService.getOutstandingSafetyEventResponseForUser(user);
 
+    }
+
+    @Override
+    public boolean needsToRespondToSafetyEvent(User sessionUser) {
+        return getOutstandingUserSafetyEventsResponse(sessionUser.getUid()) != null;
     }
 
     @Override

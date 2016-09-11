@@ -27,9 +27,9 @@ public class Account implements Serializable {
     @Column(name = "uid", nullable = false, unique = true)
     private String uid;
 
-    @ManyToOne()
+    @ManyToOne
     @JoinColumn(name = "created_by_user", nullable = false, updatable = false)
-    private User createdByUser; // todo : DB script
+    private User createdByUser;
 
     @Basic
     @Column(name="created_date_time", insertable = true, updatable = false)
@@ -73,6 +73,9 @@ public class Account implements Serializable {
     @Basic
     @Column(name="action_todo_extra")
     private boolean todoExtraMessages;
+
+    @Version
+    private Integer version;
 
     /*
     Constructors
@@ -200,6 +203,10 @@ public class Account implements Serializable {
 
     public void removePaidGroup(PaidGroup paidGroup) {
         paidGroups.remove(paidGroup);
+    }
+
+    public Integer getVersion() {
+        return version;
     }
 
     @Override

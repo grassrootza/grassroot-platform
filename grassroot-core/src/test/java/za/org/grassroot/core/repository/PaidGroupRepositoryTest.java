@@ -58,8 +58,8 @@ public class PaidGroupRepositoryTest {
         testUser = userRepository.save(new User(testPhoneNumber));
         testGroup = groupRepository.save(new Group(testGroupName, testUser));
         testGroup2 = groupRepository.save(new Group(testGroupName + "2", testUser));
-        testAccount = accountRepository.save(new Account(testAccountName, true));
-        testAccount2 = accountRepository.save(new Account(testAccountName + "2", true));
+        testAccount = accountRepository.save(new Account(testUser, testAccountName));
+        testAccount2 = accountRepository.save(new Account(testUser, testAccountName + "2"));
 
     }
 

@@ -129,7 +129,7 @@ public class UserRestController {
 
         if (passwordTokenService.isShortLivedOtpValid(phoneNumber, token)) {
             log.info("User authentication successful for user with phoneNumber={}", phoneNumber);
-            User user = userManagementService.loadOrSaveUser(phoneNumber);
+            User user = userManagementService.findByInputNumber(phoneNumber);
             if (!user.hasAndroidProfile()) {
                 userManagementService.createAndroidUserProfile(new UserDTO(user));
             }

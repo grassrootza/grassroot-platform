@@ -1,6 +1,7 @@
 package za.org.grassroot.services;
 
 import za.org.grassroot.core.domain.SafetyEvent;
+import za.org.grassroot.core.domain.User;
 
 import java.util.List;
 
@@ -23,7 +24,6 @@ public interface SafetyEventBroker {
 
     void sendReminders(String uid);
 
-
-
+    boolean needsToRespondToSafetyEvent(User sessionUser);
 
 }

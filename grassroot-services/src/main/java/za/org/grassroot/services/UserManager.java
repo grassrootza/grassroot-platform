@@ -3,8 +3,6 @@ package za.org.grassroot.services;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -143,6 +141,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
+    @Transactional
     public User createAndroidUserProfile(UserDTO userDTO) throws UserExistsException {
         Objects.requireNonNull(userDTO);
         User userProfile = new User(userDTO.getPhoneNumber(), userDTO.getDisplayName());
@@ -152,7 +151,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
         if (userExists) {
 
-            User userToUpdate = loadOrSaveUser(phoneNumber);
+            User userToUpdate = userRepository.findByPhoneNumber(phoneNumber);
             if (userToUpdate.hasAndroidProfile() && userToUpdate.getMessagingPreference().equals(UserMessagingPreference.ANDROID_APP)) {
                 log.warn("User already has android profile");
                 throw new UserExistsException("User '" + userProfile.getUsername() + "' already has a android profile!");
@@ -287,23 +286,18 @@ public class UserManager implements UserManagementService, UserDetailsService {
         return user;
     }
 
-    @Override
-    public User save(User userToSave) {
-        return userRepository.save(userToSave);
-    }
-
     /**
      * Creating some functions to internalize conversion of phone numbers and querying
      */
 
     @Override
-    public User loadOrSaveUser(String inputNumber) {
+    public User loadOrCreateUser(String inputNumber) {
         String phoneNumber = PhoneNumberUtil.convertPhoneNumber(inputNumber);
         if (!userExist(phoneNumber)) {
             User sessionUser = new User(phoneNumber);
             sessionUser.setUsername(phoneNumber);
             User newUser = userRepository.save(sessionUser);
-            asyncUserService.recordUserLog(newUser.getUid(), UserLogType.CREATED_IN_DB, "Created via loadOrSaveUser");
+            asyncUserService.recordUserLog(newUser.getUid(), UserLogType.CREATED_IN_DB, "Created via loadOrCreateUser");
             return newUser;
         } else {
             return userRepository.findByPhoneNumber(phoneNumber);
@@ -312,7 +306,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     /*
     Method to load or save a user and store that they have initiated the session. Putting it in services and making it
-    distinct from standard loadOrSaveUser because we may want to optimize it aggressively in future.
+    distinct from standard loadOrCreateUser because we may want to optimize it aggressively in future.
      */
 
     @Override
@@ -338,21 +332,9 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
-    public Page<User> getGroupMembers(Group group, int pageNumber, int pageSize) {
-        return userRepository.findByGroupsPartOf(group, new PageRequest(pageNumber, pageSize));
-    }
-
-    @Override
     public boolean userExist(String phoneNumber) {
         return userRepository.existsByPhoneNumber(phoneNumber);
     }
-
-    @Override
-    public boolean hasAddress(String uid) {
-        User user = userRepository.findOneByUid(uid);
-        return addressRepository.findOneByResident(user) != null;
-    }
-
 
     @Override
     @Transactional
@@ -381,11 +363,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
     public boolean needsToRenameSelf(User user) {
         return !user.hasName() && (!asyncUserService.hasSkippedName(user.getUid())
                 && user.getCreatedDateTime().isBefore(Instant.now().minus(3, ChronoUnit.MINUTES)));
-    }
-
-    @Override
-    public boolean needsToRespondToSafetyEvent(User sessionUser) {
-        return safetyEventBroker.getOutstandingUserSafetyEventsResponse(sessionUser.getUid()) != null;
     }
 
     @Override
@@ -429,7 +406,9 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     @Override
     @Transactional
-    public void setInitiatedSession(User sessionUser) {
+    public void setHasInitiatedUssdSession(String userUid) {
+        User sessionUser = userRepository.findOneByUid(userUid);
+
         sessionUser.setHasInitiatedSession(true);
 
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
@@ -467,6 +446,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
+    @Transactional
     public Group fetchGroupUserMustRename(User user) {
         Group lastCreatedGroup = groupRepository.findFirstByCreatedByUserAndActiveTrueOrderByIdDesc(user);
         if (lastCreatedGroup != null && lastCreatedGroup.isActive() && !lastCreatedGroup.hasName()
@@ -474,17 +454,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
             return lastCreatedGroup;
         else
             return null;
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Set<User> fetchByGroup(String groupUid, boolean includeSubgroups) {
-        Group group = groupRepository.findOneByUid(groupUid);
-        if (includeSubgroups) {
-            return group.getMembersWithChildrenIncluded();
-        } else {
-            return group.getMembers();
-        }
     }
 
     @Override

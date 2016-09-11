@@ -3,11 +3,8 @@ package za.org.grassroot.webapp.controller.webapp;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.User;
 import za.org.grassroot.services.MembershipInfo;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.webapp.model.web.GroupWrapper;
@@ -74,8 +71,7 @@ public class GroupCreateControllerTest extends WebAppAbstractUnitTest {
                                     new HashSet<>(dummyGroupCreator.getAddedMembers()),
                                     GroupPermissionTemplate.DEFAULT_GROUP, null, (60 * 24), true)).thenReturn(dummyGroup);
 
-        when((userManagementServiceMock.loadOrSaveUser(sessionTestUser.getPhoneNumber()))).thenReturn(sessionTestUser);
-        when(userManagementServiceMock.save(sessionTestUser)).thenReturn(sessionTestUser);
+        when((userManagementServiceMock.findByInputNumber(sessionTestUser.getPhoneNumber()))).thenReturn(sessionTestUser);
 
         mockMvc.perform(post("/group/create").sessionAttr("groupCreator", dummyGroupCreator).
                 param("groupTemplate", GroupPermissionTemplate.DEFAULT_GROUP.toString()))

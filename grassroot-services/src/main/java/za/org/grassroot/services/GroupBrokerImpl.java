@@ -31,15 +31,10 @@ import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 import za.org.grassroot.services.util.TokenGeneratorService;
 
-<<<<<<< HEAD
-import java.time.*;
-=======
-import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
->>>>>>> 6b9ad94... Further into closing stages of cleaning, death of EventManagementService
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;

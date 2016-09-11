@@ -61,7 +61,7 @@ public class PasswordTokenManagerTest {
 
     @Test
     public void testGenerateVerificationCode3() throws Exception {
-        User user = userManagementService.loadOrSaveUser("0729177903") ;
+        User user = userManagementService.loadOrCreateUser("0729177903") ;
         VerificationTokenCode verificationTokenCode = passwordTokenService.generateShortLivedOTP("0729177903");
         assertThat(passwordTokenService.isShortLivedOtpValid(user.getUsername(), verificationTokenCode.getCode()),
                 is(true));

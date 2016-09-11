@@ -1,5 +1,6 @@
 package za.org.grassroot.core.repository;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.LoggerFactory;
@@ -22,17 +23,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
 
 /**
- * @author Lesetse Kimwaga
-=======
-
-import javax.transaction.Transactional;
-
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.*;
-
-/**
  * Created by luke on 2015/11/14.
->>>>>>> Stashed changes
  */
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = TestContextConfiguration.class)
@@ -57,13 +48,20 @@ public class AccountRepositoryTest {
     @Autowired
     PaidGroupRepository paidGroupRepository;
 
+    User testUser;
+
+    @Before
+    public void setUp() throws Exception {
+        testUser = userRepository.save(new User("0601112345"));
+    }
+
     @Test
     @Rollback
     public void shouldSaveAndReturnId() {
 
         assertThat(accountRepository.count(), is(0L));
 
-        Account account = new Account("accountname",true);
+        Account account = new Account(testUser, "accountname");
         account = accountRepository.save(account);
         assertNotEquals(null, account.getId());
 
@@ -75,7 +73,7 @@ public class AccountRepositoryTest {
 
         assertThat(accountRepository.count(), is(0L));
 
-        Account account = new Account(accountName, true);
+        Account account = new Account(testUser, accountName);
         accountRepository.save(account);
 
         assertThat(accountRepository.count(), is(1L));
@@ -94,7 +92,7 @@ public class AccountRepositoryTest {
 
         assertThat(accountRepository.count(), is(0L));
 
-        Account account = new Account(accountName, true);
+        Account account = new Account(testUser, accountName);
         accountRepository.save(account);
 
         assertThat(accountRepository.count(), is(1L));
@@ -115,7 +113,7 @@ public class AccountRepositoryTest {
     public void shouldFindByAccountName() {
 
         assertThat(accountRepository.count(), is(0L));
-        Account account = new Account(accountName, true);
+        Account account = new Account(testUser, accountName);
         account = accountRepository.save(account);
         List<Account> accountList = accountRepository.findByAccountName(accountName);
         assertEquals(accountList.size(), 1);
@@ -130,7 +128,7 @@ public class AccountRepositoryTest {
     public void shouldFindByBillingMail() {
 
         assertThat(accountRepository.count(), is(0L));
-        Account account = new Account(accountName, true);
+        Account account = new Account(testUser, accountName);
         account.setPrimaryEmail(billingEmail);
         accountRepository.save(account);
         List<Account> accountList = accountRepository.findByAccountName(accountName);
@@ -147,7 +145,7 @@ public class AccountRepositoryTest {
     public void shouldDisable() {
 
         assertThat(accountRepository.count(), is(0L));
-        Account account = new Account(accountName, true);
+        Account account = new Account(testUser, accountName);
         accountRepository.save(account);
         Account accountFromDb = accountRepository.findByAccountName(accountName).get(0);
         accountFromDb.setEnabled(false);
@@ -162,8 +160,9 @@ public class AccountRepositoryTest {
     public void shouldFindByEnabledAndDisabled() {
 
         assertThat(accountRepository.count(), is(0L));
-        Account accountEnabled = new Account(accountName, true);
-        Account accountDisabled = new Account(accountName + "_disabled", false);
+        Account accountEnabled = new Account(testUser, accountName);
+        Account accountDisabled = new Account(testUser, accountName + "_disabled");
+        accountDisabled.setEnabled(false);
         accountRepository.save(accountEnabled);
         accountRepository.save(accountDisabled);
 
@@ -191,7 +190,8 @@ public class AccountRepositoryTest {
         User testAdmin = new User("0505550000");
         testAdmin = userRepository.save(testAdmin);
 
-        Account account = new Account(accountName, testAdmin);
+        Account account = new Account(testUser, accountName);
+        account.addAdministrator(testAdmin);
         accountRepository.save(account);
 
         testAdmin.setAccountAdministered(account);
@@ -218,7 +218,7 @@ public class AccountRepositoryTest {
         testUser = userRepository.save(testUser);
         Group testGroup = new Group("testGroup", testUser);
         testGroup = groupRepository.save(testGroup);
-        Account account = new Account(accountName, true);
+        Account account = new Account(testUser, accountName);
         account = accountRepository.save(account);
         PaidGroup testPaidGroup = new PaidGroup(testGroup, account, testUser);
         testPaidGroup = paidGroupRepository.save(testPaidGroup);
@@ -248,7 +248,7 @@ public class AccountRepositoryTest {
 
         assertThat(accountRepository.count(), is(0L));
 
-        Account account = new Account(accountName, true);
+        Account account = new Account(testUser, accountName);
         accountRepository.save(account);
 
         Account accountFromDb = accountRepository.findByAccountName(accountName).get(0);

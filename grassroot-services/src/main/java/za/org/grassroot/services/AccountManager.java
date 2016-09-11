@@ -76,12 +76,14 @@ public class AccountManager implements AccountManagementService {
             account.setPrimaryEmail(billingEmail);
         }
 
-        if (!StringUtils.isEmpty(administratorUid)) {
+        /*if (!StringUtils.isEmpty(administratorUid)) {
             AfterTxCommitTask afterTxCommitTask = () -> addAdministrator(userUid, accountUid, administratorUid);
             applicationEventPublisher.publishEvent(afterTxCommitTask);
-        }
+        }*/
 
-        accountRepository.save(account);
+        accountRepository.saveAndFlush(account);
+
+        addAdministrator(userUid, accountUid, administratorUid);
 
         return account.getUid();
     }
