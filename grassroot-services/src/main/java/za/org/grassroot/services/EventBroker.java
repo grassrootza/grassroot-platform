@@ -88,6 +88,7 @@ public interface EventBroker {
 
 	Page<Event> getEventsUserCanView(User user, EventType eventType, EventListTimeType timeType, int pageNumber, int pageSize);
 
+	// todo : where relevant, switch to group getter
 	// pass null to eventType to get all events, and null to either of the timestamps to leave unlimited (i.e., all the way to future, or all the way to past
 	List<Event> retrieveGroupEvents(Group group, EventType eventType, Instant periodStart, Instant periodEnd);
 

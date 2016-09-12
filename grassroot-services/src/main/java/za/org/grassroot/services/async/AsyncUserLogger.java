@@ -46,7 +46,7 @@ public interface AsyncUserLogger {
      * analysis to improve the date/time parser's capabilities.
      * @param userUid The uid of the user that entered the string
      * @param dateTimeString The string that the user entered (the raw input)
-     * @param action The action the user was trying to perform (meeting/vote/logbook)
+     * @param action The action the user was trying to perform (meeting/vote/to-do)
      * @param interfaceType The interface through which the string was entered
      */
     void recordUserInputtedDateTime(String userUid, String dateTimeString, String action, UserInterfaceType interfaceType);

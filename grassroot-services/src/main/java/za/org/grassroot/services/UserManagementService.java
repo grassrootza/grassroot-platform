@@ -86,7 +86,7 @@ public interface UserManagementService {
 
     Group fetchGroupUserMustRename(User user);
 
-    boolean hasIncompleteLogBooks(String userUid, long daysInPast);
+    boolean hasIncompleteTodos(String userUid, long daysInPast);
 
     LinkedHashMap<String, String> getImplementedLanguages();
 

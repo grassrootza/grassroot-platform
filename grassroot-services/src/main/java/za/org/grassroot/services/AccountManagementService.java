@@ -42,7 +42,7 @@ public interface AccountManagementService {
     Account findAccountForGroup(String groupUid);
 
     /*
-    Methods to handle billing for institutional accounts
+    Methods to handle additional features for accounts
      */
 
     void sendFreeFormMessage(String userUid, String groupUid, String message);

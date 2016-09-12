@@ -20,6 +20,7 @@ import java.time.ZoneOffset;
 import java.time.temporal.ChronoField;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Set;
 
 import static java.time.temporal.ChronoUnit.DAYS;
 import static java.time.temporal.ChronoUnit.HOURS;
@@ -98,6 +99,8 @@ public class EventRepositoryTest {
         List<Event> secondSet = eventRepository.findByParentGroupAndEventStartDateTimeBetweenAndCanceledFalse(group,
                 Instant.now(), DateTimeUtil.getVeryLongAwayInstant(), new Sort(Sort.Direction.ASC, "EventStartDateTime"));
 
+        Group updatedGroup = groupRepository.findOneByUid(group.getUid());
+
         assertNotNull(firstSet);
         assertNotNull(secondSet);
         assertEquals(2, firstSet.size());
@@ -110,13 +113,11 @@ public class EventRepositoryTest {
         assertFalse(secondSet.contains(futureEventCancelled));
         assertTrue(secondSet.contains(futureEvent));
 
-        /*
-        todo : fix / diagnore this (currently set returns 0) before using new design in production code
-        Set<Event> list = group.getUpcomingEvents(event -> true);
-        assertEquals(1, list.size());
-        assertEquals("future event", list.iterator().next().getName());
-        */
-
+        Set<Event> listUpcoming = updatedGroup.getUpcomingEvents(event -> true, true);
+        Set<Event> listAll = updatedGroup.getEvents();
+        assertEquals(1, listUpcoming.size());
+        assertEquals(3, listAll.size());
+        assertEquals("future event", listUpcoming.iterator().next().getName());
     }
 
     @Test

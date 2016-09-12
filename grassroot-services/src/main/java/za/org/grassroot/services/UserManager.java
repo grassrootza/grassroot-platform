@@ -367,14 +367,14 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     @Override
     @Transactional(readOnly = true)
-    public boolean hasIncompleteLogBooks(String userUid, long daysInPast) {
+    public boolean hasIncompleteTodos(String userUid, long daysInPast) {
         // checks for incomplete entries
         User user = userRepository.findOneByUid(userUid);
         Instant start = Instant.now().minus(daysInPast, ChronoUnit.DAYS);
         Instant end = Instant.now();
         List<Todo> todos = todoRepository.findByParentGroupMembershipsUserAndActionByDateBetweenAndCompletionPercentageLessThanAndCancelledFalse(
                 user, start, end, Todo.COMPLETION_PERCENTAGE_BOUNDARY, new Sort(Sort.Direction.DESC, "createdDateTime"));
-        return todos.stream().anyMatch(logBook -> !logBook.isCompletedBy(user));
+        return todos.stream().anyMatch(todo -> !todo.isCompletedBy(user));
     }
 
     /*

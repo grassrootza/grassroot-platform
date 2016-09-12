@@ -1,5 +1,7 @@
 package za.org.grassroot.core.domain;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.UIDGenerator;
@@ -18,6 +20,9 @@ import java.util.stream.Collectors;
 @Entity
 @Table(name = "group_profile") // quoting table name in case "group" is a reserved keyword
 public class Group implements TodoContainer, VoteContainer, MeetingContainer, Serializable, Comparable<Group> {
+
+    private static final Logger logger = LoggerFactory.getLogger(Group.class);
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
@@ -244,13 +249,8 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         }
     }
 
-    public Set<Membership> addMembers(Collection<User> newMembers) {
-        return addMembers(newMembers, BaseRoles.ROLE_ORDINARY_MEMBER);
-    }
-
     public Set<Membership> addMembers(Collection<User> newMembers, String roleName) {
         Objects.requireNonNull(roleName);
-
         Role role = getRole(roleName);
         return addMembers(newMembers, role);
     }
@@ -390,6 +390,30 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         return new HashSet<>(events);
     }
 
+    /*
+    Note: this is for direct children events, i.e., no intervening action / meeting / vote
+     */
+    public void addChildEvent(Event event) {
+        if (events == null) {
+            events = new HashSet<>();
+        }
+        events.add(event);
+    }
+
+    public Set<Event> getDescendantEvents() {
+        if (descendantEvents == null) {
+            descendantEvents = new HashSet<>();
+        }
+        return new HashSet<>(descendantEvents);
+    }
+
+    public void addDescendantEvent(Event event) {
+        if (descendantEvents == null) {
+            descendantEvents = new HashSet<>();
+        }
+        this.descendantEvents.add(event);
+    }
+
     public Set<Event> getUpcomingEventsIncludingParents(Predicate<Event> filter) {
         Set<Event> events = new HashSet<>();
 
@@ -397,20 +421,29 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         Group group = this;
         do {
             boolean parentGroup = !group.equals(this);
-            events.addAll(group.getUpcomingEventsInternal(filter, time, parentGroup));
+            events.addAll(group.getUpcomingEventsInternal(filter, time, parentGroup, false));
             group = group.getParent();
         } while (group != null);
 
         return events;
     }
 
-    public Set<Event> getUpcomingEvents(Predicate<Event> filter) {
+    public Set<Event> getUpcomingEvents(Predicate<Event> filter, boolean includeDescendants) {
         Instant time = Instant.now();
-        return getUpcomingEventsInternal(filter, time, false);
+        return getUpcomingEventsInternal(filter, time, includeDescendants, false);
     }
 
-    private Set<Event> getUpcomingEventsInternal(Predicate<Event> filter, Instant time, boolean onlyIncludingSubgroups) {
-        return getEvents().stream()
+    /**
+     *
+     * @param filter The functional predicate, if any, for filtering (note the method already removes cancelled events)
+     * @param time The time from which "upcoming" is defined
+     * @param includeAllDescendants Whether to include only events that are direct children of the group or also children of other meetings, actions, etc
+     * @param onlyIncludingSubgroups Whether to select only those events that include subgroups
+     * @return
+     */
+    private Set<Event> getUpcomingEventsInternal(Predicate<Event> filter, Instant time, boolean includeAllDescendants, boolean onlyIncludingSubgroups) {
+        Set<Event> baseSet = includeAllDescendants ? getDescendantEvents() : getEvents();
+        return baseSet.stream()
                 .filter(event ->
                         filter.test(event) &&
                         !event.isCanceled() &&

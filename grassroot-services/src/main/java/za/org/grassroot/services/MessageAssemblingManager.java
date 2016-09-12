@@ -86,26 +86,26 @@ public class MessageAssemblingManager implements MessageAssemblingService {
     @Override
     public String createTodoReminderMessage(User user, Todo todo) {
         Locale locale = getUserLocale(user);
-        String[] args = populateLogBookFields(todo);
-        final String msgKey = todo.getActionByDate().isAfter(Instant.now()) ? "sms.logbook.reminder" : "sms.todo.reminder.past";
+        String[] args = populateTodoFields(todo);
+        final String msgKey = todo.getActionByDate().isAfter(Instant.now()) ? "sms.todo.reminder" : "sms.todo.reminder.past";
         return messageSourceAccessor.getMessage(msgKey, args, locale);
     }
 
     @Override
     public String createTodoRecordedNotificationMessage(User target, Todo todo) {
         Locale locale = getUserLocale(target);
-        String[] args = populateLogBookFields(todo);
-        String messageKey = todo.isAllGroupMembersAssigned() ? "sms.logbook.new.notassigned" :
-                (todo.getAssignedMembers().size()) == 1 ? "sms.logbook.new.assigned.one" : "sms.logbook.new.assigned.many";
+        String[] args = populateTodoFields(todo);
+        String messageKey = todo.isAllGroupMembersAssigned() ? "sms.todo.new.notassigned" :
+                (todo.getAssignedMembers().size()) == 1 ? "sms.todo.new.assigned.one" : "sms.todo.new.assigned.many";
         return messageSourceAccessor.getMessage(messageKey, args, locale);
     }
 
     @Override
     public String createTodoUpdateNotificationMessage(User target, Todo todo) {
         Locale locale = getUserLocale(target);
-        String[] args = populateLogBookFields(todo);
-        String messageKey = todo.isAllGroupMembersAssigned() ? "sms.logbook.update.notassigned" :
-                (todo.getAssignedMembers().size()) == 1 ? "sms.logbook.update.assigned.one" : "sms.logbook.update.assigned.many";
+        String[] args = populateTodoFields(todo);
+        String messageKey = todo.isAllGroupMembersAssigned() ? "sms.todo.update.notassigned" :
+                (todo.getAssignedMembers().size()) == 1 ? "sms.todo.update.assigned.one" : "sms.todo.update.assigned.many";
         return messageSourceAccessor.getMessage(messageKey, args, locale);
 
     }
@@ -314,7 +314,7 @@ public class MessageAssemblingManager implements MessageAssemblingService {
 
     }
 
-    private String[] populateLogBookFields(Todo todo) {
+    private String[] populateTodoFields(Todo todo) {
         Group group = todo.getAncestorGroup();
         String salutation = (group.hasName()) ? group.getGroupName() : "Grassroot";
         DateTimeFormatter sdf = DateTimeFormatter.ofPattern("EEE, d MMM");

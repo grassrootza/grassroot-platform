@@ -129,8 +129,8 @@ public class TaskBrokerImpl implements TaskBroker {
         Set<TaskDTO> taskDtos = resolveEventTaskDtos(events, user, changedSince);
 
         List<Todo> todos = todoRepository.findByParentGroupAndCancelledFalse(group);
-        Set<TaskDTO> logBookTaskDtos = resolveLogBookTaskDtos(todos, user, changedSince);
-        taskDtos.addAll(logBookTaskDtos);
+        Set<TaskDTO> todoTaskDtos  = resolveTodoTaskDtos(todos, user, changedSince);
+        taskDtos.addAll(todoTaskDtos);
 
         List<TaskDTO> tasks = new ArrayList<>(taskDtos);
         Collections.sort(tasks, Collections.reverseOrder());
@@ -150,8 +150,8 @@ public class TaskBrokerImpl implements TaskBroker {
         Set<TaskDTO> taskDtos = resolveEventTaskDtos(events, user, null);
 
         List<Todo> todos = todoRepository.findByParentGroupMembershipsUserAndActionByDateGreaterThanAndCancelledFalse(user, now);
-        Set<TaskDTO> logBookTaskDtos = resolveLogBookTaskDtos(todos, user, null);
-        taskDtos.addAll(logBookTaskDtos);
+        Set<TaskDTO> todoTaskDtos = resolveTodoTaskDtos(todos, user, null);
+        taskDtos.addAll(todoTaskDtos);
 
         List<TaskDTO> tasks = new ArrayList<>(taskDtos);
         Collections.sort(tasks);
@@ -195,7 +195,7 @@ public class TaskBrokerImpl implements TaskBroker {
 		Set<TaskDTO> taskDTOs = resolveEventTaskDtos(events, user, null);
 
         List<Todo> todos = todoRepository.findByParentGroupMembershipsUserAndMessageSearchTerm(user.getId(), tsQuery);
-		Set<TaskDTO> todoTaskDTOs = resolveLogBookTaskDtos(todos, user, null);
+		Set<TaskDTO> todoTaskDTOs = resolveTodoTaskDtos(todos, user, null);
 		taskDTOs.addAll(todoTaskDTOs);
 
 		List<TaskDTO> tasks = new ArrayList<>(taskDTOs);
@@ -216,10 +216,10 @@ public class TaskBrokerImpl implements TaskBroker {
         return taskDtos;
     }
 
-    private Set<TaskDTO> resolveLogBookTaskDtos(List<Todo> todos, User user, Instant changedSince) {
+    private Set<TaskDTO> resolveTodoTaskDtos(List<Todo> todos, User user, Instant changedSince) {
         Set<TaskDTO> taskDtos = new HashSet<>();
         for (Todo todo : todos) {
-            if (changedSince == null || isLogBookAddedOrUpdatedSince(todo, changedSince)) {
+            if (changedSince == null || isTodoAddedOrUpdatedSince(todo, changedSince)) {
                 taskDtos.add(new TaskDTO(todo, user));
             }
         }
@@ -241,7 +241,7 @@ public class TaskBrokerImpl implements TaskBroker {
         return (userResponseLog != null) && (userResponseLog.getCreatedDateTime().isAfter(changedSince));
     }
 
-    private boolean isLogBookAddedOrUpdatedSince(Todo todo, Instant changedSince) {
+    private boolean isTodoAddedOrUpdatedSince(Todo todo, Instant changedSince) {
         if (todo.getCreatedDateTime().isAfter(changedSince)) {
             return true;
         } else {

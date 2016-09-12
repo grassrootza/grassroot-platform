@@ -28,7 +28,6 @@ public abstract class Event<P extends UidIdentifiable> extends AbstractEventEnti
     /*
 	Version used by hibernate to resolve conflicting updates. Do not update set it, it is for Hibernate only
      */
-
 	@Version
 	private Integer version;
 
@@ -75,7 +74,10 @@ public abstract class Event<P extends UidIdentifiable> extends AbstractEventEnti
 		super(name, eventStartDateTime, user, includeSubGroups, rsvpRequired, relayable, reminderType, customReminderMinutes, description);
 		this.canceled = false;
 		this.noRemindersSent = 0;
+
 		this.ancestorGroup = parent.getThisOrAncestorGroup();
+		this.ancestorGroup.addDescendantEvent(this); // note: without this JPA is not mapping both sides of the relationship
+
 		updateScheduledReminderTime();
 	}
 

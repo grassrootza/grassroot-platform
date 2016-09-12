@@ -96,7 +96,7 @@ public class TodoRequestBrokerImpl implements TodoRequestBroker {
         TodoRequest todoRequest = todoRequestRepository.findOneByUid(requestUid);
 
         if (!todoRequest.getCreatedByUser().equals(user))
-            throw new AccessDeniedException("You are not the creator of this Logbook");
+            throw new AccessDeniedException("You are not the creator of this todo");
 
         todoRequest.setMessage(message);
 	}
@@ -111,17 +111,17 @@ public class TodoRequestBrokerImpl implements TodoRequestBroker {
         TodoRequest todoRequest = todoRequestRepository.findOneByUid(requestUid);
 
         if (!todoRequest.getCreatedByUser().equals(user))
-            throw new AccessDeniedException("You are not the creator of this logbook");
+            throw new AccessDeniedException("You are not the creator of this todo");
 
         todoRequest.setActionByDate(convertToSystemTime(dueDate, getSAST()));
     }
 
     @Override
 	@Transactional
-	public void finish(String logBookUid) {
-		Objects.requireNonNull(logBookUid);
+	public void finish(String todoUid) {
+		Objects.requireNonNull(todoUid);
 
-		TodoRequest todoRequest = todoRequestRepository.findOneByUid(logBookUid);
+		TodoRequest todoRequest = todoRequestRepository.findOneByUid(todoUid);
 
 		// Since requests are only used in the USSD, and since we are stripping user assignment from USSD as too compelx
         // for both users and design, am defaulting this to whole group for now
