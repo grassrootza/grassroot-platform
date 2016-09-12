@@ -403,7 +403,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
 
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
         when(userManagementServiceMock.load(sessionTestUser.getUid())).thenReturn(sessionTestUser);
-        when(eventBrokerMock.retrieveGroupEvents(testGroup, EventType.VOTE, DateTimeUtil.convertToSystemTime(start, DateTimeUtil.getSAST()),
+        when(eventBrokerMock.retrieveGroupEvents(testGroup, null, DateTimeUtil.convertToSystemTime(start, DateTimeUtil.getSAST()),
                 DateTimeUtil.convertToSystemTime(end, DateTimeUtil.getSAST()))).thenReturn(dummyEvents);
         when(todoBrokerMock.getTodosInPeriod(testGroup, start, end)).thenReturn(dummyLogbooks);
         when(groupBrokerMock.getLogsForGroup(testGroup, start, end)).thenReturn(dummyGroupLogs);
@@ -413,7 +413,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
                 andExpect(view().name("group/history")).
                 andExpect(model().attribute("group", hasProperty("uid", is(testGroup.getUid())))).
                 andExpect(model().attribute("eventsInPeriod", is(dummyEvents))).
-                andExpect(model().attribute("logBooksInPeriod", is(dummyLogbooks))).
+                andExpect(model().attribute("todosInPeriod", is(dummyLogbooks))).
                 andExpect(model().attribute("groupLogsInPeriod", is(dummyGroupLogs))).
                 andExpect(model().attribute("monthsToView", is(dummyMonths)));
 
@@ -462,7 +462,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
                 andExpect(view().name("group/history")).
                 andExpect(model().attribute("group", hasProperty("uid", is(testGroup.getUid())))).
                 andExpect(model().attribute("eventsInPeriod", is(dummyEvents))).
-                andExpect(model().attribute("logBooksInPeriod", is(dummyTodos))).
+                andExpect(model().attribute("todosInPeriod", is(dummyTodos))).
                 andExpect(model().attribute("groupLogsInPeriod", is(dummyGroupLogs))).
                 andExpect(model().attribute("monthsToView", is(dummyMonths)));
 

@@ -62,13 +62,15 @@ public class USSDUserControllerTest extends USSDAbstractUnitTest {
     public void renameSelfDoneScreenShouldWork() throws Exception {
         User namedUser = new User("278011115550", "named");
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
-        when(userManagementServiceMock.findByInputNumber(namedUser.getPhoneNumber())).thenReturn(testUser);
+        when(userManagementServiceMock.findByInputNumber(namedUser.getPhoneNumber())).thenReturn(namedUser);
         mockMvc.perform(get(path + "name-do").param(phoneParam, testUserPhone).param("request", "naming")).
                 andExpect(status().isOk());
         mockMvc.perform(get(path + "name-do").param(phoneParam, namedUser.getPhoneNumber()).param("request", "new name")).
                 andExpect(status().isOk());
-        verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone);
-        verify(userManagementServiceMock, times(1)).updateDisplayName(testUser.getUid(), "new name");
+        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
+        verify(userManagementServiceMock, times(1)).findByInputNumber(namedUser.getPhoneNumber());
+        verify(userManagementServiceMock, times(1)).updateDisplayName(testUser.getUid(), "naming");
+        verify(userManagementServiceMock, times(1)).updateDisplayName(namedUser.getUid(), "new name");
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyZeroInteractions(groupBrokerMock);
         verifyZeroInteractions(eventBrokerMock);
@@ -77,7 +79,7 @@ public class USSDUserControllerTest extends USSDAbstractUnitTest {
     @Test
     public void changeLanguageMenuShouldWork() throws Exception {
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
-
+        // todo : restore this ...
         verifyZeroInteractions(groupBrokerMock);
         verifyZeroInteractions(eventBrokerMock);
     }

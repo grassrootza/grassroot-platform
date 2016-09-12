@@ -547,11 +547,8 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         meetingDetails.put("location", "JoziHub");
         meetingDetails.put("dateTimeString", "Sat 23 Sep 2055, 11:11 am");
 
-        ResponseTotalsDTO meetingResults = new ResponseTotalsDTO(null, 0);
-        // todo : switch these to cleaned up design
-        // meetingResults.put("yes", 115);
-        // meetingResults.put("no", 54);
-        // meetingResults.put("no_answer", 546);
+        Object[] fields = new String[] { "115", "54", "0", "546" };
+        ResponseTotalsDTO meetingResults = new ResponseTotalsDTO(Collections.singletonList(fields), 600);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(eventBrokerMock.loadMeeting(testMeeting.getUid())).thenReturn(testMeeting);

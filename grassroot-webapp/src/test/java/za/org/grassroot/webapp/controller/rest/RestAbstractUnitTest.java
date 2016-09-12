@@ -12,6 +12,7 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.core.repository.VerificationTokenCodeRepository;
 import za.org.grassroot.integration.services.GcmService;
+import za.org.grassroot.integration.services.SmsSendingService;
 import za.org.grassroot.services.*;
 
 import java.time.Instant;
@@ -82,9 +83,12 @@ public class RestAbstractUnitTest
     protected EventBroker eventBrokerMock;
     @Mock
     protected TaskBroker taskBrokerMock;
-
     @Mock
     protected GcmService gcmServiceMock;
+    @Mock
+    protected MessageAssemblingService messageAssemblingServiceMock;
+    @Mock
+    protected SmsSendingService smsSendingServiceMock;
 
     protected MessageSource messageSource() {
 

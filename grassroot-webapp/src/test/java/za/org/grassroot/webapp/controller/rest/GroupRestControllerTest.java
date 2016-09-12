@@ -124,26 +124,6 @@ public class GroupRestControllerTest extends RestAbstractUnitTest {
         verify(groupJoinRequestServiceMock).open(sessionTestUser.getUid(), testGroup.getUid(), "please let me in");
     }
 
-    @Test
-    public void gettingAGroupMemberShouldWork() throws Exception {
-
-        List<User> userList = new ArrayList<>();
-        Page<User> userPage = new PageImpl<>(userList, new PageRequest(0, 5), 1);
-
-        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
-        when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
-        when(permissionBrokerMock.isGroupPermissionAvailable(sessionTestUser, testGroup,
-                                                             Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS)).thenReturn(true);
-
-        mockMvc.perform(get(path + "/members/list/{phoneNumber}/{code}/{groupUid}/{selected}",
-                            testUserPhone, testUserCode, testGroup.getUid(), true)
-                                .param("page", String.valueOf(0))
-                                .param("size", String.valueOf(5)))
-                .andExpect(status().is2xxSuccessful());
-        verify(userManagementServiceMock).findByInputNumber(testUserPhone);
-        verify(groupBrokerMock).load(testGroup.getUid());
-    }
-
     private void settingUpDummyData(Group group, List<Group> groups, MembershipInfo membershipInfo, Set<MembershipInfo> membersToAdd) {
         membersToAdd.add(membershipInfo);
         group.addMember(sessionTestUser, BaseRoles.ROLE_GROUP_ORGANIZER);

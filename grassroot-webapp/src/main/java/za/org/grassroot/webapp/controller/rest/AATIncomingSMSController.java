@@ -68,8 +68,8 @@ public class AATIncomingSMSController {
             return;
         }
 
-        boolean needsToVote = !eventBroker.getOutstandingResponseForUser(user, EventType.VOTE).isEmpty();
-        boolean needsToRsvp = !eventBroker.getOutstandingResponseForUser(user, EventType.MEETING).isEmpty();
+        boolean needsToVote = eventBroker.userHasResponsesOutstanding(user, EventType.VOTE);
+        boolean needsToRsvp = eventBroker.userHasResponsesOutstanding(user, EventType.MEETING);
 
         if((needsToVote && needsToRsvp)) {
             notifyUnableToProcessReply(user);

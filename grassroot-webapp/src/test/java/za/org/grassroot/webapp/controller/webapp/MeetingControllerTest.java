@@ -170,6 +170,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         verify(eventBrokerMock, times(1)).updateMeeting(sessionTestUser.getUid(), dummyMeeting.getUid(), dummyMeeting.getName(),
                                                         dummyMeeting.getEventStartDateTime().atZone(DateTimeUtil.getSAST()).toLocalDateTime(),
                                                         dummyMeeting.getEventLocation());
+        verify(eventBrokerMock, times(1)).getRSVPResponses(dummyMeeting);
         verifyNoMoreInteractions(eventBrokerMock);
         verify(eventBrokerMock, times(1)).getRSVPResponses(dummyMeeting);
         verify(eventLogBrokerMock, times(1)).getResponseCountForEvent(dummyMeeting);
@@ -252,6 +253,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         verify(eventBrokerMock, times(2)).loadMeeting(dummyMeeting.getUid());
         verify(eventBrokerMock, times(1)).updateReminderSettings(sessionTestUser.getUid(), dummyMeeting.getUid(),
                                                                  EventReminderType.CUSTOM, 60 * 24);
+        verify(eventBrokerMock, times(1)).getRSVPResponses(dummyMeeting);
         verifyNoMoreInteractions(eventBrokerMock);
         verifyNoMoreInteractions(groupBrokerMock);
 
