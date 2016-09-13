@@ -4,19 +4,25 @@ import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.dto.GroupDTO;
 import za.org.grassroot.core.util.PhoneNumberUtil;
-import za.org.grassroot.services.*;
+import za.org.grassroot.services.GroupBroker;
+import za.org.grassroot.services.GroupJoinRequestService;
+import za.org.grassroot.services.MembershipInfo;
+import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 
 import java.net.URISyntaxException;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static za.org.grassroot.webapp.enums.USSDSection.GROUP_MANAGER;
 import static za.org.grassroot.webapp.enums.USSDSection.SAFETY_GROUP_MANAGER;
@@ -89,14 +95,14 @@ public class USSDGroupUtil extends USSDUtil {
      */
 
     public USSDMenu askForGroup(User user, USSDSection section, String urlForExistingGroup, String urlForNewGroupPrompt,
-                                String urlToCreateNewGroup, String urlIfNogroups) throws URISyntaxException {
+                                String urlToCreateNewGroup, String urlIfNogroups, Integer numberGroups) throws URISyntaxException {
 
         USSDMenu groupMenu;
 
         final Permission filter = SectionPermissionMap.get(section); // returning null is what we want if key not present (e.g., for groups section)
-        final int numberGroups = permissionBroker.countActiveGroupsWithPermission(user, filter);
+        final int groupCount = numberGroups == null ? permissionBroker.countActiveGroupsWithPermission(user, filter) : numberGroups;
 
-        if (numberGroups == 0) { // case (a), ask for a name and then go to the next menu
+        if (groupCount == 0) { // case (a), ask for a name and then go to the next menu
             if (!StringUtils.isEmpty(urlToCreateNewGroup)) {
                 groupMenu = createGroupPrompt(user, section, urlToCreateNewGroup);
             } else { // handle no new groups, with redirect option
@@ -109,7 +115,7 @@ public class USSDGroupUtil extends USSDUtil {
             String prompt = getMessage(section, groupKeyForMessages, promptKey + ".existing", user); // todo : make sure all sections user this syntax
             String existingGroupUri = section.toPath() + urlForExistingGroup;
             String newGroupUri = StringUtils.isEmpty(urlForNewGroupPrompt) ? GROUP_MANAGER.toPath() + "create" : section.toPath() + urlForNewGroupPrompt;
-            groupMenu = userGroupMenuPaginated(user, prompt, existingGroupUri, newGroupUri, 0, section);
+            groupMenu = userGroupMenuPaginated(user, prompt, existingGroupUri, newGroupUri, 0, groupCount, section);
         }
         return groupMenu;
     }
@@ -132,19 +138,18 @@ public class USSDGroupUtil extends USSDUtil {
     }
 
     public USSDMenu showUserCreatedGroupsForSafetyFeature(User user, USSDSection section, String urlForExistingGroups, Integer pageNumber) throws URISyntaxException {
-
-        final GroupPage groupsCreated = new GroupPage(groupBroker.fetchUserCreatedGroups(user), pageNumber, PAGE_LENGTH);
+        final Page<Group> groupsCreated = groupBroker.fetchUserCreatedGroups(user, pageNumber, PAGE_LENGTH);
         final String prompt = getMessage(section, groupKeyForMessages, promptKey + ".existing", user);
 
         USSDMenu menu = new USSDMenu(prompt);
-        menu = addListOfGroupsToMenu(menu, urlForExistingGroups, groupsCreated.getContent(), user);
+        menu = addGroupsToMenu(menu, urlForExistingGroups, groupsCreated.getContent(), user);
         if (groupsCreated.hasNext())
-            menu.addMenuOption(paginatedGroupUrl(prompt, urlForExistingGroups, null, pageNumber + 1),
+            menu.addMenuOption(paginatedGroupUrl(prompt, urlForExistingGroups, null, null, pageNumber + 1),
                     "More groups"); // todo : i18n
         if (groupsCreated.hasPrevious()) {
-            menu.addMenuOption(paginatedGroupUrl(prompt, urlForExistingGroups, null, pageNumber - 1), "Back");
+            menu.addMenuOption(paginatedGroupUrl(prompt, urlForExistingGroups, null, null, pageNumber - 1), "Back");
         } else {
-            menu.addMenuOption(section.toPath() + "start", "Back");
+            menu.addMenuOption(section.toPath() + "start", "Back"); // todo : i18n
         }
         return menu;
     }
@@ -155,31 +160,31 @@ public class USSDGroupUtil extends USSDUtil {
      * @param urlForExistingGroups the url for exisitng groups
      * @param urlForNewGroup       url for new groups
      * @param pageNumber           current page
-     * @param section              current section
-     * @return
+     * @param totalResults         the number of results corresponding to this query/filter
+     * @param section              current section  @return
      * @throws URISyntaxException
      */
     public USSDMenu userGroupMenuPaginated(User user, String prompt, String urlForExistingGroups, String urlForNewGroup,
-                                           int pageNumber, USSDSection section) throws URISyntaxException {
+                                           int pageNumber, Integer totalResults, USSDSection section) throws URISyntaxException {
 
         USSDMenu menu = new USSDMenu(prompt);
-
         Permission filter = SectionPermissionMap.get(section); // returning null is what we want if key not present
-        GroupPage groupsPartOf = permissionBroker.getPageOfGroupDTOs(user, filter, pageNumber, PAGE_LENGTH);
+        long startTime = System.currentTimeMillis();
 
-        log.debug("Getting groups for USSD menu, permission={}, found {} groups", filter, groupsPartOf.getTotalElements());
+        List<Group> groupsPartOf = permissionBroker.getPageOfGroups(user, filter, pageNumber, PAGE_LENGTH);
+        log.info("Getting groups for USSD menu, took {} msecs, permission={}", System.currentTimeMillis() - startTime, filter);
 
-        menu = addListOfGroupsToMenu(menu, urlForExistingGroups, groupsPartOf.getContent(), user);
+        menu = addGroupsToMenu(menu, urlForExistingGroups, groupsPartOf, user);
 
-        if (groupsPartOf.hasNext())
-            menu.addMenuOption(paginatedGroupUrl(prompt, urlForExistingGroups, urlForNewGroup, pageNumber + 1), getMessage("group.more", user));
-        if (groupsPartOf.hasPrevious())
-            menu.addMenuOption(paginatedGroupUrl(prompt, urlForExistingGroups, urlForNewGroup, pageNumber - 1), getMessage("group.back", user));
+        int maxResults = totalResults == null ? permissionBroker.countActiveGroupsWithPermission(user, filter) : totalResults;
+
+        if (pageNumber * PAGE_LENGTH < maxResults)
+            menu.addMenuOption(paginatedGroupUrl(prompt, urlForExistingGroups, urlForNewGroup, section, pageNumber + 1), getMessage("group.more", user));
+        if (pageNumber > 0)
+            menu.addMenuOption(paginatedGroupUrl(prompt, urlForExistingGroups, urlForNewGroup, section, pageNumber - 1), getMessage("group.back", user));
         if (urlForNewGroup != null)
             menu.addMenuOption(urlForNewGroup, getMessage(groupKeyForMessages, "create", "option", user));
 
-        if (GROUP_MANAGER.equals(section) && user.hasSafetyGroup())
-            menu.addMenuOption(SAFETY_GROUP_MANAGER.toPath() + "start", getMessage(GROUP_MANAGER.toString() + ".safety.option", user));
         if (GROUP_MANAGER.equals(section) && (!groupBroker.fetchGroupsWithOneCharNames(user, 2).isEmpty()))
             menu.addMenuOption(section.toPath() + "clean", getMessage(groupKeyForMessages, "clean", "option", user));
 
@@ -190,14 +195,14 @@ public class USSDGroupUtil extends USSDUtil {
 
     /**
      * @param menu        the ussd menu to add a list of groups to
-     * @param nextMenuUrl url of the next menu in the sequence
+     * @param nextUrl     url of the next menu in the sequence
      * @param groups      a list of groups
      * @param user        user in session
      * @return a ussd menu that has a list groups with pagnination
      */
-    public USSDMenu addListOfGroupsToMenu(USSDMenu menu, String nextMenuUrl, List<GroupDTO> groups, User user) {
-        final String formedUrl = (!nextMenuUrl.contains("?")) ? (nextMenuUrl + groupUidUrlEnding) : (nextMenuUrl + "&" + groupUidParameter + "=");
-        for (GroupDTO group : groups) {
+    public USSDMenu addGroupsToMenu(USSDMenu menu, String nextUrl, List<Group> groups, User user) {
+        final String formedUrl = (!nextUrl.contains("?")) ? (nextUrl + groupUidUrlEnding) : (nextUrl + "&" + groupUidParameter + "=");
+        for (Group group : groups) {
             String name = (!group.hasName()) ? getMessage(groupKeyForMessages, "unnamed", "label", unnamedGroupDate.format(group.getCreatedDateTimeAtSAST()), user)
                     : group.getGroupName();
             menu.addMenuOption(formedUrl + group.getUid(), name);

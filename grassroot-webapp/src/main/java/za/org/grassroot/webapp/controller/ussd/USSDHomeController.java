@@ -70,8 +70,6 @@ public class USSDHomeController extends USSDController {
 
     private static final String path = homePath;
     private static final USSDSection thisSection = HOME;
-    private static final String safetyCode = "911";
-    private static final String sendMeLink = "123";
 
     private static final String rsvpMenu = "rsvp",
             renameUserMenu = "rename-start",
@@ -80,6 +78,8 @@ public class USSDHomeController extends USSDController {
             promptConfirmGroupInactive = "group-inactive-confirm";
 
     private int hashPosition;
+    private static String safetyCode;
+    private static String sendMeLink;
 
     private static final String openingMenuKey = String.join(".", Arrays.asList(homeKey, startMenu, optionsKey));
 
@@ -88,11 +88,12 @@ public class USSDHomeController extends USSDController {
             new SimpleEntry<>(VOTES, new String[]{voteMenus + startMenu, openingMenuKey + voteKey}),
             new SimpleEntry<>(TODO, new String[]{todoMenus + startMenu, openingMenuKey + logKey}),
             new SimpleEntry<>(GROUP_MANAGER, new String[]{groupMenus + startMenu, openingMenuKey + groupKey}),
-            new SimpleEntry<>(USER_PROFILE, new String[]{userMenus + startMenu, openingMenuKey + userKey})).
+            new SimpleEntry<>(USER_PROFILE, new String[]{userMenus + startMenu, openingMenuKey + userKey}),
+            new SimpleEntry<>(SAFETY_GROUP_MANAGER, new String[]{safetyMenus + startMenu, openingMenuKey + safetyKey})).
             collect(Collectors.toMap((e) -> e.getKey(), (e) -> e.getValue())));
 
     private static final List<USSDSection> openingSequenceWithGroups = Arrays.asList(
-            MEETINGS, VOTES, TODO, GROUP_MANAGER, USER_PROFILE);
+            MEETINGS, VOTES, TODO, GROUP_MANAGER, USER_PROFILE, SAFETY_GROUP_MANAGER);
     private static final List<USSDSection> openingSequenceWithoutGroups = Arrays.asList(
             USER_PROFILE, GROUP_MANAGER, MEETINGS, VOTES, TODO);
 
@@ -100,8 +101,9 @@ public class USSDHomeController extends USSDController {
 
     @PostConstruct
     public void init() {
-        // Spring initialization stuff...
         hashPosition = environment.getRequiredProperty("grassroot.ussd.code.length", Integer.class);
+        safetyCode = environment.getProperty("grassroot.ussd.safety.suffix", "911");
+        sendMeLink = environment.getProperty("grassroot.ussd.sendlink.suffix", "123");
     }
 
     public USSDMenu welcomeMenu(String opening, User user) {
@@ -560,20 +562,16 @@ public class USSDHomeController extends USSDController {
     Helper methods, for group pagination, event pagination, etc.
      */
 
-    // todo: make sure this works with permissions ... by passing in the section
     @RequestMapping(value = path + "group_page")
     @ResponseBody
     public Request groupPaginationHelper(@RequestParam(value = phoneNumber) String inputNumber,
                                          @RequestParam(value = "prompt") String prompt,
                                          @RequestParam(value = "page") Integer pageNumber,
                                          @RequestParam(value = "existingUri") String existingUri,
+                                         @RequestParam(value = "section", required = false) USSDSection section,
                                          @RequestParam(value = "newUri", required = false) String newUri) throws URISyntaxException {
-
-        /*
-         todo: likely need to add permission checking to the list of parameters, but for now just saying "false"
-          */
         return menuBuilder(ussdGroupUtil.userGroupMenuPaginated(userManager.findByInputNumber(inputNumber), prompt, existingUri,
-                newUri, pageNumber, null));
+                newUri, pageNumber, null, section));
 
     }
 

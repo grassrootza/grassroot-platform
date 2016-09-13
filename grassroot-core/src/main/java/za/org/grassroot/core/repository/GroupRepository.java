@@ -9,6 +9,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 
 import java.time.Instant;
@@ -16,28 +17,22 @@ import java.util.List;
 
 
 public interface GroupRepository extends JpaRepository<Group, Long> {
+
+    Group findOneByUid(String uid);
+
     /*
     Find the last group created by a specific user
      */
     Group findFirstByCreatedByUserAndActiveTrueOrderByIdDesc(User createdByUser);
     Group findFirstByCreatedByUserAndGroupNameAndCreatedDateTimeAfterAndActiveTrue(User createdByUser, String groupName, Instant createdSince);
-
-    Group findOneByUid(String uid);
-
-
     Group findOneByImageUrl(String imageUrl);
 
-    /*
-    Get the sub-groups for a specific group
-    one level only
-     */
+    // Get the sub-groups for a specific group (one level only)
     List<Group> findByParentAndActiveTrue(Group parent);
-    List<Group> findByParentOrderByIdAsc(Group parent);
-    /*
-    Find all the groups that a user is part of, with pagination
-     */
+
+    // Find all the groups that a user is part of, with pagination
     List<Group> findByMembershipsUserAndActiveTrue(User user);
-    Page<Group> findByMembershipsUserAndActive(User user, Pageable pageable, boolean active);
+    Page<Group> findByCreatedByUserAndActiveTrueOrderByCreatedDateTimeDesc(User user, Pageable pageable);
 
     int countByMembershipsUserAndActiveTrue(User user);
 
@@ -108,18 +103,6 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     @Query(value = "with distinct_root as (select distinct q1.root, q1.id as member from (select g.id, getroot(g.id) as root from group_profile g, group_user_membership gu where gu.user_id = ?1 and gu.group_id = g.id  ) as q1) select distinct (getchildren(root)).*, root  from distinct_root order by root,parent", nativeQuery = true)
     List<Object[]> getGroupMemberTree(Long userId);
 
-    @Query(value = "Select * from getusergroupswithsize(?1) where active = true" , nativeQuery = true)
-    List<Object[]> findActiveUserGroupsOrderedByRecentEvent(Long userId);
-
-    @Query(value ="SELECT group_profile.*, greatest(latest_group_change, latest_event) as latest_activity from group_profile " +
-            " inner join group_user_membership as membership on (group_profile.id = membership.group_id and group_profile.active=true and membership.user_id=?1) " +
-            "  left outer join" +
-            " (select group_id, max(created_date_time) as latest_group_change from group_log group by group_id) as group_log on (group_log.group_id=group_profile.id) " +
-            "  left outer join" +
-            "   (select parent_group_id, max(created_date_time) as latest_event from event group by parent_group_id) as event on (event.parent_group_id=group_profile.id) order by latest_activity desc; " +
-            "     ", nativeQuery = true)
-    List<Group> findActiveUserGroupsOrderedByRecentActivity(Long userId);
-
     @Query(value = "SELECT g FROM Group g WHERE g.active = true AND g.id IN (SELECT gl.group.id FROM GroupLog gl WHERE (gl.createdDateTime BETWEEN ?1 AND ?2) AND gl.groupLogType = za.org.grassroot.core.enums.GroupLogType.GROUP_MEMBER_ADDED_VIA_JOIN_CODE)")
     List<Group> findGroupsWhereJoinCodeUsedBetween(Instant periodStart, Instant periodEnd);
 
@@ -131,4 +114,10 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
 
     @Query("SELECT g from GroupLog gl inner join gl.group g WHERE gl.groupLogType = 'GROUP_MEMBER_REMOVED' and gl.userOrSubGroupId = ?1 AND gl.createdDateTime >= ?2")
     List<Group> findMembershipRemovedAfter(Long formerMemberId, Instant time);
+
+    @Query(value = "select count(*) from Group g " +
+            "inner join g.memberships m " +
+            "where g.active = true and m.user = ?1 and ?2 member of m.role.permissions")
+    int countActiveGroupsWhereUserHasPermission(User member, Permission requiredPermission);
+
 }

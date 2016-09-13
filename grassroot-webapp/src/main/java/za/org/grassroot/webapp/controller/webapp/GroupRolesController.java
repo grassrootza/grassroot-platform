@@ -60,9 +60,9 @@ public class GroupRolesController extends BaseController {
 		model.addAttribute("listOfMembers", members);
 
 		model.addAttribute("permissionsImplemented", permissionsToDisplay);
-		model.addAttribute("ordinaryPermissions", permissionBroker.getPermissions(group, BaseRoles.ROLE_ORDINARY_MEMBER));
-		model.addAttribute("committeePermissions", permissionBroker.getPermissions(group, BaseRoles.ROLE_COMMITTEE_MEMBER));
-		model.addAttribute("organizerPermissions", permissionBroker.getPermissions(group, BaseRoles.ROLE_GROUP_ORGANIZER));
+		model.addAttribute("ordinaryPermissions", group.getRole(BaseRoles.ROLE_ORDINARY_MEMBER).getPermissions());
+		model.addAttribute("committeePermissions", group.getRole(BaseRoles.ROLE_COMMITTEE_MEMBER).getPermissions());
+		model.addAttribute("organizerPermissions", group.getRole(BaseRoles.ROLE_GROUP_ORGANIZER).getPermissions());
 
 		model.addAttribute("canChangePermissions", permissionBroker.isGroupPermissionAvailable(getUserProfile(), group,
 				Permission.GROUP_PERMISSION_CHANGE_PERMISSION_TEMPLATE));
@@ -95,9 +95,9 @@ public class GroupRolesController extends BaseController {
 				.collect(Collectors.toList());
 
 		model.addAttribute("group", group);
-		model.addAttribute("ordinaryPermissions", permissionBroker.getPermissions(group, BaseRoles.ROLE_ORDINARY_MEMBER));
-		model.addAttribute("committeePermissions", permissionBroker.getPermissions(group, BaseRoles.ROLE_COMMITTEE_MEMBER));
-		model.addAttribute("organizerPermissions", permissionBroker.getPermissions(group, BaseRoles.ROLE_GROUP_ORGANIZER));
+		model.addAttribute("ordinaryPermissions", group.getRole(BaseRoles.ROLE_ORDINARY_MEMBER).getPermissions());
+		model.addAttribute("committeePermissions", group.getRole(BaseRoles.ROLE_COMMITTEE_MEMBER).getPermissions());
+		model.addAttribute("organizerPermissions", group.getRole(BaseRoles.ROLE_GROUP_ORGANIZER).getPermissions());
 
 		model.addAttribute("permissionsImplemented", permissionsToDisplay);
 		model.addAttribute("permissionsHidden", permissionsHidden);

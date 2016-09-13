@@ -5,6 +5,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.env.Environment;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -16,7 +18,6 @@ import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.GroupLocation;
 import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
 import za.org.grassroot.core.domain.notification.EventInfoNotification;
-import za.org.grassroot.core.dto.GroupDTO;
 import za.org.grassroot.core.dto.GroupTreeDTO;
 import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.repository.*;
@@ -1013,7 +1014,6 @@ public class GroupBrokerImpl implements GroupBroker {
         return list;
     }
 
-    // todo: make sure this isn't too expensive ... the checking function might be
     @Override
     @Transactional(readOnly = true)
     public Set<Group> possibleParents(String userUid, String groupUid) {
@@ -1107,7 +1107,6 @@ public class GroupBrokerImpl implements GroupBroker {
 
     private LocalDateTime getLastTimeGroupModified(String groupUid) {
         Group group = groupRepository.findOneByUid(groupUid);
-        // todo: change groupLog to use localdatetime
         GroupLog latestGroupLog = groupLogRepository.findFirstByGroupOrderByCreatedDateTimeDesc(group);
         return (latestGroupLog != null) ? LocalDateTime.ofInstant(latestGroupLog.getCreatedDateTime(), getSAST()) :
                 LocalDateTime.ofInstant(group.getCreatedDateTime(), getSAST());
@@ -1170,8 +1169,7 @@ public class GroupBrokerImpl implements GroupBroker {
         group.setImage(image);
         group.setImageUrl(imageUrl);
 
-        GroupLog groupLog = new GroupLog(group, user, GroupLogType.GROUP_AVATAR_UPLOADED, group.getId(),
-                "Group avatar uploaded");
+        GroupLog groupLog = new GroupLog(group, user, GroupLogType.GROUP_AVATAR_UPLOADED, group.getId(), "Group avatar uploaded");
         logActionLogsAfterCommit(Collections.singleton(groupLog));
 
     }
@@ -1217,14 +1215,9 @@ public class GroupBrokerImpl implements GroupBroker {
 
     @Override
     @Transactional(readOnly = true)
-    public List<GroupDTO> fetchUserCreatedGroups(User user) {
+    public Page<Group> fetchUserCreatedGroups(User user, int pageNumber, int pageSize) {
         Objects.nonNull(user);
-        List<Group> groups = groupRepository.findByMembershipsUserAndActiveTrue(user);
-        return groups.stream()
-                .filter(group -> group.getCreatedByUser().equals(user))
-                .sorted(Comparator.reverseOrder())
-                .map(GroupDTO::new)
-                .collect(Collectors.toList());
+        return groupRepository.findByCreatedByUserAndActiveTrueOrderByCreatedDateTimeDesc(user, new PageRequest(pageNumber, pageSize));
     }
 
     @Override

@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.util.StringUtils;
+import org.springframework.util.SystemPropertyUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -94,7 +95,7 @@ public class USSDVoteController extends USSDController {
                 menu.addMenuOption(voteMenus + "old", getMessage(thisSection, startMenu, optionsKey + "old", user));
             menu.addMenuOption("start", getMessage(USSDSection.VOTES,"start","options.back",user));
         } else {
-            menu = ussdGroupUtil.askForGroup(user, thisSection, "issue", null, null, null);
+            menu = initiateNewVote(user);
         }
 
         return menuBuilder(menu);
@@ -104,17 +105,22 @@ public class USSDVoteController extends USSDController {
     @ResponseBody
     public Request newVote(@RequestParam(value = phoneNumber) String inputNumber) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber, voteMenus + "new");
-        return menuBuilder(initiateNewVote(user));
+        Long startTime = System.currentTimeMillis();
+        USSDMenu menu = initiateNewVote(user);
+        log.info("assembling vote selection menu took {} msecs ", (System.currentTimeMillis() - startTime));
+        return menuBuilder(menu);
     }
 
     private USSDMenu initiateNewVote(User user) throws URISyntaxException {
+        long startTime = System.currentTimeMillis();
         int possibleGroups = permissionBroker.countActiveGroupsWithPermission(user, Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE);
+        log.info("counting groups took ... {} msecs", System.currentTimeMillis() - startTime);
         if (possibleGroups == 1) {
             Group group = permissionBroker.getActiveGroupsWithPermission(user, Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE).iterator().next();
             final String prompt = getMessage(thisSection, "issue", promptKey + ".skipped", group.getName(""), user);
             return setVoteGroupAndInitiateRequest(prompt, null, group.getUid(), "time", "", user);
         } else {
-            return ussdGroupUtil.askForGroup(user, thisSection, "issue", null, null, null);
+            return ussdGroupUtil.askForGroup(user, thisSection, "issue", null, null, null, possibleGroups);
         }
     }
 

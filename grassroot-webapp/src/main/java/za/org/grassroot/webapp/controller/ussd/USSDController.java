@@ -42,6 +42,7 @@ public class USSDController {
             groupMenus = "group/",
             voteMenus = "vote/",
             todoMenus = "todo/",
+            safetyMenus = "safety/",
             U404= "error";
     // referencing these from the Util class so can be common across tests etc, but stating here so not cumbersome in sub-classes
     protected static final String
@@ -66,7 +67,8 @@ public class USSDController {
             userKey = USSDSection.USER_PROFILE.toString(),
             groupKey = USSDSection.GROUP_MANAGER.toString(),
             voteKey = USSDSection.VOTES.toString(),
-            logKey = USSDSection.TODO.toString();
+            logKey = USSDSection.TODO.toString(),
+            safetyKey = USSDSection.SAFETY_GROUP_MANAGER.toString();
     protected static final String
             promptKey = "prompt",
             errorPromptKey = "prompt.error",
@@ -74,7 +76,6 @@ public class USSDController {
 
     protected static final DateTimeFormatter dateTimeFormat = DateTimeFormatter.ofPattern("EEE d MMM, h:mm a");
     protected static final DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("EEE d MMM");
-    protected static final DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern("h:mm a");
 
     protected Request tooLongError = new Request("Error! Menu is too long.", new ArrayList<>());
     protected Request noUserError = new Request("Error! Couldn't find you as a user.", new ArrayList<>());

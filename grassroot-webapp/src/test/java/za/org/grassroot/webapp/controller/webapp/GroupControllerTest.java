@@ -8,7 +8,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.TaskDTO;
-import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.MembershipInfo;
@@ -161,8 +160,8 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
 
     @Test
     public void closeTokenWorks() throws Exception {
-
         Group group = new Group("someGroupname", new User("234345345"));
+        group.addMember(sessionTestUser);
         group.setGroupTokenCode("12345");
         group.setTokenExpiryDateTime(DateTimeUtil.convertToSystemTime(LocalDateTime.now().plusYears(1L), DateTimeUtil.getSAST()));
 
@@ -350,6 +349,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
     public void deleteGroupWorksWithConfirmFieldValueInvalid() throws Exception {
 
         Group group = new Group("someGroupname", sessionTestUser);
+        group.addMember(sessionTestUser);
 
         when(groupBrokerMock.load(group.getUid())).thenReturn(group);
         when(groupBrokerMock.isDeactivationAvailable(sessionTestUser, group, true)).thenReturn(true);

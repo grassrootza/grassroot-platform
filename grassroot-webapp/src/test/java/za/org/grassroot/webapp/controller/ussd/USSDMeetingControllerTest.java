@@ -10,7 +10,6 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventType;
-import za.org.grassroot.services.GroupPage;
 import za.org.grassroot.services.MembershipInfo;
 import za.org.grassroot.services.enums.EventListTimeType;
 import za.org.grassroot.webapp.enums.USSDSection;
@@ -91,24 +90,19 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         List<Group> existingGroupList = Arrays.asList(new Group("gc1", testUser),
                                                       new Group("gc2", testUser),
                                                       new Group("gc3", testUser));
-        for (Group group : existingGroupList) {
-            group.addMember(testUser);
-        }
-
-        GroupPage groupPage = GroupPage.createFromGroups(existingGroupList, 0, 3);
+        existingGroupList.stream().forEach(g -> g.addMember(testUser));
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(eventBrokerMock.userHasEventsToView(testUser, EventType.MEETING, EventListTimeType.FUTURE)).thenReturn(false);
         when(permissionBrokerMock.countActiveGroupsWithPermission(testUser, GROUP_PERMISSION_CREATE_GROUP_MEETING)).thenReturn(1);
-        when(permissionBrokerMock.getPageOfGroupDTOs(testUser, GROUP_PERMISSION_CREATE_GROUP_MEETING, 0, 3)).
-                thenReturn(groupPage);
+        when(permissionBrokerMock.getPageOfGroups(testUser, GROUP_PERMISSION_CREATE_GROUP_MEETING, 0, 3)).thenReturn(existingGroupList);
 
         mockMvc.perform(get(path + "start").param(phoneParam, testUserPhone)).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(permissionBrokerMock, times(1)).countActiveGroupsWithPermission(testUser, GROUP_PERMISSION_CREATE_GROUP_MEETING);
-        verify(permissionBrokerMock, times(1)).getPageOfGroupDTOs(testUser, GROUP_PERMISSION_CREATE_GROUP_MEETING, 0, 3);
+        verify(permissionBrokerMock, times(1)).getPageOfGroups(testUser, GROUP_PERMISSION_CREATE_GROUP_MEETING, 0, 3);
         verifyNoMoreInteractions(permissionBrokerMock);
         verify(eventBrokerMock, times(1)).userHasEventsToView(testUser, EventType.MEETING, EventListTimeType.FUTURE);
         verifyNoMoreInteractions(eventBrokerMock);

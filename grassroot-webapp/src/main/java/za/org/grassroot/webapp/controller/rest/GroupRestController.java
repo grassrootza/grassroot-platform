@@ -542,7 +542,7 @@ public class GroupRestController {
 		Group group = groupBroker.load(groupUid);
 		ResponseEntity<ResponseWrapper> response;
 		try {
-			Set<Permission> permissionsEnabled = permissionBroker.getPermissions(group, roleName);
+			Set<Permission> permissionsEnabled = group.getRole(roleName).getPermissions();
 			List<PermissionDTO> permissionsDTO = permissionsDisplayed.stream()
 					.map(permission -> new PermissionDTO(permission, group, roleName, permissionsEnabled, messageSourceAccessor))
 					.sorted()
@@ -618,7 +618,7 @@ public class GroupRestController {
 	}
 
 	private Map<String, Set<Permission>> processUpdatedPermissions(Group group, String roleName, List<PermissionDTO> permissionDTOs) {
-		Set<Permission> currentPermissions = permissionBroker.getPermissions(group, roleName);
+		Set<Permission> currentPermissions = group.getRole(roleName).getPermissions();
 		Set<Permission> permissionsAdded = new HashSet<>();
 		Set<Permission> permissionsRemoved = new HashSet<>();
 		for (PermissionDTO p : permissionDTOs) {

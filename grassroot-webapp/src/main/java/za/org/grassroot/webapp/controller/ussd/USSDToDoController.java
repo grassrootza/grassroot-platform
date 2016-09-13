@@ -8,7 +8,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.dto.GroupDTO;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.integration.domain.SeloApiCallFailure;
 import za.org.grassroot.integration.domain.SeloParseDateTimeFailure;
@@ -129,11 +128,12 @@ public class USSDToDoController extends USSDController {
         if (newEntry) {
             return menuBuilder(initiateNewAction(user));
         } else {
-            List<GroupDTO> groups = permissionBroker.getActiveGroupDTOs(user, null);
-            if (groups.size() == 1) {
-                return listEntriesMenu(user.getPhoneNumber(), groups.get(0).getUid(), completed, 0);
+            int countGroups = permissionBroker.countActiveGroupsWithPermission(user, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY);
+            if (countGroups == 1) {
+                Group group = permissionBroker.getActiveGroupsWithPermission(user, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY).iterator().next();
+                return listEntriesMenu(user.getPhoneNumber(), group.getUid(), completed, 0);
             } else {
-                return menuBuilder(ussdGroupUtil.askForGroup(user, thisSection, listEntriesMenu + "?done=" + completed, null, null, null));
+                return menuBuilder(ussdGroupUtil.askForGroup(user, thisSection, listEntriesMenu + "?done=" + completed, null, null, null, countGroups));
             }
         }
     }
@@ -145,7 +145,7 @@ public class USSDToDoController extends USSDController {
             final String prompt = getMessage(thisSection, subjectMenu, promptKey + ".skipped", group.getName(""), user);
             return setActionGroupAndInitiateRequest(null, group.getUid(), prompt, false, user);
         } else {
-            return ussdGroupUtil.askForGroup(user, thisSection, subjectMenu, null, null, null);
+            return ussdGroupUtil.askForGroup(user, thisSection, subjectMenu, null, null, null, numberPossibleGroups);
         }
     }
 
@@ -252,8 +252,9 @@ public class USSDToDoController extends USSDController {
 
         final String urlBase = todoMenus + viewEntryMenu + todoUrlSuffix;
         final Page<Todo> entries = todoBroker.retrieveGroupTodos(user.getUid(), groupUid, done, pageNumber, PAGE_LENGTH);
-        boolean canCreateToDos = permissionBroker.getActiveGroupDTOs(user, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY).isEmpty();
-        boolean hasMultipleGroups = permissionBroker.getActiveGroupDTOs(user, null).size() > 1;
+
+        boolean canCreateToDos = permissionBroker.countActiveGroupsWithPermission(user, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY) != 0;
+        boolean hasMultipleGroups = permissionBroker.countActiveGroupsWithPermission(user, null) > 1;
 
         String backUrl = (groupUid == null) ? todoMenus + startMenu :
                 (hasMultipleGroups ? todoMenus + groupMenu + "?new=false&completed=" + done : todoMenus + startMenu);

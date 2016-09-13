@@ -11,7 +11,6 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.Vote;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
-import za.org.grassroot.services.GroupPage;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -305,18 +304,17 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
                                                new Group("gc3", testUser),
                                                new Group("gc4", testUser));
 
-        GroupPage groupPage = GroupPage.createFromGroups(testGroups, 1, 3);
-
         when(userManagementServiceMock.findByInputNumber(phoneForTests)).thenReturn(testUser);
         when(permissionBrokerMock.countActiveGroupsWithPermission(testUser, null)).thenReturn(4);
-        when(permissionBrokerMock.getPageOfGroupDTOs(testUser, null, 1, 3)).thenReturn(groupPage);
+        when(permissionBrokerMock.getPageOfGroups(testUser, null, 1, 3)).thenReturn(testGroups);
 
         mockMvc.perform(get("/ussd/group_page").param(phoneParameter, phoneForTests).param("prompt", "Look at pages").
                 param("page", "1").param("existingUri", "/ussd/blank").param("newUri", "/ussd/blank2")).
                 andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(phoneForTests);
-        verify(permissionBrokerMock, times(1)).getPageOfGroupDTOs(testUser, null, 1, 3);
+        verify(permissionBrokerMock, times(1)).countActiveGroupsWithPermission(testUser, null);
+        verify(permissionBrokerMock, times(1)).getPageOfGroups(testUser, null, 1, 3);
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(permissionBrokerMock);
     }

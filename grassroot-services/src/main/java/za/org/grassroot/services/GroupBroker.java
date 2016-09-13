@@ -1,9 +1,11 @@
 package za.org.grassroot.services;
 
-import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.dto.GroupDTO;
+import org.springframework.data.domain.Page;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.GroupLog;
+import za.org.grassroot.core.domain.Permission;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.GroupTreeDTO;
-import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 
@@ -120,7 +122,7 @@ public interface GroupBroker {
 
     List<Group> fetchGroupsWithOneCharNames(User creatingUser, int sizeThreshold);
 
-    List<GroupDTO> fetchUserCreatedGroups(User user);
+    Page<Group> fetchUserCreatedGroups(User user, int pageNumber, int pageSize);
 
     void calculateGroupLocation(String groupUid, LocalDate localDate);
 

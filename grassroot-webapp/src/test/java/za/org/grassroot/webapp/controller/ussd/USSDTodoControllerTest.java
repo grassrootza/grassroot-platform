@@ -10,7 +10,6 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Todo;
 import za.org.grassroot.core.domain.TodoRequest;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.services.GroupPage;
 import za.org.grassroot.webapp.util.USSDUrlUtil;
 
 import java.time.Instant;
@@ -83,18 +82,17 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
                 new Group("tg2", testUser),
                 new Group("tg3", testUser));
         testGroups.stream().forEach(tg -> tg.addMember(testUser));
-        GroupPage pageOfGroups = GroupPage.createFromGroups(testGroups, 0, 3);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(permissionBrokerMock.countActiveGroupsWithPermission(testUser, GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY)).thenReturn(3);
-        when(permissionBrokerMock.getPageOfGroupDTOs(testUser, GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY, 0, 3)).thenReturn(pageOfGroups);
+        when(permissionBrokerMock.getPageOfGroups(testUser, GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY, 0, 3)).thenReturn(testGroups);
 
         mockMvc.perform(get(path + groupMenu).param(phoneParam, testUserPhone).param("new", "1")).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(permissionBrokerMock, times(2)).countActiveGroupsWithPermission(testUser, GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY);
-        verify(permissionBrokerMock, times(1)).getPageOfGroupDTOs(testUser, GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY, 0, 3);
+        verify(permissionBrokerMock, times(1)).countActiveGroupsWithPermission(testUser, GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY);
+        verify(permissionBrokerMock, times(1)).getPageOfGroups(testUser, GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY, 0, 3);
         verifyNoMoreInteractions(permissionBrokerMock);
         verifyNoMoreInteractions(groupBrokerMock);
 
@@ -109,7 +107,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
                 andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(permissionBrokerMock, times(2)).countActiveGroupsWithPermission(testUser, GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY);
+        verify(permissionBrokerMock, times(1)).countActiveGroupsWithPermission(testUser, GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY);
         verifyNoMoreInteractions(permissionBrokerMock);
         verifyNoMoreInteractions(groupBrokerMock);
 

@@ -149,7 +149,7 @@ public class AdminController extends BaseController {
         } else if (foundUsers.size() == 1) {
             User user = userManagementService.load(foundUsers.get(0).getUid());
             model.addAttribute("user", foundUsers.get(0));
-            model.addAttribute("numberGroups", permissionBroker.getActiveGroupDTOs(user, null).size());
+            model.addAttribute("numberGroups", permissionBroker.getActiveGroupsWithPermission(user, null).size());
             pageToDisplay = "admin/users/view";
         } else {
             // display a list of users

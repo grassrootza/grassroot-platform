@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
@@ -83,7 +84,12 @@ public class GroupController extends BaseController {
         Long startTime = System.currentTimeMillis();
         User user = userManagementService.load(getUserProfile().getUid());
         Group group = groupBroker.load(groupUid);
-        Set<Permission> userPermissions = permissionBroker.getPermissions(user, group); // throws exception if not in group
+
+        if (!group.getMembers().contains(user)) {
+            throw new AccessDeniedException("Error! You are not part of this group");
+        }
+
+        Set<Permission> userPermissions = group.getMembership(user).getRole().getPermissions();
         Long endTime = System.currentTimeMillis();
         log.info("Checking group membership & loading permissions took {} msec, for group {}", endTime - startTime, group);
 
@@ -280,7 +286,7 @@ public class GroupController extends BaseController {
         Group group = groupBroker.load(groupUid);
         model.addAttribute("group", group);
 
-        Set<Permission> ordinaryPermissions = permissionBroker.getPermissions(group, BaseRoles.ROLE_ORDINARY_MEMBER);
+        Set<Permission> ordinaryPermissions = group.getRole(BaseRoles.ROLE_ORDINARY_MEMBER).getPermissions();
 
         boolean canCallMeetings = ordinaryPermissions.contains(Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING);
         boolean canCallVotes = ordinaryPermissions.contains(Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE);

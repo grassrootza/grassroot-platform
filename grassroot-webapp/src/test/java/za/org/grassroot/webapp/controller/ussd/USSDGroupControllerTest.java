@@ -72,7 +72,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         when(permissionBrokerMock.getActiveGroupsWithPermission(testUser, null)).thenReturn(new HashSet<>());
         mockMvc.perform(get(path + "start").param(phoneParam, testUserPhone)).andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
-        verify(permissionBrokerMock, times(1)).getActiveGroupsWithPermission(testUser, null);
+        verify(permissionBrokerMock, times(1)).countActiveGroupsWithPermission(testUser, null);
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(groupBrokerMock);
         verifyZeroInteractions(eventBrokerMock);

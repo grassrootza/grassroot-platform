@@ -112,7 +112,7 @@ public class USSDMeetingController extends USSDController {
         USSDMenu returnMenu;
 
         if (newMeeting || !eventBroker.userHasEventsToView(user, EventType.MEETING, EventListTimeType.FUTURE)) {
-            returnMenu = ussdGroupUtil.askForGroup(user, thisSection, subjectMenu, newGroupMenu, groupName, null);
+            returnMenu = ussdGroupUtil.askForGroup(user, thisSection, subjectMenu, newGroupMenu, groupName, null, null);
         } else {
             String prompt = getMessage(thisSection, startMenu, promptKey + ".new-old", user);
             String newOption = getMessage(thisSection, startMenu, optionsKey + "new", user);

@@ -72,7 +72,7 @@ public class HomeController extends BaseController {
     private ModelAndView getHomePageUserHasGroups(Model model, User user) {
 
         Long startTime1 = System.currentTimeMillis();
-        model.addAttribute("userGroups", permissionBroker.getActiveGroupDTOs(user, null));
+        model.addAttribute("userGroups", permissionBroker.getActiveGroupsSorted(user, null));
         log.info(String.format("Retrieved the active groups for the user ... took %d msecs", System.currentTimeMillis() - startTime1));
 
         Long startTime2 = System.currentTimeMillis();

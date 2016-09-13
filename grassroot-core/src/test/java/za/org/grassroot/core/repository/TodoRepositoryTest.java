@@ -129,7 +129,7 @@ public class TodoRepositoryTest {
         Group group4 = groupRepository.save(new Group("subgroup11", user, group2));
         Group group5 = groupRepository.save(new Group("group2", user));
 
-        List<Group> subGroups = groupRepository.findByParentOrderByIdAsc(groupParent);
+        List<Group> subGroups = groupRepository.findByParentAndActiveTrue(groupParent);
         assertTrue(subGroups.contains(group2));
         assertTrue(subGroups.contains(group3));
         subGroups.add(group4);

@@ -188,9 +188,9 @@
           <ul class="list-group">
             <li th:each="group,iterStat : ${userGroups}" class="list-group-item">
               <a th:href="@{/group/view(groupUid=${group.Uid})}">
-                <span th:text="${group.getDisplayName('')}"></span></a>
+                <span th:text="${group.getName('')}"></span></a>
               <span class="badge">
-                <span th:text="${group.getGroupSize()}"></span> Members
+                <span th:text="${group.getMemberships().size()}"></span> Members
               </span>
               <small class="clearfix">
                 Est. <span th:text="${#temporals.format(group.getCreatedDateTimeAtSAST(),'d MMM yyyy')}">13 May 2011</span>
