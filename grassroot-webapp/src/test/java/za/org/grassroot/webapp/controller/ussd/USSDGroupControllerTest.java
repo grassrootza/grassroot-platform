@@ -30,7 +30,7 @@ import static za.org.grassroot.webapp.util.USSDUrlUtil.*;
  */
 public class USSDGroupControllerTest extends USSDAbstractUnitTest {
 
-    private static final Logger log = LoggerFactory.getLogger(USSDGroupControllerTest.class);
+    // private static final Logger log = LoggerFactory.getLogger(USSDGroupControllerTest.class);
 
     private static final String testUserPhone = "27801110000";
     private static final String testUserUid = "test-user-unique-id";
@@ -68,12 +68,11 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
     public void openingMenuShouldWorkWithNoGroups() throws Exception {
         resetTestGroup();
         testGroup.addMember(testUser);
-
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
-        when(userManagementServiceMock.isPartOfActiveGroups(testUser)).thenReturn(false);
+        when(permissionBrokerMock.getActiveGroupsWithPermission(testUser, null)).thenReturn(new HashSet<>());
         mockMvc.perform(get(path + "start").param(phoneParam, testUserPhone)).andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
-        verify(userManagementServiceMock, times(1)).isPartOfActiveGroups(testUser);
+        verify(permissionBrokerMock, times(1)).getActiveGroupsWithPermission(testUser, null);
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(groupBrokerMock);
         verifyZeroInteractions(eventBrokerMock);

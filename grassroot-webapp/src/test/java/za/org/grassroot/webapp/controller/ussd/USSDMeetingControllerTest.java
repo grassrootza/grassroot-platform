@@ -27,6 +27,7 @@ import java.util.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static za.org.grassroot.core.domain.Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING;
 import static za.org.grassroot.core.util.DateTimeUtil.convertToSystemTime;
 import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
 import static za.org.grassroot.webapp.util.USSDUrlUtil.*;
@@ -36,7 +37,6 @@ import static za.org.grassroot.webapp.util.USSDUrlUtil.*;
  */
 public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 
-    // todo: log stuff
     private static final Logger log = LoggerFactory.getLogger(USSDMeetingControllerTest.class);
 
     private static final String testUserPhone = "27601110000";
@@ -69,18 +69,17 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
     public void meetingStartMenuNoUpcomingMeetingsAndNoGroups() throws Exception {
 
         User testUser = new User(testUserPhone);
-        List<Event> emptyMeetingList = new ArrayList<>();
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
-        when(userManagementServiceMock.isPartOfActiveGroups(testUser)).thenReturn(false);
         when(eventBrokerMock.userHasEventsToView(testUser, EventType.MEETING, EventListTimeType.FUTURE)).thenReturn(false);
+        when(permissionBrokerMock.countActiveGroupsWithPermission(testUser, GROUP_PERMISSION_CREATE_GROUP_MEETING)).thenReturn(0);
 
         mockMvc.perform(get(path + "start").param(phoneParam, testUserPhone)).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
-        verify(userManagementServiceMock, times(1)).isPartOfActiveGroups(testUser);
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(eventBrokerMock, times(1)).userHasEventsToView(testUser, EventType.MEETING, EventListTimeType.FUTURE);
+        verify(permissionBrokerMock, times(1)).countActiveGroupsWithPermission(testUser, GROUP_PERMISSION_CREATE_GROUP_MEETING);
         verifyNoMoreInteractions(eventBrokerMock);
 
     }
@@ -98,20 +97,18 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 
         GroupPage groupPage = GroupPage.createFromGroups(existingGroupList, 0, 3);
 
-        List<Event> emptyMeetingList = new ArrayList<>();
-
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(eventBrokerMock.userHasEventsToView(testUser, EventType.MEETING, EventListTimeType.FUTURE)).thenReturn(false);
-        when(userManagementServiceMock.isPartOfActiveGroups(testUser)).thenReturn(true);
-        when(permissionBrokerMock.getPageOfGroupDTOs(testUser, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING, 0, 3)).
+        when(permissionBrokerMock.countActiveGroupsWithPermission(testUser, GROUP_PERMISSION_CREATE_GROUP_MEETING)).thenReturn(1);
+        when(permissionBrokerMock.getPageOfGroupDTOs(testUser, GROUP_PERMISSION_CREATE_GROUP_MEETING, 0, 3)).
                 thenReturn(groupPage);
 
         mockMvc.perform(get(path + "start").param(phoneParam, testUserPhone)).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
-        verify(userManagementServiceMock, times(1)).isPartOfActiveGroups(testUser);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(permissionBrokerMock, times(1)).getPageOfGroupDTOs(testUser, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING, 0, 3);
+        verify(permissionBrokerMock, times(1)).countActiveGroupsWithPermission(testUser, GROUP_PERMISSION_CREATE_GROUP_MEETING);
+        verify(permissionBrokerMock, times(1)).getPageOfGroupDTOs(testUser, GROUP_PERMISSION_CREATE_GROUP_MEETING, 0, 3);
         verifyNoMoreInteractions(permissionBrokerMock);
         verify(eventBrokerMock, times(1)).userHasEventsToView(testUser, EventType.MEETING, EventListTimeType.FUTURE);
         verifyNoMoreInteractions(eventBrokerMock);

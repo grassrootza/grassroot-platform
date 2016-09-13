@@ -354,11 +354,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
-    public boolean isPartOfActiveGroups(User user) {
-        return (groupRepository.countByMembershipsUserAndActiveTrue(user) > 0);
-    }
-
-    @Override
     @Transactional(readOnly = true)
     public boolean needsToRenameSelf(User user) {
         return !user.hasName() && (!asyncUserService.hasSkippedName(user.getUid())

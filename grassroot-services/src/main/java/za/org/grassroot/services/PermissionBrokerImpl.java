@@ -148,14 +148,26 @@ public class PermissionBrokerImpl implements PermissionBroker {
     public Set<Group> getActiveGroupsWithPermission(User user, Permission requiredPermission) {
         Objects.requireNonNull(user, "User cannot be null");
         List<Group> activeGroups = groupRepository.findByMembershipsUserAndActiveTrue(user);
-        return activeGroups.stream()
-                .filter(group -> requiredPermission == null || isGroupPermissionAvailable(user, group, requiredPermission))
-                .collect(Collectors.toSet());
+        if (activeGroups == null) {
+            return new HashSet<>();
+        } else {
+            return activeGroups.stream()
+                    .filter(group -> requiredPermission == null || isGroupPermissionAvailable(user, group, requiredPermission))
+                    .collect(Collectors.toSet());
+        }
     }
 
     @Override
+    @Transactional(readOnly = true)
     public GroupPage getPageOfGroupDTOs(User user, Permission requiredPermission, int pageNumber, int pageSize) {
         return new GroupPage(getActiveGroupDTOs(user, requiredPermission), pageNumber, pageSize);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public int countActiveGroupsWithPermission(User user, Permission requiredPermission) {
+        // todo : switch this to a count query in time
+        return getActiveGroupsWithPermission(user, requiredPermission).size();
     }
 
 

@@ -124,19 +124,28 @@ public class USSDToDoController extends USSDController {
     public Request groupList(@RequestParam(value = phoneNumber) String inputNumber,
                              @RequestParam(value = "new") boolean newEntry,
                              @RequestParam(value = "completed", required=false) boolean completed) throws URISyntaxException {
-
         User user = userManager.findByInputNumber(inputNumber);
-
+        // todo : handle conflicting prompts etc in here (actually, up above)
         if (newEntry) {
-            return menuBuilder(ussdGroupUtil.askForGroupWithoutNewOption(user, thisSection, subjectMenu));
+            return menuBuilder(initiateNewAction(user));
         } else {
             List<GroupDTO> groups = permissionBroker.getActiveGroupDTOs(user, null);
             if (groups.size() == 1) {
                 return listEntriesMenu(user.getPhoneNumber(), groups.get(0).getUid(), completed, 0);
             } else {
-                return menuBuilder(ussdGroupUtil.askForGroupWithoutNewOption(user, thisSection, listEntriesMenu + "?done=" + completed,
-                                                                getMessage(thisSection, groupMenu, promptKey + ".existing", user)));
+                return menuBuilder(ussdGroupUtil.askForGroup(user, thisSection, listEntriesMenu + "?done=" + completed, null, null, null));
             }
+        }
+    }
+
+    private USSDMenu initiateNewAction(User user) throws URISyntaxException {
+        int numberPossibleGroups = permissionBroker.countActiveGroupsWithPermission(user, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY); // todo : consolidate counts
+        if (numberPossibleGroups == 1) {
+            Group group = permissionBroker.getActiveGroupsWithPermission(user, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY).iterator().next();
+            final String prompt = getMessage(thisSection, subjectMenu, promptKey + ".skipped", group.getName(""), user);
+            return setActionGroupAndInitiateRequest(null, group.getUid(), prompt, false, user);
+        } else {
+            return ussdGroupUtil.askForGroup(user, thisSection, subjectMenu, null, null, null);
         }
     }
 
@@ -148,14 +157,15 @@ public class USSDToDoController extends USSDController {
                                  @RequestParam(value = todoUidParam, required = false) String passedTodoUid) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(inputNumber);
+        final String prompt = getMessage(thisSection, subjectMenu, promptKey, user);
+        return menuBuilder(setActionGroupAndInitiateRequest(passedTodoUid, groupUid, prompt, revising, user));
+    }
 
-        final String todoUid = passedTodoUid != null ? passedTodoUid :
-                todoRequestBroker.create(user.getUid(), groupUid).getUid();
-
-        cacheManager.putUssdMenuForUser(inputNumber, saveToDoMenu(subjectMenu, todoUid));
-        USSDMenu menu = new USSDMenu(getMessage(thisSection, subjectMenu, promptKey, user),
-                                     nextOrConfirmUrl(subjectMenu, dueDateMenu, todoUid, revising));
-        return menuBuilder(menu);
+    private USSDMenu setActionGroupAndInitiateRequest(final String passedTodoUid, final String groupUid, final String prompt,
+                                                      final boolean revising, User user) {
+        final String todoUid = passedTodoUid != null ? passedTodoUid : todoRequestBroker.create(user.getUid(), groupUid).getUid();
+        cacheManager.putUssdMenuForUser(user.getPhoneNumber(), saveToDoMenu(subjectMenu, todoUid));
+        return new USSDMenu(prompt, nextOrConfirmUrl(subjectMenu, dueDateMenu, todoUid, revising));
     }
 
     @RequestMapping(path + dueDateMenu)

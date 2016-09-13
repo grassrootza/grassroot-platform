@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -18,6 +19,7 @@ import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.EventLogBroker;
 import za.org.grassroot.services.EventRequestBroker;
+import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.enums.EventListTimeType;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
@@ -32,6 +34,7 @@ import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static za.org.grassroot.webapp.util.USSDUrlUtil.backVoteUrl;
@@ -54,6 +57,9 @@ public class USSDVoteController extends USSDController {
 
     @Autowired
     private EventLogRepository eventLogRepository;
+
+    @Autowired
+    private PermissionBroker permissionBroker;
 
     @Autowired
     private USSDEventUtil eventUtil;
@@ -88,10 +94,7 @@ public class USSDVoteController extends USSDController {
                 menu.addMenuOption(voteMenus + "old", getMessage(thisSection, startMenu, optionsKey + "old", user));
             menu.addMenuOption("start", getMessage(USSDSection.VOTES,"start","options.back",user));
         } else {
-            String groupsExistPrompt = getMessage(thisSection, "group", promptKey, user);
-            String groupsDontExistPrompt = getMessage(thisSection, "group", promptKey + "-nogroup", user);
-            menu = ussdGroupUtil.askForGroupWithoutNewOption(user, thisSection, groupsExistPrompt, groupsDontExistPrompt,
-                    "issue", groupMenus + "create");
+            menu = ussdGroupUtil.askForGroup(user, thisSection, "issue", null, null, null);
         }
 
         return menuBuilder(menu);
@@ -100,12 +103,19 @@ public class USSDVoteController extends USSDController {
     @RequestMapping(value = path + "new")
     @ResponseBody
     public Request newVote(@RequestParam(value = phoneNumber) String inputNumber) throws URISyntaxException {
-
         User user = userManager.findByInputNumber(inputNumber, voteMenus + "new");
-        String groupsExistPrompt = getMessage(thisSection, "group", promptKey, user);
-        String groupsDontExistPrompt = getMessage(thisSection, "group", promptKey + "-nogroup", user);
-        return menuBuilder(ussdGroupUtil.askForGroupWithoutNewOption(user, thisSection, groupsExistPrompt, groupsDontExistPrompt,
-                "issue", groupMenus + "create"));
+        return menuBuilder(initiateNewVote(user));
+    }
+
+    private USSDMenu initiateNewVote(User user) throws URISyntaxException {
+        int possibleGroups = permissionBroker.countActiveGroupsWithPermission(user, Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE);
+        if (possibleGroups == 1) {
+            Group group = permissionBroker.getActiveGroupsWithPermission(user, Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE).iterator().next();
+            final String prompt = getMessage(thisSection, "issue", promptKey + ".skipped", group.getName(""), user);
+            return setVoteGroupAndInitiateRequest(prompt, null, group.getUid(), "time", "", user);
+        } else {
+            return ussdGroupUtil.askForGroup(user, thisSection, "issue", null, null, null);
+        }
     }
 
     /*
@@ -117,24 +127,25 @@ public class USSDVoteController extends USSDController {
     public Request votingIssue(@RequestParam(value = phoneNumber) String inputNumber,
                                @RequestParam(value = groupUidParam, required = false) String groupUid,
                                @RequestParam(value = entityUidParam, required = false) String requestUid,
-                               @RequestParam(value = interruptedFlag, required = false) boolean interrupted,
                                @RequestParam(value = revisingFlag, required = false) boolean revising) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(inputNumber);
+        USSDMenu menu = setVoteGroupAndInitiateRequest(getMessage(thisSection, "issue", promptKey, user),
+                requestUid, groupUid, revising ? "confirm" : "time", revising ? "&field=issue" : "", user);
+        return menuBuilder(menu);
+    }
 
-        if (requestUid == null) {
+    private USSDMenu setVoteGroupAndInitiateRequest(String menuPrompt, String interruptedRequestUid, String groupUid,
+                                                    String subsequentMenu, String paramsToPassForward, User user) {
+        String requestUid;
+        if (StringUtils.isEmpty(interruptedRequestUid)) {
             VoteRequest voteRequest = eventRequestBroker.createEmptyVoteRequest(user.getUid(), groupUid);
             requestUid = voteRequest.getUid();
+        } else {
+            requestUid = interruptedRequestUid;
         }
-
-        cacheManager.putUssdMenuForUser(inputNumber, saveVoteMenu("issue", requestUid));
-
-        String nextUrl = (!revising) ? voteMenus + "time" + entityUidUrlSuffix + requestUid :
-                voteMenus + "confirm" + entityUidUrlSuffix + requestUid + "&field=issue";
-
-        USSDMenu menu = new USSDMenu(getMessage(thisSection, "issue", promptKey, user), nextUrl);
-        return menuBuilder(menu);
-
+        cacheManager.putUssdMenuForUser(user.getPhoneNumber(), saveVoteMenu("issue", requestUid));
+        return new USSDMenu(menuPrompt, voteMenus + subsequentMenu + entityUidUrlSuffix + requestUid + paramsToPassForward);
     }
 
     /*

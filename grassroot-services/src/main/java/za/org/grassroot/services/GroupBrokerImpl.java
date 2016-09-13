@@ -1216,12 +1216,15 @@ public class GroupBrokerImpl implements GroupBroker {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<GroupDTO> fetchUserCreatedGroups(User user) {
         Objects.nonNull(user);
         List<Group> groups = groupRepository.findByMembershipsUserAndActiveTrue(user);
-        return groups.stream().filter(group -> group.getCreatedByUser().equals(user))
-                .map(GroupDTO::new).collect(Collectors.toList());
-
+        return groups.stream()
+                .filter(group -> group.getCreatedByUser().equals(user))
+                .sorted(Comparator.reverseOrder())
+                .map(GroupDTO::new)
+                .collect(Collectors.toList());
     }
 
     @Override

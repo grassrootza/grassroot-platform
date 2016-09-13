@@ -107,17 +107,12 @@ public class USSDMeetingController extends USSDController {
                               @RequestParam(value = "newMtg", required = false) boolean newMeeting) throws URISyntaxException, IOException {
 
         User user;
-
-        try {
-            user = userManager.findByInputNumber(inputNumber);
-        } catch (NoSuchElementException e) {
-            return noUserError;
-        }
+        user = userManager.findByInputNumber(inputNumber);
 
         USSDMenu returnMenu;
 
         if (newMeeting || !eventBroker.userHasEventsToView(user, EventType.MEETING, EventListTimeType.FUTURE)) {
-            returnMenu = ussdGroupUtil.askForGroup(user, thisSection, subjectMenu, newGroupMenu, groupName, true);
+            returnMenu = ussdGroupUtil.askForGroup(user, thisSection, subjectMenu, newGroupMenu, groupName, null);
         } else {
             String prompt = getMessage(thisSection, startMenu, promptKey + ".new-old", user);
             String newOption = getMessage(thisSection, startMenu, optionsKey + "new", user);

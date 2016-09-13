@@ -15,6 +15,7 @@ import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.services.EventLogBroker;
+import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.SafetyEventBroker;
 import za.org.grassroot.services.TodoBroker;
 import za.org.grassroot.services.enums.EventListTimeType;
@@ -57,11 +58,13 @@ public class USSDHomeController extends USSDController {
     private TodoBroker todoBroker;
 
     @Autowired
-    private Environment environment;
+    private PermissionBroker permissionBroker;
 
     @Autowired
     private SafetyEventBroker safetyEventBroker;
 
+    @Autowired
+    private Environment environment;
 
     private static final Logger log = LoggerFactory.getLogger(USSDHomeController.class);
 
@@ -104,7 +107,7 @@ public class USSDHomeController extends USSDController {
     public USSDMenu welcomeMenu(String opening, User user) {
 
         USSDMenu homeMenu = new USSDMenu(opening);
-        List<USSDSection> menuSequence = userManager.isPartOfActiveGroups(user) ?
+        List<USSDSection> menuSequence = permissionBroker.countActiveGroupsWithPermission(user, null) != 0 ?
                 openingSequenceWithGroups : openingSequenceWithoutGroups;
 
         for (USSDSection section : menuSequence) {

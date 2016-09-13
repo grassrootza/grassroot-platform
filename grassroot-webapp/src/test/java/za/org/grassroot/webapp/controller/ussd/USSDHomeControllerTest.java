@@ -308,6 +308,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
         GroupPage groupPage = GroupPage.createFromGroups(testGroups, 1, 3);
 
         when(userManagementServiceMock.findByInputNumber(phoneForTests)).thenReturn(testUser);
+        when(permissionBrokerMock.countActiveGroupsWithPermission(testUser, null)).thenReturn(4);
         when(permissionBrokerMock.getPageOfGroupDTOs(testUser, null, 1, 3)).thenReturn(groupPage);
 
         mockMvc.perform(get("/ussd/group_page").param(phoneParameter, phoneForTests).param("prompt", "Look at pages").

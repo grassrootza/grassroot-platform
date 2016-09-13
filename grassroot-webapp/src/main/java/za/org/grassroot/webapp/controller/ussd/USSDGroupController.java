@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.dto.GroupDTO;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.MembershipInfo;
 import za.org.grassroot.services.PermissionBroker;
@@ -23,9 +24,10 @@ import java.net.URISyntaxException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static za.org.grassroot.webapp.util.USSDUrlUtil.*;
@@ -77,10 +79,20 @@ public class USSDGroupController extends USSDController {
                              @RequestParam(value = "interrupted", required = false) boolean interrupted) throws URISyntaxException {
 
         // in case went "back" from menu in middle of create group
-        User sessionUser = (interrupted) ? userManager.findByInputNumber(inputNumber, null) :
-                userManager.findByInputNumber(inputNumber);
-        return menuBuilder(ussdGroupUtil.askForGroup(sessionUser, USSDSection.GROUP_MANAGER, existingGroupMenu,
-                createGroupMenu, createGroupMenu + doSuffix, true));
+        User user = (interrupted) ? userManager.findByInputNumber(inputNumber, null) : userManager.findByInputNumber(inputNumber);
+        if (!groupJoinRequestService.getPendingRequestsForUser(user.getUid()).isEmpty()) {
+            return menuBuilder(ussdGroupUtil.showGroupRequests(user, USSDSection.GROUP_MANAGER));
+        } else {
+            // todo : introduce count queries for all of these
+            Set<Group> groups = permissionBroker.getActiveGroupsWithPermission(user, null);
+            if (groups.size() != 1) {
+                return menuBuilder(ussdGroupUtil.askForGroup(user, USSDSection.GROUP_MANAGER, existingGroupMenu,
+                        createGroupMenu, createGroupMenu + doSuffix, createGroupMenu));
+            } else {
+                final String groupUid = groups.iterator().next().getUid();
+                return menuBuilder(ussdGroupUtil.existingGroupMenu(user, groupUid, true));
+            }
+        }
     }
 
     /*
@@ -524,9 +536,10 @@ public class USSDGroupController extends USSDController {
         User user = userManager.findByInputNumber(inputNumber, saveGroupMenu(mergeGroupMenu, groupUid));
 
         // todo: debug why this is returning inactive groups (service method has active flag)
-        Set<Group> mergeCandidates = groupBroker.mergeCandidates(user.getUid(), groupUid);
+        List<GroupDTO> mergeCandidates = groupBroker.mergeCandidates(user.getUid(), groupUid)
+                .stream().map(GroupDTO::new).collect(Collectors.toList());
 
-        if (mergeCandidates == null || mergeCandidates.size() == 0) {
+        if (mergeCandidates.size() == 0) {
             menu = new USSDMenu(getMessage(thisSection, mergeGroupMenu, promptKey + ".error", user));
             menu.addMenuOption(groupMenuWithId(existingGroupMenu, groupUid),
                     getMessage(thisSection, mergeGroupMenu, optionsKey + "back", user));
@@ -534,7 +547,7 @@ public class USSDGroupController extends USSDController {
         } else {
             menu = new USSDMenu(getMessage(thisSection, mergeGroupMenu, promptKey, user));
             menu = ussdGroupUtil.addListOfGroupsToMenu(menu, groupMenus + mergeGroupMenu + "-confirm?firstGroupSelected=" + groupUid,
-                    new ArrayList<>(mergeCandidates), user);
+                    mergeCandidates, user);
         }
         return menuBuilder(menu);
     }

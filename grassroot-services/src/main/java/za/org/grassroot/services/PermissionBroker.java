@@ -66,6 +66,8 @@ public interface PermissionBroker {
      */
     GroupPage getPageOfGroupDTOs(User user, Permission requiredPermission, int pageNumber, int pageSize);
 
+    int countActiveGroupsWithPermission(User user, Permission requiredPermission);
+
     Set<Permission> getPermissions(Group group, String roleName);
 
     Set<Permission> getPermissions(User user, Group group);

@@ -78,8 +78,6 @@ public interface UserManagementService {
     Miscellaneous methods to query various properties about a user
      */
 
-    boolean isPartOfActiveGroups(User user);
-
     boolean needsToRenameSelf(User sessionUser);
 
     void sendAndroidLinkSms(String userUid);
