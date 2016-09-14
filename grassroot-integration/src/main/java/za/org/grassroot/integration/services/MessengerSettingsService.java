@@ -15,6 +15,9 @@ public interface MessengerSettingsService {
     @Transactional
     public void createUserGroupMessagingSetting(String userUid, String groupUid, boolean active, boolean canSend, boolean canReceive);
 
+    @Transactional
+    public MessengerSettings load(String userUid, String groupUid);
+
 
     @Transactional
     void updateUserGroupMessageSettings(String userUid, String groupUid, boolean active, boolean canSend, boolean canReceive, Instant reactivationTime) throws MessengerSettingNotFoundException;
@@ -28,7 +31,7 @@ public interface MessengerSettingsService {
     @Transactional(readOnly = true)
     boolean isCanReceive(String userUid, String groupUid) throws Exception;
 
-    @Transactional
+    @Transactional(readOnly =true)
     boolean messengerSettingExist(String userUid, String groupUid);
 
     @Transactional

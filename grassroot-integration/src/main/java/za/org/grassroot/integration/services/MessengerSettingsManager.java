@@ -33,11 +33,28 @@ public class MessengerSettingsManager implements MessengerSettingsService {
     @Override
     @Transactional
     public void createUserGroupMessagingSetting(String userUid, String groupUid, boolean active, boolean canSend, boolean canReceive) {
+        Objects.nonNull(userUid);
+        Objects.nonNull(groupUid);
+
         User user =  userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
 
         MessengerSettings messengerSettings = new MessengerSettings(user,group,active,true,true,true);
         messengerSettingsRepository.save(messengerSettings);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public MessengerSettings load(String userUid, String groupUid) {
+        Objects.nonNull(userUid);
+        Objects.nonNull(groupUid);
+
+        User user =  userRepository.findOneByUid(userUid);
+        Group group = groupRepository.findOneByUid(groupUid);
+
+        MessengerSettings messengerSettings = messengerSettingsRepository.findByUserAndGroup(user, group);
+
+        return  messengerSettings;
     }
 
     @Override
@@ -101,9 +118,6 @@ public class MessengerSettingsManager implements MessengerSettingsService {
         if(userInitiated ){
             messengerSettings.setCanReceive(active);
         }
-
-        messengerSettingsRepository.save(messengerSettings);
-
 
     }
 

@@ -7,6 +7,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.integration.annotation.ServiceActivator;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.stereotype.Component;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.MessengerSettings;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.NotificationType;
@@ -158,11 +160,13 @@ public class InboundGcmMessageHandler {
         String phoneNumber = (String) input.getData().get("phoneNumber");
         String groupUid = (String) input.getData().get("groupUid");
         User user = userRepository.findByPhoneNumber(phoneNumber);
-
+        MessengerSettings messengerSettings = messengerSettingsService.load(user.getUid(),groupUid);
+        Group group = messengerSettings.getGroup();
+        log.info("Posting to topic with id={}",groupUid);
         try {
-            //todo implement second level caching to the message setting object
             if(messengerSettingsService.isCanSend(user.getUid(),groupUid)){
-                org.springframework.messaging.Message<Message> message = generateChatMessage(user, input);
+                log.info("Posting to topic with id={}", groupUid);
+                org.springframework.messaging.Message<Message> message = generateChatMessage(user, input,group);
                 gcmXmppOutboundChannel.send(message);
             }
         } catch (MessengerSettingNotFoundException e) {
@@ -171,7 +175,7 @@ public class InboundGcmMessageHandler {
 
     }
 
-    private org.springframework.messaging.Message<Message> generateChatMessage(User user, GcmUpstreamMessage input){
+    private org.springframework.messaging.Message<Message> generateChatMessage(User user, GcmUpstreamMessage input, Group group){
 
         String groupUid = (String) input.getData().get("groupUid");
         String topic = TOPICS.concat(groupUid);
@@ -180,6 +184,8 @@ public class InboundGcmMessageHandler {
 
         Map<String, Object> data = new HashMap<>();
         data.put("groupUid", groupUid);
+        data.put("groupName", group.getGroupName());
+        data.put("groupIcon", group.getImageUrl());
         data.put("body", message);
         data.put("id", messageId);
         data.put("uid", input.getMessageId());
@@ -192,7 +198,7 @@ public class InboundGcmMessageHandler {
         data.put("click_action", AndroidClickActionType.CHAT_MESSAGE.toString());
         data.put("priority", String.valueOf(1));
         data.put("time", input.getData().get("time"));
-
+        
         org.springframework.messaging.Message<Message> gcmMessage = GcmXmppMessageCodec.encode(topic, messageId,
                 null, null, null,
                 AndroidClickActionType.CHAT_MESSAGE.name(), data);
