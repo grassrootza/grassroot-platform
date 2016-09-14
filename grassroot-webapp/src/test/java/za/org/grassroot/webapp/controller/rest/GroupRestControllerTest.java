@@ -89,16 +89,16 @@ public class GroupRestControllerTest extends RestAbstractUnitTest {
 
         ChangedSinceData<Group> wrapper = new ChangedSinceData<>(groups, Collections.EMPTY_SET);
 
-        when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
+        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
         when(groupBrokerMock.getActiveGroups(sessionTestUser, null)).thenReturn(wrapper);
 
-        when(eventManagementServiceMock.getMostRecentEvent(testGroup)).thenReturn(event);
+        when(eventBrokerMock.getMostRecentEvent(testGroup.getUid())).thenReturn(event);
         when(groupBrokerMock.getMostRecentLog(testGroup)).thenReturn(groupLog);
         mockMvc.perform(get(path + "list/{phoneNumber}/{code}", testUserPhone, testUserCode)).andExpect(status().is2xxSuccessful());
 
-	    verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
+	    verify(userManagementServiceMock).findByInputNumber(testUserPhone);
         verify(groupBrokerMock).getActiveGroups(sessionTestUser, null);
-	    verify(eventManagementServiceMock).getMostRecentEvent(testGroup);
+	    verify(eventBrokerMock).getMostRecentEvent(testGroup.getUid());
         verify(groupBrokerMock).getMostRecentLog(testGroup);
     }
 
@@ -122,28 +122,6 @@ public class GroupRestControllerTest extends RestAbstractUnitTest {
                 .param("uid", testGroup.getUid()).param("message", "please let me in")).andExpect(status().is2xxSuccessful());
         verify(userManagementServiceMock).findByInputNumber(testUserPhone);
         verify(groupJoinRequestServiceMock).open(sessionTestUser.getUid(), testGroup.getUid(), "please let me in");
-    }
-
-    @Test
-    public void gettingAGroupMemberShouldWork() throws Exception {
-
-        List<User> userList = new ArrayList<>();
-        Page<User> userPage = new PageImpl<>(userList, new PageRequest(0, 5), 1);
-
-        when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
-        when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
-        when(permissionBrokerMock.isGroupPermissionAvailable(sessionTestUser, testGroup,
-                                                             Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS)).thenReturn(true);
-
-        when(userManagementServiceMock.getGroupMembers(testGroup, 0, 5)).thenReturn(userPage);
-        mockMvc.perform(get(path + "/members/list/{phoneNumber}/{code}/{groupUid}/{selected}",
-                            testUserPhone, testUserCode, testGroup.getUid(), true)
-                                .param("page", String.valueOf(0))
-                                .param("size", String.valueOf(5)))
-                .andExpect(status().is2xxSuccessful());
-        verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
-        verify(groupBrokerMock).load(testGroup.getUid());
-        verify(userManagementServiceMock).getGroupMembers(testGroup, 0, 5);
     }
 
     private void settingUpDummyData(Group group, List<Group> groups, MembershipInfo membershipInfo, Set<MembershipInfo> membersToAdd) {

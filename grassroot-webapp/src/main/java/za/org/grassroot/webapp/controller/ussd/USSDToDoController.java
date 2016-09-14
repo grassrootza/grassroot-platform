@@ -8,7 +8,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.dto.GroupDTO;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.integration.domain.SeloApiCallFailure;
 import za.org.grassroot.integration.domain.SeloParseDateTimeFailure;
@@ -77,8 +76,8 @@ public class USSDToDoController extends USSDController {
             completedDate = "date_completed",
             confirmCompleteDate = "confirm_date";
 
-    // todo : rename this todoParam
-    private static final String todoUidParam = "logbookUid", todoUrlSuffix = "?" + todoUidParam + "=";
+    private static final String todoUidParam = "todoUid";
+    private static final String todoUrlSuffix = "?" + todoUidParam + "=";
     private static final String priorMenuSuffix = "&" + previousMenu + "=";
 
     private static final int PAGE_LENGTH = 3;
@@ -88,17 +87,17 @@ public class USSDToDoController extends USSDController {
         return getMessage(thisSection, menu, promptKey, user);
     }
 
-    private String returnUrl(String nextMenu, String logBookUid) {
-        return todoMenus + nextMenu + todoUrlSuffix + logBookUid;
+    private String returnUrl(String nextMenu, String todoUid) {
+        return todoMenus + nextMenu + todoUrlSuffix + todoUid;
     }
 
-    private String nextOrConfirmUrl(String thisMenu, String nextMenu, String logBookUid, boolean revising) {
-        return revising ? returnUrl(confirmMenu, logBookUid) + priorMenuSuffix + thisMenu :
-                returnUrl(nextMenu, logBookUid);
+    private String nextOrConfirmUrl(String thisMenu, String nextMenu, String todoUid, boolean revising) {
+        return revising ? returnUrl(confirmMenu, todoUid) + priorMenuSuffix + thisMenu :
+                returnUrl(nextMenu, todoUid);
     }
 
-    private String backUrl(String menu, String logBookUid) {
-        return returnUrl(menu, logBookUid) + "&" + revisingFlag + "=1";
+    private String backUrl(String menu, String todoUid) {
+        return returnUrl(menu, todoUid) + "&" + revisingFlag + "=1";
     }
 
 
@@ -124,19 +123,29 @@ public class USSDToDoController extends USSDController {
     public Request groupList(@RequestParam(value = phoneNumber) String inputNumber,
                              @RequestParam(value = "new") boolean newEntry,
                              @RequestParam(value = "completed", required=false) boolean completed) throws URISyntaxException {
-
         User user = userManager.findByInputNumber(inputNumber);
-
+        // todo : handle conflicting prompts etc in here (actually, up above)
         if (newEntry) {
-            return menuBuilder(ussdGroupUtil.askForGroupWithoutNewOption(user, thisSection, subjectMenu));
+            return menuBuilder(initiateNewAction(user));
         } else {
-            List<GroupDTO> groups = permissionBroker.getActiveGroupDTOs(user, null);
-            if (groups.size() == 1) {
-                return listEntriesMenu(user.getPhoneNumber(), groups.get(0).getUid(), completed, 0);
+            int countGroups = permissionBroker.countActiveGroupsWithPermission(user, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY);
+            if (countGroups == 1) {
+                Group group = permissionBroker.getActiveGroupsWithPermission(user, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY).iterator().next();
+                return listEntriesMenu(user.getPhoneNumber(), group.getUid(), completed, 0);
             } else {
-                return menuBuilder(ussdGroupUtil.askForGroupWithoutNewOption(user, thisSection, listEntriesMenu + "?done=" + completed,
-                                                                getMessage(thisSection, groupMenu, promptKey + ".existing", user)));
+                return menuBuilder(ussdGroupUtil.askForGroup(user, thisSection, listEntriesMenu + "?done=" + completed, null, null, null, countGroups));
             }
+        }
+    }
+
+    private USSDMenu initiateNewAction(User user) throws URISyntaxException {
+        int numberPossibleGroups = permissionBroker.countActiveGroupsWithPermission(user, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY); // todo : consolidate counts
+        if (numberPossibleGroups == 1) {
+            Group group = permissionBroker.getActiveGroupsWithPermission(user, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY).iterator().next();
+            final String prompt = getMessage(thisSection, subjectMenu, promptKey + ".skipped", group.getName(""), user);
+            return setActionGroupAndInitiateRequest(null, group.getUid(), prompt, false, user);
+        } else {
+            return ussdGroupUtil.askForGroup(user, thisSection, subjectMenu, null, null, null, numberPossibleGroups);
         }
     }
 
@@ -148,36 +157,37 @@ public class USSDToDoController extends USSDController {
                                  @RequestParam(value = todoUidParam, required = false) String passedTodoUid) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(inputNumber);
+        final String prompt = getMessage(thisSection, subjectMenu, promptKey, user);
+        return menuBuilder(setActionGroupAndInitiateRequest(passedTodoUid, groupUid, prompt, revising, user));
+    }
 
-        final String todoUid = passedTodoUid != null ? passedTodoUid :
-                todoRequestBroker.create(user.getUid(), groupUid).getUid();
-
-        cacheManager.putUssdMenuForUser(inputNumber, saveToDoMenu(subjectMenu, todoUid));
-        USSDMenu menu = new USSDMenu(getMessage(thisSection, subjectMenu, promptKey, user),
-                                     nextOrConfirmUrl(subjectMenu, dueDateMenu, todoUid, revising));
-        return menuBuilder(menu);
+    private USSDMenu setActionGroupAndInitiateRequest(final String passedTodoUid, final String groupUid, final String prompt,
+                                                      final boolean revising, User user) {
+        final String todoUid = passedTodoUid != null ? passedTodoUid : todoRequestBroker.create(user.getUid(), groupUid).getUid();
+        cacheManager.putUssdMenuForUser(user.getPhoneNumber(), saveToDoMenu(subjectMenu, todoUid));
+        return new USSDMenu(prompt, nextOrConfirmUrl(subjectMenu, dueDateMenu, todoUid, revising));
     }
 
     @RequestMapping(path + dueDateMenu)
     @ResponseBody
     public Request askForDueDate(@RequestParam(value = phoneNumber) String inputNumber,
                                  @RequestParam(value = userInputParam) String passedInput,
-                                 @RequestParam(value = todoUidParam) String logBookUid,
+                                 @RequestParam(value = todoUidParam) String todoUid,
                                  @RequestParam(value = revisingFlag, required = false) boolean revising,
                                  @RequestParam(value = interruptedFlag, required = false) boolean interrupted,
                                  @RequestParam(value = interruptedInput, required = false) String priorInput) throws URISyntaxException {
 
         final String userInput = (interrupted) ? priorInput : passedInput;
-        User user = userManager.findByInputNumber(inputNumber, saveToDoMenu(dueDateMenu, logBookUid, userInput));
-        if (!revising) todoRequestBroker.updateMessage(user.getUid(), logBookUid, userInput);
+        User user = userManager.findByInputNumber(inputNumber, saveToDoMenu(dueDateMenu, todoUid, userInput));
+        if (!revising) todoRequestBroker.updateMessage(user.getUid(), todoUid, userInput);
         return menuBuilder(new USSDMenu(menuPrompt(dueDateMenu, user),
-                                        nextOrConfirmUrl(dueDateMenu, confirmMenu, logBookUid, true)));
+                                        nextOrConfirmUrl(dueDateMenu, confirmMenu, todoUid, true)));
     }
 
     @RequestMapping(path + confirmMenu)
     @ResponseBody
     public Request confirmLogBookEntry(@RequestParam(value = phoneNumber) String inputNumber,
-                                       @RequestParam(value = todoUidParam) String logBookUid,
+                                       @RequestParam(value = todoUidParam) String todoUid,
                                        @RequestParam(value = userInputParam) String passedUserInput,
                                        @RequestParam(value = previousMenu, required = false) String passedPriorMenu,
                                        @RequestParam(value = interruptedFlag, required = false) boolean interrupted,
@@ -186,12 +196,12 @@ public class USSDToDoController extends USSDController {
         final String userInput = (priorInput !=null) ? priorInput : passedUserInput;
         final String priorMenu = (passedPriorMenu != null) ? passedPriorMenu: "";
 
-        String urlToSave = saveToDoMenu(confirmMenu, logBookUid, priorMenu, userInput, !interrupted);
+        String urlToSave = saveToDoMenu(confirmMenu, todoUid, priorMenu, userInput, !interrupted);
 
         User user = userManager.findByInputNumber(inputNumber, urlToSave);
 
-        if (!interrupted) updateLogBookRequest(user.getUid(), logBookUid, priorMenu, userInput);
-        TodoRequest todoRequest = todoRequestBroker.load(logBookUid);
+        if (!interrupted) updateLogBookRequest(user.getUid(), todoUid, priorMenu, userInput);
+        TodoRequest todoRequest = todoRequestBroker.load(todoUid);
 
         boolean isInFuture = todoRequest.getActionByDate().isAfter(Instant.now());
 
@@ -206,11 +216,11 @@ public class USSDToDoController extends USSDController {
 
         USSDMenu menu = new USSDMenu(prompt);
         if (isInFuture) {
-            menu.addMenuOption(returnUrl(send, logBookUid), getMessage(thisSection, confirmMenu, optionsKey + "send", user));
+            menu.addMenuOption(returnUrl(send, todoUid), getMessage(thisSection, confirmMenu, optionsKey + "send", user));
         }
-        menu.addMenuOption(backUrl(subjectMenu, logBookUid), getMessage(thisSection, confirmMenu, optionsKey + "subject", user));
-        menu.addMenuOption(backUrl(dueDateMenu, logBookUid), getMessage(thisSection, confirmMenu, optionsKey + "duedate", user));
-        // menu.addMenuOption(backUrl(assignMenu, logBookUid), getMessage(thisSection, confirmMenu, optionsKey + "assign", user));
+        menu.addMenuOption(backUrl(subjectMenu, todoUid), getMessage(thisSection, confirmMenu, optionsKey + "subject", user));
+        menu.addMenuOption(backUrl(dueDateMenu, todoUid), getMessage(thisSection, confirmMenu, optionsKey + "duedate", user));
+        // menu.addMenuOption(backUrl(assignMenu, todoUid), getMessage(thisSection, confirmMenu, optionsKey + "assign", user));
 
         return menuBuilder(menu);
     }
@@ -218,10 +228,10 @@ public class USSDToDoController extends USSDController {
     @RequestMapping(path + send)
     @ResponseBody
     public Request finishLogBookEntry(@RequestParam(value = phoneNumber) String inputNumber,
-                                      @RequestParam(value = todoUidParam) String logBookUid) throws URISyntaxException {
+                                      @RequestParam(value = todoUidParam) String todoUid) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(inputNumber, null);
-        todoRequestBroker.finish(logBookUid);
+        todoRequestBroker.finish(todoUid);
         return menuBuilder(new USSDMenu(menuPrompt(send, user), optionsHomeExit(user)));
     }
 
@@ -242,8 +252,9 @@ public class USSDToDoController extends USSDController {
 
         final String urlBase = todoMenus + viewEntryMenu + todoUrlSuffix;
         final Page<Todo> entries = todoBroker.retrieveGroupTodos(user.getUid(), groupUid, done, pageNumber, PAGE_LENGTH);
-        boolean canCreateToDos = permissionBroker.getActiveGroupDTOs(user, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY).isEmpty();
-        boolean hasMultipleGroups = permissionBroker.getActiveGroupDTOs(user, null).size() > 1;
+
+        boolean canCreateToDos = permissionBroker.countActiveGroupsWithPermission(user, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY) != 0;
+        boolean hasMultipleGroups = permissionBroker.countActiveGroupsWithPermission(user, null) > 1;
 
         String backUrl = (groupUid == null) ? todoMenus + startMenu :
                 (hasMultipleGroups ? todoMenus + groupMenu + "?new=false&completed=" + done : todoMenus + startMenu);
@@ -281,25 +292,25 @@ public class USSDToDoController extends USSDController {
     @RequestMapping(path + viewEntryMenu)
     @ResponseBody
     public Request viewEntryMenu(@RequestParam(value = phoneNumber) String inputNumber,
-                                 @RequestParam(value = todoUidParam) String logBookUid) throws URISyntaxException {
+                                 @RequestParam(value = todoUidParam) String todoUid) throws URISyntaxException {
 
-        final User user = userManager.findByInputNumber(inputNumber, saveToDoMenu(viewEntryMenu, logBookUid));
-        final Todo todo = todoBroker.load(logBookUid);
+        final User user = userManager.findByInputNumber(inputNumber, saveToDoMenu(viewEntryMenu, todoUid));
+        final Todo todo = todoBroker.load(todoUid);
         USSDMenu menu = new USSDMenu(getMessage(thisSection, viewEntryMenu, promptKey, todo.getMessage(), user));
 
         // todo: check permissions before deciding what options to display
-        menu.addMenuOption(returnUrl(viewEntryDates, logBookUid), getMessage(thisSection, viewEntryMenu, optionsKey + "dates", user));
+        menu.addMenuOption(returnUrl(viewEntryDates, todoUid), getMessage(thisSection, viewEntryMenu, optionsKey + "dates", user));
 
         if (todo.isCompleted()) {
-            menu.addMenuOption(returnUrl(viewAssignment, logBookUid),
+            menu.addMenuOption(returnUrl(viewAssignment, todoUid),
                     getMessage(thisSection, viewEntryMenu, optionsKey + "viewcomplete", user));
         } else {
             if (todo.isAllGroupMembersAssigned()) {
-                menu.addMenuOption(returnUrl(setCompleteMenu, logBookUid), getMessage(thisSection.toKey() + optionsKey + setCompleteMenu, user));
+                menu.addMenuOption(returnUrl(setCompleteMenu, todoUid), getMessage(thisSection.toKey() + optionsKey + setCompleteMenu, user));
             } else if (todo.getAssignedMembers().contains(user)) {
-                menu.addMenuOption(returnUrl(setCompleteMenu, logBookUid), getMessage(thisSection.toKey() + optionsKey + setCompleteMenu, user));
+                menu.addMenuOption(returnUrl(setCompleteMenu, todoUid), getMessage(thisSection.toKey() + optionsKey + setCompleteMenu, user));
             } else {
-                menu.addMenuOption(returnUrl(viewAssignment, logBookUid), getMessage(thisSection, viewEntryMenu, optionsKey + "assigned", user));
+                menu.addMenuOption(returnUrl(viewAssignment, todoUid), getMessage(thisSection, viewEntryMenu, optionsKey + "assigned", user));
             }
         }
 
@@ -310,10 +321,10 @@ public class USSDToDoController extends USSDController {
     @RequestMapping(path + viewEntryDates)
     @ResponseBody
     public Request viewLogBookDates(@RequestParam(value = phoneNumber) String inputNumber,
-                                    @RequestParam(value = todoUidParam) String logBookUid) throws URISyntaxException {
+                                    @RequestParam(value = todoUidParam) String todoUid) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(inputNumber, null);
-        Todo todo = todoBroker.load(logBookUid);
+        Todo todo = todoBroker.load(todoUid);
         String createdDate = dateFormat.format(convertToUserTimeZone(todo.getCreatedDateTime(), getSAST()));
         String dueDate = dateFormat.format(convertToUserTimeZone(todo.getActionByDate(), getSAST()));
 
@@ -330,7 +341,7 @@ public class USSDToDoController extends USSDController {
             menu = new USSDMenu(getMessage(thisSection, viewEntryDates, promptKey + ".incomplete", fields, user));
         }
 
-        menu.addMenuOption(todoMenus + viewEntryMenu + todoUrlSuffix + logBookUid, getMessage(optionsKey + "back", user));
+        menu.addMenuOption(todoMenus + viewEntryMenu + todoUrlSuffix + todoUid, getMessage(optionsKey + "back", user));
         menu.addMenuOptions(optionsHomeExit(user));
         return menuBuilder(menu);
     }
@@ -338,10 +349,10 @@ public class USSDToDoController extends USSDController {
     @RequestMapping(path + viewAssignment)
     @ResponseBody
     public Request viewLogBookAssignment(@RequestParam(value = phoneNumber) String inputNumber,
-                                         @RequestParam(value = todoUidParam) String logBookUid) throws URISyntaxException {
+                                         @RequestParam(value = todoUidParam) String todoUid) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(inputNumber, null);
-        Todo todo = todoBroker.load(logBookUid);
+        Todo todo = todoBroker.load(todoUid);
 
         USSDMenu menu;
 
@@ -365,8 +376,8 @@ public class USSDToDoController extends USSDController {
         menu = new USSDMenu(getMessage(thisSection, viewAssignment, promptKey,
                 new String[]{assignedFragment, completedFragment}, user));
 
-        menu.addMenuOption(todoMenus + viewEntryMenu + todoUrlSuffix + logBookUid, getMessage(optionsKey + "back", user));
-        if (!todo.isCompleted()) menu.addMenuOption(todoMenus + setCompleteMenu + todoUrlSuffix + logBookUid,
+        menu.addMenuOption(todoMenus + viewEntryMenu + todoUrlSuffix + todoUid, getMessage(optionsKey + "back", user));
+        if (!todo.isCompleted()) menu.addMenuOption(todoMenus + setCompleteMenu + todoUrlSuffix + todoUid,
                 getMessage(thisSection.toKey() + optionsKey + setCompleteMenu, user)); // todo: check permissions
         menu.addMenuOptions(optionsHomeExit(user));
         return menuBuilder(menu);
@@ -375,15 +386,15 @@ public class USSDToDoController extends USSDController {
     @RequestMapping(path + setCompleteMenu)
     @ResponseBody
     public Request setLogBookEntryComplete(@RequestParam(value = phoneNumber) String inputNumber,
-                                           @RequestParam(value = todoUidParam) String logBookUid) throws URISyntaxException {
+                                           @RequestParam(value = todoUidParam) String todoUid) throws URISyntaxException {
 
         // todo: check permissions
-        User user = userManager.findByInputNumber(inputNumber, saveToDoMenu(setCompleteMenu, logBookUid));
+        User user = userManager.findByInputNumber(inputNumber, saveToDoMenu(setCompleteMenu, todoUid));
 
         // note: can pick completing user via USSD, though can't do multi-assignment
         USSDMenu menu = new USSDMenu(getMessage(thisSection, setCompleteMenu, promptKey + ".unassigned", user));
 
-        String urlEnd = todoUrlSuffix + logBookUid;
+        String urlEnd = todoUrlSuffix + todoUid;
         menu.addMenuOption(todoMenus + setCompleteMenu + doSuffix + urlEnd,
                 getMessage(thisSection, setCompleteMenu, optionsKey + "confirm", user));
         menu.addMenuOption(todoMenus + completingUser + urlEnd,
@@ -398,57 +409,57 @@ public class USSDToDoController extends USSDController {
     @RequestMapping(path + completingUser)
     @ResponseBody
     public Request selectCompletingUser(@RequestParam(value = phoneNumber) String inputNumber,
-                                        @RequestParam(value = todoUidParam) String logBookUid) throws URISyntaxException {
-        User user = userManager.findByInputNumber(inputNumber, saveToDoMenu(completingUser, logBookUid));
-        USSDMenu menu = new USSDMenu(menuPrompt(searchUserMenu, user), returnUrl(pickCompletor, logBookUid));
+                                        @RequestParam(value = todoUidParam) String todoUid) throws URISyntaxException {
+        User user = userManager.findByInputNumber(inputNumber, saveToDoMenu(completingUser, todoUid));
+        USSDMenu menu = new USSDMenu(menuPrompt(searchUserMenu, user), returnUrl(pickCompletor, todoUid));
         return menuBuilder(menu);
     }
 
     @RequestMapping(path + pickCompletor)
     @ResponseBody
     public Request pickCompletor(@RequestParam(value = phoneNumber) String inputNumber,
-                                 @RequestParam(value = todoUidParam) String logBookUid,
+                                 @RequestParam(value = todoUidParam) String todoUid,
                                  @RequestParam(value = userInputParam) String passedInput,
                                  @RequestParam(value = interruptedFlag, required = false) boolean interrupted,
                                  @RequestParam(value = interruptedInput, required =false) String prior_input) throws URISyntaxException {
         final String userInput = interrupted ? prior_input : passedInput;
-        User user = userManager.findByInputNumber(inputNumber, saveToDoMenu(pickCompletor, logBookUid, userInput));
-        return menuBuilder(pickUserFromGroup(logBookUid, userInput, setCompleteMenu + doSuffix, completingUser, user));
+        User user = userManager.findByInputNumber(inputNumber, saveToDoMenu(pickCompletor, todoUid, userInput));
+        return menuBuilder(pickUserFromGroup(todoUid, userInput, setCompleteMenu + doSuffix, completingUser, user));
     }
 
     @RequestMapping(path + completedDate)
     @ResponseBody
     public Request enterCompletedDate(@RequestParam(value = phoneNumber) String inputNumber,
-                                      @RequestParam(value = todoUidParam) String logBookUid) throws URISyntaxException {
-        User user = userManager.findByInputNumber(inputNumber, saveToDoMenu(completedDate, logBookUid));
+                                      @RequestParam(value = todoUidParam) String todoUid) throws URISyntaxException {
+        User user = userManager.findByInputNumber(inputNumber, saveToDoMenu(completedDate, todoUid));
         return menuBuilder(new USSDMenu(getMessage(thisSection, completedDate, promptKey, user),
-                returnUrl(confirmCompleteDate, logBookUid)));
+                returnUrl(confirmCompleteDate, todoUid)));
     }
 
     @RequestMapping(path + confirmCompleteDate)
     @ResponseBody
     public Request confirmCompletedDate(@RequestParam(value = phoneNumber) String inputNumber,
-                                        @RequestParam(value = todoUidParam) String logBookUid,
+                                        @RequestParam(value = todoUidParam) String todoUid,
                                         @RequestParam(value = userInputParam) String passedUserInput,
                                         @RequestParam(value = interruptedFlag,required=false) boolean interrupted,
                                         @RequestParam(value = interruptedInput, required =false) String priorInput) throws URISyntaxException {
 
         final String userInput = (priorInput != null) ? priorInput : passedUserInput;
-        log.info("ZOG: Going to save this menu ... " + saveToDoMenu(confirmCompleteDate, logBookUid, userInput, !interrupted));
-        User user = userManager.findByInputNumber(inputNumber, saveToDoMenu(confirmCompleteDate, logBookUid, userInput, !interrupted));
+        log.info("ZOG: Going to save this menu ... " + saveToDoMenu(confirmCompleteDate, todoUid, userInput, !interrupted));
+        User user = userManager.findByInputNumber(inputNumber, saveToDoMenu(confirmCompleteDate, todoUid, userInput, !interrupted));
         String formattedResponse = reformatDateInput(userInput);
-        String confirmUrl = returnUrl(setCompleteMenu + doSuffix, logBookUid) + "&completed_date=" + encodeParameter(formattedResponse);
+        String confirmUrl = returnUrl(setCompleteMenu + doSuffix, todoUid) + "&completed_date=" + encodeParameter(formattedResponse);
 
         USSDMenu menu = new USSDMenu(getMessage(thisSection, confirmCompleteDate, promptKey, formattedResponse, user));
         menu.addMenuOption(confirmUrl, getMessage(thisSection, confirmCompleteDate, optionsKey + "yes", formattedResponse, user));
-        menu.addMenuOption(returnUrl(completedDate, logBookUid), getMessage(thisSection, confirmCompleteDate, optionsKey + "no", user));
+        menu.addMenuOption(returnUrl(completedDate, todoUid), getMessage(thisSection, confirmCompleteDate, optionsKey + "no", user));
         return menuBuilder(menu);
     }
 
     @RequestMapping(path + setCompleteMenu + doSuffix)
     @ResponseBody
     public Request setLogBookEntryComplete(@RequestParam(value = phoneNumber) String inputNumber,
-                                       @RequestParam(value = todoUidParam) String logBookUid,
+                                       @RequestParam(value = todoUidParam) String todoUid,
                                        @RequestParam(value = "completed_date", required = false) String completedDate) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(inputNumber, null);
@@ -456,7 +467,7 @@ public class USSDToDoController extends USSDController {
         LocalDateTime completedDateTime = (completedDate != null) ?
                 convertDateStringToLocalDateTime(reformatDateInput(completedDate), stdHour, stdMinute) : LocalDateTime.now();
         userLogger.recordUserInputtedDateTime(user.getUid(), completedDate, "logbook-completion", UserInterfaceType.USSD);
-        todoBroker.confirmCompletion(user.getUid(), logBookUid, completedDateTime);
+        todoBroker.confirmCompletion(user.getUid(), todoUid, completedDateTime);
 
         USSDMenu menu = new USSDMenu(getMessage(thisSection, setCompleteMenu, promptKey, user));
         // todo: consider adding option to go back to either section start or group logbook start
@@ -489,10 +500,10 @@ public class USSDToDoController extends USSDController {
         }
     }
 
-    private USSDMenu pickUserFromGroup(String logBookUid, String userInput, String nextMenu, String backMenu, User user) {
+    private USSDMenu pickUserFromGroup(String todoUid, String userInput, String nextMenu, String backMenu, User user) {
 
         USSDMenu menu;
-        Todo todo = todoBroker.load(logBookUid);
+        Todo todo = todoBroker.load(todoUid);
         Group parent = (Group) todo.getParent();
         List<User> possibleUsers = userManager.searchByGroupAndNameNumber(parent.getUid(), userInput);
 
@@ -501,15 +512,15 @@ public class USSDToDoController extends USSDController {
             Iterator<User> iterator = possibleUsers.iterator();
             while (menu.getMenuCharLength() < 100 && iterator.hasNext()) {
                 User possibleUser = iterator.next();
-                menu.addMenuOption(returnUrl(nextMenu, logBookUid) + "&assignUserUid=" + possibleUser.getUid(),
+                menu.addMenuOption(returnUrl(nextMenu, todoUid) + "&assignUserUid=" + possibleUser.getUid(),
                         possibleUser.nameToDisplay());
             }
         } else {
             menu = new USSDMenu(getMessage(thisSection, pickUserMenu, promptKey + ".no-users", user));
         }
 
-        menu.addMenuOption(returnUrl(backMenu, logBookUid), getMessage(thisSection, pickUserMenu, optionsKey + "back", user));
-        menu.addMenuOption(returnUrl(nextMenu, logBookUid), getMessage(thisSection, pickUserMenu, optionsKey + "none", user));
+        menu.addMenuOption(returnUrl(backMenu, todoUid), getMessage(thisSection, pickUserMenu, optionsKey + "back", user));
+        menu.addMenuOption(returnUrl(nextMenu, todoUid), getMessage(thisSection, pickUserMenu, optionsKey + "none", user));
 
         return menu;
     }

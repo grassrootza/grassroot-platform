@@ -51,7 +51,7 @@ public class TodoRestController {
     public ResponseEntity<ResponseWrapper> setComplete(@PathVariable("phoneNumber") String phoneNumber,
                                                        @PathVariable("code") String code, @PathVariable("id") String id) {
 
-        User user = userManagementService.loadOrSaveUser(phoneNumber);
+        User user = userManagementService.findByInputNumber(phoneNumber);
         Todo todo = todoBroker.load(id);
 
         if (!todo.isCompletedBy(user)) {

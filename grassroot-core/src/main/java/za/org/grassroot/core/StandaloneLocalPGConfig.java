@@ -27,13 +27,13 @@ public class StandaloneLocalPGConfig extends DatabaseConfig {
     private String dbUsername;
     private String dbPassword;
 
-
     @Override
     public DataSource dataSource() {
         log.info("Running with LOCAL_PG profile");
 
         org.apache.tomcat.jdbc.pool.DataSource dataSource = new org.apache.tomcat.jdbc.pool.DataSource();
 
+        // note : use this to configure an alternate driver if wanted
         if (env.getProperty("db.driver") != null && !env.getProperty("db.driver").trim().equals("")) {
             dbDriver = env.getProperty("db.driver");
         } else {

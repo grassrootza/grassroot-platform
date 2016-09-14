@@ -51,9 +51,6 @@ public class MeetingController extends BaseController {
     private PermissionBroker permissionBroker;
 
     @Autowired
-    private EventManagementService eventManagementService;
-
-    @Autowired
     private EventLogBroker eventLogBroker;
 
     @Autowired
@@ -128,17 +125,18 @@ public class MeetingController extends BaseController {
         ResponseTotalsDTO meetingResponses = eventLogBroker.getResponseCountForEvent(meeting);
         boolean canViewRsvps = meeting.getCreatedByUser().equals(user) || permissionBroker.isGroupPermissionAvailable(
                 user, meeting.getAncestorGroup(), Permission.GROUP_PERMISSION_VIEW_MEETING_RSVPS);
-        boolean canAlterDetails = meeting.getCreatedByUser().equals(user);
+        boolean canAlterDetails = meeting.getCreatedByUser().equals(user) ||
+                permissionBroker.isGroupPermissionAvailable(user, meeting.getAncestorGroup(), Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
 
         model.addAttribute("meeting", new MeetingWrapper(meeting));
         model.addAttribute("responseTotals", meetingResponses);
         model.addAttribute("canViewRsvps", canViewRsvps);
 
-        model.addAttribute("canAlterDetails", canAlterDetails); // todo: maybe, or is organizer/committee?
+        model.addAttribute("canAlterDetails", canAlterDetails);
 
         if (canViewRsvps) {
             // this is clunky, but it's for Thymeleaf
-            Set<Map.Entry<User, EventRSVPResponse>> rsvpResponses = eventManagementService.getRSVPResponses(meeting).entrySet();
+            Set<Map.Entry<User, EventRSVPResponse>> rsvpResponses = eventBroker.getRSVPResponses(meeting).entrySet();
             model.addAttribute("rsvpResponses", rsvpResponses);
         }
 
@@ -159,7 +157,6 @@ public class MeetingController extends BaseController {
     @RequestMapping(value = "modify", method=RequestMethod.POST)
     public String changeMeeting(Model model, @ModelAttribute("meeting") MeetingWrapper changedMeeting, HttpServletRequest request) {
 
-        // todo: double check permissions in location update
         log.info("Okay, here is the meeting passed back ... " + changedMeeting);
 
         eventBroker.updateMeeting(getUserProfile().getUid(), changedMeeting.getEntityUid(), changedMeeting.getTitle(),
@@ -189,7 +186,6 @@ public class MeetingController extends BaseController {
         eventBroker.updateReminderSettings(getUserProfile().getUid(), eventUid, reminderType, minutes);
         Instant newScheduledTime = eventBroker.loadMeeting(eventUid).getScheduledReminderTime();
         if (newScheduledTime != null) {
-            // todo: make sure this actually works properly with zones, on AWS in Ireland, etc ...
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("h:mm a' on 'E, d MMMM").withZone(ZoneId.systemDefault());
             String reminderTime = formatter.format(newScheduledTime);
             addMessage(model, MessageType.SUCCESS, "meeting.reminder.changed", new String[] {reminderTime}, request);
@@ -217,7 +213,6 @@ public class MeetingController extends BaseController {
      * Free text entry, for authorized accounts
      */
 
-    // Major todo: make this secured against the user's role as 'admin' on an institutional account
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "free")
     public String sendFreeForm(Model model, @RequestParam(value="groupUid", required=false) String groupUid) {
@@ -247,7 +242,8 @@ public class MeetingController extends BaseController {
         model.addAttribute("includeSubGroups", includeSubgroups);
 
         model.addAttribute("message", message);
-        int recipients = userManagementService.fetchByGroup(groupUid, includeSubgroups).size();
+        Group group = groupBroker.load(groupUid);
+        int recipients = includeSubgroups ? group.getMembersWithChildrenIncluded().size() : group.getMembers().size();
         model.addAttribute("recipients", recipients);
         model.addAttribute("cost", recipients * 0.2);
         return "meeting/remind_confirm";
@@ -261,7 +257,6 @@ public class MeetingController extends BaseController {
                               RedirectAttributes redirectAttributes, HttpServletRequest request) {
 
         // todo: check that this group is paid for (and filter on previous page)
-
         log.info("Sending free form message: {}, to this group: {}", message, groupUid);
         accountManagementService.sendFreeFormMessage(getUserProfile().getUid(), groupUid, message);
 

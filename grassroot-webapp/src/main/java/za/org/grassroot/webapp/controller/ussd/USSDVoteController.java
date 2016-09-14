@@ -4,6 +4,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.util.StringUtils;
+import org.springframework.util.SystemPropertyUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -18,6 +20,8 @@ import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.EventLogBroker;
 import za.org.grassroot.services.EventRequestBroker;
+import za.org.grassroot.services.PermissionBroker;
+import za.org.grassroot.services.enums.EventListTimeType;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
@@ -31,6 +35,7 @@ import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static za.org.grassroot.webapp.util.USSDUrlUtil.backVoteUrl;
@@ -49,10 +54,13 @@ public class USSDVoteController extends USSDController {
     private EventRequestBroker eventRequestBroker;
 
     @Autowired
-    private EventLogBroker eventLogManager;
+    private EventLogBroker eventLogBroker;
 
     @Autowired
     private EventLogRepository eventLogRepository;
+
+    @Autowired
+    private PermissionBroker permissionBroker;
 
     @Autowired
     private USSDEventUtil eventUtil;
@@ -68,30 +76,26 @@ public class USSDVoteController extends USSDController {
     /*
     First menu asks user to select a group. Until we have a "snap voting" functionality worked out, this requires
     the user to have a group already set up (i.e., is different from meeting menu, which allows within-flow group creation
-    Major todo: add menus to see status of vote while in progress, and possibly trigger reminder
      */
     @RequestMapping(value = path + startMenu)
     @ResponseBody
     public Request votingStart(@RequestParam(value = phoneNumber) String inputNumber) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(inputNumber);
-        int hasVotesToView = eventManager.userHasEventsToView(user, EventType.VOTE);
+        EventListTimeType hasVotesToView = eventBroker.userHasEventsToView(user, EventType.VOTE);
         log.info("Checked for votes to view ... got integer: " + hasVotesToView);
         USSDMenu menu;
 
-        if (hasVotesToView >= -1) {
+        if (!hasVotesToView.equals(EventListTimeType.NONE)) {
             menu = new USSDMenu(getMessage(thisSection, startMenu, promptKey, user));
             menu.addMenuOption(voteMenus + "new", getMessage(thisSection, startMenu, optionsKey + "new", user));
-            if (hasVotesToView >= 0)
+            if (!hasVotesToView.equals(EventListTimeType.PAST)) // ie is either both or future
                 menu.addMenuOption(voteMenus + "open", getMessage(thisSection, startMenu, optionsKey + "open", user));
-            if (hasVotesToView <= 0)
+            if (!hasVotesToView.equals(EventListTimeType.FUTURE)) // ie is either both or past
                 menu.addMenuOption(voteMenus + "old", getMessage(thisSection, startMenu, optionsKey + "old", user));
             menu.addMenuOption("start", getMessage(USSDSection.VOTES,"start","options.back",user));
         } else {
-            String groupsExistPrompt = getMessage(thisSection, "group", promptKey, user);
-            String groupsDontExistPrompt = getMessage(thisSection, "group", promptKey + "-nogroup", user);
-            menu = ussdGroupUtil.askForGroupWithoutNewOption(user, thisSection, groupsExistPrompt, groupsDontExistPrompt,
-                    "issue", groupMenus + "create");
+            menu = initiateNewVote(user);
         }
 
         return menuBuilder(menu);
@@ -100,12 +104,24 @@ public class USSDVoteController extends USSDController {
     @RequestMapping(value = path + "new")
     @ResponseBody
     public Request newVote(@RequestParam(value = phoneNumber) String inputNumber) throws URISyntaxException {
-
         User user = userManager.findByInputNumber(inputNumber, voteMenus + "new");
-        String groupsExistPrompt = getMessage(thisSection, "group", promptKey, user);
-        String groupsDontExistPrompt = getMessage(thisSection, "group", promptKey + "-nogroup", user);
-        return menuBuilder(ussdGroupUtil.askForGroupWithoutNewOption(user, thisSection, groupsExistPrompt, groupsDontExistPrompt,
-                "issue", groupMenus + "create"));
+        Long startTime = System.currentTimeMillis();
+        USSDMenu menu = initiateNewVote(user);
+        log.info("assembling vote selection menu took {} msecs ", (System.currentTimeMillis() - startTime));
+        return menuBuilder(menu);
+    }
+
+    private USSDMenu initiateNewVote(User user) throws URISyntaxException {
+        long startTime = System.currentTimeMillis();
+        int possibleGroups = permissionBroker.countActiveGroupsWithPermission(user, Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE);
+        log.info("counting groups took ... {} msecs", System.currentTimeMillis() - startTime);
+        if (possibleGroups == 1) {
+            Group group = permissionBroker.getActiveGroupsWithPermission(user, Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE).iterator().next();
+            final String prompt = getMessage(thisSection, "issue", promptKey + ".skipped", group.getName(""), user);
+            return setVoteGroupAndInitiateRequest(prompt, null, group.getUid(), "time", "", user);
+        } else {
+            return ussdGroupUtil.askForGroup(user, thisSection, "issue", null, null, null, possibleGroups);
+        }
     }
 
     /*
@@ -117,24 +133,25 @@ public class USSDVoteController extends USSDController {
     public Request votingIssue(@RequestParam(value = phoneNumber) String inputNumber,
                                @RequestParam(value = groupUidParam, required = false) String groupUid,
                                @RequestParam(value = entityUidParam, required = false) String requestUid,
-                               @RequestParam(value = interruptedFlag, required = false) boolean interrupted,
                                @RequestParam(value = revisingFlag, required = false) boolean revising) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(inputNumber);
+        USSDMenu menu = setVoteGroupAndInitiateRequest(getMessage(thisSection, "issue", promptKey, user),
+                requestUid, groupUid, revising ? "confirm" : "time", revising ? "&field=issue" : "", user);
+        return menuBuilder(menu);
+    }
 
-        if (requestUid == null) {
+    private USSDMenu setVoteGroupAndInitiateRequest(String menuPrompt, String interruptedRequestUid, String groupUid,
+                                                    String subsequentMenu, String paramsToPassForward, User user) {
+        String requestUid;
+        if (StringUtils.isEmpty(interruptedRequestUid)) {
             VoteRequest voteRequest = eventRequestBroker.createEmptyVoteRequest(user.getUid(), groupUid);
             requestUid = voteRequest.getUid();
+        } else {
+            requestUid = interruptedRequestUid;
         }
-
-        cacheManager.putUssdMenuForUser(inputNumber, saveVoteMenu("issue", requestUid));
-
-        String nextUrl = (!revising) ? voteMenus + "time" + entityUidUrlSuffix + requestUid :
-                voteMenus + "confirm" + entityUidUrlSuffix + requestUid + "&field=issue";
-
-        USSDMenu menu = new USSDMenu(getMessage(thisSection, "issue", promptKey, user), nextUrl);
-        return menuBuilder(menu);
-
+        cacheManager.putUssdMenuForUser(user.getPhoneNumber(), saveVoteMenu("issue", requestUid));
+        return new USSDMenu(menuPrompt, voteMenus + subsequentMenu + entityUidUrlSuffix + requestUid + paramsToPassForward);
     }
 
     /*
@@ -186,7 +203,6 @@ public class USSDVoteController extends USSDController {
 
     /*
     Final menu asks for confirmation, then sends out
-    major todo: shift the time strings into messages (and generally do i18n for this)
      */
     @RequestMapping(value = path + "confirm")
     @ResponseBody
@@ -273,7 +289,6 @@ public class USSDVoteController extends USSDController {
     @RequestMapping(value = path + "open")
     @ResponseBody
     public Request viewOpenVotes(@RequestParam(value = phoneNumber) String inputNumber) throws URISyntaxException {
-        // todo: consider doing a save and return
         User user = userManager.findByInputNumber(inputNumber, voteMenus + "open");
         String prompt = getMessage(thisSection, "open", promptKey, user);
         return menuBuilder(eventUtil.listUpcomingEvents(user, thisSection, prompt, "details?back=open", false, null, null));
@@ -299,7 +314,7 @@ public class USSDVoteController extends USSDController {
         User user = userManager.findByInputNumber(inputNumber, saveVoteMenu("details", eventUid) + "&back=" + backMenu  );
         Event vote = eventBroker.load(eventUid);
         boolean futureEvent = vote.getEventStartDateTime().isAfter(Instant.now());
-        ResponseTotalsDTO voteResults = eventManager.getVoteResultsDTO(vote);
+        ResponseTotalsDTO voteResults = eventLogBroker.getVoteResultsForEvent(vote);
 
         USSDMenu menu;
 
@@ -369,7 +384,7 @@ public class USSDVoteController extends USSDController {
             // todo: replace this hack once responses are handled better
             EventRSVPResponse voteResponse = "abstain".equals(response) ? EventRSVPResponse.MAYBE :
                     EventRSVPResponse.fromString(response);
-            eventLogManager.rsvpForEvent(vote.getUid(), user.getUid(), voteResponse);
+            eventLogBroker.rsvpForEvent(vote.getUid(), user.getUid(), voteResponse);
             menu = new USSDMenu(getMessage(thisSection, "change", "done", response, user));
         }
 
@@ -452,7 +467,6 @@ public class USSDVoteController extends USSDController {
         EventRequest vote = eventRequestBroker.load(requestUid);
         if (vote.getEventStartDateTime().isBefore(Instant.now().plus(7, ChronoUnit.MINUTES))) {
             // user is manipulating an "instant" vote so need to reset the counter, else may expire before send
-            // todo: make sure this is actually working with timezones
             eventRequestBroker.updateEventDateTime(user.getUid(), requestUid, LocalDateTime.now().plusMinutes(7L));
             dateTime = getMessage(thisSection, "confirm", "time.instant", user);
         } else {

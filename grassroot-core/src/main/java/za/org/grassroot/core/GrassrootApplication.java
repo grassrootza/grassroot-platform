@@ -21,7 +21,6 @@ public class GrassrootApplication extends SpringApplication {
         super(configClass);
     }
 
-
     /**
      * Enforce activation of profiles defined in {@link GrassrootApplicationProfiles}.
      */
@@ -42,10 +41,8 @@ public class GrassrootApplication extends SpringApplication {
         }
 
         if (numberActive == 1) {
-            logger.info("Activating because one  profiles have been specified.");
-
-        }
-        else {
+            logger.info("Activating because one profile has been specified.");
+        } else {
             logger.info("The default 'standalone' profile is active because no other profiles have been specified.");
             environment.addActiveProfile(GrassrootApplicationProfiles.INMEMORY);
         }

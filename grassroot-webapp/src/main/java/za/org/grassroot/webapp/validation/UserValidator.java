@@ -3,11 +3,13 @@ package za.org.grassroot.webapp.validation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.validation.Errors;
 import org.springframework.validation.ValidationUtils;
 import org.springframework.validation.Validator;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.PhoneNumberUtil;
+import za.org.grassroot.services.MembershipInfo;
 
 /**
  * Created by luke on 2015/09/18.
@@ -29,20 +31,31 @@ public class UserValidator implements Validator {
 
         ValidationUtils.rejectIfEmpty(errors, "phoneNumber", "user.enter.error.phoneNumber.empty");
 
-        User inputedUser = (User) target;
-
-        // todo: probably want to control the length of displaynames, but major thing for now is phone numbers
-
+        // we validate the same thing on both of these, hence ...
         if (!errors.hasErrors()) {
 
-            log.info("Checking this inputNumber ... " +inputedUser.getPhoneNumber());
-            if (!PhoneNumberUtil.testInputNumber(inputedUser.getPhoneNumber())) {
-                errors.rejectValue("phoneNumber", "user.enter.error.phoneNumber.invalid");
+            User user;
+            MembershipInfo member;
+
+            if (target instanceof User) {
+                user = (User) target;
+                validate(errors, user.getPhoneNumber(), user.getDisplayName());
+            } else if (target instanceof MembershipInfo) {
+                member = (MembershipInfo) target;
+                validate(errors, member.getPhoneNumber(), member.getDisplayName());
+            } else {
+                throw new UnsupportedOperationException("Error! User validator passed neither user nor member");
             }
-
         }
-
-
     }
 
+    private void validate(Errors errors, final String phoneNumber, final String displayName) {
+        if (!PhoneNumberUtil.testInputNumber(phoneNumber)) {
+            errors.rejectValue("phoneNumber", "user.enter.error.phoneNumber.invalid");
+        }
+
+        if (!StringUtils.isEmpty(displayName) && displayName.length() > 25) {
+            errors.rejectValue("displayName", "user.enter.displayName.length");
+        }
+    }
 }

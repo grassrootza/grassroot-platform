@@ -3,11 +3,6 @@
       layout:decorator="layout">
 <head>
   <title>Grassroot - Create an account admin</title>
-<script>
-
-
-
-</script>
 </head>
 <body>
 
@@ -21,7 +16,7 @@
   <div class="well">
     <form th:action="@{/admin/accounts/designate}" method="post" autocomplete="off" class="form-horizontal">
       <!-- todo: provide an option to over-write the current primary email when doing this -->
-      <input type="hidden" name="accountId" th:value="${account.id}" />
+      <input type="hidden" name="accountUid" th:value="${account.uid}" />
       <div class="form-group">
         <label for="searchNumber" class="col-md-2 control-label">User phone number</label>
         <div class="col-md-4">

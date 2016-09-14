@@ -55,7 +55,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         when(permissionBrokerMock.isGroupPermissionAvailable(sessionTestUser, dummyGroup,
                                                              Permission.GROUP_PERMISSION_VIEW_MEETING_RSVPS)).thenReturn(true);
         when(eventLogBrokerMock.getResponseCountForEvent(dummyMeeting)).thenReturn(testCount);
-        when(eventManagementServiceMock.getRSVPResponses(dummyMeeting)).thenReturn(dummyResponsesMap);
+        when(eventBrokerMock.getRSVPResponses(dummyMeeting)).thenReturn(dummyResponsesMap);
 
         mockMvc.perform(get("/meeting/view").param("eventUid", dummyMeeting.getUid()))
                 .andExpect(status().isOk())
@@ -68,7 +68,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         //verify(permissionBrokerMock, times(1)).isGroupPermissionAvailable(sessionTestUser, dummyGroup, Permission.GROUP_PERMISSION_VIEW_MEETING_RSVPS);
         verify(eventBrokerMock, times(1)).loadMeeting(dummyMeeting.getUid());
         verify(eventLogBrokerMock, times(1)).getResponseCountForEvent(dummyMeeting);
-        verify(eventManagementServiceMock, times(1)).getRSVPResponses(dummyMeeting);
+        verify(eventBrokerMock, times(1)).getRSVPResponses(dummyMeeting);
         verifyNoMoreInteractions(permissionBrokerMock);
         verifyNoMoreInteractions(eventBrokerMock);
         verifyNoMoreInteractions(groupBrokerMock);
@@ -150,10 +150,8 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
     public void meetingModificationWorks() throws Exception {
 
         Group testGroup = new Group("Dummy Group3", new User("234345345"));
-        Meeting dummyMeeting = new Meeting("test meeting", oneDayAway,
-                                           sessionTestUser, testGroup, "some place");
+        Meeting dummyMeeting = new Meeting("test meeting", oneDayAway, sessionTestUser, testGroup, "some place");
 
-        List<User> listOfDummyYesResponses = Arrays.asList(new User("", "testUser"));
         ResponseTotalsDTO testCount = new ResponseTotalsDTO();
         testCount.setYes(1);
 
@@ -161,7 +159,6 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         when(permissionBrokerMock.isGroupPermissionAvailable(sessionTestUser, testGroup,
                                                              Permission.GROUP_PERMISSION_VIEW_MEETING_RSVPS)).thenReturn(true);
         when(eventLogBrokerMock.getResponseCountForEvent(dummyMeeting)).thenReturn(testCount);
-        when(eventManagementServiceMock.getListOfUsersThatRSVPYesForEvent(dummyMeeting)).thenReturn(listOfDummyYesResponses);
 
         mockMvc.perform(post("/meeting/modify").sessionAttr("meeting", dummyMeeting).contentType(MediaType.APPLICATION_FORM_URLENCODED))
                 .andExpect(status().isOk())
@@ -173,10 +170,11 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         verify(eventBrokerMock, times(1)).updateMeeting(sessionTestUser.getUid(), dummyMeeting.getUid(), dummyMeeting.getName(),
                                                         dummyMeeting.getEventStartDateTime().atZone(DateTimeUtil.getSAST()).toLocalDateTime(),
                                                         dummyMeeting.getEventLocation());
+        verify(eventBrokerMock, times(1)).getRSVPResponses(dummyMeeting);
         verifyNoMoreInteractions(eventBrokerMock);
-        verify(eventManagementServiceMock, times(1)).getRSVPResponses(dummyMeeting);
+        verify(eventBrokerMock, times(1)).getRSVPResponses(dummyMeeting);
         verify(eventLogBrokerMock, times(1)).getResponseCountForEvent(dummyMeeting);
-        verifyNoMoreInteractions(eventManagementServiceMock);
+        verifyNoMoreInteractions(eventBrokerMock);
         verifyZeroInteractions(userManagementServiceMock);
     }
 
@@ -219,7 +217,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         when(permissionBrokerMock.isGroupPermissionAvailable(sessionTestUser, testGroup,
                                                              Permission.GROUP_PERMISSION_VIEW_MEETING_RSVPS)).thenReturn(true);
         when(eventLogBrokerMock.getResponseCountForEvent(dummyMeeting)).thenReturn(testCount);
-        when(eventManagementServiceMock.getRSVPResponses(dummyMeeting)).thenReturn(dummyResponsesMap);
+        when(eventBrokerMock.getRSVPResponses(dummyMeeting)).thenReturn(dummyResponsesMap);
 
         mockMvc.perform(post("/meeting/rsvp").header("referer", "/home").param("eventUid", dummyMeeting.getUid()).param("answer", "yes"))
                 .andExpect(status().is3xxRedirection())
@@ -230,7 +228,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         verify(eventLogBrokerMock, times(1)).rsvpForEvent(dummyMeeting.getUid(), sessionTestUser.getUid(), EventRSVPResponse.YES);
         verifyNoMoreInteractions(eventBrokerMock);
         verifyNoMoreInteractions(permissionBrokerMock);
-        verifyNoMoreInteractions(eventManagementServiceMock);
+        verifyNoMoreInteractions(eventBrokerMock);
         verifyNoMoreInteractions(eventLogBrokerMock);
         verifyZeroInteractions(groupBrokerMock);
 
@@ -255,6 +253,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         verify(eventBrokerMock, times(2)).loadMeeting(dummyMeeting.getUid());
         verify(eventBrokerMock, times(1)).updateReminderSettings(sessionTestUser.getUid(), dummyMeeting.getUid(),
                                                                  EventReminderType.CUSTOM, 60 * 24);
+        verify(eventBrokerMock, times(1)).getRSVPResponses(dummyMeeting);
         verifyNoMoreInteractions(eventBrokerMock);
         verifyNoMoreInteractions(groupBrokerMock);
 

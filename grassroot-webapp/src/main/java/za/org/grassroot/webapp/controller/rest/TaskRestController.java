@@ -71,7 +71,7 @@ public class TaskRestController {
     public ResponseEntity<ResponseWrapper> getAllUpcomingTasksForUser(
 			@PathVariable String phoneNumber,
 			@PathVariable String code) {
-        User user = userManagementService.loadOrSaveUser(phoneNumber);
+        User user = userManagementService.findByInputNumber(phoneNumber);
 		List<TaskDTO> tasks = taskBroker.fetchUpcomingUserTasks(user.getUid());
         Collections.sort(tasks, Collections.reverseOrder());
 	    logger.info("returning tasks for user : {}", tasks.toString());

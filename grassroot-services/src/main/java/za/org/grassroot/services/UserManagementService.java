@@ -1,6 +1,5 @@
 package za.org.grassroot.services;
 
-import org.springframework.data.domain.Page;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.UserDTO;
@@ -13,7 +12,6 @@ import za.org.grassroot.services.exception.UserExistsException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 
 /**
  * @author Lesetse Kimwaga
@@ -21,10 +19,26 @@ import java.util.Set;
 public interface UserManagementService {
 
     /*
-    Methods to create and load a specific user
+    Methods to load a specific user
      */
 
     User load(String userUid);
+
+    User loadOrCreateUser(String inputNumber); // used only in USSD where there is no registration process
+
+    User findByInputNumber(String inputNumber) throws NoSuchUserException;
+
+    User findByInputNumber(String inputNumber, String currentUssdMenu) throws NoSuchUserException;
+
+    User fetchUserByUsername(String username);
+
+    boolean userExist(String phoneNumber);
+
+    List<User> searchByGroupAndNameNumber(String groupUid, String nameOrNumber);
+
+    /*
+    Methods to create a user, for various interfaces
+     */
 
     User createUserProfile(User userProfile);
 
@@ -36,6 +50,14 @@ public interface UserManagementService {
 
     User createAndroidUserProfile(UserDTO userDTO) throws UserExistsException;
 
+    String generateAndroidUserVerifier(String phoneNumber, String displayName);
+
+    String regenerateUserVerifier(String phoneNumber);
+
+    /*
+    Methods to update user properties
+     */
+
     void updateUser(String userUid, String displayName, AlertPreference alertPreference, Locale locale);
 
     void updateDisplayName(String userUid, String displayName);
@@ -44,61 +66,25 @@ public interface UserManagementService {
 
     void updateAlertPreferences(String userUid, AlertPreference alertPreference);
 
-    String generateAndroidUserVerifier(String phoneNumber, String displayName);
-
-    String regenerateUserVerifier(String phoneNumber);
-
     void setMessagingPreference(String userUid, UserMessagingPreference preference);
-
-    boolean userExist(String phoneNumber);
-
-    boolean hasAddress(String uid);
 
     void setSafetyGroup(String userUid, String groupUid);
 
-    void sendAndroidLinkSms(String userUid);
+    void setHasInitiatedUssdSession(String userUid);
 
-    void setInitiatedSession(User sessionUser);
-
-    boolean isPartOfActiveGroups(User user);
-
-    User save(User userToSave);
-
-    User loadOrSaveUser(String inputNumber);
-
-    User findByInputNumber(String inputNumber) throws NoSuchUserException;
-
-    User findByInputNumber(String inputNumber, String currentUssdMenu) throws NoSuchUserException;
-
-    User fetchUserByUsername(String username);
-
-    Group fetchGroupUserMustRename(User user);
+    User resetUserPassword(String username, String newPassword, String token);
 
     /*
-    Methods to return lists of users
-     */
-
-    Set<User> fetchByGroup(String groupUid, boolean includeSubgroups);
-
-    List<User> searchByGroupAndNameNumber(String groupUid, String nameOrNumber);
-
-    Page<User> getGroupMembers(Group group, int pageNumber, int pageSize);
-
-    /*
-    Methods to set and retrieve varfious properties about a user
+    Miscellaneous methods to query various properties about a user
      */
 
     boolean needsToRenameSelf(User sessionUser);
 
-    boolean needsToRSVP(User sessionUser);
+    void sendAndroidLinkSms(String userUid);
 
-    boolean needsToVote(User sessionUser);
+    Group fetchGroupUserMustRename(User user);
 
-    boolean needsToRespondToSafetyEvent(User sessionUser);
-
-    boolean hasIncompleteLogBooks(String userUid, long daysInPast);
-    
-    User resetUserPassword(String username, String newPassword, String token);
+    boolean hasIncompleteTodos(String userUid, long daysInPast);
 
     LinkedHashMap<String, String> getImplementedLanguages();
 

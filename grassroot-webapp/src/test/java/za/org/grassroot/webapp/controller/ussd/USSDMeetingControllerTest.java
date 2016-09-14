@@ -8,9 +8,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventType;
-import za.org.grassroot.services.GroupPage;
 import za.org.grassroot.services.MembershipInfo;
+import za.org.grassroot.services.enums.EventListTimeType;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.util.USSDEventUtil;
 
@@ -25,6 +26,7 @@ import java.util.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static za.org.grassroot.core.domain.Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING;
 import static za.org.grassroot.core.util.DateTimeUtil.convertToSystemTime;
 import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
 import static za.org.grassroot.webapp.util.USSDUrlUtil.*;
@@ -34,7 +36,6 @@ import static za.org.grassroot.webapp.util.USSDUrlUtil.*;
  */
 public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 
-    // todo: log stuff
     private static final Logger log = LoggerFactory.getLogger(USSDMeetingControllerTest.class);
 
     private static final String testUserPhone = "27601110000";
@@ -67,19 +68,18 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
     public void meetingStartMenuNoUpcomingMeetingsAndNoGroups() throws Exception {
 
         User testUser = new User(testUserPhone);
-        List<Event> emptyMeetingList = new ArrayList<>();
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
-        when(userManagementServiceMock.isPartOfActiveGroups(testUser)).thenReturn(false);
-        when(eventManagementServiceMock.userHasEventsToView(testUser, EventType.MEETING, true)).thenReturn(false);
+        when(eventBrokerMock.userHasEventsToView(testUser, EventType.MEETING, EventListTimeType.FUTURE)).thenReturn(false);
+        when(permissionBrokerMock.countActiveGroupsWithPermission(testUser, GROUP_PERMISSION_CREATE_GROUP_MEETING)).thenReturn(0);
 
         mockMvc.perform(get(path + "start").param(phoneParam, testUserPhone)).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
-        verify(userManagementServiceMock, times(1)).isPartOfActiveGroups(testUser);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(eventManagementServiceMock, times(1)).userHasEventsToView(testUser, EventType.MEETING, true);
-        verifyNoMoreInteractions(eventManagementServiceMock);
+        verify(eventBrokerMock, times(1)).userHasEventsToView(testUser, EventType.MEETING, EventListTimeType.FUTURE);
+        verify(permissionBrokerMock, times(1)).countActiveGroupsWithPermission(testUser, GROUP_PERMISSION_CREATE_GROUP_MEETING);
+        verifyNoMoreInteractions(eventBrokerMock);
 
     }
 
@@ -90,29 +90,22 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         List<Group> existingGroupList = Arrays.asList(new Group("gc1", testUser),
                                                       new Group("gc2", testUser),
                                                       new Group("gc3", testUser));
-        for (Group group : existingGroupList) {
-            group.addMember(testUser);
-        }
-
-        GroupPage groupPage = GroupPage.createFromGroups(existingGroupList, 0, 3);
-
-        List<Event> emptyMeetingList = new ArrayList<>();
+        existingGroupList.stream().forEach(g -> g.addMember(testUser));
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
-        when(eventManagementServiceMock.userHasEventsToView(testUser, EventType.MEETING, true)).thenReturn(false);
-        when(userManagementServiceMock.isPartOfActiveGroups(testUser)).thenReturn(true);
-        when(permissionBrokerMock.getPageOfGroupDTOs(testUser, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING, 0, 3)).
-                thenReturn(groupPage);
+        when(eventBrokerMock.userHasEventsToView(testUser, EventType.MEETING, EventListTimeType.FUTURE)).thenReturn(false);
+        when(permissionBrokerMock.countActiveGroupsWithPermission(testUser, GROUP_PERMISSION_CREATE_GROUP_MEETING)).thenReturn(1);
+        when(permissionBrokerMock.getPageOfGroups(testUser, GROUP_PERMISSION_CREATE_GROUP_MEETING, 0, 3)).thenReturn(existingGroupList);
 
         mockMvc.perform(get(path + "start").param(phoneParam, testUserPhone)).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
-        verify(userManagementServiceMock, times(1)).isPartOfActiveGroups(testUser);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(permissionBrokerMock, times(1)).getPageOfGroupDTOs(testUser, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING, 0, 3);
+        verify(permissionBrokerMock, times(1)).countActiveGroupsWithPermission(testUser, GROUP_PERMISSION_CREATE_GROUP_MEETING);
+        verify(permissionBrokerMock, times(1)).getPageOfGroups(testUser, GROUP_PERMISSION_CREATE_GROUP_MEETING, 0, 3);
         verifyNoMoreInteractions(permissionBrokerMock);
-        verify(eventManagementServiceMock, times(1)).userHasEventsToView(testUser, EventType.MEETING, true);
-        verifyNoMoreInteractions(eventManagementServiceMock);
+        verify(eventBrokerMock, times(1)).userHasEventsToView(testUser, EventType.MEETING, EventListTimeType.FUTURE);
+        verifyNoMoreInteractions(eventBrokerMock);
 
     }
 
@@ -129,14 +122,14 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
                 new Meeting("meeting3", startTime, testUser, group, "someLocation"));
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
-        when(eventManagementServiceMock.userHasEventsToView(testUser, EventType.MEETING, true)).thenReturn(true);
-        when(eventManagementServiceMock.getEventsUserCanView(testUser, EventType.MEETING, 1, 0, 3)).thenReturn(
+        when(eventBrokerMock.userHasEventsToView(testUser, EventType.MEETING, EventListTimeType.FUTURE)).thenReturn(true);
+        when(eventBrokerMock.getEventsUserCanView(testUser, EventType.MEETING, EventListTimeType.FUTURE, 0, 3)).thenReturn(
                 new PageImpl<Event>(upcomingMeetingList));
 
         mockMvc.perform(get(path + "start").param(phoneParam, testUserPhone)).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
-        verify(eventManagementServiceMock, times(1)).userHasEventsToView(testUser, EventType.MEETING, true);
+        verify(eventBrokerMock, times(1)).userHasEventsToView(testUser, EventType.MEETING, EventListTimeType.FUTURE);
     }
 
     @Test
@@ -351,7 +344,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         verify(userManagementServiceMock, times(2)).findByInputNumber(anyString(), anyString());
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(eventRequestBrokerMock, times(1)).updateMeetingLocation(testUser.getUid(), requestUid, "JoziHub");
-        verifyNoMoreInteractions(eventManagementServiceMock);
+        verifyNoMoreInteractions(eventBrokerMock);
         verifyZeroInteractions(groupBrokerMock);
     }
 
@@ -510,7 +503,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         verify(userManagementServiceMock, times(1)).findByInputNumber(anyString(), anyString());
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(eventRequestBrokerMock, times(1)).finish(testUser.getUid(), requestUid, true);
-        verifyNoMoreInteractions(eventManagementServiceMock);
+        verifyNoMoreInteractions(eventBrokerMock);
         verifyZeroInteractions(groupBrokerMock);
     }
 
@@ -545,16 +538,12 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         meetingDetails.put("location", "JoziHub");
         meetingDetails.put("dateTimeString", "Sat 23 Sep 2055, 11:11 am");
 
-        Map<String, Integer> meetingResults = new HashMap<>();
-        meetingResults.put("yes", 115);
-        meetingResults.put("no", 54);
-        meetingResults.put("no_answer", 546);
+        Object[] fields = new String[] { "115", "54", "0", "546" };
+        ResponseTotalsDTO meetingResults = new ResponseTotalsDTO(Collections.singletonList(fields), 600);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(eventBrokerMock.loadMeeting(testMeeting.getUid())).thenReturn(testMeeting);
-
-        when(eventManagementServiceMock.getMeetingRsvpTotals(testMeeting)).thenReturn(meetingResults);
-        when(eventManagementServiceMock.getNumberInvitees(testMeeting)).thenReturn(546 + 115 + 54);
+        when(eventLogBrokerMock.getResponseCountForEvent(testMeeting)).thenReturn(meetingResults);
 
         mockMvc.perform(get(path + "details").param(phoneParam, testUserPhone).param("entityUid", testMeeting.getUid())).
                 andExpect(status().isOk());
@@ -562,10 +551,8 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         verify(userManagementServiceMock, times(1)).findByInputNumber(anyString());
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(eventBrokerMock, times(1)).loadMeeting(testMeeting.getUid());
-        verify(eventManagementServiceMock, times(1)).getMeetingRsvpTotals(any(Event.class));
-        verify(eventManagementServiceMock, times(1)).getMeetingRsvpTotals(any(Event.class));
-        verify(eventManagementServiceMock, times(1)).getNumberInvitees(any(Event.class));
-        verifyNoMoreInteractions(eventManagementServiceMock);
+        verify(eventLogBrokerMock, times(1)).getResponseCountForEvent(testMeeting);
+        verifyNoMoreInteractions(eventBrokerMock);
         verifyZeroInteractions(groupBrokerMock);
 
     }
@@ -621,7 +608,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         verifyNoMoreInteractions(cacheUtilManagerMock);
         verify(eventRequestBrokerMock, times(1)).createChangeRequest(testUser.getUid(), testMeeting.getUid());
         verify(eventRequestBrokerMock, times(1)).load(changeRequest.getUid());
-        verifyNoMoreInteractions(eventManagementServiceMock);
+        verifyNoMoreInteractions(eventBrokerMock);
         verifyZeroInteractions(groupBrokerMock);
 
     }

@@ -7,7 +7,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.support.MessageSourceAccessor;
-import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -52,13 +51,13 @@ public class GroupRestController {
     private static final int groupMemberListPageSizeDefault = 20;
 
     @Autowired
-    private EventManagementService eventManagementService;
-
-    @Autowired
     private UserManagementService userManagementService;
 
     @Autowired
     private GroupBroker groupBroker;
+
+	@Autowired
+	private EventBroker eventBroker;
 
     @Autowired
     private PermissionBroker permissionBroker;
@@ -150,7 +149,7 @@ public class GroupRestController {
             @PathVariable("code") String token,
             @RequestParam(name = "changedSince", required = false) Long changedSinceMillis) {
 
-        User user = userManagementService.loadOrSaveUser(phoneNumber);
+        User user = userManagementService.findByInputNumber(phoneNumber);
 
         Instant changedSince = changedSinceMillis == null ? null : Instant.ofEpochMilli(changedSinceMillis);
         ChangedSinceData<Group> changedSinceData = groupBroker.getActiveGroups(user, changedSince);
@@ -287,7 +286,7 @@ public class GroupRestController {
                                                                              @PathVariable String code,
                                                                              @RequestParam(required = false, value = "type") JoinReqType type) {
 
-        User user = userManagementService.loadOrSaveUser(phoneNumber);
+        User user = userManagementService.findByInputNumber(phoneNumber);
         List<GroupJoinRequest> openRequests = new ArrayList<>();
 
 	    // could do this slightly more elegantly using an unless type construction, but privileging clarity
@@ -329,35 +328,6 @@ public class GroupRestController {
             // since role / permissions / assignment may have changed since request was opened ...
             return RestUtil.errorResponse(HttpStatus.CONFLICT, RestMessage.APPROVER_PERMISSIONS_CHANGED);
         }
-    }
-
-    @RequestMapping(value = "/members/list/{phoneNumber}/{code}/{groupUid}/{selected}", method = RequestMethod.GET)
-    public ResponseEntity<ResponseWrapper> getGroupMember(@PathVariable("phoneNumber") String phoneNumber,
-                                                          @PathVariable("code") String code, @PathVariable("groupUid") String groupUid,
-                                                          @PathVariable("selected") boolean selectedByDefault,
-                                                          @RequestParam(value = "page", required = false) Integer requestPage,
-                                                          @RequestParam(value = "size", required = false) Integer requestPageSize) {
-
-        User user = userManagementService.loadOrSaveUser(phoneNumber);
-        Group group = groupBroker.load(groupUid);
-
-        if (!permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS)) {
-            return RestUtil.accessDeniedResponse();
-        }
-
-        int page = (requestPage != null) ? requestPage : 0;
-        int size = (requestPageSize != null) ? requestPageSize : groupMemberListPageSizeDefault;
-        Page<User> pageable = userManagementService.getGroupMembers(group, page, size);
-        ResponseWrapper responseWrapper;
-        if (page > pageable.getTotalPages()) {
-            responseWrapper = new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.GROUP_ACTIVITIES, RestStatus.FAILURE);
-        } else {
-            List<MembershipResponseWrapper> members = pageable.getContent().stream()
-                    .map(u -> new MembershipResponseWrapper(group, u, group.getMembership(u).getRole(), selectedByDefault))
-                    .collect(Collectors.toList());
-            responseWrapper = new GenericResponseWrapper(HttpStatus.OK, RestMessage.GROUP_MEMBERS, RestStatus.SUCCESS, members);
-        }
-        return new ResponseEntity<>(responseWrapper, HttpStatus.valueOf(responseWrapper.getCode()));
     }
 
     @RequestMapping(value = "/members/add/{phoneNumber}/{code}/{uid}", method = RequestMethod.POST)
@@ -577,7 +547,7 @@ public class GroupRestController {
 		Group group = groupBroker.load(groupUid);
 		ResponseEntity<ResponseWrapper> response;
 		try {
-			Set<Permission> permissionsEnabled = permissionBroker.getPermissions(group, roleName);
+			Set<Permission> permissionsEnabled = group.getRole(roleName).getPermissions();
 			List<PermissionDTO> permissionsDTO = permissionsDisplayed.stream()
 					.map(permission -> new PermissionDTO(permission, group, roleName, permissionsEnabled, messageSourceAccessor))
 					.sorted()
@@ -643,7 +613,7 @@ public class GroupRestController {
 
     private GroupResponseWrapper createGroupWrapper(Group group, User caller) {
         Role role = group.getMembership(caller).getRole();
-        Event event = eventManagementService.getMostRecentEvent(group);
+        Event event = eventBroker.getMostRecentEvent(group.getUid());
         GroupLog groupLog = groupBroker.getMostRecentLog(group);
 
         boolean hasTask = event != null;
@@ -671,7 +641,7 @@ public class GroupRestController {
 	}
 
 	private Map<String, Set<Permission>> processUpdatedPermissions(Group group, String roleName, List<PermissionDTO> permissionDTOs) {
-		Set<Permission> currentPermissions = permissionBroker.getPermissions(group, roleName);
+		Set<Permission> currentPermissions = group.getRole(roleName).getPermissions();
 		Set<Permission> permissionsAdded = new HashSet<>();
 		Set<Permission> permissionsRemoved = new HashSet<>();
 		for (PermissionDTO p : permissionDTOs) {

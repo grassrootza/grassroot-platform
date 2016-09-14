@@ -11,11 +11,14 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventRSVPResponse;
+import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.services.EventLogBroker;
+import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.SafetyEventBroker;
 import za.org.grassroot.services.TodoBroker;
+import za.org.grassroot.services.enums.EventListTimeType;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDResponseTypes;
 import za.org.grassroot.webapp.enums.USSDSection;
@@ -55,18 +58,18 @@ public class USSDHomeController extends USSDController {
     private TodoBroker todoBroker;
 
     @Autowired
-    private Environment environment;
+    private PermissionBroker permissionBroker;
 
     @Autowired
     private SafetyEventBroker safetyEventBroker;
 
+    @Autowired
+    private Environment environment;
 
     private static final Logger log = LoggerFactory.getLogger(USSDHomeController.class);
 
     private static final String path = homePath;
     private static final USSDSection thisSection = HOME;
-    private static final String safetyCode = "911";
-    private static final String sendMeLink = "123";
 
     private static final String rsvpMenu = "rsvp",
             renameUserMenu = "rename-start",
@@ -75,6 +78,8 @@ public class USSDHomeController extends USSDController {
             promptConfirmGroupInactive = "group-inactive-confirm";
 
     private int hashPosition;
+    private static String safetyCode;
+    private static String sendMeLink;
 
     private static final String openingMenuKey = String.join(".", Arrays.asList(homeKey, startMenu, optionsKey));
 
@@ -83,11 +88,12 @@ public class USSDHomeController extends USSDController {
             new SimpleEntry<>(VOTES, new String[]{voteMenus + startMenu, openingMenuKey + voteKey}),
             new SimpleEntry<>(TODO, new String[]{todoMenus + startMenu, openingMenuKey + logKey}),
             new SimpleEntry<>(GROUP_MANAGER, new String[]{groupMenus + startMenu, openingMenuKey + groupKey}),
-            new SimpleEntry<>(USER_PROFILE, new String[]{userMenus + startMenu, openingMenuKey + userKey})).
+            new SimpleEntry<>(USER_PROFILE, new String[]{userMenus + startMenu, openingMenuKey + userKey}),
+            new SimpleEntry<>(SAFETY_GROUP_MANAGER, new String[]{safetyMenus + startMenu, openingMenuKey + safetyKey})).
             collect(Collectors.toMap((e) -> e.getKey(), (e) -> e.getValue())));
 
     private static final List<USSDSection> openingSequenceWithGroups = Arrays.asList(
-            MEETINGS, VOTES, TODO, GROUP_MANAGER, USER_PROFILE);
+            MEETINGS, VOTES, TODO, GROUP_MANAGER, USER_PROFILE, SAFETY_GROUP_MANAGER);
     private static final List<USSDSection> openingSequenceWithoutGroups = Arrays.asList(
             USER_PROFILE, GROUP_MANAGER, MEETINGS, VOTES, TODO);
 
@@ -95,14 +101,15 @@ public class USSDHomeController extends USSDController {
 
     @PostConstruct
     public void init() {
-        // Spring initialization stuff...
         hashPosition = environment.getRequiredProperty("grassroot.ussd.code.length", Integer.class);
+        safetyCode = environment.getProperty("grassroot.ussd.safety.suffix", "911");
+        sendMeLink = environment.getProperty("grassroot.ussd.sendlink.suffix", "123");
     }
 
     public USSDMenu welcomeMenu(String opening, User user) {
 
         USSDMenu homeMenu = new USSDMenu(opening);
-        List<USSDSection> menuSequence = userManager.isPartOfActiveGroups(user) ?
+        List<USSDSection> menuSequence = permissionBroker.countActiveGroupsWithPermission(user, null) != 0 ?
                 openingSequenceWithGroups : openingSequenceWithoutGroups;
 
         for (USSDSection section : menuSequence) {
@@ -127,7 +134,7 @@ public class USSDHomeController extends USSDController {
             return menuBuilder(interruptedPrompt(inputNumber));
         }
 
-        User sessionUser = userManager.loadOrSaveUser(inputNumber);
+        User sessionUser = userManager.loadOrCreateUser(inputNumber);
         userLogger.recordUserSession(sessionUser.getUid(), UserInterfaceType.USSD);
 
         /*
@@ -142,7 +149,7 @@ public class USSDHomeController extends USSDController {
             openingMenu = processTrailingDigits(trailingDigits, sessionUser);
         } else {
             if (!sessionUser.isHasInitiatedSession())
-                userManager.setInitiatedSession(sessionUser);
+                userManager.setHasInitiatedUssdSession(sessionUser.getUid());
 
             USSDResponseTypes neededResponse = neededResponse(sessionUser);
             if (!neededResponse.equals(USSDResponseTypes.NONE)) {
@@ -164,7 +171,7 @@ public class USSDHomeController extends USSDController {
     @ResponseBody
     public Request forceStartMenu(@RequestParam(value = phoneNumber) String inputNumber) throws URISyntaxException {
 
-        return menuBuilder(defaultStartMenu(userManager.loadOrSaveUser(inputNumber)));
+        return menuBuilder(defaultStartMenu(userManager.loadOrCreateUser(inputNumber)));
 
     }
 
@@ -195,10 +202,10 @@ public class USSDHomeController extends USSDController {
 
     private USSDResponseTypes neededResponse(User user) {
 
-        if (userManager.needsToRespondToSafetyEvent(user)) return USSDResponseTypes.RESPOND_SAFETY;
-        if (userManager.needsToVote(user)) return USSDResponseTypes.VOTE;
-        if (userManager.needsToRSVP(user)) return USSDResponseTypes.MTG_RSVP;
-        if (userManager.hasIncompleteLogBooks(user.getUid(), daysPastLogbooks)) return USSDResponseTypes.RESPOND_TODO;
+        if (safetyEventBroker.needsToRespondToSafetyEvent(user)) return USSDResponseTypes.RESPOND_SAFETY;
+        if (eventBroker.userHasResponsesOutstanding(user, EventType.VOTE)) return USSDResponseTypes.VOTE;
+        if (eventBroker.userHasResponsesOutstanding(user, EventType.MEETING)) return USSDResponseTypes.MTG_RSVP;
+        if (userManager.hasIncompleteTodos(user.getUid(), daysPastLogbooks)) return USSDResponseTypes.RESPOND_TODO;
         if (userManager.needsToRenameSelf(user)) return USSDResponseTypes.RENAME_SELF;
         if (userManager.fetchGroupUserMustRename(user) != null) return USSDResponseTypes.NAME_GROUP;
 
@@ -296,7 +303,7 @@ public class USSDHomeController extends USSDController {
 
     private USSDMenu assembleVoteMenu(User sessionUser) {
         log.info("Asking for a vote ... from user " + sessionUser);
-        Vote vote = (Vote) eventManager.getOutstandingVotesForUser(sessionUser).get(0);
+        Vote vote = (Vote) eventBroker.getOutstandingResponseForUser(sessionUser, EventType.VOTE).get(0);
 
         final String[] promptFields = new String[]{vote.getAncestorGroup().getName(""),
                 vote.getCreatedByUser().nameToDisplay(),
@@ -315,8 +322,7 @@ public class USSDHomeController extends USSDController {
     }
 
     private USSDMenu assembleRsvpMenu(User sessionUser) {
-        log.info("Asking for rsvp!");
-        Event meeting = eventManager.getOutstandingRSVPForUser(sessionUser).get(0);
+        Event meeting = eventBroker.getOutstandingResponseForUser(sessionUser, EventType.MEETING).get(0);
 
         String[] meetingDetails = new String[]{meeting.getAncestorGroup().getName(""),
                 meeting.getCreatedByUser().nameToDisplay(),
@@ -388,10 +394,9 @@ public class USSDHomeController extends USSDController {
             if (!isBarred) safetyEventBroker.create(user.getUid(), user.getSafetyGroup().getUid());
             menu = new USSDMenu(message);
         } else {
-            // todo : externalize the option texts
             menu = new USSDMenu(getMessage(thisSection, "safety.not-activated", promptKey, user));
-            menu.addMenuOption(USSDSection.SAFETY_GROUP_MANAGER.toPath() + "pick-group", "Make existing group my safety group");
-            menu.addMenuOption(USSDSection.SAFETY_GROUP_MANAGER.toPath() + "new-group", "Create new group");
+            menu.addMenuOption(USSDSection.SAFETY_GROUP_MANAGER.toPath() + "pick-group", getMessage(thisSection, "safety", optionsKey + "existing", user));
+            menu.addMenuOption(USSDSection.SAFETY_GROUP_MANAGER.toPath() + "new-group", getMessage(thisSection, "safety", optionsKey + "new", user));
             menu.addMenuOption(startMenu, "Main menu");
         }
         return menu;
@@ -404,14 +409,11 @@ public class USSDHomeController extends USSDController {
     }
 
     private USSDMenu assemblePanicButtonActivationResponse(User user, SafetyEvent safetyEvent) {
-
         String activateByDisplayName = safetyEvent.getActivatedBy().getDisplayName();
-        USSDMenu menu = new USSDMenu("Did you respond to the panic alert triggered by " + activateByDisplayName + "?");
+        USSDMenu menu = new USSDMenu("Did you respond to the panic alert triggered by " + activateByDisplayName + "?"); // todo : i18n
         menu.addMenuOption(USSDUrlUtil.safetyMenuWithId("record-response", safetyEvent.getUid(), true), "Yes");
         menu.addMenuOption(USSDUrlUtil.safetyMenuWithId("record-response", safetyEvent.getUid(), false), "No");
-
         return menu;
-
     }
 
     private boolean isSafetyActivationCode(String trailingDigits) {
@@ -433,7 +435,7 @@ public class USSDHomeController extends USSDController {
                                   @RequestParam(value = yesOrNoParam) String attending) throws URISyntaxException {
 
         String welcomeKey;
-        User user = userManager.loadOrSaveUser(inputNumber);
+        User user = userManager.loadOrCreateUser(inputNumber);
         Meeting meeting = eventBroker.loadMeeting(meetingUid);
 
         if ("yes".equals(attending)) {
@@ -455,11 +457,7 @@ public class USSDHomeController extends USSDController {
                                   @RequestParam(value = "response") String response) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(inputNumber);
-        Vote vote = (Vote) eventBroker.load(voteUid);
-
-        // todo: switch this to uid
-        eventLogBroker.rsvpForEvent(vote.getUid(), user.getUid(), EventRSVPResponse.fromString(response));
-
+        eventLogBroker.rsvpForEvent(voteUid, user.getUid(), EventRSVPResponse.fromString(response));
         String prompt = getMessage(thisSection, startMenu, promptKey + ".vote-recorded", user);
         return menuBuilder(new USSDMenu(prompt, optionsHomeExit(user)));
     }
@@ -534,7 +532,6 @@ public class USSDHomeController extends USSDController {
     @ResponseBody
     public Request confirmGroupInactive(@RequestParam(value = phoneNumber) String inputNumber,
                                         @RequestParam(value = groupUidParam) String groupUid) throws URISyntaxException {
-        // todo: another round of checks that this should be allowed
         User user = userManager.findByInputNumber(inputNumber);
         Group group = groupBroker.load(groupUid);
         String sizeOfGroup = "" + (group.getMembers().size() - 1); // subtracting the group creator
@@ -554,7 +551,6 @@ public class USSDHomeController extends USSDController {
     @ResponseBody
     public Request setGroupInactiveAndStart(@RequestParam(value = phoneNumber) String inputNumber,
                                             @RequestParam(value = groupUidParam) String groupUid) throws URISyntaxException {
-        // todo: permission checks
         User sessionUser = userManager.findByInputNumber(inputNumber);
         log.info("At the request of user: " + sessionUser + ", we are setting inactive this group ... " + groupUid);
         groupBroker.deactivate(sessionUser.getUid(), groupUid, true);
@@ -566,20 +562,16 @@ public class USSDHomeController extends USSDController {
     Helper methods, for group pagination, event pagination, etc.
      */
 
-    // todo: make sure this works with permissions ... by passing in the section
     @RequestMapping(value = path + "group_page")
     @ResponseBody
     public Request groupPaginationHelper(@RequestParam(value = phoneNumber) String inputNumber,
                                          @RequestParam(value = "prompt") String prompt,
                                          @RequestParam(value = "page") Integer pageNumber,
                                          @RequestParam(value = "existingUri") String existingUri,
+                                         @RequestParam(value = "section", required = false) USSDSection section,
                                          @RequestParam(value = "newUri", required = false) String newUri) throws URISyntaxException {
-
-        /*
-         todo: likely need to add permission checking to the list of parameters, but for now just saying "false"
-          */
         return menuBuilder(ussdGroupUtil.userGroupMenuPaginated(userManager.findByInputNumber(inputNumber), prompt, existingUri,
-                newUri, pageNumber, null));
+                newUri, pageNumber, null, section));
 
     }
 
@@ -594,10 +586,11 @@ public class USSDHomeController extends USSDController {
                                          @RequestParam(value = "nextUrl") String nextUrl,
                                          @RequestParam(value = "pastPresentBoth") Integer pastPresentBoth,
                                          @RequestParam(value = "includeGroupName") boolean includeGroupName) throws URISyntaxException {
-        // toto: error handling on the section
+        // todo: error handling on the section and switch to time type on the integer
+        EventListTimeType timeType = pastPresentBoth == 1 ? EventListTimeType.FUTURE : EventListTimeType.PAST;
         return menuBuilder(eventUtil.listPaginatedEvents(
                 userManager.findByInputNumber(inputNumber), fromString(section),
-                prompt, nextUrl, (menuForNew != null), menuForNew, optionForNew, includeGroupName, pastPresentBoth, pageNumber));
+                prompt, nextUrl, (menuForNew != null), menuForNew, optionForNew, includeGroupName, timeType, pageNumber));
     }
 
     @RequestMapping(value = path + U404)

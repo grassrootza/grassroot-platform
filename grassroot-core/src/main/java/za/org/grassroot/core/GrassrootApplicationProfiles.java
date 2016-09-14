@@ -5,26 +5,16 @@ package za.org.grassroot.core;
  */
 public final class GrassrootApplicationProfiles {
 
-
     /**
      *
-     */
-    public final static String TEST = "test";
-
-
-    /**
-     *
-     * The default profile for the Meeting Organizer Application.
-     * Indicates that the application is running locally is expected
+     * The default profile. Indicates that the application is running locally is expected
      * to find resources such as Data Sources in-memory.
      */
     public  final static String INMEMORY = "default";
 
 
-    /**
-     *
-     * The Local Postgresql profile for the Meeting Organizer Application.
-     * Indicates that the application is running against local postgresql database.
+    /*
+     * Local Postgresql profile. Indicates that the application is running against local postgresql database.
      */
     public  final static String LOCAL_PG = "localpg";
 

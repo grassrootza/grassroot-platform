@@ -12,9 +12,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.GroupLog;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.GroupLogType;
 
 import javax.transaction.Transactional;
@@ -260,18 +258,18 @@ public class GroupRepositoryTest {
     }
 
     @Test
-    public void shouldReturnPagesActive() {
+    public void shouldReturnPagesCreatedBy() {
         assertThat(groupRepository.count(), is(0L));
         User user = userRepository.save(new User("3331110000"));
         List<Group> testGroups = Arrays.asList(new Group("gc1", user), new Group("gc2", user), new Group("gc3", user), new Group("gc4", user));
         for (Group group : testGroups) group.addMember(user);
         testGroups = groupRepository.save(testGroups);
         assertThat(groupRepository.count(), is(4L));
-        Page<Group> pageTest1 = groupRepository.findByMembershipsUserAndActive(user, new PageRequest(0, 3), true);
+        Page<Group> pageTest1 = groupRepository.findByCreatedByUserAndActiveTrueOrderByCreatedDateTimeDesc(user, new PageRequest(0, 3));
         assertThat(pageTest1.hasNext(), is(true));
         testGroups.get(0).setActive(false);
         groupRepository.save(testGroups.get(0));
-        Page<Group> activeGroups = groupRepository.findByMembershipsUserAndActive(user, new PageRequest(0,3), true);
+        Page<Group> activeGroups = groupRepository.findByCreatedByUserAndActiveTrueOrderByCreatedDateTimeDesc(user, new PageRequest(0,3));
         assertFalse(activeGroups.hasNext());
     }
 
@@ -279,13 +277,33 @@ public class GroupRepositoryTest {
     public void shouldSaveAndRetrievePaidFor() {
         assertThat(groupRepository.count(), is(0L));
         User user = userRepository.save(new User("3331113333"));
-
         Group paidGroup = new Group("paidGroup", user);
         paidGroup.setPaidFor(true);
         Group group1 = groupRepository.save(paidGroup);
         Group group2 = groupRepository.save(new Group("unpaidGroup", user));
         assertTrue(group1.isPaidFor());
         assertFalse(group2.isPaidFor());
+    }
+
+    @Test
+    public void shouldFindByPermission() {
+        assertThat(groupRepository.count(), is(0L));
+        User user = userRepository.save(new User("0801113456"));
+        Group group1 = new Group("group1", user);
+        Group group2 = new Group("group2", user);
+
+        group1.getRole(BaseRoles.ROLE_GROUP_ORGANIZER).addPermission(Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER);
+        group1.getRole(BaseRoles.ROLE_GROUP_ORGANIZER).addPermission(Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING);
+        group2.getRole(BaseRoles.ROLE_ORDINARY_MEMBER).addPermission(Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING);
+
+        group1.addMember(user, BaseRoles.ROLE_GROUP_ORGANIZER);
+        group2.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER);
+
+        groupRepository.save(group1);
+        groupRepository.save(group2);
+
+        assertEquals(1, groupRepository.countActiveGroupsWhereUserHasPermission(user, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER));
+        assertEquals(2, groupRepository.countActiveGroupsWhereUserHasPermission(user, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING));
     }
 
    /* @Test

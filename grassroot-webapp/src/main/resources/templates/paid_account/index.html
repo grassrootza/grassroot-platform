@@ -8,7 +8,7 @@
 This page loaded. You can view these accounts:
 <ul>
   <li th:each="account : ${accounts}">
-    <a th:href="@{view(accountId=${account.id})}"><span th:text="${account.accountName}"></span></a>
+    <a th:href="@{view(accountUid=${account.id})}"><span th:text="${account.accountName}"></span></a>
   </li>
 </ul>
 </body>

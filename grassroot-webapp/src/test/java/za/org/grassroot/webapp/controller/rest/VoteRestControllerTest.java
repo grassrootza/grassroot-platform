@@ -78,13 +78,13 @@ public class VoteRestControllerTest extends RestAbstractUnitTest {
         list.add(responses);
         ResponseTotalsDTO rsvpTotalsDTO = new ResponseTotalsDTO(list, 5);
 
-        when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
+        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
         when(eventBrokerMock.load(voteEvent.getUid())).thenReturn(voteEvent);
         when(eventLogRepositoryMock.findByEventAndUserAndEventLogType(voteEvent, sessionTestUser, EventLogType.RSVP)).thenReturn(eventLog);
         when(eventLogBrokerMock.hasUserRespondedToEvent(voteEvent, sessionTestUser)).thenReturn(true);
         when(eventLogBrokerMock.getVoteResultsForEvent(voteEvent)).thenReturn(rsvpTotalsDTO);
         mockMvc.perform(get(path + "/view/{id}/{phoneNumber}/{code}", voteEvent.getUid(), testUserPhone, testUserCode)).andExpect(status().is2xxSuccessful());
-        verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
+        verify(userManagementServiceMock).findByInputNumber(testUserPhone);
         verify(eventBrokerMock).load(voteEvent.getUid());
         verify(eventLogRepositoryMock).findByEventAndUserAndEventLogType(voteEvent, sessionTestUser, EventLogType.RSVP);
         verify(eventLogBrokerMock).getVoteResultsForEvent(voteEvent);
@@ -93,13 +93,13 @@ public class VoteRestControllerTest extends RestAbstractUnitTest {
     @Test
     public void castingVotesShouldWork() throws Exception {
 
-        when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
+        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
         when(eventBrokerMock.load(voteEvent.getUid())).thenReturn(voteEvent);
         when(eventLogBrokerMock.hasUserRespondedToEvent(voteEvent, sessionTestUser)).thenReturn(false);
         mockMvc.perform(get(path + "/do/{id}/{phoneNumber}/{code}", voteEvent.getUid(), testUserPhone, testUserCode)
                 .param("response", "YES"))
                 .andExpect(status().is2xxSuccessful());
-        verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
+        verify(userManagementServiceMock).findByInputNumber(testUserPhone);
         verify(eventBrokerMock).load(voteEvent.getUid());
         verify(eventLogBrokerMock).rsvpForEvent(voteEvent.getUid(), sessionTestUser.getUid(), EventRSVPResponse.YES);
     }

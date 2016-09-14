@@ -25,7 +25,6 @@ public class EventWrapper {
     protected boolean relayable;
 
     protected EventReminderType reminderType;
-    protected int defaultReminderMinutes;
     protected int customReminderMinutes;
 
     protected Set<String> assignedMembers;
@@ -44,19 +43,15 @@ public class EventWrapper {
             case GROUP:
                 Group parent = (Group) event.getParent();
                 this.parentName = parent.getName("");
-                this.defaultReminderMinutes = parent.getReminderMinutes();
                 break;
             case MEETING:
-                this.parentName = event.getParent().getName();
-                this.defaultReminderMinutes = 0; // todo: fix
+                this.parentName = ((Meeting) event.getParent()).getName();
                 break;
             case VOTE:
-                this.parentName = event.getParent().getName();
-                this.defaultReminderMinutes = 0; // todo: fix
+                this.parentName = ((Vote) event.getParent()).getName();
                 break;
             case TODO:
                 this.parentName = ((Todo) event.getParent()).getMessage();
-                this.defaultReminderMinutes = 0; // todo: fix
                 break;
         }
 
@@ -71,7 +66,7 @@ public class EventWrapper {
         this.reminderType = event.getReminderType();
         this.customReminderMinutes = event.getCustomReminderMinutes();
 
-        // todo: assign members ...
+        // todo: assign members ... also, set custom reminder minute (and reminder settings) to be same as parent
     }
 
     public static EventWrapper makeEmpty(boolean rsvpRequired) {
@@ -161,8 +156,6 @@ public class EventWrapper {
     public void setReminderType(EventReminderType reminderType) {
         this.reminderType = reminderType;
     }
-
-    public int getDefaultReminderMinutes() { return defaultReminderMinutes; }
 
     public int getCustomReminderMinutes() {
         return customReminderMinutes;

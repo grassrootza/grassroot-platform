@@ -16,22 +16,22 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class TodoRestControllerTest extends RestAbstractUnitTest {
 
     @InjectMocks
-    private TodoRestController logBookRestController;
+    private TodoRestController todoRestController;
 
-    private String path = "/api/logbook";
+    private String path = "/api/todo";
 
     @Before
     public void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(logBookRestController).build();
+        mockMvc = MockMvcBuilders.standaloneSetup(todoRestController).build();
     }
 
     @Test
     public void settingCompleteShouldWork() throws Exception {
 
-        when(userManagementServiceMock.loadOrSaveUser(testUserPhone)).thenReturn(sessionTestUser);
+        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
         when(todoBrokerMock.load(TEST_TO_DO.getUid())).thenReturn(TEST_TO_DO);
         mockMvc.perform(get(path + "/complete/{phoneNumber}/{code}/{id}", testUserPhone, testUserCode, TEST_TO_DO.getUid())).andExpect(status().is2xxSuccessful());
-        verify(userManagementServiceMock).loadOrSaveUser(testUserPhone);
+        verify(userManagementServiceMock).findByInputNumber(testUserPhone);
         verify(todoBrokerMock).load(TEST_TO_DO.getUid());
     }
 }

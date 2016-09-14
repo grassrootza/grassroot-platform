@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
@@ -18,6 +19,7 @@ import za.org.grassroot.integration.domain.SeloParseDateTimeFailure;
 import za.org.grassroot.services.EventLogBroker;
 import za.org.grassroot.services.EventRequestBroker;
 import za.org.grassroot.services.MembershipInfo;
+import za.org.grassroot.services.enums.EventListTimeType;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
@@ -105,17 +107,12 @@ public class USSDMeetingController extends USSDController {
                               @RequestParam(value = "newMtg", required = false) boolean newMeeting) throws URISyntaxException, IOException {
 
         User user;
-
-        try {
-            user = userManager.findByInputNumber(inputNumber);
-        } catch (NoSuchElementException e) {
-            return noUserError;
-        }
+        user = userManager.findByInputNumber(inputNumber);
 
         USSDMenu returnMenu;
 
-        if (newMeeting || !eventManager.userHasEventsToView(user, EventType.MEETING, true)) {
-            returnMenu = ussdGroupUtil.askForGroup(user, thisSection, subjectMenu, newGroupMenu, groupName, true);
+        if (newMeeting || !eventBroker.userHasEventsToView(user, EventType.MEETING, EventListTimeType.FUTURE)) {
+            returnMenu = ussdGroupUtil.askForGroup(user, thisSection, subjectMenu, newGroupMenu, groupName, null, null);
         } else {
             String prompt = getMessage(thisSection, startMenu, promptKey + ".new-old", user);
             String newOption = getMessage(thisSection, startMenu, optionsKey + "new", user);
@@ -438,28 +435,24 @@ public class USSDMeetingController extends USSDController {
         String mtgDescription;
 
         if (meeting.isRsvpRequired()) {
-            // todo: use enums instead of literal strings for the map (i.e., switch to RSVP toals DTO
-            Map<String, Integer> rsvpResponses = eventManager.getMeetingRsvpTotals(meeting);
-            int answeredYes = rsvpResponses.get("yes");
-            int answeredNo = rsvpResponses.get("no");
-            int noAnswer = rsvpResponses.get("no_answer");
-            Group group = (Group) meeting.getParent(); // todo: !?!?!?
+            ResponseTotalsDTO rsvpResponses = eventLogBroker.getResponseCountForEvent(meeting);
+            Group group = meeting.getAncestorGroup();
             String[] messageFields = new String[]{
                     group.getName(""),
                     meeting.getEventLocation(),
                     convertToUserTimeZone(meeting.getEventStartDateTime(), getSAST()).format(dateTimeFormat),
-                    "" + eventManager.getNumberInvitees(meeting),
-                    "" + answeredYes,
-                    "" + answeredNo,
-                    "" + noAnswer};
+                    String.valueOf(meeting.getMembers().size()),
+                    String.valueOf(rsvpResponses.getYes()),
+                    String.valueOf(rsvpResponses.getNo()),
+                    String.valueOf(rsvpResponses.getNumberNoRSVP())};
             mtgDescription = getMessage(thisSection, viewMeetingDetails, promptKey + ".rsvp", messageFields, sessionUser);
         } else {
-            Group group = (Group) meeting.getParent(); // todo: !?!?!?
+            Group group = meeting.getAncestorGroup();
             String[] messageFields = new String[]{
                     group.getName(""),
                     meeting.getEventLocation(),
                     convertToUserTimeZone(meeting.getEventStartDateTime(), getSAST()).format(dateTimeFormat),
-                    "" + eventManager.getNumberInvitees(meeting)};
+                    String.valueOf(meeting.getMembers().size())};
             mtgDescription = getMessage(thisSection, viewMeetingDetails, promptKey, messageFields, sessionUser);
         }
 
@@ -470,10 +463,6 @@ public class USSDMeetingController extends USSDController {
         promptMenu.addMenuOption("exit", getMessage("exit.option", sessionUser)); // exit system
         return menuBuilder(promptMenu);
     }
-
-    /*
-    todo: add logging, etc.
-     */
 
     @RequestMapping(value = path + changeMeetingLocation)
     public Request changeLocation(@RequestParam(value = phoneNumber) String inputNumber,

@@ -51,7 +51,7 @@ public class HomeController extends BaseController {
         Long startTimeCountGroups = System.currentTimeMillis();
         log.info(String.format("Getting user profile took %d msecs", startTimeCountGroups - startTime));
 
-        if (userManagementService.isPartOfActiveGroups(user)) {
+        if (permissionBroker.countActiveGroupsWithPermission(user, null) != 0) {
             log.info(String.format("Counting user groups took ... %d msecs", System.currentTimeMillis() - startTimeCountGroups));
             homePageModelAndView = getHomePageUserHasGroups(model, user);
         } else {
@@ -72,7 +72,7 @@ public class HomeController extends BaseController {
     private ModelAndView getHomePageUserHasGroups(Model model, User user) {
 
         Long startTime1 = System.currentTimeMillis();
-        model.addAttribute("userGroups", permissionBroker.getActiveGroupDTOs(user, null));
+        model.addAttribute("userGroups", permissionBroker.getActiveGroupsSorted(user, null));
         log.info(String.format("Retrieved the active groups for the user ... took %d msecs", System.currentTimeMillis() - startTime1));
 
         Long startTime2 = System.currentTimeMillis();

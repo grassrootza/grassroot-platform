@@ -49,7 +49,7 @@ public class NotificationRestController {
                                                             @RequestParam(value = "page", required = false) Integer queryPage,
                                                             @RequestParam(value = "size", required = false) Integer queryPageSize) {
 
-        User user = userManagementService.loadOrSaveUser(phoneNumber);
+        User user = userManagementService.findByInputNumber(phoneNumber);
         final int pageNumber = (queryPage == null) ? 0 : queryPage;
         final int pageSize = (queryPageSize == null) ? pageLength : queryPageSize;
 
@@ -96,7 +96,7 @@ public class NotificationRestController {
     public ResponseEntity<ResponseWrapper> updateReadStatus(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code,
                                                             @RequestParam("uid") String uid) throws Exception{
 
-        User user = userManagementService.loadOrSaveUser(phoneNumber);
+        User user = userManagementService.findByInputNumber(phoneNumber);
         Notification notification = notificationService.loadNotification(uid);
 
         log.info("updating notification read status for user uid : {}, notification uid : {}", user.getUid(), uid);

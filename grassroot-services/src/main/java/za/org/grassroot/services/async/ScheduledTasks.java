@@ -98,9 +98,9 @@ public class ScheduledTasks {
         }
     }
 
-    @Scheduled(fixedRate = 60000) //runs every 1 minutes
+    @Scheduled(fixedRate = 60000) //runs every 1 minute
     public void sendUnsentVoteResults() {
-        List<Vote> votes = voteRepository.findUnsentVoteResults();
+        List<Vote> votes = voteRepository.findUnsentVoteResults(Instant.now().minus(1, ChronoUnit.HOURS), Instant.now());
         if (!votes.isEmpty()) {
             logger.info("Sending vote results for {} unsent votes...", votes.size());
         }

@@ -14,6 +14,8 @@ import java.util.List;
 
 public interface PaidGroupRepository extends JpaRepository<PaidGroup, Long> {
 
+    PaidGroup findOneByUid(String paidGroupUid);
+
     List<PaidGroup> findByExpireDateTimeGreaterThan(Instant date);
 
     List<PaidGroup> findByAccount(Account account);

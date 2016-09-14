@@ -1,4 +1,4 @@
-package za.org.grassroot.services.util;
+package za.org.grassroot.services;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,7 +10,6 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.AddressRepository;
 import za.org.grassroot.core.repository.UserRepository;
-import za.org.grassroot.services.AddressBroker;
 import za.org.grassroot.services.async.AsyncUserLogger;
 
 import java.util.Objects;
@@ -79,6 +78,13 @@ public class AddressBrokerImpl implements AddressBroker {
 
         log.info("deleting user address from db");
 
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean hasAddress(String userUid) {
+        User user = userRepository.findOneByUid(userUid);
+        return addressRepository.findOneByResident(user) != null;
     }
 
 }

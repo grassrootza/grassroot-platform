@@ -18,6 +18,7 @@ import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.services.NotificationService;
 import za.org.grassroot.integration.services.SmsSendingService;
 import za.org.grassroot.services.PasswordTokenService;
+import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.webapp.enums.RestMessage;
@@ -52,6 +53,9 @@ public class UserRestController {
 
     @Autowired
     private NotificationService notificationService;
+
+    @Autowired
+    private PermissionBroker permissionBroker;
 
     @Autowired
     private Environment environment;
@@ -129,7 +133,7 @@ public class UserRestController {
 
         if (passwordTokenService.isShortLivedOtpValid(phoneNumber, token)) {
             log.info("User authentication successful for user with phoneNumber={}", phoneNumber);
-            User user = userManagementService.loadOrSaveUser(phoneNumber);
+            User user = userManagementService.findByInputNumber(phoneNumber);
             if (!user.hasAndroidProfile()) {
                 userManagementService.createAndroidUserProfile(new UserDTO(user));
             }
@@ -137,7 +141,7 @@ public class UserRestController {
 
             passwordTokenService.expireVerificationCode(user.getUid(), VerificationCodeType.SHORT_OTP);
             VerificationTokenCode longLivedToken = passwordTokenService.generateLongLivedAuthCode(user.getUid());
-            boolean hasGroups = userManagementService.isPartOfActiveGroups(user);
+            boolean hasGroups = permissionBroker.countActiveGroupsWithPermission(user, null) != 0;
             int notificationCount = notificationService.countUnviewedAndroidNotifications(user.getUid());
 
             AuthWrapper authWrapper = AuthWrapper.create(false, longLivedToken, user, hasGroups, notificationCount);

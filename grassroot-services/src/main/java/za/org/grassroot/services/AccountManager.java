@@ -3,32 +3,29 @@ package za.org.grassroot.services;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.notification.FreeFormMessageNotification;
 import za.org.grassroot.core.enums.AccountLogType;
-import za.org.grassroot.core.repository.AccountRepository;
-import za.org.grassroot.core.repository.GroupRepository;
-import za.org.grassroot.core.repository.PaidGroupRepository;
-import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.repository.*;
 import za.org.grassroot.services.exception.GroupAlreadyPaidForException;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
-import javax.transaction.Transactional;
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
  * Created by luke on 2015/11/12.
- * todo: decide where to implement permission checking for all of this (front end / services, where in services)
- * todo: equals logic in account to prevent duplication
  */
 @Service
-@Transactional
 public class AccountManager implements AccountManagementService {
 
     private static final Logger log = LoggerFactory.getLogger(AccountManager.class);
@@ -40,85 +37,94 @@ public class AccountManager implements AccountManagementService {
     private PaidGroupRepository paidGroupRepository;
 
     @Autowired
-    private UserManagementService userManagementService;
-
-    @Autowired
-    private RoleManagementService roleManagementService;
-
-    @Autowired
    	private UserRepository userRepository;
 
    	@Autowired
    	private GroupRepository groupRepository;
 
+    @Autowired
+    private RoleRepository roleRepository;
+
    	@Autowired
    	private LogsAndNotificationsBroker logsAndNotificationsBroker;
 
+    @Autowired
+    private ApplicationEventPublisher applicationEventPublisher;
 
     @Override
-    public Account createAccount(String accountName) {
-        log.info("Okay, creating a bare bones account ... with name: " + accountName);
-        Account newAccount = new Account(accountName, true);
-        return accountRepository.save(newAccount);
+    public Account loadAccount(String accountUid) {
+        return accountRepository.findOneByUid(accountUid);
     }
 
     @Override
-    public Account createAccount(String accountName, User administrator) {
-        Account account = accountRepository.save(new Account(accountName, administrator));
-        log.info("Created the account ... " + account.toString());
-        addAdminToUser(administrator, account);
-        return accountRepository.save(account);
+    @Transactional(readOnly = true)
+    public PaidGroup loadPaidGroup(String paidGroupUid) {
+        return paidGroupRepository.findOneByUid(paidGroupUid);
     }
 
     @Override
-    public Account createAccount(String accountName, User administrator, String billingEmail, boolean enabled) {
-        Account account = accountRepository.save(new Account(accountName, administrator, billingEmail, enabled));
-        addAdminToUser(administrator, account);
-        return account;
+    @Transactional
+    public String createAccount(String userUid, String accountName, String administratorUid, String billingEmail) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(accountName);
+
+        User creatingUser = userRepository.findOneByUid(userUid);
+        Account account = new Account(creatingUser, accountName);
+        final String accountUid = account.getUid();
+
+        if (!StringUtils.isEmpty(billingEmail)) {
+            account.setPrimaryEmail(billingEmail);
+        }
+
+        /*if (!StringUtils.isEmpty(administratorUid)) {
+            AfterTxCommitTask afterTxCommitTask = () -> addAdministrator(userUid, accountUid, administratorUid);
+            applicationEventPublisher.publishEvent(afterTxCommitTask);
+        }*/
+
+        accountRepository.saveAndFlush(account);
+
+        addAdministrator(userUid, accountUid, administratorUid);
+
+        return account.getUid();
     }
 
     @Override
-    public Account addAdministrator(Account account, User administrator) {
-        account.addAdministrator(administrator);
-        addAdminToUser(administrator, account);
-        return accountRepository.save(account);
-    }
+    @Transactional
+    public void updateBillingEmail(String userUid, String accountUid, String billingEmail) {
+        User user = userRepository.findOneByUid(userUid);
+        Account account = accountRepository.findOneByUid(accountUid);
 
-    @Override
-    public Account setBillingEmail(Account account, String billingEmail) {
+        // todo : system admin check & logging
+
         account.setPrimaryEmail(billingEmail);
-        return accountRepository.save(account);
     }
 
     @Override
-    public Account adjustSettings(Account changedAccount) {
+    @Transactional
+    public void updateSettings(Account changedAccount) {
         Account savedAccount = accountRepository.findOne(changedAccount.getId());
         savedAccount.setFreeFormMessages(changedAccount.isFreeFormMessages());
         savedAccount.setRelayableMessages(changedAccount.isRelayableMessages());
         savedAccount.setTodoExtraMessages(changedAccount.isTodoExtraMessages());
-        return accountRepository.save(savedAccount);
-    }
-
-    /*
-    Helper function to make sure second side of relationship & admin role added to user
-     */
-    private User addAdminToUser(User user, Account account) {
-        // todo: check if there are redundant calls here (though this won't be used often)
-        log.info("Wiring up user to account admin ... ");
-        user.setAccountAdministered(account);
-        User savedUser = userManagementService.save(user);
-        log.info("User account admin set ... User: " + savedUser.toString());
-        return roleManagementService.addStandardRoleToUser(BaseRoles.ROLE_ACCOUNT_ADMIN, savedUser);
     }
 
     @Override
-    public Account loadAccount(Long accountId) {
-        return accountRepository.findOne(accountId);
-    }
+    @Transactional
+    public void addAdministrator(String userUid, String accountUid, String administratorUid) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(accountUid);
+        Objects.requireNonNull(administratorUid);
 
-    @Override
-    public Account findAccountByAdministrator(User administrator) {
-        return accountRepository.findByAdministrators(administrator);
+        User changingUser = userRepository.findOneByUid(userUid);
+        Account account = accountRepository.findOneByUid(accountUid);
+        User administrator = userRepository.findOneByUid(administratorUid);
+
+        // todo : permission check & log creation
+
+        account.addAdministrator(administrator);
+        administrator.setAccountAdministered(account);
+        Role adminRole = roleRepository.findByNameAndRoleType(BaseRoles.ROLE_ACCOUNT_ADMIN, Role.RoleType.STANDARD).get(0);
+        administrator.addStandardRole(adminRole);
     }
 
     @Override
@@ -128,21 +134,34 @@ public class AccountManager implements AccountManagementService {
 
     @Override
     @Transactional
-    public Group addGroupToAccount(Account account, Group group, User addingUser) throws GroupAlreadyPaidForException {
-        // todo: check it isn't already added, didn't exist before, etc
+    public void addGroupToAccount(String accountUid, String groupUid, String addingUserUid) throws GroupAlreadyPaidForException {
+        Objects.requireNonNull(accountUid);
+        Objects.requireNonNull(groupUid);
+        Objects.requireNonNull(addingUserUid);
+
+        Group group = groupRepository.findOneByUid(groupUid);
+        Account account = accountRepository.findOneByUid(accountUid);
+        User addingUser = userRepository.findOneByUid(addingUserUid);
+
+        // todo: check permissions etc
 
         // do this a bit more elegantly
-        if (group.isPaidFor())
+        if (group.isPaidFor()) {
             throw new GroupAlreadyPaidForException();
-        PaidGroup paidGroup = paidGroupRepository.save(new PaidGroup(group, account, addingUser));
+        }
+
+        PaidGroup paidGroup = new PaidGroup(group, account, addingUser);
+
+        paidGroupRepository.saveAndFlush(paidGroup);
+
         account.addPaidGroup(paidGroup);
         group.setPaidFor(true);
-        return group;
-        // return groupManagementService.saveGroup(group, true, "Set paid for", addingUser.getId());
     }
 
     @Override
-    public Account findAccountForGroup(Group group) {
+    @Transactional(readOnly =  true)
+    public Account findAccountForGroup(String groupUid) {
+        Group group = groupRepository.findOneByUid(groupUid);
         if (!group.isPaidFor())
             return null;
         else
@@ -151,36 +170,28 @@ public class AccountManager implements AccountManagementService {
 
     @Override
     @Transactional
-    public Account removeGroupFromAccount(Account account, PaidGroup paidGroupRecord, User removingUser) {
-        Group group = paidGroupRecord.getGroup();
+    public void removeGroupFromAccount(String accountUid, String paidGroupUid, String removingUserUid) {
+        Objects.requireNonNull(accountUid);
+        Objects.requireNonNull(paidGroupUid);
+        Objects.requireNonNull(removingUserUid);
 
-        paidGroupRecord.setExpireDateTime(Instant.now());
-        paidGroupRecord.setRemovedByUser(removingUser);
+        // todo : permissions & logs
 
-        account.removePaidGroup(paidGroupRecord);
+        Account account = accountRepository.findOneByUid(accountUid);
+        PaidGroup record = paidGroupRepository.findOneByUid(paidGroupUid);
+        Group group = record.getGroup();
+        User user = userRepository.findOneByUid(removingUserUid);
+
+        record.setExpireDateTime(Instant.now());
+        record.setRemovedByUser(user);
+        account.removePaidGroup(record);
         group.setPaidFor(false);
 
-        paidGroupRepository.save(paidGroupRecord);
-        log.info("PaidGroup entity now ... " + paidGroupRecord);
-        // groupManagementService.saveGroup(group, true,"Remove paid for",removingUser.getId());
-        return accountRepository.save(account);
     }
 
     @Override
-    public List<PaidGroup> getGroupsPaidForByAccount(Account account) {
-        // todo: remove this and just use getGroupsPaidFor
-        return paidGroupRepository.findByAccount(account);
-    }
-
-    @Override
-    public PaidGroup loadPaidGroupEntity(Long paidGroupId) {
-        return paidGroupRepository.findOne(paidGroupId);
-    }
-
-    @Override
-   	@org.springframework.transaction.annotation.Transactional
+   	@Transactional
    	public void sendFreeFormMessage(String userUid, String groupUid, String message) {
-   		// todo: move most of this to AccountManager
    		// for now, just let the notification async handle the group loading etc., here just check the user
    		// has permission (is account admin--later, account admin and it's a paid group, with enough credit
 

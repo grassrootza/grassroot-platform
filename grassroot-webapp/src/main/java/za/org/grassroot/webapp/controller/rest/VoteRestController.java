@@ -97,7 +97,7 @@ public class VoteRestController {
     public ResponseEntity<ResponseWrapper> viewVote(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code,
                                                     @PathVariable("id") String voteUid) {
 
-        User user = userManagementService.loadOrSaveUser(phoneNumber);
+        User user = userManagementService.findByInputNumber(phoneNumber);
         Event event = eventBroker.load(voteUid);
         ResponseTotalsDTO totals = eventLogBroker.getVoteResultsForEvent(event);
         EventWrapper eventWrapper = new EventWrapper(event, user, totals, eventLogRepository);
@@ -125,7 +125,7 @@ public class VoteRestController {
                                                     @PathVariable("code") String code, @PathVariable("id") String voteUid,
                                                     @RequestParam(value = "response", required = true) String response) {
 
-        User user = userManagementService.loadOrSaveUser(phoneNumber);
+        User user = userManagementService.findByInputNumber(phoneNumber);
         Event event = eventBroker.load(voteUid);
         String trimmedResponse = response.toLowerCase().trim();
         // boolean hasVoted = eventLogBroker.hasUserRespondedToEvent(event, user);
@@ -165,7 +165,7 @@ public class VoteRestController {
 
     @RequestMapping(value = "/cancel/{phoneNumber}/{code}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> cancelVote(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code, @RequestParam("uid") String voteUid){
-        User user = userManagementService.loadOrSaveUser(phoneNumber);
+        User user = userManagementService.findByInputNumber(phoneNumber);
         String userUid = user.getUid();
         Event event = eventBroker.load(voteUid);
         ResponseEntity<ResponseWrapper> responseWrapper;

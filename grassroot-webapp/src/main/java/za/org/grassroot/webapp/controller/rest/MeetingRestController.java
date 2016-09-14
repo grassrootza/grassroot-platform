@@ -58,9 +58,6 @@ public class MeetingRestController {
     private PermissionBroker permissionBroker;
 
     @Autowired
-    private EventManagementService eventManagementService; // todo :really need to migrate from this old thing to broker
-
-    @Autowired
     private EventLogRepository eventLogRepository;
 
     @InitBinder
@@ -86,7 +83,7 @@ public class MeetingRestController {
         log.info("REST : received meeting create request... with local date time: {}, and members: {}",
                  eventStartDateTime.toString(), members == null ? "null" : members.toString());
 
-        User user = userManagementService.loadOrSaveUser(phoneNumber);
+        User user = userManagementService.findByInputNumber(phoneNumber);
         Set<String> assignedMemberUids = (members == null) ? new HashSet<>() : members;
         EventReminderType reminderType = reminderMinutes == -1 ? EventReminderType.GROUP_CONFIGURED : EventReminderType.CUSTOM;
 
@@ -129,7 +126,8 @@ public class MeetingRestController {
     public ResponseEntity<ResponseWrapper> rsvp(@PathVariable("phoneNumber") String phoneNumber,
                                                 @PathVariable("code") String code, @PathVariable("id") String meetingUid,
                                                 @RequestParam(value = "response", required = true) String response) {
-        User user = userManagementService.loadOrSaveUser(phoneNumber);
+
+        User user = userManagementService.findByInputNumber(phoneNumber);
         Meeting meeting = eventBroker.loadMeeting(meetingUid);
         String trimmedResponse = response.toLowerCase().trim();
         ResponseEntity<ResponseWrapper> responseWrapper;
@@ -147,7 +145,7 @@ public class MeetingRestController {
 
     @RequestMapping(value = "/view/{id}/{phoneNumber}/{code}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> view(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code, @PathVariable("id") String id) {
-        User user = userManagementService.loadOrSaveUser(phoneNumber);
+        User user = userManagementService.findByInputNumber(phoneNumber);
         Meeting meeting = eventBroker.loadMeeting(id);
         ResponseTotalsDTO totals = eventLogBroker.getResponseCountForEvent(meeting);
         EventWrapper eventWrapper = new EventWrapper(meeting, user, totals, eventLogRepository);
@@ -170,7 +168,7 @@ public class MeetingRestController {
 
         MeetingRsvpsDTO rsvpsDTO;
         if (canViewRsvps) {
-            rsvpsDTO = new MeetingRsvpsDTO(meetingUid, totals, eventManagementService.getRSVPResponses(meeting));
+            rsvpsDTO = new MeetingRsvpsDTO(meetingUid, totals, eventBroker.getRSVPResponses(meeting));
         } else {
             rsvpsDTO = new MeetingRsvpsDTO(meetingUid, totals);
         }
@@ -180,7 +178,7 @@ public class MeetingRestController {
 
     @RequestMapping(value = "/cancel/{phoneNumber}/{code}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> cancelMeeting(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code, @RequestParam("uid") String meetingUid){
-        User user = userManagementService.loadOrSaveUser(phoneNumber);
+        User user = userManagementService.findByInputNumber(phoneNumber);
         String userUid = user.getUid();
         Event event = eventBroker.load(meetingUid);
         ResponseEntity<ResponseWrapper> responseWrapper;

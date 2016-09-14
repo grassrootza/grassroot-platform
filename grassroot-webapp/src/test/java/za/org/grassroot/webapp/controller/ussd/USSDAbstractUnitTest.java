@@ -42,9 +42,6 @@ public abstract class USSDAbstractUnitTest {
     protected GroupBroker groupBrokerMock;
 
     @Mock
-    protected EventManagementService eventManagementServiceMock;
-
-    @Mock
     protected EventLogBroker eventLogBrokerMock;
 
     @Mock

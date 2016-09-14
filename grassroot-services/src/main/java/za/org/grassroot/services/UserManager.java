@@ -3,8 +3,6 @@ package za.org.grassroot.services;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -56,8 +54,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
     private GroupRepository groupRepository;
     @Autowired
     private PasswordTokenService passwordTokenService;
-    @Autowired
-    private EventManagementService eventManagementService;
     @Autowired
     private CacheUtilService cacheUtilService;
     @Autowired
@@ -145,6 +141,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
+    @Transactional
     public User createAndroidUserProfile(UserDTO userDTO) throws UserExistsException {
         Objects.requireNonNull(userDTO);
         User userProfile = new User(userDTO.getPhoneNumber(), userDTO.getDisplayName());
@@ -154,7 +151,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
         if (userExists) {
 
-            User userToUpdate = loadOrSaveUser(phoneNumber);
+            User userToUpdate = userRepository.findByPhoneNumber(phoneNumber);
             if (userToUpdate.hasAndroidProfile() && userToUpdate.getMessagingPreference().equals(UserMessagingPreference.ANDROID_APP)) {
                 log.warn("User already has android profile");
                 throw new UserExistsException("User '" + userProfile.getUsername() + "' already has a android profile!");
@@ -289,23 +286,18 @@ public class UserManager implements UserManagementService, UserDetailsService {
         return user;
     }
 
-    @Override
-    public User save(User userToSave) {
-        return userRepository.save(userToSave);
-    }
-
     /**
      * Creating some functions to internalize conversion of phone numbers and querying
      */
 
     @Override
-    public User loadOrSaveUser(String inputNumber) {
+    public User loadOrCreateUser(String inputNumber) {
         String phoneNumber = PhoneNumberUtil.convertPhoneNumber(inputNumber);
         if (!userExist(phoneNumber)) {
             User sessionUser = new User(phoneNumber);
             sessionUser.setUsername(phoneNumber);
             User newUser = userRepository.save(sessionUser);
-            asyncUserService.recordUserLog(newUser.getUid(), UserLogType.CREATED_IN_DB, "Created via loadOrSaveUser");
+            asyncUserService.recordUserLog(newUser.getUid(), UserLogType.CREATED_IN_DB, "Created via loadOrCreateUser");
             return newUser;
         } else {
             return userRepository.findByPhoneNumber(phoneNumber);
@@ -314,7 +306,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     /*
     Method to load or save a user and store that they have initiated the session. Putting it in services and making it
-    distinct from standard loadOrSaveUser because we may want to optimize it aggressively in future.
+    distinct from standard loadOrCreateUser because we may want to optimize it aggressively in future.
      */
 
     @Override
@@ -340,21 +332,9 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
-    public Page<User> getGroupMembers(Group group, int pageNumber, int pageSize) {
-        return userRepository.findByGroupsPartOf(group, new PageRequest(pageNumber, pageSize));
-    }
-
-    @Override
     public boolean userExist(String phoneNumber) {
         return userRepository.existsByPhoneNumber(phoneNumber);
     }
-
-    @Override
-    public boolean hasAddress(String uid) {
-        User user = userRepository.findOneByUid(uid);
-        return addressRepository.findOneByResident(user) != null;
-    }
-
 
     @Override
     @Transactional
@@ -374,11 +354,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
-    public boolean isPartOfActiveGroups(User user) {
-        return (groupRepository.countByMembershipsUserAndActiveTrue(user) > 0);
-    }
-
-    @Override
     @Transactional(readOnly = true)
     public boolean needsToRenameSelf(User user) {
         return !user.hasName() && (!asyncUserService.hasSkippedName(user.getUid())
@@ -386,32 +361,15 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
-    public boolean needsToRSVP(User sessionUser) {
-        // todo: as noted elsewhere, should optimize this to a count query and move to just event broker
-        return eventManagementService.getOutstandingRSVPForUser(sessionUser).size() > 0;
-    }
-
-    @Override
-    public boolean needsToVote(User sessionUser) {
-        log.info("Checking if vote outstanding for user: " + sessionUser);
-        return eventManagementService.getOutstandingVotesForUser(sessionUser).size() > 0;
-    }
-
-    @Override
-    public boolean needsToRespondToSafetyEvent(User sessionUser) {
-        return safetyEventBroker.getOutstandingUserSafetyEventsResponse(sessionUser.getUid()) != null;
-    }
-
-    @Override
     @Transactional(readOnly = true)
-    public boolean hasIncompleteLogBooks(String userUid, long daysInPast) {
+    public boolean hasIncompleteTodos(String userUid, long daysInPast) {
         // checks for incomplete entries
         User user = userRepository.findOneByUid(userUid);
         Instant start = Instant.now().minus(daysInPast, ChronoUnit.DAYS);
         Instant end = Instant.now();
         List<Todo> todos = todoRepository.findByParentGroupMembershipsUserAndActionByDateBetweenAndCompletionPercentageLessThanAndCancelledFalse(
                 user, start, end, Todo.COMPLETION_PERCENTAGE_BOUNDARY, new Sort(Sort.Direction.DESC, "createdDateTime"));
-        return todos.stream().anyMatch(logBook -> !logBook.isCompletedBy(user));
+        return todos.stream().anyMatch(todo -> !todo.isCompletedBy(user));
     }
 
     /*
@@ -443,7 +401,9 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     @Override
     @Transactional
-    public void setInitiatedSession(User sessionUser) {
+    public void setHasInitiatedUssdSession(String userUid) {
+        User sessionUser = userRepository.findOneByUid(userUid);
+
         sessionUser.setHasInitiatedSession(true);
 
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
@@ -481,6 +441,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
+    @Transactional
     public Group fetchGroupUserMustRename(User user) {
         Group lastCreatedGroup = groupRepository.findFirstByCreatedByUserAndActiveTrueOrderByIdDesc(user);
         if (lastCreatedGroup != null && lastCreatedGroup.isActive() && !lastCreatedGroup.hasName()
@@ -488,17 +449,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
             return lastCreatedGroup;
         else
             return null;
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Set<User> fetchByGroup(String groupUid, boolean includeSubgroups) {
-        Group group = groupRepository.findOneByUid(groupUid);
-        if (includeSubgroups) {
-            return group.getMembersWithChildrenIncluded();
-        } else {
-            return group.getMembers();
-        }
     }
 
     @Override

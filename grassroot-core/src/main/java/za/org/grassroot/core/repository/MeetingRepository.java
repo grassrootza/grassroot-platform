@@ -17,14 +17,16 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
 	Meeting findOneByUid(String uid);
 
     int countByCreatedDateTimeBetween(Instant start, Instant end);
+	int countByParentGroupMembershipsUserAndEventStartDateTimeBetweenAndCanceledFalseOrderByEventStartDateTimeDesc(User user, Instant start, Instant end);
 
 	@Transactional
 	List<Meeting> findByEventStartDateTimeBetweenAndCanceledFalseAndRsvpRequiredTrue(Instant startTimeAfter, Instant startTimeBefore);
 
 	List<Meeting> findByParentGroupAndEventStartDateTimeBetweenAndCanceledFalse(Group group, Instant startDateTime, Instant endDateTime);
 
-	Meeting findOneByCreatedByUserAndParentGroupAndNameAndEventStartDateTimeBetweenAndCanceledFalse(User user, Group group, String name, Instant startDateTime,
-	                                                                                                Instant endDateTime);
+	Page<Meeting> findByParentGroupMembershipsUserAndEventStartDateTimeBetweenAndCanceledFalseOrderByEventStartDateTimeDesc(User user, Instant startTime, Instant endTime, Pageable page);
+
+	Meeting findOneByCreatedByUserAndParentGroupAndNameAndEventStartDateTimeBetweenAndCanceledFalse(User user, Group group, String name, Instant startDateTime, Instant endDateTime);
 
     /**
      * Find meetings for which we should send out response totals (i.e., X said yes, and so forth), being meetings:
@@ -34,17 +36,14 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
      * @return
      */
     @Transactional
-	@Query(value = "SELECT e FROM Event e WHERE e.eventStartDateTime > ?1 AND e.class = 'MEETING' AND e.canceled = FALSE AND (e.createdDateTime BETWEEN ?2 AND ?3) AND (SELECT count(el) FROM EventLog el WHERE el.eventLogType = za.org.grassroot.core.enums.EventLogType.RSVP_TOTAL_MESSAGE AND e = el.event) = 0 ")
+	@Query(value = "SELECT e FROM Event e " +
+			"WHERE e.eventStartDateTime > ?1 " +
+			"AND e.class = 'MEETING' " +
+			"AND e.canceled = FALSE " +
+			"AND (e.createdDateTime BETWEEN ?2 AND ?3) " +
+			"AND (SELECT count(el) FROM EventLog el WHERE el.eventLogType = za.org.grassroot.core.enums.EventLogType.RSVP_TOTAL_MESSAGE " +
+			"AND e = el.event) = 0")
     List<Meeting> meetingsForResponseTotals(Instant startTimeAfter, Instant intervalStart, Instant intervalEnd);
 
-	// todo: consider cleaning these up (seems like possible duplication)
-
-	Page<Meeting> findByParentGroupMembershipsUserAndCanceledOrderByEventStartDateTimeDesc(User user, boolean canceled, Pageable page);
-	Page<Meeting> findByParentGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceledOrderByEventStartDateTimeDesc(User user, Instant startTime, boolean cancelled, Pageable page);
-	Page<Meeting> findByParentGroupMembershipsUserAndEventStartDateTimeLessThanAndCanceledOrderByEventStartDateTimeDesc(User user, Instant startTime, boolean cancelled, Pageable page);
-
-	List<Meeting> findByParentGroupMembershipsUserAndCanceledOrderByEventStartDateTimeDesc(User user, boolean canceled);
-	List<Meeting> findByParentGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceled(User user, Instant startTime, boolean cancelled);
-	List<Meeting> findByParentGroupMembershipsUserAndEventStartDateTimeLessThanAndCanceled(User user, Instant startTime, boolean cancelled);
 
 }

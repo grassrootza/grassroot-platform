@@ -13,9 +13,10 @@ import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.integration.domain.SeloParseDateTimeFailure;
 import za.org.grassroot.integration.services.LearningService;
-import za.org.grassroot.services.EventManagementService;
+import za.org.grassroot.services.EventBroker;
 import za.org.grassroot.services.EventRequestBroker;
 import za.org.grassroot.services.async.AsyncUserLogger;
+import za.org.grassroot.services.enums.EventListTimeType;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 
@@ -43,7 +44,7 @@ public class USSDEventUtil extends USSDUtil {
     private static final Logger log = LoggerFactory.getLogger(USSDEventUtil.class);
 
     @Autowired
-    private EventManagementService eventManager;
+    private EventBroker eventBroker;
 
     @Autowired
     private EventRequestBroker eventRequestBroker;
@@ -75,25 +76,27 @@ public class USSDEventUtil extends USSDUtil {
 
     public USSDMenu listUpcomingEvents(User user, USSDSection section, String prompt, String nextMenu,
                                        boolean includeNewOption, String newMenu, String newOption) {
-        return listPaginatedEvents(user, section, prompt, nextMenu, includeNewOption, newMenu, newOption, true, 1, 0);
+        return listPaginatedEvents(user, section, prompt, nextMenu, includeNewOption, newMenu, newOption, true, EventListTimeType.FUTURE, 0);
     }
 
     public USSDMenu listPriorEvents(User user, USSDSection section, String prompt, String nextUrl, boolean withGroup) {
-        return listPaginatedEvents(user, section, prompt, nextUrl, false, null, null, withGroup, -1, 0);
+        return listPaginatedEvents(user, section, prompt, nextUrl, false, null, null, withGroup, EventListTimeType.PAST, 0);
     }
 
     public USSDMenu listPaginatedEvents(User user, USSDSection section, String prompt, String menuForExisting,
                                         boolean includeNewOption, String menuForNew, String optionTextForNew,
-                                        boolean includeGroupName, int pastPresentBoth, int pageNumber) {
+                                        boolean includeGroupName, EventListTimeType timeType, int pageNumber) {
 
-        Page<Event> events = eventManager.getEventsUserCanView(user, mapSectionType.get(section), pastPresentBoth, pageNumber, pageSize);
+        int timeFlag = EventListTimeType.FUTURE.equals(timeType) ? 1 : -1;
+        Page<Event> events = eventBroker.getEventsUserCanView(user, mapSectionType.get(section), timeType, pageNumber, pageSize);
+
         USSDMenu menu = new USSDMenu(prompt);
         menu = addListOfEventsToMenu(menu, section, menuForExisting, events.getContent(), includeGroupName);
         if (events.hasNext())
-            menu.addMenuOption(paginatedEventUrl(prompt, section, menuForExisting, menuForNew, optionTextForNew, pastPresentBoth,
-                                                 includeGroupName, pageNumber + 1), "More");
+            menu.addMenuOption(paginatedEventUrl(prompt, section, menuForExisting, menuForNew, optionTextForNew, timeFlag,
+                                                 includeGroupName, pageNumber + 1), "More"); // todo : i18n
         if (events.hasPrevious())
-            menu.addMenuOption(paginatedEventUrl(prompt, section, menuForExisting, menuForNew, optionTextForNew, pastPresentBoth,
+            menu.addMenuOption(paginatedEventUrl(prompt, section, menuForExisting, menuForNew, optionTextForNew, timeFlag,
                                                  includeGroupName, pageNumber - 1), "Back");
         if (includeNewOption)
             menu.addMenuOption(section.toPath() + menuForNew, optionTextForNew);

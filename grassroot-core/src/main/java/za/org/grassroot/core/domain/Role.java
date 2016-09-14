@@ -12,12 +12,17 @@ import java.util.Set;
  */
 @Entity
 @Table(name = "role")
-public class Role extends BaseEntity implements GrantedAuthority, Comparable<Role> {
+public class Role implements GrantedAuthority, Comparable<Role> {
 
     public enum RoleType {
         STANDARD,
         GROUP
     }
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column( name = "id")
+    protected Long id;
 
     @Column(name = "role_name", nullable = false, length = 50)
     private String name;
@@ -43,6 +48,10 @@ public class Role extends BaseEntity implements GrantedAuthority, Comparable<Rol
         this.name = Objects.requireNonNull(name);
         this.roleType = groupUid == null ? RoleType.STANDARD : RoleType.GROUP;
         this.groupUid = groupUid;
+    }
+
+    public Long getId() {
+        return id;
     }
 
     public String getName() {

@@ -5,7 +5,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.MessageSource;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.services.*;
+import za.org.grassroot.services.EventBroker;
+import za.org.grassroot.services.GroupBroker;
+import za.org.grassroot.services.GroupJoinRequestService;
+import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.util.CacheUtilService;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
@@ -39,6 +42,7 @@ public class USSDController {
             groupMenus = "group/",
             voteMenus = "vote/",
             todoMenus = "todo/",
+            safetyMenus = "safety/",
             U404= "error";
     // referencing these from the Util class so can be common across tests etc, but stating here so not cumbersome in sub-classes
     protected static final String
@@ -63,7 +67,8 @@ public class USSDController {
             userKey = USSDSection.USER_PROFILE.toString(),
             groupKey = USSDSection.GROUP_MANAGER.toString(),
             voteKey = USSDSection.VOTES.toString(),
-            logKey = USSDSection.TODO.toString();
+            logKey = USSDSection.TODO.toString(),
+            safetyKey = USSDSection.SAFETY_GROUP_MANAGER.toString();
     protected static final String
             promptKey = "prompt",
             errorPromptKey = "prompt.error",
@@ -71,7 +76,6 @@ public class USSDController {
 
     protected static final DateTimeFormatter dateTimeFormat = DateTimeFormatter.ofPattern("EEE d MMM, h:mm a");
     protected static final DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("EEE d MMM");
-    protected static final DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern("h:mm a");
 
     protected Request tooLongError = new Request("Error! Menu is too long.", new ArrayList<>());
     protected Request noUserError = new Request("Error! Couldn't find you as a user.", new ArrayList<>());
@@ -89,8 +93,6 @@ public class USSDController {
     protected GroupBroker groupBroker;
     @Autowired
     protected EventBroker eventBroker;
-    @Autowired
-    protected EventManagementService eventManager;
     @Autowired
     protected CacheUtilService cacheManager;
     @Autowired
@@ -123,11 +125,9 @@ public class USSDController {
         return ussdMenuUtil.menuBuilder(ussdMenu, isFirstMenu);
     }
 
-
     /**
      * Some default menu returns and some frequently used sets of menu options
      */
-
 
     protected Map<String, String> optionsHomeExit(User sessionUser) {
         return ImmutableMap.<String, String>builder().
@@ -180,9 +180,8 @@ public class USSDController {
         return messageSource.getMessage("ussd." + messageKey, null, new Locale(language));
     }
 
-    // todo move this somewhere else, and/or clean up nullability in User class, but if put it there, confuses Hibernate (wants a setter)
+    // provides a null safe helper method to get language code from user
     private String getLanguage(User user) {
-        // todo some validation on the locale code, above just checking it's not null
         return (user.getLanguageCode() == null) ? Locale.US.getLanguage(): user.getLanguageCode();
     }
 

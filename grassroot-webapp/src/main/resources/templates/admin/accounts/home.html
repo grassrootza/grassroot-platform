@@ -3,11 +3,6 @@
       layout:decorator="layout">
 <head>
   <title>Grassroot - Manage institutional accounts</title>
-<script>
-
-
-
-</script>
 </head>
 <body>
 
@@ -31,7 +26,7 @@
           <tbody>
             <tr th:each="account : ${accounts}">
               <td>
-                <a href="" th:href="@{view(accountId=${account.id})}"><span th:text="${account.accountName}">Account name</span></a>
+                <a href="" th:href="@{view(accountUid=${account.uid})}"><span th:text="${account.accountName}">Account name</span></a>
               </td>
               <td><span th:text="${account.primaryEmail}">Email address</span></td>
               <td><span th:text="${account.enabled}">True</span></td>

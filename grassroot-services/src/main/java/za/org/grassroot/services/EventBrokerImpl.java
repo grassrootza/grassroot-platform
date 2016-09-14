@@ -3,6 +3,9 @@ package za.org.grassroot.services;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +17,8 @@ import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.MeetingImportance;
 import za.org.grassroot.core.repository.*;
+import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.services.enums.EventListTimeType;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.services.util.CacheUtilService;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
@@ -22,10 +27,8 @@ import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static za.org.grassroot.core.domain.EventReminderType.CUSTOM;
@@ -49,6 +52,8 @@ public class EventBrokerImpl implements EventBroker {
 	private UidIdentifiableRepository uidIdentifiableRepository;
 	@Autowired
 	private UserRepository userRepository;
+	@Autowired
+	private GroupRepository groupRepository;
 	@Autowired
 	private PermissionBroker permissionBroker;
 
@@ -179,6 +184,11 @@ public class EventBrokerImpl implements EventBroker {
             throw new IllegalStateException("Meeting is canceled: " + meeting);
         }
 
+		if (!meeting.getCreatedByUser().equals(user) ||
+				permissionBroker.isGroupPermissionAvailable(user, meeting.getAncestorGroup(), Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS)) {
+			throw new AccessDeniedException("Error! Only meeting caller or group organizer can change meeting");
+		}
+
         Instant convertedStartDateTime = convertToSystemTime(eventStartDateTime, getSAST());
         boolean startTimeChanged = !convertedStartDateTime.equals(meeting.getEventStartDateTime());
         if (startTimeChanged) {
@@ -217,6 +227,11 @@ public class EventBrokerImpl implements EventBroker {
 
 		if (meeting.isCanceled()) {
 			throw new IllegalStateException("Meeting is canceled: " + meeting);
+		}
+
+		if (!meeting.getCreatedByUser().equals(user) ||
+				permissionBroker.isGroupPermissionAvailable(user, meeting.getAncestorGroup(), Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS)) {
+			throw new AccessDeniedException("Error! Only meeting caller or group organizer can change meeting");
 		}
 
 		Instant convertedStartDateTime = convertToSystemTime(eventStartDateTime, getSAST());
@@ -391,6 +406,11 @@ public class EventBrokerImpl implements EventBroker {
 
 		if (event.isCanceled()) {
 			throw new IllegalStateException("Event is already canceled: " + event);
+		}
+
+		// cancelling has higher permission threshold than changing...only person who called event can do it
+		if (!event.getCreatedByUser().equals(user)) {
+			throw new AccessDeniedException("Error! Only event caller can cancel event");
 		}
 
 		event.setCanceled(true);
@@ -649,4 +669,144 @@ public class EventBrokerImpl implements EventBroker {
 
 		event.removeAssignedMembers(memberUids);
 	}
+
+	/*
+	SECTION starts here for reading & retrieving user events
+	 */
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<Event> getOutstandingResponseForUser(User user, EventType eventType) {
+		logger.debug("getOutstandingResponseForUser..." + user.getPhoneNumber() + "...type..." + eventType.toString());
+		List<Event> outstandingRSVPs = cacheUtilService.getOutstandingResponseForUser(user, eventType);
+
+		if (outstandingRSVPs == null) {
+			Map<Long, Long> eventMap = new HashMap<>();
+			outstandingRSVPs = new ArrayList<>();
+			List<Group> groups = groupRepository.findByMembershipsUserAndActiveTrue(user);
+			logger.debug("getOutstandingResponseForUser...after...getGroupsPartOf...");
+
+			// major todo: must be a more elegant way to do this, e.g., via a single query
+			if (groups != null) {
+				logger.debug("getOutstandingResponseForUser...number of groups..." + groups.size());
+				for (Group group : groups) {
+					Predicate<Event> filter = event -> event.isRsvpRequired() && event.getEventType() == eventType
+							&& ((eventType == EventType.MEETING && event.getCreatedByUser().getId() != user.getId()) || eventType != EventType.MEETING);
+					Set<Event> upcomingEvents = group.getUpcomingEventsIncludingParents(filter);
+
+					for (Event event : upcomingEvents) {
+						//N.B. remove this if statement if you want to allow votes for people that joined the group late
+						if (eventType == EventType.VOTE) {
+							Membership membership = group.getMembership(user);
+							if (membership != null && membership.getJoinTime().isAfter(event.getCreatedDateTime())) {
+								logger.info(String.format("Excluding vote %s for %s as the user joined group %s after the vote was called", event.getName(), user.getPhoneNumber(), group.getId()));
+								continue;
+							}
+						}
+
+						if (!eventLogBroker.hasUserRespondedToEvent(event, user)) {
+							//see if we added it already as the user can be in multiple groups in a group structure
+							if (eventMap.get(event.getId()) == null) {
+								outstandingRSVPs.add(event);
+								eventMap.put(event.getId(), event.getId());
+							}
+						}
+					}
+
+				}
+				cacheUtilService.putOutstandingResponseForUser(user, eventType, outstandingRSVPs);
+			}
+		}
+
+		return outstandingRSVPs;
+	}
+
+	@Override
+	public boolean userHasResponsesOutstanding(User user, EventType eventType) {
+		// todo : replace with a quick count query
+		return !getOutstandingResponseForUser(user, eventType).isEmpty();
+	}
+
+
+	@Override
+	@Transactional(readOnly = true)
+	public EventListTimeType userHasEventsToView(User user, EventType type) {
+		boolean pastEvents = userHasEventsToView(user, type, EventListTimeType.PAST);
+		boolean futureEvents = userHasEventsToView(user, type, EventListTimeType.FUTURE);
+		return (pastEvents && futureEvents) ? EventListTimeType.BOTH
+				: pastEvents ? EventListTimeType.PAST
+				: futureEvents ? EventListTimeType.FUTURE
+				: EventListTimeType.NONE;
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public boolean userHasEventsToView(User user, EventType type, EventListTimeType timeType) {
+		Instant startTime = timeType.equals(EventListTimeType.FUTURE) ? Instant.now() : DateTimeUtil.getEarliestInstant();
+		Instant endTime = timeType.equals(EventListTimeType.PAST) ? Instant.now() : DateTimeUtil.getVeryLongAwayInstant();
+		return type.equals(EventType.MEETING) ?
+				meetingRepository.countByParentGroupMembershipsUserAndEventStartDateTimeBetweenAndCanceledFalseOrderByEventStartDateTimeDesc(user, startTime, endTime) > 0 :
+				voteRepository.countByParentGroupMembershipsUserAndEventStartDateTimeBetweenAndCanceledFalseOrderByEventStartDateTimeDesc(user, startTime, endTime) > 0;
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public Map<User, EventRSVPResponse> getRSVPResponses(Event event) {
+		Map<User, EventRSVPResponse> rsvpResponses = new LinkedHashMap<>();
+
+		List<User> usersAnsweredYes = userRepository.findUsersThatRSVPYesForEvent(event);
+		List<User> usersAnsweredNo = userRepository.findUsersThatRSVPNoForEvent(event);
+
+		@SuppressWarnings("unchecked") // someting stange with getAllMembers and <user> creates an unchecked warning here (hence suppressing)
+				Set<User> users = new HashSet<>(event.getAllMembers());
+		users.stream().forEach(u -> rsvpResponses.put(u, usersAnsweredYes.contains(u) ? EventRSVPResponse.YES :
+						usersAnsweredNo.contains(u) ? EventRSVPResponse.NO : EventRSVPResponse.NO_RESPONSE));
+
+		logger.info("worked through stream of {} users, got back a map of size {}", users.size(), rsvpResponses.size());
+
+		return rsvpResponses;
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	@SuppressWarnings("unchecked") // given the conversion to page, this is otherwise spurious
+	public Page<Event> getEventsUserCanView(User user, EventType eventType, EventListTimeType timeType, int pageNumber, int pageSize) {
+		Instant startTime = !timeType.equals(EventListTimeType.FUTURE) ? DateTimeUtil.getEarliestInstant() : Instant.now();
+		Instant endTime = !timeType.equals(EventListTimeType.PAST) ? DateTimeUtil.getVeryLongAwayInstant() : Instant.now();
+		return (eventType.equals(EventType.MEETING)) ?
+				(Page) meetingRepository.findByParentGroupMembershipsUserAndEventStartDateTimeBetweenAndCanceledFalseOrderByEventStartDateTimeDesc(user, startTime, endTime,
+						new PageRequest(pageNumber, pageSize)) :
+				(Page) voteRepository.findByParentGroupMembershipsUserAndEventStartDateTimeBetweenAndCanceledFalseOrderByEventStartDateTimeDesc(user, startTime, endTime,
+						new PageRequest(pageNumber, pageSize));
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public Event getMostRecentEvent(String groupUid) {
+		Group group = groupRepository.findOneByUid(groupUid);
+		return eventRepository.findTopByParentGroupAndEventStartDateTimeNotNullOrderByEventStartDateTimeDesc(group);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	@SuppressWarnings("unchecked")
+	public List<Event> retrieveGroupEvents(Group group, EventType eventType, Instant periodStart, Instant periodEnd) {
+		List<Event> events;
+		Sort sort = new Sort(Sort.Direction.ASC, "EventStartDateTime");
+		Instant beginning = (periodStart == null) ? group.getCreatedDateTime() : periodStart;
+		Instant end = (periodEnd == null) ? DateTimeUtil.getVeryLongAwayInstant() : periodEnd;
+
+		if (eventType == null) {
+			events = eventRepository.findByParentGroupAndEventStartDateTimeBetweenAndCanceledFalse(group, beginning, end, sort);
+		} else {
+			events = eventType.equals(EventType.MEETING) ?
+					(List) meetingRepository.findByParentGroupAndEventStartDateTimeBetweenAndCanceledFalse(group, beginning, end) :
+					(List) voteRepository.findByParentGroupAndEventStartDateTimeBetweenAndCanceledFalse(group, beginning, end);
+		}
+
+		return events;
+	}
+
+
+
 }

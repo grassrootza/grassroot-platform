@@ -4,6 +4,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.core.env.Environment;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -15,14 +18,10 @@ import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.GroupLocation;
 import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
 import za.org.grassroot.core.domain.notification.EventInfoNotification;
-import za.org.grassroot.core.dto.GroupDTO;
 import za.org.grassroot.core.dto.GroupTreeDTO;
 import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
-import za.org.grassroot.integration.services.GcmManager;
-import za.org.grassroot.integration.services.GcmService;
-import za.org.grassroot.integration.services.MessengerSettingsService;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.services.exception.GroupDeactivationNotAvailableException;
 import za.org.grassroot.services.exception.InvalidTokenException;
@@ -33,8 +32,10 @@ import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 import za.org.grassroot.services.util.TokenGeneratorService;
 
-import java.io.IOException;
-import java.time.*;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -53,15 +54,14 @@ public class GroupBrokerImpl implements GroupBroker {
     private final Logger logger = LoggerFactory.getLogger(GroupBrokerImpl.class);
 
     @Autowired
+    private Environment environment;
+
+    @Autowired
     private GroupRepository groupRepository;
     @Autowired
     private UserRepository userRepository;
     @Autowired
     private EventRepository eventRepository;
-    @Autowired
-    private MeetingRepository meetingRepository;
-    @Autowired
-    private VoteRepository voteRepository;
     @Autowired
     private GroupLogRepository groupLogRepository;
 
@@ -80,15 +80,7 @@ public class GroupBrokerImpl implements GroupBroker {
     @Autowired
     private GroupLocationRepository groupLocationRepository;
     @Autowired
-    private EventManagementService eventManagementService;
-    @Autowired
     private EventLogRepository eventLogRepository;
-
-    @Autowired
-    private GcmService gcmService;
-
-    @Autowired
-    private MessengerSettingsService messengerSettingsService;
 
     @Override
     @Transactional(readOnly = true)
@@ -106,14 +98,14 @@ public class GroupBrokerImpl implements GroupBroker {
     @Override
     @Transactional(readOnly = true)
     public List<Group> searchUsersGroups(String userUid, String searchTerm) {
-        Objects.requireNonNull(userUid);
-        Objects.requireNonNull(searchTerm);
+	    Objects.requireNonNull(userUid);
+	    Objects.requireNonNull(searchTerm);
 
-        if (searchTerm.trim().isEmpty()) {
-            throw new IllegalArgumentException("Error, cannot search for blank term");
-        }
+	    if (searchTerm.trim().isEmpty()) {
+		    throw new IllegalArgumentException("Error, cannot search for blank term");
+	    }
 
-        User user = userRepository.findOneByUid(userUid);
+	    User user = userRepository.findOneByUid(userUid);
         String tsQuery = FullTextSearchUtils.encodeAsTsQueryText(searchTerm);
         return groupRepository.findByActiveAndMembershipsUserWithNameContainsText(user.getId(), tsQuery);
     }
@@ -162,19 +154,6 @@ public class GroupBrokerImpl implements GroupBroker {
 
         permissionBroker.setRolePermissionsFromTemplate(group, groupPermissionTemplate);
         group = groupRepository.save(group);
-
-        List<String> registrationIds = new ArrayList<>();
-        for (Membership membership : group.getMemberships()) {
-            if (gcmService.hasGcmKey(membership.getUser())) {
-                messengerSettingsService.createUserGroupMessagingSetting(membership.getUser().getUid(), group.getUid(), true, true, true);
-                registrationIds.add(gcmService.getGcmKey(membership.getUser()));
-            }
-        }
-        try {
-            gcmService.batchAddUsersToTopic(registrationIds, group.getUid());
-        } catch (Exception e) {
-
-        }
 
         logger.info("Group created under UID {}", group.getUid());
 
@@ -228,17 +207,16 @@ public class GroupBrokerImpl implements GroupBroker {
     @Override
     @Transactional(readOnly = true)
     public boolean isDeactivationAvailable(User user, Group group, boolean checkIfWithinTimeWindow) {
-        // todo: Integrate with permission checking -- for now, just checking if group created by user in last 48 hours
-        //todo check with luke if this permission applies or maybe add a new permission for group deletion
         permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
         boolean isUserGroupCreator = group.getCreatedByUser().equals(user);
         if (!checkIfWithinTimeWindow) {
             return isUserGroupCreator;
         } else {
-            Instant deactivationTimeThreshold = group.getCreatedDateTime().plus(Duration.ofHours(48));
+            Integer timeWindow = environment.getProperty("grassroot.groups.delete.window", Integer.class);
+            Instant deactivationTimeThreshold = group.getCreatedDateTime().plus(Duration.ofHours(timeWindow == null ? 48 : timeWindow));
             boolean isGroupMalformed = (group.getGroupName() == null || group.getGroupName().length() < 2)
-                    && group.getMembers().size() <= 2;
-            return isUserGroupCreator && (isGroupMalformed || Instant.now().isBefore(deactivationTimeThreshold));
+		            && group.getMembers().size() <= 2;
+	        return isUserGroupCreator && (isGroupMalformed || Instant.now().isBefore(deactivationTimeThreshold));
         }
     }
 
@@ -294,17 +272,7 @@ public class GroupBrokerImpl implements GroupBroker {
         try {
             LogsAndNotificationsBundle bundle = addMemberships(user, group, membershipInfos, false);
             logsAndNotificationsBroker.storeBundle(bundle);
-
-            List<String> registrationIds = new ArrayList<>();
-            for (Membership membership : group.getMemberships()) {
-                if (gcmService.hasGcmKey(membership.getUser())) {
-                    messengerSettingsService.createUserGroupMessagingSetting(membership.getUser().getUid(), group.getUid(), true, true, true);
-                    registrationIds.add(gcmService.getGcmKey(membership.getUser()));
-                }
-             }
-            gcmService.batchAddUsersToTopic(registrationIds, group.getUid());
-
-        } catch (IOException| InvalidPhoneNumberException e) {
+        } catch (InvalidPhoneNumberException e) {
             logger.info("Error! Invalid phone number : " + e.getMessage());
         }
     }
@@ -320,7 +288,7 @@ public class GroupBrokerImpl implements GroupBroker {
         logger.info("Adding a member via token code: group={}, user={}, code={}", group, user, tokenPassed);
         group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER);
         GroupLog groupLog = new GroupLog(group, user, GroupLogType.GROUP_MEMBER_ADDED_VIA_JOIN_CODE, user.getId(),
-                "Member joined via join code: " + tokenPassed);
+                                    "Member joined via join code: " + tokenPassed);
         logActionLogsAfterCommit(Collections.singleton(groupLog));
     }
 
@@ -336,8 +304,8 @@ public class GroupBrokerImpl implements GroupBroker {
             for (Group group : groupsWhereJoinCodeUsed) {
                 List<String> joinedUserDescriptions;
                 List<GroupLog> groupLogs = groupLogRepository.findByGroupAndGroupLogTypeAndCreatedDateTimeBetween(group,
-                        GroupLogType.GROUP_MEMBER_ADDED_VIA_JOIN_CODE,
-                        periodStart, periodEnd);
+                                                                              GroupLogType.GROUP_MEMBER_ADDED_VIA_JOIN_CODE,
+                                                                              periodStart, periodEnd);
                 Set<User> organizers = group.getMemberships().stream() // consider adding a getOrganizers method to group
                         .filter(m -> m.getRole().getName().equals(BaseRoles.ROLE_GROUP_ORGANIZER))
                         .map(m -> m.getUser())
@@ -400,15 +368,12 @@ public class GroupBrokerImpl implements GroupBroker {
         userRepository.save(createdUsers);
         userRepository.flush();
 
-
         // adding action logs and event notifications ...
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
         for (User createdUser : createdUsers) {
             bundle.addLog(new UserLog(createdUser.getUid(), UserLogType.CREATED_IN_DB, String.format("Created by being added to group with ID: %s", group.getUid()), UNKNOWN));
         }
-
-
 
         @SuppressWarnings("unchecked")
         Set<Meeting> meetings = (Set) group.getUpcomingEventsIncludingParents(event -> event.getEventType().equals(EventType.MEETING));
@@ -577,6 +542,8 @@ public class GroupBrokerImpl implements GroupBroker {
         logsAndNotificationsBroker.storeBundle(bundle);
     }
 
+    @Override
+    @Transactional
     public Group merge(String userUid, String firstGroupUid, String secondGroupUid,
                        boolean leaveActive, boolean orderSpecified, boolean createNew, String newGroupName) {
         Objects.requireNonNull(userUid);
@@ -584,6 +551,7 @@ public class GroupBrokerImpl implements GroupBroker {
         Objects.requireNonNull(secondGroupUid);
 
         User user = userRepository.findOneByUid(userUid);
+
         Group firstGroup = groupRepository.findOneByUid(firstGroupUid);
         Group secondGroup = groupRepository.findOneByUid(secondGroupUid);
 
@@ -597,6 +565,11 @@ public class GroupBrokerImpl implements GroupBroker {
         } else {
             groupInto = secondGroup;
             groupFrom = firstGroup;
+        }
+
+        permissionBroker.validateGroupPermission(user, groupInto, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER);
+        if (!leaveActive) {
+            permissionBroker.validateGroupPermission(user, groupFrom, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
         }
 
         Group resultGroup;
@@ -623,8 +596,6 @@ public class GroupBrokerImpl implements GroupBroker {
         }
 
         logger.info("Group from active status is now : {}", groupFrom.isActive());
-        groupRepository.saveAndFlush(groupFrom);
-
         return resultGroup;
     }
 
@@ -676,9 +647,9 @@ public class GroupBrokerImpl implements GroupBroker {
         Set<Permission> updatedPermissions = new HashSet<>(roleToUpdate.getPermissions());
         updatedPermissions.removeAll(permissionsToRemove);
         updatedPermissions.addAll(permissionsToAdd);
-        if (roleName.equals(BaseRoles.ROLE_GROUP_ORGANIZER)) {
-            updatedPermissions.addAll(permissionBroker.getProtectedOrganizerPermissions());
-        }
+	    if (roleName.equals(BaseRoles.ROLE_GROUP_ORGANIZER)) {
+		    updatedPermissions.addAll(permissionBroker.getProtectedOrganizerPermissions());
+	    }
 
         roleToUpdate.setPermissions(updatedPermissions);
 
@@ -764,7 +735,7 @@ public class GroupBrokerImpl implements GroupBroker {
         group.setReminderMinutes(reminderMinutes);
         String logMessage = String.format("Changed reminder default to %d minutes", reminderMinutes);
         logActionLogsAfterCommit(Collections.singleton(new GroupLog(group, user,
-                GroupLogType.REMINDER_DEFAULT_CHANGED, 0L, logMessage)));
+                                                                     GroupLogType.REMINDER_DEFAULT_CHANGED, 0L, logMessage)));
     }
 
     @Override
@@ -774,7 +745,7 @@ public class GroupBrokerImpl implements GroupBroker {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(groupUid);
 
-        Group group = load(groupUid);
+        Group group = load(groupUid);;
         User user = userRepository.findOneByUid(userUid);
 
         // since this might be called from a parent, via recursion, on which this will throw an error, rather catch & throw
@@ -796,14 +767,14 @@ public class GroupBrokerImpl implements GroupBroker {
 
         if (includeSubGroups) {
             List<Group> subGroups = new ArrayList<>(groupRepository.findByParentAndActiveTrue(group));
-            if (!subGroups.isEmpty()) {
+            if (subGroups != null && !subGroups.isEmpty()) {
                 for (Group subGroup : subGroups)
                     updateGroupDefaultLanguage(userUid, subGroup.getUid(), newLocale, true);
             }
         }
 
         logActionLogsAfterCommit(Collections.singleton(new GroupLog(group, user, GroupLogType.LANGUAGE_CHANGED,
-                0L, String.format("Set default language to %s", newLocale))));
+                                                                     0L, String.format("Set default language to %s", newLocale))));
 
     }
 
@@ -1043,7 +1014,6 @@ public class GroupBrokerImpl implements GroupBroker {
         return list;
     }
 
-    // todo: make sure this isn't too expensive ... the checking function might be
     @Override
     @Transactional(readOnly = true)
     public Set<Group> possibleParents(String userUid, String groupUid) {
@@ -1053,7 +1023,7 @@ public class GroupBrokerImpl implements GroupBroker {
         User user = userRepository.findOneByUid(userUid);
         Group groupToMakeChild = groupRepository.findOneByUid(groupUid);
 
-        Set<Group> groupsWithPermission = permissionBroker.getActiveGroupsWithPermission(user, Permission.GROUP_PERMISSION_CREATE_SUBGROUP);
+        Set<Group> groupsWithPermission = permissionBroker.getActiveGroupsWithPermission(user,Permission.GROUP_PERMISSION_CREATE_SUBGROUP);
         groupsWithPermission.remove(groupToMakeChild);
 
         return groupsWithPermission.stream().filter(g -> !isGroupAlsoParent(groupToMakeChild, g)).collect(Collectors.toSet());
@@ -1090,8 +1060,8 @@ public class GroupBrokerImpl implements GroupBroker {
         Group group = groupRepository.findOneByUid(groupUid);
 
         permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
-        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER);
 
+        // todo: may want to check for both update and add members ...
         Set<Group> otherGroups = permissionBroker.getActiveGroupsWithPermission(user, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
         otherGroups.remove(group);
         return otherGroups;
@@ -1110,7 +1080,7 @@ public class GroupBrokerImpl implements GroupBroker {
     private void recursiveParentGroups(Group childGroup, List<Group> parentGroups) {
         parentGroups.add(childGroup);
         if (childGroup.getParent() != null && childGroup.getParent().getId() != 0) {
-            recursiveParentGroups(childGroup.getParent(), parentGroups);
+            recursiveParentGroups(childGroup.getParent(),parentGroups);
         }
     }
 
@@ -1161,40 +1131,7 @@ public class GroupBrokerImpl implements GroupBroker {
     public List<GroupLog> getLogsForGroup(Group group, LocalDateTime periodStart, LocalDateTime periodEnd) {
         Sort sort = new Sort(Sort.Direction.ASC, "CreatedDateTime");
         return groupLogRepository.findByGroupAndCreatedDateTimeBetween(group, convertToSystemTime(periodStart, getSAST()),
-                convertToSystemTime(periodEnd, getSAST()), sort);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<Event> retrieveGroupEvents(Group group, EventType eventType, Instant periodStart, Instant periodEnd) {
-        List<Event> events;
-        Sort sort = new Sort(Sort.Direction.ASC, "EventStartDateTime");
-        Instant beginning, end;
-        if (periodStart == null && periodEnd == null) {
-            beginning = group.getCreatedDateTime();
-            end = convertToSystemTime(getVeryLongTimeAway(), getSAST());
-        } else if (periodStart == null) { // since first condition is false, means period end is not null
-            beginning = group.getCreatedDateTime();
-            end = periodEnd;
-        } else if (periodEnd == null) { // since first & second conditions false, means period start is not null
-            beginning = periodStart;
-            end = getVeryLongTimeAway().toInstant(ZoneOffset.UTC);
-        } else {
-            beginning = periodStart;
-            end = periodEnd;
-        }
-
-        if (eventType == null) {
-            events = eventRepository.findByParentGroupAndEventStartDateTimeBetweenAndCanceledFalse(group, beginning, end, sort);
-        } else if (eventType.equals(EventType.MEETING)) {
-            events = (List) meetingRepository.findByParentGroupAndEventStartDateTimeBetweenAndCanceledFalse(group, beginning, end);
-        } else if (eventType.equals(EventType.VOTE)) {
-            events = (List) voteRepository.findByParentGroupAndEventStartDateTimeBetweenAndCanceledFalse(group, beginning, end);
-        } else {
-            events = eventRepository.findByParentGroupAndEventStartDateTimeBetweenAndCanceledFalse(group, beginning, end, sort);
-        }
-
-        return events;
+                                                                         convertToSystemTime(periodEnd, getSAST()), sort);
     }
 
     @Override
@@ -1232,8 +1169,7 @@ public class GroupBrokerImpl implements GroupBroker {
         group.setImage(image);
         group.setImageUrl(imageUrl);
 
-        GroupLog groupLog = new GroupLog(group, user, GroupLogType.GROUP_AVATAR_UPLOADED, group.getId(),
-                "Group avatar uploaded");
+        GroupLog groupLog = new GroupLog(group, user, GroupLogType.GROUP_AVATAR_UPLOADED, group.getId(), "Group avatar uploaded");
         logActionLogsAfterCommit(Collections.singleton(groupLog));
 
     }
@@ -1267,23 +1203,21 @@ public class GroupBrokerImpl implements GroupBroker {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public List<Group> fetchGroupsWithOneCharNames(User user, int sizeThreshold) {
+	@Transactional(readOnly = true)
+	public List<Group> fetchGroupsWithOneCharNames(User user, int sizeThreshold) {
         //for now limiting this to only groups created by the user
-        List<Group> candidateGroups = new ArrayList<>(groupRepository.findActiveGroupsWithNamesLessThanOneCharacter(user));
-        return candidateGroups.stream()
-                .filter(group -> group.getMembers().size() <= sizeThreshold)
-                .sorted(Collections.reverseOrder())
-                .collect(Collectors.toList());
+		List<Group> candidateGroups = new ArrayList<>(groupRepository.findActiveGroupsWithNamesLessThanOneCharacter(user));
+		return candidateGroups.stream()
+				.filter(group -> group.getMembers().size() <= sizeThreshold)
+				.sorted(Collections.reverseOrder())
+				.collect(Collectors.toList());
     }
 
     @Override
-    public List<GroupDTO> fetchUserCreatedGroups(User user) {
+    @Transactional(readOnly = true)
+    public Page<Group> fetchUserCreatedGroups(User user, int pageNumber, int pageSize) {
         Objects.nonNull(user);
-        List<Group> groups = groupRepository.findByMembershipsUserAndActiveTrue(user);
-        return groups.stream().filter(group -> group.getCreatedByUser().equals(user))
-                .map(GroupDTO::new).collect(Collectors.toList());
-
+        return groupRepository.findByCreatedByUserAndActiveTrueOrderByCreatedDateTimeDesc(user, new PageRequest(pageNumber, pageSize));
     }
 
     @Override
@@ -1316,17 +1250,17 @@ public class GroupBrokerImpl implements GroupBroker {
             return true;
         }
 
-        Event mostRecentEvent = eventManagementService.getMostRecentEvent(group);
+        Event mostRecentEvent = eventRepository.findTopByParentGroupAndEventStartDateTimeNotNullOrderByEventStartDateTimeDesc(group);
         if (mostRecentEvent != null) {
             if (mostRecentEvent.getCreatedDateTime().isAfter(changedSince)) {
-                return true;
-            }
+				return true;
+			}
 
             // if most recent event is created before last time user checked this group, then we check if this event has been changed after this last time
             EventLog lastChangeEventLog = eventLogRepository.findFirstByEventAndEventLogTypeOrderByCreatedDateTimeDesc(mostRecentEvent, EventLogType.CHANGE);
             if (lastChangeEventLog != null && lastChangeEventLog.getCreatedDateTime().isAfter(changedSince)) {
-                return true;
-            }
+				return true;
+			}
         }
 
         return false;

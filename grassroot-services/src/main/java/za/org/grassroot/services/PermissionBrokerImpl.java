@@ -7,13 +7,13 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.dto.GroupDTO;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.RoleRepository;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 
+import javax.persistence.EntityManager;
+import javax.persistence.Query;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 public class PermissionBrokerImpl implements PermissionBroker {
@@ -25,6 +25,9 @@ public class PermissionBrokerImpl implements PermissionBroker {
 
     @Autowired
     private RoleRepository roleRepository;
+
+    @Autowired
+    private EntityManager entityManager;
 
     // major todo: externalize these permissions
 
@@ -102,6 +105,26 @@ public class PermissionBrokerImpl implements PermissionBroker {
         return java.util.Collections.unmodifiableSet(set);
     }
 
+    private Query fetchGroupsWithPermission(User user, Permission permission) {
+        return entityManager.createNativeQuery("select group_profile.*, greatest(latest_group_change, latest_event) as latest_activity from group_profile " +
+                "inner join group_user_membership as membership on (group_profile.id = membership.group_id and group_profile.active = true and membership.user_id = :user) " +
+                "left outer join (select group_id, max(created_date_time) as latest_group_change from group_log group by group_id) as group_log on (group_log.group_id = group_profile.id) " +
+                "left outer join (select parent_group_id, max(created_date_time) as latest_event from event group by parent_group_id) as event on (event.parent_group_id = group_profile.id) " +
+                "where group_profile.active = true " +
+                "and :permission in (select permission from role_permissions where role_id = membership.role_id) " +
+                "order by latest_activity desc", Group.class)
+                .setParameter("user", user.getId())
+                .setParameter("permission", permission.getName());
+    }
+
+    private Query fetchAllGroupsSortedForUser(User user) {
+        return entityManager.createNativeQuery("SELECT group_profile.*, greatest(latest_group_change, latest_event) as latest_activity from group_profile " +
+                "inner join group_user_membership as membership on (group_profile.id = membership.group_id and group_profile.active=true and membership.user_id= :user) " +
+                "left outer join (select group_id, max(created_date_time) as latest_group_change from group_log group by group_id) as group_log on (group_log.group_id=group_profile.id) " +
+                "left outer join (select parent_group_id, max(created_date_time) as latest_event from event group by parent_group_id) as event on (event.parent_group_id=group_profile.id) " +
+                "order by latest_activity desc", Group.class)
+                .setParameter("user", user.getId());
+    }
 
     @Override
     public void setRolePermissionsFromTemplate(Group group, GroupPermissionTemplate template) {
@@ -143,59 +166,46 @@ public class PermissionBrokerImpl implements PermissionBroker {
 
     @Override
     @Transactional(readOnly = true)
+    @SuppressWarnings("unchecked")
     public Set<Group> getActiveGroupsWithPermission(User user, Permission requiredPermission) {
         Objects.requireNonNull(user, "User cannot be null");
-        List<Group> activeGroups = groupRepository.findByMembershipsUserAndActiveTrue(user);
-        return activeGroups.stream()
-                .filter(group -> requiredPermission == null || isGroupPermissionAvailable(user, group, requiredPermission))
-                .collect(Collectors.toSet());
+        Query resultQuery = requiredPermission == null ? fetchAllGroupsSortedForUser(user) : fetchGroupsWithPermission(user, requiredPermission);
+        List<Group> activeGroups = resultQuery.getResultList();
+        return activeGroups == null ? new HashSet<>() : new HashSet<>(activeGroups);
     }
 
     @Override
-    public GroupPage getPageOfGroupDTOs(User user, Permission requiredPermission, int pageNumber, int pageSize) {
-        return new GroupPage(getActiveGroupDTOs(user, requiredPermission), pageNumber, pageSize);
+    @Transactional(readOnly = true)
+    @SuppressWarnings("unchecked")
+    public List<Group> getPageOfGroups(User user, Permission requiredPermission, int pageNumber, int pageSize) {
+        Query resultQuery = requiredPermission == null ? fetchAllGroupsSortedForUser(user) : fetchGroupsWithPermission(user, requiredPermission);
+        return resultQuery
+                .setFirstResult((pageNumber) * pageSize)
+                .setMaxResults(pageSize)
+                .getResultList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public int countActiveGroupsWithPermission(User user, Permission requiredPermission) {
+        if (requiredPermission == null) {
+            return groupRepository.countByMembershipsUserAndActiveTrue(user);
+        } else {
+            // using entity manager to create query on this runs into some lazy initialization issues on role, and repo can handle in hql, hence
+            return groupRepository.countActiveGroupsWhereUserHasPermission(user, requiredPermission);
+        }
     }
 
 
     @Override
     @Transactional(readOnly = true)
-    public List<GroupDTO> getActiveGroupDTOs(User user, Permission requiredPermission) {
-
-        // we use a list here because the sorting matter
-        List<Group> groups = groupRepository.findActiveUserGroupsOrderedByRecentActivity(user.getId());
-        final boolean filterByPermission = (requiredPermission != null);
-
-        // todo: the permission checking version of this defeats some of the purpose, by getting all the groups anyway, so, rethink
-        List<GroupDTO> list = new ArrayList<>();
-        for (Group group : groups) {
-            GroupDTO groupDTO = new GroupDTO(group);
-            if (filterByPermission) {
-                for (Membership membership : user.getMemberships()) {
-                    if (membership.getGroup().getUid().equals(groupDTO.getUid()) && membership.getRole().getPermissions().contains(requiredPermission))
-                        list.add(groupDTO);
-                }
-            } else {
-                list.add(groupDTO);
-            }
-        }
-
-        return list;
-
-    }
-
-    @Override
-    public Set<Permission> getPermissions(Group group, String roleName) {
-        return group.getRole(roleName).getPermissions();
-    }
-
-    @Override
-    public Set<Permission> getPermissions(User user, Group group) {
-        for (Membership membership : user.getMemberships()) {
-            if (membership.getGroup().equals(group)) {
-                return membership.getRole().getPermissions();
-            }
-        }
-        throw new AccessDeniedException("Error! User " + user + " is not a member of group " + group);
+    @SuppressWarnings("unchecked")
+    public List<Group> getActiveGroupsSorted(User user, Permission requiredPermission) {
+        long startTime = System.currentTimeMillis();
+        List<Group> groups;
+        Query resultQuery = requiredPermission == null ? fetchAllGroupsSortedForUser(user) : fetchGroupsWithPermission(user, requiredPermission);
+        log.info("repository query took ... {} msecs", System.currentTimeMillis() - startTime);
+        return resultQuery.getResultList();
     }
 
     @Override

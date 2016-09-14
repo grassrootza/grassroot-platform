@@ -41,7 +41,7 @@ public class UserManagementServiceTest {
 
     @Test
     public void shouldLoadOrSave() {
-        User user = userManagementService.loadOrSaveUser("0826607135");
+        User user = userManagementService.loadOrCreateUser("0826607135");
         Assert.assertNotEquals(Long.parseLong("0"),Long.parseLong(user.getId().toString()));
     }
 }

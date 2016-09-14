@@ -216,7 +216,7 @@ public class AdminManager implements AdminService {
     }
 
     /**
-     * SECTION: Methods to analyze logbook entries
+     * SECTION: Methods to analyze action to-do entries
      */
 
     @Override

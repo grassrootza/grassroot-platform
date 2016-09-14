@@ -18,5 +18,5 @@ public interface TodoRequestBroker {
 
 	void updateDueDate(String userUid, String requestUid, LocalDateTime dueDate);
 
-	void finish(String logBookUid);
+	void finish(String todoUid);
 }

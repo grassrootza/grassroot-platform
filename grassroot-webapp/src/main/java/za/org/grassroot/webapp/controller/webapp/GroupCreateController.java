@@ -14,7 +14,6 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.services.GroupBroker;
 import za.org.grassroot.services.MembershipInfo;
-import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.GroupWrapper;
 
@@ -59,12 +58,11 @@ public class GroupCreateController extends BaseController {
 
 	@RequestMapping(value = "create", method = RequestMethod.POST)
 	public String createGroup(Model model, @ModelAttribute("groupCreator") @Validated GroupWrapper groupCreator,
-	                          BindingResult bindingResult, @RequestParam("groupTemplate") String templateRaw,
-	                          HttpServletRequest request, RedirectAttributes redirectAttributes) {
+	                          BindingResult bindingResult, HttpServletRequest request, RedirectAttributes redirectAttributes) {
 
 		Long timeStart, timeEnd;
 
-		GroupPermissionTemplate template = GroupPermissionTemplate.fromString(templateRaw); // todo: set in wrapper
+		logger.info("creating a group, with template = {}", groupCreator.getPermissionTemplate());
 
 		if (bindingResult.hasErrors()) {
 			model.addAttribute("groupCreator", groupCreator);
@@ -77,7 +75,7 @@ public class GroupCreateController extends BaseController {
 		String parentUid = (groupCreator.getHasParent()) ? groupCreator.getParent().getUid() : null;
 
 		Group groupCreated = groupBroker.create(user.getUid(), groupCreator.getGroupName(), parentUid,
-				new HashSet<>(groupCreator.getAddedMembers()), template, null,
+				new HashSet<>(groupCreator.getAddedMembers()), groupCreator.getPermissionTemplate(), null,
 				groupCreator.getReminderMinutes(), true);
 		timeEnd = System.currentTimeMillis();
 

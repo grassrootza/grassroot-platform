@@ -10,7 +10,7 @@ import za.org.grassroot.core.domain.Meeting;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.Vote;
 import za.org.grassroot.core.enums.EventRSVPResponse;
-import za.org.grassroot.services.GroupPage;
+import za.org.grassroot.core.enums.EventType;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -80,12 +80,12 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
     public void welcomeMenuShouldWork() throws Exception {
 
         testUser.setHasInitiatedSession(false);
-        when(userManagementServiceMock.loadOrSaveUser(phoneForTests)).thenReturn(testUser);
+        when(userManagementServiceMock.loadOrCreateUser(phoneForTests)).thenReturn(testUser);
 
         // todo: check a lot more than this
         mockMvc.perform(get(openingMenu).param(phoneParameter, phoneForTests)).andExpect(status().isOk());
 
-        verify(userManagementServiceMock, times(1)).loadOrSaveUser(phoneForTests);
+        verify(userManagementServiceMock, times(1)).loadOrCreateUser(phoneForTests);
         // verifyNoMoreInteractions(userManagementServiceMock); // todo: work out if should shift other calls to user entity itself
     }
 
@@ -95,7 +95,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
         testUser.setHasInitiatedSession(true);
         testUser.setLanguageCode("zu");
 
-        when(userManagementServiceMock.loadOrSaveUser(phoneForTests)).thenReturn(testUser);
+        when(userManagementServiceMock.loadOrCreateUser(phoneForTests)).thenReturn(testUser);
 
         mockMvc.perform(get(openingMenu).param(phoneParameter, phoneForTests)).andExpect(status().isOk());
     }
@@ -105,7 +105,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
 
         testUser.setDisplayName("");
         testUser.setHasInitiatedSession(false);
-        when(userManagementServiceMock.loadOrSaveUser(phoneForTests)).thenReturn(testUser);
+        when(userManagementServiceMock.loadOrCreateUser(phoneForTests)).thenReturn(testUser);
         when(userManagementServiceMock.findByInputNumber(phoneForTests)).thenReturn(testUser);
 
         mockMvc.perform(get(openingMenu).param(phoneParameter, phoneForTests)).andExpect(status().isOk());
@@ -125,7 +125,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
         // switch the next thing to cache manager
         // testUser.setLastUssdMenu("/ussd/mtg/start"); // irrelevant if this is well formed or not, just testing if it asks
 
-        when(userManagementServiceMock.loadOrSaveUser(phoneForTests)).thenReturn(testUser);
+        when(userManagementServiceMock.loadOrCreateUser(phoneForTests)).thenReturn(testUser);
         when(userManagementServiceMock.findByInputNumber(phoneForTests)).thenReturn(testUser);
 
         mockMvc.perform(get(openingMenu).param(phoneParameter, phoneForTests)).andExpect(status().isOk());
@@ -144,14 +144,14 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
         testGroup.setGroupTokenCode("111");
         testGroup.setTokenExpiryDateTime(Instant.now().plus(7, ChronoUnit.DAYS));
 
-        when(userManagementServiceMock.loadOrSaveUser(phoneForTests)).thenReturn(testUser);
+        when(userManagementServiceMock.loadOrCreateUser(phoneForTests)).thenReturn(testUser);
         when(groupBrokerMock.findGroupFromJoinCode("111")).thenReturn(testGroup);
 
         mockMvc.perform(get(openingMenu).param(phoneParameter, phoneForTests).param("request", "*134*1994*111#")).
                 andExpect(status().isOk());
 
         for (User user : languageUsers) {
-            when(userManagementServiceMock.loadOrSaveUser(user.getPhoneNumber())).thenReturn(user);
+            when(userManagementServiceMock.loadOrCreateUser(user.getPhoneNumber())).thenReturn(user);
             mockMvc.perform(get(openingMenu).param(phoneParameter, user.getPhoneNumber()).param("request", "*134*1994*111#")).
                     andExpect(status().isOk());
         }
@@ -178,15 +178,15 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
             testGroup.addMember(user); // this may be redundant
             user.setHasInitiatedSession(false);
 
-            when(userManagementServiceMock.loadOrSaveUser(user.getPhoneNumber())).thenReturn(user);
+            when(userManagementServiceMock.loadOrCreateUser(user.getPhoneNumber())).thenReturn(user);
             when(userManagementServiceMock.findByInputNumber(user.getPhoneNumber())).thenReturn(user);
-            when(userManagementServiceMock.needsToVote(user)).thenReturn(true);
-            when(eventManagementServiceMock.getOutstandingVotesForUser(user)).thenReturn(Collections.singletonList(vote));
+            when(eventBrokerMock.userHasResponsesOutstanding(user, EventType.VOTE)).thenReturn(true);
+            when(eventBrokerMock.getOutstandingResponseForUser(user, EventType.VOTE)).thenReturn(Collections.singletonList(vote));
             when(eventBrokerMock.load(vote.getUid())).thenReturn(vote);
 
             mockMvc.perform(get(openingMenu).param(phoneParameter, user.getPhoneNumber())).andExpect(status().isOk());
-            verify(userManagementServiceMock, times(1)).needsToVote(user);
-            verify(eventManagementServiceMock, times(1)).getOutstandingVotesForUser(user);
+            verify(eventBrokerMock, times(1)).userHasResponsesOutstanding(user, EventType.VOTE);
+            verify(eventBrokerMock, times(1)).getOutstandingResponseForUser(user, EventType.VOTE);
 
             // note: the fact that message source accessor is not wired up may mean this is not actually testing
             mockMvc.perform(get("/ussd/start").param(phoneParameter, user.getPhoneNumber()));
@@ -214,14 +214,14 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
 
             user.setHasInitiatedSession(false);
 
-            when(userManagementServiceMock.loadOrSaveUser(user.getPhoneNumber())).thenReturn(user);
+            when(userManagementServiceMock.loadOrCreateUser(user.getPhoneNumber())).thenReturn(user);
             when(userManagementServiceMock.findByInputNumber(user.getPhoneNumber())).thenReturn(user);
-            when(userManagementServiceMock.needsToRSVP(user)).thenReturn(true);
-            when(eventManagementServiceMock.getOutstandingRSVPForUser(user)).thenReturn(Collections.singletonList(meeting));
+            when(eventBrokerMock.userHasResponsesOutstanding(user, EventType.MEETING)).thenReturn(true);
+            when(eventBrokerMock.getOutstandingResponseForUser(user, EventType.MEETING)).thenReturn(Collections.singletonList(meeting));
             when(eventBrokerMock.loadMeeting(meeting.getUid())).thenReturn(meeting);
 
             mockMvc.perform(get(openingMenu).param(phoneParameter, user.getPhoneNumber())).andExpect(status().isOk());
-            verify(eventManagementServiceMock, times(1)).getOutstandingRSVPForUser(user);
+            verify(eventBrokerMock, times(1)).getOutstandingResponseForUser(user, EventType.MEETING);
 
             mockMvc.perform(get("/ussd/rsvp").param(phoneParameter, user.getPhoneNumber())
                                     .param("entityUid", "" + meeting.getUid())
@@ -243,7 +243,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
         testUser.setHasInitiatedSession(true);
         Group testGroup = new Group("", testUser);
 
-        when(userManagementServiceMock.loadOrSaveUser(phoneForTests)).thenReturn(testUser);
+        when(userManagementServiceMock.loadOrCreateUser(phoneForTests)).thenReturn(testUser);
         when(userManagementServiceMock.findByInputNumber(phoneForTests)).thenReturn(testUser);
         when(userManagementServiceMock.fetchGroupUserMustRename(testUser)).thenReturn(testGroup);
 
@@ -256,7 +256,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
                 param("groupUid", "" + testGroup.getUid()).
                 param("request", testGroupName)).andExpect(status().isOk());
 
-        verify(userManagementServiceMock, times(1)).loadOrSaveUser(phoneForTests);
+        verify(userManagementServiceMock, times(1)).loadOrCreateUser(phoneForTests);
         verify(userManagementServiceMock, times(1)).findByInputNumber(phoneForTests);
         verify(groupBrokerMock, times(1)).updateName(testUser.getUid(), testGroup.getUid(), testGroupName);
         verify(userManagementServiceMock, times(2)).fetchGroupUserMustRename(testUser);
@@ -272,7 +272,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
         testUser.setHasInitiatedSession(true);
         testUser.setDisplayName("");
 
-        when(userManagementServiceMock.loadOrSaveUser(phoneForTests)).thenReturn(testUser);
+        when(userManagementServiceMock.loadOrCreateUser(phoneForTests)).thenReturn(testUser);
         when(userManagementServiceMock.findByInputNumber(phoneForTests)).thenReturn(testUser);
         when(userManagementServiceMock.needsToRenameSelf(testUser)).thenReturn(true);
 
@@ -285,7 +285,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
         mockMvc.perform(get("/ussd/rename-start").param(phoneParameter, phoneForTests).param("request", testUserName)).
                 andExpect(status().isOk());
 
-        verify(userManagementServiceMock, times(1)).loadOrSaveUser(phoneForTests);
+        verify(userManagementServiceMock, times(1)).loadOrCreateUser(phoneForTests);
         verify(userManagementServiceMock, times(1)).findByInputNumber(phoneForTests);
         verify(userManagementServiceMock, times(1)).updateDisplayName(testUser.getUid(), testUserName);
 
@@ -304,17 +304,17 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
                                                new Group("gc3", testUser),
                                                new Group("gc4", testUser));
 
-        GroupPage groupPage = GroupPage.createFromGroups(testGroups, 1, 3);
-
         when(userManagementServiceMock.findByInputNumber(phoneForTests)).thenReturn(testUser);
-        when(permissionBrokerMock.getPageOfGroupDTOs(testUser, null, 1, 3)).thenReturn(groupPage);
+        when(permissionBrokerMock.countActiveGroupsWithPermission(testUser, null)).thenReturn(4);
+        when(permissionBrokerMock.getPageOfGroups(testUser, null, 1, 3)).thenReturn(testGroups);
 
         mockMvc.perform(get("/ussd/group_page").param(phoneParameter, phoneForTests).param("prompt", "Look at pages").
                 param("page", "1").param("existingUri", "/ussd/blank").param("newUri", "/ussd/blank2")).
                 andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(phoneForTests);
-        verify(permissionBrokerMock, times(1)).getPageOfGroupDTOs(testUser, null, 1, 3);
+        verify(permissionBrokerMock, times(1)).countActiveGroupsWithPermission(testUser, null);
+        verify(permissionBrokerMock, times(1)).getPageOfGroups(testUser, null, 1, 3);
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(permissionBrokerMock);
     }

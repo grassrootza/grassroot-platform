@@ -44,13 +44,13 @@ public class USSDUrlUtil {
      * @param menuPrompt
      * @param existingGroupUri
      * @param newGroupUri
-     * @param pageNumber
-     * @return
+     * @param section
+     *@param pageNumber  @return
      */
-    public static String paginatedGroupUrl(String menuPrompt, String existingGroupUri, String newGroupUri, Integer pageNumber) {
+    public static String paginatedGroupUrl(String menuPrompt, String existingGroupUri, String newGroupUri, USSDSection section, Integer pageNumber) {
         String newGroupParameter = (newGroupUri != null) ? "&newUri=" + encodeParameter(newGroupUri) : "";
         return "group_page?prompt=" + encodeParameter(menuPrompt) + "&existingUri=" + encodeParameter(existingGroupUri)
-                + newGroupParameter + "&page=" + pageNumber;
+                + newGroupParameter + "&page=" + pageNumber + (section != null ? "&section=" + section.name() : "");
     }
 
     public static String paginatedEventUrl(String menuPrompt, USSDSection section, String viewEventUrl,
@@ -124,7 +124,7 @@ public class USSDUrlUtil {
     }
 
     public static String saveToDoMenu(String menu, String logBookUid) {
-        return USSDSection.TODO.toPath() + menu + "?logbookUid=" + logBookUid + setInterruptedFlag;
+        return USSDSection.TODO.toPath() + menu + "?todoUid=" + logBookUid + setInterruptedFlag;
     }
 
     public static String saveToDoMenu(String menu, String logBookUid, String priorInput) {

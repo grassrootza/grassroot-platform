@@ -6,8 +6,10 @@ import org.mockito.InjectMocks;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import za.org.grassroot.core.domain.*;
-import za.org.grassroot.services.GroupPage;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.Todo;
+import za.org.grassroot.core.domain.TodoRequest;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.webapp.util.USSDUrlUtil;
 
 import java.time.Instant;
@@ -21,6 +23,7 @@ import java.util.List;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static za.org.grassroot.core.domain.Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY;
 import static za.org.grassroot.core.util.DateTimeUtil.convertDateStringToLocalDateTime;
 import static za.org.grassroot.core.util.DateTimeUtil.reformatDateInput;
 import static za.org.grassroot.webapp.util.USSDUrlUtil.*;
@@ -36,8 +39,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
 
     private static final String testUserPhone = "0601110001";
     private static final String phoneParam = "msisdn";
-    private static final String logBookIdParam = "logbookUid";
-    private static final Long dummyId = 1L;
+    private static final String todoUidParam = "todoUid";
     private static final String dummyUserInput = "blah blah blah blah";
     private static final String groupMenu = "group",
             subjectMenu = "subject",
@@ -79,18 +81,18 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
         List<Group> testGroups = Arrays.asList(new Group("tg1", testUser),
                 new Group("tg2", testUser),
                 new Group("tg3", testUser));
-        for (Group testGroup : testGroups) {
-            testGroup.addMember(testUser);
-        }
-        GroupPage pageOfGroups = GroupPage.createFromGroups(testGroups, 0, 3);
+        testGroups.stream().forEach(tg -> tg.addMember(testUser));
+
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
-        when(userManagementServiceMock.isPartOfActiveGroups(testUser)).thenReturn(true);
-        when(permissionBrokerMock.getPageOfGroupDTOs(testUser, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY, 0, 3)).thenReturn(pageOfGroups);
-        mockMvc.perform(get(path + groupMenu).param(phoneParam, testUserPhone).param("new", "1")).
-                andExpect(status().isOk());
+        when(permissionBrokerMock.countActiveGroupsWithPermission(testUser, GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY)).thenReturn(3);
+        when(permissionBrokerMock.getPageOfGroups(testUser, GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY, 0, 3)).thenReturn(testGroups);
+
+        mockMvc.perform(get(path + groupMenu).param(phoneParam, testUserPhone).param("new", "1")).andExpect(status().isOk());
+
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(permissionBrokerMock, times(2)).getPageOfGroupDTOs(testUser, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY, 0, 3);
+        verify(permissionBrokerMock, times(1)).countActiveGroupsWithPermission(testUser, GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY);
+        verify(permissionBrokerMock, times(1)).getPageOfGroups(testUser, GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY, 0, 3);
         verifyNoMoreInteractions(permissionBrokerMock);
         verifyNoMoreInteractions(groupBrokerMock);
 
@@ -100,12 +102,12 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
     public void groupSelectMenuShouldWorkWithNoGroup() throws Exception {
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
-        when(userManagementServiceMock.isPartOfActiveGroups(testUser)).thenReturn(false);
+        when(permissionBrokerMock.countActiveGroupsWithPermission(testUser, GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY)).thenReturn(0);
         mockMvc.perform(get(path + groupMenu).param(phoneParam, testUserPhone).param("new", "1")).
                 andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(permissionBrokerMock, times(1)).getPageOfGroupDTOs(testUser, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY, 0, 3);
+        verify(permissionBrokerMock, times(1)).countActiveGroupsWithPermission(testUser, GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY);
         verifyNoMoreInteractions(permissionBrokerMock);
         verifyNoMoreInteractions(groupBrokerMock);
 
@@ -163,7 +165,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).
                 thenReturn(testUser);
 
-        mockMvc.perform(get(path + dueDateMenu).param(logBookIdParam, dummyLogBook.getUid()).param(phoneParam, testUserPhone)
+        mockMvc.perform(get(path + dueDateMenu).param(todoUidParam, dummyLogBook.getUid()).param(phoneParam, testUserPhone)
                 .param("prior_input", dummyUserInput).param("interrupted", String.valueOf(true))
                 .param("revising", String.valueOf(false)).param("request", "1")).andExpect(status().isOk());
 
@@ -255,7 +257,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         when(todoRequestBrokerMock.load(dummyLogBook.getUid())).thenReturn(dummyLogBook);
 
-        mockMvc.perform(get(path + confirmMenu).param(logBookIdParam, dummyLogBook.getUid())
+        mockMvc.perform(get(path + confirmMenu).param(todoUidParam, dummyLogBook.getUid())
                 .param(phoneParam, testUserPhone).param("request", "revised message").param("prior_menu", subjectMenu))
                 .andExpect(status().isOk());
         mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param("request", "1"))
@@ -289,7 +291,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
             when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
             when(todoRequestBrokerMock.load(dummyLogBook.getUid())).thenReturn(dummyLogBook);
 
-            mockMvc.perform(get(path + confirmMenu).param(phoneParam, testUserPhone).param(logBookIdParam, dummyLogBook.getUid())
+            mockMvc.perform(get(path + confirmMenu).param(phoneParam, testUserPhone).param(todoUidParam, dummyLogBook.getUid())
                     .param("prior_input", date).param("prior_menu", "due_date").param("request", "1"))
                     .andExpect(status().isOk());
         }
@@ -310,7 +312,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
 
-        mockMvc.perform(get(path + send).param(logBookIdParam, dummyLogBook.getUid())
+        mockMvc.perform(get(path + send).param(todoUidParam, dummyLogBook.getUid())
                 .param(phoneParam, testUserPhone)).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);
@@ -329,7 +331,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
         when(userManagementServiceMock.findByInputNumber(testUserPhone, saveToDoMenu(viewEntryMenu, dummyTodo.getUid()))).thenReturn(testUser);
         when(todoBrokerMock.load(dummyTodo.getUid())).thenReturn(dummyTodo);
 
-        mockMvc.perform(get(path + viewEntryMenu).param(logBookIdParam, dummyTodo.getUid())
+        mockMvc.perform(get(path + viewEntryMenu).param(todoUidParam, dummyTodo.getUid())
                 .param(phoneParam, testUserPhone)).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, saveToDoMenu(viewEntryMenu, dummyTodo.getUid()));
@@ -349,7 +351,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
         when(todoBrokerMock.load(dummyTodo.getUid())).thenReturn(dummyTodo);
 
-        mockMvc.perform(get(path + viewEntryDates).param(logBookIdParam, dummyTodo.getUid())
+        mockMvc.perform(get(path + viewEntryDates).param(todoUidParam, dummyTodo.getUid())
                 .param(phoneParam, testUserPhone)).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);
@@ -371,7 +373,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
         when(todoBrokerMock.load(dummyTodo.getUid())).thenReturn(dummyTodo);
 
-        mockMvc.perform(get(path + viewEntryDates).param(logBookIdParam, dummyTodo.getUid())
+        mockMvc.perform(get(path + viewEntryDates).param(todoUidParam, dummyTodo.getUid())
                 .param(phoneParam, testUserPhone)).andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);
         verify(todoBrokerMock, times(1)).load(dummyTodo.getUid());
@@ -393,7 +395,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
         when(todoBrokerMock.load(dummyTodo.getUid())).thenReturn(dummyTodo);
 
         mockMvc.perform(get(path + viewAssignment).param(phoneParam, testUserPhone)
-                .param(logBookIdParam, dummyTodo.getUid())).andExpect(status().isOk());
+                .param(todoUidParam, dummyTodo.getUid())).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);
         verify(todoBrokerMock, times(1)).load(dummyTodo.getUid());
@@ -418,7 +420,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
         when(todoBrokerMock.load(dummyTodo.getUid())).thenReturn(dummyTodo);
 
         mockMvc.perform(get(path + setCompleteMenu).param(phoneParam, testUserPhone)
-                .param(logBookIdParam, dummyTodo.getUid())).andExpect(status().isOk());
+                .param(todoUidParam, dummyTodo.getUid())).andExpect(status().isOk());
         mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone)).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, urlToSave);
@@ -435,7 +437,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
         mockMvc.perform(get(path + completingUser).param(phoneParam, testUserPhone)
-                .param(logBookIdParam, dummyTodo.getUid())).andExpect(status().isOk());
+                .param(todoUidParam, dummyTodo.getUid())).andExpect(status().isOk());
         mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone)).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone,
@@ -460,7 +462,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
                 .thenReturn(testPossibleUsers);
         when(todoBrokerMock.load(dummyTodo.getUid())).thenReturn(dummyTodo);
 
-        mockMvc.perform(get(path + pickCompletor).param(phoneParam, testUserPhone).param(logBookIdParam, dummyTodo.getUid())
+        mockMvc.perform(get(path + pickCompletor).param(phoneParam, testUserPhone).param(todoUidParam, dummyTodo.getUid())
                                 .param("request", testUserPhone)).andExpect(status().isOk());
         mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param("request", "1"))
                 .andExpect(status().isOk());
@@ -482,7 +484,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
 
-        mockMvc.perform(get(path + completedDate).param(phoneParam, testUserPhone).param(logBookIdParam, logBookUid))
+        mockMvc.perform(get(path + completedDate).param(phoneParam, testUserPhone).param(todoUidParam, logBookUid))
                 .andExpect(status().isOk());
         mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param("request", "1"))
                 .andExpect(status().isOk());
@@ -503,7 +505,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
 
-        mockMvc.perform(get(path + confirmCompleteDate).param(phoneParam, testUserPhone).param(logBookIdParam, logBookUid).
+        mockMvc.perform(get(path + confirmCompleteDate).param(phoneParam, testUserPhone).param(todoUidParam, logBookUid).
                 param(userInputParam, priorInput)).andExpect(status().isOk());
         mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param(userInputParam, "1"))
                 .andExpect(status().isOk());
@@ -529,7 +531,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
 
         mockMvc.perform(get(path + setCompleteMenu + "-do").param(phoneParam, testUserPhone).
-                param(logBookIdParam, dummyTodo.getUid()).param("completed_date", completed_date).
+                param(todoUidParam, dummyTodo.getUid()).param("completed_date", completed_date).
                 param(assignUserID, testUser.getUid())).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);

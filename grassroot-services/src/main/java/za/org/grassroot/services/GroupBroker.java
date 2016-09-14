@@ -1,9 +1,11 @@
 package za.org.grassroot.services;
 
-import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.dto.GroupDTO;
+import org.springframework.data.domain.Page;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.GroupLog;
+import za.org.grassroot.core.domain.Permission;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.GroupTreeDTO;
-import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 
@@ -118,13 +120,9 @@ public interface GroupBroker {
 
     List<GroupLog> getLogsForGroup(Group group, LocalDateTime periodStart, LocalDateTime periodEnd);
 
-    // pass null to eventType to get all events
-    // pass null to either of the timestamps to leave unlimited (i.e., all the way to future, or all the way to past
-    List<Event> retrieveGroupEvents(Group group, EventType eventType, Instant periodStart, Instant periodEnd);
-
     List<Group> fetchGroupsWithOneCharNames(User creatingUser, int sizeThreshold);
 
-    List<GroupDTO> fetchUserCreatedGroups(User user);
+    Page<Group> fetchUserCreatedGroups(User user, int pageNumber, int pageSize);
 
     void calculateGroupLocation(String groupUid, LocalDate localDate);
 

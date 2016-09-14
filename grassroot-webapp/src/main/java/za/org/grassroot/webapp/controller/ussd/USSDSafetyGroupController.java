@@ -76,7 +76,7 @@ public class USSDSafetyGroupController extends USSDController {
         if (user.hasSafetyGroup()) {
             Group group = user.getSafetyGroup();
             menu = new USSDMenu(getMessage(thisSection, promptKey, "exists", group.getGroupName(), user));
-            boolean hasAddress = userManager.hasAddress(user.getUid());
+            boolean hasAddress = addressBroker.hasAddress(user.getUid());
             if (!hasAddress) {
                 menu.addMenuOption(thisSection.toPath() + addAddress,
                         getMessage(thisSection, createGroupMenu, optionsKey + ".address", user));
