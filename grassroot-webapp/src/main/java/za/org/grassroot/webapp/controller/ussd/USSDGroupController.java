@@ -51,7 +51,6 @@ public class USSDGroupController extends USSDController {
             listGroupMembers = "list",
             renameGroupPrompt = "rename",
             hideGroupPrompt = "visibility",
-            showGroupPrompt = "show",
             approveUser = "approve",
             rejectUser = "reject",
             addMemberPrompt = "addnumber", // probably should rename this to prevent confusion w/ above

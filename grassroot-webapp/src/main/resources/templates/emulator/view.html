@@ -33,5 +33,10 @@
     <button th:action="@{/emulator/ussd/view}" method="get">Interrupt</button>
 </form></div>
 
+<div><form>
+    <input type="hidden" name="request" value="*134*19940*911#" />
+    <button th:action="@{/emulator/ussd/view}" method="get">Trigger safety alert</button>
+</form></div>
+
 </body>
 </html>

@@ -9,8 +9,6 @@ public interface AddressBroker {
 
     Address getUserAddress(String userUid);
 
-    void adduserAddress(String userUid, String houseNumber, String street, String town);
-
     void updateUserAddress(String userUid, String houseNumber, String street, String town);
 
     void removeAddress(String userUid);

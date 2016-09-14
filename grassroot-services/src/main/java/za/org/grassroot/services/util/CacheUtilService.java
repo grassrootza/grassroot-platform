@@ -27,8 +27,6 @@ public interface CacheUtilService {
 
     void putOutstandingResponseForUser(User user, EventType eventType, List<Event> outstandingRSVPs);
 
-
-
     void putUssdMenuForUser(String phoneNumber, String urlToCache);
 
     void clearUssdMenuForUser(String phoneNumber);

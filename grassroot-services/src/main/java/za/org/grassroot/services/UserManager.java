@@ -310,6 +310,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
      */
 
     @Override
+    @Transactional(readOnly = true)
     public User findByInputNumber(String inputNumber) throws NoSuchUserException {
         User sessionUser = userRepository.findByPhoneNumber(PhoneNumberUtil.convertPhoneNumber(inputNumber));
         if (sessionUser == null) throw new NoSuchUserException("Could not find user with phone number: " + inputNumber);
@@ -317,35 +318,28 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public User findByInputNumber(String inputNumber, String currentUssdMenu) throws NoSuchUserException {
-
         User sessionUser = userRepository.findByPhoneNumber(PhoneNumberUtil.convertPhoneNumber(inputNumber));
         cacheUtilService.putUssdMenuForUser(inputNumber, currentUssdMenu);
-
         return sessionUser;
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<User> searchByGroupAndNameNumber(String groupUid, String nameOrNumber) {
         return userRepository.findByGroupsPartOfAndDisplayNameContainingIgnoreCaseOrPhoneNumberLike(
                 groupRepository.findOneByUid(groupUid), "%" + nameOrNumber + "%", "%" + nameOrNumber + "%");
     }
 
     @Override
+    @Transactional(readOnly = true)
     public boolean userExist(String phoneNumber) {
         return userRepository.existsByPhoneNumber(phoneNumber);
     }
 
     @Override
-    @Transactional
-    public void setSafetyGroup(String userUid, String groupUid) {
-        User user = userRepository.findOneByUid(userUid);
-        Group group = groupRepository.findOneByUid(groupUid);
-        user.setSafetyGroup(group);
-
-    }
-
-    @Override
+    @Transactional(readOnly = true)
     public void sendAndroidLinkSms(String userUid) {
         User user = userRepository.findOneByUid(userUid);
         String message = messageAssemblingService.createAndroidLinkSms(user);

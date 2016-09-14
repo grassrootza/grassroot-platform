@@ -4,6 +4,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.springframework.test.annotation.Rollback;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Meeting;
@@ -60,6 +61,10 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
                 .build();
 
         wireUpMessageSourceAndGroupUtil(ussdHomeController);
+        // todo : extend this parrent into method above, to remove public setters
+        ReflectionTestUtils.setField(ussdHomeController, "safetyCode", "911");
+        ReflectionTestUtils.setField(ussdHomeController, "sendMeLink", "123");
+        ReflectionTestUtils.setField(ussdHomeController, "hashPosition", 10);
 
         /* We use these quite often */
         testUserZu.setLanguageCode("zu");
@@ -91,12 +96,9 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
 
     @Test
     public void welcomeMenuAfterChoosingLanguageShouldWork() throws Exception {
-
         testUser.setHasInitiatedSession(true);
         testUser.setLanguageCode("zu");
-
         when(userManagementServiceMock.loadOrCreateUser(phoneForTests)).thenReturn(testUser);
-
         mockMvc.perform(get(openingMenu).param(phoneParameter, phoneForTests)).andExpect(status().isOk());
     }
 

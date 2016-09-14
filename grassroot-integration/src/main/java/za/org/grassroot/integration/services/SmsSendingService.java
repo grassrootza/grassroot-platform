@@ -10,4 +10,7 @@ public interface SmsSendingService {
 
     void sendPrioritySMS(String message, String destinationNumber);
 
+    // helper method async wrapper for methods that need to call SMS send directly (i.e., bypassing notification because of time criticality)
+    void sendAsyncSMS(String message, String destinationNumber);
+
 }

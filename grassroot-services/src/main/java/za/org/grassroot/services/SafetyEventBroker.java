@@ -16,8 +16,6 @@ public interface SafetyEventBroker {
 
     void recordResponse(String userUid, String safetyEventUid, boolean isValid);
 
-    List<SafetyEvent> fetchGroupSafetyEvents(String groupUid);
-
     List<SafetyEvent> getOutstandingUserSafetyEventsResponse(String userUid);
 
     boolean isUserBarred(String uid);
@@ -25,5 +23,14 @@ public interface SafetyEventBroker {
     void sendReminders(String uid);
 
     boolean needsToRespondToSafetyEvent(User sessionUser);
+
+    void setSafetyGroup(String userUid, String groupUid);
+
+    /**
+     *
+     * @param userUid
+     * @param deactivateGroup
+     */
+    void resetSafetyGroup(String userUid, boolean deactivateGroup);
 
 }

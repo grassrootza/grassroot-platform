@@ -433,6 +433,14 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         return getUpcomingEventsInternal(filter, time, includeDescendants, false);
     }
 
+    // todo : make sure this is wired on other side
+    public Set<Todo> getDescendantTodos() {
+        if (descendantTodos == null) {
+            descendantTodos = new HashSet<>();
+        }
+        return new HashSet<>(descendantTodos);
+    }
+
     /**
      *
      * @param filter The functional predicate, if any, for filtering (note the method already removes cancelled events)
