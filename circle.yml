@@ -1,0 +1,11 @@
+machine:
+  java:
+    version: oraclejdk8
+test:
+  post:
+    - mkdir -p $CIRCLE_TEST_REPORTS/junit/
+    - find . -type f -regex ".*/build/test-results/.*xml" -exec cp {} $CIRCLE_TEST_REPORTS/junit/ \;
+general:
+  artifacts:
+    - "grassroot-core/build/libs/grassroot-core-1.0.0.M3.jar"
+    - "grassroot-webapp/build/libs/grassroot-webapp-1.0.0.M3.jar"
