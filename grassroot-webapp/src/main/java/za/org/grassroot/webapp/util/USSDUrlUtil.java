@@ -23,7 +23,6 @@ public class USSDUrlUtil {
             phoneNumber = "msisdn",
             userInputParam = "request",
             groupUidParam = "groupUid",
-            logbookIDParam = "logbookUid",
             entityUidParam = "entityUid",
             previousMenu = "prior_menu",
             yesOrNoParam = "confirmed",
@@ -33,7 +32,6 @@ public class USSDUrlUtil {
 
     public static final String
             groupUidUrlSuffix = ("?" + groupUidParam + "="),
-            logbookIdUrlSuffix = ("?" + logbookIDParam + "="),
             entityUidUrlSuffix = ("?" + entityUidParam + "="),
             setInterruptedFlag = "&" + interruptedFlag + "=1",
             setRevisingFlag = "&" + revisingFlag + "=1",
@@ -114,7 +112,6 @@ public class USSDUrlUtil {
         }
     }
 
-
     public static String saveVoteMenu(String menu, String requestUid) {
         return USSDSection.VOTES.toPath() + menu + "?entityUid=" + requestUid + setInterruptedFlag;
     }
@@ -123,22 +120,35 @@ public class USSDUrlUtil {
         return USSDSection.VOTES.toPath() + menu + "?entityUid=" + requestUid + setRevisingFlag;
     }
 
-    public static String saveToDoMenu(String menu, String logBookUid) {
-        return USSDSection.TODO.toPath() + menu + "?todoUid=" + logBookUid + setInterruptedFlag;
+    public static String saveToDoMenu(String menu, String todoUid) {
+        return USSDSection.TODO.toPath() + menu + "?todoUid=" + todoUid + setInterruptedFlag;
     }
 
-    public static String saveToDoMenu(String menu, String logBookUid, String priorInput) {
-        return saveToDoMenu(menu, logBookUid) + addInterruptedInput + encodeParameter(priorInput);
+    public static String saveToDoMenu(String menu, String todoUid, String priorInput) {
+        return saveToDoMenu(menu, todoUid) + addInterruptedInput + encodeParameter(priorInput);
     }
 
     // todo: use this above, or figure out a more elegant way around it
-    public static String saveToDoMenu(String menu, String logBookUid, String priorInput, boolean encodeInput) {
-        return saveToDoMenu(menu, logBookUid) + addInterruptedInput + (encodeInput ? encodeParameter(priorInput) : priorInput);
+    public static String saveToDoMenu(String menu, String todoUid, String priorInput, boolean encodeInput) {
+        return saveToDoMenu(menu, todoUid) + addInterruptedInput + (encodeInput ? encodeParameter(priorInput) : priorInput);
     }
 
-    public static String saveToDoMenu(String menu, String logBookUid, String previousMenu, String priorInput, boolean encodeInput) {
-        return saveToDoMenu(menu, logBookUid, priorInput, encodeInput) + "&prior_menu=" + previousMenu;
+    public static String saveToDoMenu(String menu, String todoUid, String previousMenu, String priorInput, boolean encodeInput) {
+        return saveToDoMenu(menu, todoUid, priorInput, encodeInput) + "&prior_menu=" + previousMenu;
 
+    }
+
+    public static String saveSafetyMenuPrompt(String menu) {
+        return USSDSection.SAFETY_GROUP_MANAGER.toPath() + menu + "?" + interruptedFlag + "=1";
+    }
+
+    public static String saveAddressMenu(String menu, String field) {
+        return USSDSection.SAFETY_GROUP_MANAGER.toPath() + menu + "?field=" + field + setInterruptedFlag;
+    }
+
+    public static String saveSafetyGroupMenu(String menu, String groupUid, String input) {
+        return USSDSection.SAFETY_GROUP_MANAGER.toPath() + menu + "?groupUid=" + groupUid + setInterruptedFlag
+                + ((input != null) ? "&prior_input=" + input : "");
     }
 
     public static String mtgMenu(String menu, String entityUid) {
@@ -158,14 +168,9 @@ public class USSDUrlUtil {
         return section.toPath() + menu + "?groupUid=" + groupUid;
     }
 
-    public static String safetyMenuWithId(String menu, String safetyUid, boolean response) {
-        return USSDSection.SAFETY_GROUP_MANAGER.toPath() + menu + "-do" + "?entityUid=" + safetyUid + "&response=" + response;
+    public static String safetyMenuWithId(String menu, String safetyUid) {
+        return USSDSection.SAFETY_GROUP_MANAGER.toPath() + menu + "-do" + "?entityUid=" + safetyUid + "&response=";
     }
-
-    public static String safetyMenuWithId(String menu, String safetyUid, String response) {
-        return USSDSection.SAFETY_GROUP_MANAGER.toPath() + menu + "-do" + "?entityUid=" + safetyUid + "&response=" + response;
-    }
-
 
     public static String groupVisibilityOption(String menu, String groupUid, boolean discoverable) {
         return USSDSection.GROUP_MANAGER.toPath() + menu + "?groupUid=" + groupUid + "&hide=" + discoverable;

@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -45,7 +46,6 @@ public class SmsSendingManager implements SmsSendingService {
 
     @Override
     public String sendSMS(String message, String destinationNumber) {
-
         UriComponentsBuilder gatewayURI = UriComponentsBuilder.newInstance().scheme("https").host(smsGatewayHost);
 
         gatewayURI.path("send/").queryParam("username", smsGatewayUsername).queryParam("password", smsGatewayPassword);
@@ -60,7 +60,6 @@ public class SmsSendingManager implements SmsSendingService {
             log.info("SMS...result..." + messageResult);
             return messageResult;
         }
-
         return null;
     }
 
@@ -74,6 +73,12 @@ public class SmsSendingManager implements SmsSendingService {
 
         String messageResult = restTemplate.getForObject(gatewayURI.build().toUri(), String.class);
         log.info("Priority SMS sent, with result ... " + messageResult);
+    }
+
+    @Async
+    @Override
+    public void sendAsyncSMS(String message, String destinationNumber) {
+        sendSMS(message, destinationNumber);
     }
 
 }

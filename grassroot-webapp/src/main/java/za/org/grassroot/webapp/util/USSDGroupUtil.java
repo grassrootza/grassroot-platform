@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -47,6 +48,9 @@ public class USSDGroupUtil extends USSDUtil {
 
     @Autowired
     private GroupJoinRequestService groupJoinRequestService;
+
+    @Value("${grassroot.ussd.joincode.format:*134*1994*%s#}")
+    private String joinCodeFormat;
 
     private static final String groupKeyForMessages = "group";
 
@@ -143,13 +147,13 @@ public class USSDGroupUtil extends USSDUtil {
 
         USSDMenu menu = new USSDMenu(prompt);
         menu = addGroupsToMenu(menu, urlForExistingGroups, groupsCreated.getContent(), user);
+
         if (groupsCreated.hasNext())
-            menu.addMenuOption(paginatedGroupUrl(prompt, urlForExistingGroups, null, null, pageNumber + 1),
-                    "More groups"); // todo : i18n
+            menu.addMenuOption(paginatedGroupUrl(prompt, urlForExistingGroups, null, SAFETY_GROUP_MANAGER, pageNumber + 1), getMessage("group.more", user));
         if (groupsCreated.hasPrevious()) {
-            menu.addMenuOption(paginatedGroupUrl(prompt, urlForExistingGroups, null, null, pageNumber - 1), "Back");
+            menu.addMenuOption(paginatedGroupUrl(prompt, urlForExistingGroups, null, SAFETY_GROUP_MANAGER, pageNumber - 1), getMessage("group.back", user));
         } else {
-            menu.addMenuOption(section.toPath() + "start", "Back"); // todo : i18n
+            menu.addMenuOption(section.toPath() + "start", getMessage(section, groupKeyForMessages, optionsKey + "home", user));
         }
         return menu;
     }
@@ -243,7 +247,7 @@ public class USSDGroupUtil extends USSDUtil {
             throws URISyntaxException {
         Map<String, List<String>> enteredNumbers = PhoneNumberUtil.splitPhoneNumbers(userInput);
         groupBroker.addMembers(user.getUid(), groupUid, turnNumbersIntoMembers(enteredNumbers.get(validNumbers)), false);
-        return checkForErrorsAndSetPrompt(user, section, new USSDMenu(true), groupUid, enteredNumbers.get(invalidNumbers), returnUrl, false);
+        return checkForErrorsAndSetPrompt(user, section, new USSDMenu(true), groupUid, enteredNumbers.get(invalidNumbers), returnUrl);
     }
 
     private Set<MembershipInfo> turnNumbersIntoMembers(List<String> validNumbers) {
@@ -254,10 +258,9 @@ public class USSDGroupUtil extends USSDUtil {
     }
 
     private USSDMenu checkForErrorsAndSetPrompt(User user, USSDSection section, USSDMenu menu, String groupUid, List<String> invalidNumbers,
-                                                String returnUrl, boolean newGroup) {
+                                                String returnUrl) {
         log.info("Inside checkForErrorsAndSetPrompt ... with invalid numbers ... " + invalidNumbers.toString());
-        String addedOrCreated = newGroup ? ".created" : ".added";
-        String prompt = invalidNumbers.isEmpty() ? getMessage(section, groupKeyForMessages, promptKey + addedOrCreated, user) :
+        String prompt = invalidNumbers.isEmpty() ? getMessage(section, groupKeyForMessages, promptKey + ".added", user) :
                 getMessage(section, groupKeyForMessages, promptKey + ".error", String.join(", ", invalidNumbers), user);
         menu.setPromptMessage(prompt);
         String groupIdWithParams = (returnUrl.contains("?")) ? ("&" + groupUidParameter + "=") : groupUidUrlEnding;
@@ -293,7 +296,7 @@ public class USSDGroupUtil extends USSDUtil {
         }
 
         if (user.hasSafetyGroup() && group.equals(user.getSafetyGroup())) {
-            listMenu.addMenuOption(SAFETY_GROUP_MANAGER.toPath() + "start", getMessage(GROUP_MANAGER.toString() + ".safety.option", user));
+            listMenu.addMenuOption(SAFETY_GROUP_MANAGER.toPath() + "start", getMessage(menuKey + "safety", user));
         }
 
         if (listMenu.getMenuOptions().size() < 4) {
@@ -343,7 +346,7 @@ public class USSDGroupUtil extends USSDUtil {
             prompt = getMessage(GROUP_MANAGER, existingGroupMenu, promptKey + ".single", group.getName(""), user);
         } else {
             if (openToken) {
-                String dial = "*134*1994*" + group.getGroupTokenCode() + "#"; // todo : application property
+                String dial = String.format(joinCodeFormat, group.getGroupTokenCode());
                 prompt = getMessage(GROUP_MANAGER, existingGroupMenu, promptKey + ".token", dial, user);
             } else {
                 prompt = getMessage(GROUP_MANAGER, existingGroupMenu, promptKey, user);

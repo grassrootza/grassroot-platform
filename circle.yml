@@ -7,5 +7,5 @@ test:
     - find . -type f -regex ".*/build/test-results/.*xml" -exec cp {} $CIRCLE_TEST_REPORTS/junit/ \;
 general:
   artifacts:
-    - "grassroot-core/target/grassroot-core-1.0.0.M2.jar"
-    - "grassroot-webapp/target/grassroot-webapp-1.0.0.M2.jar"
+    - "grassroot-core/build/libs/grassroot-core-1.0.0.M3.jar"
+    - "grassroot-webapp/build/libs/grassroot-webapp-1.0.0.M3.jar"

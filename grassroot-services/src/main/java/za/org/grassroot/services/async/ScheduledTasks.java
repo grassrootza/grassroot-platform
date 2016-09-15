@@ -87,14 +87,11 @@ public class ScheduledTasks {
     }
 
     @Scheduled(fixedRate = 300000)
-    public void sendSafetyReminders(){
-
-        List<SafetyEvent> safetyEvents = safetyEventRepository.findSafetyEvents(Instant.now().minus(1, ChronoUnit.HOURS),
-                Instant.now());
-
+    public void sendSafetyReminders() {
+        List<SafetyEvent> safetyEvents = safetyEventRepository.findSafetyEvents(Instant.now().minus(1, ChronoUnit.HOURS), Instant.now());
         logger.info("Sending out safety reminders");
-        for(SafetyEvent safetyEvent:safetyEvents){
-            safetyEventBroker.sendReminders(safetyEvent.getUid());
+        if (safetyEvents != null) {
+            safetyEvents.stream().forEach(e -> safetyEventBroker.sendReminders(e.getUid()));
         }
     }
 
@@ -104,6 +101,7 @@ public class ScheduledTasks {
         if (!votes.isEmpty()) {
             logger.info("Sending vote results for {} unsent votes...", votes.size());
         }
+
         for (Vote vote : votes) {
             try {
                 eventBroker.sendVoteResults(vote.getUid());
@@ -125,7 +123,6 @@ public class ScheduledTasks {
         for (Meeting meeting : meetings) {
             try {
                 eventBroker.sendMeetingAcknowledgements(meeting.getUid());
-
             } catch (Exception ex) {
                 logger.error("Error while sending acknowledgments for meeting " + meeting + ": " + ex.getMessage(), ex);
             }

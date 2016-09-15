@@ -68,8 +68,6 @@ public interface UserManagementService {
 
     void setMessagingPreference(String userUid, UserMessagingPreference preference);
 
-    void setSafetyGroup(String userUid, String groupUid);
-
     void setHasInitiatedUssdSession(String userUid);
 
     User resetUserPassword(String username, String newPassword, String token);

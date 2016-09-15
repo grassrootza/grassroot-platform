@@ -22,11 +22,9 @@ public interface SafetyEventRepository extends JpaRepository<SafetyEvent, Long> 
     Long countByActivatedByAndCreatedDateTimeAfterAndFalseAlarm(User user, Instant from, boolean falseAlarm);
 
     @Transactional
-    @Query(value = "select se from SafetyEvent se where se.createdDateTime > ?1 and se.scheduledReminderTime < ?2 and se.active = true")
+    @Query(value = "select se from SafetyEvent se " +
+            "where se.createdDateTime > ?1 " +
+            "and se.scheduledReminderTime < ?2 and se.active = true")
     List<SafetyEvent> findSafetyEvents(Instant from, Instant to);
-
-
-
-
 
 }

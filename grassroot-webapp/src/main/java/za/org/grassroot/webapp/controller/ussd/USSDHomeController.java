@@ -3,6 +3,7 @@ package za.org.grassroot.webapp.controller.ussd;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -78,8 +79,12 @@ public class USSDHomeController extends USSDController {
             promptConfirmGroupInactive = "group-inactive-confirm";
 
     private int hashPosition;
-    private static String safetyCode;
-    private static String sendMeLink;
+
+    @Value("${grassroot.ussd.safety.suffix:911}")
+    private String safetyCode;
+
+    @Value("${grassroot.ussd.sendlink.suffix:123}")
+    private String sendMeLink;
 
     private static final String openingMenuKey = String.join(".", Arrays.asList(homeKey, startMenu, optionsKey));
 
@@ -102,8 +107,6 @@ public class USSDHomeController extends USSDController {
     @PostConstruct
     public void init() {
         hashPosition = environment.getRequiredProperty("grassroot.ussd.code.length", Integer.class);
-        safetyCode = environment.getProperty("grassroot.ussd.safety.suffix", "911");
-        sendMeLink = environment.getProperty("grassroot.ussd.sendlink.suffix", "123");
     }
 
     public USSDMenu welcomeMenu(String opening, User user) {
@@ -127,10 +130,14 @@ public class USSDHomeController extends USSDController {
 
         Long startTime = System.currentTimeMillis();
 
-        USSDMenu openingMenu;
+        log.info("testing ... hash position = {}, safetyPrefix = {}", hashPosition, safetyCode);
 
-        // first off, check if there is a cache entry for an interrupted menu, and if so, just assemble without touching DB
-        if (userInterrupted(inputNumber)) {
+        USSDMenu openingMenu;
+        final boolean trailingDigitsPresent = codeHasTrailingDigits(enteredUSSD);
+
+        // first off, check if (a) the user has entered no special code after and (b) there is a cache entry for an
+        // interrupted menu, and if so, just assemble without touching DB
+        if (!trailingDigitsPresent && userInterrupted(inputNumber)) {
             return menuBuilder(interruptedPrompt(inputNumber));
         }
 
@@ -138,13 +145,13 @@ public class USSDHomeController extends USSDController {
         userLogger.recordUserSession(sessionUser.getUid(), UserInterfaceType.USSD);
 
         /*
-        Adding some complex logic here to check for one of these things:
-        (1) The user has appended a joining code, so we need to add them to a group
+        Adding some logic here to check for one of these things:
+        (1) The user has appended a joining code, so we need to add them to a group, or has asked to trigger a panic call
         (2) The user has an outstanding RSVP request for a meeting
         (3) The user has not named themselves, or a prior group
          */
 
-        if (codeHasTrailingDigits(enteredUSSD)) {
+        if (trailingDigitsPresent) {
             String trailingDigits = enteredUSSD.substring(hashPosition + 1, enteredUSSD.length() - 1);
             openingMenu = processTrailingDigits(trailingDigits, sessionUser);
         } else {
@@ -152,16 +159,12 @@ public class USSDHomeController extends USSDController {
                 userManager.setHasInitiatedUssdSession(sessionUser.getUid());
 
             USSDResponseTypes neededResponse = neededResponse(sessionUser);
-            if (!neededResponse.equals(USSDResponseTypes.NONE)) {
-                openingMenu = requestUserResponse(sessionUser, neededResponse);
-            } else {
-                openingMenu = defaultStartMenu(sessionUser);
-            }
+            openingMenu = neededResponse.equals(USSDResponseTypes.NONE) ? defaultStartMenu(sessionUser)
+                    : requestUserResponse(sessionUser, neededResponse);
         }
         Long endTime = System.currentTimeMillis();
         log.info(String.format("Generating home menu, time taken: %d msecs", endTime - startTime));
         return menuBuilder(openingMenu, true);
-
     }
 
     /*
@@ -170,13 +173,10 @@ public class USSDHomeController extends USSDController {
     @RequestMapping(value = path + startMenu + "_force")
     @ResponseBody
     public Request forceStartMenu(@RequestParam(value = phoneNumber) String inputNumber) throws URISyntaxException {
-
         return menuBuilder(defaultStartMenu(userManager.loadOrCreateUser(inputNumber)));
-
     }
 
     private USSDMenu interruptedPrompt(String inputNumber) {
-
         String returnUrl = cacheManager.fetchUssdMenuForUser(inputNumber);
         log.info("The user was interrupted somewhere ...Here's the URL: " + returnUrl);
 
@@ -214,28 +214,23 @@ public class USSDHomeController extends USSDController {
     }
 
     private USSDMenu processTrailingDigits(String trailingDigits, User sessionUser) throws URISyntaxException {
-
         USSDMenu returnMenu;
-
-        // todo: a switch logic for token ranges
-
         log.info("Processing trailing digits ..." + trailingDigits);
-        if (isSafetyActivationCode(trailingDigits)) {
+        if (safetyCode.equals(trailingDigits)) {
             returnMenu = assemblePanicButtonActivationMenu(sessionUser);
-        } else if (isSendMeAndroindLink(trailingDigits)) {
+        } else if (sendMeLink.equals(trailingDigits)) {
             returnMenu = assembleSendMeAndroidLinkMenu(sessionUser);
         } else {
+            // todo: remove "findBy" above and consolidate into the service call (which throws the 'cant find error'
             Group groupFromJoinCode = groupBroker.findGroupFromJoinCode(trailingDigits.trim());
             if (groupFromJoinCode != null) {
                 log.info("Found a token with these trailing digits ...");
-                // todo: remove "findBy" above and consolidate into the service call (which throws the 'cant find error'
                 groupBroker.addMemberViaJoinCode(sessionUser.getUid(), groupFromJoinCode.getUid(), trailingDigits);
                 String prompt = (groupFromJoinCode.hasName()) ?
                         getMessage(thisSection, startMenu, promptKey + ".group.token.named", groupFromJoinCode.getGroupName(), sessionUser) :
                         getMessage(thisSection, startMenu, promptKey + ".group.token.unnamed", sessionUser);
                 returnMenu = welcomeMenu(prompt, sessionUser);
             } else {
-                log.info("Whoops, couldn't find the code");
                 returnMenu = welcomeMenu(getMessage(thisSection, startMenu, promptKey + ".unknown.request", sessionUser), sessionUser);
             }
 
@@ -261,6 +256,10 @@ public class USSDHomeController extends USSDController {
         USSDMenu openingMenu = new USSDMenu();
 
         switch (response) {
+            case RESPOND_SAFETY:
+                SafetyEvent safetyEvent = safetyEventBroker.getOutstandingUserSafetyEventsResponse(user.getUid()).get(0);
+                openingMenu = assemblePanicButtonActivationResponse(user, safetyEvent);
+                break;
             case VOTE:
                 openingMenu = assembleVoteMenu(user);
                 break;
@@ -282,10 +281,6 @@ public class USSDHomeController extends USSDController {
                                 dateFormat.format(convertToUserTimeZone(group.getCreatedDateTime(), getSAST()))) :
                         renameGroupNoInactiveOption(user, group.getUid(),
                                 dateFormat.format(convertToUserTimeZone(group.getCreatedDateTime(), getSAST())));
-                break;
-            case RESPOND_SAFETY:
-                SafetyEvent safetyEvent = safetyEventBroker.getOutstandingUserSafetyEventsResponse(user.getUid()).get(0);
-                openingMenu = assemblePanicButtonActivationResponse(user, safetyEvent);
                 break;
 
             case NONE:
@@ -385,7 +380,6 @@ public class USSDHomeController extends USSDController {
         return thisMenu;
     }
 
-
     private USSDMenu assemblePanicButtonActivationMenu(User user) {
         USSDMenu menu;
         if (user.hasSafetyGroup()) {
@@ -395,33 +389,26 @@ public class USSDHomeController extends USSDController {
             menu = new USSDMenu(message);
         } else {
             menu = new USSDMenu(getMessage(thisSection, "safety.not-activated", promptKey, user));
-            menu.addMenuOption(USSDSection.SAFETY_GROUP_MANAGER.toPath() + "pick-group", getMessage(thisSection, "safety", optionsKey + "existing", user));
-            menu.addMenuOption(USSDSection.SAFETY_GROUP_MANAGER.toPath() + "new-group", getMessage(thisSection, "safety", optionsKey + "new", user));
-            menu.addMenuOption(startMenu, "Main menu");
+            if (groupBroker.fetchUserCreatedGroups(user, 0, 1).getTotalElements() != 0) {
+                menu.addMenuOption(safetyMenus + "pick-group", getMessage(thisSection, "safety", optionsKey + "existing", user));
+            }
+            menu.addMenuOption(safetyMenus + "new-group", getMessage(thisSection, "safety", optionsKey + "new", user));
+            menu.addMenuOption(startMenu, getMessage(optionsKey + "back.main", user));
         }
+        return menu;
+    }
+
+    private USSDMenu assemblePanicButtonActivationResponse(User user, SafetyEvent safetyEvent) {
+        String activateByDisplayName = safetyEvent.getActivatedBy().getDisplayName();
+        USSDMenu menu = new USSDMenu(getMessage(thisSection, "safety.responder", promptKey, activateByDisplayName, user));
+        menu.addMenuOptions(optionsYesNo(user, USSDUrlUtil.safetyMenuWithId("record-response", safetyEvent.getUid())));
         return menu;
     }
 
     private USSDMenu assembleSendMeAndroidLinkMenu(User user) {
         userManager.sendAndroidLinkSms(user.getUid());
         String message = getMessage(thisSection, "link.android", promptKey, user);
-        return new USSDMenu(message);
-    }
-
-    private USSDMenu assemblePanicButtonActivationResponse(User user, SafetyEvent safetyEvent) {
-        String activateByDisplayName = safetyEvent.getActivatedBy().getDisplayName();
-        USSDMenu menu = new USSDMenu("Did you respond to the panic alert triggered by " + activateByDisplayName + "?"); // todo : i18n
-        menu.addMenuOption(USSDUrlUtil.safetyMenuWithId("record-response", safetyEvent.getUid(), true), "Yes");
-        menu.addMenuOption(USSDUrlUtil.safetyMenuWithId("record-response", safetyEvent.getUid(), false), "No");
-        return menu;
-    }
-
-    private boolean isSafetyActivationCode(String trailingDigits) {
-        return (trailingDigits.equals(safetyCode));
-    }
-
-    private boolean isSendMeAndroindLink(String trailingDigits) {
-        return (trailingDigits).equals(sendMeLink);
+        return new USSDMenu(message, optionsHomeExit(user));
     }
 
     /*
@@ -464,7 +451,7 @@ public class USSDHomeController extends USSDController {
 
     @RequestMapping(value = path + "log-complete")
     @ResponseBody
-    public Request logBookEntry(@RequestParam(value = phoneNumber) String inputNumber,
+    public Request todoEntryMarkComplete(@RequestParam(value = phoneNumber) String inputNumber,
                                 @RequestParam(value = entityUidParam) String logBookUid,
                                 @RequestParam(value = yesOrNoParam) String response) throws URISyntaxException {
 
@@ -570,9 +557,12 @@ public class USSDHomeController extends USSDController {
                                          @RequestParam(value = "existingUri") String existingUri,
                                          @RequestParam(value = "section", required = false) USSDSection section,
                                          @RequestParam(value = "newUri", required = false) String newUri) throws URISyntaxException {
-        return menuBuilder(ussdGroupUtil.userGroupMenuPaginated(userManager.findByInputNumber(inputNumber), prompt, existingUri,
-                newUri, pageNumber, null, section));
-
+        User user = userManager.findByInputNumber(inputNumber);
+        if (SAFETY_GROUP_MANAGER.equals(section)) {
+            return menuBuilder(ussdGroupUtil.showUserCreatedGroupsForSafetyFeature(user, SAFETY_GROUP_MANAGER, existingUri, pageNumber));
+        } else {
+            return menuBuilder(ussdGroupUtil.userGroupMenuPaginated(user, prompt, existingUri, newUri, pageNumber, null, section));
+        }
     }
 
     @RequestMapping(value = path + "event_page")

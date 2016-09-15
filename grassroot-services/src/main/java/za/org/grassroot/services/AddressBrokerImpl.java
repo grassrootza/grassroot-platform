@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.Address;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.UserLogType;
@@ -43,27 +44,32 @@ public class AddressBrokerImpl implements AddressBroker {
 
     @Override
     @Transactional
-    public void adduserAddress(String userUid, String houseNumber, String street, String town) {
-        Objects.requireNonNull(userUid);
-        User user = userRepository.findOneByUid(userUid);
-        Address address = new Address(user, houseNumber, street, town);
-        addressRepository.save(address);
-        log.info("Added user address to db");
-
-        asyncUserLogger.recordUserLog(user.getUid(), UserLogType.ADDED_ADDRESS, "user added address");
-    }
-
-    @Override
-    @Transactional
     public void updateUserAddress(String userUid, String houseNumber, String street, String town) {
         Objects.requireNonNull(userUid);
+
         User user = userRepository.findOneByUid(userUid);
         Address address = addressRepository.findOneByResident(user);
-        if (houseNumber != null) address.setHouseNumber(houseNumber);
-        if (street != null) address.setStreetName(street);
-        if (town != null) address.setTown(town);
 
-        log.info("updating user address");
+        if (address == null) {
+            address = createAddress(user);
+        }
+
+        if (!StringUtils.isEmpty(houseNumber))
+            address.setHouseNumber(houseNumber);
+        if (!StringUtils.isEmpty(street))
+            address.setStreetName(street);
+        if (!StringUtils.isEmpty(town))
+            address.setTown(town);;
+
+        log.info("updated user address");
+    }
+
+    private Address createAddress(User resident) {
+        Address address = new Address(resident);
+        addressRepository.save(address);
+        log.info("Added user address to db");
+        asyncUserLogger.recordUserLog(resident.getUid(), UserLogType.ADDED_ADDRESS, "user added address");
+        return address;
     }
 
 
@@ -75,16 +81,15 @@ public class AddressBrokerImpl implements AddressBroker {
         Address address = addressRepository.findOneByResident(user);
         addressRepository.delete(address);
         asyncUserLogger.recordUserLog(user.getUid(), UserLogType.REMOVED_ADDRESS, "user deleted address");
-
         log.info("deleting user address from db");
-
     }
 
     @Override
     @Transactional(readOnly = true)
     public boolean hasAddress(String userUid) {
-        User user = userRepository.findOneByUid(userUid);
-        return addressRepository.findOneByResident(user) != null;
+        final User user = userRepository.findOneByUid(userUid);
+        final Address address = addressRepository.findOneByResident(user);
+        return address != null && address.hasHouseAndStreet();
     }
 
 }

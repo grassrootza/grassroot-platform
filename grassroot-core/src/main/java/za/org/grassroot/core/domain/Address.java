@@ -1,5 +1,6 @@
 package za.org.grassroot.core.domain;
 
+import org.springframework.util.StringUtils;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
@@ -40,10 +41,14 @@ public class Address {
 
     }
 
-    public Address(User resident, String houseNumber, String streetName, String town){
+    public Address(User resident) {
         this.uid = UIDGenerator.generateId();
         this.createdDateTime = Instant.now();
         this.resident = resident;
+    }
+
+    public Address(User resident, String houseNumber, String streetName, String town){
+        this(resident);
         this.houseNumber = houseNumber;
         this.streetName = streetName;
         this.town = town;
@@ -104,6 +109,10 @@ public class Address {
 
     public void setCreatedDateTime(Instant createdDateTime) {
         this.createdDateTime = createdDateTime;
+    }
+
+    public boolean hasHouseAndStreet() {
+        return !StringUtils.isEmpty(this.houseNumber) || !StringUtils.isEmpty(this.streetName);
     }
 
     @Override
