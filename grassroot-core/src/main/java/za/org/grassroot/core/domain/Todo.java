@@ -1,5 +1,6 @@
 package za.org.grassroot.core.domain;
 
+import org.springframework.beans.factory.annotation.Value;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
@@ -19,8 +20,11 @@ import java.util.Set;
                 @Index(name = "idx_action_todo_replicated_group_id", columnList = "replicated_group_id")})
 public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, VoteContainer, MeetingContainer {
 
-    public static final double COMPLETION_PERCENTAGE_BOUNDARY = 20; // reducing this to 20 until we see larger proportions of response
-    public static final int DEFAULT_NUMBER_REMINDERS = 2;
+    @Value("${grassroot.todos.completion.threshold:20}")
+    private double COMPLETION_PERCENTAGE_BOUNDARY; // reducing this to 20 until we see larger proportions of response
+
+    @Value("{grassroot.todos.number.reminders:2")
+    private int DEFAULT_NUMBER_REMINDERS;
 
     @Column(name = "cancelled")
     protected boolean cancelled;
@@ -57,15 +61,15 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
     }
 
     public Todo(User createdByUser, TodoContainer parent, String message, Instant actionByDate) {
-        this(createdByUser, parent, message, actionByDate, 60, null, DEFAULT_NUMBER_REMINDERS, true);
+        this(createdByUser, parent, message, actionByDate, 60, null, null, true);
     }
 
     public Todo(User createdByUser, TodoContainer parent, String message, Instant actionByDate, int reminderMinutes,
-                Group replicatedGroup, int numberOfRemindersLeftToSend, boolean reminderActive) {
+                Group replicatedGroup, Integer numberOfRemindersLeftToSend, boolean reminderActive) {
         super(createdByUser, parent, message, actionByDate, reminderMinutes, reminderActive);
         this.ancestorGroup = parent.getThisOrAncestorGroup();
         this.replicatedGroup = replicatedGroup;
-        this.numberOfRemindersLeftToSend = numberOfRemindersLeftToSend;
+        this.numberOfRemindersLeftToSend = numberOfRemindersLeftToSend == null ? DEFAULT_NUMBER_REMINDERS : numberOfRemindersLeftToSend;
         this.cancelled = false;
     }
 
@@ -163,9 +167,7 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
         return completionConfirmations.stream().anyMatch(confirmation -> confirmation.getMember().equals(member));
     }
 
-    public double getCompletionPercentage() {
-        return completionPercentage;
-    }
+    public double getCompletionPercentage() { return completionPercentage; }
 
     @Override
     public Instant getDeadlineTime() {

@@ -102,8 +102,6 @@ public class USSDHomeController extends USSDController {
     private static final List<USSDSection> openingSequenceWithoutGroups = Arrays.asList(
             USER_PROFILE, GROUP_MANAGER, MEETINGS, VOTES, TODO);
 
-    private static final long daysPastLogbooks = 5; // just check for logbooks that crossed deadline in last ~week
-
     @PostConstruct
     public void init() {
         hashPosition = environment.getRequiredProperty("grassroot.ussd.code.length", Integer.class);
@@ -205,7 +203,7 @@ public class USSDHomeController extends USSDController {
         if (safetyEventBroker.needsToRespondToSafetyEvent(user)) return USSDResponseTypes.RESPOND_SAFETY;
         if (eventBroker.userHasResponsesOutstanding(user, EventType.VOTE)) return USSDResponseTypes.VOTE;
         if (eventBroker.userHasResponsesOutstanding(user, EventType.MEETING)) return USSDResponseTypes.MTG_RSVP;
-        if (userManager.hasIncompleteTodos(user.getUid(), daysPastLogbooks)) return USSDResponseTypes.RESPOND_TODO;
+        if (todoBroker.userHasTodosForResponse(user.getUid(), false)) return USSDResponseTypes.RESPOND_TODO;
         if (userManager.needsToRenameSelf(user)) return USSDResponseTypes.RENAME_SELF;
         if (userManager.fetchGroupUserMustRename(user) != null) return USSDResponseTypes.NAME_GROUP;
 
@@ -267,7 +265,7 @@ public class USSDHomeController extends USSDController {
                 openingMenu = assembleRsvpMenu(user);
                 break;
             case RESPOND_TODO:
-                openingMenu = assembleLogBookMenu(user);
+                openingMenu = assembleActionTodoMenu(user);
                 break;
             case RENAME_SELF:
                 openingMenu.setPromptMessage(getMessage(thisSection, USSDController.startMenu, promptKey + "-rename", user));
@@ -335,20 +333,19 @@ public class USSDHomeController extends USSDController {
         return openingMenu;
     }
 
-    private USSDMenu assembleLogBookMenu(User user) {
-        log.info("User has an incomplete logbook needing a response!");
-        Todo todo = todoBroker.fetchTodoForUserResponse(user.getUid(), daysPastLogbooks, false);
-
-        if (todo == null) {
-            log.info("For some reason, should have found a logbook to respond to, but didnt, user = {}", user);
+    private USSDMenu assembleActionTodoMenu(User user) {
+        Optional<Todo> optionalTodo = todoBroker.fetchTodoForUserResponse(user.getUid(), false);
+        if (!optionalTodo.isPresent()) {
+            log.info("For some reason, should have found an action to respond to, but didnt, user = {}", user);
             return welcomeMenu(getMessage(thisSection, startMenu, promptKey, user), user);
         } else {
+            Todo todo = optionalTodo.get();
             String[] promptFields = new String[]{
                     todo.getParent().getName(),
                     todo.getMessage(),
                     todo.getActionByDateAtSAST().format(dateFormat)};
-            String prompt = getMessage(thisSection, startMenu, promptKey + ".logbook", promptFields, user);
-            String completeUri = "log-complete" + entityUidUrlSuffix + todo.getUid();
+            String prompt = getMessage(thisSection, startMenu, promptKey + ".todo", promptFields, user);
+            String completeUri = "todo-complete" + entityUidUrlSuffix + todo.getUid();
             USSDMenu menu = new USSDMenu(prompt);
             menu.addMenuOptions(new LinkedHashMap<>(optionsYesNo(user, completeUri, completeUri)));
             menu.addMenuOption(completeUri + "&confirmed=unknown",
@@ -452,18 +449,18 @@ public class USSDHomeController extends USSDController {
     @RequestMapping(value = path + "log-complete")
     @ResponseBody
     public Request todoEntryMarkComplete(@RequestParam(value = phoneNumber) String inputNumber,
-                                @RequestParam(value = entityUidParam) String logBookUid,
+                                @RequestParam(value = entityUidParam) String todoUid,
                                 @RequestParam(value = yesOrNoParam) String response) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(inputNumber);
 
         String prompt;
         if (response.equalsIgnoreCase("yes")) {
-            boolean stateChanged = todoBroker.confirmCompletion(user.getUid(), logBookUid, LocalDateTime.now());
-            prompt = stateChanged ? getMessage(thisSection, startMenu, promptKey + ".logbook-completed", user) :
-                    getMessage(thisSection, startMenu, promptKey + ".logbook-unchanged", user);
+            boolean stateChanged = todoBroker.confirmCompletion(user.getUid(), todoUid, LocalDateTime.now());
+            prompt = stateChanged ? getMessage(thisSection, startMenu, promptKey + ".todo-completed", user) :
+                    getMessage(thisSection, startMenu, promptKey + ".todo-unchanged", user);
         } else {
-            prompt = getMessage(thisSection, startMenu, promptKey + ".logbook-marked-no", user);
+            prompt = getMessage(thisSection, startMenu, promptKey + ".todo-marked-no", user);
         }
 
         return menuBuilder(welcomeMenu(prompt, user));

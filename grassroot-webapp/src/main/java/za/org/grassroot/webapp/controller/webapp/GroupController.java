@@ -545,7 +545,7 @@ public class GroupController extends BaseController {
         Instant start = DateTimeUtil.convertToSystemTime(startDateTime, DateTimeUtil.getSAST());
         Instant end = DateTimeUtil.convertToSystemTime(endDateTime, DateTimeUtil.getSAST());
         List<Event> eventsInPeriod = eventBroker.retrieveGroupEvents(group, null, start, end);
-        List<Todo> todosInPeriod = todoBroker.getTodosInPeriod(group, startDateTime, endDateTime);
+        List<Todo> todosInPeriod = todoBroker.fetchTodosForGroupCreatedDuring(group.getUid(), startDateTime, endDateTime);
         List<GroupLog> groupLogsInPeriod = groupBroker.getLogsForGroup(group, startDateTime, endDateTime);
         List<LocalDate> monthsActive = groupBroker.getMonthsGroupActive(groupUid);
 

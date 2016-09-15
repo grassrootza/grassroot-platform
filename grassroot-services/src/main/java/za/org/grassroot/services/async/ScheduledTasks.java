@@ -150,7 +150,6 @@ public class ScheduledTasks {
         List<Todo> todos = todoRepository.findAllTodosForReminding(Instant.now(),
                 environment.getProperty("grassroot.todos.completion.threshold", Double.class));
         logger.info("Sending scheduled reminders for {} todos", todos.size());
-
         for (Todo todo : todos) {
             try {
                 todoBroker.sendScheduledReminder(todo.getUid());

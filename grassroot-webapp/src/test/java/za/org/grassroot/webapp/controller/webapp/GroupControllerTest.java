@@ -405,7 +405,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         when(userManagementServiceMock.load(sessionTestUser.getUid())).thenReturn(sessionTestUser);
         when(eventBrokerMock.retrieveGroupEvents(testGroup, null, DateTimeUtil.convertToSystemTime(start, DateTimeUtil.getSAST()),
                 DateTimeUtil.convertToSystemTime(end, DateTimeUtil.getSAST()))).thenReturn(dummyEvents);
-        when(todoBrokerMock.getTodosInPeriod(testGroup, start, end)).thenReturn(dummyLogbooks);
+        when(todoBrokerMock.fetchTodosForGroupCreatedDuring(testGroup.getUid(), start, end)).thenReturn(dummyLogbooks);
         when(groupBrokerMock.getLogsForGroup(testGroup, start, end)).thenReturn(dummyGroupLogs);
         when(groupBrokerMock.getMonthsGroupActive(testGroup.getUid())).thenReturn(dummyMonths);
 
@@ -427,7 +427,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         verify(eventBrokerMock, times(1)).retrieveGroupEvents(testGroup, null, DateTimeUtil.convertToSystemTime(start, DateTimeUtil.getSAST()),
                 DateTimeUtil.convertToSystemTime(end, DateTimeUtil.getSAST()));
         verifyNoMoreInteractions(eventBrokerMock);
-        verify(todoBrokerMock, times(1)).getTodosInPeriod(testGroup, start, end);
+        verify(todoBrokerMock, times(1)).fetchTodosForGroupCreatedDuring(testGroup.getUid(), start, end);
         verifyNoMoreInteractions(todoBrokerMock);
 
     }
@@ -454,7 +454,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
         when(userManagementServiceMock.load(sessionTestUser.getUid())).thenReturn(sessionTestUser);
         when(eventBrokerMock.retrieveGroupEvents(testGroup, null, startInst, endInst)).thenReturn(dummyEvents);
-        when(todoBrokerMock.getTodosInPeriod(testGroup, start, end)).thenReturn(dummyTodos);
+        when(todoBrokerMock.fetchTodosForGroupCreatedDuring(testGroup.getUid(), start, end)).thenReturn(dummyTodos);
         when(groupBrokerMock.getLogsForGroup(testGroup, start, end)).thenReturn(dummyGroupLogs);
         when(groupBrokerMock.getMonthsGroupActive(testGroup.getUid())).thenReturn(dummyMonths);
 
@@ -475,7 +475,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(eventBrokerMock, times(1)).retrieveGroupEvents(testGroup, null, startInst, endInst);
         verifyNoMoreInteractions(eventBrokerMock);
-        verify(todoBrokerMock, times(1)).getTodosInPeriod(testGroup, start, end);
+        verify(todoBrokerMock, times(1)).fetchTodosForGroupCreatedDuring(testGroup.getUid(), start, end);
         verifyNoMoreInteractions(todoBrokerMock);
 
     }

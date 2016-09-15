@@ -160,7 +160,9 @@ public class TaskBrokerImpl implements TaskBroker {
         List<Event> events = eventRepository.findByParentGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceledFalse(user, now);
         Set<TaskDTO> taskDtos = resolveEventTaskDtos(events, user, null);
 
-        List<Todo> todos = todoRepository.findAll(Specifications.where(notCancelled()).and(actionByDateAfter(now)).and(userPartOfGroup(user)));
+        List<Todo> todos = todoRepository.findAll(Specifications.where(notCancelled()).and(actionByDateAfter(now))
+                .and(completionConfirmsBelow(COMPLETION_PERCENTAGE_BOUNDARY)).and(userPartOfGroup(user)));
+
         Set<TaskDTO> todoTaskDtos = resolveTodoTaskDtos(todos, user, null);
         taskDtos.addAll(todoTaskDtos);
 

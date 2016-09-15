@@ -47,8 +47,4 @@ public final class TodoSpecifications {
         };
     }
 
-    public static Specification<Todo> userAssigned(final User user) {
-        return (root, query, cb) -> cb.isMember(user, root.get(Todo_.assignedMembers));
-    }
-
 }
