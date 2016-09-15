@@ -3,6 +3,7 @@ package za.org.grassroot.services.async;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.*;
@@ -64,6 +65,9 @@ public class ScheduledTasks {
 
     @Autowired
     private SafetyEventRepository safetyEventRepository;
+
+    @Autowired
+    private Environment environment;
 
     @Scheduled(fixedRate = 300000) //runs every 5 minutes
     public void sendReminders() {
@@ -143,10 +147,9 @@ public class ScheduledTasks {
 
     @Scheduled(fixedRate = 300000) //runs every 5 minutes
     public void sendTodoReminders() {
-
-        List<Todo> todos = todoRepository.findAllTodosForReminding(Instant.now());
+        List<Todo> todos = todoRepository.findAllTodosForReminding(Instant.now(),
+                environment.getProperty("grassroot.todos.completion.threshold", Double.class));
         logger.info("Sending scheduled reminders for {} todos", todos.size());
-
         for (Todo todo : todos) {
             try {
                 todoBroker.sendScheduledReminder(todo.getUid());

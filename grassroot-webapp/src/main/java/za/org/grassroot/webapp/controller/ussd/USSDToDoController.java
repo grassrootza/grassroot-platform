@@ -251,7 +251,7 @@ public class USSDToDoController extends USSDController {
         final User user = userManager.findByInputNumber(inputNumber, USSDUrlUtil.logViewExistingUrl(listEntriesMenu, groupUid, done, pageNumber));
 
         final String urlBase = todoMenus + viewEntryMenu + todoUrlSuffix;
-        final Page<Todo> entries = todoBroker.retrieveGroupTodos(user.getUid(), groupUid, done, pageNumber, PAGE_LENGTH);
+        final Page<Todo> entries = todoBroker.fetchPageOfTodosForGroup(user.getUid(), groupUid, done, pageNumber, PAGE_LENGTH);
 
         boolean canCreateToDos = permissionBroker.countActiveGroupsWithPermission(user, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY) != 0;
         boolean hasMultipleGroups = permissionBroker.countActiveGroupsWithPermission(user, null) > 1;

@@ -95,7 +95,6 @@ public class TodoRepositoryTest {
 
     @Test
     public void shouldSaveAndRetrieveLogBookAssignedToUserAndCompleted()  {
-
         User user = userRepository.save(new User("001111145"));
         Group group = new Group("test action", user);
         group.addMember(user);
@@ -108,6 +107,7 @@ public class TodoRepositoryTest {
         todoRepository.save(lb1);
         todoRepository.save(lb2);
 
+        // todo : move these into services, given transition to using specifications
         Sort sort = new Sort(Sort.Direction.DESC, "actionByDate");
         List<Todo> list = todoRepository.findByAssignedMembersAndActionByDateBetweenAndCompletionPercentageGreaterThanEqual(user, Instant.now(),
                 DateTimeUtil.getVeryLongAwayInstant(), 50, sort);

@@ -156,9 +156,9 @@ public class TodoController extends BaseController {
 
         Group group = groupBroker.load(groupUid);
         model.addAttribute("group", group);
-        model.addAttribute("incompleteEntries", todoBroker.loadGroupTodos(group.getUid(), false, TodoStatus.INCOMPLETE));
+        model.addAttribute("incompleteEntries", todoBroker.fetchTodosForGroupByStatus(group.getUid(), false, TodoStatus.INCOMPLETE));
 
-        List<Todo> completedEntries = todoBroker.loadGroupTodos(group.getUid(), false, TodoStatus.COMPLETE);
+        List<Todo> completedEntries = todoBroker.fetchTodosForGroupByStatus(group.getUid(), false, TodoStatus.COMPLETE);
         model.addAttribute("completedEntries", completedEntries);
         log.info("Got back this many complete entries ... " + completedEntries.size());
 
