@@ -3,6 +3,7 @@ package za.org.grassroot.services;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -39,6 +40,12 @@ public class TodoBrokerImpl implements TodoBroker {
 
 	private static final Logger logger = LoggerFactory.getLogger(TodoBrokerImpl.class);
 
+	@Value("${grassroot.todos.completion.threshold:20}") // defaults to 20 percent
+	private double COMPLETION_PERCENTAGE_BOUNDARY;
+
+	@Value("${grassroot.todos.number.reminders:2}")
+	private int DEFAULT_NUMBER_REMINDERS;
+
 	@Autowired
 	private UserRepository userRepository;
 	@Autowired
@@ -55,6 +62,7 @@ public class TodoBrokerImpl implements TodoBroker {
 	private PermissionBroker permissionBroker;
 
 	@Override
+	@Transactional(readOnly = true)
 	public Todo load(String todoUid) {
 		return todoRepository.findOneByUid(todoUid);
 	}
@@ -89,7 +97,7 @@ public class TodoBrokerImpl implements TodoBroker {
 			throw new EventStartTimeNotInFutureException("Error! Attempt to create todo with due date in the past");
 		}
 
-		Todo todo = new Todo(user, parent, message, convertedActionByDate, reminderMinutes, null, Todo.DEFAULT_NUMBER_REMINDERS, true);
+		Todo todo = new Todo(user, parent, message, convertedActionByDate, reminderMinutes, null, DEFAULT_NUMBER_REMINDERS, true);
 
 		if (!assignedMemberUids.isEmpty()) {
 			assignedMemberUids.add(userUid);
@@ -255,19 +263,21 @@ public class TodoBrokerImpl implements TodoBroker {
 		Pageable pageable = new PageRequest(pageNumber, pageSize);
 		User user = userRepository.findOneByUid(userUid);
 
+
+
 		if (groupUid != null) {
 			Group group = groupRepository.findOneByUid(groupUid);
 			permissionBroker.validateGroupPermission(user, group, null); // make sure user is part of group
 			if (entriesComplete) {
-				page = todoRepository.findByParentGroupAndCompletionPercentageGreaterThanEqualAndCancelledFalseOrderByActionByDateDesc(group, Todo.COMPLETION_PERCENTAGE_BOUNDARY, pageable);
+				page = todoRepository.findByParentGroupAndCompletionPercentageGreaterThanEqualAndCancelledFalseOrderByActionByDateDesc(group, COMPLETION_PERCENTAGE_BOUNDARY, pageable);
 			} else {
-				page = todoRepository.findByParentGroupAndCompletionPercentageLessThanAndCancelledFalseOrderByActionByDateDesc(group, Todo.COMPLETION_PERCENTAGE_BOUNDARY, pageable);
+				page = todoRepository.findByParentGroupAndCompletionPercentageLessThanAndCancelledFalseOrderByActionByDateDesc(group, COMPLETION_PERCENTAGE_BOUNDARY, pageable);
 			}
 		} else {
 			if (entriesComplete) {
-				page = todoRepository.findByParentGroupMembershipsUserAndCompletionPercentageGreaterThanEqualAndCancelledFalseOrderByActionByDateDesc(user, Todo.COMPLETION_PERCENTAGE_BOUNDARY, pageable);
+				page = todoRepository.findByParentGroupMembershipsUserAndCompletionPercentageGreaterThanEqualAndCancelledFalseOrderByActionByDateDesc(user, COMPLETION_PERCENTAGE_BOUNDARY, pageable);
 			} else {
-				page = todoRepository.findByParentGroupMembershipsUserAndCompletionPercentageLessThanOrderByActionByDateDesc(user, Todo.COMPLETION_PERCENTAGE_BOUNDARY, pageable);
+				page = todoRepository.findByParentGroupMembershipsUserAndCompletionPercentageLessThanOrderByActionByDateDesc(user, COMPLETION_PERCENTAGE_BOUNDARY, pageable);
 			}
 		}
 
@@ -298,9 +308,9 @@ public class TodoBrokerImpl implements TodoBroker {
 
 		switch (status) {
 			case COMPLETE:
-				return todoRepository.findByParentGroupAndCompletionPercentageGreaterThanEqualAndActionByDateGreaterThanAndCancelledFalse(group, Todo.COMPLETION_PERCENTAGE_BOUNDARY, start);
+				return todoRepository.findByParentGroupAndCompletionPercentageGreaterThanEqualAndActionByDateGreaterThanAndCancelledFalse(group, COMPLETION_PERCENTAGE_BOUNDARY, start);
 			case INCOMPLETE:
-				return todoRepository.findByParentGroupAndCompletionPercentageLessThanAndActionByDateGreaterThanAndCancelledFalse(group, Todo.COMPLETION_PERCENTAGE_BOUNDARY, start);
+				return todoRepository.findByParentGroupAndCompletionPercentageLessThanAndActionByDateGreaterThanAndCancelledFalse(group, COMPLETION_PERCENTAGE_BOUNDARY, start);
 			case BOTH:
 				return todoRepository.findByParentGroupAndActionByDateGreaterThanAndCancelledFalse(group, start);
 			default:
@@ -318,8 +328,8 @@ public class TodoBrokerImpl implements TodoBroker {
 		Sort sort = new Sort(Sort.Direction.ASC, "actionByDate"); // so the most overdue come up first
 
 		List<Todo> userLbs = !assignedTodosOnly ?
-				todoRepository.findByParentGroupMembershipsUserAndActionByDateBetweenAndCompletionPercentageLessThanAndCancelledFalse(user, start, end, Todo.COMPLETION_PERCENTAGE_BOUNDARY, sort)
-				: todoRepository.findByAssignedMembersAndActionByDateBetweenAndCompletionPercentageLessThan(user, start, end, Todo.COMPLETION_PERCENTAGE_BOUNDARY, sort);
+				todoRepository.findByParentGroupMembershipsUserAndActionByDateBetweenAndCompletionPercentageLessThanAndCancelledFalse(user, start, end, COMPLETION_PERCENTAGE_BOUNDARY, sort)
+				: todoRepository.findByAssignedMembersAndActionByDateBetweenAndCompletionPercentageLessThan(user, start, end, COMPLETION_PERCENTAGE_BOUNDARY, sort);
 
 		lbToReturn = userLbs
 				.stream()

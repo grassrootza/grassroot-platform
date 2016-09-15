@@ -3,6 +3,7 @@ package za.org.grassroot.services;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
@@ -24,6 +25,9 @@ import java.util.stream.Collectors;
 public class TaskBrokerImpl implements TaskBroker {
 
     private static final Logger log = LoggerFactory.getLogger(TaskBrokerImpl.class);
+
+    @Value("${grassroot.todos.completion.threshold:20}") // defaults to 20 percent
+    private double COMPLETION_PERCENTAGE_BOUNDARY;
 
     @Autowired
     private UserRepository userRepository;
@@ -96,7 +100,7 @@ public class TaskBrokerImpl implements TaskBroker {
                 .forEach(e -> new TaskDTO(e, user, eventLogRepository));
 
         // todo : hmm, actually, we may want this to find all incomplete actions, but to consider / adjust in future
-        List<Todo> todos = todoRepository.findByParentGroupAndCompletionPercentageLessThanAndActionByDateGreaterThanAndCancelledFalse(group, Todo.COMPLETION_PERCENTAGE_BOUNDARY, start);
+        List<Todo> todos = todoRepository.findByParentGroupAndCompletionPercentageLessThanAndActionByDateGreaterThanAndCancelledFalse(group, COMPLETION_PERCENTAGE_BOUNDARY, start);
         for (Todo todo : todos) {
             taskDtos.add(new TaskDTO(todo, user));
         }

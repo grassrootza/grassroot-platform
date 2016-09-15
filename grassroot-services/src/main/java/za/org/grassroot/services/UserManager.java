@@ -3,6 +3,7 @@ package za.org.grassroot.services;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -68,14 +69,11 @@ public class UserManager implements UserManagementService, UserDetailsService {
     private MessageAssemblingService messageAssemblingService;
     @Autowired
     private GcmService gcmService;
-
-    @Autowired
-    private SafetyEventBroker safetyEventBroker;
-    @Autowired
-    private AddressRepository addressRepository;
     @Autowired
     private SmsSendingService smsSendingService;
 
+    @Value("${grassroot.todos.completion.threshold:20}") // defaults to 20 percent
+    private double COMPLETION_PERCENTAGE_BOUNDARY;
 
     @Override
     public User load(String userUid) {
@@ -362,7 +360,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
         Instant start = Instant.now().minus(daysInPast, ChronoUnit.DAYS);
         Instant end = Instant.now();
         List<Todo> todos = todoRepository.findByParentGroupMembershipsUserAndActionByDateBetweenAndCompletionPercentageLessThanAndCancelledFalse(
-                user, start, end, Todo.COMPLETION_PERCENTAGE_BOUNDARY, new Sort(Sort.Direction.DESC, "createdDateTime"));
+                user, start, end, COMPLETION_PERCENTAGE_BOUNDARY, new Sort(Sort.Direction.DESC, "createdDateTime"));
         return todos.stream().anyMatch(todo -> !todo.isCompletedBy(user));
     }
 

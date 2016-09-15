@@ -70,7 +70,7 @@ public interface TodoRepository extends JpaRepository<Todo, Long> {
             "and td.numberOfRemindersLeftToSend > 0 " +
             "and td.scheduledReminderTime < ?1 " +
             "and td.reminderActive = true")
-    List<Todo> findAllTodosForReminding(Instant referenceInstant);
+    List<Todo> findAllTodosForReminding(Instant referenceInstant, Integer reference);
 
     @Query(value = "select count(t) from Todo t where t.replicatedGroup=?1 and t.message=?2 and t.actionByDate=?3")
     int countReplicatedEntries(Group group, String message, Instant actionByDate);
