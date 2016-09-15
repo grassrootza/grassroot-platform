@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -18,7 +19,10 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.notification.WelcomeNotification;
 import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.enums.*;
-import za.org.grassroot.core.repository.*;
+import za.org.grassroot.core.repository.GroupRepository;
+import za.org.grassroot.core.repository.TodoRepository;
+import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.repository.UserRequestRepository;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.services.GcmService;
 import za.org.grassroot.integration.services.SmsSendingService;
@@ -36,6 +40,8 @@ import java.time.ZonedDateTime;
 import java.time.temporal.ChronoField;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+
+import static za.org.grassroot.services.specifications.TodoSpecifications.*;
 
 /**
  * @author Lesetse Kimwaga
@@ -359,8 +365,9 @@ public class UserManager implements UserManagementService, UserDetailsService {
         User user = userRepository.findOneByUid(userUid);
         Instant start = Instant.now().minus(daysInPast, ChronoUnit.DAYS);
         Instant end = Instant.now();
-        List<Todo> todos = todoRepository.findByParentGroupMembershipsUserAndActionByDateBetweenAndCompletionPercentageLessThanAndCancelledFalse(
-                user, start, end, COMPLETION_PERCENTAGE_BOUNDARY, new Sort(Sort.Direction.DESC, "createdDateTime"));
+        Sort sort = new Sort(Sort.Direction.DESC, "createdDateTime");
+        List<Todo> todos = todoRepository.findAll(Specifications.where(actionByDateBetween(start, end)).and(notCancelled())
+                .and(completionConfirmsBelow(COMPLETION_PERCENTAGE_BOUNDARY)).and(userPartOfGroup(user)), sort);
         return todos.stream().anyMatch(todo -> !todo.isCompletedBy(user));
     }
 

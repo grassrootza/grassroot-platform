@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
@@ -12,11 +13,14 @@ import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.enums.TodoLogType;
 import za.org.grassroot.core.repository.*;
+import za.org.grassroot.services.specifications.TodoSpecifications;
 import za.org.grassroot.services.util.FullTextSearchUtils;
 
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static za.org.grassroot.services.specifications.TodoSpecifications.*;
 
 /**
  * Created by luke on 2016/04/26.
@@ -96,11 +100,12 @@ public class TaskBrokerImpl implements TaskBroker {
         Set<TaskDTO> taskDtos = new HashSet<>();
 
         Instant start = Instant.now();
-        eventBroker.retrieveGroupEvents(group, null, start, null)
-                .forEach(e -> new TaskDTO(e, user, eventLogRepository));
+        eventBroker.retrieveGroupEvents(group, null, start, null).forEach(e -> new TaskDTO(e, user, eventLogRepository));
 
         // todo : hmm, actually, we may want this to find all incomplete actions, but to consider / adjust in future
-        List<Todo> todos = todoRepository.findByParentGroupAndCompletionPercentageLessThanAndActionByDateGreaterThanAndCancelledFalse(group, COMPLETION_PERCENTAGE_BOUNDARY, start);
+        List<Todo> todos = todoRepository.findAll(Specifications.where(notCancelled()).and(hasGroupAsParent(group))
+                .and(actionByDateAfter(start)).and(completionConfirmsBelow(COMPLETION_PERCENTAGE_BOUNDARY)));
+
         for (Todo todo : todos) {
             taskDtos.add(new TaskDTO(todo, user));
         }
@@ -132,7 +137,9 @@ public class TaskBrokerImpl implements TaskBroker {
         }
         Set<TaskDTO> taskDtos = resolveEventTaskDtos(events, user, changedSince);
 
-        List<Todo> todos = todoRepository.findByParentGroupAndCancelledFalse(group);
+        @SuppressWarnings("unchecked")
+        List<Todo> todos = todoRepository.findAll(Specifications.where(notCancelled())
+                .and(TodoSpecifications.hasGroupAsParent(group)));
         Set<TaskDTO> todoTaskDtos  = resolveTodoTaskDtos(todos, user, changedSince);
         taskDtos.addAll(todoTaskDtos);
 
@@ -153,7 +160,7 @@ public class TaskBrokerImpl implements TaskBroker {
         List<Event> events = eventRepository.findByParentGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceledFalse(user, now);
         Set<TaskDTO> taskDtos = resolveEventTaskDtos(events, user, null);
 
-        List<Todo> todos = todoRepository.findByParentGroupMembershipsUserAndActionByDateGreaterThanAndCancelledFalse(user, now);
+        List<Todo> todos = todoRepository.findAll(Specifications.where(notCancelled()).and(actionByDateAfter(now)).and(userPartOfGroup(user)));
         Set<TaskDTO> todoTaskDtos = resolveTodoTaskDtos(todos, user, null);
         taskDtos.addAll(todoTaskDtos);
 

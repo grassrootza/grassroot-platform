@@ -1,4 +1,4 @@
-package za.org.grassroot.core.domain.metamodel;
+package za.org.grassroot.core.domain;
 
 import java.time.Instant;
 import javax.annotation.Generated;

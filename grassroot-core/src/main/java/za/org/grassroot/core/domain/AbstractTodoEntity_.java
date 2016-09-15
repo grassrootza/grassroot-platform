@@ -1,14 +1,8 @@
-package za.org.grassroot.core.domain.metamodel;
+package za.org.grassroot.core.domain;
 
-import za.org.grassroot.core.domain.AbstractTodoEntity;
-import za.org.grassroot.core.domain.Event;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.User;
-
-import java.time.Instant;
-import javax.annotation.Generated;
 import javax.persistence.metamodel.SingularAttribute;
 import javax.persistence.metamodel.StaticMetamodel;
+import java.time.Instant;
 
 @StaticMetamodel(AbstractTodoEntity.class)
 public abstract class AbstractTodoEntity_ {

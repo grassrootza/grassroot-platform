@@ -8,6 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +24,7 @@ import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.enums.TodoStatus;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
+import za.org.grassroot.services.specifications.TodoSpecifications;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
@@ -34,6 +36,7 @@ import java.util.stream.Collectors;
 
 import static za.org.grassroot.core.util.DateTimeUtil.convertToSystemTime;
 import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
+import static za.org.grassroot.services.specifications.TodoSpecifications.*;
 
 @Service
 public class TodoBrokerImpl implements TodoBroker {
@@ -259,37 +262,30 @@ public class TodoBrokerImpl implements TodoBroker {
 	public Page<Todo> retrieveGroupTodos(String userUid, String groupUid, boolean entriesComplete, int pageNumber, int pageSize) {
 		Objects.requireNonNull(userUid);
 
-		Page<Todo> page;
-		Pageable pageable = new PageRequest(pageNumber, pageSize);
 		User user = userRepository.findOneByUid(userUid);
+		Pageable pageable = new PageRequest(pageNumber, pageSize, new Sort(Sort.Direction.DESC, "actionByDate"));
 
-
-
+		Specifications<Todo> specifications = Specifications.where(notCancelled());
 		if (groupUid != null) {
 			Group group = groupRepository.findOneByUid(groupUid);
 			permissionBroker.validateGroupPermission(user, group, null); // make sure user is part of group
-			if (entriesComplete) {
-				page = todoRepository.findByParentGroupAndCompletionPercentageGreaterThanEqualAndCancelledFalseOrderByActionByDateDesc(group, COMPLETION_PERCENTAGE_BOUNDARY, pageable);
-			} else {
-				page = todoRepository.findByParentGroupAndCompletionPercentageLessThanAndCancelledFalseOrderByActionByDateDesc(group, COMPLETION_PERCENTAGE_BOUNDARY, pageable);
-			}
+			specifications = specifications.and(hasGroupAsParent(group));
 		} else {
-			if (entriesComplete) {
-				page = todoRepository.findByParentGroupMembershipsUserAndCompletionPercentageGreaterThanEqualAndCancelledFalseOrderByActionByDateDesc(user, COMPLETION_PERCENTAGE_BOUNDARY, pageable);
-			} else {
-				page = todoRepository.findByParentGroupMembershipsUserAndCompletionPercentageLessThanOrderByActionByDateDesc(user, COMPLETION_PERCENTAGE_BOUNDARY, pageable);
-			}
+			specifications = specifications.and(userPartOfGroup(user));
 		}
+		specifications = specifications.and(entriesComplete ? completionConfirmsAbove(COMPLETION_PERCENTAGE_BOUNDARY)
+				: completionConfirmsBelow(COMPLETION_PERCENTAGE_BOUNDARY));
 
-		return page;
+		return todoRepository.findAll(specifications, pageable);
 	}
 
 	@Override
+	@Transactional(readOnly = true)
 	public List<Todo> getTodosInPeriod(Group group, LocalDateTime periodStart, LocalDateTime periodEnd) {
 		Sort sort = new Sort(Sort.Direction.ASC, "createdDateTime");
 		Instant start = convertToSystemTime(periodStart, getSAST());
 		Instant end = convertToSystemTime(periodEnd, getSAST());
-		return todoRepository.findByParentGroupAndCreatedDateTimeBetween(group, start, end, sort);
+		return todoRepository.findAll(Specifications.where(hasGroupAsParent(group)).and(createdDateBetween(start, end)), sort);
 	}
 
 	@Override
@@ -300,22 +296,31 @@ public class TodoBrokerImpl implements TodoBroker {
 				.collect(Collectors.toList());
 	}
 
+	@Override
+	@Transactional(readOnly = true)
 	public List<Todo> loadGroupTodos(String groupUid, boolean futureTodosOnly, TodoStatus status) {
 		Objects.requireNonNull(groupUid);
 
 		Group group = groupRepository.findOneByUid(groupUid);
 		Instant start = futureTodosOnly ? Instant.now() : DateTimeUtil.getEarliestInstant();
 
+		logger.info("okay, about to use the specifications ... again 3");
+		Specifications<Todo> specifications = Specifications.where(TodoSpecifications.notCancelled())
+				.and(TodoSpecifications.actionByDateAfter(start))
+				.and(hasGroupAsParent(group));
+
 		switch (status) {
 			case COMPLETE:
-				return todoRepository.findByParentGroupAndCompletionPercentageGreaterThanEqualAndActionByDateGreaterThanAndCancelledFalse(group, COMPLETION_PERCENTAGE_BOUNDARY, start);
+				specifications = specifications.and(TodoSpecifications.completionConfirmsAbove(COMPLETION_PERCENTAGE_BOUNDARY));
+				break;
 			case INCOMPLETE:
-				return todoRepository.findByParentGroupAndCompletionPercentageLessThanAndActionByDateGreaterThanAndCancelledFalse(group, COMPLETION_PERCENTAGE_BOUNDARY, start);
-			case BOTH:
-				return todoRepository.findByParentGroupAndActionByDateGreaterThanAndCancelledFalse(group, start);
+				specifications = specifications.and(TodoSpecifications.completionConfirmsBelow(COMPLETION_PERCENTAGE_BOUNDARY));
+				break;
 			default:
-				return todoRepository.findByParentGroupAndActionByDateGreaterThanAndCancelledFalse(group, start);
+				break;
 		}
+
+		return todoRepository.findAll(specifications);
 	}
 
 	@Override
@@ -326,10 +331,11 @@ public class TodoBrokerImpl implements TodoBroker {
 		Instant end = Instant.now();
 		Instant start = Instant.now().minus(daysInPast, ChronoUnit.DAYS);
 		Sort sort = new Sort(Sort.Direction.ASC, "actionByDate"); // so the most overdue come up first
+		Specifications<Todo> specifications = Specifications.where(actionByDateBetween(start, end))
+				.and(completionConfirmsBelow(COMPLETION_PERCENTAGE_BOUNDARY)).and(notCancelled());
 
-		List<Todo> userLbs = !assignedTodosOnly ?
-				todoRepository.findByParentGroupMembershipsUserAndActionByDateBetweenAndCompletionPercentageLessThanAndCancelledFalse(user, start, end, COMPLETION_PERCENTAGE_BOUNDARY, sort)
-				: todoRepository.findByAssignedMembersAndActionByDateBetweenAndCompletionPercentageLessThan(user, start, end, COMPLETION_PERCENTAGE_BOUNDARY, sort);
+		specifications = assignedTodosOnly ? specifications.and(userAssigned(user)) : specifications.and(userPartOfGroup(user));
+		List<Todo> userLbs = todoRepository.findAll(specifications, sort);
 
 		lbToReturn = userLbs
 				.stream()

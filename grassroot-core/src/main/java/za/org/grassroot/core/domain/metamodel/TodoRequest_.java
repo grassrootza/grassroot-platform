@@ -1,9 +1,9 @@
 package za.org.grassroot.core.domain.metamodel;
 
+import za.org.grassroot.core.domain.AbstractTodoEntity_;
 import za.org.grassroot.core.domain.TodoRequest;
 import za.org.grassroot.core.domain.User;
 
-import javax.annotation.Generated;
 import javax.persistence.metamodel.SetAttribute;
 import javax.persistence.metamodel.SingularAttribute;
 import javax.persistence.metamodel.StaticMetamodel;

@@ -1,15 +1,9 @@
-package za.org.grassroot.core.domain.metamodel;
+package za.org.grassroot.core.domain;
 
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.Todo;
-import za.org.grassroot.core.domain.TodoCompletionConfirmation;
-import za.org.grassroot.core.domain.User;
-
-import java.time.Instant;
-import javax.annotation.Generated;
 import javax.persistence.metamodel.SetAttribute;
 import javax.persistence.metamodel.SingularAttribute;
 import javax.persistence.metamodel.StaticMetamodel;
+import java.time.Instant;
 
 @StaticMetamodel(Todo.class)
 public abstract class Todo_ extends AbstractTodoEntity_ {
@@ -24,4 +18,3 @@ public abstract class Todo_ extends AbstractTodoEntity_ {
 	public static volatile SingularAttribute<Todo, Instant> completedDate;
 
 }
-
