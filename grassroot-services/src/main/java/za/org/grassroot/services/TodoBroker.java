@@ -8,6 +8,7 @@ import za.org.grassroot.services.enums.TodoStatus;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 public interface TodoBroker {
@@ -24,6 +25,8 @@ public interface TodoBroker {
 	void removeAssignedMembers(String userUid, String todoUid, Set<String> memberUids);
 
 	void cancel(String userUid, String todoUid);
+
+	Todo update(String userUid, String uid, String message, String description, LocalDateTime actionByDate, Integer reminderMinutes, Set<String> assignnedMemberUids);
 
 	/**
 	 * Confirms completion by given user which should be a member of specified todo.
@@ -44,24 +47,28 @@ public interface TodoBroker {
 	 * @param pageSize The page size
      * @return
      */
-	Page<Todo> retrieveGroupTodos(String userUid, String groupUid, boolean entriesComplete, int pageNumber, int pageSize);
+	Page<Todo> fetchPageOfTodosForGroup(String userUid, String groupUid, boolean entriesComplete, int pageNumber, int pageSize);
 
-	List<Todo> getTodosInPeriod(Group group, LocalDateTime periodStart, LocalDateTime periodEnd);
+	List<Todo> fetchTodosForGroupByStatus(String groupUid, boolean futureTodosOnly, TodoStatus status);
 
-	List<Group> retrieveGroupsFromTodos(List<Todo> todos);
+	List<Todo> fetchTodosForGroupCreatedDuring(String groupUid, LocalDateTime createdAfter, LocalDateTime createdBefore);
 
-	List<Todo> loadGroupTodos(String groupUid, boolean futureTodosOnly, TodoStatus status);
+	/*
+	Check if a user needs to respond to a to-do
+	 */
 
-	// todo: we need some sort of logic here for not showing users the same todo over and over
-	Todo fetchTodoForUserResponse(String userUid, long daysInPast, boolean assignedTodosOnly);
+	// todo: we need some sort of logic here for not showing users the same todo over and over (plus handle assigned vs parent)
+	Optional<Todo> fetchTodoForUserResponse(String userUid, boolean assignedTodosOnly);
 
-	Todo update(String userUid, String uid, String message, String description, LocalDateTime actionByDate, Integer reminderMinutes, Set<String> assignnedMemberUids);
+	boolean userHasTodosForResponse(String userUid, boolean assignedTodosOnly);
 
 	/**
 	 * Methods to handle "replicaed" todos (i.e., that cascade down subgroups)
 	 */
 
 	boolean hasReplicatedEntries(Todo todo);
+
+	List<Group> retrieveGroupsFromTodos(List<Todo> todos);
 
 	List<Todo> getAllReplicatedEntriesFromParent(Todo todo);
 

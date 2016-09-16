@@ -36,9 +36,9 @@ import static za.org.grassroot.services.enums.GroupPermissionTemplate.DEFAULT_GR
 @ContextConfiguration(classes = {GrassrootServicesConfig.class,TestContextConfig.class})
 @Transactional
 @ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
-public class GroupManagementServiceTest extends AbstractTransactionalJUnit4SpringContextTests {
+public class GroupBrokerTest extends AbstractTransactionalJUnit4SpringContextTests {
 
-    private static final Logger log = LoggerFactory.getLogger(GroupManagementServiceTest.class);
+    private static final Logger log = LoggerFactory.getLogger(GroupBrokerTest.class);
 
     @Autowired
     private UserManagementService userManagementService;

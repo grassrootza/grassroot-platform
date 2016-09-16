@@ -128,13 +128,13 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
         Page<Todo> dummyPage = new PageImpl<>(testTodos);
         String urlToSave = logViewExistingUrl(listEntriesMenu, testGroup.getUid(), true, 0);
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
-        when(todoBrokerMock.retrieveGroupTodos(testUser.getUid(), testGroup.getUid(), true, 0, 3)).thenReturn(dummyPage);
+        when(todoBrokerMock.fetchPageOfTodosForGroup(testUser.getUid(), testGroup.getUid(), true, 0, 3)).thenReturn(dummyPage);
         mockMvc.perform(get(path + listEntriesMenu).param(phoneParam, testUserPhone).param("groupUid", testGroup.getUid())
                 .param("done", String.valueOf(true))).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(todoBrokerMock, times(1)).retrieveGroupTodos(testUser.getUid(), testGroup.getUid(), true, 0, 3);
+        verify(todoBrokerMock, times(1)).fetchPageOfTodosForGroup(testUser.getUid(), testGroup.getUid(), true, 0, 3);
         verifyNoMoreInteractions(todoBrokerMock);
     }
 

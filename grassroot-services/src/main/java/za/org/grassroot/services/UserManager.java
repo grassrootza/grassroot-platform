@@ -3,7 +3,7 @@ package za.org.grassroot.services;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Sort;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -17,7 +17,9 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.notification.WelcomeNotification;
 import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.enums.*;
-import za.org.grassroot.core.repository.*;
+import za.org.grassroot.core.repository.GroupRepository;
+import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.repository.UserRequestRepository;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.services.GcmService;
 import za.org.grassroot.integration.services.SmsSendingService;
@@ -61,21 +63,16 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Autowired
     private UserRequestRepository userCreateRequestRepository;
     @Autowired
-    private TodoRepository todoRepository;
-    @Autowired
     private LogsAndNotificationsBroker logsAndNotificationsBroker;
     @Autowired
     private MessageAssemblingService messageAssemblingService;
     @Autowired
     private GcmService gcmService;
-
-    @Autowired
-    private SafetyEventBroker safetyEventBroker;
-    @Autowired
-    private AddressRepository addressRepository;
     @Autowired
     private SmsSendingService smsSendingService;
 
+    @Value("${grassroot.todos.completion.threshold:20}") // defaults to 20 percent
+    private double COMPLETION_PERCENTAGE_BOUNDARY;
 
     @Override
     public User load(String userUid) {
@@ -352,18 +349,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
     public boolean needsToRenameSelf(User user) {
         return !user.hasName() && (!asyncUserService.hasSkippedName(user.getUid())
                 && user.getCreatedDateTime().isBefore(Instant.now().minus(3, ChronoUnit.MINUTES)));
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public boolean hasIncompleteTodos(String userUid, long daysInPast) {
-        // checks for incomplete entries
-        User user = userRepository.findOneByUid(userUid);
-        Instant start = Instant.now().minus(daysInPast, ChronoUnit.DAYS);
-        Instant end = Instant.now();
-        List<Todo> todos = todoRepository.findByParentGroupMembershipsUserAndActionByDateBetweenAndCompletionPercentageLessThanAndCancelledFalse(
-                user, start, end, Todo.COMPLETION_PERCENTAGE_BOUNDARY, new Sort(Sort.Direction.DESC, "createdDateTime"));
-        return todos.stream().anyMatch(todo -> !todo.isCompletedBy(user));
     }
 
     /*
