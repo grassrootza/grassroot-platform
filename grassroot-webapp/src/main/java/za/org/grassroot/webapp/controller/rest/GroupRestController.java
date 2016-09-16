@@ -18,6 +18,7 @@ import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
 import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.integration.exception.MessengerSettingNotFoundException;
+import za.org.grassroot.integration.services.GcmService;
 import za.org.grassroot.integration.services.MessengerSettingsService;
 import za.org.grassroot.services.*;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
@@ -27,6 +28,7 @@ import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.webapp.enums.JoinReqType;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
+import za.org.grassroot.webapp.model.MessengerSettingsDTO;
 import za.org.grassroot.webapp.model.rest.GroupJoinRequestDTO;
 import za.org.grassroot.webapp.model.rest.PermissionDTO;
 import za.org.grassroot.webapp.model.rest.wrappers.*;
@@ -70,6 +72,9 @@ public class GroupRestController {
 
 	@Autowired
 	private MessengerSettingsService messengerSettingsService;
+
+	@Autowired
+	private GcmService gcmService;
 
 	@Autowired
 	@Qualifier("messageSourceAccessor")
@@ -593,21 +598,45 @@ public class GroupRestController {
 		return response;
 	}
 
-	@RequestMapping(value= "messenger/update/{phoneNumber}/{code}", method =RequestMethod.POST)
+	@RequestMapping(value= "messenger/update/{phoneNumber}/{code}/{groupUid}", method =RequestMethod.POST)
 	public ResponseEntity<ResponseWrapper> updateMemberGroupChatSetting(@PathVariable String phoneNumber,
 																		@PathVariable String code,
-																		@RequestParam("groupUid") String groupUid,
+																		@PathVariable("groupUid") String groupUid,
 																		@RequestParam(value = "userUid",required = false) String userUid,
-																		@RequestParam("active") boolean active,
-																		@RequestParam("userInitiated") boolean userInitiated)
-			throws MessengerSettingNotFoundException {
+																		@RequestParam("active") boolean active, @RequestParam("userInitiated") boolean userInitiated)
+			throws Exception {
 
 		User user = userManagementService.findByInputNumber(phoneNumber);
-		String userSettingTobeUpdate = (userInitiated)?user.getUid():userUid;
-
-		messengerSettingsService.updateActivityStatus(userSettingTobeUpdate,groupUid,active,userInitiated);
+		String userSettingTobeUpdated = (userInitiated)?user.getUid():userUid;
+		log.info("userInitiated " + userInitiated);
+		log.info("active " + active);
+		log.info("userUid"  +userUid);
+        if(!userInitiated){
+            Group group = groupBroker.load(groupUid);
+            permissionBroker.isGroupPermissionAvailable(user,group,Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER);
+        }
+		messengerSettingsService.updateActivityStatus(userSettingTobeUpdated,groupUid,active,userInitiated);
+		if(userInitiated){
+			String registrationId = gcmService.getGcmKey(user);
+			if(active){
+				gcmService.subscribeToTopic(registrationId,groupUid);
+			}else{
+				gcmService.unsubScribeFromTopic(registrationId,groupUid);
+			}
+		}
 		return (!active)?RestUtil.messageOkayResponse(RestMessage.CHAT_DEACTIVATED):
 				RestUtil.messageOkayResponse(RestMessage.CHAT_ACTIVATED);
+
+	}
+
+	@RequestMapping(value ="messenger/fetch_settings/{phoneNumber}/{code}/{groupUid}", method = RequestMethod.GET)
+	public ResponseEntity<MessengerSettingsDTO> fetchMemberGroupChatSetting(@PathVariable String phoneNumber,
+																	   @PathVariable String code,
+																	   @PathVariable("groupUid") String groupUid) throws MessengerSettingNotFoundException{
+
+		User user = userManagementService.findByInputNumber(phoneNumber);
+		MessengerSettings messengerSettings = messengerSettingsService.load(user.getUid(),groupUid);
+		return new ResponseEntity<>(new MessengerSettingsDTO(messengerSettings),HttpStatus.OK);
 
 	}
 

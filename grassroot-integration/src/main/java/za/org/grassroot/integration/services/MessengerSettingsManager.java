@@ -6,11 +6,13 @@ import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.MessengerSettings;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.repository.GcmRegistrationRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.MessengerSettingsRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.integration.exception.MessengerSettingNotFoundException;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
@@ -22,13 +24,15 @@ import java.util.Objects;
 public class MessengerSettingsManager implements MessengerSettingsService {
 
     @Autowired
-    UserRepository userRepository;
+    private UserRepository userRepository;
 
     @Autowired
-    GroupRepository groupRepository;
+    private GroupRepository groupRepository;
 
     @Autowired
-    MessengerSettingsRepository messengerSettingsRepository;
+    private MessengerSettingsRepository messengerSettingsRepository;
+
+
 
     @Override
     @Transactional
@@ -100,7 +104,7 @@ public class MessengerSettingsManager implements MessengerSettingsService {
 
     @Override
     @Transactional
-    public void updateActivityStatus(String userUid, String groupUid, boolean active, boolean userInitiated) throws MessengerSettingNotFoundException {
+    public void updateActivityStatus(String userUid, String groupUid, boolean active, boolean userInitiated) throws Exception {
         Objects.nonNull(userUid);
         Objects.nonNull(groupUid);
 
@@ -114,10 +118,10 @@ public class MessengerSettingsManager implements MessengerSettingsService {
         messengerSettings.setActive(active);
         messengerSettings.setUserInitiated(userInitiated);
         messengerSettings.setCanSend(active);
-
-        if(userInitiated ){
+        if(userInitiated){
             messengerSettings.setCanReceive(active);
         }
+        messengerSettingsRepository.save(messengerSettings);
 
     }
 

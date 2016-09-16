@@ -162,7 +162,7 @@ public class ScheduledTasks {
     }
 
     @Scheduled(fixedDelay = 300000)
-    public void reactivateMutedUsers(){
+    public void reactivateMutedUsers() throws Exception {
         List<MessengerSettings> messengerSettingses = messengerSettingsService.loadMutedUsersMessengerSettings();
         for(MessengerSettings messengerSetting: messengerSettingses){
             String userUid = messengerSetting.getUser().getUid();

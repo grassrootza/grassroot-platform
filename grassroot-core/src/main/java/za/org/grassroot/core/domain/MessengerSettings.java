@@ -74,6 +74,14 @@ public class MessengerSettings {
         return canSend;
     }
 
+    public boolean isUserInitiated() {
+        return userInitiated;
+    }
+
+    public boolean isCanReceive() {
+        return canReceive;
+    }
+
     public Instant getReactivationTime() {
         return reactivationTime;
     }

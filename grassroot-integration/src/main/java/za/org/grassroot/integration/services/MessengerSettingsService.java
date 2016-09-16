@@ -26,7 +26,7 @@ public interface MessengerSettingsService {
     boolean isCanSend(String userUid, String groupUid) throws MessengerSettingNotFoundException;
 
     @Transactional
-    void updateActivityStatus(String userUid, String groupUid, boolean active, boolean userInitiated) throws MessengerSettingNotFoundException;
+    void updateActivityStatus(String userUid, String groupUid, boolean active, boolean userInitiated) throws Exception;
 
     @Transactional(readOnly = true)
     boolean isCanReceive(String userUid, String groupUid) throws Exception;

@@ -170,7 +170,7 @@ public class InboundGcmMessageHandler {
                 gcmXmppOutboundChannel.send(message);
             }
         } catch (MessengerSettingNotFoundException e) {
-            log.info("User with phoneNumber={} is not enabled to sending messages to this group", phoneNumber);
+            log.info("User with phoneNumber={} is not enabled to send messages to this group", phoneNumber);
         }
 
     }
@@ -193,10 +193,8 @@ public class InboundGcmMessageHandler {
         data.put("phone_number", user.getPhoneNumber());
         data.put("userUid", user.getUid());
         data.put("created_date_time", Instant.now().toString());
-        data.put("alert_type", NotificationType.CHAT.toString());
         data.put("entity_type", AndroidClickActionType.CHAT_MESSAGE.toString());
         data.put("click_action", AndroidClickActionType.CHAT_MESSAGE.toString());
-        data.put("priority", String.valueOf(1));
         data.put("time", input.getData().get("time"));
         
         org.springframework.messaging.Message<Message> gcmMessage = GcmXmppMessageCodec.encode(topic, messageId,
