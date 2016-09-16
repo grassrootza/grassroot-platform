@@ -1,0 +1,2 @@
+ALTER TABLE action_todo_completion_confirmation DROP COLUMN creation_time;
+ALTER TABLE action_todo_completion_confirmation DROP COLUMN confirmation_type;

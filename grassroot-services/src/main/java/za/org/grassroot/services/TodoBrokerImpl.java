@@ -16,6 +16,7 @@ import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.notification.TodoInfoNotification;
 import za.org.grassroot.core.domain.notification.TodoReminderNotification;
+import za.org.grassroot.core.enums.TodoCompletionConfirmType;
 import za.org.grassroot.core.enums.TodoLogType;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.TodoRepository;
@@ -28,8 +29,6 @@ import za.org.grassroot.services.specifications.TodoSpecifications;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
-import javax.persistence.EntityManager;
-import javax.persistence.TypedQuery;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -51,8 +50,11 @@ public class TodoBrokerImpl implements TodoBroker {
 	@Value("${grassroot.todos.number.reminders:2}")
 	private int DEFAULT_NUMBER_REMINDERS;
 
-	@Value("${grassroot.todos.days_over.prompt:5}")
+	@Value("${grassroot.todos.days_over.prompt:7}")
 	private int DAYS_PAST_FOR_TODO_CHECKING;
+
+	@Value("${grassroot.todos.days_after.reminder:3}")
+	private int DAYS_AFTER_FOR_REMINDER;
 
 	@Autowired
 	private UserRepository userRepository;
@@ -68,8 +70,6 @@ public class TodoBrokerImpl implements TodoBroker {
 	private LogsAndNotificationsBroker logsAndNotificationsBroker;
 	@Autowired
 	private PermissionBroker permissionBroker;
-	@Autowired
-	private EntityManager entityManager;
 
 	@Override
 	@Transactional(readOnly = true)
@@ -210,22 +210,19 @@ public class TodoBrokerImpl implements TodoBroker {
 
 	@Override
 	@Transactional
-	public boolean confirmCompletion(String userUid, String todoUid, LocalDateTime completionTime) {
+	public boolean confirmCompletion(String userUid, String todoUid, TodoCompletionConfirmType confirmType, LocalDateTime completionTime) {
 		Objects.requireNonNull(userUid);
 		Objects.requireNonNull(todoUid);
+		Objects.requireNonNull(confirmType);
 
 		User user = userRepository.findOneByUid(userUid);
 		Todo todo = todoRepository.findOneByUid(todoUid);
 
-		logger.info("Confirming completion todo={}, completion time={}, user={}", todo, completionTime, user);
+		logger.info("Confirming completion type={}, todo={}, completion time={}, user={}", todo, confirmType, completionTime, user);
 
 		Instant completionInstant = completionTime == null ? null : convertToSystemTime(completionTime, getSAST());
-		boolean confirmationRegistered = todo.addCompletionConfirmation(user, completionInstant);
-		if (!confirmationRegistered) {
-			// should error be raised when member already registered completions !?
-			logger.info("Completion confirmation already exists for member {} and log book {}", user, todo);
-		}
-		return confirmationRegistered;
+		boolean tippedThreshold = todo.addCompletionConfirmation(user, confirmType, completionInstant);
+		return  tippedThreshold || todo.getCreatedByUser().equals(user);
 	}
 
 
@@ -241,11 +238,12 @@ public class TodoBrokerImpl implements TodoBroker {
 		Set<User> members = todo.isAllGroupMembersAssigned() ?
 				todo.getAncestorGroup().getMembers() : todo.getAssignedMembers();
 
-		for (User member : members) {
-			String message = messageAssemblingService.createTodoReminderMessage(member, todo);
-			Notification notification = new TodoReminderNotification(member, message, todoLog);
-			bundle.addNotification(notification);
-		}
+		members.stream().filter(m -> !todo.isCompletionConfirmedByMember(m))
+				.forEach(member -> {
+					String message = messageAssemblingService.createTodoReminderMessage(member, todo);
+					Notification notification = new TodoReminderNotification(member, message, todoLog);
+					bundle.addNotification(notification);
+				});
 
 		// we only want to include log if there are some notifications
 		if (!bundle.getNotifications().isEmpty()) {
@@ -253,11 +251,9 @@ public class TodoBrokerImpl implements TodoBroker {
 		}
 
 		// reduce number of reminders to send and calculate new reminder minutes
-		// to reduce SMS / notification traffic, reducing this to just one day
 		todo.setNumberOfRemindersLeftToSend(todo.getNumberOfRemindersLeftToSend() - 1);
 		if (todo.getNumberOfRemindersLeftToSend() > 0) {
-			// i.e., advance it by 5 days (~ working week).
-			todo.setReminderMinutes(todo.getReminderMinutes() - DateTimeUtil.numberOfMinutesForDays(5));
+			todo.setReminderMinutes(todo.getReminderMinutes() - DateTimeUtil.numberOfMinutesForDays(DAYS_AFTER_FOR_REMINDER));
 			todo.calculateScheduledReminderTime();
 		} else {
 			todo.setReminderActive(false);
@@ -334,12 +330,14 @@ public class TodoBrokerImpl implements TodoBroker {
 	@Transactional(readOnly = true)
 	public Optional<Todo> fetchTodoForUserResponse(String userUid, boolean assignedTodosOnly) {
 		final User user = userRepository.findOneByUid(userUid);
-		final List<Todo> result = queryTodosForResponse(user, DAYS_PAST_FOR_TODO_CHECKING).getResultList();
+		Sort sort = new Sort(Sort.Direction.ASC, "actionByDate"); // get the most overdue
+		final List<Todo> result = todoRepository.findAll(incompleteTodoSpecifications(user, DAYS_PAST_FOR_TODO_CHECKING), sort);
 		if (result == null || result.isEmpty()) {
-			return Optional.empty(); // note : getSingleResult throws error if list is empty, hence use this wrapping (may be able to simplify ...)
+			return Optional.empty();
 		} else {
 			return result.stream()
 					.filter(t -> !assignedTodosOnly || t.isAllGroupMembersAssigned() || t.getAssignedMembers().contains(user))
+					.filter(t -> !t.hasUserRespondedToTodo(user)) // todo : include in specifications?
 					.findFirst();
 		}
 	}
@@ -350,19 +348,29 @@ public class TodoBrokerImpl implements TodoBroker {
 		return fetchTodoForUserResponse(userUid, assignedTodosOnly).isPresent();
 	}
 
-	private TypedQuery<Todo> queryTodosForResponse(User user, long daysPastToCheck) {
-		return entityManager.createQuery("select td from Todo td " +
-				"left join td.completionConfirmations cm " +
-				"inner join td.parentGroup g " +
-				"inner join g.memberships m " +
-				"where td.cancelled = false and td.completionPercentage < :threshold and (td.actionByDate between :start and :endtime) " +
-				"and m.user = :user and (cm.member is null OR (cm.member != :user and cm.member != td.createdByUser))" +
-				"order by td.actionByDate asc", Todo.class) // so the most overdue comes up first
-				.setParameter("threshold", COMPLETION_PERCENTAGE_BOUNDARY)
-				.setParameter("endtime", Instant.now())
-				.setParameter("start", Instant.now().minus(daysPastToCheck, ChronoUnit.DAYS))
-				.setParameter("user", user)
-				.setMaxResults(1);
+	@Override
+	@Transactional(readOnly = true)
+	public boolean userHasIncompleteActionsToView(String userUid) {
+		User user = userRepository.findOneByUid(userUid);
+		return todoRepository.count(incompleteTodoSpecifications(user, 90)) > 0;
+	}
+
+	@Transactional(readOnly = true)
+	public Page<Todo> fetchIncompleteActionsToView(String userUid, Pageable pageable) {
+		// important: we assume that the pageable has sort instructions embedded in it
+		User user = userRepository.findOneByUid(userUid);
+		return todoRepository.findAll(incompleteTodoSpecifications(user, 90), pageable);
+	}
+
+	private Specifications<Todo> incompleteTodoSpecifications(User user, long daysPastToCheck) {
+		// what we want: todos on groups that the user is part of, with action by date in a defined interval, where the action by date is in the
+		// range and the to-do has not been marked completed by the creator of the to-do
+		return Specifications
+				.where(notCancelled())
+				.and(userPartOfGroup(user))
+				.and(actionByDateBetween(Instant.now().minus(daysPastToCheck, ChronoUnit.DAYS), Instant.now()))
+				.and(completionConfirmsBelow(COMPLETION_PERCENTAGE_BOUNDARY))
+				.and(todoNotConfirmedByCreator());
 	}
 
 	@Override

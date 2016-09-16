@@ -433,12 +433,18 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         return getUpcomingEventsInternal(filter, time, includeDescendants, false);
     }
 
-    // todo : make sure this is wired on other side
     public Set<Todo> getDescendantTodos() {
         if (descendantTodos == null) {
             descendantTodos = new HashSet<>();
         }
         return new HashSet<>(descendantTodos);
+    }
+
+    public void addDescendantTodo(Todo todo) {
+        if (descendantTodos == null) {
+            descendantTodos = new HashSet<>();
+        }
+        descendantTodos.add(todo);
     }
 
     /**

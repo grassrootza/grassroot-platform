@@ -12,6 +12,7 @@ import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Todo;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.TodoCompletionConfirmType;
 import za.org.grassroot.core.util.DateTimeUtil;
 
 import javax.transaction.Transactional;
@@ -112,7 +113,7 @@ public class TodoRepositoryTest {
         List<Todo> list = todoRepository.findByAssignedMembersAndActionByDateBetweenAndCompletionPercentageGreaterThanEqual(user, Instant.now(),
                 DateTimeUtil.getVeryLongAwayInstant(), 50, sort);
         assertEquals(0, list.size());
-        lb1.addCompletionConfirmation(user, Instant.now());
+        lb1.addCompletionConfirmation(user, TodoCompletionConfirmType.COMPLETED, Instant.now());
         todoRepository.save(lb1);
         list = todoRepository.findByAssignedMembersAndActionByDateBetweenAndCompletionPercentageGreaterThanEqual(user, Instant.now(),
                 DateTimeUtil.getVeryLongAwayInstant(), 50, sort);

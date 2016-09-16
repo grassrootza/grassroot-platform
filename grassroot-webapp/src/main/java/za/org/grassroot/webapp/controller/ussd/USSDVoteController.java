@@ -314,7 +314,7 @@ public class USSDVoteController extends USSDController {
         User user = userManager.findByInputNumber(inputNumber, saveVoteMenu("details", eventUid) + "&back=" + backMenu  );
         Event vote = eventBroker.load(eventUid);
         boolean futureEvent = vote.getEventStartDateTime().isAfter(Instant.now());
-        ResponseTotalsDTO voteResults = eventLogBroker.getVoteResultsForEvent(vote);
+        ResponseTotalsDTO voteResults = eventLogBroker.getResponseCountForEvent(vote);
 
         USSDMenu menu;
 

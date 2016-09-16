@@ -1,9 +1,6 @@
 package za.org.grassroot.services;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,7 +25,7 @@ import java.util.stream.Collectors;
 @Service
 public class AccountManager implements AccountManagementService {
 
-    private static final Logger log = LoggerFactory.getLogger(AccountManager.class);
+    // private static final Logger log = LoggerFactory.getLogger(AccountManager.class);
 
     @Autowired
     private AccountRepository accountRepository;
@@ -49,7 +46,7 @@ public class AccountManager implements AccountManagementService {
    	private LogsAndNotificationsBroker logsAndNotificationsBroker;
 
     @Autowired
-    private ApplicationEventPublisher applicationEventPublisher;
+    private PermissionBroker permissionBroker;
 
     @Override
     public Account loadAccount(String accountUid) {
@@ -76,11 +73,6 @@ public class AccountManager implements AccountManagementService {
             account.setPrimaryEmail(billingEmail);
         }
 
-        /*if (!StringUtils.isEmpty(administratorUid)) {
-            AfterTxCommitTask afterTxCommitTask = () -> addAdministrator(userUid, accountUid, administratorUid);
-            applicationEventPublisher.publishEvent(afterTxCommitTask);
-        }*/
-
         accountRepository.saveAndFlush(account);
 
         addAdministrator(userUid, accountUid, administratorUid);
@@ -94,9 +86,12 @@ public class AccountManager implements AccountManagementService {
         User user = userRepository.findOneByUid(userUid);
         Account account = accountRepository.findOneByUid(accountUid);
 
-        // todo : system admin check & logging
+        if (account.getAdministrators().contains(user)) {
+            permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
+        }
 
         account.setPrimaryEmail(billingEmail);
+        createAndStoreSingleAccountLog(new AccountLog(userUid, account, AccountLogType.DETAILS_CHANGED, null, null, "billing email changed to " + billingEmail));
     }
 
     @Override
@@ -119,15 +114,20 @@ public class AccountManager implements AccountManagementService {
         Account account = accountRepository.findOneByUid(accountUid);
         User administrator = userRepository.findOneByUid(administratorUid);
 
-        // todo : permission check & log creation
+        if (!account.getAdministrators().contains(changingUser)) {
+            permissionBroker.validateSystemRole(changingUser, BaseRoles.ROLE_SYSTEM_ADMIN);
+        }
 
         account.addAdministrator(administrator);
         administrator.setAccountAdministered(account);
         Role adminRole = roleRepository.findByNameAndRoleType(BaseRoles.ROLE_ACCOUNT_ADMIN, Role.RoleType.STANDARD).get(0);
         administrator.addStandardRole(adminRole);
+
+        createAndStoreSingleAccountLog(new AccountLog(userUid, account, AccountLogType.ADMIN_CHANGED, null, null, "administrator added : " + administrator.getName("")));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Account> loadAllAccounts() {
         return accountRepository.findAll();
     }
@@ -143,19 +143,19 @@ public class AccountManager implements AccountManagementService {
         Account account = accountRepository.findOneByUid(accountUid);
         User addingUser = userRepository.findOneByUid(addingUserUid);
 
-        // todo: check permissions etc
+        if (!account.getAdministrators().contains(addingUser)) {
+            permissionBroker.validateSystemRole(addingUser, BaseRoles.ROLE_SYSTEM_ADMIN);
+        }
 
-        // do this a bit more elegantly
         if (group.isPaidFor()) {
             throw new GroupAlreadyPaidForException();
         }
 
         PaidGroup paidGroup = new PaidGroup(group, account, addingUser);
-
         paidGroupRepository.saveAndFlush(paidGroup);
-
         account.addPaidGroup(paidGroup);
         group.setPaidFor(true);
+        createAndStoreSingleAccountLog(new AccountLog(addingUserUid, account, AccountLogType.GROUP_ADDED, groupUid, paidGroup.getUid(), "paid group added : " + group.getName()));
     }
 
     @Override
@@ -175,18 +175,21 @@ public class AccountManager implements AccountManagementService {
         Objects.requireNonNull(paidGroupUid);
         Objects.requireNonNull(removingUserUid);
 
-        // todo : permissions & logs
-
         Account account = accountRepository.findOneByUid(accountUid);
         PaidGroup record = paidGroupRepository.findOneByUid(paidGroupUid);
         Group group = record.getGroup();
         User user = userRepository.findOneByUid(removingUserUid);
 
+        if (!account.getAdministrators().contains(user)) {
+            permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
+        }
+
         record.setExpireDateTime(Instant.now());
         record.setRemovedByUser(user);
         account.removePaidGroup(record);
         group.setPaidFor(false);
-
+        createAndStoreSingleAccountLog(new AccountLog(removingUserUid, account, AccountLogType.GROUP_REMOVED, group.getUid(),
+                paidGroupUid, "paid group removed : " + group.getName("")));
     }
 
     @Override
@@ -220,4 +223,10 @@ public class AccountManager implements AccountManagementService {
    			throw new AccessDeniedException("User not account admin!");
    		}
    	}
+
+    private void createAndStoreSingleAccountLog(AccountLog accountLog) {
+        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+        bundle.addLog(accountLog);
+        logsAndNotificationsBroker.storeBundle(bundle);
+    }
 }

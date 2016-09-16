@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.enums.TodoCompletionConfirmType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.EventBroker;
 import za.org.grassroot.services.GroupBroker;
@@ -230,9 +231,9 @@ public class TodoController extends BaseController {
         Todo todo = todoBroker.load(logBookUid);
 
         if (setCompletedDate) {
-	        todoBroker.confirmCompletion(sessionUserUid, todo.getUid(), completedDate);
+	        todoBroker.confirmCompletion(sessionUserUid, todo.getUid(), TodoCompletionConfirmType.COMPLETED, completedDate);
         } else {
-	        todoBroker.confirmCompletion(sessionUserUid, todo.getUid(), LocalDateTime.now());
+	        todoBroker.confirmCompletion(sessionUserUid, todo.getUid(), TodoCompletionConfirmType.COMPLETED, LocalDateTime.now());
         }
 
         addMessage(model, MessageType.SUCCESS, "todo.completed.done", request);

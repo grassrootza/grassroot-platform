@@ -104,7 +104,7 @@ public class VoteController extends BaseController {
         boolean canModify = (vote.getCreatedByUser().equals(getUserProfile())
                 && vote.getEventStartDateTime().isAfter(Instant.now())); // todo: make this more nuanced
 
-        ResponseTotalsDTO responses = eventLogBroker.getVoteResultsForEvent(vote);
+        ResponseTotalsDTO responses = eventLogBroker.getResponseCountForEvent(vote);
 
         model.addAttribute("vote", new EventWrapper(vote));
         model.addAttribute("yes", responses.getYes());

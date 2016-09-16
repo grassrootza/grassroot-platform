@@ -11,10 +11,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.enums.EventRSVPResponse;
-import za.org.grassroot.core.enums.EventType;
-import za.org.grassroot.core.enums.UserInterfaceType;
-import za.org.grassroot.core.enums.UserLogType;
+import za.org.grassroot.core.enums.*;
 import za.org.grassroot.services.EventLogBroker;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.SafetyEventBroker;
@@ -200,9 +197,9 @@ public class USSDHomeController extends USSDController {
 
     private USSDResponseTypes neededResponse(User user) {
 
-        if (safetyEventBroker.needsToRespondToSafetyEvent(user)) return USSDResponseTypes.RESPOND_SAFETY;
-        if (eventBroker.userHasResponsesOutstanding(user, EventType.VOTE)) return USSDResponseTypes.VOTE;
-        if (eventBroker.userHasResponsesOutstanding(user, EventType.MEETING)) return USSDResponseTypes.MTG_RSVP;
+        // if (safetyEventBroker.needsToRespondToSafetyEvent(user)) return USSDResponseTypes.RESPOND_SAFETY;
+        // if (eventBroker.userHasResponsesOutstanding(user, EventType.VOTE)) return USSDResponseTypes.VOTE;
+        // if (eventBroker.userHasResponsesOutstanding(user, EventType.MEETING)) return USSDResponseTypes.MTG_RSVP;
         if (todoBroker.userHasTodosForResponse(user.getUid(), false)) return USSDResponseTypes.RESPOND_TODO;
         if (userManager.needsToRenameSelf(user)) return USSDResponseTypes.RENAME_SELF;
         if (userManager.fetchGroupUserMustRename(user) != null) return USSDResponseTypes.NAME_GROUP;
@@ -219,13 +216,12 @@ public class USSDHomeController extends USSDController {
         } else if (sendMeLink.equals(trailingDigits)) {
             returnMenu = assembleSendMeAndroidLinkMenu(sessionUser);
         } else {
-            // todo: remove "findBy" above and consolidate into the service call (which throws the 'cant find error'
-            Group groupFromJoinCode = groupBroker.findGroupFromJoinCode(trailingDigits.trim());
-            if (groupFromJoinCode != null) {
-                log.info("Found a token with these trailing digits ...");
-                groupBroker.addMemberViaJoinCode(sessionUser.getUid(), groupFromJoinCode.getUid(), trailingDigits);
-                String prompt = (groupFromJoinCode.hasName()) ?
-                        getMessage(thisSection, startMenu, promptKey + ".group.token.named", groupFromJoinCode.getGroupName(), sessionUser) :
+            Optional<Group> searchResult = groupBroker.findGroupFromJoinCode(trailingDigits.trim());
+            if (searchResult.isPresent()) {
+                Group group = searchResult.get();
+                groupBroker.addMemberViaJoinCode(sessionUser.getUid(), group.getUid(), trailingDigits);
+                String prompt = (group.hasName()) ?
+                        getMessage(thisSection, startMenu, promptKey + ".group.token.named", group.getGroupName(), sessionUser) :
                         getMessage(thisSection, startMenu, promptKey + ".group.token.unnamed", sessionUser);
                 returnMenu = welcomeMenu(prompt, sessionUser);
             } else {
@@ -242,11 +238,9 @@ public class USSDHomeController extends USSDController {
     }
 
     private USSDMenu defaultStartMenu(User sessionUser) throws URISyntaxException {
-
         String welcomeMessage = sessionUser.hasName() ? getMessage(thisSection, startMenu, promptKey + "-named", sessionUser.getName(""), sessionUser) :
                 getMessage(thisSection, startMenu, promptKey, sessionUser);
         return welcomeMenu(welcomeMessage, sessionUser);
-
     }
 
     private USSDMenu requestUserResponse(User user, USSDResponseTypes response) throws URISyntaxException {
@@ -275,12 +269,9 @@ public class USSDHomeController extends USSDController {
             case NAME_GROUP:
                 Group group = userManager.fetchGroupUserMustRename(user);
                 openingMenu = (groupBroker.isDeactivationAvailable(user, group, true)) ?
-                        renameGroupAllowInactive(user, group.getUid(),
-                                dateFormat.format(convertToUserTimeZone(group.getCreatedDateTime(), getSAST()))) :
-                        renameGroupNoInactiveOption(user, group.getUid(),
-                                dateFormat.format(convertToUserTimeZone(group.getCreatedDateTime(), getSAST())));
+                        renameGroupAllowInactive(user, group.getUid(), dateFormat.format(convertToUserTimeZone(group.getCreatedDateTime(), getSAST()))) :
+                        renameGroupNoInactiveOption(user, group.getUid(), dateFormat.format(convertToUserTimeZone(group.getCreatedDateTime(), getSAST())));
                 break;
-
             case NONE:
                 openingMenu = defaultStartMenu(user);
                 break;
@@ -295,7 +286,6 @@ public class USSDHomeController extends USSDController {
      */
 
     private USSDMenu assembleVoteMenu(User sessionUser) {
-        log.info("Asking for a vote ... from user " + sessionUser);
         Vote vote = (Vote) eventBroker.getOutstandingResponseForUser(sessionUser, EventType.VOTE).get(0);
 
         final String[] promptFields = new String[]{vote.getAncestorGroup().getName(""),
@@ -340,16 +330,12 @@ public class USSDHomeController extends USSDController {
             return welcomeMenu(getMessage(thisSection, startMenu, promptKey, user), user);
         } else {
             Todo todo = optionalTodo.get();
-            String[] promptFields = new String[]{
-                    todo.getParent().getName(),
-                    todo.getMessage(),
-                    todo.getActionByDateAtSAST().format(dateFormat)};
+            String[] promptFields = new String[]{todo.getParent().getName(), todo.getMessage(), todo.getActionByDateAtSAST().format(dateFormat)};
             String prompt = getMessage(thisSection, startMenu, promptKey + ".todo", promptFields, user);
             String completeUri = "todo-complete" + entityUidUrlSuffix + todo.getUid();
             USSDMenu menu = new USSDMenu(prompt);
             menu.addMenuOptions(new LinkedHashMap<>(optionsYesNo(user, completeUri, completeUri)));
-            menu.addMenuOption(completeUri + "&confirmed=unknown",
-                    getMessage(thisSection, startMenu, logKey + "." + optionsKey + "unknown", user));
+            menu.addMenuOption(completeUri + "&confirmed=unknown", getMessage(thisSection, startMenu, logKey + "." + optionsKey + "unknown", user));
             return menu;
         }
     }
@@ -446,22 +432,20 @@ public class USSDHomeController extends USSDController {
         return menuBuilder(new USSDMenu(prompt, optionsHomeExit(user)));
     }
 
-    @RequestMapping(value = path + "log-complete")
+    @RequestMapping(value = path + "todo-complete")
     @ResponseBody
     public Request todoEntryMarkComplete(@RequestParam(value = phoneNumber) String inputNumber,
                                 @RequestParam(value = entityUidParam) String todoUid,
                                 @RequestParam(value = yesOrNoParam) String response) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(inputNumber);
+        TodoCompletionConfirmType type = "yes".equals(response) ? TodoCompletionConfirmType.COMPLETED
+                : "no".equals(response) ? TodoCompletionConfirmType.NOT_COMPLETED : TodoCompletionConfirmType.NOT_KNOWN;
 
-        String prompt;
-        if (response.equalsIgnoreCase("yes")) {
-            boolean stateChanged = todoBroker.confirmCompletion(user.getUid(), todoUid, LocalDateTime.now());
-            prompt = stateChanged ? getMessage(thisSection, startMenu, promptKey + ".todo-completed", user) :
-                    getMessage(thisSection, startMenu, promptKey + ".todo-unchanged", user);
-        } else {
-            prompt = getMessage(thisSection, startMenu, promptKey + ".todo-marked-no", user);
-        }
+        boolean stateChanged = todoBroker.confirmCompletion(user.getUid(), todoUid, type, LocalDateTime.now());
+        final String prompt = (!"yes".equals(response)) ? getMessage(thisSection, startMenu, promptKey + ".todo-marked-no", user) :
+                !stateChanged ?  getMessage(thisSection, startMenu, promptKey + ".todo-unchanged", user)
+                        : getMessage(thisSection, startMenu, promptKey + ".todo-completed", user);
 
         return menuBuilder(welcomeMenu(prompt, user));
     }

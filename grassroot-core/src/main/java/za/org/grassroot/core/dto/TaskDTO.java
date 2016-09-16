@@ -91,9 +91,8 @@ public class TaskDTO implements Comparable<TaskDTO> {
         this.description =event.getDescription();
         this.hasResponded = eventLog != null;
 
-        this.reply = (eventLog != null && eventLog.hasValidResponse()) ?
-                eventLog.getResponse().toString() :
-                String.valueOf(TodoStatus.NO_RESPONSE); // todo : return completion %
+        this.reply = (eventLog != null && eventLog.hasValidResponse()) ? eventLog.getResponse().toString() :
+                String.valueOf(TodoStatus.NO_RESPONSE);
         this.canAction = canActionOnEvent(event, hasResponded);
         this.location = event.getEventType().equals(EventType.MEETING) ? ((Meeting) event).getEventLocation() : "";
         this.canEdit = event.getCreatedByUser().equals(user) && instant.isAfter(Instant.now());
@@ -103,9 +102,8 @@ public class TaskDTO implements Comparable<TaskDTO> {
     public TaskDTO(Todo todo, User user) {
         this(user, todo);
 
-        this.hasResponded = todo.isCompletedBy(user);
-        this.reply = hasResponded ? String.valueOf(TodoStatus.COMPLETED)
-                : getTodoStatus(todo);
+        this.hasResponded = todo.isCompletionConfirmedByMember(user);
+        this.reply = hasResponded ? String.valueOf(TodoStatus.COMPLETED) : getTodoStatus(todo);
 
         this.canAction = canActionOnLogBook(todo, user);
         this.location = "";
@@ -170,7 +168,6 @@ public class TaskDTO implements Comparable<TaskDTO> {
 	public boolean isCreatedByUser() { return createdByUser; }
 
     private String getTodoStatus(Todo todo) {
-
         if (todo.isCompleted()) {
             return String.valueOf(TodoStatus.COMPLETED);
         } else if (todo.getActionByDate().isBefore(Instant.now())) {
@@ -178,7 +175,6 @@ public class TaskDTO implements Comparable<TaskDTO> {
         } else {
             return String.valueOf(TodoStatus.PENDING);
         }
-
     }
 
     // for the moment, users can change their vote after casting it

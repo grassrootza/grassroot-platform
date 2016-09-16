@@ -99,7 +99,7 @@ public class VoteRestController {
 
         User user = userManagementService.findByInputNumber(phoneNumber);
         Event event = eventBroker.load(voteUid);
-        ResponseTotalsDTO totals = eventLogBroker.getVoteResultsForEvent(event);
+        ResponseTotalsDTO totals = eventLogBroker.getResponseCountForEvent(event);
         EventWrapper eventWrapper = new EventWrapper(event, user, totals, eventLogRepository);
         return RestUtil.okayResponseWithData(RestMessage.VOTE_DETAILS, eventWrapper);
     }
@@ -112,7 +112,7 @@ public class VoteRestController {
 
         permissionBroker.validateGroupPermission(user, event.getAncestorGroup(), null);
 
-        ResponseTotalsDTO totals = eventLogBroker.getVoteResultsForEvent(event);
+        ResponseTotalsDTO totals = eventLogBroker.getResponseCountForEvent(event);
         if (totals != null) {
             return new ResponseEntity<>(totals, HttpStatus.OK);
         } else {

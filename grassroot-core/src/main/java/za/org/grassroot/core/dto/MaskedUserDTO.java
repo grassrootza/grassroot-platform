@@ -1,14 +1,20 @@
 package za.org.grassroot.core.dto;
 
+import org.springframework.beans.factory.annotation.Value;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.util.MaskingUtil;
 
 import java.time.Instant;
+import java.util.Arrays;
 
 /**
  * Created by luke on 2016/02/04.
  */
 public class MaskedUserDTO {
+
+    @Value("${grassroot.msisdn.length:11}")
+    private int phoneNumberLength;
+
+    private final char maskingCharacter = '*';
 
     private Long id;
     private String uid;
@@ -26,10 +32,10 @@ public class MaskedUserDTO {
     public MaskedUserDTO(User user) {
         this.id = user.getId();
         this.uid = user.getUid();
-        this.firstName = MaskingUtil.maskName(user.getFirstName());
-        this.lastName = MaskingUtil.maskName(user.getLastName());
-        this.displayName = MaskingUtil.maskName(user.getDisplayName());
-        this.phoneNumber = MaskingUtil.maskPhoneNumber(user.getPhoneNumber());
+        this.firstName = maskName(user.getFirstName());
+        this.lastName = maskName(user.getLastName());
+        this.displayName = maskName(user.getDisplayName());
+        this.phoneNumber = maskPhoneNumber(user.getPhoneNumber());
         this.languageCode = user.getLanguageCode();
         this.createdDateTime = user.getCreatedDateTime();
 
@@ -77,5 +83,20 @@ public class MaskedUserDTO {
     public boolean isEnabled() {
         return enabled;
     }
+
+    private String maskPhoneNumber(String msisdn) {
+        char[] chars = new char[phoneNumberLength - 6];
+        Arrays.fill(chars, maskingCharacter);
+        return phoneNumber.substring(0,2) + (new String(chars)) + phoneNumber.substring(8, phoneNumberLength);
+    }
+
+    private String maskName(String name) {
+        if (name == null || name.trim().equals("")) return name;
+        int lengthOfMask = name.length() - 1;
+        char[] mask = new char[lengthOfMask];
+        Arrays.fill(mask, maskingCharacter);
+        return name.substring(0, 1) + (new String(mask));
+    }
+
 
 }

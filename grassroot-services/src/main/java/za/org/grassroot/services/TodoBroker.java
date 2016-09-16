@@ -4,6 +4,7 @@ import org.springframework.data.domain.Page;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.Todo;
+import za.org.grassroot.core.enums.TodoCompletionConfirmType;
 import za.org.grassroot.services.enums.TodoStatus;
 
 import java.time.LocalDateTime;
@@ -29,12 +30,14 @@ public interface TodoBroker {
 	Todo update(String userUid, String uid, String message, String description, LocalDateTime actionByDate, Integer reminderMinutes, Set<String> assignnedMemberUids);
 
 	/**
-	 * Confirms completion by given user which should be a member of specified todo.
+	 * Confirms completion by given user which should be a member of specified to-do.
 	 * @param userUid member that is confirming completion
 	 * @param todoUid action to-do ID
-	 * @param completionTime time of completion; can be null only in case when some other member previously set it for given todo
+	 * @param confirmType whether the user responded that the to-do was completed, was not completed, or they don't know
+	 * @param completionTime time of completion; can be null only in case when some other member previously set it for given to-do
+	 * @return Whether the completion response pushed the to-do over the completion threshold
 	 */
-	boolean confirmCompletion(String userUid, String todoUid, LocalDateTime completionTime);
+	boolean confirmCompletion(String userUid, String todoUid, TodoCompletionConfirmType confirmType, LocalDateTime completionTime); // todo : wire up UI for altering
 
 	void sendScheduledReminder(String todoUid);
 
@@ -54,13 +57,13 @@ public interface TodoBroker {
 	List<Todo> fetchTodosForGroupCreatedDuring(String groupUid, LocalDateTime createdAfter, LocalDateTime createdBefore);
 
 	/*
-	Check if a user needs to respond to a to-do
+	Check if a user needs to respond to a to-do (note : will not return to-dos where user has marked 'I don't know', to avoid infinite & annoying pinging
 	 */
-
-	// todo: we need some sort of logic here for not showing users the same todo over and over (plus handle assigned vs parent)
 	Optional<Todo> fetchTodoForUserResponse(String userUid, boolean assignedTodosOnly);
 
 	boolean userHasTodosForResponse(String userUid, boolean assignedTodosOnly);
+
+	boolean userHasIncompleteActionsToView(String userUid);
 
 	/**
 	 * Methods to handle "replicaed" todos (i.e., that cascade down subgroups)

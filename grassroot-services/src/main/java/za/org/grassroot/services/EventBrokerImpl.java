@@ -56,8 +56,6 @@ public class EventBrokerImpl implements EventBroker {
 	private GroupRepository groupRepository;
 	@Autowired
 	private PermissionBroker permissionBroker;
-
-
 	@Autowired
 	private LogsAndNotificationsBroker logsAndNotificationsBroker;
 	@Autowired
@@ -614,7 +612,7 @@ public class EventBrokerImpl implements EventBroker {
 
 		EventLog eventLog = new EventLog(null, vote, EventLogType.RESULT);
 
-		ResponseTotalsDTO responseTotalsDTO = eventLogBroker.getVoteResultsForEvent(vote);
+		ResponseTotalsDTO responseTotalsDTO = eventLogBroker.getResponseCountForEvent(vote);
 		Set<User> voteResultsNotificationSentMembers = new HashSet<>(userRepository.findNotificationTargetsForEvent(
 				vote, VoteResultsNotification.class));
 		for (User member : getAllEventMembers(vote)) {

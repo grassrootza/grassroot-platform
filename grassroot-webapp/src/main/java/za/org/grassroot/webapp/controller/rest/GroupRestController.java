@@ -184,14 +184,13 @@ public class GroupRestController {
         User user = userManagementService.findByInputNumber(phoneNumber);
 
 	    String tokenSearch = getSearchToken(searchTerm);
-        Group groupByToken = groupBroker.findGroupFromJoinCode(tokenSearch);
+        Optional<Group> groupByToken = groupBroker.findGroupFromJoinCode(tokenSearch);
 
         ResponseEntity<ResponseWrapper> responseEntity;
-        if (groupByToken != null  && !groupByToken.hasMember(user)) {
-            responseEntity = RestUtil.okayResponseWithData(RestMessage.GROUP_FOUND, new GroupSearchWrapper(groupByToken));
+        if (groupByToken.isPresent() && !groupByToken.get().hasMember(user)) {
+            responseEntity = RestUtil.okayResponseWithData(RestMessage.GROUP_FOUND, new GroupSearchWrapper(groupByToken.get()));
         } else {
-
-	        // the service beans accept null for the filter, in which case they just ignore location, hence doing it this way
+			// the service beans accept null for the filter, in which case they just ignore location, hence doing it this way
 	        // note: excluding groups with no location, to avoid user confusion, but should change in future
 	        GroupLocationFilter filter = null;
 	        if (searchByLocation) {

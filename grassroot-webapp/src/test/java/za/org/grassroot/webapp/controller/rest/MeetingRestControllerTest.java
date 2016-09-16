@@ -33,8 +33,6 @@ public class MeetingRestControllerTest extends RestAbstractUnitTest {
 
     private static final String path = "/api/meeting";
 
-    private ResponseTotalsDTO testResponseTotalsDTO = new ResponseTotalsDTO();
-
     @Before
     public void setUp() {
 
@@ -92,9 +90,9 @@ public class MeetingRestControllerTest extends RestAbstractUnitTest {
 
     @Test
     public void viewRsvpingShouldWork() throws Exception {
-
         Role role = new Role("ROLE_GROUP_ORGANIZER", meetingEvent.getUid());
         testGroup.addMember(sessionTestUser, role);
+        ResponseTotalsDTO testResponseTotalsDTO = ResponseTotalsDTO.makeForTest(40, 20, 10, 0, 70);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
         when(eventBrokerMock.loadMeeting(meetingEvent.getUid())).thenReturn(meetingEvent);

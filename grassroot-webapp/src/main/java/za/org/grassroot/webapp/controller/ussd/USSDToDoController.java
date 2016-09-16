@@ -8,6 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.enums.TodoCompletionConfirmType;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.integration.domain.SeloApiCallFailure;
 import za.org.grassroot.integration.domain.SeloParseDateTimeFailure;
@@ -112,7 +113,9 @@ public class USSDToDoController extends USSDController {
             thisMenu = new USSDMenu(getMessage(thisSection, startMenu, promptKey, user));
             thisMenu.addMenuOption(todoMenus + groupMenu + "?new=true", getMessage(thisSection, startMenu, optionsKey + "new", user));
         }
+
         thisMenu.addMenuOption(todoMenus + listEntriesMenu + "?done=false", getMessage(thisSection, startMenu, optionsKey + "incomplete", user));
+
         thisMenu.addMenuOption(todoMenus + groupMenu + "?new=false&completed=true", getMessage(thisSection, startMenu, optionsKey + "old", user));
         thisMenu.addMenuOption(startMenu, getMessage(thisSection,startMenu,optionsKey+"back", user));
         return menuBuilder(thisMenu);
@@ -467,7 +470,7 @@ public class USSDToDoController extends USSDController {
         LocalDateTime completedDateTime = (completedDate != null) ?
                 convertDateStringToLocalDateTime(reformatDateInput(completedDate), stdHour, stdMinute) : LocalDateTime.now();
         userLogger.recordUserInputtedDateTime(user.getUid(), completedDate, "logbook-completion", UserInterfaceType.USSD);
-        todoBroker.confirmCompletion(user.getUid(), todoUid, completedDateTime);
+        todoBroker.confirmCompletion(user.getUid(), todoUid, TodoCompletionConfirmType.COMPLETED, completedDateTime);
 
         USSDMenu menu = new USSDMenu(getMessage(thisSection, setCompleteMenu, promptKey, user));
         // todo: consider adding option to go back to either section start or group logbook start

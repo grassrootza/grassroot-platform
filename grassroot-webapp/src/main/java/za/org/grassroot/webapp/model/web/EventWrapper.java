@@ -26,6 +26,7 @@ public class EventWrapper {
 
     protected EventReminderType reminderType;
     protected int customReminderMinutes;
+    protected int defaultReminderMinutes;
 
     protected Set<String> assignedMembers;
 
@@ -65,6 +66,7 @@ public class EventWrapper {
 
         this.reminderType = event.getReminderType();
         this.customReminderMinutes = event.getCustomReminderMinutes();
+        this.defaultReminderMinutes = event.getAncestorGroup().getReminderMinutes();
 
         // todo: assign members ... also, set custom reminder minute (and reminder settings) to be same as parent
     }
@@ -160,6 +162,8 @@ public class EventWrapper {
     public int getCustomReminderMinutes() {
         return customReminderMinutes;
     }
+
+    public int getDefaultReminderMinutes() { return defaultReminderMinutes; }
 
     public void setCustomReminderMinutes(int customReminderMinutes) {
         this.customReminderMinutes = customReminderMinutes;

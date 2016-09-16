@@ -13,9 +13,7 @@ import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -73,21 +71,18 @@ public class VoteRestControllerTest extends RestAbstractUnitTest {
 
         testGroup.addMember(sessionTestUser, new Role("ROLE_GROUP_ORGANIZER", testGroup.getUid()));
         EventLog eventLog = new EventLog(sessionTestUser, voteEvent, EventLogType.RSVP, EventRSVPResponse.YES);
-        List<Object[]> list = new ArrayList<>();
-        String[] responses = {"1", "2", "3", "4", "5"};
-        list.add(responses);
-        ResponseTotalsDTO rsvpTotalsDTO = new ResponseTotalsDTO(list, 5);
+        ResponseTotalsDTO rsvpTotalsDTO = ResponseTotalsDTO.makeForTest(1, 2, 3, 4, 5);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
         when(eventBrokerMock.load(voteEvent.getUid())).thenReturn(voteEvent);
         when(eventLogRepositoryMock.findByEventAndUserAndEventLogType(voteEvent, sessionTestUser, EventLogType.RSVP)).thenReturn(eventLog);
         when(eventLogBrokerMock.hasUserRespondedToEvent(voteEvent, sessionTestUser)).thenReturn(true);
-        when(eventLogBrokerMock.getVoteResultsForEvent(voteEvent)).thenReturn(rsvpTotalsDTO);
+        when(eventLogBrokerMock.getResponseCountForEvent(voteEvent)).thenReturn(rsvpTotalsDTO);
         mockMvc.perform(get(path + "/view/{id}/{phoneNumber}/{code}", voteEvent.getUid(), testUserPhone, testUserCode)).andExpect(status().is2xxSuccessful());
         verify(userManagementServiceMock).findByInputNumber(testUserPhone);
         verify(eventBrokerMock).load(voteEvent.getUid());
         verify(eventLogRepositoryMock).findByEventAndUserAndEventLogType(voteEvent, sessionTestUser, EventLogType.RSVP);
-        verify(eventLogBrokerMock).getVoteResultsForEvent(voteEvent);
+        verify(eventLogBrokerMock).getResponseCountForEvent(voteEvent);
     }
 
     @Test
