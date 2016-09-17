@@ -94,6 +94,14 @@ public class Role implements GrantedAuthority, Comparable<Role> {
         return getAuthority();
     }
 
+    public String describe() {
+        return "Role{" +
+                "name='" + name + '\'' +
+                ", groupUid='" + groupUid + '\'' +
+                ", roleType=" + roleType +
+                '}';
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {

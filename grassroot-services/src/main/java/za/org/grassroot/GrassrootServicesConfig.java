@@ -40,14 +40,14 @@ import java.util.concurrent.Executors;
 @EnableScheduling
 public class GrassrootServicesConfig implements SchedulingConfigurer {
 
-    @Bean( name = "servicesMessageSource")
+    @Bean(name = "servicesMessageSource")
     public ResourceBundleMessageSource messageSource() {
         ResourceBundleMessageSource source = new ResourceBundleMessageSource();
         source.setBasename("notification-messages/messages");
         return source;
     }
 
-    @Bean ( name = "servicesMessageSourceAccessor")
+    @Bean (name = "servicesMessageSourceAccessor")
     public MessageSourceAccessor getMessageSourceAccessor() { return new MessageSourceAccessor(messageSource()); }
 
     @Override

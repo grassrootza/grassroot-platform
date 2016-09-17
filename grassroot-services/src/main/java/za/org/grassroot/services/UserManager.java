@@ -468,7 +468,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     public LinkedHashMap<String, String> getImplementedLanguages() {
 
-        // todo: replace calls to one in USSDController to this one
+        // todo: make this static and move to webapp module
 
         LinkedHashMap<String, String> languages = new LinkedHashMap<>();
 

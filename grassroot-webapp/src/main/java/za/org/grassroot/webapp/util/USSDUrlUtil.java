@@ -18,7 +18,7 @@ public class USSDUrlUtil {
 
     public static final String homePath = "/ussd/";
 
-    // todo: consider using getters (may cause issues with @RequestParam annotation requiring constants though)
+    // note: public static here is not great, but request param notations are not happy with getters, hence leaving for now
     public static final String
             phoneNumber = "msisdn",
             userInputParam = "request",
@@ -125,7 +125,7 @@ public class USSDUrlUtil {
     }
 
     public static String saveToDoMenu(String menu, String todoUid, String priorInput) {
-        return saveToDoMenu(menu, todoUid) + addInterruptedInput + encodeParameter(priorInput);
+        return saveToDoMenu(menu, todoUid) + addInterruptedInput + encodeParameter(priorInput) + setInterruptedFlag;
     }
 
     // todo: use this above, or figure out a more elegant way around it
@@ -176,8 +176,8 @@ public class USSDUrlUtil {
         return USSDSection.GROUP_MANAGER.toPath() + menu + "?groupUid=" + groupUid + "&hide=" + discoverable;
     }
 
-    public static String logViewExistingUrl(String menu, String groupUid, Boolean done, Integer pageNumber) {
-        return USSDSection.TODO.toPath() + menu + "?groupUid=" + groupUid + "&done=" + done + "&pageNumber=" + pageNumber;
+    public static String todosViewGroupCompleteEntries(String menu, String groupUid, Integer pageNumber) {
+        return USSDSection.TODO.toPath() + menu + "?groupUid=" + groupUid + "&pageNumber=" + pageNumber;
     }
 
     public static String approveRejectRequestMenuUrl(String menu, String userUid, String requestUid) {

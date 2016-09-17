@@ -5,7 +5,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.util.StringUtils;
-import org.springframework.util.SystemPropertyUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -27,6 +26,7 @@ import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 import za.org.grassroot.webapp.util.USSDEventUtil;
+import za.org.grassroot.webapp.util.USSDGroupUtil;
 
 import java.net.URISyntaxException;
 import java.time.Instant;
@@ -35,7 +35,6 @@ import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static za.org.grassroot.webapp.util.USSDUrlUtil.backVoteUrl;
@@ -120,7 +119,8 @@ public class USSDVoteController extends USSDController {
             final String prompt = getMessage(thisSection, "issue", promptKey + ".skipped", group.getName(""), user);
             return setVoteGroupAndInitiateRequest(prompt, null, group.getUid(), "time", "", user);
         } else {
-            return ussdGroupUtil.askForGroup(user, thisSection, "issue", null, null, null, possibleGroups);
+            return ussdGroupUtil.askForGroup(new USSDGroupUtil.GroupMenuBuilder(user, thisSection)
+                    .urlForExistingGroup("issue").numberOfGroups(possibleGroups));
         }
     }
 

@@ -1,6 +1,9 @@
 package za.org.grassroot.core.domain;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.util.StringUtils;
 import za.org.grassroot.core.enums.TodoCompletionConfirmType;
 import za.org.grassroot.core.util.UIDGenerator;
 
@@ -22,9 +25,7 @@ import java.util.Set;
                 @Index(name = "idx_action_todo_replicated_group_id", columnList = "replicated_group_id")})
 public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, VoteContainer, MeetingContainer {
 
-    @Transient
-    @Value("${grassroot.todos.completion.threshold:20}")
-    private double COMPLETION_PERCENTAGE_BOUNDARY; // reducing this to 20 until we see larger proportions of response
+    private static Logger logger = LoggerFactory.getLogger(Todo.class);
 
     @Transient
     @Value("{grassroot.todos.number.reminders:2")
@@ -111,6 +112,9 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
     public String getName() { return message; }
 
     @Override
+    public boolean hasName() { return !StringUtils.isEmpty(message); }
+
+    @Override
     public JpaEntityType getJpaEntityType() {
         return JpaEntityType.TODO;
     }
@@ -125,7 +129,8 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
         this.assignedMembers = assignedMembersCollection;
     }
 
-    public boolean addCompletionConfirmation(User member, TodoCompletionConfirmType confirmType, Instant completionTime) {
+    public boolean addCompletionConfirmation(User member, TodoCompletionConfirmType confirmType, Instant completionTime,
+                                             double threshold) {
         Objects.requireNonNull(member);
 
         if (completionTime == null && this.completedDate == null) {
@@ -154,10 +159,10 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
         }
 
         this.completionConfirmations.add(confirmation);
-        boolean wasBelowThreshold = this.completionPercentage < COMPLETION_PERCENTAGE_BOUNDARY;
+        boolean wasBelowThreshold = this.completionPercentage < threshold;
         this.completionPercentage = calculateCompletionStatus().getPercentage();
 
-        return wasBelowThreshold && (this.completionPercentage > COMPLETION_PERCENTAGE_BOUNDARY); // i.e., if crossed the threshold
+        return wasBelowThreshold && (this.completionPercentage > threshold);
     }
 
     public TodoCompletionStatus calculateCompletionStatus() {
@@ -171,15 +176,15 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
         return new TodoCompletionStatus((int) confirmationsCount, membersCount);
     }
 
-    public boolean isCancelled() { return cancelled; }
-
-    public void setCancelled(boolean cancelled) { this.cancelled = cancelled; }
-
-    public boolean isCompleted() {
-        return calculateCompletionStatus().getPercentage() >= COMPLETION_PERCENTAGE_BOUNDARY;
+    public boolean isCompleted(double threshold) {
+        return calculateCompletionStatus().getPercentage() >= threshold;
     }
 
-    public boolean hasUserRespondedToTodo(User member) {
+    public int countCompletions() {
+        return completionConfirmations.size();
+    }
+
+    public boolean hasUserResponded(User member) {
         Objects.requireNonNull(member);
         return completionConfirmations.stream().anyMatch(c -> c.getMember().equals(member));
     }
@@ -192,6 +197,10 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
     }
 
     public double getCompletionPercentage() { return completionPercentage; }
+
+    public boolean isCancelled() { return cancelled; }
+
+    public void setCancelled(boolean cancelled) { this.cancelled = cancelled; }
 
     @Override
     public Instant getDeadlineTime() {

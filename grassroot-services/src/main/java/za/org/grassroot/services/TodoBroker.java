@@ -1,6 +1,7 @@
 package za.org.grassroot.services;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.Todo;
@@ -29,6 +30,10 @@ public interface TodoBroker {
 
 	Todo update(String userUid, String uid, String message, String description, LocalDateTime actionByDate, Integer reminderMinutes, Set<String> assignnedMemberUids);
 
+	void updateSubject(String userUid, String todoUid, String newMessage);
+
+	void updateActionByDate(String userUid, String todoUid, LocalDateTime revisedActionByDate);
+
 	/**
 	 * Confirms completion by given user which should be a member of specified to-do.
 	 * @param userUid member that is confirming completion
@@ -37,7 +42,7 @@ public interface TodoBroker {
 	 * @param completionTime time of completion; can be null only in case when some other member previously set it for given to-do
 	 * @return Whether the completion response pushed the to-do over the completion threshold
 	 */
-	boolean confirmCompletion(String userUid, String todoUid, TodoCompletionConfirmType confirmType, LocalDateTime completionTime); // todo : wire up UI for altering
+	boolean confirmCompletion(String userUid, String todoUid, TodoCompletionConfirmType confirmType, LocalDateTime completionTime);
 
 	void sendScheduledReminder(String todoUid);
 
@@ -45,12 +50,10 @@ public interface TodoBroker {
 	 * Return a page of todos, for a given group or for all groups that a user is part of
 	 * @param userUid The user initiating the query
 	 * @param groupUid The group whose todos to return. If null, returns across all user's groups.
-	 * @param entriesComplete Whether to return complete or incomplete entries
-	 * @param pageNumber The page number
-	 * @param pageSize The page size
-     * @return
+	 * @param pageRequest The page request (including sort instructions)
+	 * @return
      */
-	Page<Todo> fetchPageOfTodosForGroup(String userUid, String groupUid, boolean entriesComplete, int pageNumber, int pageSize);
+	Page<Todo> fetchPageOfTodosForGroup(String userUid, String groupUid, Pageable pageRequest);
 
 	List<Todo> fetchTodosForGroupByStatus(String groupUid, boolean futureTodosOnly, TodoStatus status);
 
@@ -64,6 +67,10 @@ public interface TodoBroker {
 	boolean userHasTodosForResponse(String userUid, boolean assignedTodosOnly);
 
 	boolean userHasIncompleteActionsToView(String userUid);
+
+	Page<Todo> fetchIncompleteActionsToView(String userUid, Pageable pageable);
+
+	boolean userHasOldActionsToView(String userUid);
 
 	/**
 	 * Methods to handle "replicaed" todos (i.e., that cascade down subgroups)

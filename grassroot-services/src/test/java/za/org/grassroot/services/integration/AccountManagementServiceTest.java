@@ -6,17 +6,16 @@ import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.GrassrootServicesConfig;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
-import za.org.grassroot.core.domain.Account;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.Role;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.repository.RoleRepository;
 import za.org.grassroot.services.AccountManagementService;
 import za.org.grassroot.services.GroupBroker;
@@ -31,10 +30,11 @@ import static za.org.grassroot.services.enums.GroupPermissionTemplate.DEFAULT_GR
 
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = {GrassrootServicesConfig.class, TestContextConfig.class})
+@SpringApplicationConfiguration(classes = {GrassrootServicesConfig.class})
 @Transactional
 @ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
 @WithMockUser(username = "0605550000", roles={"SYSTEM_ADMIN"})
+@TestPropertySource("/application.properties")
 public class AccountManagementServiceTest {
 
     private static final Logger log = LoggerFactory.getLogger(AccountManagementServiceTest.class);
@@ -67,10 +67,13 @@ public class AccountManagementServiceTest {
         testUser = userManagementService.loadOrCreateUser(userNumber);
         testAdmin = userManagementService.loadOrCreateUser(accountAdminNumber);
         testGroup = groupBroker.create(testUser.getUid(), groupName, null, new HashSet<>(), DEFAULT_GROUP, null, null, false);
-        roleRepository.save(new Role(accountAdminRole, null));
+        // roleRepository.save(new Role(accountAdminRole, null));
     }
 
     private Account createTestAccount(String billingEmail) {
+        Role systemAdmin = new Role(BaseRoles.ROLE_SYSTEM_ADMIN, null);
+        log.info("systemAdmin role: " + systemAdmin.describe());
+        roleRepository.save(systemAdmin);
         String accountUid = accountManagementService.createAccount(testUser.getUid(), accountName, testAdmin.getUid(), billingEmail);
         Account account = accountManagementService.loadAccount(accountUid);
         return account;
@@ -86,6 +89,7 @@ public class AccountManagementServiceTest {
 
     @Test
     public void shouldCreateWithAdmin() {
+
         Account account = createTestAccount(null);
         assertNotEquals(null, account.getId());
         assertNotNull(account.getAdministrators());

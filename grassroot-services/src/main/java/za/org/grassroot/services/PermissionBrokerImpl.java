@@ -108,10 +108,11 @@ public class PermissionBrokerImpl implements PermissionBroker {
     }
 
     private Query fetchGroupsWithPermission(User user, Permission permission) {
-        return entityManager.createNativeQuery("select group_profile.*, greatest(latest_group_change, latest_event) as latest_activity from group_profile " +
+        return entityManager.createNativeQuery("select group_profile.*, greatest(latest_group_change, latest_event, latest_todo) as latest_activity from group_profile " +
                 "inner join group_user_membership as membership on (group_profile.id = membership.group_id and group_profile.active = true and membership.user_id = :user) " +
                 "left outer join (select group_id, max(created_date_time) as latest_group_change from group_log group by group_id) as group_log on (group_log.group_id = group_profile.id) " +
                 "left outer join (select parent_group_id, max(created_date_time) as latest_event from event group by parent_group_id) as event on (event.parent_group_id = group_profile.id) " +
+                "left outer join (select parent_group_id, max(created_date_time) as latest_todo from action_todo group by parent_group_id) as todo on (todo.parent_group_id = group_profile.id) " +
                 "where group_profile.active = true " +
                 "and :permission in (select permission from role_permissions where role_id = membership.role_id) " +
                 "order by latest_activity desc", Group.class)
@@ -120,10 +121,11 @@ public class PermissionBrokerImpl implements PermissionBroker {
     }
 
     private Query fetchAllGroupsSortedForUser(User user) {
-        return entityManager.createNativeQuery("SELECT group_profile.*, greatest(latest_group_change, latest_event) as latest_activity from group_profile " +
+        return entityManager.createNativeQuery("SELECT group_profile.*, greatest(latest_group_change, latest_event, latest_todo) as latest_activity from group_profile " +
                 "inner join group_user_membership as membership on (group_profile.id = membership.group_id and group_profile.active=true and membership.user_id= :user) " +
                 "left outer join (select group_id, max(created_date_time) as latest_group_change from group_log group by group_id) as group_log on (group_log.group_id=group_profile.id) " +
                 "left outer join (select parent_group_id, max(created_date_time) as latest_event from event group by parent_group_id) as event on (event.parent_group_id=group_profile.id) " +
+                "left outer join (select parent_group_id, max(created_date_time) as latest_todo from action_todo group by parent_group_id) as todo on (todo.parent_group_id = group_profile.id) " +
                 "order by latest_activity desc", Group.class)
                 .setParameter("user", user.getId());
     }
@@ -217,6 +219,7 @@ public class PermissionBrokerImpl implements PermissionBroker {
 
     @Override
     public void validateSystemRole(User user, String roleName) {
+        log.info("attempting to validate system role, with name: " + roleName);
         List<Role> systemRoles = roleRepository.findByNameAndRoleType(roleName, Role.RoleType.STANDARD);
         if (systemRoles == null || systemRoles.isEmpty()) {
             throw new UnsupportedOperationException("Error! Attempt to check invalid role");

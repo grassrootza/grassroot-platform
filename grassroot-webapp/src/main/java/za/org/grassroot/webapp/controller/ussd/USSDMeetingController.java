@@ -31,7 +31,10 @@ import za.org.grassroot.webapp.util.USSDGroupUtil;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static za.org.grassroot.core.util.DateTimeUtil.*;
@@ -106,20 +109,19 @@ public class USSDMeetingController extends USSDController {
     public Request meetingOrg(@RequestParam(value = phoneNumber, required = true) String inputNumber,
                               @RequestParam(value = "newMtg", required = false) boolean newMeeting) throws URISyntaxException, IOException {
 
-        User user;
-        user = userManager.findByInputNumber(inputNumber);
+        User user = userManager.findByInputNumber(inputNumber);
 
         USSDMenu returnMenu;
-
         if (newMeeting || !eventBroker.userHasEventsToView(user, EventType.MEETING, EventListTimeType.FUTURE)) {
-            returnMenu = ussdGroupUtil.askForGroup(user, thisSection, subjectMenu, newGroupMenu, groupName, null, null);
+            returnMenu = ussdGroupUtil.askForGroup(new USSDGroupUtil.GroupMenuBuilder(user, thisSection)
+                    .urlForExistingGroup(subjectMenu)
+                    .urlForCreateNewGroupPrompt(newGroupMenu)
+                    .urlToCreateNewGroup(groupName));
         } else {
             String prompt = getMessage(thisSection, startMenu, promptKey + ".new-old", user);
             String newOption = getMessage(thisSection, startMenu, optionsKey + "new", user);
             returnMenu = eventUtil.listUpcomingEvents(user, thisSection, prompt, manageMeetingMenu, true, startMenu + "?newMtg=1", newOption);
         }
-
-        log.info("Timing a core menu ... meeting start menu handing over to menu builder ...");
         return menuBuilder(returnMenu);
     }
 

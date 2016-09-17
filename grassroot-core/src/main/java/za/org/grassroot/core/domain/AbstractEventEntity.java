@@ -1,5 +1,6 @@
 package za.org.grassroot.core.domain;
 
+import org.springframework.util.StringUtils;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 
@@ -115,6 +116,10 @@ public abstract class AbstractEventEntity {
 
 	public String getName() {
 		return name;
+	}
+
+	public boolean hasName() {
+		return !StringUtils.isEmpty(name);
 	}
 
 	public void setName(String name) {

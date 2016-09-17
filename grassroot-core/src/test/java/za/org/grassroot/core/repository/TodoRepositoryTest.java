@@ -113,7 +113,7 @@ public class TodoRepositoryTest {
         List<Todo> list = todoRepository.findByAssignedMembersAndActionByDateBetweenAndCompletionPercentageGreaterThanEqual(user, Instant.now(),
                 DateTimeUtil.getVeryLongAwayInstant(), 50, sort);
         assertEquals(0, list.size());
-        lb1.addCompletionConfirmation(user, TodoCompletionConfirmType.COMPLETED, Instant.now());
+        lb1.addCompletionConfirmation(user, TodoCompletionConfirmType.COMPLETED, Instant.now(), 20);
         todoRepository.save(lb1);
         list = todoRepository.findByAssignedMembersAndActionByDateBetweenAndCompletionPercentageGreaterThanEqual(user, Instant.now(),
                 DateTimeUtil.getVeryLongAwayInstant(), 50, sort);

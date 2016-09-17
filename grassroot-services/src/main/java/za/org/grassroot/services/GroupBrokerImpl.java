@@ -623,7 +623,6 @@ public class GroupBrokerImpl implements GroupBroker {
             role.setPermissions(adjustedRolePermissions);
         }
 
-        // todo: consider more fine grained logging (which permission changed)
         logActionLogsAfterCommit(Collections.singleton(new GroupLog(group, user, GroupLogType.PERMISSIONS_CHANGED, 0L,
                 "Changed permissions assigned to group roles")));
 

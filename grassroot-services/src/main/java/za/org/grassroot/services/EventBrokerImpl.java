@@ -371,8 +371,13 @@ public class EventBrokerImpl implements EventBroker {
         Objects.requireNonNull(eventUid);
         Objects.requireNonNull(reminderType);
 
-        // todo: permission checking
         Event event = eventRepository.findOneByUid(eventUid);
+		User user = userRepository.findOneByUid(userUid);
+
+		if (!event.getCreatedByUser().equals(user)) {
+			throw new AccessDeniedException("Error! Only the event creator can adjust settings");
+		}
+
 		event.setReminderType(reminderType);
         event.setCustomReminderMinutes(customReminderMinutes);
         event.updateScheduledReminderTime();

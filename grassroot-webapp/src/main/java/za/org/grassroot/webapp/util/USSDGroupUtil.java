@@ -82,43 +82,91 @@ public class USSDGroupUtil extends USSDUtil {
     /**
      * SECTION 1: menus to ask a user to pick a group, including via pagination
      */
-
     /**
      * Core method, to present user a list of groups to take further action:
      * (a) user has no groups, so just ask for one and then go to the next page (goes to newGroupMenu)
      * (b) user has groups, and there are open join requests on them which the user can answer
      * (c) user has groups, ask for one (goes to section + nextUrl), with option to create new (goes to section + urlForCreatingNewGroup);
-     * @param user currently active user
-     * @param section section of the ussd menu that is currently in view
-     * @param urlForExistingGroup option link if user belongs to one or more groups
-     * @param urlForNewGroupPrompt option link to a menu prompting for new group, pass null if option should not be displayed
-     * @param urlToCreateNewGroup option link to actually create group (if should skip straight to it)
-     * @param urlIfNogroups option link if direct group creation is not possible but a way out should be offered users
-     * @return
-     * @throws URISyntaxException
+     *
+     * The builder pattern relies on these parameters (the first two are required, the remainder optional):
+     * user:  currently active user
+     * section: section of the ussd menu that is currently in view
+     * urlForExistingGroup: option link if user belongs to one or more groups
+     * urlForNewGroup: option link to a menu prompting for new group, pass null if option should not be displayed
+     * urlToCreateNewGroup: option link to actually create group (if should skip straight to it)
+     * urlIfNogroups: option link if direct group creation is not possible but a way out should be offered users
+     * messageKey: the key to use in constructing the call to i18n ... if null or empty, default is used
+     * numberOfGroups: the number of groups (in total, not just page) -- passing it enables skipping some persistence calls
      */
+    public static class GroupMenuBuilder {
+        private User user;
+        private USSDSection section;
+        private String messageKey;
+        private String urlForExistingGroup;
+        private String urlForCreateNewGroupPrompt;
+        private String urlToCreateNewGroup;
+        private String urlForNoGroups;
+        private Integer numberOfGroups; // if known
 
-    public USSDMenu askForGroup(User user, USSDSection section, String urlForExistingGroup, String urlForNewGroupPrompt,
-                                String urlToCreateNewGroup, String urlIfNogroups, Integer numberGroups) throws URISyntaxException {
+        public GroupMenuBuilder(User user, USSDSection section) {
+            this.user = user;
+            this.section = section;
+        }
 
+        public GroupMenuBuilder messageKey(String promptKey) {
+            this.messageKey = promptKey;
+            return this;
+        }
+
+        public GroupMenuBuilder urlForExistingGroup(String urlForExistingGroup) {
+            this.urlForExistingGroup = urlForExistingGroup;
+            return this;
+        }
+
+        public GroupMenuBuilder urlForCreateNewGroupPrompt(String urlForCreateNewGroupPrompt) {
+            this.urlForCreateNewGroupPrompt = urlForCreateNewGroupPrompt;
+            return this;
+        }
+
+        public GroupMenuBuilder urlToCreateNewGroup(String urlToCreateNewGroup) {
+            this.urlToCreateNewGroup = urlToCreateNewGroup;
+            return this;
+        }
+
+        public GroupMenuBuilder urlForNoGroups(String urlForNoGroups) {
+            this.urlForNoGroups = urlForNoGroups;
+            return this;
+        }
+
+        public GroupMenuBuilder numberOfGroups(Integer numberOfGroups) {
+            this.numberOfGroups = numberOfGroups;
+            return this;
+        }
+    }
+
+    public USSDMenu askForGroup(GroupMenuBuilder builder) throws URISyntaxException {
         USSDMenu groupMenu;
-
+        final User user = builder.user;
+        final USSDSection section = builder.section;
         final Permission filter = SectionPermissionMap.get(section); // returning null is what we want if key not present (e.g., for groups section)
-        final int groupCount = numberGroups == null ? permissionBroker.countActiveGroupsWithPermission(user, filter) : numberGroups;
+
+        final int groupCount = builder.numberOfGroups == null ? permissionBroker.countActiveGroupsWithPermission(user, filter) : builder.numberOfGroups;
+        final String messageKey = builder.messageKey == null ? groupKeyForMessages : builder.messageKey;
 
         if (groupCount == 0) { // case (a), ask for a name and then go to the next menu
-            if (!StringUtils.isEmpty(urlToCreateNewGroup)) {
-                groupMenu = createGroupPrompt(user, section, urlToCreateNewGroup);
-            } else { // handle no new groups, with redirect option
-                groupMenu = new USSDMenu(getMessage(section, "group", promptKey + ".empty", user)); // todo : make sure all sections use this syntax
-                groupMenu.addMenuOption(urlIfNogroups, getMessage(section, groupKeyForMessages, "options.new", user));
-                groupMenu.addMenuOption("start", getMessage("start", user));
+            if (!StringUtils.isEmpty(builder.urlToCreateNewGroup)) {
+                groupMenu = createGroupPrompt(user, section, builder.urlToCreateNewGroup);
+            } else { // case (b), handle no new groups, with redirect option
+                groupMenu = new USSDMenu(getMessage(section, messageKey, promptKey + ".empty", user));
+                groupMenu.addMenuOption(builder.urlForNoGroups, getMessage(section, messageKey, optionsKey + "new", user));
+                groupMenu.addMenuOption("start_force", getMessage("start", user));
                 groupMenu.addMenuOption("exit", getMessage("exit.option", user));
             }
         } else { // case (c), ask for an existing one, with option to prompt for new one
-            String prompt = getMessage(section, groupKeyForMessages, promptKey + ".existing", user); // todo : make sure all sections user this syntax
-            String existingGroupUri = section.toPath() + urlForExistingGroup;
-            String newGroupUri = StringUtils.isEmpty(urlForNewGroupPrompt) ? GROUP_MANAGER.toPath() + "create" : section.toPath() + urlForNewGroupPrompt;
+            String prompt = getMessage(section, messageKey, promptKey + ".existing", user);
+            String existingGroupUri = section.toPath() + builder.urlForExistingGroup;
+            String newGroupUri = StringUtils.isEmpty(builder.urlForCreateNewGroupPrompt) ?
+                    GROUP_MANAGER.toPath() + "create" : section.toPath() + builder.urlForCreateNewGroupPrompt;
             groupMenu = userGroupMenuPaginated(user, prompt, existingGroupUri, newGroupUri, 0, groupCount, section);
         }
         return groupMenu;
@@ -192,7 +240,7 @@ public class USSDGroupUtil extends USSDUtil {
         if (GROUP_MANAGER.equals(section) && (!groupBroker.fetchGroupsWithOneCharNames(user, 2).isEmpty()))
             menu.addMenuOption(section.toPath() + "clean", getMessage(groupKeyForMessages, "clean", "option", user));
 
-        menu.addMenuOption("start", getMessage(groupKeyForMessages, "menu", optionsKey + "back", user));
+        menu.addMenuOption("start_force", getMessage(groupKeyForMessages, "menu", optionsKey + "back", user));
 
         return menu;
     }

@@ -5,7 +5,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specifications;
@@ -221,8 +220,8 @@ public class TodoBrokerImpl implements TodoBroker {
 		logger.info("Confirming completion type={}, todo={}, completion time={}, user={}", todo, confirmType, completionTime, user);
 
 		Instant completionInstant = completionTime == null ? null : convertToSystemTime(completionTime, getSAST());
-		boolean tippedThreshold = todo.addCompletionConfirmation(user, confirmType, completionInstant);
-		return  tippedThreshold || todo.getCreatedByUser().equals(user);
+		boolean tippedThreshold = todo.addCompletionConfirmation(user, confirmType, completionInstant, COMPLETION_PERCENTAGE_BOUNDARY);
+		return  tippedThreshold || (todo.getCreatedByUser().equals(user) && confirmType.equals(TodoCompletionConfirmType.COMPLETED));
 	}
 
 
@@ -264,24 +263,16 @@ public class TodoBrokerImpl implements TodoBroker {
 
 	@Override
 	@Transactional(readOnly = true)
-	public Page<Todo> fetchPageOfTodosForGroup(String userUid, String groupUid, boolean entriesComplete, int pageNumber, int pageSize) {
+	public Page<Todo> fetchPageOfTodosForGroup(String userUid, String groupUid, Pageable pageRequest) {
 		Objects.requireNonNull(userUid);
-
 		User user = userRepository.findOneByUid(userUid);
-		Pageable pageable = new PageRequest(pageNumber, pageSize, new Sort(Sort.Direction.DESC, "actionByDate"));
-
-		Specifications<Todo> specifications = Specifications.where(notCancelled());
-		if (groupUid != null) {
-			Group group = groupRepository.findOneByUid(groupUid);
-			permissionBroker.validateGroupPermission(user, group, null); // make sure user is part of group
-			specifications = specifications.and(hasGroupAsParent(group));
-		} else {
-			specifications = specifications.and(userPartOfGroup(user));
-		}
-		specifications = specifications.and(entriesComplete ? completionConfirmsAbove(COMPLETION_PERCENTAGE_BOUNDARY)
-				: completionConfirmsBelow(COMPLETION_PERCENTAGE_BOUNDARY));
-
-		return todoRepository.findAll(specifications, pageable);
+		Group group = groupRepository.findOneByUid(groupUid);
+		permissionBroker.validateGroupPermission(user, group, null); // make sure user is part of group
+		Specifications<Todo> specifications = Specifications
+				.where(notCancelled())
+				.and(hasGroupAsParent(group))
+				.and(completionConfirmsAbove(COMPLETION_PERCENTAGE_BOUNDARY));
+		return todoRepository.findAll(specifications, pageRequest);
 	}
 
 	@Override
@@ -330,14 +321,14 @@ public class TodoBrokerImpl implements TodoBroker {
 	@Transactional(readOnly = true)
 	public Optional<Todo> fetchTodoForUserResponse(String userUid, boolean assignedTodosOnly) {
 		final User user = userRepository.findOneByUid(userUid);
-		Sort sort = new Sort(Sort.Direction.ASC, "actionByDate"); // get the most overdue
-		final List<Todo> result = todoRepository.findAll(incompleteTodoSpecifications(user, DAYS_PAST_FOR_TODO_CHECKING), sort);
+		final Sort sort = new Sort(Sort.Direction.ASC, "actionByDate"); // get the most overdue
+		final List<Todo> result = todoRepository.findAll(incompleteTodoSpecifications(user, DAYS_PAST_FOR_TODO_CHECKING, false), sort);
 		if (result == null || result.isEmpty()) {
 			return Optional.empty();
 		} else {
 			return result.stream()
 					.filter(t -> !assignedTodosOnly || t.isAllGroupMembersAssigned() || t.getAssignedMembers().contains(user))
-					.filter(t -> !t.hasUserRespondedToTodo(user)) // todo : include in specifications?
+					.filter(t -> !t.hasUserResponded(user)) // might be able to include in specifications, but could be overloading for small gain
 					.findFirst();
 		}
 	}
@@ -352,25 +343,36 @@ public class TodoBrokerImpl implements TodoBroker {
 	@Transactional(readOnly = true)
 	public boolean userHasIncompleteActionsToView(String userUid) {
 		User user = userRepository.findOneByUid(userUid);
-		return todoRepository.count(incompleteTodoSpecifications(user, 90)) > 0;
+		return todoRepository.count(incompleteTodoSpecifications(user, 90, true)) > 0;
 	}
 
+	@Override
 	@Transactional(readOnly = true)
 	public Page<Todo> fetchIncompleteActionsToView(String userUid, Pageable pageable) {
 		// important: we assume that the pageable has sort instructions embedded in it
 		User user = userRepository.findOneByUid(userUid);
-		return todoRepository.findAll(incompleteTodoSpecifications(user, 90), pageable);
+		return todoRepository.findAll(incompleteTodoSpecifications(user, 90, true), pageable);
 	}
 
-	private Specifications<Todo> incompleteTodoSpecifications(User user, long daysPastToCheck) {
+	private Specifications<Todo> incompleteTodoSpecifications(User user, long daysPastToCheck, boolean dueInFutureToo) {
 		// what we want: todos on groups that the user is part of, with action by date in a defined interval, where the action by date is in the
 		// range and the to-do has not been marked completed by the creator of the to-do
 		return Specifications
 				.where(notCancelled())
 				.and(userPartOfGroup(user))
-				.and(actionByDateBetween(Instant.now().minus(daysPastToCheck, ChronoUnit.DAYS), Instant.now()))
+				.and(actionByDateBetween(Instant.now().minus(daysPastToCheck, ChronoUnit.DAYS),
+						dueInFutureToo ? DateTimeUtil.getVeryLongAwayInstant() : Instant.now()))
 				.and(completionConfirmsBelow(COMPLETION_PERCENTAGE_BOUNDARY))
 				.and(todoNotConfirmedByCreator());
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public boolean userHasOldActionsToView(String userUid) {
+		User user = userRepository.findOneByUid(userUid);
+		// note : we do not use the completion threshold because then actions which are under threshold but over 90 days old
+		// might get lost (since the view incomplete functionality is time limited) -- and this controls whether menu appears, so need to be cautious
+		return todoRepository.count(Specifications.where(notCancelled()).and(userPartOfGroup(user))) > 0;
 	}
 
 	@Override
@@ -413,6 +415,40 @@ public class TodoBrokerImpl implements TodoBroker {
 		logsAndNotificationsBroker.storeBundle(bundle);
 
 		return todo;
+	}
+
+	@Override
+	@Transactional
+	public void updateSubject(String userUid, String todoUid, String newMessage) {
+		Objects.requireNonNull(userUid);
+		Objects.requireNonNull(todoUid);
+		Objects.requireNonNull(newMessage);
+
+		User user = userRepository.findOneByUid(userUid);
+		Todo todo = todoRepository.findOneByUid(todoUid);
+
+		if (!todo.getCreatedByUser().equals(user)) {
+			throw new AccessDeniedException("Error! Only the user who recorded the action can change it");
+		}
+
+		todo.setMessage(newMessage);
+	}
+
+	@Override
+	@Transactional
+	public void updateActionByDate(String userUid, String todoUid, LocalDateTime revisedActionByDate) {
+		Objects.requireNonNull(userUid);
+		Objects.requireNonNull(todoUid);
+		Objects.requireNonNull(revisedActionByDate);
+
+		User user = userRepository.findOneByUid(userUid);
+		Todo todo = todoRepository.findOneByUid(todoUid);
+
+		if (!todo.getCreatedByUser().equals(user)) {
+			throw new AccessDeniedException("Error! Only the user who recorded the action can change the due date");
+		}
+
+		todo.setActionByDate(convertToSystemTime(revisedActionByDate, getSAST()));
 	}
 
 	@Override

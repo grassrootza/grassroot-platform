@@ -101,10 +101,8 @@ public class TaskDTO implements Comparable<TaskDTO> {
 
     public TaskDTO(Todo todo, User user) {
         this(user, todo);
-
         this.hasResponded = todo.isCompletionConfirmedByMember(user);
-        this.reply = hasResponded ? String.valueOf(TodoStatus.COMPLETED) : getTodoStatus(todo);
-
+        this.reply = hasResponded ? String.valueOf(TodoStatus.COMPLETED) : getTodoStatus(todo, user);
         this.canAction = canActionOnLogBook(todo, user);
         this.location = "";
         this.canEdit = todo.getCreatedByUser().equals(user); // may adjust in future
@@ -167,8 +165,8 @@ public class TaskDTO implements Comparable<TaskDTO> {
 
 	public boolean isCreatedByUser() { return createdByUser; }
 
-    private String getTodoStatus(Todo todo) {
-        if (todo.isCompleted()) {
+    private String getTodoStatus(Todo todo, User user) {
+        if (todo.isCompletionConfirmedByMember(user)) {
             return String.valueOf(TodoStatus.COMPLETED);
         } else if (todo.getActionByDate().isBefore(Instant.now())) {
             return String.valueOf(TodoStatus.OVERDUE);
@@ -190,7 +188,7 @@ public class TaskDTO implements Comparable<TaskDTO> {
     }
 
     private boolean canActionOnLogBook(Todo todo, User user) {
-        if (!todo.isCompleted() &&
+        if (!todo.isCompletionConfirmedByMember(user) &&
                 (todo.getAssignedMembers().contains(user)
                 || todo.getAssignedMembers().isEmpty())) {
             return true;

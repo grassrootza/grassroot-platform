@@ -5,6 +5,8 @@ import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Todo;
@@ -60,7 +62,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
     private static final String path = "/ussd/todo/";
 
     @InjectMocks
-    private USSDToDoController ussdLogBookController;
+    private USSDTodoController ussdLogBookController;
 
     private User testUser;
 
@@ -116,10 +118,9 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
 
     @Test
     public void listEntriesMenuShouldWork() throws Exception {
-
-        String message = "some message about meeting some other people to" +
-                " discuss something important about the community";
+        String message = "some message about meeting some other people to discuss something important about the community";
         Instant now = Instant.now();
+
         Group testGroup = new Group("somegroup", testUser);
         List<Todo> testTodos = Arrays.asList(
                 new Todo(testUser, testGroup, message, now),
@@ -127,15 +128,18 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
                 new Todo(testUser, testGroup, message, now));
 
         Page<Todo> dummyPage = new PageImpl<>(testTodos);
-        String urlToSave = logViewExistingUrl(listEntriesMenu, testGroup.getUid(), true, 0);
+        PageRequest pageRequest = new PageRequest(0, 3, new Sort(Sort.Direction.DESC, "actionByDate"));
+        String urlToSave = todosViewGroupCompleteEntries(listEntriesMenu, testGroup.getUid(), 0);
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
-        when(todoBrokerMock.fetchPageOfTodosForGroup(testUser.getUid(), testGroup.getUid(), true, 0, 3)).thenReturn(dummyPage);
-        mockMvc.perform(get(path + listEntriesMenu).param(phoneParam, testUserPhone).param("groupUid", testGroup.getUid())
+        when(todoBrokerMock.fetchPageOfTodosForGroup(testUser.getUid(), testGroup.getUid(), pageRequest)).thenReturn(dummyPage);
+
+        mockMvc.perform(get(path + listEntriesMenu).param(phoneParam, testUserPhone)
+                .param("groupUid", testGroup.getUid())
                 .param("done", String.valueOf(true))).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(todoBrokerMock, times(1)).fetchPageOfTodosForGroup(testUser.getUid(), testGroup.getUid(), true, 0, 3);
+        verify(todoBrokerMock, times(1)).fetchPageOfTodosForGroup(testUser.getUid(), testGroup.getUid(), pageRequest);
         verifyNoMoreInteractions(todoBrokerMock);
     }
 
@@ -327,7 +331,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
         Group testGroup = new Group("test testGroup", testUser);
         Todo dummyTodo = new Todo(testUser, testGroup, "Some logbook subject", Instant.now());
         dummyTodo.getAncestorGroup().addMember(testUser);
-        dummyTodo.addCompletionConfirmation(testUser, TodoCompletionConfirmType.COMPLETED, Instant.now());
+        dummyTodo.addCompletionConfirmation(testUser, TodoCompletionConfirmType.COMPLETED, Instant.now(), 20);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, saveToDoMenu(viewEntryMenu, dummyTodo.getUid()))).thenReturn(testUser);
         when(todoBrokerMock.load(dummyTodo.getUid())).thenReturn(dummyTodo);
@@ -347,7 +351,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
         Group testGroup = new Group("tg1", testUser);
         Todo dummyTodo = new Todo(testUser, testGroup, "test logbook", Instant.now().plus(7, ChronoUnit.DAYS));
         dummyTodo.getAncestorGroup().addMember(testUser);
-        dummyTodo.addCompletionConfirmation(testUser, TodoCompletionConfirmType.COMPLETED, Instant.now());
+        dummyTodo.addCompletionConfirmation(testUser, TodoCompletionConfirmType.COMPLETED, Instant.now(), 20);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
         when(todoBrokerMock.load(dummyTodo.getUid())).thenReturn(dummyTodo);
@@ -369,7 +373,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
         Group testGroup = new Group("tg2", testUser);
         Todo dummyTodo = new Todo(testUser, testGroup, "test logbook", Instant.now().minus(7, ChronoUnit.DAYS));
         dummyTodo.getAncestorGroup().addMember(testUser);
-        dummyTodo.addCompletionConfirmation(testUser, TodoCompletionConfirmType.COMPLETED, Instant.now());
+        dummyTodo.addCompletionConfirmation(testUser, TodoCompletionConfirmType.COMPLETED, Instant.now(), 20);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
         when(todoBrokerMock.load(dummyTodo.getUid())).thenReturn(dummyTodo);
@@ -390,7 +394,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
         testGroup.addMember(testUser);
         Todo dummyTodo = new Todo(testUser, testGroup, "test logbook", Instant.now().minus(7, ChronoUnit.DAYS));
 
-        dummyTodo.addCompletionConfirmation(testUser, TodoCompletionConfirmType.COMPLETED, Instant.now());
+        dummyTodo.addCompletionConfirmation(testUser, TodoCompletionConfirmType.COMPLETED, Instant.now(), 20);
         dummyTodo.assignMembers(Collections.singleton(testUser.getUid()));
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
         when(todoBrokerMock.load(dummyTodo.getUid())).thenReturn(dummyTodo);
@@ -412,7 +416,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
         testGroup.addMember(testUser);
         Todo dummyTodo = new Todo(testUser, testGroup, "test logbook", Instant.now().minus(7, ChronoUnit.DAYS));
 
-        dummyTodo.addCompletionConfirmation(testUser, TodoCompletionConfirmType.COMPLETED, Instant.now());
+        dummyTodo.addCompletionConfirmation(testUser, TodoCompletionConfirmType.COMPLETED, Instant.now(), 20);
         dummyTodo.assignMembers(Collections.singleton(testUser.getUid()));
 
         String urlToSave = saveToDoMenu(setCompleteMenu, dummyTodo.getUid());
@@ -525,7 +529,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
         Todo dummyTodo = new Todo(testUser, testGroup, "test logbook", Instant.now().plus(1, ChronoUnit.DAYS));
 
         dummyTodo.assignMembers(Collections.singleton(testUser.getUid()));
-        dummyTodo.addCompletionConfirmation(testUser, TodoCompletionConfirmType.COMPLETED, Instant.now());
+        dummyTodo.addCompletionConfirmation(testUser, TodoCompletionConfirmType.COMPLETED, Instant.now(), 20);
         String completed_date = "20/11";
         LocalDateTime correctDateTime = LocalDateTime.of(2016, 11, 20, 13, 0);
 
