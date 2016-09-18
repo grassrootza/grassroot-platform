@@ -247,8 +247,6 @@ public class USSDMeetingController extends USSDController {
                             @RequestParam(value = "interrupted", required = false) boolean interrupted,
                             @RequestParam(value = "revising", required = false) boolean revising) throws URISyntaxException {
 
-        // todo: add error and exception handling
-
         User user = userManager.findByInputNumber(inputNumber, saveMeetingMenu(placeMenu, mtgRequestUid, revising));
         if (!interrupted) eventUtil.updateEventRequest(user.getUid(), mtgRequestUid, priorMenu, userInput);
 

@@ -182,9 +182,9 @@ public class EventBrokerImpl implements EventBroker {
             throw new IllegalStateException("Meeting is canceled: " + meeting);
         }
 
-		if (!meeting.getCreatedByUser().equals(user) ||
-				permissionBroker.isGroupPermissionAvailable(user, meeting.getAncestorGroup(), Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS)) {
-			throw new AccessDeniedException("Error! Only meeting caller or group organizer can change meeting");
+		// note : for the moment, only the user who called the meeting can change it ... may alter in future, depends on user feedback
+		if (!meeting.getCreatedByUser().equals(user)) {
+			throw new AccessDeniedException("Error! Only meeting caller can change meeting");
 		}
 
         Instant convertedStartDateTime = convertToSystemTime(eventStartDateTime, getSAST());

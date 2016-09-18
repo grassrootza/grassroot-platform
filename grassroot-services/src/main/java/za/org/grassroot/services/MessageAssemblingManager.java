@@ -63,7 +63,7 @@ public class MessageAssemblingManager implements MessageAssemblingService {
     public String createEventResponseMessage(User user, Event event, EventRSVPResponse rsvpResponse) {
         Meeting meeting = (Meeting) event;
         String messageKey;
-        String salutation = (((Group) meeting.getParent()).hasName()) ? ((Group) meeting.getParent()).getGroupName() : "Grassroot";
+        String salutation = (( meeting.getParent()).hasName()) ? ((Group) meeting.getParent()).getGroupName() : "Grassroot";
         DateTimeFormatter sdf = DateTimeFormatter.ofPattern("EEE d MMM, h:mm a");
         String dateString = sdf.format(meeting.getEventDateTimeAtSAST());
         String[] field = {salutation, user.nameToDisplay(), meeting.getName(), dateString, meeting.getEventLocation()};

@@ -75,7 +75,9 @@ public class AccountManager implements AccountManagementService {
 
         accountRepository.saveAndFlush(account);
 
-        addAdministrator(userUid, accountUid, administratorUid);
+        if (!StringUtils.isEmpty(administratorUid)) {
+            addAdministrator(userUid, accountUid, administratorUid);
+        }
 
         return account.getUid();
     }

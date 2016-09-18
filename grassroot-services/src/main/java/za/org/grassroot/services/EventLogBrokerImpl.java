@@ -87,8 +87,8 @@ public class EventLogBrokerImpl implements EventLogBroker {
                     event.setEventStartDateTime(Instant.now());
                 }
             } else {
-                if (!user.equals(event.getCreatedByUser())) {
-                    generateEventResponseMessage(event, eventLog, rsvpResponse);
+                if (event.getEventType().equals(EventType.MEETING) && !user.equals(event.getCreatedByUser())) {
+                    generateMeetingResponseMessage(event, eventLog, rsvpResponse);
                 }
             }
         } else if (event.getEventStartDateTime().isAfter(Instant.now())) {
@@ -97,8 +97,8 @@ public class EventLogBrokerImpl implements EventLogBroker {
             eventLog.setResponse(rsvpResponse);
             log.info("rsvpForEvent... changing response to {} on eventLog {}", rsvpResponse.toString(), eventLog);
             eventLogRepository.saveAndFlush(eventLog); // todo: shouldn't need this, but it's not persisting (cleaning needed)
-            if (!user.equals(event.getCreatedByUser())) {
-                generateEventResponseMessage(event, eventLog, rsvpResponse);
+            if (event.getEventType().equals(EventType.MEETING) && !user.equals(event.getCreatedByUser())) {
+                generateMeetingResponseMessage(event, eventLog, rsvpResponse);
             }
         }
 
@@ -117,7 +117,7 @@ public class EventLogBrokerImpl implements EventLogBroker {
         return new ResponseTotalsDTO(responseEventLogs, event);
     }
 
-    private void generateEventResponseMessage(Event event, EventLog eventLog, EventRSVPResponse rsvpResponse) {
+    private void generateMeetingResponseMessage(Event event, EventLog eventLog, EventRSVPResponse rsvpResponse) {
         if (event.getCreatedByUser().getMessagingPreference().equals(UserMessagingPreference.ANDROID_APP)) {
             String message = messageAssemblingService.createEventResponseMessage(event.getCreatedByUser(), event, rsvpResponse);
             Notification notification = new EventResponseNotification(event.getCreatedByUser(), message, eventLog);

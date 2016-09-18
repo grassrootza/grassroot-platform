@@ -161,19 +161,24 @@ public class EventRequestBrokerImpl implements EventRequestBroker {
 	}
 
     @Override
+	@Transactional
     public void finishEdit(String userUid, String eventUid, String changeRequestUid) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(changeRequestUid);
 
-        User user = userRepository.findOneByUid(userUid);
+		User user = userRepository.findOneByUid(userUid);
         Event event = eventBroker.load(eventUid);
-        EventRequest request = eventRequestRepository.findOneByUid(changeRequestUid);
 
+		if (!event.getCreatedByUser().equals(user)) {
+			throw new AccessDeniedException("Error! Only user who created event can modify it");
+		}
+
+		EventRequest request = eventRequestRepository.findOneByUid(changeRequestUid);
         if (request instanceof MeetingRequest) {
-            MeetingRequest meetingChangeRequest = (MeetingRequest) request;
-            eventBroker.updateMeeting(userUid, eventUid, meetingChangeRequest.getName(),
-									  meetingChangeRequest.getEventDateTimeAtSAST(),
-                                      meetingChangeRequest.getEventLocation());
+			MeetingRequest meetingChangeRequest = (MeetingRequest) request;
+			eventBroker.updateMeeting(userUid, eventUid, meetingChangeRequest.getName(),
+						meetingChangeRequest.getEventDateTimeAtSAST(),
+						meetingChangeRequest.getEventLocation());
         } else {
             VoteRequest voteRequest = (VoteRequest) request;
             eventBroker.updateVote(userUid, eventUid, voteRequest.getEventDateTimeAtSAST(), voteRequest.getDescription());

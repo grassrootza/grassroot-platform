@@ -339,7 +339,7 @@ public class AdminController extends BaseController {
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping(value = "/admin/accounts/designate_confirmed", method = RequestMethod.POST)
-    public String designateUserDo(Model model, @RequestParam String administratorUid, @RequestParam("accountUid") String accountUid) {
+    public String designateUserDo(Model model, @RequestParam String administratorUid, @RequestParam String accountUid) {
 
         // todo: add error handling, etc
         User userToDesignate = userManagementService.load(administratorUid);
