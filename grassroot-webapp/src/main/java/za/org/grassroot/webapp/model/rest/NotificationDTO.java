@@ -8,6 +8,7 @@ import za.org.grassroot.core.domain.Task;
 import za.org.grassroot.core.domain.Todo;
 import za.org.grassroot.core.domain.notification.EventNotification;
 import za.org.grassroot.core.domain.notification.TodoNotification;
+import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.NotificationDetailedType;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.util.DateTimeUtil;
@@ -99,7 +100,9 @@ public class NotificationDTO {
         this.message = stripDialSuffix(stripTitleFromMessage(title, notification.getMessage()));
 
         this.entityType = event.getEventType().toString();
-        this.changeType = notification.getEventLog().getEventLogType().toString();
+        // todo: something strange with a single notification null event log appeared on staging server (cannot reproduce) ... introducing this until certain fixed
+        this.changeType = notification.getEventLog() == null ? EventLogType.CREATED.toString() :
+                notification.getEventLog().getEventLogType().toString();
     }
 
     public NotificationDTO(Notification notification, Todo todo){
