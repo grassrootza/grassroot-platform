@@ -11,8 +11,7 @@ import java.util.Arrays;
  */
 public class MaskedUserDTO {
 
-    @Value("${grassroot.msisdn.length:11}")
-    private int phoneNumberLength;
+    private static int phoneNumberLength;
 
     private final char maskingCharacter = '*';
 
@@ -29,12 +28,17 @@ public class MaskedUserDTO {
     private boolean webProfile;
     private boolean enabled;
 
+    public static void setPhoneNumberLength(int msisdnLength) {
+        phoneNumberLength = msisdnLength;
+    }
+
+    // requiring the pass in otherwise have to wire this up as a component just to get the property size
     public MaskedUserDTO(User user) {
         this.id = user.getId();
         this.uid = user.getUid();
         this.firstName = maskName(user.getFirstName());
         this.lastName = maskName(user.getLastName());
-        this.displayName = maskName(user.getDisplayName());
+        this.displayName = maskName(user.nameToDisplay());
         this.phoneNumber = maskPhoneNumber(user.getPhoneNumber());
         this.languageCode = user.getLanguageCode();
         this.createdDateTime = user.getCreatedDateTime();
@@ -87,7 +91,7 @@ public class MaskedUserDTO {
     private String maskPhoneNumber(String msisdn) {
         char[] chars = new char[phoneNumberLength - 6];
         Arrays.fill(chars, maskingCharacter);
-        return phoneNumber.substring(0,2) + (new String(chars)) + phoneNumber.substring(8, phoneNumberLength);
+        return msisdn.substring(0,2) + (new String(chars)) + msisdn.substring(8, phoneNumberLength);
     }
 
     private String maskName(String name) {

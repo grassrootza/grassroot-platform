@@ -795,7 +795,7 @@ public class EventBrokerImpl implements EventBroker {
 	@SuppressWarnings("unchecked")
 	public List<Event> retrieveGroupEvents(Group group, EventType eventType, Instant periodStart, Instant periodEnd) {
 		List<Event> events;
-		Sort sort = new Sort(Sort.Direction.ASC, "EventStartDateTime");
+		Sort sort = new Sort(Sort.Direction.DESC, "eventStartDateTime");
 		Instant beginning = (periodStart == null) ? group.getCreatedDateTime() : periodStart;
 		Instant end = (periodEnd == null) ? DateTimeUtil.getVeryLongAwayInstant() : periodEnd;
 

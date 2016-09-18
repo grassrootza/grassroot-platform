@@ -221,7 +221,15 @@ public class TodoBrokerImpl implements TodoBroker {
 
 		Instant completionInstant = completionTime == null ? null : convertToSystemTime(completionTime, getSAST());
 		boolean tippedThreshold = todo.addCompletionConfirmation(user, confirmType, completionInstant, COMPLETION_PERCENTAGE_BOUNDARY);
-		return  tippedThreshold || (todo.getCreatedByUser().equals(user) && confirmType.equals(TodoCompletionConfirmType.COMPLETED));
+
+		if (tippedThreshold || (todo.getCreatedByUser().equals(user) && confirmType.equals(TodoCompletionConfirmType.COMPLETED))) {
+			// to make sure reminders are turned off (reminder query should filter out, but just to be sure)
+			todo.setNumberOfRemindersLeftToSend(0);
+			todo.setReminderActive(false);
+			return true;
+		} else {
+			return false;
+		}
 	}
 
 

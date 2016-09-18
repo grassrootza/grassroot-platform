@@ -13,10 +13,12 @@ import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.enums.TodoLogType;
 import za.org.grassroot.core.repository.*;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.specifications.TodoSpecifications;
 import za.org.grassroot.services.util.FullTextSearchUtils;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -32,6 +34,9 @@ public class TaskBrokerImpl implements TaskBroker {
 
     @Value("${grassroot.todos.completion.threshold:20}") // defaults to 20 percent
     private double COMPLETION_PERCENTAGE_BOUNDARY;
+
+    @Value("${grassroot.todos.days_over.prompt:7}")
+    private int DAYS_PAST_FOR_TODO_CHECKING;
 
     @Autowired
     private UserRepository userRepository;
@@ -99,12 +104,14 @@ public class TaskBrokerImpl implements TaskBroker {
 
         Set<TaskDTO> taskDtos = new HashSet<>();
 
-        Instant start = Instant.now();
-        eventBroker.retrieveGroupEvents(group, null, start, null).forEach(e -> new TaskDTO(e, user, eventLogRepository));
+        eventBroker.retrieveGroupEvents(group, null, Instant.now(), null)
+                .forEach(e -> taskDtos.add(new TaskDTO(e, user, eventLogRepository)));
 
+        Instant todoStart = Instant.now().minus(DAYS_PAST_FOR_TODO_CHECKING, ChronoUnit.DAYS);
+        Instant todoEnd = DateTimeUtil.getVeryLongAwayInstant();
         List<Todo> todos = todoRepository.findAll(Specifications.where(notCancelled())
                 .and(hasGroupAsParent(group))
-                .and(actionByDateAfter(start))
+                .and(actionByDateBetween(todoStart, todoEnd))
                 .and(completionConfirmsBelow(COMPLETION_PERCENTAGE_BOUNDARY)));
 
         for (Todo todo : todos) {
@@ -161,8 +168,12 @@ public class TaskBrokerImpl implements TaskBroker {
         List<Event> events = eventRepository.findByParentGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceledFalse(user, now);
         Set<TaskDTO> taskDtos = resolveEventTaskDtos(events, user, null);
 
-        List<Todo> todos = todoRepository.findAll(Specifications.where(notCancelled()).and(actionByDateAfter(now))
-                .and(completionConfirmsBelow(COMPLETION_PERCENTAGE_BOUNDARY)).and(userPartOfGroup(user)));
+        Instant todoStart = Instant.now().minus(DAYS_PAST_FOR_TODO_CHECKING, ChronoUnit.DAYS);
+        Instant todoEnd = DateTimeUtil.getVeryLongAwayInstant();
+        List<Todo> todos = todoRepository.findAll(Specifications.where(notCancelled())
+                .and(actionByDateBetween(todoStart, todoEnd))
+                .and(completionConfirmsBelow(COMPLETION_PERCENTAGE_BOUNDARY))
+                .and(userPartOfGroup(user)));
 
         Set<TaskDTO> todoTaskDtos = resolveTodoTaskDtos(todos, user, null);
         taskDtos.addAll(todoTaskDtos);

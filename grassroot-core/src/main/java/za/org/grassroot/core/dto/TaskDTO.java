@@ -84,6 +84,7 @@ public class TaskDTO implements Comparable<TaskDTO> {
     public TaskDTO(Event event, User user, EventLog eventLog) {
         this(user, event);
 
+
         if (eventLog != null && !eventLog.getEventLogType().equals(EventLogType.RSVP)) {
             throw new IllegalArgumentException("Event log has to be of " + EventLogType.RSVP + ": " + eventLog);
         }

@@ -28,6 +28,7 @@ public interface TodoRepository extends JpaRepository<Todo, Long>, JpaSpecificat
         "where m.user_id = ?1 and to_tsvector('english', l.message) @@ to_tsquery('english', ?2)", nativeQuery = true)
     List<Todo> findByParentGroupMembershipsUserAndMessageSearchTerm(Long userId, String tsQueryText);
 
+    // todo : consider switching this to specifications as well
     @Transactional
     @Query(value = "select td from Todo td " +
             "left join td.completionConfirmations cm " +
