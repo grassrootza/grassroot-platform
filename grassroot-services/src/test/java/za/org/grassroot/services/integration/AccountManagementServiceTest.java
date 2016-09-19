@@ -6,35 +6,30 @@ import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.GrassrootServicesConfig;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.repository.RoleRepository;
+import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.AccountManagementService;
 import za.org.grassroot.services.GroupBroker;
 import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.services.exception.GroupAlreadyPaidForException;
 
 import java.util.HashSet;
-import java.util.Iterator;
 
 import static org.junit.Assert.*;
 import static za.org.grassroot.services.enums.GroupPermissionTemplate.DEFAULT_GROUP;
 
-
-@RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = {GrassrootServicesConfig.class})
-@Transactional
+@RunWith(SpringRunner.class)
+@ContextConfiguration(classes = TestContextConfig.class)
 @ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
 @WithMockUser(username = "0605550000", roles={"SYSTEM_ADMIN"})
-@TestPropertySource("/application.properties")
+@Transactional
 public class AccountManagementServiceTest {
 
     private static final Logger log = LoggerFactory.getLogger(AccountManagementServiceTest.class);
@@ -50,6 +45,9 @@ public class AccountManagementServiceTest {
 
     @Autowired
     private RoleRepository roleRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
     private final String accountName = "testAccount";
     private final String billingEmail = "billingemail@cso.org";
@@ -67,13 +65,18 @@ public class AccountManagementServiceTest {
         testUser = userManagementService.loadOrCreateUser(userNumber);
         testAdmin = userManagementService.loadOrCreateUser(accountAdminNumber);
         testGroup = groupBroker.create(testUser.getUid(), groupName, null, new HashSet<>(), DEFAULT_GROUP, null, null, false);
-        // roleRepository.save(new Role(accountAdminRole, null));
+
+        Role systemAdmin = new Role(BaseRoles.ROLE_SYSTEM_ADMIN, null);
+        log.info("systemAdmin role: " + systemAdmin.describe());
+        testUser.addStandardRole(systemAdmin);
+        roleRepository.save(systemAdmin);
+        userRepository.save(testUser);
+
+        Role accountAdmin = new Role(BaseRoles.ROLE_ACCOUNT_ADMIN, null);
+        roleRepository.save(accountAdmin);
     }
 
     private Account createTestAccount(String billingEmail) {
-        Role systemAdmin = new Role(BaseRoles.ROLE_SYSTEM_ADMIN, null);
-        log.info("systemAdmin role: " + systemAdmin.describe());
-        roleRepository.save(systemAdmin);
         String accountUid = accountManagementService.createAccount(testUser.getUid(), accountName, testAdmin.getUid(), billingEmail);
         Account account = accountManagementService.loadAccount(accountUid);
         return account;

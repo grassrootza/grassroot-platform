@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.context.support.AnnotationConfigContextLoader;
 import org.springframework.web.client.AsyncRestTemplate;
 import org.springframework.web.client.RestTemplate;
@@ -22,8 +22,8 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by luke on 2016/05/17.
  */
+@RunWith(SpringRunner.class)
 @ContextConfiguration(loader = AnnotationConfigContextLoader.class, classes = { HttpConfig.class })
-@RunWith(SpringJUnit4ClassRunner.class)
 public class HttpClientTest {
 
     private static final String url = "http://httpbin.org/status/200";

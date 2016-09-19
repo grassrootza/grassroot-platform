@@ -61,7 +61,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
         // todo : extend this parrent into method above, to remove public setters
         ReflectionTestUtils.setField(ussdHomeController, "safetyCode", "911");
         ReflectionTestUtils.setField(ussdHomeController, "sendMeLink", "123");
-        ReflectionTestUtils.setField(ussdHomeController, "hashPosition", 10);
+        ReflectionTestUtils.setField(ussdHomeController, "hashPosition", 9);
 
         /* We use these quite often */
         testUserZu.setLanguageCode("zu");

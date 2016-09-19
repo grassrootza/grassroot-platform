@@ -2,15 +2,22 @@ package za.org.grassroot.services.integration;
 
 import org.jivesoftware.smack.XMPPConnection;
 import org.springframework.beans.factory.FactoryBean;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
+import org.springframework.test.context.TestPropertySource;
 
 import static org.mockito.Mockito.mock;
 
 /**
  * Created by paballo on 2016/04/12.
  */
-@Component
+@Configuration
+@EnableAutoConfiguration
+@ComponentScan(basePackages = { "za.org.grassroot" })
+@PropertySource("/application.properties")
 public class TestContextConfig {
 
     @Bean

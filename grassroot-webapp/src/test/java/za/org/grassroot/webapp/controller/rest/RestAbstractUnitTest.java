@@ -29,8 +29,8 @@ import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
  */
 @RunWith(MockitoJUnitRunner.class)
 @ContextConfiguration
-public class RestAbstractUnitTest
-{
+public class RestAbstractUnitTest {
+
     protected final static String testUserPhone = "27815550000";
     protected final static String testUserCode = "2394";
     protected final static String testGroupName = "test_group";

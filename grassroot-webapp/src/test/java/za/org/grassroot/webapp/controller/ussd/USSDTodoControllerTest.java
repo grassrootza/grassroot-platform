@@ -51,30 +51,24 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
             send = "send";
     private static final String listEntriesMenu = "list",
             viewEntryMenu = "view",
-            viewEntryDates = "view_dates",
-            viewAssignment = "view_assigned",
-            setCompleteMenu = "set_complete",
-            completingUser = "choose_completor",
-            pickCompletor = "pick_completor",
-            completedDate = "date_completed",
-            confirmCompleteDate = "confirm_date";
+            setCompleteMenu = "complete";
 
     private static final String path = "/ussd/todo/";
 
     @InjectMocks
-    private USSDTodoController ussdLogBookController;
+    private USSDTodoController ussdTodoController;
 
     private User testUser;
 
     @Before
     public void setUp() {
 
-        mockMvc = MockMvcBuilders.standaloneSetup(ussdLogBookController)
+        mockMvc = MockMvcBuilders.standaloneSetup(ussdTodoController)
                 .setHandlerExceptionResolvers(exceptionResolver())
                 .setValidator(validator())
                 .setViewResolvers(viewResolver())
                 .build();
-        wireUpMessageSourceAndGroupUtil(ussdLogBookController);
+        wireUpMessageSourceAndGroupUtil(ussdTodoController);
         testUser = new User(testUserPhone);
     }
 
@@ -135,7 +129,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
 
         mockMvc.perform(get(path + listEntriesMenu).param(phoneParam, testUserPhone)
                 .param("groupUid", testGroup.getUid())
-                .param("done", String.valueOf(true))).andExpect(status().isOk());
+                .param("pageNumber", String.valueOf(0))).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
@@ -181,72 +175,8 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
 
     }
 
-    /* Since we are no longer doing user assignment through USSD, this is redundant
-
     @Test
-    public void askForAssignmentWorksAfterInterruption() throws Exception {
-
-        TodoRequest dummyLogBook = TodoRequest.makeEmpty(testUser);
-
-        String priorInput = "20/1";
-
-        String urlToSave = USSDUrlUtil.saveToDoMenu(assignMenu, dummyLogBook.getUid(), priorInput);
-        String formattedDateString = reformatDateInput(priorInput).trim();
-        when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
-
-        mockMvc.perform(get(path + assignMenu).param(logBookIdParam, dummyLogBook.getUid())
-                .param(phoneParam, testUserPhone).param("prior_input", priorInput).param("interrupted", String.valueOf(true)).param("request", "1").param("revising", String.valueOf(false)))
-                .andExpect(status().isOk());
-
-        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave);
-        verify(todoRequestBrokerMock, times(1)).updateDueDate(testUser.getUid(), dummyLogBook.getUid(),
-                                                                 parsePreformattedDate(reformatDateInput(priorInput).trim(), hour, minutes));
-        verifyNoMoreInteractions(userManagementServiceMock);
-        verifyNoMoreInteractions(logBookServiceMock);
-
-    }*/
-
-    /* As above, commenting out -- possibly to delete later
-    @Test
-    public void searchUserWorksAfterInterruption() throws Exception {
-
-        Todo dummyLogBook = Todo.makeEmpty();
-        String urlToSave = USSDUrlUtil.saveToDoMenu(searchUserMenu, dummyLogBook.getUid());
-        when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
-        mockMvc.perform(get(path + searchUserMenu).param(logBookIdParam, String.valueOf(dummyId))
-                .param(phoneParam, testUserPhone).param("prior_input", "1").param("interrupted", String.valueOf(true))
-                .param("request", "1"))
-                .andExpect(status().isOk());
-        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave);
-        verifyNoMoreInteractions(userManagementServiceMock);
-    }
-    */
-
-    /* As above, leaving this out
-    @Test
-    public void askForAssignedUsersWorksWithNumberAfterInterruption() throws Exception {
-
-        Todo dummyLogBook = Todo.makeEmpty();
-        dummyLogBook.setId(dummyId);
-        dummyLogBook.setParent(new Group("somegroup", testUser));
-        String urlToSave = USSDUrlUtil.saveToDoMenu(pickUserMenu, dummyLogBook.getUid(), testUserPhone);
-        List<User> dummyPossibleUsers = Arrays.asList(testUser);
-        when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
-        when(logBookServiceMock.load(dummyId)).thenReturn(dummyLogBook);
-        when(userManagementServiceMock.searchByGroupAndNameNumber(dummyLogBook.getThisOrAncestorGroup().getUid(), testUserPhone))
-                .thenReturn(dummyPossibleUsers);
-        mockMvc.perform(get(path + pickUserMenu).param(logBookIdParam,
-                String.valueOf(dummyId)).param("prior_input", testUserPhone).param(phoneParam, testUserPhone)
-                .param("interrupted", String.valueOf(true)).param("request", "1")).andExpect(status().isOk());
-        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave);
-        verify(logBookServiceMock, times(1)).load(dummyId);
-        verify(userManagementServiceMock, times(1)).searchByGroupAndNameNumber(dummyLogBook.getThisOrAncestorGroup().getUid(), testUserPhone);
-        verifyNoMoreInteractions(userManagementServiceMock);
-        verifyNoMoreInteractions(logBookServiceMock);
-    }*/
-
-    @Test
-    public void confirmLogEntryBookWorksWhenAssignedToUser() throws Exception {
+    public void confirmTodoWorksWhenAssignedToUser() throws Exception {
 
         Group testGroup = new Group("testGroup", testUser);
         testGroup.addMember(testUser);
@@ -287,7 +217,6 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
                 "%02d-%02d-%d", "%02d %02d %d", "%02d/%02d/%d", "%d-%d-%d", "%d/%d/%d");
 
 	    for (String format : bloomVariations) {
-
 	        String date = String.format(format, testDay.getDayOfMonth(), testDay.getMonthValue(), testYear.getValue());
 		    String urlToSave = USSDUrlUtil.saveToDoMenu(confirmMenu, dummyLogBook.getUid(), dueDateMenu, date, true);
 	        String formattedDateString = reformatDateInput(date).trim();
@@ -311,10 +240,8 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
     }
 
     @Test
-    public void finishLogBookShouldWork() throws Exception {
-
+    public void finishTodoShouldWork() throws Exception {
         TodoRequest dummyLogBook = TodoRequest.makeEmpty(testUser);
-
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
 
         mockMvc.perform(get(path + send).param(todoUidParam, dummyLogBook.getUid())
@@ -346,75 +273,11 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
     }
 
     @Test
-    public void viewLogBookDatesWorksWhenActionInComplete() throws Exception {
-
-        Group testGroup = new Group("tg1", testUser);
-        Todo dummyTodo = new Todo(testUser, testGroup, "test logbook", Instant.now().plus(7, ChronoUnit.DAYS));
-        dummyTodo.getAncestorGroup().addMember(testUser);
-        dummyTodo.addCompletionConfirmation(testUser, TodoCompletionConfirmType.COMPLETED, Instant.now(), 20);
-
-        when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
-        when(todoBrokerMock.load(dummyTodo.getUid())).thenReturn(dummyTodo);
-
-        mockMvc.perform(get(path + viewEntryDates).param(todoUidParam, dummyTodo.getUid())
-                .param(phoneParam, testUserPhone)).andExpect(status().isOk());
-
-        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);
-        verify(todoBrokerMock, times(1)).load(dummyTodo.getUid());
-
-        verifyNoMoreInteractions(userManagementServiceMock);
-        verifyNoMoreInteractions(todoBrokerMock);
-
-    }
-
-    @Test
-    public void viewLogBookDatesWorksWhenActionCompleted() throws Exception {
-
-        Group testGroup = new Group("tg2", testUser);
-        Todo dummyTodo = new Todo(testUser, testGroup, "test logbook", Instant.now().minus(7, ChronoUnit.DAYS));
-        dummyTodo.getAncestorGroup().addMember(testUser);
-        dummyTodo.addCompletionConfirmation(testUser, TodoCompletionConfirmType.COMPLETED, Instant.now(), 20);
-
-        when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
-        when(todoBrokerMock.load(dummyTodo.getUid())).thenReturn(dummyTodo);
-
-        mockMvc.perform(get(path + viewEntryDates).param(todoUidParam, dummyTodo.getUid())
-                .param(phoneParam, testUserPhone)).andExpect(status().isOk());
-        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);
-        verify(todoBrokerMock, times(1)).load(dummyTodo.getUid());
-        verifyNoMoreInteractions(userManagementServiceMock);
-        verifyNoMoreInteractions(todoBrokerMock);
-
-    }
-
-    @Test
-    public void viewLogBookAssignmentWorks() throws Exception {
+    public void todoCompleteMenuWorks() throws Exception {
 
         Group testGroup = new Group("tg2", testUser);
         testGroup.addMember(testUser);
-        Todo dummyTodo = new Todo(testUser, testGroup, "test logbook", Instant.now().minus(7, ChronoUnit.DAYS));
-
-        dummyTodo.addCompletionConfirmation(testUser, TodoCompletionConfirmType.COMPLETED, Instant.now(), 20);
-        dummyTodo.assignMembers(Collections.singleton(testUser.getUid()));
-        when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
-        when(todoBrokerMock.load(dummyTodo.getUid())).thenReturn(dummyTodo);
-
-        mockMvc.perform(get(path + viewAssignment).param(phoneParam, testUserPhone)
-                .param(todoUidParam, dummyTodo.getUid())).andExpect(status().isOk());
-
-        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);
-        verify(todoBrokerMock, times(1)).load(dummyTodo.getUid());
-        verifyNoMoreInteractions(userManagementServiceMock);
-        verifyNoMoreInteractions(todoBrokerMock);
-
-    }
-
-    @Test
-    public void logBookCompleteMenuWorks() throws Exception {
-
-        Group testGroup = new Group("tg2", testUser);
-        testGroup.addMember(testUser);
-        Todo dummyTodo = new Todo(testUser, testGroup, "test logbook", Instant.now().minus(7, ChronoUnit.DAYS));
+        Todo dummyTodo = new Todo(testUser, testGroup, "test todo", Instant.now().minus(7, ChronoUnit.DAYS));
 
         dummyTodo.addCompletionConfirmation(testUser, TodoCompletionConfirmType.COMPLETED, Instant.now(), 20);
         dummyTodo.assignMembers(Collections.singleton(testUser.getUid()));
@@ -430,117 +293,34 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
 
         verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verifyNoMoreInteractions(todoBrokerMock);
-
-    }
-
-    @Test
-    public void selectCompletingUserPromptWorks() throws Exception {
-
-        Todo dummyTodo = Todo.makeEmpty();
-        String urlToSave = saveToDoMenu(completingUser, dummyTodo.getUid());
-
-        when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
-        mockMvc.perform(get(path + completingUser).param(phoneParam, testUserPhone)
-                .param(todoUidParam, dummyTodo.getUid())).andExpect(status().isOk());
-        mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone)).andExpect(status().isOk());
-
-        verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone,
-                saveToDoMenu(completingUser, dummyTodo.getUid()));
-        verifyNoMoreInteractions(userManagementServiceMock);
-    }
-
-    @Test
-    public void pickCompletorWorks() throws Exception {
-
-        Group testGroup = new Group("tg2", testUser);
-        testGroup.addMember(testUser);
-        Todo dummyTodo = new Todo(testUser, testGroup, "test logbook", Instant.now().minus(7, ChronoUnit.DAYS));
-
-        dummyTodo.assignMembers(Collections.singleton(testUser.getUid()));
-
-        List<User> testPossibleUsers = Arrays.asList(testUser);
-        String urlToSave = saveToDoMenu(pickCompletor, dummyTodo.getUid(), testUserPhone);
-
-        when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
-        when(userManagementServiceMock.searchByGroupAndNameNumber(dummyTodo.getAncestorGroup().getUid(), testUserPhone))
-                .thenReturn(testPossibleUsers);
-        when(todoBrokerMock.load(dummyTodo.getUid())).thenReturn(dummyTodo);
-
-        mockMvc.perform(get(path + pickCompletor).param(phoneParam, testUserPhone).param(todoUidParam, dummyTodo.getUid())
-                                .param("request", testUserPhone)).andExpect(status().isOk());
-        mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param("request", "1"))
-                .andExpect(status().isOk());
-
-        verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone,
-                saveToDoMenu(pickCompletor, dummyTodo.getUid(), testUserPhone));
-        verify(userManagementServiceMock, times(2)).searchByGroupAndNameNumber(dummyTodo.getAncestorGroup().getUid(), testUserPhone);
         verify(todoBrokerMock, times(2)).load(dummyTodo.getUid());
-        verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(todoBrokerMock);
 
     }
 
     @Test
-    public void completedDatePromptWorks() throws Exception {
-
-        String logBookUid = Todo.makeEmpty().getUid();
-        String urlToSave = saveToDoMenu(completedDate, logBookUid);
-
-        when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
-
-        mockMvc.perform(get(path + completedDate).param(phoneParam, testUserPhone).param(todoUidParam, logBookUid))
-                .andExpect(status().isOk());
-        mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param("request", "1"))
-                .andExpect(status().isOk());
-
-        verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, urlToSave);
-        verifyNoMoreInteractions(userManagementServiceMock);
-        verifyNoMoreInteractions(todoBrokerMock);
-
-    }
-
-    @Test
-    public void confirmCompletedDateWorks() throws Exception {
-
-        String logBookUid = Todo.makeEmpty().getUid();
-
-        String priorInput = "20 01";
-        String urlToSave = saveToDoMenu(confirmCompleteDate, logBookUid, priorInput);
-
-        when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
-
-        mockMvc.perform(get(path + confirmCompleteDate).param(phoneParam, testUserPhone).param(todoUidParam, logBookUid).
-                param(userInputParam, priorInput)).andExpect(status().isOk());
-        mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param(userInputParam, "1"))
-                .andExpect(status().isOk());
-
-        verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, urlToSave);
-        verifyNoMoreInteractions(userManagementServiceMock);
-        verifyNoMoreInteractions(todoBrokerMock);
-
-    }
-
-    @Test
-    public void setLogBookEntryCompleteWorks() throws Exception {
+    public void setActionTodoComplete() throws Exception {
 
         Group testGroup = new Group("tg2", testUser);
         testGroup.addMember(testUser);
         Todo dummyTodo = new Todo(testUser, testGroup, "test logbook", Instant.now().plus(1, ChronoUnit.DAYS));
-
         dummyTodo.assignMembers(Collections.singleton(testUser.getUid()));
         dummyTodo.addCompletionConfirmation(testUser, TodoCompletionConfirmType.COMPLETED, Instant.now(), 20);
-        String completed_date = "20/11";
-        LocalDateTime correctDateTime = LocalDateTime.of(2016, 11, 20, 13, 0);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
+        when(todoBrokerMock.load(dummyTodo.getUid())).thenReturn(dummyTodo);
 
-        mockMvc.perform(get(path + setCompleteMenu + "-do").param(phoneParam, testUserPhone).
-                param(todoUidParam, dummyTodo.getUid()).param("completed_date", completed_date).
-                param(assignUserID, testUser.getUid())).andExpect(status().isOk());
+        mockMvc.perform(get(path + setCompleteMenu + "-do")
+                .param(phoneParam, testUserPhone)
+                .param(todoUidParam, dummyTodo.getUid())
+                .param("prior_input", TodoCompletionConfirmType.COMPLETED.name())).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);
-        verify(todoBrokerMock, times(1)).confirmCompletion(testUser.getUid(), dummyTodo.getUid(), TodoCompletionConfirmType.COMPLETED, correctDateTime);
+
+        verify(todoBrokerMock, times(1)).load(dummyTodo.getUid());
+        verify(todoBrokerMock, times(1)).confirmCompletion(eq(testUser.getUid()), eq(dummyTodo.getUid()), eq(TodoCompletionConfirmType.COMPLETED),
+                any(LocalDateTime.class));
+        verify(todoBrokerMock, times(1)).userHasIncompleteActionsToView(testUser.getUid());
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(todoBrokerMock);
 

@@ -227,7 +227,7 @@ public class UserRestController {
 
     private String temporaryTokenSend(String token, String destinationNumber, boolean resending) {
         if (environment.acceptsProfiles("production")) {
-            if (token != null && System.getenv("SMSUSER") != null && System.getenv("SMSPASS") != null) {
+            if (token != null) {
                 // todo : wire up a message source for this
                 final String prefix = resending ? "Grassroot code (resent): " : "Grassroot code: ";
                 smsSendingService.sendPrioritySMS(prefix + token, destinationNumber);
