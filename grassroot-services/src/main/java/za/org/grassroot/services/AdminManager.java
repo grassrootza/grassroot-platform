@@ -1,8 +1,11 @@
 package za.org.grassroot.services;
 
+import com.google.common.base.Splitter;
+import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,6 +16,7 @@ import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.*;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.exception.MemberNotPartOfGroupException;
 import za.org.grassroot.services.exception.NoSuchUserException;
 import za.org.grassroot.services.geo.GeoLocationBroker;
@@ -35,6 +39,9 @@ import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
 public class AdminManager implements AdminService {
 
     private static final Logger logger = LoggerFactory.getLogger(AdminManager.class);
+
+    @Value("${grassroot.keywords.excluded:''}")
+    String listOfWordsToExcludeFromStat;
 
     @Autowired
     private UserRepository userRepository;
@@ -68,16 +75,6 @@ public class AdminManager implements AdminService {
 
     @Autowired
     private EntityManager entityManager;
-
-    /*
-    Helper functions to mask a list of entities
-     */
-    private List<MaskedUserDTO> maskListUsers(List<User> users) {
-        List<MaskedUserDTO> maskedUsers = new ArrayList<>();
-        for (User user : users)
-            maskedUsers.add(new MaskedUserDTO(user));
-        return maskedUsers;
-    }
 
     @Override
     @Transactional(readOnly = true)
@@ -269,14 +266,26 @@ public class AdminManager implements AdminService {
 
     @Override
     @Transactional
-    @SuppressWarnings("unchecked")
     public List<KeywordDTO> getKeywordStats(LocalDateTime localDate) {
+        List<KeywordDTO> rawStats = processRawStats(DateTimeUtil.convertToSystemTime(localDate, DateTimeUtil.getSAST()));
+        List<String> excludedWords = Lists.newArrayList(Splitter.on(",").split(listOfWordsToExcludeFromStat));
+        logger.info("got raw stats, now applying these strings as filter: " + excludedWords);
 
-        Date fromDate = java.sql.Timestamp.valueOf(localDate);
+        List<KeywordDTO> filteredTerms = new ArrayList<>();
+        rawStats.stream()
+                .filter(w -> !excludedWords.contains(w.getKeyword()))
+                .forEach(filteredTerms::add);
+
+        return filteredTerms;
+
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<KeywordDTO> processRawStats(Instant fromDate) {
         return entityManager.createNativeQuery("SELECT word as keyword, group_name_count, meeting_name_count, " +
                 "vote_name_count, todo_count, nentry AS total_occurence " +
                 "FROM ts_stat(\'SELECT to_tsvector(keyword) " +
-                "FROM (SELECT g.name as keyword FROM group_profile g where g.created_date_time > '\'" + fromDate + " \'\' " +
+                "FROM (SELECT g.name as keyword FROM group_profile g where g.created_date_time > '\'" +fromDate + "\'\'" +
                 "UNION ALL SELECT e.name FROM event e where e.created_date_time > '\'" +fromDate + "\'\' " +
                 "UNION ALL SELECT t.message from action_todo t where t.created_date_time > '\'" +fromDate  +"\'\') as keywords\')" +
                 "LEFT OUTER JOIN (SELECT word AS group_name,nentry AS group_name_count " +
@@ -330,6 +339,16 @@ public class AdminManager implements AdminService {
     private int countSessionsInPeriod(Instant start, Instant end, int low, int high) {
         List<String> uids = userLogRepository.fetchUserUidsHavingUserLogTypeCountBetween(start, end, UserLogType.USER_SESSION, low, high);
         return (uids == null || uids.isEmpty()) ? 0 : uids.size();
+    }
+
+    /*
+   Helper functions to mask a list of entities
+    */
+    private List<MaskedUserDTO> maskListUsers(List<User> users) {
+        List<MaskedUserDTO> maskedUsers = new ArrayList<>();
+        for (User user : users)
+            maskedUsers.add(new MaskedUserDTO(user));
+        return maskedUsers;
     }
 
 }

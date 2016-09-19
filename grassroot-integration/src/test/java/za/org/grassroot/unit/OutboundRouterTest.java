@@ -7,7 +7,7 @@ import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.junit4.SpringRunner;
 import za.org.grassroot.core.domain.EventLog;
 import za.org.grassroot.core.domain.Meeting;
 import za.org.grassroot.core.domain.Notification;
@@ -15,7 +15,6 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.notification.EventCancelledNotification;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.UserMessagingPreference;
-import za.org.grassroot.integration.InfrastructureConfiguration;
 import za.org.grassroot.integration.router.OutboundMessageRouter;
 
 import static org.junit.Assert.assertEquals;
@@ -23,8 +22,8 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by paballo on 2016/04/11.
  */
-@ContextConfiguration(classes = {InfrastructureConfiguration.class, OutboundMessageRouter.class})
-@RunWith(SpringJUnit4ClassRunner.class)
+@RunWith(SpringRunner.class)
+@ContextConfiguration(classes = {TestContextConfig.class, OutboundMessageRouter.class})
 public class OutboundRouterTest {
 
     @Autowired

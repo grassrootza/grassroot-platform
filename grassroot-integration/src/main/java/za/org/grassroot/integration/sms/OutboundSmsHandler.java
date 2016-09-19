@@ -32,11 +32,11 @@ public class OutboundSmsHandler {
         log.info("Sms outbound channel sending forwarding message to = {}", destination);
         SmsGatewayResponse response = smsSendingService.sendSMS(msg,destination);
         if (response.isSuccessful()) {
-            // todo : decide if should update the next delivery time? also, keep an eye out on possible loops
             notificationService.markNotificationAsDelivered(notification.getUid());
             notificationService.updateNotificationReadStatus(notification.getUid(), true);
         } else {
-
+            // todo : decide if should update the next delivery time? also, keep an eye out on possible loops
+            log.error("error delivering SMS, response from gateway: {}", response.toString());
         }
     }
 }
