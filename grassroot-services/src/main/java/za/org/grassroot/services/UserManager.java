@@ -22,7 +22,7 @@ import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.repository.UserRequestRepository;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.services.GcmService;
-import za.org.grassroot.integration.services.SmsSendingService;
+import za.org.grassroot.integration.sms.SmsSendingService;
 import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.exception.InvalidTokenException;
 import za.org.grassroot.services.exception.NoSuchProfileException;

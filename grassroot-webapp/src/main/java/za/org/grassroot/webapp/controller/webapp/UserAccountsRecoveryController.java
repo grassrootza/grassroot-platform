@@ -15,7 +15,8 @@ import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.servlet.view.RedirectView;
 import za.org.grassroot.core.domain.VerificationTokenCode;
-import za.org.grassroot.integration.services.SmsSendingService;
+import za.org.grassroot.integration.sms.SmsGatewayResponse;
+import za.org.grassroot.integration.sms.SmsSendingService;
 import za.org.grassroot.services.PasswordTokenService;
 import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.webapp.controller.BaseController;
@@ -113,10 +114,9 @@ public class UserAccountsRecoveryController extends BaseController {
 
     private void temporaryTokenSend(VerificationTokenCode verificationTokenCode) {
         if (verificationTokenCode != null) {
-            // "Your Grassroot verification code is: " +
-            String messageResult = smsSendingService.sendSMS(getMessage("user.profile.token.message", verificationTokenCode.getCode()),
+            SmsGatewayResponse messageResult = smsSendingService.sendSMS(getMessage("user.profile.token.message", verificationTokenCode.getCode()),
                     verificationTokenCode.getUsername());
-            log.debug("SMS send result: {}", messageResult);
+            log.info("For token {}, sms send result: {}", verificationTokenCode.getCode(), messageResult.toString());
         }
     }
 }

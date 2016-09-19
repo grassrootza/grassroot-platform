@@ -11,7 +11,7 @@ import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
-import za.org.grassroot.integration.services.SmsSendingService;
+import za.org.grassroot.integration.sms.SmsSendingService;
 import za.org.grassroot.services.EventBroker;
 import za.org.grassroot.services.EventLogBroker;
 import za.org.grassroot.services.MessageAssemblingService;

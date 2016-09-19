@@ -15,7 +15,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.notification.EventCancelledNotification;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.UserMessagingPreference;
-import za.org.grassroot.integration.config.InfrastructureConfiguration;
+import za.org.grassroot.integration.InfrastructureConfiguration;
 import za.org.grassroot.integration.router.OutboundMessageRouter;
 
 import static org.junit.Assert.assertEquals;

@@ -7,7 +7,6 @@ package za.org.grassroot.integration.xmpp;
 import org.jivesoftware.smack.packet.DefaultExtensionElement;
 import org.jivesoftware.smack.util.XmlStringBuilder;
 
-
 public class GcmPacketExtension extends DefaultExtensionElement {
     public static final String GCM_ELEMENT_NAME = "gcm";
     public static final String GCM_NAMESPACE = "google:mobile:data";

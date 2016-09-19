@@ -31,7 +31,7 @@ public class OutboundMessageRouter {
                     break;
                 case "ANDROID_APP":
                     log.info("routing to gcm channel");
-                    if (checkGcmRegistration(message.getPayload())) {
+                    if (checkGcmRegistration(message.getPayload())) { //todo : fix this
                         outputChannel = "gcmOutboundChannel";
                     } else {
                         log.info("Error! User had no gcm registration but had gcm preference; sending to SMS instead");

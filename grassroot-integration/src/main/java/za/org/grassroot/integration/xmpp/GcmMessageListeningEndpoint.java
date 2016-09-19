@@ -3,11 +3,11 @@ package za.org.grassroot.integration.xmpp;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.log4j.Logger;
-import org.jivesoftware.smack.PacketListener;
 import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.StanzaListener;
 import org.jivesoftware.smack.XMPPConnection;
-import org.jivesoftware.smack.packet.*;
+import org.jivesoftware.smack.packet.ExtensionElement;
+import org.jivesoftware.smack.packet.Stanza;
 import org.jivesoftware.smack.provider.ExtensionElementProvider;
 import org.jivesoftware.smack.provider.ProviderManager;
 import org.springframework.integration.support.MessageBuilder;
@@ -26,10 +26,9 @@ import java.util.Map;
  */
 public class GcmMessageListeningEndpoint extends ChatMessageListeningEndpoint {
 
-
     private Logger log = Logger.getLogger(GcmMessageListeningEndpoint.class);
-    protected StanzaListener stanzaListener = new GcmPacketListener();
-    protected XmppHeaderMapper headerMapper = new DefaultXmppHeaderMapper();
+    private StanzaListener stanzaListener = new GcmPacketListener();
+    private XmppHeaderMapper headerMapper = new DefaultXmppHeaderMapper();
     private ObjectMapper mapper = new ObjectMapper();
 
     public GcmMessageListeningEndpoint(XMPPConnection connection) {

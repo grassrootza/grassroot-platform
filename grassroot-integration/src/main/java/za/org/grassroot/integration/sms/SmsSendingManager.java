@@ -1,4 +1,4 @@
-package za.org.grassroot.integration.services;
+package za.org.grassroot.integration.sms;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -8,6 +8,8 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
+import za.org.grassroot.integration.sms.aat.AatResponseInterpreter;
+import za.org.grassroot.integration.sms.aat.AatSmsResponse;
 
 import javax.annotation.PostConstruct;
 
@@ -16,8 +18,6 @@ import javax.annotation.PostConstruct;
  */
 @Service
 public class SmsSendingManager implements SmsSendingService {
-
-    // todo: add error and exception handling
 
     private Logger log = LoggerFactory.getLogger(SmsSendingManager.class);
 
@@ -45,7 +45,7 @@ public class SmsSendingManager implements SmsSendingService {
     }
 
     @Override
-    public String sendSMS(String message, String destinationNumber) {
+    public SmsGatewayResponse sendSMS(String message, String destinationNumber) {
         UriComponentsBuilder gatewayURI = UriComponentsBuilder.newInstance().scheme("https").host(smsGatewayHost);
 
         gatewayURI.path("send/").queryParam("username", smsGatewayUsername).queryParam("password", smsGatewayPassword);
@@ -53,26 +53,25 @@ public class SmsSendingManager implements SmsSendingService {
         gatewayURI.queryParam("message", message);
 
         if (!environment.acceptsProfiles("default")) {
-            // todo : remove this logging line soon
-            log.info("Sending SMS via URL: " + gatewayURI.toUriString());
-            //@todo process response message
-            String messageResult = restTemplate.getForObject(gatewayURI.build().toUri(), String.class);
-            log.info("SMS...result..." + messageResult);
-            return messageResult;
+            SmsGatewayResponse response = new AatResponseInterpreter(restTemplate.getForObject(gatewayURI.build().toUri(), AatSmsResponse.class));
+            log.info("SMS...result... as string = {}", response.toString());
+            return response;
+        } else {
+            return null;
         }
-        return null;
     }
 
     @Override
-    public void sendPrioritySMS(String message, String destinationNumber) {
+    public SmsGatewayResponse sendPrioritySMS(String message, String destinationNumber) {
         UriComponentsBuilder gatewayURI = UriComponentsBuilder.newInstance().scheme("https").host(smsGatewayHost);
 
         gatewayURI.path("send/").queryParam("username", smsPriorityUsername).queryParam("password", smsPriorityPassword);
         gatewayURI.queryParam("number", destinationNumber);
         gatewayURI.queryParam("message", message);
 
-        String messageResult = restTemplate.getForObject(gatewayURI.build().toUri(), String.class);
-        log.info("Priority SMS sent, with result ... " + messageResult);
+        SmsGatewayResponse response = new AatResponseInterpreter(restTemplate.getForObject(gatewayURI.build().toUri(), AatSmsResponse.class));
+        log.info("Priority SMS sent, with result ... " + response.toString());
+        return response;
     }
 
     @Async

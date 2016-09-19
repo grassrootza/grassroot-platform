@@ -11,7 +11,7 @@ import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.integration.services.GcmService;
 import za.org.grassroot.integration.services.MessageSendingService;
 import za.org.grassroot.integration.services.NotificationService;
-import za.org.grassroot.integration.services.SmsSendingService;
+import za.org.grassroot.integration.sms.SmsSendingService;
 
 import static org.mockito.Mockito.mock;
 

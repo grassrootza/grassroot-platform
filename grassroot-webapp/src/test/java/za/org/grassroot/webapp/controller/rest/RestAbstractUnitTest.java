@@ -12,7 +12,7 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.core.repository.VerificationTokenCodeRepository;
 import za.org.grassroot.integration.services.GcmService;
-import za.org.grassroot.integration.services.SmsSendingService;
+import za.org.grassroot.integration.sms.SmsSendingService;
 import za.org.grassroot.services.*;
 
 import java.time.Instant;
