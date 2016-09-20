@@ -19,6 +19,7 @@ import za.org.grassroot.integration.services.NotificationService;
 
 /**
  * Created by paballo on 2016/04/04.
+ * major todo: more intelligent handling of GCM return messages (e.g., unregister if not registered, etc)
  */
 @Component
 public class InboundGcmMessageHandler {
@@ -102,8 +103,7 @@ public class InboundGcmMessageHandler {
     private void handleNotAcknowledged(GcmUpstreamMessage input) {
         String messageId = input.getMessageId();
         Notification notification = notificationService.loadNotification(messageId);
-        log.info("Push Notification delivery failed, now sending SMS");
-        log.info("Sending SMS to " + notification.getTarget().getPhoneNumber());
+        log.info("Push Notification delivery failed, now sending SMS to  {}", notification.getTarget().getPhoneNumber());
         messageSendingService.sendMessage(UserMessagingPreference.SMS.name(),notification);
     }
 
@@ -120,7 +120,6 @@ public class InboundGcmMessageHandler {
 		gcmXmppOutboundChannel.send(gcmMessage);
     }
 
-    //todo move all ordinary message handling logic to a separate file
     public void registerUser(String registrationId, String phoneNumber){
         String convertedNumber= PhoneNumberUtil.convertPhoneNumber(phoneNumber);
         User user = userRepository.findByPhoneNumber(convertedNumber);

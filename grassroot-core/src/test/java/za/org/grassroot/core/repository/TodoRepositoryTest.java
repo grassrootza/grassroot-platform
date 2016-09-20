@@ -150,8 +150,7 @@ public class TodoRepositoryTest {
             replicatedEntries.add(lbChild);
         }
 
-        // todo: change action/todo design so replication references action/todo entry, not group, then don't need the
-        // todo: (contd) query checking date & time (which is not going to work) or message (which risks false returns)
+        // note : once fix / change replicated to-do models, fix this too
 
         List<Todo> replicatedEntries2 = new ArrayList<>();
         Todo lbParent2 = todoRepository.save(new Todo(user, groupParent, message, dueDate2));

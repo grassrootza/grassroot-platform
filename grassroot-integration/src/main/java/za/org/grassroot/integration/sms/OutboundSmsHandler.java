@@ -11,6 +11,7 @@ import za.org.grassroot.integration.services.NotificationService;
 
 /**
  * Created by paballo on 2016/04/06.
+ * major todo: decide how to handle non-delivered SMSs, e.g., decide if should update the next delivery time? also, keep an eye out on possible loops
  */
 @MessageEndpoint
 public class OutboundSmsHandler {
@@ -35,7 +36,6 @@ public class OutboundSmsHandler {
             notificationService.markNotificationAsDelivered(notification.getUid());
             notificationService.updateNotificationReadStatus(notification.getUid(), true);
         } else {
-            // todo : decide if should update the next delivery time? also, keep an eye out on possible loops
             log.error("error delivering SMS, response from gateway: {}", response.toString());
         }
     }

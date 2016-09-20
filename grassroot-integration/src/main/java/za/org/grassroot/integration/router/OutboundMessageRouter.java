@@ -15,9 +15,6 @@ public class OutboundMessageRouter {
 
     private Logger log = LoggerFactory.getLogger(OutboundMessageRouter.class);
 
-    // @Autowired
-    // private GcmRegistrationRepository gcmRegistrationRepository;
-
     @Router(inputChannel="requestChannel")
     public String route(Message<Notification> message) {
         String route = (String) message.getHeaders().get("route");
@@ -29,17 +26,12 @@ public class OutboundMessageRouter {
                     log.info("routing to sms channel");
                     outputChannel = "smsOutboundChannel";
                     break;
-                case "ANDROID_APP":
+                case "ANDROID_APP": //
                     log.info("routing to gcm channel");
-                    if (checkGcmRegistration(message.getPayload())) { //todo : fix this
-                        outputChannel = "gcmOutboundChannel";
-                    } else {
-                        log.info("Error! User had no gcm registration but had gcm preference; sending to SMS instead");
-                        outputChannel = "smsOutboundChannel";
-                    }
+                    outputChannel = "gcmOutboundChannel";
                     break;
                 default:
-                    log.info("badly form route={}, defaulting to sms channel", route);
+                    log.info("badly formed route={}, defaulting to sms channel", route);
                     outputChannel = "smsOutboundChannel";
                     break;
             }
@@ -49,12 +41,6 @@ public class OutboundMessageRouter {
         }
 
         return outputChannel;
-    }
-
-    private boolean checkGcmRegistration(Notification notification) {
-        return true;
-        // User user = notification.getTarget();
-        //return gcmRegistrationRepository.findByUser(user) != null;
     }
 
 }

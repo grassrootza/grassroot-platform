@@ -16,6 +16,7 @@ import java.util.Set;
 
 /**
  * Created by aakilomar on 12/3/15.
+ * major todo : change replication reference from group to the base level action/todo
  */
 @Entity
 @Table(name = "action_todo",

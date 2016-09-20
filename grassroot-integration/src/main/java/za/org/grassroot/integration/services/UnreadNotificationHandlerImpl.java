@@ -36,7 +36,7 @@ public class UnreadNotificationHandlerImpl implements UnreadNotificationHandler 
         // need to only check for those attempt, else may send before user has chance to view
         // note : do the check on read, not viewed on android, because we want to preserve that as false but mark to read on SMS send (to avoid repeat deliveries)
         List<Notification> unreadNotifications = notificationRepository
-                .findFirst100ByReadFalseAndAttemptCountGreaterThanAndNextAttemptTimeBeforeAndCreatedDateTimeGreaterThan(0, time, timeToCheck);
+                .findFirst100ByReadFalseAndAttemptCountGreaterThanAndLastAttemptTimeGreaterThan(0, timeToCheck);
         if (unreadNotifications.size() > 0) {
             logger.info("Sending {} unread notifications", unreadNotifications.size());
         }

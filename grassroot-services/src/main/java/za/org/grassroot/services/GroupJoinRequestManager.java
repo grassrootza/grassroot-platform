@@ -245,7 +245,7 @@ public class GroupJoinRequestManager implements GroupJoinRequestService {
     @Override
     @Transactional(readOnly = true)
     public List<GroupJoinRequest> getPendingRequestsForUser(String userUid) {
-        Sort sort = new Sort(Sort.Direction.DESC, "creationTime"); // todo: probably want to do this on multiple fields
+        Sort sort = new Sort(Sort.Direction.DESC, "creationTime");
         User user = userRepository.findOneByUid(userUid);
         return groupJoinRequestRepository.findByGroupJoinApproverAndStatus(user, GroupJoinRequestStatus.PENDING, sort);
     }

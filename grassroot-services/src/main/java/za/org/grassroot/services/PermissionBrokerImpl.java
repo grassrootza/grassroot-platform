@@ -29,8 +29,6 @@ public class PermissionBrokerImpl implements PermissionBroker {
     @Autowired
     private EntityManager entityManager;
 
-    // major todo: externalize these permissions
-
     private static final Set<Permission> defaultOrdinaryMemberPermissions =
             constructPermissionSet(Collections.emptySet(),
                     Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS,

@@ -162,6 +162,10 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         this.description = ""; // at some point may want to add to the constructor
         this.defaultImage = GroupDefaultImage.SOCIAL_MOVEMENT;
 
+        if (parent != null) {
+            parent.addChildGroup(this);
+        }
+
         // automatically add 3 default roles
         addRole(BaseRoles.ROLE_GROUP_ORGANIZER);
         addRole(BaseRoles.ROLE_COMMITTEE_MEMBER);
@@ -381,6 +385,20 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
     public boolean hasValidGroupTokenCode() {
         return (groupTokenCode != null && !groupTokenCode.isEmpty()) &&
                 (tokenExpiryDateTime != null && tokenExpiryDateTime.isAfter(Instant.now()));
+    }
+
+    public Set<Group> getDirectChildren() {
+        if (children == null) {
+            children = new HashSet<>();
+        }
+        return new HashSet<>(children);
+    }
+
+    public void addChildGroup(Group childGroup) {
+        if (children == null) {
+            children = new HashSet<>();
+        }
+        children.add(childGroup);
     }
 
     public Set<Event> getEvents() {

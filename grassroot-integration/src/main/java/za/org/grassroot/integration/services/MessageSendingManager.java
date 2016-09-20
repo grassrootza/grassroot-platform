@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.core.repository.GcmRegistrationRepository;
 
 /**
@@ -42,7 +43,6 @@ public class MessageSendingManager implements MessageSendingService {
         String route = (givenRoute == null) ? notification.getTarget().getMessagingPreference().name() : givenRoute;
         if ("ANDROID_APP".equals(route)) {
             if (!checkGcmRegistration(notification)) {
-                logger.error("user had preference set to Android, but no GCM registration");
                 route = "SMS";
             }
         }
@@ -52,11 +52,16 @@ public class MessageSendingManager implements MessageSendingService {
                 .build();
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     private boolean checkGcmRegistration(Notification notification) {
-        // return true;
         User user = notification.getTarget();
-        return gcmRegistrationRepository.findByUser(user) != null;
+        if (gcmRegistrationRepository.findByUser(user) != null) {
+            return true;
+        } else {
+            logger.error("user had preference set to Android, but no GCM registration, correcting");
+            user.setMessagingPreference(UserMessagingPreference.SMS);
+            return false;
+        }
     }
 
 

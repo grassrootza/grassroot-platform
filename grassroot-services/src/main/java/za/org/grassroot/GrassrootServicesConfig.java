@@ -29,6 +29,7 @@ import java.util.concurrent.Executors;
 
 /**
  * @author Lesetse Kimwaga
+ * major todo: work out why changing the deprecated annotation to newer one breaks all entity scanning in bootRun but not tests etc
  */
 
 @Configuration

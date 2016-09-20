@@ -11,6 +11,7 @@ import za.org.grassroot.core.domain.User;
 import java.time.Instant;
 import java.util.List;
 
+// major todo: switch to JPA specifications
 public interface EventRepository extends JpaRepository<Event, Long> {
 
 	Event findOneByUid(String uid);
@@ -22,6 +23,8 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 	List<Event> findByParentGroupAndCanceledFalse(Group group);
 
     int countByParentGroupMembershipsUserAndEventStartDateTimeGreaterThan(User user, Instant instant);
+
+	Event findOneByCreatedByUserAndParentGroupAndNameAndEventStartDateTimeBetweenAndCanceledFalse(User user, Group group, String name, Instant startDateTime, Instant endDateTime);
 
     /*
     A set of queries to use in fetching events related to a user (different flavors exist)
