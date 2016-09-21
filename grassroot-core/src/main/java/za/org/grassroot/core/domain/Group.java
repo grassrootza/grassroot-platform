@@ -162,6 +162,10 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         this.description = ""; // at some point may want to add to the constructor
         this.defaultImage = GroupDefaultImage.SOCIAL_MOVEMENT;
 
+        if (parent != null) {
+            parent.addChildGroup(this);
+        }
+
         // automatically add 3 default roles
         addRole(BaseRoles.ROLE_GROUP_ORGANIZER);
         addRole(BaseRoles.ROLE_COMMITTEE_MEMBER);
@@ -383,6 +387,20 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
                 (tokenExpiryDateTime != null && tokenExpiryDateTime.isAfter(Instant.now()));
     }
 
+    public Set<Group> getDirectChildren() {
+        if (children == null) {
+            children = new HashSet<>();
+        }
+        return new HashSet<>(children);
+    }
+
+    public void addChildGroup(Group childGroup) {
+        if (children == null) {
+            children = new HashSet<>();
+        }
+        children.add(childGroup);
+    }
+
     public Set<Event> getEvents() {
         if (events == null) {
             events = new HashSet<>();
@@ -433,12 +451,18 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         return getUpcomingEventsInternal(filter, time, includeDescendants, false);
     }
 
-    // todo : make sure this is wired on other side
     public Set<Todo> getDescendantTodos() {
         if (descendantTodos == null) {
             descendantTodos = new HashSet<>();
         }
         return new HashSet<>(descendantTodos);
+    }
+
+    public void addDescendantTodo(Todo todo) {
+        if (descendantTodos == null) {
+            descendantTodos = new HashSet<>();
+        }
+        descendantTodos.add(todo);
     }
 
     /**

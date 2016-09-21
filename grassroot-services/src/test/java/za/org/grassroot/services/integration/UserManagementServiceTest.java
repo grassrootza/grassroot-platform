@@ -4,12 +4,10 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.transaction.annotation.EnableTransactionManagement;
-import za.org.grassroot.GrassrootServicesConfig;
+import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.services.UserManagementService;
@@ -21,10 +19,9 @@ import static org.hamcrest.Matchers.equalTo;
  * @author Lesetse Kimwaga
  */
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = {GrassrootServicesConfig.class, TestContextConfig.class})
-@EnableTransactionManagement
-@DirtiesContext
+@RunWith(SpringRunner.class)
+@ContextConfiguration(classes = TestContextConfig.class)
+@Transactional
 @ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
 public class UserManagementServiceTest {
 
@@ -36,7 +33,6 @@ public class UserManagementServiceTest {
         User userProfile = new User("1201994", "Grass Root");
         userProfile = userManagementService.createUserProfile(userProfile);
         assertThat(userProfile.getDisplayName(), equalTo("Grass Root"));
-
     }
 
     @Test

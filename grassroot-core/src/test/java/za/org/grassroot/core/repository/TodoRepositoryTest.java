@@ -3,15 +3,17 @@ package za.org.grassroot.core.repository;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.data.domain.Sort;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.junit4.SpringRunner;
 import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Todo;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.TodoCompletionConfirmType;
 import za.org.grassroot.core.util.DateTimeUtil;
 
 import javax.transaction.Transactional;
@@ -27,8 +29,8 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
 
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = TestContextConfiguration.class)
+@RunWith(SpringRunner.class)
+@ContextConfiguration(classes = TestContextConfiguration.class)
 @Transactional
 @ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
 public class TodoRepositoryTest {
@@ -112,7 +114,7 @@ public class TodoRepositoryTest {
         List<Todo> list = todoRepository.findByAssignedMembersAndActionByDateBetweenAndCompletionPercentageGreaterThanEqual(user, Instant.now(),
                 DateTimeUtil.getVeryLongAwayInstant(), 50, sort);
         assertEquals(0, list.size());
-        lb1.addCompletionConfirmation(user, Instant.now());
+        lb1.addCompletionConfirmation(user, TodoCompletionConfirmType.COMPLETED, Instant.now(), 20);
         todoRepository.save(lb1);
         list = todoRepository.findByAssignedMembersAndActionByDateBetweenAndCompletionPercentageGreaterThanEqual(user, Instant.now(),
                 DateTimeUtil.getVeryLongAwayInstant(), 50, sort);
@@ -148,8 +150,7 @@ public class TodoRepositoryTest {
             replicatedEntries.add(lbChild);
         }
 
-        // todo: change action/todo design so replication references action/todo entry, not group, then don't need the
-        // todo: (contd) query checking date & time (which is not going to work) or message (which risks false returns)
+        // note : once fix / change replicated to-do models, fix this too
 
         List<Todo> replicatedEntries2 = new ArrayList<>();
         Todo lbParent2 = todoRepository.save(new Todo(user, groupParent, message, dueDate2));

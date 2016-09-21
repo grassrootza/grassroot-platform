@@ -22,7 +22,7 @@ import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.repository.UserRequestRepository;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.services.GcmService;
-import za.org.grassroot.integration.services.SmsSendingService;
+import za.org.grassroot.integration.sms.SmsSendingService;
 import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.exception.InvalidTokenException;
 import za.org.grassroot.services.exception.NoSuchProfileException;
@@ -468,7 +468,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     public LinkedHashMap<String, String> getImplementedLanguages() {
 
-        // todo: replace calls to one in USSDController to this one
+        // todo: make this static and move to webapp module
 
         LinkedHashMap<String, String> languages = new LinkedHashMap<>();
 

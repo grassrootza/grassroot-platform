@@ -23,6 +23,7 @@ import za.org.grassroot.webapp.model.rest.wrappers.GenericResponseWrapper;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapperImpl;
 import za.org.grassroot.webapp.model.web.MemberPicker;
+import za.org.grassroot.webapp.util.RestUtil;
 
 import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDate;
@@ -67,7 +68,7 @@ public class AjaxController extends BaseController {
         } else if (JpaEntityType.TODO.equals(type)) {
             memberPicker = new MemberPicker(todoBroker.load(parentUid), selected);
         } else {
-            return errorResponse();
+            return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.INVALID_ENTITY_TYPE);
         }
 
         ResponseWrapper body = new GenericResponseWrapper(HttpStatus.FOUND, RestMessage.PARENT_MEMBERS,
@@ -85,7 +86,7 @@ public class AjaxController extends BaseController {
             return new ResponseEntity<>(body, HttpStatus.OK);
         } catch (Exception e) {
             log.info("Error fetching task! Error: {}", e.toString());
-            return errorResponse();
+            return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.INVALID_INPUT);
         }
     }
 
@@ -103,12 +104,6 @@ public class AjaxController extends BaseController {
         List<double[]> listLatLongs = geoLocationBroker.fetchUserLatitudeLongitudeInAvgPeriod(userUid, LocalDate.now());
         ResponseWrapper body = new GenericResponseWrapper(HttpStatus.FOUND, RestMessage.TASK_FOUND, RestStatus.SUCCESS, listLatLongs);
         return new ResponseEntity<>(body, HttpStatus.OK);
-    }
-
-    private ResponseEntity<ResponseWrapper> errorResponse() {
-        // todo: look into repetition of http status in this
-        ResponseWrapper error = new ResponseWrapperImpl(HttpStatus.BAD_REQUEST, RestMessage.INVALID_ENTITY_TYPE, RestStatus.FAILURE);
-        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
     }
 
 }

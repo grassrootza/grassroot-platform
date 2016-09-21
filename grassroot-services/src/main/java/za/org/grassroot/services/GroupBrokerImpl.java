@@ -167,7 +167,6 @@ public class GroupBrokerImpl implements GroupBroker {
         return group;
     }
 
-
     private void logActionLogsAfterCommit(Set<ActionLog> actionLogs) {
         if (!actionLogs.isEmpty()) {
             LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
@@ -624,7 +623,6 @@ public class GroupBrokerImpl implements GroupBroker {
             role.setPermissions(adjustedRolePermissions);
         }
 
-        // todo: consider more fine grained logging (which permission changed)
         logActionLogsAfterCommit(Collections.singleton(new GroupLog(group, user, GroupLogType.PERMISSIONS_CHANGED, 0L,
                 "Changed permissions assigned to group roles")));
 
@@ -981,11 +979,11 @@ public class GroupBrokerImpl implements GroupBroker {
     }
 
     @Override
-    public Group findGroupFromJoinCode(String joinCode) {
+    public Optional<Group> findGroupFromJoinCode(String joinCode) {
         Group groupToReturn = groupRepository.findByGroupTokenCode(joinCode);
-        if (groupToReturn == null) return null;
+        if (groupToReturn == null) return Optional.empty();
         if (groupToReturn.getTokenExpiryDateTime().isBefore(Instant.now())) return null;
-        return groupToReturn;
+        return Optional.of(groupToReturn);
     }
 
     @Override

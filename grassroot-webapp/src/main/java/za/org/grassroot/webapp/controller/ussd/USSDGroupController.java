@@ -17,6 +17,7 @@ import za.org.grassroot.services.exception.GroupDeactivationNotAvailableExceptio
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
+import za.org.grassroot.webapp.util.USSDGroupUtil;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
@@ -82,8 +83,13 @@ public class USSDGroupController extends USSDController {
         } else {
             final int numberGroups = permissionBroker.countActiveGroupsWithPermission(user, null);
             if (numberGroups != 1) {
-                return menuBuilder(ussdGroupUtil.askForGroup(user, USSDSection.GROUP_MANAGER, existingGroupMenu,
-                        createGroupMenu, createGroupMenu + doSuffix, createGroupMenu, numberGroups));
+                USSDGroupUtil.GroupMenuBuilder builder = new USSDGroupUtil.GroupMenuBuilder(user, thisSection);
+                builder.urlForExistingGroup(existingGroupMenu)
+                        .urlForCreateNewGroupPrompt(createGroupMenu)
+                        .urlToCreateNewGroup(createGroupMenu + doSuffix)
+                        .urlForNoGroups(createGroupMenu)
+                        .numberOfGroups(numberGroups);
+                return menuBuilder(ussdGroupUtil.askForGroup(builder));
             } else {
                 final String groupUid = permissionBroker.getActiveGroupsWithPermission(user, null).iterator().next().getUid();
                 return menuBuilder(ussdGroupUtil.existingGroupMenu(user, groupUid, true));

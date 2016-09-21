@@ -46,8 +46,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
 
          logger.info("ZOG: dummyMeetingIs: {} ", dummyMeeting);
 
-        ResponseTotalsDTO testCount = new ResponseTotalsDTO();
-        testCount.setYes(1);
+        ResponseTotalsDTO testCount = ResponseTotalsDTO.makeForTest(1, 0, 0, 0, 1);
         HashMap<User, EventRSVPResponse> dummyResponsesMap = mock(HashMap.class);
         dummyResponsesMap.put(sessionTestUser, EventRSVPResponse.YES);
 
@@ -152,9 +151,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         Group testGroup = new Group("Dummy Group3", new User("234345345"));
         Meeting dummyMeeting = new Meeting("test meeting", oneDayAway, sessionTestUser, testGroup, "some place");
 
-        ResponseTotalsDTO testCount = new ResponseTotalsDTO();
-        testCount.setYes(1);
-
+        ResponseTotalsDTO testCount = ResponseTotalsDTO.makeForTest(1, 0, 0, 0, 1);
         when(eventBrokerMock.loadMeeting(dummyMeeting.getUid())).thenReturn(dummyMeeting);
         when(permissionBrokerMock.isGroupPermissionAvailable(sessionTestUser, testGroup,
                                                              Permission.GROUP_PERMISSION_VIEW_MEETING_RSVPS)).thenReturn(true);
@@ -208,8 +205,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         Meeting dummyMeeting = new Meeting("test meeting", oneDayAway,
                                            sessionTestUser, testGroup, "some place");
 
-        ResponseTotalsDTO testCount = new ResponseTotalsDTO();
-        testCount.setYes(2);
+        ResponseTotalsDTO testCount = ResponseTotalsDTO.makeForTest(2, 0, 0, 0, 2);
         HashMap<User, EventRSVPResponse> dummyResponsesMap = mock(HashMap.class);
         dummyResponsesMap.put(sessionTestUser, EventRSVPResponse.YES);
 

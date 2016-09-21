@@ -1,12 +1,16 @@
 package za.org.grassroot.core.domain;
 
+import za.org.grassroot.core.enums.TodoCompletionConfirmType;
+
 import javax.persistence.*;
 import java.time.Instant;
+import java.util.Objects;
 
 @Entity
 @Table(name = "action_todo_completion_confirmation",
 		uniqueConstraints = @UniqueConstraint(name = "uk_compl_confirmation_action_todo_member", columnNames = {"action_todo_id", "member_id"}))
 public class TodoCompletionConfirmation {
+
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(name = "id", nullable = false)
@@ -20,17 +24,30 @@ public class TodoCompletionConfirmation {
 	@JoinColumn(name = "action_todo_id", nullable = false, foreignKey = @ForeignKey(name = "fk_action_todo_compl_confirm_action_todo"))
 	private Todo todo;
 
-	@Column(name = "completion_time")
+	@Column(name = "creation_time", nullable = false, updatable = false) // i.e., when the user made the response
+	private Instant creationTime;
+
+	@Column(name = "completion_time") // i.e., when the to-do was completed
 	private Instant completionTime;
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "confirmation_type", nullable = false)
+	private TodoCompletionConfirmType confirmType;
 
 	private TodoCompletionConfirmation() {
 		// for JPA
 	}
 
-	public TodoCompletionConfirmation(Todo todo, User member, Instant completionTime) {
+	public TodoCompletionConfirmation(Todo todo, User member, TodoCompletionConfirmType confirmType, Instant completionTime) {
+		Objects.requireNonNull(todo);
+		Objects.requireNonNull(member);
+		Objects.requireNonNull(confirmType);
+
 		this.todo = todo;
 		this.member = member;
 		this.completionTime = completionTime;
+		this.confirmType = confirmType;
+		this.creationTime = Instant.now();
 	}
 
 	public Long getId() {
@@ -45,6 +62,15 @@ public class TodoCompletionConfirmation {
 		return todo;
 	}
 
+	public Instant getCreationTime() { return creationTime; }
+
+	public Instant getCompletionTime() { return completionTime; }
+
+	public TodoCompletionConfirmType getConfirmType() { return confirmType; }
+
+	public void setCompletionTime(Instant completionTime) { this.completionTime = completionTime; }
+
+	public void setConfirmType(TodoCompletionConfirmType confirmType) { this.confirmType = confirmType; }
 
 	@Override
 	public boolean equals(Object o) {
@@ -60,8 +86,8 @@ public class TodoCompletionConfirmation {
 		if (!member.equals(that.member)) {
 			return false;
 		}
-		return todo.equals(that.todo);
 
+		return todo.equals(that.todo);
 	}
 
 	@Override

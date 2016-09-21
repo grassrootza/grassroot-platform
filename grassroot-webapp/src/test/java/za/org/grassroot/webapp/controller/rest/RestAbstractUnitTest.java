@@ -12,7 +12,7 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.core.repository.VerificationTokenCodeRepository;
 import za.org.grassroot.integration.services.GcmService;
-import za.org.grassroot.integration.services.SmsSendingService;
+import za.org.grassroot.integration.sms.SmsSendingService;
 import za.org.grassroot.services.*;
 
 import java.time.Instant;
@@ -29,8 +29,8 @@ import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
  */
 @RunWith(MockitoJUnitRunner.class)
 @ContextConfiguration
-public class RestAbstractUnitTest
-{
+public class RestAbstractUnitTest {
+
     protected final static String testUserPhone = "27815550000";
     protected final static String testUserCode = "2394";
     protected final static String testGroupName = "test_group";

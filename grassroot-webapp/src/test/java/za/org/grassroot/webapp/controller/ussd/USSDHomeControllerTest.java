@@ -15,10 +15,7 @@ import za.org.grassroot.core.enums.EventType;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -64,7 +61,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
         // todo : extend this parrent into method above, to remove public setters
         ReflectionTestUtils.setField(ussdHomeController, "safetyCode", "911");
         ReflectionTestUtils.setField(ussdHomeController, "sendMeLink", "123");
-        ReflectionTestUtils.setField(ussdHomeController, "hashPosition", 10);
+        ReflectionTestUtils.setField(ussdHomeController, "hashPosition", 9);
 
         /* We use these quite often */
         testUserZu.setLanguageCode("zu");
@@ -147,7 +144,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
         testGroup.setTokenExpiryDateTime(Instant.now().plus(7, ChronoUnit.DAYS));
 
         when(userManagementServiceMock.loadOrCreateUser(phoneForTests)).thenReturn(testUser);
-        when(groupBrokerMock.findGroupFromJoinCode("111")).thenReturn(testGroup);
+        when(groupBrokerMock.findGroupFromJoinCode("111")).thenReturn(Optional.of(testGroup));
 
         mockMvc.perform(get(openingMenu).param(phoneParameter, phoneForTests).param("request", "*134*1994*111#")).
                 andExpect(status().isOk());

@@ -67,12 +67,11 @@ public class USSDMenu {
     public void setFreeText(boolean isFreeText) { this.isFreeText = isFreeText; }
 
     public void setNextURI(String nextUri) {
-        // todo: throw an exception if this is not a free text
+        this.isFreeText = true;
         menuOptions.put(nextUri, "");
     }
 
     public String getNextURI() {
-        // todo: throw an exception if this is not a free text
         return menuOptions.entrySet().iterator().next().getKey();
     }
 

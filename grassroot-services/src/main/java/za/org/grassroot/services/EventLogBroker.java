@@ -16,6 +16,4 @@ public interface EventLogBroker {
     boolean hasUserRespondedToEvent(Event event, User user);
 
     ResponseTotalsDTO getResponseCountForEvent(Event event);
-
-    ResponseTotalsDTO getVoteResultsForEvent(Event event);
 }

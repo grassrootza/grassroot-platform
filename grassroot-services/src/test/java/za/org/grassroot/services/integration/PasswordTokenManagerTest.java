@@ -10,6 +10,7 @@ import org.springframework.test.annotation.Repeat;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.GrassrootServicesConfig;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
@@ -24,10 +25,10 @@ import static org.hamcrest.Matchers.is;
 /**
  * @author Lesetse Kimwaga
  */
-@RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = {GrassrootServicesConfig.class, TestContextConfig.class})
+@RunWith(SpringRunner.class)
+@ContextConfiguration(classes = TestContextConfig.class)
 @Transactional
-@DirtiesContext
+//@DirtiesContext
 @ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
 public class PasswordTokenManagerTest {
 

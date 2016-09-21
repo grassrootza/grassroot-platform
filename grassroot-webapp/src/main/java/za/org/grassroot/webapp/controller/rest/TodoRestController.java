@@ -13,6 +13,7 @@ import za.org.grassroot.core.domain.Todo;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.core.enums.TaskType;
+import za.org.grassroot.core.enums.TodoCompletionConfirmType;
 import za.org.grassroot.services.TaskBroker;
 import za.org.grassroot.services.TodoBroker;
 import za.org.grassroot.services.UserManagementService;
@@ -54,8 +55,8 @@ public class TodoRestController {
         User user = userManagementService.findByInputNumber(phoneNumber);
         Todo todo = todoBroker.load(id);
 
-        if (!todo.isCompletedBy(user)) {
-            todoBroker.confirmCompletion(user.getUid(), id, LocalDateTime.now());
+        if (!todo.isCompletionConfirmedByMember(user)) {
+            todoBroker.confirmCompletion(user.getUid(), id, TodoCompletionConfirmType.COMPLETED, LocalDateTime.now());
             TaskDTO updatedTask = taskBroker.load(user.getUid(), id, TaskType.TODO);
             return RestUtil.okayResponseWithData(RestMessage.TODO_SET_COMPLETED, Collections.singletonList(updatedTask));
         } else {

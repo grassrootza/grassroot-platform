@@ -4,6 +4,7 @@ import com.google.common.base.Joiner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.enums.TodoCompletionConfirmType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.EventBroker;
 import za.org.grassroot.services.GroupBroker;
@@ -34,6 +36,9 @@ import java.util.*;
 public class TodoController extends BaseController {
 
     private static final Logger log = LoggerFactory.getLogger(TodoController.class);
+
+    @Value("${grassroot.todos.completion.threshold:20}") // defaults to 20 percent
+    private double COMPLETION_PERCENTAGE_BOUNDARY;
 
     @Autowired
     private GroupBroker groupBroker;
@@ -180,7 +185,7 @@ public class TodoController extends BaseController {
         model.addAttribute("entry", todoEntry);
         model.addAttribute("parent", todoEntry.getParent());
         model.addAttribute("creatingUser", todoEntry.getCreatedByUser());
-        model.addAttribute("isComplete", todoEntry.isCompleted());
+        model.addAttribute("isComplete", todoEntry.isCompleted(COMPLETION_PERCENTAGE_BOUNDARY));
 
         if (todoBroker.hasReplicatedEntries(todoEntry)) {
             log.info("Found replicated entries ... adding them to model");
@@ -230,9 +235,9 @@ public class TodoController extends BaseController {
         Todo todo = todoBroker.load(logBookUid);
 
         if (setCompletedDate) {
-	        todoBroker.confirmCompletion(sessionUserUid, todo.getUid(), completedDate);
+	        todoBroker.confirmCompletion(sessionUserUid, todo.getUid(), TodoCompletionConfirmType.COMPLETED, completedDate);
         } else {
-	        todoBroker.confirmCompletion(sessionUserUid, todo.getUid(), LocalDateTime.now());
+	        todoBroker.confirmCompletion(sessionUserUid, todo.getUid(), TodoCompletionConfirmType.COMPLETED, LocalDateTime.now());
         }
 
         addMessage(model, MessageType.SUCCESS, "todo.completed.done", request);
@@ -279,7 +284,7 @@ public class TodoController extends BaseController {
         if (todo.getReminderMinutes() != savedTodo.getReminderMinutes())
             savedTodo.setReminderMinutes(todo.getReminderMinutes());
 
-        // todo: implement this using new design
+        // todo: implement this using new design (and switch the update field)
         /* if (!assignToUser)
             savedTodo.setAssignedToUser(null);
         else

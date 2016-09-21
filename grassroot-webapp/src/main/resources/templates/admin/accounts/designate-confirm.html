@@ -17,7 +17,7 @@
     <form th:action="@{/admin/accounts/designate_confirmed}" method="post" autocomplete="off" class="form-horizontal">
       <!-- todo: provide an option to over-write the current primary email when doing this -->
       <input type="hidden" name="accountUid" th:value="${account.uid}" />
-      <input type="hidden" name="userUid" th:value="${userToDesignate.uid}" />
+      <input type="hidden" name="administratorUid" th:value="${userToDesignate.uid}" />
       <div class="form-group">
         You are about to make an administrator the user <span th:text="${userToDesignate.nameToDisplay()}">name</span>,
         with the phone number <span th:text="${userToDesignate.phoneNumber}">081XXX</span>. Are you sure?

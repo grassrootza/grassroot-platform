@@ -25,6 +25,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -135,11 +136,15 @@ public class PaidAccountController extends BaseController {
                                  @RequestParam boolean tokenSearch, HttpServletRequest request) {
         Account account = accountManagementService.loadAccount(accountUid);
         if (!sessionUserHasAccountPermission(account, request)) throw new AccessDeniedException("");
+
         model.addAttribute("account", account);
         model.addAttribute("tokenSearch", tokenSearch);
 
         if (tokenSearch) {
-            model.addAttribute("groupFound", groupBroker.findGroupFromJoinCode(searchTerm));
+            Optional<Group> searchResult = groupBroker.findGroupFromJoinCode(searchTerm);
+            if (searchResult.isPresent()) {
+                model.addAttribute("groupFound", groupBroker.findGroupFromJoinCode(searchTerm));
+            }
         } else {
             model.addAttribute("groupCandidates", groupBroker.findPublicGroups(getUserProfile().getUid(), searchTerm, null, false));
         }

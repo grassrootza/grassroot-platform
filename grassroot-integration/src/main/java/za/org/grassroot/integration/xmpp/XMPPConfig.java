@@ -1,8 +1,9 @@
 package za.org.grassroot.integration.xmpp;
 
-
 import org.jivesoftware.smack.ConnectionConfiguration;
 import org.jivesoftware.smack.XMPPConnection;
+import org.jivesoftware.smack.roster.Roster;
+import org.jivesoftware.smack.tcp.XMPPTCPConnectionConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,7 +15,7 @@ import org.springframework.integration.annotation.ServiceActivator;
 import org.springframework.integration.xmpp.config.XmppConnectionFactoryBean;
 import org.springframework.integration.xmpp.outbound.ChatMessageSendingMessageHandler;
 import org.springframework.messaging.MessageChannel;
-import za.org.grassroot.integration.config.InfrastructureConfiguration;
+import za.org.grassroot.integration.InfrastructureConfiguration;
 
 import javax.net.ssl.SSLSocketFactory;
 
@@ -24,7 +25,7 @@ import javax.net.ssl.SSLSocketFactory;
 @Configuration
 @Import(InfrastructureConfiguration.class)
 @ConditionalOnProperty(name = "gcm.connection.enabled", havingValue = "true",  matchIfMissing = false)
-public class XMPPConfiguration {
+public class XMPPConfig {
 
     @Value("${gcm.connection.url}")
     private String host;
@@ -38,17 +39,19 @@ public class XMPPConfiguration {
     @Value("${gcm.sender.key}")
     private String gcmSenderKey;
 
-    private Logger log = LoggerFactory.getLogger(XMPPConfiguration.class);
+    private Logger log = LoggerFactory.getLogger(XMPPConfig.class);
 
-    @Bean
-    public ConnectionConfiguration connectionConfiguration() {
-        ConnectionConfiguration connectionConfiguration = new ConnectionConfiguration(host, port);
-        connectionConfiguration.setCompressionEnabled(false);
-        connectionConfiguration.setSocketFactory(SSLSocketFactory.getDefault());
-        connectionConfiguration.setSecurityMode(ConnectionConfiguration.SecurityMode.enabled);
-        connectionConfiguration.setReconnectionAllowed(true);
-        connectionConfiguration.setRosterLoadedAtLogin(false);
-        return connectionConfiguration;
+    private XMPPTCPConnectionConfiguration connectionConfiguration() {
+        return XMPPTCPConnectionConfiguration
+                .builder()
+                .setServiceName(host)
+                .setCompressionEnabled(true)
+                .setHost(host)
+                .setPort(port)
+                .setUsernameAndPassword(gcmSenderId, gcmSenderKey)
+                .setSocketFactory(SSLSocketFactory.getDefault())
+                .setSecurityMode(ConnectionConfiguration.SecurityMode.ifpossible)
+                .build();
     }
 
     @Bean(name = "gcmConnection")
@@ -56,10 +59,9 @@ public class XMPPConfiguration {
         log.info("Starting up XMPP connection, for URL={} on port={}, with ID={} and key={}", host, port, gcmSenderId, gcmSenderKey);
         XmppConnectionFactoryBean connectionFactoryBean = new XmppConnectionFactoryBean();
         connectionFactoryBean.setConnectionConfiguration(connectionConfiguration());
-        connectionFactoryBean.setUser(gcmSenderId);
-        connectionFactoryBean.setPassword(gcmSenderKey);
         connectionFactoryBean.setAutoStartup(true);
-        log.info("XMPP connection succesfully started up");
+        Roster.setRosterLoadedAtLoginDefault(false);
+        log.info("XMPP connection successfully started up");
         return connectionFactoryBean;
     }
 
@@ -69,7 +71,6 @@ public class XMPPConfiguration {
         endpoint.setOutputChannel(gcmInboundChannel);
         endpoint.setAutoStartup(true);
         return endpoint;
-
     }
 
     @Bean
@@ -77,6 +78,5 @@ public class XMPPConfiguration {
     public ChatMessageSendingMessageHandler chatMessageSendingMessageHandler(XMPPConnection connection){
         ChatMessageSendingMessageHandler adapter = new ChatMessageSendingMessageHandler(connection);
         return adapter;
-
     }
 }

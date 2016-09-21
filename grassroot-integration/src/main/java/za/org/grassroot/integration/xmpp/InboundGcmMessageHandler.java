@@ -11,7 +11,6 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.MessengerSettings;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.enums.NotificationType;
 import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.PhoneNumberUtil;
@@ -19,17 +18,14 @@ import za.org.grassroot.core.util.UIDGenerator;
 import za.org.grassroot.integration.domain.AndroidClickActionType;
 import za.org.grassroot.integration.domain.GcmUpstreamMessage;
 import za.org.grassroot.integration.exception.MessengerSettingNotFoundException;
-import za.org.grassroot.integration.services.GcmService;
-import za.org.grassroot.integration.services.MessageSendingService;
-import za.org.grassroot.integration.services.MessengerSettingsService;
-import za.org.grassroot.integration.services.NotificationService;
+import za.org.grassroot.integration.services.*;
+import za.org.grassroot.integration.utils.MessageUtils;
 
-import java.time.Instant;
-import java.util.HashMap;
 import java.util.Map;
 
 /**
  * Created by paballo on 2016/04/04.
+ * major todo: more intelligent handling of GCM return messages (e.g., unregister if not registered, etc)
  */
 @Component
 public class InboundGcmMessageHandler {
@@ -55,6 +51,9 @@ public class InboundGcmMessageHandler {
 
     @Autowired
     private MessengerSettingsService messengerSettingsService;
+
+    @Autowired
+    private LearningService learningService;
 
 
     private static final String ORIGINAL_MESSAGE_ID = "original_message_id";
@@ -110,7 +109,7 @@ public class InboundGcmMessageHandler {
                     updateReadStatus(notificationId);
                     break;
                 case "CHAT":
-                    handleChatMessage(input);
+                    handleNonServiceMessage(input);
                     break;
                 default: //action unknown ignore
                     break;
@@ -123,40 +122,39 @@ public class InboundGcmMessageHandler {
     private void handleNotAcknowledged(GcmUpstreamMessage input) {
         String messageId = input.getMessageId();
         Notification notification = notificationService.loadNotification(messageId);
-        log.info("Push Notification delivery failed, now sending SMS");
-        log.info("Sending SMS to " + notification.getTarget().getPhoneNumber());
-        messageSendingService.sendMessage(UserMessagingPreference.SMS.name(), notification);
+        log.info("Push Notification delivery failed, now sending SMS to  {}", notification.getTarget().getPhoneNumber());
+        messageSendingService.sendMessage(UserMessagingPreference.SMS.name(),notification);
     }
 
-    private void handleDeliveryReceipts(GcmUpstreamMessage input) {
+    private void handleDeliveryReceipts(GcmUpstreamMessage input){
         String messageId = String.valueOf(input.getData().get(ORIGINAL_MESSAGE_ID));
         log.info("Message " + messageId + " delivery successful, updating notification to delivered status.");
         notificationService.markNotificationAsDelivered(messageId);
     }
 
 
-    private void sendAcknowledment(String registrationId, String messageId) {
+    private void sendAcknowledment(String registrationId, String messageId){
         org.springframework.messaging.Message<Message> gcmMessage = GcmXmppMessageCodec.encode(registrationId, messageId, "ack");
         log.info("Acknowledging message with id ={}", messageId);
-        gcmXmppOutboundChannel.send(gcmMessage);
+		gcmXmppOutboundChannel.send(gcmMessage);
     }
 
-    public void registerUser(String registrationId, String phoneNumber) {
-        String convertedNumber = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
+    public void registerUser(String registrationId, String phoneNumber){
+        String convertedNumber= PhoneNumberUtil.convertPhoneNumber(phoneNumber);
         User user = userRepository.findByPhoneNumber(convertedNumber);
-        log.info("Registering user with phoneNumber={} as a push notification receipient, found user={}", convertedNumber, user);
-        gcmService.registerUser(user, registrationId);
+        log.info("Registering user with phoneNumber={} as a push notification receipient, found user={}",convertedNumber, user);
+        gcmService.registerUser(user,registrationId);
         user.setMessagingPreference(UserMessagingPreference.ANDROID_APP);
         userRepository.save(user);
     }
 
-    public void updateReadStatus(String messageId) {
+    public void updateReadStatus(String messageId){
         log.info("Marking notification with id={} as read", messageId);
-        notificationService.updateNotificationReadStatus(messageId, true);
+        notificationService.updateNotificationReadStatus(messageId,true);
 
     }
 
-    public void handleChatMessage(GcmUpstreamMessage input) {
+    public void handleNonServiceMessage(GcmUpstreamMessage input) {
         String phoneNumber = (String) input.getData().get("phoneNumber");
         String groupUid = (String) input.getData().get("groupUid");
         User user = userRepository.findByPhoneNumber(phoneNumber);
@@ -166,7 +164,7 @@ public class InboundGcmMessageHandler {
         try {
             if(messengerSettingsService.isCanSend(user.getUid(),groupUid)){
                 log.info("Posting to topic with id={}", groupUid);
-                org.springframework.messaging.Message<Message> message = generateChatMessage(user, input,group);
+                org.springframework.messaging.Message<Message> message = generateMessage(user, input,group);
                 gcmXmppOutboundChannel.send(message);
             }
         } catch (MessengerSettingNotFoundException e) {
@@ -175,34 +173,28 @@ public class InboundGcmMessageHandler {
 
     }
 
-    private org.springframework.messaging.Message<Message> generateChatMessage(User user, GcmUpstreamMessage input, Group group){
-
-        String groupUid = (String) input.getData().get("groupUid");
-        String topic = TOPICS.concat(groupUid);
-        String message = (String) input.getData().get("message");
-        String messageId = UIDGenerator.generateId();
-
-        Map<String, Object> data = new HashMap<>();
-        data.put("groupUid", groupUid);
-        data.put("groupName", group.getGroupName());
-        data.put("groupIcon", group.getImageUrl());
-        data.put("body", message);
-        data.put("id", messageId);
-        data.put("uid", input.getMessageId());
-        data.put("title", user.nameToDisplay());
-        data.put("phone_number", user.getPhoneNumber());
-        data.put("userUid", user.getUid());
-        data.put("created_date_time", Instant.now().toString());
-        data.put("entity_type", AndroidClickActionType.CHAT_MESSAGE.toString());
-        data.put("click_action", AndroidClickActionType.CHAT_MESSAGE.toString());
-        data.put("time", input.getData().get("time"));
-        
-        org.springframework.messaging.Message<Message> gcmMessage = GcmXmppMessageCodec.encode(topic, messageId,
-                null, null, null,
-                AndroidClickActionType.CHAT_MESSAGE.name(), data);
-
+    private org.springframework.messaging.Message<Message> generateMessage(User user, GcmUpstreamMessage input, Group group){
+        String messageId = UIDGenerator.generateId();;
+        org.springframework.messaging.Message<Message> gcmMessage;
+        Map<String, Object> data;
+        if(!MessageUtils.isCommand((input))) {
+            String topic = TOPICS.concat(group.getUid());
+            data = MessageUtils.generateChatMessageData(input,user,group);
+            gcmMessage = GcmXmppMessageCodec.encode(topic, messageId,
+                    null, null, null,
+                    AndroidClickActionType.CHAT_MESSAGE.name(), data);
+        }else {
+            String[] tokens = MessageUtils.tokenize(String.valueOf(input.getData().get("message")));
+           /* if(tokens.length > 2){
+                tokens[2] = learningService.parse(tokens[2]).toString();
+            }else{
+                tokens[1] =  learningService.parse(tokens[1]).toString();
+            }*/
+            data = MessageUtils.generateCommandResponseData(input, group, tokens);
+            gcmMessage = GcmXmppMessageCodec.encode(input.getFrom(), messageId,
+                    null, null, null,
+                    AndroidClickActionType.CHAT_MESSAGE.name(), data);
+        }
         return gcmMessage;
-
-
     }
 }

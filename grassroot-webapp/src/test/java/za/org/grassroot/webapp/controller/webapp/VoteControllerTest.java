@@ -107,13 +107,9 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
     public void viewVoteWorks() throws Exception {
 
         Vote testVote = new Vote("test", Instant.now(), sessionTestUser, new Group("tg1", sessionTestUser));
-        ResponseTotalsDTO testVoteResults = new ResponseTotalsDTO();
-        testVoteResults.setYes(3);
-        testVoteResults.setNo(7);
-        testVoteResults.setMaybe(3);
-        testVoteResults.setNumberOfUsers(15);
+        ResponseTotalsDTO testVoteResults = ResponseTotalsDTO.makeForTest(3, 7, 3, 0, 15);
         when(eventBrokerMock.load(testVote.getUid())).thenReturn(testVote);
-        when(eventLogBrokerMock.getVoteResultsForEvent(testVote)).thenReturn(testVoteResults);
+        when(eventLogBrokerMock.getResponseCountForEvent(testVote)).thenReturn(testVoteResults);
 
         mockMvc.perform(get("/vote/view").param("eventUid", testVote.getUid()))
                 .andExpect(status().isOk()).andExpect(view().name("vote/view"))
@@ -125,7 +121,7 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
 
         verify(eventBrokerMock, times(1)).load(testVote.getUid());
         verifyNoMoreInteractions(eventBrokerMock);
-        verify(eventLogBrokerMock, times(1)).getVoteResultsForEvent(testVote);
+        verify(eventLogBrokerMock, times(1)).getResponseCountForEvent(testVote);
         verifyNoMoreInteractions(eventLogBrokerMock);
     }
 

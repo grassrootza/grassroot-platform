@@ -3,11 +3,11 @@ package za.org.grassroot.integration.xmpp;
 /**
  * Created by paballo on 2016/04/04.
  */
-import org.jivesoftware.smack.packet.DefaultPacketExtension;
+
+import org.jivesoftware.smack.packet.DefaultExtensionElement;
 import org.jivesoftware.smack.util.XmlStringBuilder;
 
-
-public class GcmPacketExtension extends DefaultPacketExtension {
+public class GcmPacketExtension extends DefaultExtensionElement {
     public static final String GCM_ELEMENT_NAME = "gcm";
     public static final String GCM_NAMESPACE = "google:mobile:data";
     private final String json;
@@ -30,4 +30,5 @@ public class GcmPacketExtension extends DefaultPacketExtension {
         buffer.closeElement(elementName);
         return buffer;
     }
+
 }

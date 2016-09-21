@@ -214,7 +214,7 @@ public class USSDSafetyGroupController extends USSDController {
         }
 
         USSDMenu menu = new USSDMenu(getMessage(thisSection, resetSafetyGroup, promptKey, user));
-        if (group.getDescendantEvents().isEmpty() && group.getDescendantTodos().isEmpty()) {
+        if (group.getDescendantEvents().isEmpty() && group.getDescendantTodos().isEmpty()) { // todo : test descendant todo
             menu.addMenuOption(safetyMenus + resetSafetyGroup + doSuffix + "?deactivate=true",
                     getMessage(thisSection, resetSafetyGroup, optionsKey + "deactivate", user));
             menu.addMenuOption(safetyMenus + resetSafetyGroup + doSuffix, getMessage(thisSection, resetSafetyGroup, optionsKey + "active", user));

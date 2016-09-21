@@ -194,14 +194,13 @@ public class GroupRestController {
         User user = userManagementService.findByInputNumber(phoneNumber);
 
 	    String tokenSearch = getSearchToken(searchTerm);
-        Group groupByToken = groupBroker.findGroupFromJoinCode(tokenSearch);
+        Optional<Group> groupByToken = groupBroker.findGroupFromJoinCode(tokenSearch);
 
         ResponseEntity<ResponseWrapper> responseEntity;
-        if (groupByToken != null  && !groupByToken.hasMember(user)) {
-            responseEntity = RestUtil.okayResponseWithData(RestMessage.GROUP_FOUND, new GroupSearchWrapper(groupByToken));
+        if (groupByToken.isPresent() && !groupByToken.get().hasMember(user)) {
+            responseEntity = RestUtil.okayResponseWithData(RestMessage.GROUP_FOUND, new GroupSearchWrapper(groupByToken.get()));
         } else {
-
-	        // the service beans accept null for the filter, in which case they just ignore location, hence doing it this way
+			// the service beans accept null for the filter, in which case they just ignore location, hence doing it this way
 	        // note: excluding groups with no location, to avoid user confusion, but should change in future
 	        GroupLocationFilter filter = null;
 	        if (searchByLocation) {
@@ -624,18 +623,18 @@ public class GroupRestController {
 				gcmService.unsubScribeFromTopic(registrationId,groupUid);
 			}
 		}
-		return (!active)?RestUtil.messageOkayResponse(RestMessage.CHAT_DEACTIVATED):
-				RestUtil.messageOkayResponse(RestMessage.CHAT_ACTIVATED);
+		return RestUtil.messageOkayResponse((!active) ? RestMessage.CHAT_DEACTIVATED : RestMessage.CHAT_ACTIVATED);
 
 	}
 
 	@RequestMapping(value ="messenger/fetch_settings/{phoneNumber}/{code}/{groupUid}", method = RequestMethod.GET)
 	public ResponseEntity<MessengerSettingsDTO> fetchMemberGroupChatSetting(@PathVariable String phoneNumber,
 																	   @PathVariable String code,
-																	   @PathVariable("groupUid") String groupUid) throws MessengerSettingNotFoundException{
+																	   @PathVariable("groupUid") String groupUid, @RequestParam(value = "userUid",required = false) String userUid) throws MessengerSettingNotFoundException{
 
 		User user = userManagementService.findByInputNumber(phoneNumber);
-		MessengerSettings messengerSettings = messengerSettingsService.load(user.getUid(),groupUid);
+		MessengerSettings messengerSettings = userUid != null ? messengerSettingsService.load(userUid, groupUid)
+				: messengerSettingsService.load(user.getUid(), groupUid);
 		return new ResponseEntity<>(new MessengerSettingsDTO(messengerSettings),HttpStatus.OK);
 
 	}

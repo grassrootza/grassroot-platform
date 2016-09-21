@@ -3,6 +3,8 @@ package za.org.grassroot.webapp.controller.webapp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
@@ -11,6 +13,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Group;
@@ -18,10 +21,14 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.MaskedUserDTO;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.GroupRepository;
+import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.*;
+import za.org.grassroot.services.exception.MemberNotPartOfGroupException;
+import za.org.grassroot.services.exception.NoSuchUserException;
 import za.org.grassroot.services.util.FullTextSearchUtils;
 import za.org.grassroot.webapp.controller.BaseController;
 
+import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -41,6 +48,9 @@ public class AdminController extends BaseController {
 
     private static final Logger log = LoggerFactory.getLogger(AdminController.class);
 
+    @Value("${grassroot.msisdn.length:11}")
+    private int phoneNumberLength;
+
     @Autowired
     private UserManagementService userManagementService;
 
@@ -54,10 +64,19 @@ public class AdminController extends BaseController {
     private PermissionBroker permissionBroker;
 
     @Autowired
+    private PasswordTokenService passwordTokenService;
+
+    @Autowired
     private AccountManagementService accountManagementService;
 
     @Autowired
     private AdminService adminService;
+
+    @PostConstruct
+    private void init() {
+        // not pretty, but alternatives (both worse) are to hard code length into DTO, or wire it up as a component
+        MaskedUserDTO.setPhoneNumberLength(phoneNumberLength);
+    }
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping("/admin/home")
@@ -124,7 +143,6 @@ public class AdminController extends BaseController {
         model.addAttribute("histogramData", sessionHistogram);
 
         log.info("max user sessions in last month: " + adminService.getMaxSessionsInLastMonth());
-        log.info("session histogram : " + sessionHistogram.toString());
 
         return "admin/users/home";
     }
@@ -136,20 +154,23 @@ public class AdminController extends BaseController {
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping("/admin/users/view")
     public String viewUser(Model model, @RequestParam("lookup_term") String lookupTerm, HttpServletRequest request) {
-
         String pageToDisplay;
-        List<MaskedUserDTO> foundUsers = adminService.searchByInputNumberOrDisplayName(lookupTerm);
 
-        log.info("Admin site, found this many users with the search term ... " + foundUsers.size());
+        final String searchTerm = PhoneNumberUtil.testInputNumber(lookupTerm) ? PhoneNumberUtil.convertPhoneNumber(lookupTerm)
+                : lookupTerm;
+        List<MaskedUserDTO> foundUsers = adminService.searchByInputNumberOrDisplayName(searchTerm);
+
+        log.info("Admin site, found {0} users from the processed search term {1}", foundUsers.size(), searchTerm);
 
         if (foundUsers.size() == 0) {
             // say no users found, and ask to search again ... use a redirect, I think
-            addMessage(model, MessageType.ERROR, "no.one.found", request);
-            pageToDisplay = "admin/users/home";
+            addMessage(model, MessageType.ERROR, "admin.find.error", request);
+            pageToDisplay = "redirect:admin/users/home";
         } else if (foundUsers.size() == 1) {
             User user = userManagementService.load(foundUsers.get(0).getUid());
             model.addAttribute("user", foundUsers.get(0));
             model.addAttribute("numberGroups", permissionBroker.getActiveGroupsWithPermission(user, null).size());
+            model.addAttribute("adminPhoneNumber", getUserProfile().getPhoneNumber()); // todo : expose a method to just do this (i.e., not sending number back to client)
             pageToDisplay = "admin/users/view";
         } else {
             // display a list of users
@@ -158,6 +179,20 @@ public class AdminController extends BaseController {
         }
 
         return pageToDisplay;
+    }
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    @RequestMapping(value = "/admin/users/optout", method = RequestMethod.POST)
+    public String userOptOut(@RequestParam String userToRemoveUid, @RequestParam String otpEntered,
+                             RedirectAttributes attributes, HttpServletRequest request) {
+
+        if (!passwordTokenService.isShortLivedOtpValid(getUserProfile().getPhoneNumber(), otpEntered)) {
+            throw new AccessDeniedException("Error! Admin user did not validate with OTP");
+        }
+
+        adminService.removeUserFromAllGroups(getUserProfile().getUid(), userToRemoveUid);
+        addMessage(attributes, MessageType.SUCCESS, "admin.optout.done", request);
+        return "redirect:/admin/users/home";
     }
 
 	/*
@@ -209,14 +244,16 @@ public class AdminController extends BaseController {
 	}
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    @RequestMapping(value = "/admin/groups/remove", method = RequestMethod.GET)
+    @RequestMapping(value = "/admin/groups/remove", method = RequestMethod.POST)
     public String removeGroupMember(Model model, HttpServletRequest request,
                                     @RequestParam String groupUid,
                                     @RequestParam String phoneNumber) {
         try {
             adminService.removeMemberFromGroup(getUserProfile().getUid(), groupUid, phoneNumber);
             addMessage(model, MessageType.SUCCESS, "admin.group.removed", request);
-        } catch (Exception e) {
+        } catch (NoSuchUserException e) {
+            addMessage(model, MessageType.ERROR, "admin.group.removed.nouser", request);
+        } catch (MemberNotPartOfGroupException e) {
             addMessage(model, MessageType.ERROR, "admin.group.removed.error", request);
         }
         return "admin/groups/search";
@@ -302,7 +339,7 @@ public class AdminController extends BaseController {
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping(value = "/admin/accounts/designate_confirmed", method = RequestMethod.POST)
-    public String designateUserDo(Model model, @RequestParam String administratorUid, @RequestParam("accountUid") String accountUid) {
+    public String designateUserDo(Model model, @RequestParam String administratorUid, @RequestParam String accountUid) {
 
         // todo: add error handling, etc
         User userToDesignate = userManagementService.load(administratorUid);

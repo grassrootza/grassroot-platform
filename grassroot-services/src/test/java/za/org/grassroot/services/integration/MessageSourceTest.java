@@ -8,6 +8,7 @@ import org.springframework.context.MessageSource;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.GrassrootServicesConfig;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
@@ -21,8 +22,8 @@ import static org.hamcrest.Matchers.*;
  * @author Lesetse Kimwaga
  */
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = {GrassrootServicesConfig.class, TestContextConfig.class})
+@RunWith(SpringRunner.class)
+@ContextConfiguration(classes = TestContextConfig.class)
 @Transactional
 @ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
 public class MessageSourceTest {

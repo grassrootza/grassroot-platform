@@ -76,6 +76,7 @@ public class USSDController {
 
     protected static final DateTimeFormatter dateTimeFormat = DateTimeFormatter.ofPattern("EEE d MMM, h:mm a");
     protected static final DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("EEE d MMM");
+    protected static final DateTimeFormatter shortDateFormat = DateTimeFormatter.ofPattern("d MMM");
 
     protected Request tooLongError = new Request("Error! Menu is too long.", new ArrayList<>());
     protected Request noUserError = new Request("Error! Couldn't find you as a user.", new ArrayList<>());
@@ -131,7 +132,7 @@ public class USSDController {
 
     protected Map<String, String> optionsHomeExit(User sessionUser) {
         return ImmutableMap.<String, String>builder().
-                put("start", getMessage(startMenu, sessionUser)).
+                put("start_force", getMessage(startMenu, sessionUser)).
                 put("exit", getMessage("exit.option", sessionUser)).build();
     }
 

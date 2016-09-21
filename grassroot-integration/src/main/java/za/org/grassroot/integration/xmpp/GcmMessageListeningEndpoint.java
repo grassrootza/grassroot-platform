@@ -3,18 +3,19 @@ package za.org.grassroot.integration.xmpp;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.log4j.Logger;
-import org.jivesoftware.smack.PacketListener;
 import org.jivesoftware.smack.SmackException;
+import org.jivesoftware.smack.StanzaListener;
 import org.jivesoftware.smack.XMPPConnection;
-import org.jivesoftware.smack.packet.Packet;
-import org.jivesoftware.smack.packet.PacketExtension;
-import org.jivesoftware.smack.provider.PacketExtensionProvider;
+import org.jivesoftware.smack.packet.ExtensionElement;
+import org.jivesoftware.smack.packet.Stanza;
+import org.jivesoftware.smack.provider.ExtensionElementProvider;
 import org.jivesoftware.smack.provider.ProviderManager;
 import org.springframework.integration.support.MessageBuilder;
 import org.springframework.integration.xmpp.inbound.ChatMessageListeningEndpoint;
 import org.springframework.integration.xmpp.support.DefaultXmppHeaderMapper;
 import org.springframework.integration.xmpp.support.XmppHeaderMapper;
 import org.xmlpull.v1.XmlPullParser;
+import org.xmlpull.v1.XmlPullParserException;
 import za.org.grassroot.integration.domain.GcmUpstreamMessage;
 
 import java.io.IOException;
@@ -25,18 +26,20 @@ import java.util.Map;
  */
 public class GcmMessageListeningEndpoint extends ChatMessageListeningEndpoint {
 
-
     private Logger log = Logger.getLogger(GcmMessageListeningEndpoint.class);
-    protected PacketListener packetListener = new GcmPacketListener();
-    protected XmppHeaderMapper headerMapper = new DefaultXmppHeaderMapper();
+    private StanzaListener stanzaListener = new GcmPacketListener();
+    private XmppHeaderMapper headerMapper = new DefaultXmppHeaderMapper();
     private ObjectMapper mapper = new ObjectMapper();
 
     public GcmMessageListeningEndpoint(XMPPConnection connection) {
         super(connection);
         ProviderManager.addExtensionProvider(GcmPacketExtension.GCM_ELEMENT_NAME, GcmPacketExtension.GCM_NAMESPACE,
-                (PacketExtensionProvider) parser -> {
-                    String json = parser.nextText();
-                    return new GcmPacketExtension(json);
+                new ExtensionElementProvider<ExtensionElement>() {
+                    @Override
+                    public ExtensionElement parse(XmlPullParser parser, int initialDepth) throws XmlPullParserException, IOException, SmackException {
+                        String json = parser.nextText();
+                        return new GcmPacketExtension(json);
+                    }
                 });
 
     }
@@ -53,19 +56,19 @@ public class GcmMessageListeningEndpoint extends ChatMessageListeningEndpoint {
 
     @Override
     protected void doStart() {
-        this.xmppConnection.addPacketListener(this.packetListener, null);
+        this.xmppConnection.addAsyncStanzaListener(this.stanzaListener, null);
     }
 
     @Override
     protected void doStop() {
         if (this.xmppConnection != null) {
-            this.xmppConnection.removePacketListener(this.packetListener);
+            this.xmppConnection.removeAsyncStanzaListener(this.stanzaListener);
         }
     }
 
-    private class GcmPacketListener implements PacketListener {
+    private class GcmPacketListener implements StanzaListener {
         @Override
-        public void processPacket(Packet packet) throws SmackException.NotConnectedException {
+        public void processPacket(Stanza packet) throws SmackException.NotConnectedException {
 
             log.info("Packet received from gcm " + packet.toString());
             if (packet instanceof org.jivesoftware.smack.packet.Message) {

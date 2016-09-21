@@ -7,9 +7,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.boot.test.TestRestTemplate;
-import org.springframework.boot.test.WebIntegrationTest;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.test.context.ActiveProfiles;
@@ -22,7 +21,6 @@ import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.EventBroker;
 import za.org.grassroot.services.EventLogBroker;
 import za.org.grassroot.services.UserManagementService;
-import za.org.grassroot.webapp.GrassrootWebApplicationConfig;
 
 import javax.annotation.PostConstruct;
 import javax.net.ssl.*;
@@ -39,8 +37,7 @@ import java.util.List;
  * all in one place here. If this starts impacting test suite performance can undo.
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = {GrassrootWebApplicationConfig.class})
-@WebIntegrationTest(randomPort = true)
+@SpringBootTest
 @ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
 public class USSDAbstractIT {
 

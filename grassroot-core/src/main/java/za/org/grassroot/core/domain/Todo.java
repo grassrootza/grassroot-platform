@@ -1,16 +1,22 @@
 package za.org.grassroot.core.domain;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.util.StringUtils;
+import za.org.grassroot.core.enums.TodoCompletionConfirmType;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 /**
  * Created by aakilomar on 12/3/15.
+ * major todo : change replication reference from group to the base level action/todo
  */
 @Entity
 @Table(name = "action_todo",
@@ -20,9 +26,9 @@ import java.util.Set;
                 @Index(name = "idx_action_todo_replicated_group_id", columnList = "replicated_group_id")})
 public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, VoteContainer, MeetingContainer {
 
-    @Value("${grassroot.todos.completion.threshold:20}")
-    private double COMPLETION_PERCENTAGE_BOUNDARY; // reducing this to 20 until we see larger proportions of response
+    private static Logger logger = LoggerFactory.getLogger(Todo.class);
 
+    @Transient
     @Value("{grassroot.todos.number.reminders:2")
     private int DEFAULT_NUMBER_REMINDERS;
 
@@ -67,7 +73,10 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
     public Todo(User createdByUser, TodoContainer parent, String message, Instant actionByDate, int reminderMinutes,
                 Group replicatedGroup, Integer numberOfRemindersLeftToSend, boolean reminderActive) {
         super(createdByUser, parent, message, actionByDate, reminderMinutes, reminderActive);
+
         this.ancestorGroup = parent.getThisOrAncestorGroup();
+        this.ancestorGroup.addDescendantTodo(this);
+
         this.replicatedGroup = replicatedGroup;
         this.numberOfRemindersLeftToSend = numberOfRemindersLeftToSend == null ? DEFAULT_NUMBER_REMINDERS : numberOfRemindersLeftToSend;
         this.cancelled = false;
@@ -104,6 +113,9 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
     public String getName() { return message; }
 
     @Override
+    public boolean hasName() { return !StringUtils.isEmpty(message); }
+
+    @Override
     public JpaEntityType getJpaEntityType() {
         return JpaEntityType.TODO;
     }
@@ -118,7 +130,8 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
         this.assignedMembers = assignedMembersCollection;
     }
 
-    public boolean addCompletionConfirmation(User member, Instant completionTime) {
+    public boolean addCompletionConfirmation(User member, TodoCompletionConfirmType confirmType, Instant completionTime,
+                                             double threshold) {
         Objects.requireNonNull(member);
 
         if (completionTime == null && this.completedDate == null) {
@@ -135,39 +148,60 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
             throw new IllegalArgumentException("User " + member + " is not assigned to or in the group of this todo: " + this);
         }
 
-        TodoCompletionConfirmation confirmation = new TodoCompletionConfirmation(this, member, completionTime);
-        boolean confirmationAdded = this.completionConfirmations.add(confirmation);
+        Optional<TodoCompletionConfirmation> confirmByMember = this.completionConfirmations.stream()
+                .filter(tc -> tc.getMember().equals(member)).findFirst();
+        TodoCompletionConfirmation confirmation;
 
+        if (confirmByMember.isPresent()) { // i.e., user is switching response
+            confirmation = confirmByMember.get();
+            confirmation.setConfirmType(confirmType);
+        } else {
+            confirmation = new TodoCompletionConfirmation(this, member, confirmType, completionTime);
+        }
+
+        this.completionConfirmations.add(confirmation);
+        boolean wasBelowThreshold = this.completionPercentage < threshold;
         this.completionPercentage = calculateCompletionStatus().getPercentage();
 
-        return confirmationAdded;
+        return wasBelowThreshold && (this.completionPercentage > threshold);
     }
 
     public TodoCompletionStatus calculateCompletionStatus() {
         Set<User> members = getMembers();
         int membersCount = members.size();
-        // we count only those confirmations that are from users that
-        // are currently members (these can always change)
+        // we count only those confirmations that mark as complete and are from users that are currently members (these can always change)
         long confirmationsCount = completionConfirmations.stream()
-                .filter(confirmation -> members.contains(confirmation.getMember()))
+                .filter(confirmation -> TodoCompletionConfirmType.COMPLETED.equals(confirmation.getConfirmType())
+                        && members.contains(confirmation.getMember()))
                 .count();
         return new TodoCompletionStatus((int) confirmationsCount, membersCount);
     }
 
-    public boolean isCancelled() { return cancelled; }
-
-    public void setCancelled(boolean cancelled) { this.cancelled = cancelled; }
-
-    public boolean isCompleted() {
-        return calculateCompletionStatus().getPercentage() >= COMPLETION_PERCENTAGE_BOUNDARY;
+    public boolean isCompleted(double threshold) {
+        return calculateCompletionStatus().getPercentage() >= threshold;
     }
 
-    public boolean isCompletedBy(User member) {
+    public int countCompletions() {
+        return completionConfirmations.size();
+    }
+
+    public boolean hasUserResponded(User member) {
         Objects.requireNonNull(member);
-        return completionConfirmations.stream().anyMatch(confirmation -> confirmation.getMember().equals(member));
+        return completionConfirmations.stream().anyMatch(c -> c.getMember().equals(member));
+    }
+
+    // note : only returns yes if response type is "completed"
+    public boolean isCompletionConfirmedByMember(User member) {
+        Objects.requireNonNull(member);
+        return completionConfirmations.stream().anyMatch(confirmation -> confirmation.getConfirmType().equals(TodoCompletionConfirmType.COMPLETED)
+                && confirmation.getMember().equals(member));
     }
 
     public double getCompletionPercentage() { return completionPercentage; }
+
+    public boolean isCancelled() { return cancelled; }
+
+    public void setCancelled(boolean cancelled) { this.cancelled = cancelled; }
 
     @Override
     public Instant getDeadlineTime() {

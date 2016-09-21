@@ -11,6 +11,8 @@ public interface UidIdentifiable {
 
 	String getName();
 
+	boolean hasName();
+
 	Set<User> getMembers();
 
 	/**

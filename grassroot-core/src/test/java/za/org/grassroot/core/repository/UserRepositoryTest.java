@@ -6,10 +6,10 @@ import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringRunner;
 import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.*;
@@ -28,8 +28,8 @@ import static org.junit.Assert.*;
  * @author Lesetse Kimwaga
  */
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = TestContextConfiguration.class)
+@RunWith(SpringRunner.class)
+@ContextConfiguration(classes = TestContextConfiguration.class)
 @Transactional
 @ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
 public class UserRepositoryTest {

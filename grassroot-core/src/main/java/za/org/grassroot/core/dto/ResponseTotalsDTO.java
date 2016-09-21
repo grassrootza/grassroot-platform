@@ -1,5 +1,9 @@
 package za.org.grassroot.core.dto;
 
+import za.org.grassroot.core.domain.Event;
+import za.org.grassroot.core.domain.EventLog;
+import za.org.grassroot.core.enums.EventRSVPResponse;
+
 import java.io.Serializable;
 import java.util.List;
 
@@ -16,29 +20,31 @@ public class ResponseTotalsDTO implements Serializable {
     private int invalid;
     private int numberOfUsers;
 
-    public ResponseTotalsDTO() {
+    private ResponseTotalsDTO() {
+        // for make test (but keep private so it's explicit that this should not be called)
     }
 
-    public ResponseTotalsDTO(List<Object[]> listFields, int totalNotified) {
-        Object[] fields = listFields.get(0);
-        this.yes = (fields[0] == null) ? 0 : Integer.parseInt(fields[0].toString());
-        this.no = (fields[1] == null) ? 0 : Integer.parseInt(fields[1].toString());
-        this.maybe = (fields[2] == null) ? 0 : Integer.parseInt(fields[2].toString());
-        this.invalid = (fields[3] == null) ? 0 : Integer.parseInt(fields[3].toString());
-        // todo : rather customize the eventlog query (the call to getAllMembers.size may become expensive), but that query will become complex fast
-        this.numberOfUsers = totalNotified;
+    public static ResponseTotalsDTO makeForTest(int yes, int no, int maybe, int invalid, int numberOfUsers) {
+        ResponseTotalsDTO totalsDTO = new ResponseTotalsDTO();
+        totalsDTO.yes = yes;
+        totalsDTO.no = no;
+        totalsDTO.maybe = maybe;
+        totalsDTO.invalid = invalid;
+        totalsDTO.numberOfUsers = numberOfUsers;
+        return totalsDTO;
+    }
+
+    public ResponseTotalsDTO(List<EventLog> eventLogs, Event event) {
+        this();
+        this.yes = (int) eventLogs.stream().filter(el -> el.getResponse().equals(EventRSVPResponse.YES)).count();
+        this.no = (int) eventLogs.stream().filter(el -> el.getResponse().equals(EventRSVPResponse.NO)).count();
+        this.maybe = (int) eventLogs.stream().filter(el -> el.getResponse().equals(EventRSVPResponse.MAYBE)).count();
+        this.invalid = (int) eventLogs.stream().filter(el -> el.getResponse().equals(EventRSVPResponse.INVALID_RESPONSE)).count();
+        this.numberOfUsers = event.getAllMembers().size();
     }
 
     public int getNumberNoRSVP() {
         return numberOfUsers - (yes + no + maybe + invalid);
-    }
-
-    public void add(ResponseTotalsDTO other) {
-        this.yes += other.getYes();
-        this.no += other.getNo();
-        this.maybe += other.getMaybe();
-        this.invalid += other.getInvalid();
-        this.numberOfUsers += other.getNumberOfUsers();
     }
 
     public int getYes() {

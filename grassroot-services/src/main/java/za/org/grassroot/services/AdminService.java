@@ -60,6 +60,9 @@ public interface AdminService {
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     void removeMemberFromGroup(String adminUserUid, String groupUid, String memberMsisdn);
 
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    void removeUserFromAllGroups(String adminUserUid, String userUid);
+
     /*
     Methods to analyze patterns in events, including RSVP totals
      */

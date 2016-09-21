@@ -1,4 +1,4 @@
-package za.org.grassroot.integration.config;
+package za.org.grassroot.integration;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -48,7 +48,6 @@ public class InfrastructureConfiguration {
 
     @Bean
     public MessageChannel systemMessageChannel(){return new DirectChannel();}
-
 
 
 

@@ -3,9 +3,9 @@ package za.org.grassroot.core.repository;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringRunner;
 import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.*;
@@ -14,12 +14,10 @@ import za.org.grassroot.core.enums.EventLogType;
 import javax.transaction.Transactional;
 import java.time.Instant;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
-// todo : copy pattern of these tests to notification repository test to generate proper coverage there
-
-@RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = TestContextConfiguration.class)
+@RunWith(SpringRunner.class)
+@ContextConfiguration(classes = TestContextConfiguration.class)
 @Transactional
 @ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
 public class EventLogRepositoryTest {
@@ -38,38 +36,36 @@ public class EventLogRepositoryTest {
 
     @Test
     public void shouldSaveAndRetrieveEventLogEventNotification() throws Exception {
-
+        assertEquals(0, eventLogRepository.count());
         User user = userRepository.save(new User("001111111"));
         Group group = groupRepository.save(new Group("test eventlog", user));
         User user2 = userRepository.save(new User("00111112"));
         group.addMember(user2);
         Event event = eventRepository.save(new Meeting("test meeting",Instant.now(),  user, group, "someLoc"));
         eventLogRepository.save(new EventLog(user, event, EventLogType.CREATED));
-
-        // complete the test
+        assertEquals(1, eventLogRepository.count());
+        EventLog eventLog = eventLogRepository.findByEventAndUserAndEventLogType(event, user, EventLogType.CREATED);
+        assertNotNull(eventLog);
+        assertTrue(eventLog.getEvent().equals(event));
     }
 
     @Test
     public void shouldSaveAndNotRetrieveEventLogEventNotification() throws Exception {
+        assertEquals(0, eventLogRepository.count());
         User user = userRepository.save(new User("001111113"));
         Group group = groupRepository.save(new Group("test eventlog 2", user));
         User user2 = userRepository.save(new User("00111114"));
         group.addMember(user2);
         Event event = eventRepository.save(new Meeting("test meeting 2", Instant.now(), user, group, "someLoc"));
         eventLogRepository.save(new EventLog(user2, event, EventLogType.REMINDER));
-
-        // complete the test
+        assertEquals(1, eventLogRepository.count());
+        EventLog eventLog = eventLogRepository.findByEventAndUserAndEventLogType(event, user, EventLogType.REMINDER);
+        assertNull(eventLog);
+        EventLog eventLog1 = eventLogRepository.findByEventAndUserAndEventLogType(event, user2, EventLogType.REMINDER);
+        assertNotNull(eventLog1);
     }
 
-    @Test
-    public void shouldSayNotificationSent() throws Exception {
-        User user = userRepository.save(new User("001111115"));
-        Group group = groupRepository.save(new Group("test eventlog 3", user));
-        User user2 = userRepository.save(new User("00111116"));
-        group.addMember(user2);
-        Event event = eventRepository.save(new Meeting("test meeting 3", Instant.now(), user, group, "someLoc"));
-        eventLogRepository.save(new EventLog(user, event, EventLogType.CREATED));
-    }
+
 
     @Test
     public void shouldSayReminderSent() throws Exception {

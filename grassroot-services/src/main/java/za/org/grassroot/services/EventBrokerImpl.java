@@ -56,8 +56,6 @@ public class EventBrokerImpl implements EventBroker {
 	private GroupRepository groupRepository;
 	@Autowired
 	private PermissionBroker permissionBroker;
-
-
 	@Autowired
 	private LogsAndNotificationsBroker logsAndNotificationsBroker;
 	@Autowired
@@ -92,12 +90,13 @@ public class EventBrokerImpl implements EventBroker {
 		User user = userRepository.findOneByUid(userUid);
 		MeetingContainer parent = uidIdentifiableRepository.findOneByUid(MeetingContainer.class, parentType, parentUid);
 
+		// todo : implement for generic parent types, once have migrated to jpa specifications
 		if (parentType.equals(JpaEntityType.GROUP)) {
-			Meeting possibleDuplicate = checkForDuplicateMeeting(user, (Group) parent, name, eventStartDateTimeInSystem);
-			if (possibleDuplicate != null) {
+			Event possibleDuplicate = checkForDuplicate(userUid, parentUid, name, eventStartDateTimeInSystem);
+			if (possibleDuplicate != null && possibleDuplicate.getEventType().equals(EventType.MEETING)) {
 				// todo : hand over to update meeting if anything different in parameters
 				logger.info("Detected duplicate meeting creation, returning the already-created one ... ");
-				return possibleDuplicate;
+				return (Meeting) possibleDuplicate;
 			}
 		}
 
@@ -140,17 +139,20 @@ public class EventBrokerImpl implements EventBroker {
 	}
 
 	// introducing so that we can check catch & handle duplicate requests (e.g., from malfunctions on Android client offline->queue->sync function)
-	// todo : make generic so that works for any parent container type & for votes too ...
 	@Transactional(readOnly = true)
-	private Meeting checkForDuplicateMeeting(User user, Group group, String name, Instant eventStartDateTimeSystem) {
-		Objects.requireNonNull(user);
+	private Event checkForDuplicate(String userUid, String parentGroupUid, String name, Instant startDateTime) {
+		Objects.requireNonNull(userUid);
+		Objects.requireNonNull(parentGroupUid);
+		Objects.requireNonNull(name);
+		Objects.requireNonNull(startDateTime);
 
-		logger.info("Checking for duplicate meeting ...");
+		Instant intervalStart = startDateTime.minus(180, ChronoUnit.SECONDS);;
+		Instant intervalEnd = startDateTime.plus(180, ChronoUnit.SECONDS);
 
-		Instant start = eventStartDateTimeSystem.minus(180, ChronoUnit.SECONDS);
-		Instant end = eventStartDateTimeSystem.plus(180, ChronoUnit.SECONDS);
+		User user = userRepository.findOneByUid(userUid);
+		Group parentGroup = groupRepository.findOneByUid(parentGroupUid);
 
-		return meetingRepository.findOneByCreatedByUserAndParentGroupAndNameAndEventStartDateTimeBetweenAndCanceledFalse(user, group, name, start, end);
+		return eventRepository.findOneByCreatedByUserAndParentGroupAndNameAndEventStartDateTimeBetweenAndCanceledFalse(user, parentGroup, name, intervalStart, intervalEnd);
 	}
 
 	private Set<Notification> constructEventInfoNotifications(Event event, EventLog eventLog) {
@@ -164,6 +166,7 @@ public class EventBrokerImpl implements EventBroker {
 		return notifications;
 	}
 
+	@SuppressWarnings("unchecked")
 	private Set<User> getAllEventMembers(Event event) {
 		return (Set<User>) event.getAllMembers();
 	}
@@ -184,9 +187,9 @@ public class EventBrokerImpl implements EventBroker {
             throw new IllegalStateException("Meeting is canceled: " + meeting);
         }
 
-		if (!meeting.getCreatedByUser().equals(user) ||
-				permissionBroker.isGroupPermissionAvailable(user, meeting.getAncestorGroup(), Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS)) {
-			throw new AccessDeniedException("Error! Only meeting caller or group organizer can change meeting");
+		// note : for the moment, only the user who called the meeting can change it ... may alter in future, depends on user feedback
+		if (!meeting.getCreatedByUser().equals(user)) {
+			throw new AccessDeniedException("Error! Only meeting caller can change meeting");
 		}
 
         Instant convertedStartDateTime = convertToSystemTime(eventStartDateTime, getSAST());
@@ -257,7 +260,6 @@ public class EventBrokerImpl implements EventBroker {
 			if (meeting.isAllGroupMembersAssigned()) {
 				meeting.assignMembers(assignedMemberUids);
 			} else {
-				// todo : maybe move this into a single method in the assigned members container
 				Set<String> existingMemberUids = meeting.getAssignedMembers()
 						.stream()
 						.map(User::getUid)
@@ -307,6 +309,15 @@ public class EventBrokerImpl implements EventBroker {
 
 		permissionBroker.validateGroupPermission(user, parent.getThisOrAncestorGroup(), Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE);
 
+		if (parentType.equals(JpaEntityType.GROUP)) {
+			Event possibleDuplicate = checkForDuplicate(userUid, parentUid, name, convertedClosingDateTime);
+			if (possibleDuplicate != null && possibleDuplicate.getEventType().equals(EventType.VOTE)) {
+				logger.info("Detected duplicate vote creation, returning the already-created one ... ");
+				return (Vote) possibleDuplicate;
+			}
+		}
+
+
 		Vote vote = new Vote(name, convertedClosingDateTime, user, parent, includeSubGroups, relayable, description);
 		if (assignMemberUids != null && !assignMemberUids.isEmpty()) {
 			assignMemberUids.add(userUid); // enforce creating user part of vote
@@ -334,16 +345,20 @@ public class EventBrokerImpl implements EventBroker {
 		Objects.requireNonNull(userUid);
 		Objects.requireNonNull(voteUid);
 
-		User user = userRepository.findOneByUid(userUid); // todo: permission checking, once worked out proper logic
+		User user = userRepository.findOneByUid(userUid);
 		Vote vote = voteRepository.findOneByUid(voteUid);
 
 		if (vote.isCanceled()) {
 			throw new IllegalStateException("Vote is canceled: " + vote);
 		}
 
+		if (!vote.getCreatedByUser().equals(user)) {
+			throw new AccessDeniedException("Error! Only user who created vote can update it");
+		}
+
 		Instant convertedClosingDateTime = convertToSystemTime(eventStartDateTime, getSAST());
 
-		boolean startTimeChanged = !vote.getEventStartDateTime().equals(eventStartDateTime);
+		boolean startTimeChanged = !vote.getEventStartDateTime().equals(convertedClosingDateTime);
 		if (startTimeChanged) {
 			validateEventStartTime(convertedClosingDateTime);
 			vote.setEventStartDateTime(convertedClosingDateTime);
@@ -373,8 +388,13 @@ public class EventBrokerImpl implements EventBroker {
         Objects.requireNonNull(eventUid);
         Objects.requireNonNull(reminderType);
 
-        // todo: permission checking
         Event event = eventRepository.findOneByUid(eventUid);
+		User user = userRepository.findOneByUid(userUid);
+
+		if (!event.getCreatedByUser().equals(user)) {
+			throw new AccessDeniedException("Error! Only the event creator can adjust settings");
+		}
+
 		event.setReminderType(reminderType);
         event.setCustomReminderMinutes(customReminderMinutes);
         event.updateScheduledReminderTime();
@@ -447,14 +467,13 @@ public class EventBrokerImpl implements EventBroker {
 			throw new IllegalStateException("Event is not scheduled for reminder: " + event);
 		}
 
+		// the notification picker & handler will handle error failures & resending (its proper concern)
 		event.setNoRemindersSent(event.getNoRemindersSent() + 1);
 		event.setScheduledReminderActive(false);
 
-		// todo: figure out how to get and handle errors from here (i.e., so don't set reminders false if an error)
-		// we set null here, because initiator is the app itself!
-
 		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
+		// we set null for user here, because initiator is the app itself!
 		EventLog eventLog = new EventLog(null, event, EventLogType.REMINDER);
 
 		Set<User> excludedMembers = findEventReminderExcludedMembers(event);
@@ -614,7 +633,7 @@ public class EventBrokerImpl implements EventBroker {
 
 		EventLog eventLog = new EventLog(null, vote, EventLogType.RESULT);
 
-		ResponseTotalsDTO responseTotalsDTO = eventLogBroker.getVoteResultsForEvent(vote);
+		ResponseTotalsDTO responseTotalsDTO = eventLogBroker.getResponseCountForEvent(vote);
 		Set<User> voteResultsNotificationSentMembers = new HashSet<>(userRepository.findNotificationTargetsForEvent(
 				vote, VoteResultsNotification.class));
 		for (User member : getAllEventMembers(vote)) {
@@ -672,6 +691,7 @@ public class EventBrokerImpl implements EventBroker {
 
 	/*
 	SECTION starts here for reading & retrieving user events
+	major todo : switch this to using a JPA specification model & quick findOne / count call, as in newly designed todo broker
 	 */
 
 	@Override
@@ -684,9 +704,7 @@ public class EventBrokerImpl implements EventBroker {
 			Map<Long, Long> eventMap = new HashMap<>();
 			outstandingRSVPs = new ArrayList<>();
 			List<Group> groups = groupRepository.findByMembershipsUserAndActiveTrue(user);
-			logger.debug("getOutstandingResponseForUser...after...getGroupsPartOf...");
 
-			// major todo: must be a more elegant way to do this, e.g., via a single query
 			if (groups != null) {
 				logger.debug("getOutstandingResponseForUser...number of groups..." + groups.size());
 				for (Group group : groups) {
@@ -695,21 +713,14 @@ public class EventBrokerImpl implements EventBroker {
 					Set<Event> upcomingEvents = group.getUpcomingEventsIncludingParents(filter);
 
 					for (Event event : upcomingEvents) {
-						//N.B. remove this if statement if you want to allow votes for people that joined the group late
-						if (eventType == EventType.VOTE) {
-							Membership membership = group.getMembership(user);
-							if (membership != null && membership.getJoinTime().isAfter(event.getCreatedDateTime())) {
-								logger.info(String.format("Excluding vote %s for %s as the user joined group %s after the vote was called", event.getName(), user.getPhoneNumber(), group.getId()));
-								continue;
-							}
+						if (eventType == EventType.VOTE && !checkJoinedAfterVote(user, event, group)) {
+							logger.info(String.format("Excluding vote %s for %s as the user joined group %s after the vote was called", event.getName(), user.getPhoneNumber(), group.getId()));
+							continue;
 						}
 
-						if (!eventLogBroker.hasUserRespondedToEvent(event, user)) {
-							//see if we added it already as the user can be in multiple groups in a group structure
-							if (eventMap.get(event.getId()) == null) {
-								outstandingRSVPs.add(event);
-								eventMap.put(event.getId(), event.getId());
-							}
+						if (!eventLogBroker.hasUserRespondedToEvent(event, user) && eventMap.get(event.getId()) == null) {
+							outstandingRSVPs.add(event);
+							eventMap.put(event.getId(), event.getId());
 						}
 					}
 
@@ -721,9 +732,14 @@ public class EventBrokerImpl implements EventBroker {
 		return outstandingRSVPs;
 	}
 
+	//N.B. remove this if statement if you want to allow votes for people that joined the group late
+	private boolean checkJoinedAfterVote(User user, Event event, Group group) {
+		Membership membership = group.getMembership(user);
+		return membership != null && membership.getJoinTime().isAfter(event.getCreatedDateTime());
+	}
+
 	@Override
 	public boolean userHasResponsesOutstanding(User user, EventType eventType) {
-		// todo : replace with a quick count query
 		return !getOutstandingResponseForUser(user, eventType).isEmpty();
 	}
 
@@ -792,7 +808,7 @@ public class EventBrokerImpl implements EventBroker {
 	@SuppressWarnings("unchecked")
 	public List<Event> retrieveGroupEvents(Group group, EventType eventType, Instant periodStart, Instant periodEnd) {
 		List<Event> events;
-		Sort sort = new Sort(Sort.Direction.ASC, "EventStartDateTime");
+		Sort sort = new Sort(Sort.Direction.DESC, "eventStartDateTime");
 		Instant beginning = (periodStart == null) ? group.getCreatedDateTime() : periodStart;
 		Instant end = (periodEnd == null) ? DateTimeUtil.getVeryLongAwayInstant() : periodEnd;
 

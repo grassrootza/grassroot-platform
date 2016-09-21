@@ -3,4 +3,4 @@
 . /etc/environment
 #cd /var/grassroot
 cd /opt/codedeploy-agent/deployment-root/${DEPLOYMENT_GROUP_ID}/${DEPLOYMENT_ID}/deployment-archive
-gradle clean build -x test
+./gradlew clean build -x test

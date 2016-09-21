@@ -5,7 +5,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.Event;
+import za.org.grassroot.core.domain.EventLog;
+import za.org.grassroot.core.domain.Notification;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.notification.EventResponseNotification;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventLogType;
@@ -14,7 +17,6 @@ import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.core.repository.EventRepository;
-import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.util.CacheUtilService;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
@@ -37,9 +39,6 @@ public class EventLogBrokerImpl implements EventLogBroker {
 
     @Autowired
     private UserRepository userRepository;
-
-    @Autowired
-    private GroupRepository groupRepository;
 
     @Autowired
     private LogsAndNotificationsBroker logsAndNotificationsBroker;
@@ -71,8 +70,7 @@ public class EventLogBrokerImpl implements EventLogBroker {
         User user = userRepository.findOneByUid(userUid);
         Event event = eventRepository.findOneByUid(eventUid);
 
-        log.trace("rsvpForEvent...event..." + event.getId() + "...user..." + user.getPhoneNumber() +
-                "...rsvp..." + rsvpResponse.toString());
+        log.trace("rsvpForEvent...event..." + event.getId() + "...user..." + user.getPhoneNumber() + "...rsvp..." + rsvpResponse.toString());
 
         if (!hasUserRespondedToEvent(event, user)) {
             EventLog eventLog = createEventLog(EventLogType.RSVP, event.getUid(), user.getUid(), rsvpResponse);
@@ -82,15 +80,15 @@ public class EventLogBrokerImpl implements EventLogBroker {
             // see if everyone voted, if they did expire the vote so that the results are sent out
 
             if (event.getEventType().equals(EventType.VOTE)) {
-                ResponseTotalsDTO rsvpTotalsDTO = getVoteResultsForEvent(event);
+                ResponseTotalsDTO rsvpTotalsDTO = getResponseCountForEvent(event);
                 log.info("rsvpForEvent... response total DTO for vote : " + rsvpTotalsDTO.toString());
                 if (rsvpTotalsDTO.getNumberNoRSVP() < 1) {
                     log.info("rsvpForEvent...everyone has voted... sending out results for {}", event.getName());
                     event.setEventStartDateTime(Instant.now());
                 }
             } else {
-                if (!user.equals(event.getCreatedByUser())) {
-                    generateEventResponseMessage(event, eventLog, rsvpResponse);
+                if (event.getEventType().equals(EventType.MEETING) && !user.equals(event.getCreatedByUser())) {
+                    generateMeetingResponseMessage(event, eventLog, rsvpResponse);
                 }
             }
         } else if (event.getEventStartDateTime().isAfter(Instant.now())) {
@@ -99,8 +97,8 @@ public class EventLogBrokerImpl implements EventLogBroker {
             eventLog.setResponse(rsvpResponse);
             log.info("rsvpForEvent... changing response to {} on eventLog {}", rsvpResponse.toString(), eventLog);
             eventLogRepository.saveAndFlush(eventLog); // todo: shouldn't need this, but it's not persisting (cleaning needed)
-            if (!user.equals(event.getCreatedByUser())) {
-                generateEventResponseMessage(event, eventLog, rsvpResponse);
+            if (event.getEventType().equals(EventType.MEETING) && !user.equals(event.getCreatedByUser())) {
+                generateMeetingResponseMessage(event, eventLog, rsvpResponse);
             }
         }
 
@@ -115,38 +113,11 @@ public class EventLogBrokerImpl implements EventLogBroker {
     @Override
     @Transactional(readOnly = true)
     public ResponseTotalsDTO getResponseCountForEvent(Event event) {
-        ResponseTotalsDTO totals;
-        if (!event.isIncludeSubGroups()) {
-            List<Object[]> groupTotals = eventLogRepository.rsvpTotalsForEventAndGroup(event.getId(), event.getAncestorGroup().getId());
-            totals = new ResponseTotalsDTO(groupTotals, event.getAllMembers().size());
-        } else {
-            totals = new ResponseTotalsDTO();
-            for (Group group : groupRepository.findGroupAndSubGroupsById(event.getAncestorGroup().getId())) {
-                List<Object[]> groupTotals = eventLogRepository.rsvpTotalsForEventAndGroup(event.getId(), group.getId());
-                totals.add(new ResponseTotalsDTO(groupTotals, group.getMemberships().size()));
-            }
-        }
-        log.info("getRSVPTotalsForEvent...returning..." + totals.toString());
-        return totals;
+        List<EventLog> responseEventLogs = eventLogRepository.findByEventAndEventLogType(event, EventLogType.RSVP);
+        return new ResponseTotalsDTO(responseEventLogs, event);
     }
 
-    @Override
-    public ResponseTotalsDTO getVoteResultsForEvent(Event event) {
-        if (!event.isIncludeSubGroups()) {
-            List<Object[]> groupVotes = eventLogRepository.voteTotalsForEventAndGroup(event.getId(), event.getAncestorGroup().getId());
-            return new ResponseTotalsDTO(groupVotes, event.getAllMembers().size());
-        }
-        ResponseTotalsDTO totals = new ResponseTotalsDTO();
-        for (Group group : groupRepository.findGroupAndSubGroupsById(event.getAncestorGroup().getId())) {
-            ResponseTotalsDTO groupVotes = new ResponseTotalsDTO(eventLogRepository.voteTotalsForEventAndGroup(event.getId(), group.getId()),
-                    event.getAllMembers().size());
-            totals.add(groupVotes);
-        }
-        log.info("getVoteResultsForEvent...returning..." + totals.toString());
-        return totals;
-    }
-
-    private void generateEventResponseMessage(Event event, EventLog eventLog, EventRSVPResponse rsvpResponse) {
+    private void generateMeetingResponseMessage(Event event, EventLog eventLog, EventRSVPResponse rsvpResponse) {
         if (event.getCreatedByUser().getMessagingPreference().equals(UserMessagingPreference.ANDROID_APP)) {
             String message = messageAssemblingService.createEventResponseMessage(event.getCreatedByUser(), event, rsvpResponse);
             Notification notification = new EventResponseNotification(event.getCreatedByUser(), message, eventLog);
@@ -156,26 +127,4 @@ public class EventLogBrokerImpl implements EventLogBroker {
         }
     }
 
-//    private void recursiveTotalsAdd(Event event, Group parentGroup, ResponseTotalsDTO rsvpTotalsDTO ) {
-//
-//        for (Group childGroup : groupRepository.findByParent(parentGroup)) {
-//            recursiveTotalsAdd(event, childGroup, rsvpTotalsDTO);
-//        }
-//
-//        // add all the totals at this level
-//        rsvpTotalsDTO.add(new ResponseTotalsDTO(eventLogRepository.rsvpTotalsForEventAndGroup(event.getId(), parentGroup.getId(),event.getCreatedByUser().getId())));
-//
-//    }
-
-
-//    private void recursiveVotesAdd(Event event, Group parentGroup, ResponseTotalsDTO rsvpTotalsDTO ) {
-//
-//        for (Group childGroup : groupRepository.findByParent(parentGroup)) {
-//            recursiveVotesAdd(event, childGroup, rsvpTotalsDTO);
-//        }
-//
-//        // add all the totals at this level
-//        rsvpTotalsDTO.add(new ResponseTotalsDTO(eventLogRepository.voteTotalsForEventAndGroup(event.getId(), parentGroup.getId())));
-//
-//    }
 }

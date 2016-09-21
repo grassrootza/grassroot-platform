@@ -3,10 +3,10 @@ package za.org.grassroot.core.repository;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.data.domain.Sort;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
@@ -29,8 +29,8 @@ import static za.org.grassroot.core.enums.UserLogType.*;
 /**
  * Created by luke on 2016/02/22.
  */
-@RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = TestContextConfiguration.class)
+@RunWith(SpringRunner.class)
+@ContextConfiguration(classes = TestContextConfiguration.class)
 @Transactional
 @ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
 public class UserLogRepositoryTest {

@@ -18,14 +18,6 @@ import java.util.List;
 public interface TodoRepository extends JpaRepository<Todo, Long>, JpaSpecificationExecutor<Todo> {
 
     Todo findOneByUid(String uid);
-    List<Todo> findByParentGroupAndCancelledFalse(Group group);
-
-    // todo : work through & complete assigned members
-    List<Todo> findByAssignedMembersAndActionByDateBetweenAndCompletionPercentageGreaterThanEqual(User user, Instant start, Instant end, double minCompletionPercentage, Sort sort);
-
-    // methods for handling replication
-    List<Todo> findByParentGroupAndMessageAndCreatedDateTime(Group group, String message, Instant createdDateTime);
-    List<Todo> findByReplicatedGroupAndMessageAndActionByDateOrderByParentGroupIdAsc(Group replicatedGroup, String message, Instant actionByDateTime);
 
     // methods for analyzing action/to-do (for admin)
     Long countByCreatedDateTimeBetween(Instant start, Instant end);
@@ -36,6 +28,7 @@ public interface TodoRepository extends JpaRepository<Todo, Long>, JpaSpecificat
         "where m.user_id = ?1 and to_tsvector('english', l.message) @@ to_tsquery('english', ?2)", nativeQuery = true)
     List<Todo> findByParentGroupMembershipsUserAndMessageSearchTerm(Long userId, String tsQueryText);
 
+    // todo : consider switching this to specifications as well
     @Transactional
     @Query(value = "select td from Todo td " +
             "left join td.completionConfirmations cm " +
@@ -46,6 +39,16 @@ public interface TodoRepository extends JpaRepository<Todo, Long>, JpaSpecificat
             "and td.reminderActive = true " +
             "and (cm.member is null or cm.member != td.createdByUser)")
     List<Todo> findAllTodosForReminding(Instant referenceInstant, double threshold);
+
+    // these are in test only and have been superceded in the main code -- delete once test coverage for services built out
+    List<Todo> findByParentGroupAndCancelledFalse(Group group);
+    List<Todo> findByAssignedMembersAndActionByDateBetweenAndCompletionPercentageGreaterThanEqual(User user, Instant start, Instant end, double minCompletionPercentage, Sort sort);
+
+    // methods for handling replication
+    List<Todo> findByParentGroupAndMessageAndCreatedDateTime(Group group, String message, Instant createdDateTime);
+    List<Todo> findByReplicatedGroupAndMessageAndActionByDateOrderByParentGroupIdAsc(Group replicatedGroup, String message, Instant actionByDateTime);
+
+
 
     @Query(value = "select count(t) from Todo t where t.replicatedGroup=?1 and t.message=?2 and t.actionByDate=?3")
     int countReplicatedEntries(Group group, String message, Instant actionByDate);

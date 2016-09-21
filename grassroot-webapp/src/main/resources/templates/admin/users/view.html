@@ -2,12 +2,13 @@
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorator="layout">
 <head>
-  <title>Grassroot - View Meeting</title>
+  <title>Grassroot - Admin view user</title>
 </head>
 <body>
 
+<!-- todo : modernize layout -->
 <div layout:fragment="header">
-  <h2>Meeting: <span  th:text="${user.nameToDisplay()}">Meeting</span></h2>
+  <h2>User: <span  th:text="${user.displayName}">Name</span></h2>
 </div>
 <div layout:fragment="overview">View user details and perform basic actions</div>
 
@@ -28,7 +29,7 @@
         </tr>
         <tr>
           <td>Display name</td>
-          <td><span th:text="${user.nameToDisplay()}">Joe Bloggs</span></td>
+          <td><span th:text="${user.displayName}">Joe Bloggs</span></td>
         </tr>
         <tr>
           <td>Phone number</td>
@@ -48,7 +49,7 @@
         </tr>
         <tr>
           <td>Has a web profile:</td>
-          <td><span th:text="${user.hasWebProfile()}">Yes</span></td>
+          <td><span th:text="${user.isWebProfile()}">Yes</span></td>
         </tr>
         <tr>
           <td>Number of groups a part of:</td>
@@ -58,12 +59,56 @@
     </div>
     <div class="row">
 
-      <a href="@{add_group(userId=${user.id})}">Add this user to a group</a>
-      <a href="@{language}">Change this user's language</a>
-      <a href="@{password}">Reset this user's password</a>
+      <a class="btn btn-primary" th:href="@{password}">Reset this user's password</a>
+      <button type="button" class="btn btn-warning" data-toggle="modal" data-target="#optOutModal">
+        Opt out this user</button>
 
     </div>
   </div>
+
+  <div class="modal fade" id="optOutModal" tabindex="-1" role="dialog" aria-labelledby="optOutLabel">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title" id="optOutLabel">Remove member from all groups</h4>
+        </div>
+        <form th:action="@{optout}" method="post">
+          <input type="hidden" name="userToRemoveUid" id="userUid" th:value="${user.uid}" />
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="otp-input" class="control-label">Enter OTP sent to admin user's phone</label>
+              <input type="text" class="form-control" id="otp-input" name="otpEntered" />
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            <button type="submit" class="btn btn-primary">Confirmed</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="header-container" layout:fragment="script-container">
+
+  <script th:inline="javascript">
+
+    /*<![CDATA[*/
+
+    var userPhone = /*[[${adminPhoneNumber}]]*/ 'phonenumber';
+
+    $(document).ready(function() {
+      $('#optOutModal').on('show.bs.modal', function(event) {
+        $.ajax({ url:"/grass-root-verification/" + userPhone });
+      })
+    });
+
+    /*]]>*/
+
+  </script>
 </div>
 
 </body>

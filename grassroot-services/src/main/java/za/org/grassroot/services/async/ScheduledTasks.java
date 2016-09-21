@@ -3,6 +3,7 @@ package za.org.grassroot.services.async;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -34,6 +35,9 @@ import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
 public class ScheduledTasks {
 
     private Logger logger = LoggerFactory.getLogger(ScheduledTasks.class);
+
+    @Value("${grassroot.todos.completion.threshold:20}") // defaults to 20 percent
+    private double COMPLETION_PERCENTAGE_BOUNDARY;
 
     @Autowired
     private EventBroker eventBroker;
@@ -152,9 +156,8 @@ public class ScheduledTasks {
 
     @Scheduled(fixedRate = 300000) //runs every 5 minutes
     public void sendTodoReminders() {
-        List<Todo> todos = todoRepository.findAllTodosForReminding(Instant.now(),
-                environment.getProperty("grassroot.todos.completion.threshold", Double.class));
-        logger.info("Sending scheduled reminders for {} todos", todos.size());
+        List<Todo> todos = todoRepository.findAllTodosForReminding(Instant.now(), COMPLETION_PERCENTAGE_BOUNDARY);
+        logger.info("Sending scheduled reminders for {} todos, after using threshold of {}", todos.size(), COMPLETION_PERCENTAGE_BOUNDARY);
         for (Todo todo : todos) {
             try {
                 todoBroker.sendScheduledReminder(todo.getUid());

@@ -14,6 +14,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 public interface GroupBroker {
@@ -91,7 +92,7 @@ public interface GroupBroker {
      */
     List<Group> findPublicGroups(String userUid, String searchTerm, GroupLocationFilter locationFilter, boolean restrictToGroupName);
 
-    Group findGroupFromJoinCode(String joinCode);
+    Optional<Group> findGroupFromJoinCode(String joinCode);
 
     /** METHODS FOR DEALING WITH SUBGROUPS, LINKING GROUPS, AND MERGING **/
 

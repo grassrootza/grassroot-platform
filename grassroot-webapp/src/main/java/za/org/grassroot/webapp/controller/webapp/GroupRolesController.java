@@ -45,7 +45,7 @@ public class GroupRolesController extends BaseController {
 	 * Group role view pages
 	 */
 
-	@RequestMapping(value = "roles/members")
+	@RequestMapping(value = "members")
 	public String viewMemberRoles(Model model, @RequestParam String groupUid) {
 		// service layer will take care of checking permissions, but at least here make sure user is in group
 		Group group = groupBroker.load(groupUid);
@@ -70,7 +70,7 @@ public class GroupRolesController extends BaseController {
 		return "group/roles/view";
 	}
 
-	@RequestMapping(value = "roles/members", method = RequestMethod.POST)
+	@RequestMapping(value = "members", method = RequestMethod.POST)
 	public String alterMemberRoles(Model model, @RequestParam String groupUid, @RequestParam String msisdn,
 	                               @RequestParam(name = "new_role") String newRole, HttpServletRequest request) {
 
@@ -82,7 +82,7 @@ public class GroupRolesController extends BaseController {
 
 	}
 
-	@RequestMapping(value = "roles/permissions")
+	@RequestMapping(value = "permissions")
 	public String viewRolePermissions(Model model, @RequestParam String groupUid) {
 
 		Group group = groupBroker.load(groupUid);
@@ -105,7 +105,7 @@ public class GroupRolesController extends BaseController {
 		return "group/roles/permissions";
 	}
 
-	@RequestMapping(value = "roles/permissions", method = RequestMethod.POST)
+	@RequestMapping(value = "permissions", method = RequestMethod.POST)
 	public String changeGroupRole(Model model, @RequestParam String groupUid, HttpServletRequest request) {
 
 		// todo: there must be a more efficient way to do this, possibly via a permission wrapper?

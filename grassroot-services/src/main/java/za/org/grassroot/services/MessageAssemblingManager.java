@@ -29,20 +29,14 @@ public class MessageAssemblingManager implements MessageAssemblingService {
     @Qualifier("servicesMessageSourceAccessor")
     MessageSourceAccessor messageSourceAccessor;
 
+    // major todo : consolidate & externalize all the date formatters
     private static final DateTimeFormatter shortDateFormatter = DateTimeFormatter.ofPattern("EEE, d/M");
 
     @Override
     public String createEventInfoMessage(User user, Event event) {
-        //TODO fix the locale resolver in config
-        String messageKey = "";
-        if (event.getEventType() == EventType.VOTE) {
-            messageKey = "sms.vote.send.new";
-        } else {
-            messageKey = event.isRsvpRequired() ? "sms.mtg.send.new.rsvp" : "sms.mtg.send.new";
-
-        }
-        Locale locale = getUserLocale(user);
-        return messageSourceAccessor.getMessage(messageKey, populateEventFields(event), locale);
+        String messageKey = EventType.VOTE.equals(event.getEventType()) ? "sms.vote.send.new" :
+                event.isRsvpRequired() ? "sms.mtg.send.new.rsvp" : "sms.mtg.send.new";
+        return messageSourceAccessor.getMessage(messageKey, populateEventFields(event), getUserLocale(user));
     }
 
     @Override
@@ -69,7 +63,7 @@ public class MessageAssemblingManager implements MessageAssemblingService {
     public String createEventResponseMessage(User user, Event event, EventRSVPResponse rsvpResponse) {
         Meeting meeting = (Meeting) event;
         String messageKey;
-        String salutation = (((Group) meeting.getParent()).hasName()) ? ((Group) meeting.getParent()).getGroupName() : "Grassroot";
+        String salutation = (( meeting.getParent()).hasName()) ? ((Group) meeting.getParent()).getGroupName() : "Grassroot";
         DateTimeFormatter sdf = DateTimeFormatter.ofPattern("EEE d MMM, h:mm a");
         String dateString = sdf.format(meeting.getEventDateTimeAtSAST());
         String[] field = {salutation, user.nameToDisplay(), meeting.getName(), dateString, meeting.getEventLocation()};
@@ -279,8 +273,7 @@ public class MessageAssemblingManager implements MessageAssemblingService {
     }
 
     public String[] populateEventFields(Event event, double yes, double no, double abstain, double noReply) {
-        // todo: switch this to new name (may want a "hasName"/"getName" method defined on UidIdentifiable?
-        String salutation = (((Group) event.getParent()).hasName()) ? ((Group) event.getParent()).getGroupName() : "Grassroot";
+        String salutation = ((event.getParent()).hasName()) ? event.getParent().getName() : "Grassroot";
         DateTimeFormatter sdf = DateTimeFormatter.ofPattern("EEE d MMM, h:mm a");
         String dateString = sdf.format(event.getEventDateTimeAtSAST());
 

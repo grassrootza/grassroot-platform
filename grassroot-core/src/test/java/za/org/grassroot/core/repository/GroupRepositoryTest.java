@@ -5,11 +5,11 @@ import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringRunner;
 import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.*;
@@ -27,8 +27,8 @@ import static org.junit.Assert.*;
 /**
  * @author Lesetse Kimwaga
  */
-@RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = TestContextConfiguration.class)
+@RunWith(SpringRunner.class)
+@ContextConfiguration(classes = TestContextConfiguration.class)
 @Transactional
 @ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
 public class GroupRepositoryTest {
@@ -120,44 +120,37 @@ public class GroupRepositoryTest {
     }
 
     @Test
-    public void shouldReturnLevel1Children() {
+    public void shouldReturnLevel1ChildrenByRepositoryQuery() {
         User user = userRepository.save(new User("2222222222"));
         Group gb = groupRepository.save(new Group("gb", user));
         Group gb1 = groupRepository.save(new Group("gb1", user, gb));
         Group gb2 = groupRepository.save(new Group("gb2", user, gb));
         List<Group> children = groupRepository.findByParentAndActiveTrue(gb);
         assertEquals(2,children.size());
-        for (Group child : children) {
-            log.debug("child......" + child.toString());
-        }
-    }
-
-
-    @Test
-    public void shouldReturnParentAndAllChildren() {
-        User user = userRepository.save(new User("3333333333"));
-        Group gc = groupRepository.save(new Group("gc", user));
-        Group gc1 = groupRepository.save(new Group("gc1", user, gc));
-        Group gc2 = groupRepository.save(new Group("gc2", user, gc));
-        Group gc1a = groupRepository.save(new Group("gc1a", user, gc1));
-        Group gc1b = groupRepository.save(new Group("gc1b", user, gc1));
-        List<Group>  children = groupRepository.findGroupAndSubGroupsById(gc.getId());
-        //todo - aakil the code works but the test fails, returns zero records, transaction thing again
-        //assertEquals(5,children.size());
     }
 
     @Test
-    public void shouldReturnOnlyOneLevel() {
+    public void shouldReturnByEntityGet() {
         User user = userRepository.save(new User("3333333330"));
         Group gc = groupRepository.save(new Group("gc", user));
         Group gc1 = groupRepository.save(new Group("gc1", user, gc));
         Group gc2 = groupRepository.save(new Group("gc2", user, gc));
         Group gc1a = groupRepository.save(new Group("gc1a", user, gc1));
         Group gc1b = groupRepository.save(new Group("gc1b", user, gc1));
-        List<Group> children = groupRepository.findGroupAndSubGroupsById(gc1b.getId());
-        //todo - aakil the code works but the test fails, returns zero records, transaction thing again
-        //assertEquals(1,children.size());
-        //assertEquals(gc1b.getId(),children.get(0).getId());
+
+        Group gcUpdated = groupRepository.findOne(gc.getId());
+        Group gc1Updated = groupRepository.findOne(gc1.getId());
+        Group gc2Updated = groupRepository.findOne(gc2.getId());
+
+        assertNotNull(gcUpdated);
+        assertNotNull(gcUpdated.getDirectChildren());
+        assertEquals(2, gcUpdated.getDirectChildren().size());
+        assertTrue(gcUpdated.getDirectChildren().contains(gc1));
+        assertTrue(gcUpdated.getDirectChildren().contains(gc2));
+        assertFalse(gcUpdated.getDirectChildren().contains(gc1a));
+        assertFalse(gcUpdated.getDirectChildren().contains(gc1b));
+        assertEquals(2, gc1Updated.getDirectChildren().size());
+        assertEquals(0, gc2Updated.getDirectChildren().size());
     }
 
     @Test

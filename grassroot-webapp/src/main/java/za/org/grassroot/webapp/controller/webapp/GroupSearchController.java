@@ -20,6 +20,7 @@ import za.org.grassroot.webapp.controller.BaseController;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Created by luke on 2016/09/06.
@@ -52,9 +53,9 @@ public class GroupSearchController extends BaseController {
 			String tokenSearch = term.contains("*134*1994*") ?
 					term.substring("*134*1994*".length(), term.length() - 1) : term;
 			log.info("searching for group ... token to use ... " + tokenSearch);
-			Group groupByToken = groupBroker.findGroupFromJoinCode(tokenSearch);
-			if (groupByToken != null) {
-				model.addAttribute("group", groupByToken);
+			Optional<Group> groupByToken = groupBroker.findGroupFromJoinCode(tokenSearch);
+			if (groupByToken.isPresent()) {
+				model.addAttribute("group", groupByToken.get());
 				model.addAttribute("externalGroupsFound", true);
 			} else {
 				// just for testing since no UI support yet exists...

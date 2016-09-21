@@ -28,7 +28,7 @@ import java.security.cert.X509Certificate;
 
 /**
  * Created by paballo on 2016/01/27.
- * todo: make this only load in local pg, not staging/production
+ * note : as is appropriate, only works if ussd gateway is set to localhost IP (else security rejects calls)
  */
 
 @Controller
