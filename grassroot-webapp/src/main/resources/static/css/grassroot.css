@@ -178,6 +178,19 @@
     margin-top:20px;
 }
 
+.padding-sm {
+    padding: 2px !important;
+}
+
+.tight-vertical {
+    padding-top: 2px !important;
+    padding-bottom: 2px !important;
+}
+
+.border-green {
+    border: 1px;
+    border-color: #207A33;
+}
 
 .alert-success {
     background-color: #207A33;

@@ -14,7 +14,10 @@ import za.org.grassroot.core.util.DateTimeUtil;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 
 import static org.hamcrest.Matchers.*;
 import static org.mockito.Mockito.*;
@@ -124,22 +127,21 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
     public void createMeetingIndexWorksWithGroupNotSpecified() throws Exception {
 
         Group dummyGroup = new Group("", sessionTestUser);
-        Set<Group> dummyGroups = Collections.singleton(dummyGroup);
+        List<Group> dummyGroups = Collections.singletonList(dummyGroup);
 
         List<String[]> minuteOptions = new ArrayList<>();
         String[] oneDay = new String[]{"" + 24 * 60, "One day ahead"};
         minuteOptions.add(oneDay);
 
         when(userManagementServiceMock.load(sessionTestUser.getUid())).thenReturn(sessionTestUser);
-        when(permissionBrokerMock.getActiveGroupsWithPermission(sessionTestUser,
-                                                  Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING)).thenReturn(dummyGroups);
+        when(permissionBrokerMock.getActiveGroupsSorted(sessionTestUser, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING)).thenReturn(dummyGroups);
 
         mockMvc.perform(get("/meeting/create")).andExpect(status().isOk())
                 .andExpect((view().name("meeting/create")))
                 .andExpect(model().attribute("userGroups", hasItem(dummyGroup)));
 
         verify(userManagementServiceMock, times(1)).load(sessionTestUser.getUid());
-        verify(permissionBrokerMock, times(1)).getActiveGroupsWithPermission(sessionTestUser, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING);
+        verify(permissionBrokerMock, times(1)).getActiveGroupsSorted(sessionTestUser, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING);
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(groupBrokerMock);
         verifyNoMoreInteractions(eventBrokerMock);

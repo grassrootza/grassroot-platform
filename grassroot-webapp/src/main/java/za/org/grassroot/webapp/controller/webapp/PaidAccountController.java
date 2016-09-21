@@ -23,14 +23,12 @@ import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Created by luke on 2016/01/13.
- * todo : consolidate with files in admin/account ...
  */
 @Controller
 @RequestMapping("/paid_account")
@@ -55,24 +53,37 @@ public class PaidAccountController extends BaseController {
         if (request.isUserInRole("ROLE_SYSTEM_ADMIN")) {
             model.addAttribute("accounts", accountManagementService.loadAllAccounts());
             return "paid_account/index";
-        } else {
+        } else if (request.isUserInRole("ROLE_ACCOUNT_ADMIN")) {
             User user = userManagementService.load(getUserProfile().getUid());
             Account account = user.getAccountAdministered();
-            log.info("Not system admin, but found this account ... " + account);
-            return viewPaidAccount(model, account.getUid(), request);
+            return viewPaidAccount(model, account.getUid());
+        } else {
+            throw new AccessDeniedException("Error! Only system admin or account admin can access this page");
         }
     }
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/view")
-    public String viewPaidAccount(Model model, @RequestParam("accountUid") String accountUid, HttpServletRequest request) {
+    public String viewPaidAccount(Model model, @RequestParam("accountUid") String accountUid) {
         Account account = accountManagementService.loadAccount(accountUid);
-        log.info("We are checking against this account ..." + account);
-        /*if (!sessionUserHasAccountPermission(account, request))
-            throw new AccessDeniedException("Not an administrator for this account");*/
+        validateUserIsAdministrator(account);
+
+        List<PaidGroup> currentlyPaidGroups = account.getPaidGroups().stream()
+                .filter(PaidGroup::isActive)
+                .collect(Collectors.toList());
+
         model.addAttribute("account", account);
-        model.addAttribute("paidGroups", account.getPaidGroups());
+        model.addAttribute("paidGroups", currentlyPaidGroups);
         return "paid_account/view";
+    }
+
+    // major todo : insert these
+    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
+    @RequestMapping(value = "/settings", method = RequestMethod.POST)
+    public String changeAccountSettings(Model model, @RequestParam("accountId") String accountUid, HttpServletRequest request) {
+        Account account = accountManagementService.loadAccount(accountUid);
+        validateUserIsAdministrator(account);
+        return "paid_account/settings";
     }
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
@@ -81,7 +92,7 @@ public class PaidAccountController extends BaseController {
                                       @RequestParam(value = "monthToView", required = false) String monthToView, HttpServletRequest request) {
 
         Account account = accountManagementService.loadAccount(accountUid);
-        if (!sessionUserHasAccountPermission(account, request)) throw new AccessDeniedException("");
+        validateUserIsAdministrator(account);
 
         final LocalDateTime beginDate;
         final LocalDateTime endDate;
@@ -122,20 +133,20 @@ public class PaidAccountController extends BaseController {
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/group/designate")
-    public String designateGroupPaidFor(Model model, @RequestParam("accountId") String accountUid, HttpServletRequest request) {
+    public String designateGroupPaidFor(Model model, @RequestParam("accountUid") String accountUid, HttpServletRequest request) {
         Account account = accountManagementService.loadAccount(accountUid);
-        if (!sessionUserHasAccountPermission(account, request)) throw new AccessDeniedException("");
+        validateUserIsAdministrator(account);
         model.addAttribute("account", account);
-        model.addAttribute("candidateGroups", getCandidateGroupsToDesignate(getUserProfile(), account));
+        model.addAttribute("candidateGroups", getCandidateGroupsToDesignate(getUserProfile()));
         return "paid_account/designate";
     }
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/group/search")
     public String searchForGroup(Model model, @RequestParam String accountUid, @RequestParam String searchTerm,
-                                 @RequestParam boolean tokenSearch, HttpServletRequest request) {
+                                 @RequestParam boolean tokenSearch) {
         Account account = accountManagementService.loadAccount(accountUid);
-        if (!sessionUserHasAccountPermission(account, request)) throw new AccessDeniedException("");
+        validateUserIsAdministrator(account);
 
         model.addAttribute("account", account);
         model.addAttribute("tokenSearch", tokenSearch);
@@ -156,69 +167,41 @@ public class PaidAccountController extends BaseController {
     @RequestMapping(value = "/group/designate", method = RequestMethod.POST)
     public String doDesignation(Model model, @RequestParam String accountUid, @RequestParam String groupUid,
                                 HttpServletRequest request) {
-        // todo: some form of confirmation screen
         Account account = accountManagementService.loadAccount(accountUid);
-        if (!sessionUserHasAccountPermission(account, request)) throw new AccessDeniedException("");
+        validateUserIsAdministrator(account);
         accountManagementService.addGroupToAccount(accountUid, groupUid, getUserProfile().getUid());
         addMessage(model, MessageType.SUCCESS, "account.addgroup.success", request);
-        return viewPaidAccount(model, accountUid, request);
-    }
-
-    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
-    @RequestMapping(value = "/group/remove")
-    public String confirmRemovePaidFor(Model model, @RequestParam String accountUid, @RequestParam String paidGroupUid,
-                                       HttpServletRequest request) {
-        Account account = accountManagementService.loadAccount(accountUid);
-        if (!sessionUserHasAccountPermission(account, request)) throw new AccessDeniedException("");
-        PaidGroup paidGroupEntity = accountManagementService.loadPaidGroup(paidGroupUid);
-        model.addAttribute("account", account);
-        model.addAttribute("paidGroup", paidGroupEntity);
-        return "paid_account/remove";
+        return viewPaidAccount(model, accountUid);
     }
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/group/remove", method = RequestMethod.POST)
-    public String removePaidForDesignation(Model model, @RequestParam("accountId") String accountUid,
-                                           @RequestParam("paidGroupUid") String paidGroupUid, HttpServletRequest request) {
+    public String removePaidForDesignation(Model model, @RequestParam String accountUid, @RequestParam String paidGroupUid,
+                                           @RequestParam(value = "confirm_field") String confirmed, HttpServletRequest request) {
         Account account = accountManagementService.loadAccount(accountUid);
-        PaidGroup paidGroupRecord = accountManagementService.loadPaidGroup(paidGroupUid);
-        if (!sessionUserHasAccountPermission(account, request)) throw new AccessDeniedException("");
-        accountManagementService.removeGroupFromAccount(accountUid, paidGroupUid, getUserProfile().getUid());
-        addMessage(model, MessageType.INFO, "account.remgroup.success", request);
-        return viewPaidAccount(model, accountUid, request);
+        validateUserIsAdministrator(account);
+        if (confirmed.equalsIgnoreCase("confirmed")) {
+            accountManagementService.removeGroupFromAccount(accountUid, paidGroupUid, getUserProfile().getUid());
+            addMessage(model, MessageType.INFO, "account.remgroup.success", request);
+        } else {
+            addMessage(model, MessageType.ERROR, "account.remgroup.failed", request);
+        }
+        return viewPaidAccount(model, accountUid);
     }
 
-    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
-    @RequestMapping(value = "/admin/settings", method = RequestMethod.POST)
-    public String changeAccountSettings(Model model, @RequestParam("accountId") String accountUid, HttpServletRequest request) {
-        Account account = accountManagementService.loadAccount(accountUid);
-        if (!sessionUserHasAccountPermission(account, request)) throw new AccessDeniedException("");
-        return "paid_account/settings";
+    /* quick helper method to do role & permission check */
+    private void validateUserIsAdministrator(Account account) {
+        User user = userManagementService.load(getUserProfile().getUid());
+        if (user.getAccountAdministered() == null || !user.getAccountAdministered().equals(account)) {
+            permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
+        }
     }
 
-    /*
-        quick private helper method to do role & permission check
-        major todo: move this to a service and call it via @preauthorize
-    */
-    private boolean sessionUserHasAccountPermission(Account account, HttpServletRequest request) {
-        log.info("This user is in system admin role ..." + request.isUserInRole("ROLE_SYSTEM_ADMIN"));
-        log.info("This user's account matches ..." + (getUserProfile().getAccountAdministered() == account));
-        Long startTime = System.currentTimeMillis();
-        boolean response = request.isUserInRole("ROLE_SYSTEM_ADMIN") || getUserProfile().getAccountAdministered() == account;
-        Long endTime = System.currentTimeMillis();
-        log.info(String.format("Role check took %d ms", endTime - startTime));
-        return response;
-    }
-
-    private List<Group> getCandidateGroupsToDesignate(User user, Account account) {
-        Long startTime = System.currentTimeMillis();
-        Set<Group> groupsPartOf = permissionBroker.getActiveGroupsWithPermission(user, null);
-        Set<PaidGroup> alreadyDesignated = account.getPaidGroups();
-        for (PaidGroup paidGroup : alreadyDesignated)
-            if (groupsPartOf.contains(paidGroup.getGroup())) groupsPartOf.remove(paidGroup.getGroup());
-        Long endTime = System.currentTimeMillis();
-        log.info(String.format("Fetched list of groups that can be designated, took %d ms", endTime - startTime));
-        return new ArrayList<>(groupsPartOf);
+    private List<Group> getCandidateGroupsToDesignate(User user) {
+        List<Group> groupsPartOf = permissionBroker.getActiveGroupsSorted(user, null);
+        return groupsPartOf.stream()
+                .filter(g -> !g.isPaidFor())
+                .collect(Collectors.toList());
     }
 
     private Model addRecordsToModel(String attr, Model model, Group group, EventType type, LocalDateTime start, LocalDateTime end) {

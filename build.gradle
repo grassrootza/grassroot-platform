@@ -2,7 +2,7 @@ allprojects  {
   apply plugin: 'maven'
 
   group = 'za.org.grassroot'
-  version = '1.0.0.M3'
+  version = '1.0.0.M4'
 }
 
 subprojects {
@@ -17,7 +17,7 @@ subprojects {
     maven { url "http://repo.maven.apache.org/maven2" }
   }
 
-  // todo : rewire integration tests
+  // major todo : rewire integration tests
   test {
     exclude '**/*IT*'
     testLogging {
@@ -43,12 +43,5 @@ subprojects {
     testCompile group: 'org.mockito', name: 'mockito-core', version:'1.10.19'
     testCompile group: 'org.powermock', name: 'powermock-module-junit4', version:'1.6.5'
   }
-
-  /*configurations.all {
-    resolutionStrategy {
-      force "org.igniterealtime.smack:smack-core:4.0.6"
-    }
-  }*/
-
   
 }

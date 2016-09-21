@@ -4,7 +4,7 @@ import org.quartz.CronTrigger;
 import org.quartz.JobDetail;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.orm.jpa.EntityScan;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -29,7 +29,6 @@ import java.util.concurrent.Executors;
 
 /**
  * @author Lesetse Kimwaga
- * major todo: work out why changing the deprecated annotation to newer one breaks all entity scanning in bootRun but not tests etc
  */
 
 @Configuration

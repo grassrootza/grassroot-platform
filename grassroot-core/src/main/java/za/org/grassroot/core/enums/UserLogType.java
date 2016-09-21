@@ -23,7 +23,8 @@ public enum UserLogType {
     JOINED_SAFETY_GROUP("user added to safety group"),
     ADDED_ADDRESS("user added address"),
     CHANGED_ADDRESS("user changed address"),
-    REMOVED_ADDRESS("user removed addres");
+    REMOVED_ADDRESS("user removed addres"),
+    USED_PROMOTIONAL_CODE("user entered using a promotional code");
 
 
     private final String text;

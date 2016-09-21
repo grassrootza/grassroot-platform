@@ -15,7 +15,7 @@ import za.org.grassroot.webapp.model.web.EventWrapper;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Collections;
-import java.util.Set;
+import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.beans.HasPropertyWithValue.hasProperty;
@@ -65,17 +65,17 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
     public void createVoteWorksWhengroupNotSpecified() throws Exception {
 
         Group testGroup = new Group("Dummy Group3", new User("234345345"));
-        Set<Group> testPossibleGroups = Collections.singleton(testGroup);
+        List<Group> testPossibleGroups = Collections.singletonList(testGroup);
 
         when(userManagementServiceMock.load(sessionTestUser.getUid())).thenReturn(sessionTestUser);
-        when(permissionBrokerMock.getActiveGroupsWithPermission(sessionTestUser, Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE)).thenReturn(testPossibleGroups);
+        when(permissionBrokerMock.getActiveGroupsSorted(sessionTestUser, Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE)).thenReturn(testPossibleGroups);
 
         mockMvc.perform(get("/vote/create"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("vote/create"))
                 .andExpect(model().attribute("possibleGroups", hasItem(testGroup)));
 
-        verify(permissionBrokerMock, times(1)).getActiveGroupsWithPermission(sessionTestUser, Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE);
+        verify(permissionBrokerMock, times(1)).getActiveGroupsSorted(sessionTestUser, Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE);
         verifyNoMoreInteractions(permissionBrokerMock);
         verifyNoMoreInteractions(groupBrokerMock);
     }

@@ -1,15 +1,28 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
->
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" xmlns:data="http://www.w3.org/1999/xhtml"
+      data-layout-decorate="layout">
 <head>
-  <meta charset="UTF-8" />
-  <title>Viewing account</title>
+  <title>Grassroot Accounts Administration</title>
 </head>
 <body>
-This page loaded. You can view these accounts:
-<ul>
-  <li th:each="account : ${accounts}">
-    <a th:href="@{view(accountUid=${account.id})}"><span th:text="${account.accountName}"></span></a>
-  </li>
-</ul>
+<div layout:fragment="header">
+  <h2 class="text-center">Grassroot Accounts Administration</h2>
+</div>
+<div layout:fragment="overview"></div>
+
+<div layout:fragment="content">
+  <div class="well">
+    <div class="row">
+      <div class="col-md-4 col-md-offset-4">
+        <p>Select an account:</p>
+        <ul class="list-group">
+          <li class="list-group-item" th:each="account : ${accounts}">
+            <a th:href="@{view(accountUid=${account.uid})}"><span th:text="${account.accountName}"></span></a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
 </body>
 </html>
