@@ -27,9 +27,9 @@ public class MessageUtils {
         data.put("uid", input.getMessageId());
         data.put("title", "Grassroot");
         if (message.contains("/meeting")) {
-            String text =  "Do you want to call a meeting about %s on %s at %s?";
+            String text = "Do you want to call a meeting about %s on %s at %s?";
             data.put("type", "meeting");
-            data.put("body", String.format(text,(Object[])tokens));
+            data.put("body", String.format(text, (Object[]) tokens));
         }
         data.put("tokens", Arrays.asList(tokens));
         data.put("entity_type", AndroidClickActionType.CHAT_MESSAGE.toString());
@@ -76,6 +76,23 @@ public class MessageUtils {
             message = message.replace("/vote", "");
         }
         return message.split(",");
+    }
+
+    public static Map<String, Object> generateInvalidCommandResponseData(GcmUpstreamMessage input, Group group) {
+        String groupUid = (String) input.getData().get("groupUid");
+        String messageId = UIDGenerator.generateId();
+        Map<String, Object> data = new HashMap<>();
+        data.put("groupUid", groupUid);
+        data.put("groupName", group.getGroupName());
+        data.put("id", messageId);
+        data.put("uid", input.getMessageId());
+        data.put("title", "Grassroot");
+        data.put("body", "Sorry we could not parse your message. Please try again.");
+        data.put("entity_type", AndroidClickActionType.CHAT_MESSAGE.toString());
+        data.put("click_action", AndroidClickActionType.CHAT_MESSAGE.toString());
+        data.put("time", input.getData().get("time"));
+
+        return data;
     }
 
 

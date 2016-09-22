@@ -1,5 +1,7 @@
 package za.org.grassroot.integration.services;
 
+import za.org.grassroot.integration.domain.SeloParseDateTimeFailure;
+
 import java.time.LocalDateTime;
 
 /**
@@ -7,5 +9,5 @@ import java.time.LocalDateTime;
  */
 public interface LearningService {
 
-   LocalDateTime parse(String phrase);
+   LocalDateTime parse(String phrase) throws SeloParseDateTimeFailure;
 }
