@@ -144,6 +144,10 @@ public class PaidGroup {
 
     public void setExpireDateTime(Instant expireDateTime) { this.expireDateTime = expireDateTime; }
 
+    public boolean isActive() {
+        return expireDateTime == null || expireDateTime.isAfter(Instant.now());
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {

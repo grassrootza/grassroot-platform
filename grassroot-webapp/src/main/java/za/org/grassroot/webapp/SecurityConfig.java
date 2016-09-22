@@ -21,6 +21,7 @@ import org.springframework.security.web.authentication.SavedRequestAwareAuthenti
 import org.springframework.security.web.authentication.rememberme.JdbcTokenRepositoryImpl;
 import org.springframework.security.web.authentication.rememberme.PersistentTokenBasedRememberMeServices;
 import org.springframework.security.web.authentication.rememberme.PersistentTokenRepository;
+import org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import javax.sql.DataSource;
@@ -86,8 +87,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                     .logoutSuccessUrl("/login")
                     .permitAll().and()
                 .rememberMe()
-                    .rememberMeServices(rememberMeServices());
-                // .useSecureCookie(true);
+                    .rememberMeServices(rememberMeServices())
+                    .useSecureCookie(true).and()
+                .csrf().csrfTokenRepository(new HttpSessionCsrfTokenRepository());
     }
 
     @Override

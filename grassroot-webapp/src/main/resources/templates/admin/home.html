@@ -16,18 +16,41 @@
     <!-- Central text header -->
   <div class="well">
     <div class="row">
-      <h1>Grassroot Internal Admin Console</h1>
-      <!-- Insert user's name -->
-      <h2 th:text="#{web.home.welcome(${currentUser.firstName})}">Welcome back to Grassroot, Luke</h2>
+      <div class="col-md-4 col-md-offset-4 text-center">
+        <h2>Grassroot Internal Admin Console</h2>
+        <h3 th:text="#{web.home.welcome(${currentUser.displayName})}">Welcome back to Grassroot, Luke</h3>
+      </div>
     </div>
+
+    <div class="row">
+      <div class="col-md-2 col-md-offset-5 text-center">
+        <div class="dropdown">
+          <a href="javascript:void(0)" data-target="#" class="dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+            <strong>Admin functions</strong><b class="caret"></b><div class="ripple-wrapper"></div>
+          </a>
+          <ul class="dropdown-menu">
+            <li><a href="" th:href="@{users/home}">Users</a></li>
+            <li><a href="" th:href="@{groups/search}">Groups</a></li>
+            <li><a href="" th:href="@{analytics/geo_stats}">Geo</a></li>
+            <li><a href="" th:href="@{analytics/word_stats}">Keyword Table</a></li>
+            <li><a href="" th:href="@{accounts/home}">Accounts</a></li>
+            <li><a href="" th:href="@{stats/home}">System stats</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <!-- read out of some key stats -->
   <div class="well">
     <div class="row">
-      <mark>System statistics at a glance</mark>
+      <div class="col-md-4 col-md-offset-4 text-center">
+        <h4>System statistics at a glance</h4>
+      </div>
     </div>
     <div class="row">
+      <div class="col-md-8 col-md-offset-2">
       <table class="table table-striped">
         <thead>
           <th>Time period</th>
@@ -76,28 +99,6 @@
           </tr>
         </tbody>
       </table>
-    </div>
-  </div>
-
-  <div class="well">
-    <div class="row">
-      <div class="col-md-3">
-        <a href="" th:href="@{users/home}"><button class="btn btn-primary">Users</button></a>
-      </div>
-      <div class="col-md-3">
-        <a href="" th:href="@{groups/search}"><button class="btn btn-primary">Groups</button></a>
-      </div>
-      <div class="col-md-3">
-        <a href="" th:href="@{analytics/geo_stats}"><button class="btn btn-primary">Geo</button></a>
-      </div>
-      <div class="col-md-3">
-        <a href="" th:href="@{analytics/word_stats}"><button class="btn btn-primary">Keyword Table</button></a>
-      </div>
-      <div class="col-md-3">
-        <a href="" th:href="@{accounts/home}"><button class="btn btn-primary">Accounts</button></a>
-      </div>
-      <div class="col-md-3">
-        <a href="" th:href="@{stats/home}"><button class="btn btn-primary">System stats</button></a>
       </div>
     </div>
   </div>

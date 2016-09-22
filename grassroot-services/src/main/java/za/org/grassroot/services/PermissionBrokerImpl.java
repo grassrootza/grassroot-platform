@@ -202,7 +202,6 @@ public class PermissionBrokerImpl implements PermissionBroker {
     @SuppressWarnings("unchecked")
     public List<Group> getActiveGroupsSorted(User user, Permission requiredPermission) {
         long startTime = System.currentTimeMillis();
-        List<Group> groups;
         Query resultQuery = requiredPermission == null ? fetchAllGroupsSortedForUser(user) : fetchGroupsWithPermission(user, requiredPermission);
         log.info("repository query took ... {} msecs", System.currentTimeMillis() - startTime);
         return resultQuery.getResultList();

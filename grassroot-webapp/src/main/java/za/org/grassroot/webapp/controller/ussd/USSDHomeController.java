@@ -83,6 +83,9 @@ public class USSDHomeController extends USSDController {
     @Value("${grassroot.ussd.sendlink.suffix:123}")
     private String sendMeLink;
 
+    @Value("${grassroot.ussd.promotion.suffix:44}")
+    private String promotionSuffix;
+
     private static final String openingMenuKey = String.join(".", Arrays.asList(homeKey, startMenu, optionsKey));
 
     private static final Map<USSDSection, String[]> openingMenuOptions = Collections.unmodifiableMap(Stream.of(
@@ -152,7 +155,6 @@ public class USSDHomeController extends USSDController {
         } else {
             if (!sessionUser.isHasInitiatedSession())
                 userManager.setHasInitiatedUssdSession(sessionUser.getUid());
-
             USSDResponseTypes neededResponse = neededResponse(sessionUser);
             openingMenu = neededResponse.equals(USSDResponseTypes.NONE) ? defaultStartMenu(sessionUser)
                     : requestUserResponse(sessionUser, neededResponse);
@@ -208,26 +210,31 @@ public class USSDHomeController extends USSDController {
 
     }
 
-    private USSDMenu processTrailingDigits(String trailingDigits, User sessionUser) throws URISyntaxException {
+    private USSDMenu processTrailingDigits(String trailingDigits, User user) throws URISyntaxException {
         USSDMenu returnMenu;
         log.info("Processing trailing digits ..." + trailingDigits);
         if (safetyCode.equals(trailingDigits)) {
-            returnMenu = assemblePanicButtonActivationMenu(sessionUser);
+            returnMenu = assemblePanicButtonActivationMenu(user);
         } else if (sendMeLink.equals(trailingDigits)) {
-            returnMenu = assembleSendMeAndroidLinkMenu(sessionUser);
+            returnMenu = assembleSendMeAndroidLinkMenu(user);
+        } else if (promotionSuffix.equals(trailingDigits)) {
+            userLogger.recordUserLog(user.getUid(), UserLogType.USED_PROMOTIONAL_CODE, "used code: " + trailingDigits);
+            if (!user.isHasInitiatedSession()) {
+                userManager.setHasInitiatedUssdSession(user.getUid());
+            }
+            returnMenu = defaultStartMenu(user);
         } else {
             Optional<Group> searchResult = groupBroker.findGroupFromJoinCode(trailingDigits.trim());
             if (searchResult.isPresent()) {
                 Group group = searchResult.get();
-                groupBroker.addMemberViaJoinCode(sessionUser.getUid(), group.getUid(), trailingDigits);
+                groupBroker.addMemberViaJoinCode(user.getUid(), group.getUid(), trailingDigits);
                 String prompt = (group.hasName()) ?
-                        getMessage(thisSection, startMenu, promptKey + ".group.token.named", group.getGroupName(), sessionUser) :
-                        getMessage(thisSection, startMenu, promptKey + ".group.token.unnamed", sessionUser);
-                returnMenu = welcomeMenu(prompt, sessionUser);
+                        getMessage(thisSection, startMenu, promptKey + ".group.token.named", group.getGroupName(), user) :
+                        getMessage(thisSection, startMenu, promptKey + ".group.token.unnamed", user);
+                returnMenu = welcomeMenu(prompt, user);
             } else {
-                returnMenu = welcomeMenu(getMessage(thisSection, startMenu, promptKey + ".unknown.request", sessionUser), sessionUser);
+                returnMenu = welcomeMenu(getMessage(thisSection, startMenu, promptKey + ".unknown.request", user), user);
             }
-
         }
         return returnMenu;
 

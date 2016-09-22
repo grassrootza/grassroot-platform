@@ -71,8 +71,7 @@ public class MeetingController extends BaseController {
             meeting.setParentUid(groupUid);
         } else {
             User user = userManagementService.load(getUserProfile().getUid()); // refresh user entity, in case permissions changed
-            model.addAttribute("userGroups",
-                               permissionBroker.getActiveGroupsWithPermission(user, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING));
+            model.addAttribute("userGroups", permissionBroker.getActiveGroupsSorted(user, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING));
         }
 
         model.addAttribute("meeting", meeting);
@@ -224,8 +223,7 @@ public class MeetingController extends BaseController {
             model.addAttribute("group", groupBroker.load(groupUid));
             groupSpecified = true;
         } else {
-            Set<Group> activeGroups = permissionBroker.getActiveGroupsWithPermission(sessionUser, null); // only where organizer?
-            model.addAttribute("userGroups", activeGroups);
+            model.addAttribute("userGroups", permissionBroker.getActiveGroupsSorted(sessionUser, null));
             groupSpecified = false;
         }
         model.addAttribute("groupSpecified", groupSpecified); // slightly redundant, but use it to tell Thymeleaf what to do

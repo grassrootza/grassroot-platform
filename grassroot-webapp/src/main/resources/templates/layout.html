@@ -45,8 +45,9 @@
               <span class="icon-bar"></span>
               <span class="icon-bar"></span>
             </button>
-            <a class="navbar-brand" href="javascript:void(0)" th:href="@{/home}">
-              <p class="white-text">Grassroot</p>
+            <a class="navbar-left" href="javascript:void(0)" th:href="@{/home}">
+              <img th:src="@{/images/grassroot-logo-navbar.png}" style="padding-bottom: 1px; padding-top: 5px; max-height: 46px"/>
+              <!-- <p class="white-text">Grassroot</p> -->
             </a>
           </div>
           <div class="collapse navbar-collapse navbar-responsive-collapse">
@@ -57,7 +58,7 @@
               <li sec:authorize="isAuthenticated()" class="active"><a href="javascript:void(0)" th:href="@{/todo/create}"><span class="white-text">Create to-do</span></a></li>
               <li sec:authorize="hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')" class="active"><a href="javascript:void(0)" th:href="@{/meeting/free}"><span class="white-text">Send Message</span></a></li>
               <li sec:authorize="hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')" class="active"><a href="javascript:void(0)" th:href="@{/paid_account/index}"><span class="white-text">Manage account</span></a></li>
-              <li sec:authorize="hasRole('ROLE_SYSTEM_ADMIN')" class="active white-text"><a href="javascript:void(0)" th:href="@{/admin/home}"><span class="white-text">System admin</span></a></li>
+              <li sec:authorize="hasRole('ROLE_SYSTEM_ADMIN')" class="active"><a href="javascript:void(0)" th:href="@{/admin/home}"><span class="white-text">System admin</span></a></li>
 
             </ul>
 
