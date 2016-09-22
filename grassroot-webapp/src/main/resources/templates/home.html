@@ -17,19 +17,20 @@
 <body>
 
 <div layout:fragment="header">
-  <h1 th:text="#{web.home.banner}" class="text-center">Meet, vote act</h1>
-  <!-- Insert user's name -->
-  <h4 th:text="#{web.home.welcome(${currentUser.displayName})}" class="text-center">Welcome back to Grassroot, Luke</h4>
+  <div class="jumbotron narrow-vertical">
+    <h1 th:text="#{web.home.banner}" class="text-center">Meet, vote act</h1>
+    <h4 th:text="#{web.home.welcome(${currentUser.displayName})}" class="text-center">Welcome back to Grassroot, Luke</h4>
+  </div>
 </div>
 <div layout:fragment="overview"></div>
 
 <div layout:fragment="content">
 
   <div class="container-fluid">
-    <div class="row top-buffer">
+    <div class="row">
       <div class="col-md-6 col-md-offset-3">
         <form th:action="@{/group/search}" method="get" class="form-vertical">
-          <div class="input-group input-group-md">
+          <div class="input-group input-group-lg">
             <input type="text" name="term" class="form-control" id="searchTerm" />
             <span class="input-group-btn">
               <button type="submit" class="btn btn-primary">Search</button>
@@ -100,12 +101,14 @@
     <div class="row top-buffer">
       <div class="col-md-10 col-md-offset-1">
         <ul class="list-group">
-        <div class="list-group-item padding-sm">
-          <li class="list-group-item borderless"><h4>Upcoming events and actions:</h4></li>
-          <li th:each="task : ${upcomingTasks}" class="list-group-item borderless tight-vertical">
+        <div class="border-green padding-sm">
+          <li class="list-group-item borderless tight-vertical">
+            <h4><b>Upcoming events and actions:</b></h4>
+          </li>
+          <li th:each="task, iterStat : ${upcomingTasks}" class="list-group-item borderless tight-vertical">
             <div class="row">
               <!-- LHS: Description of task -->
-              <div class="col-md-8">
+              <div class="col-sm-8">
                   <h4><a href="#" th:href="'javascript:fetchTaskDescription(\'' + ${task.taskUid} + '\', \'' + ${task.type} + '\')'">
                     <strong th:text="${task.type}">Meeting</strong>: <span th:text="${task.title}">Title</span></a></h4>
                   <p class="list-group-text" th:text="#{web.home.__${task.type}__.description(${task.parentName},
@@ -113,7 +116,7 @@
               </div>
 
               <!-- RHS: Actions on task -->
-              <div class="col-md-4 pull-right text-right">
+              <div class="col-sm-4 button-md-align vertical-padding">
 
                 <div th:unless="${task.hasResponded}">
                   <div th:switch="${task.type}">
@@ -131,7 +134,7 @@
                       <a th:href="@{vote/answer(eventUid=${task.taskUid},answer=maybe)}" class="btn btn-default">Abstain</a>
                     </div>
                     <div th:case="TODO">
-                      <a th:href="@{todo/complete(logBookUid=${task.taskUid})}" class="btn btn-default">Mark complete</a>
+                      <a th:href="@{todo/complete(todoUid=${task.taskUid})}" class="btn btn-default">Mark complete</a>
                     </div>
                   </div>
                 </div>
@@ -159,6 +162,7 @@
 
               </div>
             </div>
+            <hr th:unless="${iterStat.last}" class="thin-separator" />
           </li>
         </div>
         </ul>
@@ -166,39 +170,38 @@
     </div>
   </div>
 
-  <!-- List of user's groups -->
+  <!-- List of user's groups (but nothing afterwards is showing ...) -->
 
   <div class="container" th:if="${not #lists.isEmpty(userGroups)}">
-      <div class="row top-buffer">
-        <div class="col-md-10 col-md-offset-1">
-          <ul class="list-group">
-            <li class="list-group-item">
-              <div class="row">
-                <div class="col-md-8" style="padding-top: 2px;"><p class="list-group-item-text"><b>Your groups</b></p></div>
-                <div class="col-md-4 pull-right text-right">
-                  <a th:href="@{/group/create}" role="button" class="btn btn-primary btn-sm">
-                    <span class="glyphicon glyphicon-plus" aria-hidden="true"></span> New group
-                  </a></div>
-                </div>
-            </li>
-            <li th:each="group,iterStat : ${userGroups}" class="list-group-item">
-              <a th:href="@{/group/view(groupUid=${group.Uid})}">
-                <span th:text="${group.getName('')}"></span></a>
+    <div class="row top-buffer">
+      <div class="col-md-10 col-md-offset-1">
+        <ul class="list-group">
+          <li class="list-group-item">
+            <div class="row">
+              <div class="col-sm-8">
+                <h4 class="list-group-item-text"><b>Your groups</b></h4>
+              </div>
+              <div class="col-sm-4 pull-right text-right" style="padding-top: 5px;">
+                <a th:href="@{/group/create}" role="button" class="btn btn-primary btn-md">
+                  <span class="glyphicon glyphicon-plus" aria-hidden="true"></span> New group</a>
+              </div>
+            </div>
+          </li>
+
+          <li th:each="group,iterStat : ${userGroups}" class="list-group-item narrow-vertical">
+            <a th:href="@{/group/view(groupUid=${group.Uid})}"><span class="h4" th:text="${group.getName('')}"></span></a>
               <span class="badge">
                 <span th:text="${group.getMemberships().size()}"></span> Members
               </span>
-              <small class="clearfix">
-                Est. <span th:text="${#temporals.format(group.getCreatedDateTimeAtSAST(),'d MMM yyyy')}">13 May 2011</span>
-              </small>
-            </li>
-          </ul>
-        </div>
+            <p>Est. <span th:text="${#temporals.format(group.getCreatedDateTimeAtSAST(),'d MMM yyyy')}">13 May 2011</span></p>
+          </li>
+        </ul>
       </div>
+    </div>
   </div>
 
   <!-- Skeleton of modal for displaying upcoming task (content filled by ajax method below) -->
-  <div th:if="${not #lists.isEmpty(upcomingTasks)}" class="modal fade" id="taskModal"
-       tabindex="-1" role="dialog" aria-labelledby="taskModalTitle">
+  <div th:if="${not #lists.isEmpty(upcomingTasks)}" class="modal fade" id="taskModal" tabindex="-1" role="dialog" aria-labelledby="taskModalTitle">
     <div class="modal-dialog" role="document">
       <div class="modal-content">
         <div class="modal-header">
@@ -211,7 +214,7 @@
             <span id="taskModalDescription"></span></p>
         </div>
         <div class="modal-footer">
-          <form id="taskModalNotRespondedForm" action="" method="get"> <!--toDo: switch to post -->
+          <form id="taskModalNotRespondedForm" action="" method="get">
             <input type="hidden" name="eventUid" id="taskUid" />
             <button type="close" data-dismiss="modal" class="btn btn-default btn-sm">Close</button>
             <a href="#" id="taskModalViewDetails" class="btn btn-default btn-sm">View details</a>
@@ -229,12 +232,12 @@
 
   <script th:inline="javascript">
 
-    /*<![CDATA[*/
-
     function fetchTaskDescription(taskUid, taskType) {
 
       var token = $("meta[name='_csrf']").attr("content");
       var header = $("meta[name='_csrf_header']").attr("content");
+
+      console.log("fetching task with type = " + taskType);
 
       var param = {};
       param["taskUid"] = taskUid;
@@ -260,6 +263,8 @@
     }
 
     function populateAndDisplayTaskModal(task) {
+
+      console.log("retrieved task, with description : " + JSON.stringify(task));
 
       var uid = task.taskUid;
       var type = task.type;
@@ -298,10 +303,10 @@
           "The action is assigned to " + task.memberCount + " members";
         summary.html("To-do for " + task.parentName + ", due by " + deadline + ". " + assigned + suffix);
         replyForm.attr("action", "todo/complete");
-        replyForm.find("#taskUid").attr("name", "logBookUid");
+        replyForm.find("#taskUid").attr("name", "todoUid");
         replyForm.find("#taskModalYesButton").text("Mark completed").toggle(!replied);
         replyForm.find("#taskModalNoButton").hide();
-        detailsButton.attr("href", "todo/details?logBookUid=" + uid).show();
+        detailsButton.attr("href", "todo/details?todoUid=" + uid).show();
       }
 
       modal.find("#taskModalTitle").html(type + ": " + task.title);
@@ -356,8 +361,6 @@
       modal.find('#approveLink').attr('href', approveHref);
       modal.find('#declineLink').attr('href', declineHref);
     });
-
-    /*]]>*/
 
 
   </script>

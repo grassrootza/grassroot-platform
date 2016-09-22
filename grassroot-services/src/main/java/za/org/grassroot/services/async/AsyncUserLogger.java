@@ -76,4 +76,6 @@ public interface AsyncUserLogger {
      * @return
      */
     boolean hasSkippedNamingGroup(String userUid, String groupUid);
+
+    boolean hasUsedJoinCodeRecently(String userUid);
 }

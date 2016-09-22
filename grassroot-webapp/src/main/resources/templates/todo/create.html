@@ -16,7 +16,7 @@
 </div>
 
 <div layout:fragment="overview">
-  <h5 class="text-center">Record a decision and to-do in the group logbook</h5>
+  <h5 class="text-center">Record a decision and to-do for the group</h5>
 </div>
 
 <div layout:fragment="content">
@@ -26,14 +26,14 @@
     <div class="row">
       <div class="col-md-6 col-md-offset-3">
 
-        <form th:object="${entry}" th:action="@{/todo/record}" method="post" class="form-vertical">
+        <form th:object="${actionTodo}" th:action="@{/todo/record}" method="post" class="form-vertical">
 
           <input type="hidden" th:field="*{parentEntityType}" />
 
           <div class="form-group">
             <label for="group" class="control-label">Group:</label>
-            <div th:unless="${groupSpecified}">
-              <select th:unless="${groupSpecified}" th:field="*{parentUid}" id="groupSelector" class="form-control">
+            <div th:unless="${parentSpecified}">
+              <select th:unless="${parentSpecified}" th:field="*{parentUid}" id="groupSelector" class="form-control">
                 <option th:each="group: ${possibleGroups}"
                         th:value="${group.Uid}"
                         th:text="${group.getName('')}"
@@ -41,9 +41,9 @@
               </select>
               <input type="hidden" th:value="${userUid}" id="userUid" />
             </div>
-            <div th:if="${groupSpecified}">
-              <input th:if="${groupSpecified}" class="form-control" readonly="true" th:placeholder="${group.groupName}" id="group" />
-              <input type="hidden" th:if="${groupSpecified}" th:field="*{parentUid}" th:value="${group.uid}" />
+            <div th:if="${parentSpecified}">
+              <input class="form-control" readonly="true" th:placeholder="${parent.name}" id="group" />
+              <input type="hidden" th:field="*{parentUid}" th:value="${parent.uid}" />
             </div>
           </div>
 
@@ -84,10 +84,10 @@
           <div class="form-group">
             <label class="control-label">Send a reminder:</label>
             <select th:field="*{reminderType}" class="form-control" id="reminderType">
-              <option th:if="${groupSpecified}" value="GROUP_CONFIGURED" selected="true">
-                Group default (<span th:text="#{web.meeting.reminder.group.__${group.reminderMinutes}__}">X</span> ahead)
+              <option th:if="${parentSpecified}" value="GROUP_CONFIGURED" selected="true">
+                Group default (<span th:text="#{web.meeting.reminder.group.__${parent.reminderMinutes}__}">X</span> ahead)
               </option>
-              <option th:unless="${groupSpecified}" value="GROUP_CONFIGURED" id="groupOption">
+              <option th:unless="${parentSpecified}" value="GROUP_CONFIGURED" id="groupOption">
                 Group default (<span id="groupReminderTime">X ahead</span>)
               </option>
               <option value="CUSTOM">Set custom</option>
@@ -105,10 +105,11 @@
               <input name="subGroups" type="checkbox" id="subgroups" />
               Include subgroups?
             </label>
+            <!-- todo : add a view traffic director to handle the links below for non-group parents -->
             <div class="btn-container pull-right">
-              <a th:if="${groupSpecified}"
-                 th:href="@{/group/view(groupUid=${group.Uid})}" role="button" class="btn btn-default horizontal-padding">Cancel</a>
-              <a th:if="${not groupSpecified}"
+              <a th:if="${parentSpecified}"
+                 th:href="@{/group/view(groupUid=${parent.uid})}" role="button" class="btn btn-default horizontal-padding">Cancel</a>
+              <a th:if="${not parentSpecified}"
                  th:href="@{/home}" role="button" class="btn btn-default">Cancel</a>
               <button type="submit" class="btn btn-primary horizontal-padding">Record</button>
             </div>
@@ -122,7 +123,7 @@
                   <h4 class="modal-title" id="memberModalLabel">Assign members to action</h4>
                 </div>
                 <div class="modal-body">
-                  <div th:if="${groupSpecified}" class="list-group checked-list-box">
+                  <div th:if="${parentSpecified}" class="list-group checked-list-box">
                     <li class="list-group-item checkbox"
                         th:each="member, iterStat: *{memberPicker.getListOfMembers()}">
                       <label>
@@ -132,7 +133,7 @@
                       </label>
                     </li>
                   </div>
-                  <div th:unless="${groupSpecified}" id="dynamicMemberPicker" class="list-group checked-list-box">
+                  <div th:unless="${parentSpecified}" id="dynamicMemberPicker" class="list-group checked-list-box">
                   </div>
                 </div>
                 <div class="modal-footer">

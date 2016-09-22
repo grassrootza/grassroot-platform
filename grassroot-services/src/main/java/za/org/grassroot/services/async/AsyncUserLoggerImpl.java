@@ -13,6 +13,7 @@ import za.org.grassroot.core.repository.UserLogRepository;
 import za.org.grassroot.services.util.CacheUtilService;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 
 import static za.org.grassroot.core.enums.UserInterfaceType.UNKNOWN;
@@ -120,6 +121,13 @@ public class AsyncUserLoggerImpl implements AsyncUserLogger {
     @Transactional(readOnly = true)
     public boolean hasSkippedNamingGroup(String userUid, String groupUid) {
         return userLogRepository.countByUserUidAndUserLogTypeAndDescription(userUid, UserLogType.USER_SKIPPED_NAME, groupUid) > 0;
+    }
+
+    @Override
+    public boolean hasUsedJoinCodeRecently(String userUid) {
+        Instant end = Instant.now();
+        Instant start = end.minus(5, ChronoUnit.MINUTES);
+        return userLogRepository.countByUserUidAndUserLogTypeAndCreationTimeBetween(userUid, UserLogType.USED_A_JOIN_CODE, start, end) > 0;
     }
 
 

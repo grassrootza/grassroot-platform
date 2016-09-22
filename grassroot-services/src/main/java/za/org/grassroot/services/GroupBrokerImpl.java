@@ -281,14 +281,18 @@ public class GroupBrokerImpl implements GroupBroker {
     public void addMemberViaJoinCode(String userUidToAdd, String groupUid, String tokenPassed) {
         User user = userRepository.findOneByUid(userUidToAdd);
         Group group = groupRepository.findOneByUid(groupUid);
+
         if (!tokenPassed.equals(group.getGroupTokenCode()) || Instant.now().isAfter(group.getTokenExpiryDateTime()))
             throw new InvalidTokenException("Invalid token: " + tokenPassed);
 
         logger.info("Adding a member via token code: group={}, user={}, code={}", group, user, tokenPassed);
         group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER);
-        GroupLog groupLog = new GroupLog(group, user, GroupLogType.GROUP_MEMBER_ADDED_VIA_JOIN_CODE, user.getId(),
-                                    "Member joined via join code: " + tokenPassed);
-        logActionLogsAfterCommit(Collections.singleton(groupLog));
+
+        Set<ActionLog> logs = new HashSet<>();
+        logs.add(new GroupLog(group, user, GroupLogType.GROUP_MEMBER_ADDED_VIA_JOIN_CODE, user.getId(),
+                                    "Member joined via join code: " + tokenPassed));
+        logs.add(new UserLog(userUidToAdd, UserLogType.USED_A_JOIN_CODE, groupUid, UNKNOWN));
+        logActionLogsAfterCommit(logs);
     }
 
     @Override

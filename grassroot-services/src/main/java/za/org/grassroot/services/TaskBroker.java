@@ -11,6 +11,10 @@ import java.util.List;
  */
 public interface TaskBroker {
 
+    // note: this is a highly inefficient method that will scan the repos to find the entity with the corresponding UID
+    // use it only when gains are significant and use relatively low. If the type is readily available, use the subsequent method.
+    TaskDTO load(String userUid, String taskUid);
+
     TaskDTO load(String userUid, String taskUid, TaskType type);
 
     List<TaskDTO> fetchUpcomingIncompleteGroupTasks(String userUid, String groupUid);

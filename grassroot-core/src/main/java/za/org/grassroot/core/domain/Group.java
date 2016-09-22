@@ -590,6 +590,17 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         return JpaEntityType.GROUP;
     }
 
+    @Override
+    public EventReminderType getReminderType() {
+        return EventReminderType.GROUP_CONFIGURED;
+    }
+
+    @Override
+    public Integer getTodoReminderMinutes() {
+        return reminderMinutes;
+    }
+
+    @Override
     public Set<Todo> getTodos() {
         if (todos == null) {
             todos = new HashSet<>();

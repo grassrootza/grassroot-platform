@@ -3,6 +3,7 @@ package za.org.grassroot.webapp.controller.webapp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -15,12 +16,16 @@ import za.org.grassroot.services.GroupBroker;
 import za.org.grassroot.services.GroupJoinRequestService;
 import za.org.grassroot.services.GroupLocationFilter;
 import za.org.grassroot.services.TaskBroker;
+import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.exception.RequestorAlreadyPartOfGroupException;
 import za.org.grassroot.webapp.controller.BaseController;
+import za.org.grassroot.webapp.model.web.PublicGroupWrapper;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Created by luke on 2016/09/06.
@@ -30,6 +35,10 @@ import java.util.Optional;
 public class GroupSearchController extends BaseController {
 
 	private static final Logger log = LoggerFactory.getLogger(GroupSearchController.class);
+	private static final Pattern tokenPattern = Pattern.compile("[^a-zA-Z\\s]+");
+
+	@Value("${grassroot.ussd.dialcode:*134*1994*}")
+	private String ussdDialCode;
 
 	@Autowired
 	private GroupBroker groupBroker;
@@ -40,38 +49,46 @@ public class GroupSearchController extends BaseController {
 	@Autowired
 	private GroupJoinRequestService groupJoinRequestService;
 
-	// todo: prevent a Dos on this / token cycling
+	@Autowired
+	private AsyncUserLogger userLogger;
+
 
 	@RequestMapping(value = "/search")
 	public String searchForGroup(Model model, @RequestParam String term, HttpServletRequest request) {
 
+		boolean resultFound = false;
 		if (term.isEmpty()) {
 			addMessage(model, BaseController.MessageType.ERROR, "search.error.empty", request);
-			model.addAttribute("externalGroupFound", false);
-			return "group/results";
 		} else {
-			String tokenSearch = term.contains("*134*1994*") ?
-					term.substring("*134*1994*".length(), term.length() - 1) : term;
-			log.info("searching for group ... token to use ... " + tokenSearch);
-			Optional<Group> groupByToken = groupBroker.findGroupFromJoinCode(tokenSearch);
-			if (groupByToken.isPresent()) {
-				model.addAttribute("group", groupByToken.get());
-				model.addAttribute("externalGroupsFound", true);
+			boolean onlyDigits = tokenPattern.matcher(term.trim()).find();
+			if (onlyDigits && !userLogger.hasUsedJoinCodeRecently(getUserProfile().getUid())) {
+				String tokenSearch = term.contains(ussdDialCode) ? term.substring(ussdDialCode.length(), term.length() - 1) : term;
+				log.info("searching for group ... token to use ... " + tokenSearch);
+				Optional<Group> groupByToken = groupBroker.findGroupFromJoinCode(tokenSearch);
+				if (groupByToken.isPresent()) {
+					model.addAttribute("group", groupByToken.get());
+					resultFound = true;
+				}
 			} else {
 				// just for testing since no UI support yet exists...
 				// GroupLocationFilter locationFilter = new GroupLocationFilter(new GeoLocation(45.567641, 18.701211), 30000, true);
 				GroupLocationFilter locationFilter = null;
-				List<Group> publicGroups = groupBroker.findPublicGroups(getUserProfile().getUid(), term, locationFilter, false);
+				List<PublicGroupWrapper> publicGroups = groupBroker.findPublicGroups(getUserProfile().getUid(), term, locationFilter, false)
+						.stream().map(g -> new PublicGroupWrapper(g, getMessage("search.group.desc"))).collect(Collectors.toList());
+
 				model.addAttribute("groupCandidates", publicGroups);
-				model.addAttribute("externalGroupsFound", !publicGroups.isEmpty());
+
+				final String userUid = getUserProfile().getUid();
+				List<Group> memberGroups = groupBroker.searchUsersGroups(userUid, term);
+				List<TaskDTO> memberTasks = taskBroker.searchForTasks(userUid, term);
+				model.addAttribute("foundGroups", memberGroups);
+				model.addAttribute("foundTasks", memberTasks);
+
+				resultFound = !publicGroups.isEmpty() || !memberGroups.isEmpty() || !memberTasks.isEmpty();
 			}
-			final String userUid = getUserProfile().getUid();
-			List<Group> memberGroups = groupBroker.searchUsersGroups(userUid, term);
-			List<TaskDTO> memberTasks = taskBroker.searchForTasks(userUid, term);
-			model.addAttribute("foundGroups", memberGroups);
-			model.addAttribute("foundTasks", memberTasks);
 		}
 
+		model.addAttribute("resultFound", resultFound);
 		return "group/results";
 	}
 
@@ -79,9 +96,7 @@ public class GroupSearchController extends BaseController {
 	public String requestToJoinGroup(Model model, @RequestParam(value="uid") String groupToJoinUid,
 	                                 @RequestParam(value="description", required = false) String description,
 	                                 HttpServletRequest request, RedirectAttributes attributes) {
-
-		// dealing with Jquery weirdness that has crept in on Chrome ...
-
+		// in case modal goes weird on old / new / etc browsers (because CSS/JS)
 		if ("error".equals(groupToJoinUid)) {
 			addMessage(attributes, MessageType.ERROR, "group.join.request.error", request);
 			return "redirect:/home";

@@ -1,6 +1,6 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      layout:decorator="layout">
+      data-layout-decorate="layout">
 <head>
     <title>Grassroot Group Search</title>
 </head>
@@ -14,20 +14,12 @@
 
 <div layout:fragment="content">
 
-  <!-- turn into 'no results found' -->
-  <div th:unless="${externalGroupsFound}">
-    <div class="row">
-      <div class="col-md-4 col-md-offset-4">
-        <p>Sorry, we couldn't find any public groups matching that name or join code.</p>
-      </div>
-    </div>
-  </div>
-
+  <!-- todo : add options row -->
   <div class="container-fluid">
     <div class="row">
       <div class="col-md-4 col-md-offset-4">
         <form th:action="@{search}" method="get" class="form-vertical">
-          <div class="input-group input-group-md">
+          <div class="input-group input-group-lg">
             <input type="text" name="term" class="form-control" id="searchTerm" placeholder="Search again"/>
             <span class="input-group-btn">
               <button type="submit" class="btn btn-primary"><span class="glyphicon glyphicon-search" aria-hidden="true"></span></button>
@@ -38,14 +30,23 @@
     </div>
   </div>
 
+  <div class="container-fluid" th:unless="${resultFound}">
+    <div class="row top-buffer">
+      <div class="col-md-4 col-md-offset-4 border-green">
+        <h4><b>Sorry, there were no results found for your search.</b></h4>
+      </div>
+    </div>
+  </div>
+
+
   <!-- user's own groups and events search -->
   <div class="container-fluid" th:if="${not #lists.isEmpty(foundGroups)}">
     <div class="row top-buffer">
-      <div class="col-md-6 col-md-offset-3">
-        <div class="list-group-item tight-vertical">
-          <h4>Your groups:</h4>
+      <div class="col-md-6 col-md-offset-3 border-green">
+        <div class="list-group-item borderless tight-vertical">
+          <h4><b>Your groups:</b></h4>
         </div>
-        <div class="list-group-item" th:each="group,iterStat : ${foundGroups}">
+        <div th:each="group,iterStat : ${foundGroups}" class="list-group-item borderless">
           <h4 class="list-group-item-heading">
             <a th:href="@{/group/view(groupUid=${group.uid})}"><span th:text="${group.getName('')}" >Group name</span></a>
           </h4>
@@ -53,42 +54,45 @@
             <!-- improve description -->
             <p class="list-group-item-text">Est. <span th:text="${#temporals.format(group.getCreatedDateTimeAtSAST(),'dd MMMM yyyy')}">13 May 2011</span></p>
           </div>
+          <hr th:unless="${iterStat.last}" class="thin-separator" />
         </div>
       </div>
-      <div class="list-group-separator"></div>
     </div>
   </div>
 
   <!-- public groups search -->
-  <div class="container-fluid" th:if="${externalGroupsFound}">
+  <div class="container-fluid" th:if="${not #lists.isEmpty(groupCandidates)} or ${group != null}">
 
-    <div class="row top-buffer" th:if="${groupCandidates != null}">
-      <div class="col-md-6 col-md-offset-3">
-        <h4><span th:text="${groupCandidates.size()}">X</span> other <span th:text="${groupCandidates.size() > 1}? 'groups' : 'group'">groups</span> found</h4>
-        <div class="list-group-item" th:each="group,iterStat : ${groupCandidates}">
+    <div class="row top-buffer" th:unless="${#lists.isEmpty(groupCandidates)}">
+      <div class="col-md-6 col-md-offset-3 border-green" style="padding-bottom: 7px;">
+        <div class="list-group-item borderless tight-vertical">
+          <h4><b><span th:text="${groupCandidates.size()}">X</span> other <span th:text="${groupCandidates.size() > 1}? 'groups' : 'group'">groups</span> found</b></h4>
+        </div>
+        <div th:each="group,iterStat : ${groupCandidates}" class="list-group-item borderless narrow-vertical" >
           <div class="row">
-            <div class="col-md-9">
-              <h4 class="list-group-item-heading"><span th:text="${group.getName('')}" class="text-primary">Group name</span></h4>
-              <p class="list-group-item-text">Est. <span th:text="${#temporals.format(group.getCreatedDateTimeAtSAST(),'dd MMMM yyyy')}">13 May 2011</span></p>
+            <div class="col-xs-9">
+              <h4 class="list-group-item-heading"><span th:text="${group.groupName}">Group name</span></h4>
+              <p class="list-group-item-text"><span th:text="${group.groupDescription}">13 May 2011</span></p>
             </div>
-            <div class="col-md-3 text-right">
-              <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#joinModal" th:attr="data-uid=${group.uid}">
+            <div class="col-xs-3 button-md-align">
+              <button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#joinModal" th:attr="data-uid=${group.groupUid}">
                 Ask to join</button>
             </div>
           </div>
+          <hr th:unless="${iterStat.last}" class="thin-separator" style="margin-top: 7px;" />
         </div>
       </div>
     </div>
 
     <div class="row top-buffer" th:if="${group != null}">
-      <div class="col-md-6 col-md-offset-3">
-        <p>Found! You entered the join code for "<span th:text="${group.groupName}">name</span>", created by
-          <span th:text="${group.createdByUser.nameToDisplay()}">person</span>, with <span th:text="${group.memberships.size()}">X</span> members.</p>
+      <div class="col-md-6 col-md-offset-3 vertical-padding">
+        <h4>Found! You entered the join code for "<span th:text="${group.groupName}">name</span>", created by
+          <span th:text="${group.createdByUser.nameToDisplay()}">person</span>, with <span th:text="${group.memberships.size()}">X</span> members.</h4>
         <form th:action="@{join/token}" method="post">
           <input type="hidden" name="groupUid" th:value="${group.uid}" />
           <input type="hidden" name="token" th:value="${group.groupTokenCode}" />
-          <div class="form-group text-center">
-            <button type="submit" class="btn btn-default btn-block">Join this group</button>
+          <div class="form-group text-center top-buffer">
+            <button type="submit" class="btn btn-primary btn-lg btn-block">Join this group</button>
           </div>
         </form>
       </div>
@@ -98,18 +102,21 @@
 
   <div class="container-fluid" th:if="${not #lists.isEmpty(foundTasks)}">
       <div class="row top-buffer">
-        <div class="col-md-6 col-md-offset-3">
-          <h4>Your meetings, votes and actions matching the search:</h4>
+        <div class="col-md-6 col-md-offset-3 border-green">
+          <div class="list-group-item tight-vertical borderless">
+            <h4><b>Your meetings, votes and actions matching the search:</b></h4>
+          </div>
           <div class="list-group">
-            <div th:each="task,iterStat : ${foundTasks}" class="list-group-item tight-vertical">
+            <div th:each="task,iterStat : ${foundTasks}" class="list-group-item tight-vertical borderless">
               <div class="list-group-item-heading">
                 <h4>
-                  <a th:href="@{/task/view(eventUid=${task.taskUid})}"><strong th:text="${task.type}">Meeting</strong>: <span th:text="${task.title}">Title</span></a>
+                  <a th:href="@{/task/view(taskUid=${task.taskUid})}"><strong th:text="${task.type}">Meeting</strong>: <span th:text="${task.title}">Title</span></a>
                 </h4>
                 <div class="least-content">
                   <span th:text="#{web.home.__${task.type}__.description(${task.parentName}, ${#temporals.format(task.getDeadlineDateTime(),'h:mm a, dd MMMM')})}">Description</span>
                 </div>
               </div>
+              <hr th:unless="${iterStat.last}" class="thin-separator" />
             </div>
           </div>
         </div>
