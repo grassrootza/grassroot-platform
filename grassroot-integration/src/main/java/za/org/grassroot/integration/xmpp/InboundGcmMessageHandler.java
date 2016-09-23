@@ -185,20 +185,23 @@ public class InboundGcmMessageHandler {
                     AndroidClickActionType.CHAT_MESSAGE.name(), data);
         } else {
             String[] tokens = MessageUtils.tokenize(String.valueOf(input.getData().get("message")));
+            if (tokens.length < 2) {
+                data = MessageUtils.generateInvalidCommandResponseData(input, group);
+            } else {
                 try {
                     tokens[1] = learningService.parse(tokens[1]).toString();
                     data = MessageUtils.generateCommandResponseData(input, group, tokens);
                 } catch (SeloParseDateTimeFailure e) {
-                    data = MessageUtils.generateInvalidCommandResponseData(input,group);
+                    data = MessageUtils.generateInvalidCommandResponseData(input, group);
                 }
-
-            gcmMessage = GcmXmppMessageCodec.encode(input.getFrom(),String.valueOf(data.get("messageId")),
-                    null, null, null,
-                    AndroidClickActionType.CHAT_MESSAGE.name(), data);
+            }
+                gcmMessage = GcmXmppMessageCodec.encode(input.getFrom(), String.valueOf(data.get("messageId")),
+                        null, null, null,
+                        AndroidClickActionType.CHAT_MESSAGE.name(), data);
+            }
+            return gcmMessage;
         }
-        return gcmMessage;
+
     }
 
 
-
-}

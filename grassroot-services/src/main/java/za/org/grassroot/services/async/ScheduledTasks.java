@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.integration.exception.MessengerSettingNotFoundException;
+import za.org.grassroot.integration.services.MessageSendingService;
 import za.org.grassroot.integration.services.MessengerSettingsService;
 import za.org.grassroot.services.EventBroker;
 import za.org.grassroot.services.GroupBroker;
@@ -74,6 +75,9 @@ public class ScheduledTasks {
 
     @Autowired
     private SafetyEventRepository safetyEventRepository;
+
+    @Autowired
+    private MessageSendingService messageSendingService;
 
     @Autowired
     private Environment environment;
@@ -177,7 +181,6 @@ public class ScheduledTasks {
                 messengerSettingsService.updateActivityStatus(userUid,groupUid,true,false);
             } catch (MessengerSettingNotFoundException e) {
                 logger.error("Error while trying unmute user with " + userUid);
-                //unlikely to happen
             }
         }
     }
@@ -202,4 +205,10 @@ public class ScheduledTasks {
     @Scheduled(cron = "0 0 15 * * *") // runs at 3pm (= 5pm SAST) every day
     public void sendGroupJoinNotifications() { groupBroker.notifyOrganizersOfJoinCodeUse(Instant.now().minus(1, ChronoUnit.DAYS),
                                                                                          Instant.now());}
+    @Scheduled(fixedRate = 300000)
+    public void gcmKeepAlive(){
+        messageSendingService.sendPollingMessage();
+    }
+
+
 }

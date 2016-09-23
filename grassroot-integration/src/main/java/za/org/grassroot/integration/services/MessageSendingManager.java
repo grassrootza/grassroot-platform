@@ -41,7 +41,7 @@ public class MessageSendingManager implements MessageSendingService {
 
     @Override
     public void sendPollingMessage(){
-      //  requestChannel.send(MessageBuilder.withPayload("polling").setHeader("route", "ANDROID_APP").build());
+       requestChannel.send(MessageBuilder.withPayload("polling").setHeader("route", "ANDROID_APP").build());
 
     }
 
