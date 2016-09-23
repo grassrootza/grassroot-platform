@@ -62,6 +62,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
         ReflectionTestUtils.setField(ussdHomeController, "safetyCode", "911");
         ReflectionTestUtils.setField(ussdHomeController, "sendMeLink", "123");
         ReflectionTestUtils.setField(ussdHomeController, "hashPosition", 9);
+        ReflectionTestUtils.setField(ussdHomeController, "promotionSuffix", "44");
 
         /* We use these quite often */
         testUserZu.setLanguageCode("zu");

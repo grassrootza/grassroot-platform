@@ -27,7 +27,6 @@ import za.org.grassroot.webapp.model.web.TodoWrapper;
 import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.util.Collections;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -153,15 +152,19 @@ public class TodoController extends BaseController {
     @RequestMapping(value = "view")
     public String viewGroupActions(Model model, @RequestParam String groupUid) {
 
-        log.info("Okay, pulling up action records ... primarily for the currently assigned group");
-
+        User user = userManagementService.load(getUserProfile().getUid());
         Group group = groupBroker.load(groupUid);
-        model.addAttribute("group", group);
-        model.addAttribute("incompleteEntries", todoBroker.fetchTodosForGroupByStatus(group.getUid(), false, TodoStatus.INCOMPLETE));
 
-        List<Todo> completedEntries = todoBroker.fetchTodosForGroupByStatus(group.getUid(), false, TodoStatus.COMPLETE);
-        model.addAttribute("completedEntries", completedEntries);
-        log.info("Got back this many complete entries ... " + completedEntries.size());
+        permissionBroker.validateGroupPermission(user, group, null);
+
+        model.addAttribute("user", user);
+        model.addAttribute("group", group);
+        model.addAttribute("canCallMeeting", permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING));
+        model.addAttribute("canCallVote", permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE));
+        model.addAttribute("canRecordAction", permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY));
+
+        model.addAttribute("incompleteEntries", todoBroker.fetchTodosForGroupByStatus(group.getUid(), false, TodoStatus.INCOMPLETE));
+        model.addAttribute("completedEntries", todoBroker.fetchTodosForGroupByStatus(group.getUid(), false, TodoStatus.COMPLETE));
 
         return "todo/view";
     }
