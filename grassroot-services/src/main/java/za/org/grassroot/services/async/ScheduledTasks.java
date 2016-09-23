@@ -5,16 +5,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
-import org.springframework.messaging.Message;
-import org.springframework.messaging.MessageChannel;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.repository.*;
-import za.org.grassroot.core.util.UIDGenerator;
 import za.org.grassroot.integration.exception.MessengerSettingNotFoundException;
 import za.org.grassroot.integration.services.MessengerSettingsService;
-import za.org.grassroot.integration.xmpp.GcmXmppMessageCodec;
 import za.org.grassroot.services.EventBroker;
 import za.org.grassroot.services.GroupBroker;
 import za.org.grassroot.services.SafetyEventBroker;
@@ -81,9 +77,6 @@ public class ScheduledTasks {
 
     @Autowired
     private Environment environment;
-
-    @Autowired
-    private MessageChannel gcmXmppOutboundChannel;
 
     @Scheduled(fixedRate = 300000) //runs every 5 minutes
     public void sendReminders() {
@@ -174,7 +167,7 @@ public class ScheduledTasks {
         }
     }
 
-    @Scheduled(fixedDelay = 300000)
+    @Scheduled(fixedRate= 300000)
     public void reactivateMutedUsers() throws Exception {
         List<MessengerSettings> messengerSettingses = messengerSettingsService.loadMutedUsersMessengerSettings();
         for(MessengerSettings messengerSetting: messengerSettingses){
@@ -209,10 +202,4 @@ public class ScheduledTasks {
     @Scheduled(cron = "0 0 15 * * *") // runs at 3pm (= 5pm SAST) every day
     public void sendGroupJoinNotifications() { groupBroker.notifyOrganizersOfJoinCodeUse(Instant.now().minus(1, ChronoUnit.DAYS),
                                                                                          Instant.now());}
-
-    @Scheduled(fixedRate = 300000)
-    public void pollGcm(){
-        org.springframework.messaging.Message<org.jivesoftware.smack.packet.Message> message = GcmXmppMessageCodec.encode(String.valueOf(100), UIDGenerator.generateId(),null);
-        gcmXmppOutboundChannel.send(message);
-    }
 }

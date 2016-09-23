@@ -10,7 +10,6 @@ import org.springframework.integration.config.EnableIntegration;
 import org.springframework.integration.scheduling.PollerMetadata;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.scheduling.support.PeriodicTrigger;
-import org.springframework.test.context.BootstrapWith;
 
 /**
  * Created by paballo on 2016/04/01.
@@ -49,8 +48,6 @@ public class InfrastructureConfiguration {
 
     @Bean
     public MessageChannel systemMessageChannel(){return new DirectChannel();}
-
-
 
 
 

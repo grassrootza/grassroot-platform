@@ -10,4 +10,6 @@ public interface MessageSendingService {
 	void sendMessage(Notification notification);
 
 	void sendMessage(String destination, Notification notification);
+
+    void sendPollingMessage();
 }

@@ -191,7 +191,7 @@
       $('#pickedMemberCount').hide();
       $('#wholeGroup').click(function() {
         $('#pickedMemberCount').hide();
-      });
+      })
 
       $('#memberModal').on('hidden.bs.modal', function() {
         var membersSelected = $('#memberModal').find('input[type="checkbox"]:checked').length;
@@ -264,7 +264,8 @@
       var memberList = returnedObject.data.listOfMembers;
       for (var i = 0; i < memberList.length; i++) {
         $("#dynamicMemberPicker").append(constructItem(memberList[i], i));
-      }
+      };
+
       function constructItem(member, index) {
         // this is a bit of a hack to engineer the list to look like Thymeleaf when it creates an entity
         var listFieldName = "memberPicker.listOfMembers";

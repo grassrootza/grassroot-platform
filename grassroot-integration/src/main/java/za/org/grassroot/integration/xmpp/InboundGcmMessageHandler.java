@@ -14,7 +14,6 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.PhoneNumberUtil;
-import za.org.grassroot.core.util.UIDGenerator;
 import za.org.grassroot.integration.domain.AndroidClickActionType;
 import za.org.grassroot.integration.domain.GcmUpstreamMessage;
 import za.org.grassroot.integration.domain.SeloParseDateTimeFailure;
@@ -22,6 +21,7 @@ import za.org.grassroot.integration.exception.MessengerSettingNotFoundException;
 import za.org.grassroot.integration.services.*;
 import za.org.grassroot.integration.utils.MessageUtils;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -155,7 +155,7 @@ public class InboundGcmMessageHandler {
 
     }
 
-    private void handleNonServiceMessage(GcmUpstreamMessage input) {
+    public void handleNonServiceMessage(GcmUpstreamMessage input) {
         String phoneNumber = (String) input.getData().get("phoneNumber");
         String groupUid = (String) input.getData().get("groupUid");
         User user = userRepository.findByPhoneNumber(phoneNumber);
@@ -174,7 +174,7 @@ public class InboundGcmMessageHandler {
 
     }
 
-    private org.springframework.messaging.Message<Message> generateMessage(User user, GcmUpstreamMessage input, Group group) {
+    public org.springframework.messaging.Message<Message> generateMessage(User user, GcmUpstreamMessage input, Group group) {
         org.springframework.messaging.Message<Message> gcmMessage;
         Map<String, Object> data;
         if (!MessageUtils.isCommand((input))) {
@@ -198,5 +198,7 @@ public class InboundGcmMessageHandler {
         }
         return gcmMessage;
     }
+
+
 
 }
