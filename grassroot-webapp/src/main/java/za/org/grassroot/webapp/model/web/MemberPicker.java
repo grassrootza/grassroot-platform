@@ -1,11 +1,13 @@
 package za.org.grassroot.webapp.model.web;
 
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.Task;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.UidIdentifiable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -18,21 +20,31 @@ public class MemberPicker {
     // creating this as a list so we can sort it sensibly later
     private List<AssignmentWrapper> listOfMembers;
 
-    public MemberPicker() {
-        listOfMembers = new ArrayList<>();
+    public static MemberPicker create(UidIdentifiable parent, JpaEntityType type, boolean selectedByDefault) {
+        Objects.requireNonNull(type);
+        if (type.equals(JpaEntityType.GROUP)) {
+            return new MemberPicker((Group) parent, selectedByDefault);
+        } else if (type.equals(JpaEntityType.MEETING) || type.equals(JpaEntityType.VOTE) || type.equals(JpaEntityType.TODO)) {
+            return new MemberPicker((Task) parent, selectedByDefault);
+        } else {
+            throw new IllegalArgumentException("Unsupported entity type passed as parent");
+        }
     }
+
+    public MemberPicker() {
+        // needed for entity binding
+    }
+
 
     public MemberPicker(Task<?> task, boolean selectedByDefault) {
         listOfMembers = new ArrayList<>();
-        for (User user : task.getAssignedMembers()) {
-            listOfMembers.add(new AssignmentWrapper(user, selectedByDefault));
-        }
+        task.getAssignedMembers().forEach(m -> listOfMembers.add(new AssignmentWrapper(m, selectedByDefault)));
     }
 
     public MemberPicker(Group group, boolean selectedByDefault) {
         listOfMembers = new ArrayList<>();
-        for (User user : group.getMembers()) {
-            listOfMembers.add(new AssignmentWrapper(user, selectedByDefault));
+        if (group != null) {
+            group.getMembers().forEach(m -> listOfMembers.add(new AssignmentWrapper(m, selectedByDefault)));
         }
     }
 
@@ -45,7 +57,10 @@ public class MemberPicker {
     }
 
     public Set<String> getSelectedUids() {
-        return listOfMembers.stream().filter(m -> m.isSelected()).map(m -> m.getUserUid()).collect(Collectors.toSet());
+        return listOfMembers.stream()
+                .filter(AssignmentWrapper::isSelected)
+                .map(AssignmentWrapper::getUserUid)
+                .collect(Collectors.toSet());
     }
 
     @Override

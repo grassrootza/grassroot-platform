@@ -21,6 +21,7 @@ public enum UserLogType {
     JOIN_REQUEST_APPROVED("user was approved to join a group"),
     JOIN_REQUEST_DENIED("user was denied joining a group"),
     JOINED_SAFETY_GROUP("user added to safety group"),
+    USED_A_JOIN_CODE("user joined a group via a join code"),
     ADDED_ADDRESS("user added address"),
     CHANGED_ADDRESS("user changed address"),
     REMOVED_ADDRESS("user removed addres"),

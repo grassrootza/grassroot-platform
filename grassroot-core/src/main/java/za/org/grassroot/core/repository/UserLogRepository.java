@@ -29,6 +29,8 @@ public interface UserLogRepository extends JpaRepository<UserLog, Long> {
     @Transactional(readOnly = true)
     int countByUserUidAndUserLogTypeAndDescription(String userUid, UserLogType userLogType, String description);
 
+    int countByUserUidAndUserLogTypeAndCreationTimeBetween(String userUid, UserLogType userLogType, Instant start, Instant end);
+
     /*
    Some counting and retrieving functions for session analyzing (doing a count on the distinct isn't reliable, so just count the list)
 	*/

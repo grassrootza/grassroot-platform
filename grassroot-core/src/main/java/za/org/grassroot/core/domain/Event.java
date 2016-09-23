@@ -150,6 +150,12 @@ public abstract class Event<P extends UidIdentifiable> extends AbstractEventEnti
 		this.assignedMembers = assignedMembersCollection;
 	}
 
+	@Override
+	public Integer getTodoReminderMinutes() {
+		return EventReminderType.CUSTOM.equals(reminderType) ? customReminderMinutes : null;
+	}
+
+	@Override
 	public Set<Todo> getTodos() {
 		if (todos == null) {
 			todos = new HashSet<>();

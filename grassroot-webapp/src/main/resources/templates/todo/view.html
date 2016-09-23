@@ -6,61 +6,81 @@
 </head>
 <body>
 
-<div layout:fragment="header">
-  <h2><mark><span th:text="${group.groupName}">Group name</span></mark>: logbook of actions recorded</h2>
+<div layout:fragment="header" class="jumbotron narrow-vertical">
+  <h2 class="text-center"><span th:text="${group.name}"><b>Group name</b></span></h2>
+  <h3 class="text-center">Record of actions</h3>
 </div>
-<div layout:fragment="overview">
-  <a th:href="@{create(groupId=${group.id})}"><button class="btn-primary">Record a new entry</button></a>
-</div>
+
+<div layout:fragment="overview"></div>
 
 <div layout:fragment="content">
   <div layout:fragment="messages"></div>
 
-  <div class="well" th:unless="${#lists.isEmpty(incompleteEntries)}">
-    <div class="row list-group">
-      <h3>Uncompleted actions:</h3>
-    </div>
-    <div class="row list-group-item">
-      <table class="table table-striped">
-        <thead>
-          <th>Date entered</th>
-          <th>Description</th>
-          <th>Due date</th>
-          <th><!-- todo: assigned member --></th>
-        </thead>
-        <tbody>
-        <tr th:each="entry : ${incompleteEntries}">
-          <td><span th:text="${#dates.format(entry.createdDateTime, 'dd MMM yyyy')}">Date time</span></td>
-          <td><a th:href="@{details(logBookUid=${entry.uid})}"><span th:text="${entry.message}">Description</span></a></td>
-          <td><span th:text="${#dates.format(entry.actionByDate, 'dd MMM yyyy, HH:mm')}">Due date</span></td>
-          <td><a th:href="@{complete(logBookUid=${entry.uid})}"><button class="default">Mark complete</button></a></td>
-        </tr>
-        </tbody>
-      </table>
+  <div class="row">
+    <div class="col-md-12 text-center">
+      <a th:if="${canCallMeeting}" href="" th:href="@{/meeting/create(groupUid=${group.uid})}">
+        <button class="btn btn-lg btn-default">Call a meeting</button></a>
+      <a th:if="${canCallVote}" href="" th:href="@{/vote/create(groupUid=${group.uid})}">
+        <button class="btn btn-lg btn-default">Take a vote</button></a>
+      <a th:if="${canRecordAction}" href="" th:href="@{/todo/create(parentUid=${group.uid})}">
+        <button class="btn btn-lg btn-default">Record action</button></a>
+      <a th:href="@{/group/view(groupUid=${group.uid})}"><button class="btn btn-lg btn-default">
+        Back to group</button></a>
     </div>
   </div>
 
-  <div class="well" th:unless="${#lists.isEmpty(completedEntries)}">
-    <div class="row list-group">
-      <h3>Completed actions:</h3>
+  <div class="row" th:unless="${#lists.isEmpty(incompleteEntries)}">
+    <div class="col-md-6 col-md-offset-3">
+      <div class="row">
+        <h3>Incomplete actions:</h3>
+      </div>
+      <div class="row list-group-item">
+        <table class="table table-striped">
+          <thead>
+            <th>Date entered</th>
+            <th>Description</th>
+            <th>Due date</th>
+            <th><!-- todo: assigned member(s) --></th>
+          </thead>
+          <tbody>
+          <tr th:each="entry : ${incompleteEntries}">
+            <td><span th:text="${#dates.format(entry.createdDateTime, 'dd MMM yyyy')}">Date time</span></td>
+            <td><a th:href="@{details(todoUid=${entry.uid})}"><span th:text="${entry.message}">Description</span></a></td>
+            <td><span th:text="${#dates.format(entry.actionByDate, 'dd MMM yyyy, HH:mm')}">Due date</span></td>
+            <td>
+              <a th:unless="${entry.hasUserResponded(user)}" th:href="@{complete(todoUid=${entry.uid})}"><button class="btn btn-default">Mark complete</button></a>
+              <span th:if="${entry.hasUserResponded(user)}" class="badge">You marked it complete</span>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
-    <div class="row list-group-item">
-      <table class="table table-striped">
-        <thead>
-          <th>Date entered</th>
-          <th>Description</th>
-          <th>Date completed</th>
-          <th><!-- todo: completed member --></th>
-        </thead>
-        <tbody>
-        <tr th:each="entry: ${completedEntries}">
-          <td><span th:text="${#dates.format(entry.createdDateTime, 'dd MMM yyyy')}">Date time created</span></td>
-          <td><a th:href="@{details(logBookUid=${entry.uid})}"><span th:text="${entry.message}">Description</span></a></td>
-          <td><span th:text="${#dates.format(entry.completedDate, 'dd MMM yyyy')}">Completed date</span></td>
-          <td></td>
-        </tr>
-        </tbody>
-      </table>
+  </div>
+
+  <div class="row" th:unless="${#lists.isEmpty(completedEntries)}">
+    <div class="col-md-6 col-md-offset-3">
+      <div class="row">
+        <h3>Completed actions:</h3>
+      </div>
+      <div class="row list-group-item">
+        <table class="table table-striped">
+          <thead>
+            <th>Date entered</th>
+            <th>Description</th>
+            <th>Date completed</th>
+            <th></th>
+          </thead>
+          <tbody>
+          <tr th:each="entry: ${completedEntries}">
+            <td><span th:text="${#dates.format(entry.createdDateTime, 'dd MMM yyyy')}">Date time created</span></td>
+            <td><a th:href="@{details(logBookUid=${entry.uid})}"><span th:text="${entry.message}">Description</span></a></td>
+            <td><span th:text="${#dates.format(entry.completedDate, 'dd MMM yyyy')}">Completed date</span></td>
+            <td></td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 

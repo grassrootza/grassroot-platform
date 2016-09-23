@@ -1,6 +1,6 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      layout:decorator="layout">
+      data-layout-decorate="layout">
 <head>
   <title>Grassroot - View Group</title>
   <script th:src="@{/js/grassroot-methods.js}"></script>
@@ -103,11 +103,11 @@
 
 <div layout:fragment="content">
 
-  <div> <!-- todo : move this up in layout, and hence throughout -->
+  <div>
     <div layout:fragment="messages"></div>
   </div>
 
-  <!-- toDo : fix the logic here (leave unsubscribe if can't alter -->
+  <!-- toDo : fix the logic here (remove unsubscribe if organizer) -->
   <div class="row">
     <div th:if="${canAlter}" class="row">
       <div class="col-md-2 col-md-offset-5 text-center">
@@ -299,7 +299,7 @@
           <button class="btn btn-default">Call a meeting</button></a>
         <a th:if="${canCallVote}" href="" th:href="@{/vote/create(groupUid=${group.uid})}">
           <button class="btn btn-default">Take a vote</button></a>
-        <a th:if="${canRecordAction}" href="" th:href="@{/todo/create(groupUid=${group.uid})}">
+        <a th:if="${canRecordAction}" href="" th:href="@{/todo/create(parentUid=${group.uid})}">
           <button class="btn btn-default">Record action</button></a>
         <a href="" th:href="@{/todo/view(groupUid=${group.uid})}">
           <button class="btn btn-default">View to-dos</button></a>
@@ -346,10 +346,10 @@
             </div>
 
             <div th:case="TODO" th:with="deadline=${#temporals.format(task.deadlineDateTime,'EEE d MMM')}">
-              <a href="" th:href="@{/todo/details(logBookUid=${task.taskUid})}"><b>TODO:</b>
+              <a href="" th:href="@{/todo/details(todoUid=${task.taskUid})}"><b>TODO:</b>
                 <span th:text="${task.title}"></span> (due <span th:text="${#temporals.format(task.deadlineDateTime, 'd MMM')}">11 Sep 2015</span>)</a>
               <div th:unless="${task.hasResponded}" class="pull-right">
-                <a th:href="@{/todo/complete(logBookUid=${task.taskUid})}" class="btn btn-default btn-xs">Mark as completed</a>
+                <a th:href="@{/todo/complete(todoUid=${task.taskUid})}" class="btn btn-default btn-xs">Mark as completed</a>
               </div>
             </div>
 

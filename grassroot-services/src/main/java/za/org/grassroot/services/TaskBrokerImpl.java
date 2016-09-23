@@ -66,6 +66,22 @@ public class TaskBrokerImpl implements TaskBroker {
     private PermissionBroker permissionBroker;
 
     @Override
+    public TaskDTO load(String userUid, String taskUid) {
+        User user = userRepository.findOneByUid(userUid);
+        Event event = eventRepository.findOneByUid(taskUid);
+        if (event != null) {
+            return new TaskDTO(event, user, eventLogRepository);
+        } else {
+            Todo todo = todoRepository.findOneByUid(taskUid);
+            if (todo != null) {
+                return new TaskDTO(todo, user);
+            } else {
+                return null;
+            }
+        }
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public TaskDTO load(String userUid, String taskUid, TaskType type) {
         Objects.requireNonNull(userUid);
