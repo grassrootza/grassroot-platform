@@ -1,26 +1,25 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      layout:decorator="layout">
+      data-layout-decorate="layout">
 <head>
   <title>Grassroot - Send a free-form message</title>
-<script>
-
-
-
-</script>
 </head>
 <body>
 
 <div layout:fragment="header">
-  <h2>Send a custom message</h2>
+  <h2 class="text-center">Send a custom message</h2>
 </div>
-<div layout:fragment="overview">Send a custome message to groups</div>
+
+<div layout:fragment="overview">
+  <h4 class="text-center">Send a custom message to groups</h4>
+</div>
 
 <div layout:fragment="content">
   <div layout:fragment="messages"></div>
+
   <div class="well">
-    <div class="col-md-8 col-md-offset-2">
-    <form th:action="@{/meeting/free}" method="post" autocomplete="off" class="form-horizontal">
+    <div class="col-md-6 col-md-offset-3">
+    <form th:action="@{/meeting/free}" method="post" autocomplete="off" class="form-vertical">
       <div class="form-group">
         <label for="group" class="control-label">Group for message</label>
         <div th:switch="${groupSpecified}">
@@ -32,22 +31,17 @@
             </select>
           </div>
           <div th:case="true">
-            <input type="hidden" th:value="${group.id}" name="groupId" />
+            <input type="hidden" th:value="${group.uid}" name="groupUid" />
             <span th:text="${group.groupName}" id="group">Group name</span>
           </div>
         </div>
       </div>
+
       <div class="form-group">
         <label for="name" class="control-label">Message to send:</label>
         <textarea name="message" maxlength="155" class="form-control" id="name"
-                  placeholder="Message to send (max 155 characters)" />
+                  placeholder="Message to send (max 155 characters)"></textarea>
       </div>
-      <!-- <div class="form-group">
-        <label for="subgroups" class="col-md-2 control-label">Include sub-groups?</label>
-        <div class="col-md-4">
-          <input name="includeSubGroups" type="checkbox" id="subgroups" class="form-control"/>
-        </div>
-      </div> -->
 
       <div class="form-group">
         <div class="col-md-8">

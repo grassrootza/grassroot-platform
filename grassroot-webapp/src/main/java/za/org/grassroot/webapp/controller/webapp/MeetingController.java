@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -232,16 +233,15 @@ public class MeetingController extends BaseController {
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "free", method = RequestMethod.POST)
-    public String confirmFreeMsg(Model model, @RequestParam String groupUid, @RequestParam(value="message") String message,
-                                 @RequestParam(value="includeSubGroups", required=false) boolean includeSubgroups) {
+    public String confirmFreeMsg(Model model, @RequestParam String groupUid, @RequestParam(value="message") String message) {
 
         model.addAttribute("action", "free");
         model.addAttribute("groupUid", groupUid);
-        model.addAttribute("includeSubGroups", includeSubgroups);
 
         model.addAttribute("message", message);
         Group group = groupBroker.load(groupUid);
-        int recipients = includeSubgroups ? group.getMembersWithChildrenIncluded().size() : group.getMembers().size();
+
+        int recipients = group.getMembers().size();
         model.addAttribute("recipients", recipients);
         model.addAttribute("cost", recipients * 0.2);
         return "meeting/remind_confirm";
@@ -256,11 +256,17 @@ public class MeetingController extends BaseController {
 
         // todo: check that this group is paid for (and filter on previous page)
         log.info("Sending free form message: {}, to this group: {}", message, groupUid);
-        accountManagementService.sendFreeFormMessage(getUserProfile().getUid(), groupUid, message);
 
-        redirectAttributes.addAttribute("groupUid", groupUid);
-        addMessage(redirectAttributes, MessageType.SUCCESS, "sms.message.sent", request);
-        return "redirect:/group/view";
+        try {
+            accountManagementService.sendFreeFormMessage(getUserProfile().getUid(), groupUid, message);
+            addMessage(redirectAttributes, MessageType.SUCCESS, "sms.message.sent", request);
+            log.info("Sent message, redirecting to home");
+
+        } catch (AccessDeniedException e) {
+            addMessage(redirectAttributes, MessageType.ERROR, "sms.message.error", request);
+            e.printStackTrace();
+        }
+        return "redirect:/home";
     }
 
     /**

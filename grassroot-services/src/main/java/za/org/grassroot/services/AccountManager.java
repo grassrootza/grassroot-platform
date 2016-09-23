@@ -1,5 +1,7 @@
 package za.org.grassroot.services;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -25,7 +27,7 @@ import java.util.stream.Collectors;
 @Service
 public class AccountManager implements AccountManagementService {
 
-    // private static final Logger log = LoggerFactory.getLogger(AccountManager.class);
+    private static final Logger log = LoggerFactory.getLogger(AccountManager.class);
 
     @Autowired
     private AccountRepository accountRepository;
@@ -203,6 +205,8 @@ public class AccountManager implements AccountManagementService {
    		User user = userRepository.findOneByUid(userUid);
    		Group group = groupRepository.findOneByUid(groupUid);
    		Account account = user.getAccountAdministered();
+
+        log.info("loaded user, group, now loading account ...");
 
    		authorizeFreeFormMessageSending(user, account);
 

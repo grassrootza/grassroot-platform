@@ -713,7 +713,7 @@ public class EventBrokerImpl implements EventBroker {
 					Set<Event> upcomingEvents = group.getUpcomingEventsIncludingParents(filter);
 
 					for (Event event : upcomingEvents) {
-						if (eventType == EventType.VOTE && !checkJoinedAfterVote(user, event, group)) {
+						if (eventType == EventType.VOTE && !checkUserJoinedBeforeVote(user, event, group)) {
 							logger.info(String.format("Excluding vote %s for %s as the user joined group %s after the vote was called", event.getName(), user.getPhoneNumber(), group.getId()));
 							continue;
 						}
@@ -733,9 +733,9 @@ public class EventBrokerImpl implements EventBroker {
 	}
 
 	//N.B. remove this if statement if you want to allow votes for people that joined the group late
-	private boolean checkJoinedAfterVote(User user, Event event, Group group) {
+	private boolean checkUserJoinedBeforeVote(User user, Event event, Group group) {
 		Membership membership = group.getMembership(user);
-		return membership != null && membership.getJoinTime().isAfter(event.getCreatedDateTime());
+		return membership != null && membership.getJoinTime().isBefore(event.getCreatedDateTime());
 	}
 
 	@Override

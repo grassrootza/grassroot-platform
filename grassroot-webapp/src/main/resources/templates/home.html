@@ -109,7 +109,7 @@
             <div class="row">
               <!-- LHS: Description of task -->
               <div class="col-sm-8">
-                  <h4><a href="#" th:href="'javascript:fetchTaskDescription(\'' + ${task.taskUid} + '\', \'' + ${task.type} + '\')'">
+                  <h4 class="list-header"><a href="#" th:href="'javascript:fetchTaskDescription(\'' + ${task.taskUid} + '\', \'' + ${task.type} + '\')'">
                     <strong th:text="${task.type}">Meeting</strong>: <span th:text="${task.title}">Title</span></a></h4>
                   <p class="list-group-text" th:text="#{web.home.__${task.type}__.description(${task.parentName},
                   ${#temporals.format(task.getDeadlineDateTime(),'h:mm a, dd MMMM')})}">Description</p>
@@ -189,7 +189,7 @@
           </li>
 
           <li th:each="group,iterStat : ${userGroups}" class="list-group-item narrow-vertical">
-            <a th:href="@{/group/view(groupUid=${group.Uid})}"><span class="h4" th:text="${group.getName('')}"></span></a>
+            <a th:href="@{/group/view(groupUid=${group.Uid})}"><span class="h4 list-header" th:text="${group.getName('')}"></span></a>
               <span class="badge">
                 <span th:text="${group.getMemberships().size()}"></span> Members
               </span>
