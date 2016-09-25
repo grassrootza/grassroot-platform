@@ -29,7 +29,7 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
     private static Logger logger = LoggerFactory.getLogger(Todo.class);
 
     @Transient
-    @Value("{grassroot.todos.number.reminders:2")
+    @Value("{grassroot.todos.number.reminders:1")
     private int DEFAULT_NUMBER_REMINDERS;
 
     @Column(name = "cancelled")

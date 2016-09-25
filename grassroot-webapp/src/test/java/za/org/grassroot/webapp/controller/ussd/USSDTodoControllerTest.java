@@ -170,7 +170,8 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(todoRequestBrokerMock, times(1)).updateMessage(testUser.getUid(), dummyLogBook.getUid(), dummyUserInput);
+        // todo : restore when build test for instant todo
+        // verify(todoRequestBrokerMock, times(1)).updateMessage(testUser.getUid(), dummyLogBook.getUid(), dummyUserInput);
         verifyNoMoreInteractions(todoRequestBrokerMock);
 
     }

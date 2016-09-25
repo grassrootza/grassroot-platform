@@ -46,7 +46,7 @@ public class TodoBrokerImpl implements TodoBroker {
 	@Value("${grassroot.todos.completion.threshold:20}") // defaults to 20 percent
 	private double COMPLETION_PERCENTAGE_BOUNDARY;
 
-	@Value("${grassroot.todos.number.reminders:2}")
+	@Value("${grassroot.todos.number.reminders:1}")
 	private int DEFAULT_NUMBER_REMINDERS;
 
 	@Value("${grassroot.todos.days_over.prompt:7}")
@@ -91,22 +91,23 @@ public class TodoBrokerImpl implements TodoBroker {
 		Objects.requireNonNull(parentType);
 		Objects.requireNonNull(parentUid);
 		Objects.requireNonNull(message);
-		Objects.requireNonNull(actionByDate);
 		Objects.requireNonNull(assignedMemberUids);
 
 		User user = userRepository.findOneByUid(userUid);
 		TodoContainer parent = uidIdentifiableRepository.findOneByUid(TodoContainer.class, parentType, parentUid);
 
-		logger.info("Creating new log book: userUid={}, parentType={}, parentUid={}, message={}, actionByDate={}, reminderMinutes={}, assignedMemberUids={}, replicateToSubgroups={}",
-				userUid, parentType, parentUid, message, actionByDate, reminderMinutes, assignedMemberUids, replicateToSubgroups);
+		boolean isInstantAction = actionByDate == null;
+		Instant convertedActionByDate = isInstantAction ? Instant.now().plus(5, ChronoUnit.MINUTES) : convertToSystemTime(actionByDate, getSAST());
 
-		Instant convertedActionByDate = convertToSystemTime(actionByDate, getSAST());
+		logger.info("Creating new log book: userUid={}, parentType={}, parentUid={}, message={}, isInstant={}, actionByDate={}, reminderMinutes={}, assignedMemberUids={}, replicateToSubgroups={}",
+				userUid, parentType, parentUid, message, isInstantAction, actionByDate, reminderMinutes, assignedMemberUids, replicateToSubgroups);
 
 		if (convertedActionByDate.isBefore(Instant.now())) {
 			throw new EventStartTimeNotInFutureException("Error! Attempt to create todo with due date in the past");
 		}
 
-		Todo todo = new Todo(user, parent, message, convertedActionByDate, reminderMinutes, null, DEFAULT_NUMBER_REMINDERS, true);
+		Todo todo = new Todo(user, parent, message, convertedActionByDate, reminderMinutes, null,
+				isInstantAction ? 0 : DEFAULT_NUMBER_REMINDERS, !isInstantAction);
 
 		if (!assignedMemberUids.isEmpty()) {
 			assignedMemberUids.add(userUid);

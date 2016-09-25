@@ -19,6 +19,18 @@ public interface TodoBroker {
 
 	Todo update(Todo todo);
 
+	/**
+	 *
+	 * @param userUid The uid of the user creating the action
+	 * @param parentType The type of entity that is a parent to the action (usually a group, can be meeting or vote)
+	 * @param parentUid The uid of the parent entity
+	 * @param message The top-level content of the to-do
+	 * @param actionByDate Passing a null value will trigger an immediate to-do, with no reminder active
+	 * @param reminderMinutes The number of minutes in advance of the deadline that a reminder will be sent
+	 * @param replicateToSubgroups Whether to cascade the action to subgroups
+	 * @param assignedMemberUids THe set of members assigned to the action, if any
+     * @return
+     */
 	Todo create(String userUid, JpaEntityType parentType, String parentUid, String message, LocalDateTime actionByDate,
 				int reminderMinutes, boolean replicateToSubgroups, Set<String> assignedMemberUids);
 

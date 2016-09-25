@@ -113,7 +113,7 @@ public class TodoRequestBrokerImpl implements TodoRequestBroker {
         if (!todoRequest.getCreatedByUser().equals(user))
             throw new AccessDeniedException("You are not the creator of this todo");
 
-        todoRequest.setActionByDate(convertToSystemTime(dueDate, getSAST()));
+        todoRequest.setActionByDate(dueDate != null ? convertToSystemTime(dueDate, getSAST()) : null);
     }
 
     @Override
@@ -129,8 +129,8 @@ public class TodoRequestBrokerImpl implements TodoRequestBroker {
         // Set<String> assignedMemberUids = todoRequest.getAssignedMembers().stream().map(User::getUid).collect(Collectors.toSet());
 		Set<String> assignedMemberUids = Collections.emptySet();
         TodoContainer parent = todoRequest.getParent();
+		LocalDateTime actionDate = todoRequest.getActionByDate() != null ? LocalDateTime.from(todoRequest.getActionByDate().atZone(getSAST())) : null;
 
-		LocalDateTime actionDate = LocalDateTime.from(todoRequest.getActionByDate().atZone(getSAST()));
 		todoBroker.create(todoRequest.getCreatedByUser().getUid(), parent.getJpaEntityType(), parent.getUid(),
 				todoRequest.getMessage(), actionDate, todoRequest.getReminderMinutes(),
 				todoRequest.isReplicateToSubgroups(), assignedMemberUids);

@@ -300,7 +300,7 @@ public class AdminManager implements AdminService {
                 "left outer join (select word as action_name,nentry  as todo_count FROM ts_stat(\'SELECT to_tsvector(keyword) " +
                 "from(select t.message as keyword from action_todo t where t.created_date_time > '\'" +fromDate + "\'\') " +
                 "as keywords\')) as todos on(word=action_name) " +
-                "ORDER BY total_occurence DESC, word limit 50", KeywordDTO.class)
+                "ORDER BY total_occurence DESC, word limit 100", KeywordDTO.class)
                 .getResultList();
     }
 
