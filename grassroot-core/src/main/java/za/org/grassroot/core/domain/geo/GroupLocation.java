@@ -76,11 +76,8 @@ public class GroupLocation {
 		if (group != null ? !group.equals(that.group) : that.group != null) {
 			return false;
 		}
-		if (localDate != null ? !localDate.equals(that.localDate) : that.localDate != null) {
-			return false;
-		}
+		return localDate != null ? localDate.equals(that.localDate) : that.localDate == null;
 
-		return true;
 	}
 
 	@Override

@@ -39,6 +39,12 @@ public class MessageSendingManager implements MessageSendingService {
         requestChannel.send(message);
     }
 
+    @Override
+    public void sendPollingMessage(){
+       requestChannel.send(MessageBuilder.withPayload("polling").setHeader("route", "ANDROID_APP").build());
+
+    }
+
     private Message<Notification> createMessage(Notification notification, String givenRoute) {
         String route = (givenRoute == null) ? notification.getTarget().getMessagingPreference().name() : givenRoute;
         if ("ANDROID_APP".equals(route)) {

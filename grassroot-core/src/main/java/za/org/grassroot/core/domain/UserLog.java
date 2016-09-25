@@ -96,9 +96,7 @@ public class UserLog implements ActionLog {
 
         final UserLog that = (UserLog) o;
 
-        if (getUid() != null ? !getUid().equals(that.getUid()) : that.getUid() != null) { return false; }
-
-        return true;
+        return getUid() != null ? getUid().equals(that.getUid()) : that.getUid() == null;
 
     }
 

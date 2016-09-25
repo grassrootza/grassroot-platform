@@ -17,6 +17,9 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
 import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
+import za.org.grassroot.integration.exception.MessengerSettingNotFoundException;
+import za.org.grassroot.integration.services.GcmService;
+import za.org.grassroot.integration.services.MessengerSettingsService;
 import za.org.grassroot.services.*;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.services.exception.JoinRequestNotOpenException;
@@ -25,6 +28,7 @@ import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.webapp.enums.JoinReqType;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
+import za.org.grassroot.webapp.model.MessengerSettingsDTO;
 import za.org.grassroot.webapp.model.rest.GroupJoinRequestDTO;
 import za.org.grassroot.webapp.model.rest.PermissionDTO;
 import za.org.grassroot.webapp.model.rest.wrappers.*;
@@ -65,6 +69,12 @@ public class GroupRestController {
 
 	@Autowired
 	private GeoLocationBroker geoLocationBroker;
+
+	@Autowired
+	private MessengerSettingsService messengerSettingsService;
+
+	@Autowired
+	private GcmService gcmService;
 
 	@Autowired
 	@Qualifier("messageSourceAccessor")
@@ -587,6 +597,48 @@ public class GroupRestController {
 		return response;
 	}
 
+	@RequestMapping(value= "messenger/update/{phoneNumber}/{code}/{groupUid}", method =RequestMethod.POST)
+	public ResponseEntity<ResponseWrapper> updateMemberGroupChatSetting(@PathVariable String phoneNumber,
+																		@PathVariable String code,
+																		@PathVariable("groupUid") String groupUid,
+																		@RequestParam(value = "userUid",required = false) String userUid,
+																		@RequestParam("active") boolean active, @RequestParam("userInitiated") boolean userInitiated)
+			throws Exception {
+
+		User user = userManagementService.findByInputNumber(phoneNumber);
+		String userSettingTobeUpdated = (userInitiated)?user.getUid():userUid;
+		log.info("userInitiated " + userInitiated);
+		log.info("active " + active);
+		log.info("userUid"  +userUid);
+        if(!userInitiated){
+            Group group = groupBroker.load(groupUid);
+            permissionBroker.isGroupPermissionAvailable(user,group,Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER);
+        }
+		messengerSettingsService.updateActivityStatus(userSettingTobeUpdated,groupUid,active,userInitiated);
+		if(userInitiated){
+			String registrationId = gcmService.getGcmKey(user);
+			if(active){
+				gcmService.subscribeToTopic(registrationId,groupUid);
+			}else{
+				gcmService.unsubScribeFromTopic(registrationId,groupUid);
+			}
+		}
+		return RestUtil.messageOkayResponse((!active) ? RestMessage.CHAT_DEACTIVATED : RestMessage.CHAT_ACTIVATED);
+
+	}
+
+	@RequestMapping(value ="messenger/fetch_settings/{phoneNumber}/{code}/{groupUid}", method = RequestMethod.GET)
+	public ResponseEntity<MessengerSettingsDTO> fetchMemberGroupChatSetting(@PathVariable String phoneNumber,
+																	   @PathVariable String code,
+																	   @PathVariable("groupUid") String groupUid, @RequestParam(value = "userUid",required = false) String userUid) throws MessengerSettingNotFoundException{
+
+		User user = userManagementService.findByInputNumber(phoneNumber);
+		MessengerSettings messengerSettings = userUid != null ? messengerSettingsService.load(userUid, groupUid)
+				: messengerSettingsService.load(user.getUid(), groupUid);
+		return new ResponseEntity<>(new MessengerSettingsDTO(messengerSettings),HttpStatus.OK);
+
+	}
+
     private GroupResponseWrapper createGroupWrapper(Group group, User caller) {
         Role role = group.getMembership(caller).getRole();
         Event event = eventBroker.getMostRecentEvent(group.getUid());
@@ -628,6 +680,11 @@ public class GroupRestController {
 			}
 		}
 		return ImmutableMap.of("ADDED", permissionsAdded, "REMOVED", permissionsRemoved);
+	}
+
+	@ExceptionHandler(MessengerSettingNotFoundException.class)
+	public ResponseEntity<ResponseWrapper> messageSettingNotFound(){
+		return RestUtil.errorResponse(HttpStatus.NOT_FOUND, RestMessage.MESSAGE_SETTING_NOT_FOUND);
 	}
 
 }

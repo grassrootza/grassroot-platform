@@ -5,12 +5,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.integration.xmpp.config.XmppConnectionFactoryBean;
 import org.springframework.messaging.MessageChannel;
+import za.org.grassroot.core.domain.MessengerSettings;
 import za.org.grassroot.core.repository.GcmRegistrationRepository;
 import za.org.grassroot.core.repository.TodoRepository;
 import za.org.grassroot.core.repository.UserRepository;
-import za.org.grassroot.integration.services.GcmService;
-import za.org.grassroot.integration.services.MessageSendingService;
-import za.org.grassroot.integration.services.NotificationService;
+import za.org.grassroot.integration.services.*;
 import za.org.grassroot.integration.sms.SmsSendingService;
 
 import static org.mockito.Mockito.mock;
@@ -66,6 +65,16 @@ public class TestContextConfig {
     @Bean(name = "gcmConnection")
     public FactoryBean<XmppConnectionFactoryBean> gcmConnection() {
         return new MockitoFactoryBean<>(XmppConnectionFactoryBean.class);
+    }
+
+    @Bean()
+    public FactoryBean<MessengerSettingsService> messengerSettingsService() {
+        return new MockitoFactoryBean<>(MessengerSettingsService.class);
+    }
+
+    @Bean()
+    public FactoryBean<LearningService> learningService(){
+        return new MockitoFactoryBean<>(LearningService.class);
     }
 
     class MockitoFactoryBean<T> implements FactoryBean<T> {

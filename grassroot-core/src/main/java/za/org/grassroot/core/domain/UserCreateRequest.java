@@ -78,11 +78,8 @@ public class UserCreateRequest {
 
         UserCreateRequest that = (UserCreateRequest) o;
 
-        if (getUid() != null ? !getUid().equals(that.getUid()) : that.getUid() != null) {
-            return false;
-        }
+        return getUid() != null ? getUid().equals(that.getUid()) : that.getUid() == null;
 
-        return true;
     }
 
     @Override

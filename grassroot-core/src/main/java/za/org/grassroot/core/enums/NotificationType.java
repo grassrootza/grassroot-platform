@@ -13,5 +13,6 @@ public enum NotificationType {
 	USER,
 	GENERAL
 
+
 	//
 }

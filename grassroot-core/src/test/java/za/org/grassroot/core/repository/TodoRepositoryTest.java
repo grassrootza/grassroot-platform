@@ -166,7 +166,7 @@ public class TodoRepositoryTest {
 
         List<Group> subGroupsFromEntries = new ArrayList<>();
         for (Todo lb : entriesFromDb)
-            subGroupsFromEntries.add(groupRepository.findOne(((Group)lb.getParent()).getId()));
+            subGroupsFromEntries.add(groupRepository.findOne(lb.getParent().getId()));
 
         assertFalse(subGroupsFromEntries.contains(groupParent));
         assertTrue(subGroupsFromEntries.contains(group2));

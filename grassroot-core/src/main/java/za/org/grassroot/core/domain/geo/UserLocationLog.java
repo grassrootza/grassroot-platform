@@ -67,11 +67,8 @@ public class UserLocationLog {
 
 		UserLocationLog userLocationLog = (UserLocationLog) o;
 
-		if (uid != null ? !uid.equals(userLocationLog.uid) : userLocationLog.uid != null) {
-			return false;
-		}
+		return uid != null ? uid.equals(userLocationLog.uid) : userLocationLog.uid == null;
 
-		return true;
 	}
 
 	@Override

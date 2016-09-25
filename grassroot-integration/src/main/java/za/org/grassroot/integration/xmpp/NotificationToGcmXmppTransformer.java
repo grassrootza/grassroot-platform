@@ -13,6 +13,7 @@ import za.org.grassroot.core.domain.notification.UserNotification;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.GcmRegistrationRepository;
+import za.org.grassroot.core.util.UIDGenerator;
 import za.org.grassroot.integration.domain.AndroidClickActionType;
 
 import java.util.HashMap;
@@ -28,16 +29,23 @@ public class NotificationToGcmXmppTransformer {
 
     private static final Logger log = LoggerFactory.getLogger(NotificationToGcmXmppTransformer.class);
 
+	private static final String TOPICS = "/topics/";
+
     @Autowired
     private GcmRegistrationRepository gcmRegistrationRepository;
 
     @Transformer(inputChannel = "gcmOutboundChannel", outputChannel = "gcmXmppOutboundChannel")
-    public Message<org.jivesoftware.smack.packet.Message> transform(Message<Notification> message) throws Exception {
+    public Message<org.jivesoftware.smack.packet.Message> transform(Message<Object> message) throws Exception {
 
-	    Notification notification = message.getPayload();
-        Message<org.jivesoftware.smack.packet.Message> gcmMessage = constructGcmMessage(notification);
-        log.info("Message with id {}, transformed to {}", notification.getUid(),
-		        gcmMessage != null && gcmMessage.getPayload() != null ? gcmMessage.getPayload().toXML().toString() : "null");
+		Message<org.jivesoftware.smack.packet.Message> gcmMessage;
+		if(message.getPayload() instanceof Notification){
+			Notification notification = (Notification) message.getPayload();
+			gcmMessage = constructGcmMessage(notification);
+			log.info("Message with id {}, transformed to {}", notification.getUid(),
+					gcmMessage != null && gcmMessage.getPayload() != null ? gcmMessage.getPayload().toXML().toString() : "null");
+		}else{
+			gcmMessage = GcmXmppMessageCodec.encode(TOPICS.concat("keepalive"), UIDGenerator.generateId(), null);
+		}
         return gcmMessage;
     }
 

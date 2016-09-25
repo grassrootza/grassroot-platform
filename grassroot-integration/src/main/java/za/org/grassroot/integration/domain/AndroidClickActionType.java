@@ -13,6 +13,7 @@ public enum AndroidClickActionType {
 	SHOW_JOIN_REQ,
 	JOIN_APPROVED,
 	TASK_RESULTS,
-	SHOW_MESSAGE
+	SHOW_MESSAGE,
+	CHAT_MESSAGE
 
 }
