@@ -93,6 +93,4 @@ public interface TodoBroker {
 	List<Group> retrieveGroupsFromTodos(List<Todo> todos);
 
 	List<Todo> getAllReplicatedEntriesFromParent(Todo todo);
-
-	Todo getParentTodoEntry(Todo todo);
 }

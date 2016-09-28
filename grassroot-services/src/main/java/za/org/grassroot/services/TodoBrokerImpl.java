@@ -463,25 +463,12 @@ public class TodoBrokerImpl implements TodoBroker {
 	@Override
 	@Transactional(readOnly = true)
 	public boolean hasReplicatedEntries(Todo todo) {
-		return todoRepository.countReplicatedEntries(todo.getAncestorGroup(), todo.getMessage(), todo.getCreatedDateTime()) != 0;
+		return todoRepository.countBySourceTodo(todo) != 0;
 	}
 
 	@Override
 	@Transactional(readOnly = true)
 	public List<Todo> getAllReplicatedEntriesFromParent(Todo todo) {
-		return todoRepository.findByReplicatedGroupAndMessageAndActionByDateOrderByParentGroupIdAsc(todo.getAncestorGroup(), todo.getMessage(),
-				todo.getActionByDate());
+		return todoRepository.findBySourceTodo(todo);
 	}
-
-	@Override
-	@Transactional(readOnly = true)
-	public Todo getParentTodoEntry(Todo todo) {
-		Group parentTodoGroup = todo.getReplicatedGroup();
-		if (parentTodoGroup == null) {
-			return null;
-		}
-		else return todoRepository.findByParentGroupAndMessageAndCreatedDateTime(parentTodoGroup, todo.getMessage(),
-				todo.getCreatedDateTime()).get(0);
-	}
-
 }

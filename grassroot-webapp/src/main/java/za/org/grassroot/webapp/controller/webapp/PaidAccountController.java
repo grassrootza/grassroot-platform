@@ -17,6 +17,7 @@ import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.AccountManagementService;
 import za.org.grassroot.services.EventBroker;
 import za.org.grassroot.services.GroupBroker;
+import za.org.grassroot.services.GroupQueryBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 
 import javax.servlet.http.HttpServletRequest;
@@ -43,6 +44,9 @@ public class PaidAccountController extends BaseController {
 
     @Autowired
     private GroupBroker groupBroker;
+
+    @Autowired
+    private GroupQueryBroker groupQueryBroker;
 
     @Autowired
     private EventBroker eventBroker;
@@ -126,7 +130,7 @@ public class PaidAccountController extends BaseController {
         model.addAttribute("paidGroupRecord", paidGroupRecord);
         model.addAttribute("dateDescription", dateDescription);
         model.addAttribute("beginDate", beginDate.toLocalDate());
-        model.addAttribute("monthsToView", groupBroker.getMonthsGroupActive(underlyingGroup.getUid()));
+        model.addAttribute("monthsToView", groupQueryBroker.getMonthsGroupActive(underlyingGroup.getUid()));
 
         return "paid_account/view_logs";
     }
@@ -152,12 +156,12 @@ public class PaidAccountController extends BaseController {
         model.addAttribute("tokenSearch", tokenSearch);
 
         if (tokenSearch) {
-            Optional<Group> searchResult = groupBroker.findGroupFromJoinCode(searchTerm);
+            Optional<Group> searchResult = groupQueryBroker.findGroupFromJoinCode(searchTerm);
             if (searchResult.isPresent()) {
-                model.addAttribute("groupFound", groupBroker.findGroupFromJoinCode(searchTerm));
+                model.addAttribute("groupFound", groupQueryBroker.findGroupFromJoinCode(searchTerm));
             }
         } else {
-            model.addAttribute("groupCandidates", groupBroker.findPublicGroups(getUserProfile().getUid(), searchTerm, null, false));
+            model.addAttribute("groupCandidates", groupQueryBroker.findPublicGroups(getUserProfile().getUid(), searchTerm, null, false));
         }
 
         return "paid_account/find_group";

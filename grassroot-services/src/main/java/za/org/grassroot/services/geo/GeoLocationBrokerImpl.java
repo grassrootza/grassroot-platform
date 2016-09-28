@@ -91,6 +91,29 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 
 	@Override
 	@Transactional
+	public void calculateGroupLocation(String groupUid, LocalDate localDate) {
+		Objects.requireNonNull(groupUid);
+		Objects.requireNonNull(localDate);
+
+		Group group = groupRepository.findOneByUid(groupUid);
+
+		// delete so we can recalculate
+		groupLocationRepository.deleteByGroupAndLocalDate(group, localDate);
+
+		Set<String> memberUids = group.getMembers().stream().map(User::getUid).collect(Collectors.toSet());
+		CenterCalculationResult result = calculateCenter(memberUids, localDate);
+		if (result.isDefined()) {
+			// for now, score is simply ratio of found member locations to total member count
+			float score = result.getUserCount() / (float) memberUids.size();
+			GroupLocation groupLocation = new GroupLocation(group, localDate, result.getCenter(), score);
+			groupLocationRepository.save(groupLocation);
+		} else {
+			logger.debug("No member location data found for group {} for local date {}", group, localDate);
+		}
+	}
+
+	@Override
+	@Transactional
 	public CenterCalculationResult calculateCenter(Set<String> userUids, LocalDate date) {
 		Objects.requireNonNull(userUids);
 		Objects.requireNonNull(date);

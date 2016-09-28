@@ -12,10 +12,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.dto.TaskDTO;
-import za.org.grassroot.services.GroupBroker;
-import za.org.grassroot.services.GroupJoinRequestService;
-import za.org.grassroot.services.GroupLocationFilter;
-import za.org.grassroot.services.TaskBroker;
+import za.org.grassroot.services.*;
 import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.exception.RequestorAlreadyPartOfGroupException;
 import za.org.grassroot.webapp.controller.BaseController;
@@ -44,6 +41,9 @@ public class GroupSearchController extends BaseController {
 	private GroupBroker groupBroker;
 
 	@Autowired
+	private GroupQueryBroker groupQueryBroker;
+
+	@Autowired
 	private TaskBroker taskBroker;
 
 	@Autowired
@@ -64,7 +64,7 @@ public class GroupSearchController extends BaseController {
 			if (onlyDigits && !userLogger.hasUsedJoinCodeRecently(getUserProfile().getUid())) {
 				String tokenSearch = term.contains(ussdDialCode) ? term.substring(ussdDialCode.length(), term.length() - 1) : term;
 				log.info("searching for group ... token to use ... " + tokenSearch);
-				Optional<Group> groupByToken = groupBroker.findGroupFromJoinCode(tokenSearch);
+				Optional<Group> groupByToken = groupQueryBroker.findGroupFromJoinCode(tokenSearch);
 				if (groupByToken.isPresent()) {
 					model.addAttribute("group", groupByToken.get());
 					resultFound = true;
@@ -73,13 +73,13 @@ public class GroupSearchController extends BaseController {
 				// just for testing since no UI support yet exists...
 				// GroupLocationFilter locationFilter = new GroupLocationFilter(new GeoLocation(45.567641, 18.701211), 30000, true);
 				GroupLocationFilter locationFilter = null;
-				List<PublicGroupWrapper> publicGroups = groupBroker.findPublicGroups(getUserProfile().getUid(), term, locationFilter, false)
+				List<PublicGroupWrapper> publicGroups = groupQueryBroker.findPublicGroups(getUserProfile().getUid(), term, locationFilter, false)
 						.stream().map(g -> new PublicGroupWrapper(g, getMessage("search.group.desc"))).collect(Collectors.toList());
 
 				model.addAttribute("groupCandidates", publicGroups);
 
 				final String userUid = getUserProfile().getUid();
-				List<Group> memberGroups = groupBroker.searchUsersGroups(userUid, term);
+				List<Group> memberGroups = groupQueryBroker.searchUsersGroups(userUid, term);
 				List<TaskDTO> memberTasks = taskBroker.searchForTasks(userUid, term);
 				model.addAttribute("foundGroups", memberGroups);
 				model.addAttribute("foundTasks", memberTasks);

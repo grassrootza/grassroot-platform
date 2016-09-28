@@ -198,7 +198,7 @@ public class ScheduledTasks {
         for (Group group : groups) {
             // we don't want one big TX for all groups, so we separate each group location
             // calculation into its own transaction
-            groupBroker.calculateGroupLocation(group.getUid(), today);
+            geoLocationBroker.calculateGroupLocation(group.getUid(), today);
         }
     }
 

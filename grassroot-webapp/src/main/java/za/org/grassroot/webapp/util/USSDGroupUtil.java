@@ -10,10 +10,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.util.PhoneNumberUtil;
-import za.org.grassroot.services.GroupBroker;
-import za.org.grassroot.services.GroupJoinRequestService;
-import za.org.grassroot.services.MembershipInfo;
-import za.org.grassroot.services.PermissionBroker;
+import za.org.grassroot.services.*;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 
@@ -42,6 +39,9 @@ public class USSDGroupUtil extends USSDUtil {
 
     @Autowired
     private GroupBroker groupBroker;
+
+    @Autowired
+    private GroupQueryBroker groupQueryBroker;
 
     @Autowired
     private PermissionBroker permissionBroker;
@@ -190,7 +190,7 @@ public class USSDGroupUtil extends USSDUtil {
     }
 
     public USSDMenu showUserCreatedGroupsForSafetyFeature(User user, USSDSection section, String urlForExistingGroups, Integer pageNumber) throws URISyntaxException {
-        final Page<Group> groupsCreated = groupBroker.fetchUserCreatedGroups(user, pageNumber, PAGE_LENGTH);
+        final Page<Group> groupsCreated = groupQueryBroker.fetchUserCreatedGroups(user, pageNumber, PAGE_LENGTH);
         final String prompt = getMessage(section, groupKeyForMessages, promptKey + ".existing", user);
 
         USSDMenu menu = new USSDMenu(prompt);
@@ -237,7 +237,7 @@ public class USSDGroupUtil extends USSDUtil {
         if (urlForNewGroup != null)
             menu.addMenuOption(urlForNewGroup, getMessage(groupKeyForMessages, "create", "option", user));
 
-        if (GROUP_MANAGER.equals(section) && (!groupBroker.fetchGroupsWithOneCharNames(user, 2).isEmpty()))
+        if (GROUP_MANAGER.equals(section) && (!groupQueryBroker.fetchGroupsWithOneCharNames(user, 2).isEmpty()))
             menu.addMenuOption(section.toPath() + "clean", getMessage(groupKeyForMessages, "clean", "option", user));
 
         menu.addMenuOption("start_force", getMessage(groupKeyForMessages, "menu", optionsKey + "back", user));

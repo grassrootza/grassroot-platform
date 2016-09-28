@@ -77,6 +77,9 @@ public abstract class USSDAbstractUnitTest {
     @Mock
     protected LearningService learningServiceMock;
 
+    @Mock
+    protected GroupQueryBroker groupQueryBrokerMock;
+
     @InjectMocks
     protected USSDGroupUtil ussdGroupUtil;
 

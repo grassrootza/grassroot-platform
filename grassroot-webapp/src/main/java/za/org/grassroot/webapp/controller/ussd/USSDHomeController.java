@@ -12,10 +12,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.*;
-import za.org.grassroot.services.EventLogBroker;
-import za.org.grassroot.services.PermissionBroker;
-import za.org.grassroot.services.SafetyEventBroker;
-import za.org.grassroot.services.TodoBroker;
+import za.org.grassroot.services.*;
 import za.org.grassroot.services.enums.EventListTimeType;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDResponseTypes;
@@ -54,6 +51,9 @@ public class USSDHomeController extends USSDController {
 
     @Autowired
     private TodoBroker todoBroker;
+
+    @Autowired
+    private GroupQueryBroker groupQueryBroker;
 
     @Autowired
     private PermissionBroker permissionBroker;
@@ -224,7 +224,7 @@ public class USSDHomeController extends USSDController {
             }
             returnMenu = defaultStartMenu(user);
         } else {
-            Optional<Group> searchResult = groupBroker.findGroupFromJoinCode(trailingDigits.trim());
+            Optional<Group> searchResult = groupQueryBroker.findGroupFromJoinCode(trailingDigits.trim());
             if (searchResult.isPresent()) {
                 Group group = searchResult.get();
                 groupBroker.addMemberViaJoinCode(user.getUid(), group.getUid(), trailingDigits);
@@ -379,7 +379,7 @@ public class USSDHomeController extends USSDController {
             menu = new USSDMenu(message);
         } else {
             menu = new USSDMenu(getMessage(thisSection, "safety.not-activated", promptKey, user));
-            if (groupBroker.fetchUserCreatedGroups(user, 0, 1).getTotalElements() != 0) {
+            if (groupQueryBroker.fetchUserCreatedGroups(user, 0, 1).getTotalElements() != 0) {
                 menu.addMenuOption(safetyMenus + "pick-group", getMessage(thisSection, "safety", optionsKey + "existing", user));
             }
             menu.addMenuOption(safetyMenus + "new-group", getMessage(thisSection, "safety", optionsKey + "new", user));

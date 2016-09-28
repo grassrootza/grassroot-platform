@@ -29,7 +29,7 @@ public class RestUtil {
                                                                    Permission.GROUP_PERMISSION_DELETE_GROUP_MEMBER).collect(Collectors.toSet());
 
     public static Set<Permission> filterPermissions(Set<Permission> permissions){
-        return permissions.stream().filter(p -> homeScreenPermissions.contains(p))
+        return permissions.stream().filter(homeScreenPermissions::contains)
                 .collect(Collectors.toSet());
     }
 

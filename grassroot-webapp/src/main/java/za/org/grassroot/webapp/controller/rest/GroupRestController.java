@@ -12,7 +12,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
 import za.org.grassroot.core.enums.GroupDefaultImage;
@@ -32,11 +31,8 @@ import za.org.grassroot.webapp.model.MessengerSettingsDTO;
 import za.org.grassroot.webapp.model.rest.GroupJoinRequestDTO;
 import za.org.grassroot.webapp.model.rest.PermissionDTO;
 import za.org.grassroot.webapp.model.rest.wrappers.*;
-import za.org.grassroot.webapp.util.ImageUtil;
 import za.org.grassroot.webapp.util.RestUtil;
 
-import javax.servlet.http.HttpServletRequest;
-import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.*;
@@ -44,22 +40,16 @@ import java.util.stream.Collectors;
 
 /**
  * Created by paballo.
+ * todo : split this as with group broker
  */
 @RestController
 @RequestMapping(value = "/api/group", produces = MediaType.APPLICATION_JSON_VALUE)
-public class GroupRestController {
+public class GroupRestController extends GroupAbstractRestController {
 
-    private Logger log = LoggerFactory.getLogger(GroupRestController.class);
-    private static final int groupMemberListPageSizeDefault = 20;
+    private static final Logger log = LoggerFactory.getLogger(GroupRestController.class);
 
     @Autowired
     private UserManagementService userManagementService;
-
-    @Autowired
-    private GroupBroker groupBroker;
-
-	@Autowired
-	private EventBroker eventBroker;
 
     @Autowired
     private PermissionBroker permissionBroker;
@@ -69,6 +59,9 @@ public class GroupRestController {
 
 	@Autowired
 	private GeoLocationBroker geoLocationBroker;
+
+	@Autowired
+	private GroupQueryBroker groupQueryBroker;
 
 	@Autowired
 	private MessengerSettingsService messengerSettingsService;
@@ -157,7 +150,7 @@ public class GroupRestController {
         User user = userManagementService.findByInputNumber(phoneNumber);
 
         Instant changedSince = changedSinceMillis == null ? null : Instant.ofEpochMilli(changedSinceMillis);
-        ChangedSinceData<Group> changedSinceData = groupBroker.getActiveGroups(user, changedSince);
+        ChangedSinceData<Group> changedSinceData = groupQueryBroker.getActiveGroups(user, changedSince);
         List<GroupResponseWrapper> groupWrappers = changedSinceData.getAddedAndUpdated().stream()
                 .map(group -> createGroupWrapper(group, user))
                 .sorted(Collections.reverseOrder())
@@ -194,7 +187,7 @@ public class GroupRestController {
         User user = userManagementService.findByInputNumber(phoneNumber);
 
 	    String tokenSearch = getSearchToken(searchTerm);
-        Optional<Group> groupByToken = groupBroker.findGroupFromJoinCode(tokenSearch);
+        Optional<Group> groupByToken = groupQueryBroker.findGroupFromJoinCode(tokenSearch);
 
         ResponseEntity<ResponseWrapper> responseEntity;
         if (groupByToken.isPresent() && !groupByToken.get().hasMember(user)) {
@@ -210,14 +203,14 @@ public class GroupRestController {
 	        }
 
 	        log.info("searching for groups, with search by name only = {}, and with location filter = {}", onlySearchNames, filter);
-	        List<Group> groupsToReturn = groupBroker.findPublicGroups(user.getUid(), searchTerm, filter, onlySearchNames);
+	        List<Group> groupsToReturn = groupQueryBroker.findPublicGroups(user.getUid(), searchTerm, filter, onlySearchNames);
 	        if (groupsToReturn == null || groupsToReturn.isEmpty()) {
 		        log.info("found no groups ... returning empty ...");
 		        responseEntity = RestUtil.okayResponseWithData(RestMessage.NO_GROUP_MATCHING_TERM_FOUND, Collections.emptyList());
 	        } else {
 		        // next line is a slightly heavy duty way to handle separating task & name queries, vs a quick string comparison on all
 		        // groups, but (a) ensures no discrepancies in what user sees, and (b) sets up for non-English/case languages
-		        List<Group> possibleGroupsOnlyName = onlySearchNames ? null : groupBroker.findPublicGroups(user.getUid(), searchTerm, null, true);
+		        List<Group> possibleGroupsOnlyName = onlySearchNames ? null : groupQueryBroker.findPublicGroups(user.getUid(), searchTerm, null, true);
 
 		        // note : we likely want to switch this to just getting the groups, via a proper JPQL query (first optimization, then maybe above)
 		        List<GroupJoinRequest> openRequests = groupJoinRequestService.getOpenUserRequestsForGroupList(user.getUid(), groupsToReturn);
@@ -402,51 +395,6 @@ public class GroupRestController {
 			return RestUtil.messageOkayResponse(RestMessage.MEMBER_UNSUBSCRIBED);
 		} catch (Exception e) { // means user has already been removed
 			return RestUtil.errorResponse(HttpStatus.CONFLICT, RestMessage.MEMBER_ALREADY_LEFT);
-		}
-	}
-
-
-    @RequestMapping(value = "/image/upload/{phoneNumber}/{code}/{groupUid}", method = RequestMethod.POST)
-    public ResponseEntity<ResponseWrapper> uploadImage(@PathVariable String phoneNumber, @PathVariable String code, @PathVariable String groupUid,
-                                                       @RequestParam("image") MultipartFile file, HttpServletRequest request) {
-        User user = userManagementService.findByInputNumber(phoneNumber);
-        Group group = groupBroker.load(groupUid);
-        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
-
-        // todo : extra compression / checks
-        ResponseEntity<ResponseWrapper> responseEntity;
-        if (file != null) {
-            try {
-                byte[] image = file.getBytes();
-                String fileName = ImageUtil.generateFileName(file,request);
-                groupBroker.saveGroupImage(user.getUid(), groupUid, fileName, image);
-	            Group updatedGroup = groupBroker.load(groupUid);
-                responseEntity = RestUtil.okayResponseWithData(RestMessage.UPLOADED, Collections.singletonList(createGroupWrapper(updatedGroup, user)));
-            } catch (IOException | IllegalArgumentException e) {
-                log.info("error "+e.getLocalizedMessage());
-                responseEntity = new ResponseEntity<>(new ResponseWrapperImpl(HttpStatus.NOT_ACCEPTABLE, RestMessage.BAD_PICTURE_FORMAT,
-                        RestStatus.FAILURE), HttpStatus.NOT_ACCEPTABLE);
-            }
-        } else {
-            responseEntity = RestUtil.errorResponse(HttpStatus.NOT_ACCEPTABLE, RestMessage.PICTURE_NOT_RECEIVED);
-        }
-
-        return responseEntity;
-
-    }
-
-	@RequestMapping(value = "/image/default/{phoneNumber}/{code}", method = RequestMethod.POST)
-	public ResponseEntity<ResponseWrapper> changeGroupDefault(@PathVariable String phoneNumber, @PathVariable String code,
-	                                                          @RequestParam String groupUid, @RequestParam GroupDefaultImage defaultImage) {
-
-		User user = userManagementService.findByInputNumber(phoneNumber);
-		try {
-			log.info("removing any custom image, and updating default image to : {}", defaultImage);
-			groupBroker.setGroupImageToDefault(user.getUid(), groupUid, defaultImage, true);
-			Group updatedGroup = groupBroker.load(groupUid);
-			return RestUtil.okayResponseWithData(RestMessage.UPLOADED, Collections.singletonList(createGroupWrapper(updatedGroup, user)));
-		} catch (AccessDeniedException e) {
-			return RestUtil.errorResponse(HttpStatus.FORBIDDEN, RestMessage.PERMISSION_DENIED);
 		}
 	}
 
@@ -638,23 +586,6 @@ public class GroupRestController {
 		return new ResponseEntity<>(new MessengerSettingsDTO(messengerSettings),HttpStatus.OK);
 
 	}
-
-    private GroupResponseWrapper createGroupWrapper(Group group, User caller) {
-        Role role = group.getMembership(caller).getRole();
-        Event event = eventBroker.getMostRecentEvent(group.getUid());
-        GroupLog groupLog = groupBroker.getMostRecentLog(group);
-
-        boolean hasTask = event != null;
-        GroupResponseWrapper responseWrapper;
-        if (hasTask && event.getEventStartDateTime().isAfter(groupLog.getCreatedDateTime())) {
-            responseWrapper = new GroupResponseWrapper(group, event, role, hasTask);
-        } else {
-            responseWrapper = new GroupResponseWrapper(group, groupLog, role, hasTask);
-        }
-        // log.info("created response wrapper = {}", responseWrapper);
-        return responseWrapper;
-
-    }
 
     private String getSearchToken(String searchTerm) {
         return searchTerm.contains("*134*1994*") ?

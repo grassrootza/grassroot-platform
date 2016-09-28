@@ -26,4 +26,3 @@ CREATE TABLE messenger_settings
       REFERENCES user_profile (id) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE NO ACTION
 );
-

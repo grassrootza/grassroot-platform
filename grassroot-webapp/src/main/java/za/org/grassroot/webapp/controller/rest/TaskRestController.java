@@ -83,7 +83,6 @@ public class TaskRestController {
 	public ResponseEntity<ChangedSinceData<TaskDTO>> getUpcomingTasksAndCancelledForUser(@PathVariable String phoneNumber,
 	                                                                                     @PathVariable String code,
 	                                                                                     @RequestParam(name = "changedSince", required = false) Long changedSinceMillis) {
-
 		User user = userManagementService.findByInputNumber(phoneNumber);
 		Instant changedSince = changedSinceMillis == null ? null : Instant.ofEpochMilli(changedSinceMillis);
 		ChangedSinceData<TaskDTO> changedSinceData = taskBroker.fetchUpcomingTasksAndCancelled(user.getUid(), changedSince);
@@ -108,6 +107,7 @@ public class TaskRestController {
         }
     }
 
+	@SuppressWarnings("unchecked") // the getAssignedMembers has a strange behavior on type check warnings, hence suppressing
     @RequestMapping(value = "/assigned/{phoneNumber}/{code}/{taskUid}/{taskType}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> fetchAssignedMembers(@PathVariable String phoneNumber, @PathVariable String code,
                                                                        @PathVariable String taskUid, @PathVariable TaskType taskType) {

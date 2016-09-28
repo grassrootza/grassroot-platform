@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.junit4.SpringRunner;
 import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
@@ -145,7 +144,7 @@ public class TodoRepositoryTest {
 
         List<Todo> replicatedEntries = new ArrayList<>();
         for (Group group : subGroups) {
-            Todo lbChild = new Todo(user, group, message, dueDate1, 60, groupParent, 3, true);
+            Todo lbChild = new Todo(user, group, message, dueDate1, 60, lbParent, 3, true);
             todoRepository.save(lbChild);
             replicatedEntries.add(lbChild);
         }
@@ -153,16 +152,16 @@ public class TodoRepositoryTest {
         // note : once fix / change replicated to-do models, fix this too
 
         List<Todo> replicatedEntries2 = new ArrayList<>();
+
         Todo lbParent2 = todoRepository.save(new Todo(user, groupParent, message, dueDate2));
         for (Group group : subGroups)
-            replicatedEntries2.add(todoRepository.save(new Todo(user, group, message, dueDate2, 60, groupParent, 3, true)));
+            replicatedEntries2.add(todoRepository.save(new Todo(user, group, message, dueDate2, 60, lbParent2, 3, true)));
 
-        List<Todo> entriesFromDb = todoRepository.
-                findByReplicatedGroupAndMessageAndActionByDateOrderByParentGroupIdAsc(groupParent, message, dueDate1);
+        List<Todo> entriesFromDb = todoRepository.findBySourceTodo(lbParent2);
 
         assertEquals(entriesFromDb.size(), replicatedEntries.size());
         for (int i = 0; i < entriesFromDb.size(); i++)
-            assertEquals(entriesFromDb.get(i), replicatedEntries.get(i));
+            assertEquals(entriesFromDb.get(i), replicatedEntries2.get(i));
 
         List<Group> subGroupsFromEntries = new ArrayList<>();
         for (Todo lb : entriesFromDb)
@@ -174,14 +173,13 @@ public class TodoRepositoryTest {
         assertTrue(subGroupsFromEntries.contains(group4));
         assertFalse(subGroupsFromEntries.contains(group5));
 
-        List<Todo> entriesFromDb2 = todoRepository.
-                findByReplicatedGroupAndMessageAndActionByDateOrderByParentGroupIdAsc(groupParent, message, lbParent2.getActionByDate());
+        List<Todo> entriesFromDb2 = todoRepository.findBySourceTodo(lbParent2);
         assertEquals(entriesFromDb2, replicatedEntries2);
 
-        int numberReplicatedEntries1 = todoRepository.countReplicatedEntries(groupParent, message, lbParent.getActionByDate());
+        int numberReplicatedEntries1 = todoRepository.countBySourceTodo(lbParent);
         assertEquals(numberReplicatedEntries1, entriesFromDb.size());
 
-        int numberReplicatedEntries2 = todoRepository.countReplicatedEntries(groupParent, message, lbParent2.getActionByDate());
+        int numberReplicatedEntries2 = todoRepository.countBySourceTodo(lbParent2);
         assertEquals(numberReplicatedEntries2, entriesFromDb2.size());
     }
 }

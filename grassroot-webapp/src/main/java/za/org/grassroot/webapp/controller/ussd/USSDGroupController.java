@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.services.GroupQueryBroker;
 import za.org.grassroot.services.MembershipInfo;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
@@ -40,6 +41,9 @@ public class USSDGroupController extends USSDController {
 
     @Autowired
     private PermissionBroker permissionBroker;
+
+    @Autowired
+    private GroupQueryBroker groupQueryBroker;
 
     private static final Logger log = LoggerFactory.getLogger(USSDGroupController.class);
 
@@ -538,7 +542,7 @@ public class USSDGroupController extends USSDController {
         User user = userManager.findByInputNumber(inputNumber, saveGroupMenu(mergeGroupMenu, groupUid));
 
         // todo: debug why this is returning inactive groups (service method has active flag)
-        List<Group> mergeCandidates = new ArrayList<>(groupBroker.mergeCandidates(user.getUid(), groupUid));
+        List<Group> mergeCandidates = new ArrayList<>(groupQueryBroker.mergeCandidates(user.getUid(), groupUid));
 
         if (mergeCandidates.size() == 0) {
             menu = new USSDMenu(getMessage(thisSection, mergeGroupMenu, promptKey + ".error", user));
@@ -666,7 +670,7 @@ public class USSDGroupController extends USSDController {
     public Request listGroupsWithInvalidNames(@RequestParam String msisdn) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(msisdn);
-	    Group group = groupBroker.fetchGroupsWithOneCharNames(user, 2).get(0);
+	    Group group = groupQueryBroker.fetchGroupsWithOneCharNames(user, 2).get(0);
 
 	    String createdDate = DateTimeUtil.convertToUserTimeZone(group.getCreatedDateTime(), DateTimeUtil.getSAST())
                 .format(DateTimeFormatter.ofPattern("d MMM"));
@@ -688,7 +692,7 @@ public class USSDGroupController extends USSDController {
         // need to do this here as aren't calling service broker method ...
         permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
 
-        final GroupLog lastLog = groupBroker.getMostRecentLog(group);
+        final GroupLog lastLog = groupQueryBroker.getMostRecentLog(group);
         final String lastModified = DateTimeUtil.convertToUserTimeZone(lastLog.getCreatedDateTime(), DateTimeUtil.getSAST())
                 .format(DateTimeFormatter.ofPattern("dd-MM"));
         final String lastMessage = lastLog.getGroupLogType().toString();

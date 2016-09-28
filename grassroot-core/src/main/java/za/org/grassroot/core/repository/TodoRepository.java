@@ -22,6 +22,9 @@ public interface TodoRepository extends JpaRepository<Todo, Long>, JpaSpecificat
     // methods for analyzing action/to-do (for admin)
     Long countByCreatedDateTimeBetween(Instant start, Instant end);
 
+    List<Todo> findBySourceTodo(Todo sourceTodo);
+    int countBySourceTodo(Todo sourceTodo);
+
     @Query(value = "select l.* from action_todo l " +
         "inner join group_profile g on l.parent_group_id = g.id " +
         "inner join group_user_membership m on g.id = m.group_id " +
@@ -43,13 +46,4 @@ public interface TodoRepository extends JpaRepository<Todo, Long>, JpaSpecificat
     // these are in test only and have been superceded in the main code -- delete once test coverage for services built out
     List<Todo> findByParentGroupAndCancelledFalse(Group group);
     List<Todo> findByAssignedMembersAndActionByDateBetweenAndCompletionPercentageGreaterThanEqual(User user, Instant start, Instant end, double minCompletionPercentage, Sort sort);
-
-    // methods for handling replication
-    List<Todo> findByParentGroupAndMessageAndCreatedDateTime(Group group, String message, Instant createdDateTime);
-    List<Todo> findByReplicatedGroupAndMessageAndActionByDateOrderByParentGroupIdAsc(Group replicatedGroup, String message, Instant actionByDateTime);
-
-
-
-    @Query(value = "select count(t) from Todo t where t.replicatedGroup=?1 and t.message=?2 and t.actionByDate=?3")
-    int countReplicatedEntries(Group group, String message, Instant actionByDate);
 }

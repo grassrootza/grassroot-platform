@@ -31,6 +31,7 @@ public abstract class WebAppAbstractUnitTest {
     protected final static User sessionTestUser = new User("testUser", testUserPhone);
 
     protected MockMvc mockMvc;
+
     @Mock
     protected EventLogBroker eventLogBrokerMock;
     @Mock
@@ -39,6 +40,8 @@ public abstract class WebAppAbstractUnitTest {
     protected UserManagementService userManagementServiceMock;
     @Mock
     protected GroupBroker groupBrokerMock;
+    @Mock
+    protected GroupQueryBroker groupQueryBrokerMock;
     @Mock
     protected EventBroker eventBrokerMock;
     @Mock

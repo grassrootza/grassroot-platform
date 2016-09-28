@@ -58,6 +58,9 @@ public class GroupController extends BaseController {
     private TodoBroker todoBroker;
 
     @Autowired
+    private GroupQueryBroker groupQueryBroker;
+
+    @Autowired
     @Qualifier("groupWrapperValidator")
     private Validator groupWrapperValidator;
 
@@ -101,7 +104,7 @@ public class GroupController extends BaseController {
         List<TaskDTO> tasks = taskBroker.fetchUpcomingIncompleteGroupTasks(user.getUid(), groupUid);
         model.addAttribute("groupTasks", tasks);
 
-        model.addAttribute("subGroups", groupBroker.subGroups(groupUid));
+        model.addAttribute("subGroups", groupQueryBroker.subGroups(groupUid));
         model.addAttribute("openToken", group.hasValidGroupTokenCode());
 
         if (userPermissions.contains(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS)) {
@@ -405,7 +408,7 @@ public class GroupController extends BaseController {
 
         log.info("Looking for possible parents of group with uid: " + groupUid);
         Group groupToMakeChild = groupBroker.load(groupUid);
-        Set<Group> possibleParents = groupBroker.possibleParents(getUserProfile().getUid(), groupUid);
+        Set<Group> possibleParents = groupQueryBroker.possibleParents(getUserProfile().getUid(), groupUid);
         if (!possibleParents.isEmpty()) {
             model.addAttribute("group", groupToMakeChild);
             model.addAttribute("possibleParents", possibleParents);
@@ -438,7 +441,7 @@ public class GroupController extends BaseController {
                                     RedirectAttributes redirectAttributes, HttpServletRequest request) {
 
         Group group = groupBroker.load(groupUid);
-        Set<Group> candidateGroups = groupBroker.mergeCandidates(getUserProfile().getUid(), groupUid);
+        Set<Group> candidateGroups = groupQueryBroker.mergeCandidates(getUserProfile().getUid(), groupUid);
         if (candidateGroups == null || candidateGroups.size() == 0) {
             addMessage(redirectAttributes, MessageType.ERROR, "group.merge.no-candidates", request);
             redirectAttributes.addAttribute("groupUid", groupUid);
@@ -546,8 +549,8 @@ public class GroupController extends BaseController {
         Instant end = DateTimeUtil.convertToSystemTime(endDateTime, DateTimeUtil.getSAST());
         List<Event> eventsInPeriod = eventBroker.retrieveGroupEvents(group, null, start, end);
         List<Todo> todosInPeriod = todoBroker.fetchTodosForGroupCreatedDuring(group.getUid(), startDateTime, endDateTime);
-        List<GroupLog> groupLogsInPeriod = groupBroker.getLogsForGroup(group, startDateTime, endDateTime);
-        List<LocalDate> monthsActive = groupBroker.getMonthsGroupActive(groupUid);
+        List<GroupLog> groupLogsInPeriod = groupQueryBroker.getLogsForGroup(group, startDateTime, endDateTime);
+        List<LocalDate> monthsActive = groupQueryBroker.getMonthsGroupActive(groupUid);
 
         model.addAttribute("group", group);
         model.addAttribute("eventsInPeriod", eventsInPeriod);

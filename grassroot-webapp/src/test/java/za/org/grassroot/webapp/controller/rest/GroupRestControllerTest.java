@@ -57,7 +57,7 @@ public class GroupRestControllerTest extends RestAbstractUnitTest {
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
         when(groupBrokerMock.create(sessionTestUser.getUid(), testGroupName, null, membersToAdd,
                                     GroupPermissionTemplate.DEFAULT_GROUP, testEventDescription, null, true)).thenReturn(testGroup);
-        when(groupBrokerMock.getMostRecentLog(testGroup)).thenReturn(groupLog);
+        when(groupQueryBrokerMock.getMostRecentLog(testGroup)).thenReturn(groupLog);
 
         log.info("Mock set up for : userUid={}, name={}, members={}, desc={}", sessionTestUser.getUid(), testGroupName,
                  membersToAdd, testEventDescription);
@@ -72,7 +72,7 @@ public class GroupRestControllerTest extends RestAbstractUnitTest {
 
         verify(userManagementServiceMock).findByInputNumber(testUserPhone);
         verify(groupBrokerMock).create(sessionTestUser.getUid(), testGroupName, null, membersToAdd, GroupPermissionTemplate.DEFAULT_GROUP, meetingEvent.getDescription(), null, true);
-        verify(groupBrokerMock, times(1)).getMostRecentLog(testGroup);
+        verify(groupQueryBrokerMock, times(1)).getMostRecentLog(testGroup);
         verify(groupBrokerMock, times(1)).checkForDuplicate(sessionTestUser.getUid(), testGroupName);
         verifyNoMoreInteractions(groupBrokerMock);
         verifyNoMoreInteractions(userManagementServiceMock);
@@ -87,26 +87,26 @@ public class GroupRestControllerTest extends RestAbstractUnitTest {
         ChangedSinceData<Group> wrapper = new ChangedSinceData<>(groups, Collections.EMPTY_SET);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
-        when(groupBrokerMock.getActiveGroups(sessionTestUser, null)).thenReturn(wrapper);
+        when(groupQueryBrokerMock.getActiveGroups(sessionTestUser, null)).thenReturn(wrapper);
 
         when(eventBrokerMock.getMostRecentEvent(testGroup.getUid())).thenReturn(event);
-        when(groupBrokerMock.getMostRecentLog(testGroup)).thenReturn(groupLog);
+        when(groupQueryBrokerMock.getMostRecentLog(testGroup)).thenReturn(groupLog);
         mockMvc.perform(get(path + "list/{phoneNumber}/{code}", testUserPhone, testUserCode)).andExpect(status().is2xxSuccessful());
 
 	    verify(userManagementServiceMock).findByInputNumber(testUserPhone);
-        verify(groupBrokerMock).getActiveGroups(sessionTestUser, null);
+        verify(groupQueryBrokerMock).getActiveGroups(sessionTestUser, null);
 	    verify(eventBrokerMock).getMostRecentEvent(testGroup.getUid());
-        verify(groupBrokerMock).getMostRecentLog(testGroup);
+        verify(groupQueryBrokerMock).getMostRecentLog(testGroup);
     }
 
     @Test
     public void searchForGroupsShouldWork() throws Exception {
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
-        when(groupBrokerMock.findGroupFromJoinCode(testSearchTerm)).thenReturn(Optional.of(testGroup));
+        when(groupQueryBrokerMock.findGroupFromJoinCode(testSearchTerm)).thenReturn(Optional.of(testGroup));
         mockMvc.perform(get(path + "search/{phoneNumber}/{code}", testUserPhone, testUserCode).param("searchTerm", testSearchTerm)).andExpect(status().is2xxSuccessful());
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(groupBrokerMock).findGroupFromJoinCode(testSearchTerm);
+        verify(groupQueryBrokerMock).findGroupFromJoinCode(testSearchTerm);
     }
 
     @Test

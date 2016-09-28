@@ -80,6 +80,9 @@ public class RestAbstractUnitTest {
     @Mock
     protected GroupBroker groupBrokerMock;
     @Mock
+    protected GroupQueryBroker groupQueryBrokerMock;
+
+    @Mock
     protected EventBroker eventBrokerMock;
     @Mock
     protected TaskBroker taskBrokerMock;

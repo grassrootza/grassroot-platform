@@ -145,7 +145,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
         testGroup.setTokenExpiryDateTime(Instant.now().plus(7, ChronoUnit.DAYS));
 
         when(userManagementServiceMock.loadOrCreateUser(phoneForTests)).thenReturn(testUser);
-        when(groupBrokerMock.findGroupFromJoinCode("111")).thenReturn(Optional.of(testGroup));
+        when(groupQueryBrokerMock.findGroupFromJoinCode("111")).thenReturn(Optional.of(testGroup));
 
         mockMvc.perform(get(openingMenu).param(phoneParameter, phoneForTests).param("request", "*134*1994*111#")).
                 andExpect(status().isOk());

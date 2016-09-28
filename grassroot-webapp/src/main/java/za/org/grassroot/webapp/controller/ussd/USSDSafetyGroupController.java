@@ -16,6 +16,7 @@ import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.services.AddressBroker;
+import za.org.grassroot.services.GroupQueryBroker;
 import za.org.grassroot.services.MembershipInfo;
 import za.org.grassroot.services.SafetyEventBroker;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
@@ -47,6 +48,9 @@ public class USSDSafetyGroupController extends USSDController {
 
     @Autowired
     private AddressBroker addressBroker;
+
+    @Autowired
+    private GroupQueryBroker groupQueryBroker;
 
     @Autowired
     private SafetyEventBroker safetyEventBroker;
@@ -98,7 +102,7 @@ public class USSDSafetyGroupController extends USSDController {
             menu.addMenuOption(safetyMenus + resetSafetyGroup, getMessage(thisSection, startMenu, optionsKey + resetSafetyGroup, user));
         } else {
             menu = new USSDMenu(getMessage(thisSection, startMenu, promptKey + ".nogroup", user));
-            if (groupBroker.fetchUserCreatedGroups(user, 0, 1).getTotalElements() != 0) {
+            if (groupQueryBroker.fetchUserCreatedGroups(user, 0, 1).getTotalElements() != 0) {
                 menu.addMenuOption(safetyMenus + pickGroup, getMessage(thisSection, startMenu, optionsKey + "existing", user));
             }
             menu.addMenuOption(safetyMenus + newGroup, getMessage(thisSection, startMenu, optionsKey + "new", user));

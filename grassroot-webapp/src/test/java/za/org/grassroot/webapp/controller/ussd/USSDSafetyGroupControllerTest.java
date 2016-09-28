@@ -67,11 +67,11 @@ public class USSDSafetyGroupControllerTest extends USSDAbstractUnitTest {
     @Test
     public void openingSafetyGroupShouldWorkWithoutGroup() throws Exception{
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
-        when(groupBrokerMock.fetchUserCreatedGroups(testUser, 0, 1)).thenReturn(new PageImpl<Group>(Collections.singletonList(testGroup)));
+        when(groupQueryBrokerMock.fetchUserCreatedGroups(testUser, 0, 1)).thenReturn(new PageImpl<Group>(Collections.singletonList(testGroup)));
         mockMvc.perform(get(path + "start").param(phoneParam, testUserPhone)).andExpect(status().isOk());
         verify(userManagementServiceMock,times(1)).findByInputNumber(testUserPhone);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(groupBrokerMock, times(1)).fetchUserCreatedGroups(testUser, 0, 1);
+        verify(groupQueryBrokerMock, times(1)).fetchUserCreatedGroups(testUser, 0, 1);
         verifyNoMoreInteractions(groupBrokerMock);
     }
 

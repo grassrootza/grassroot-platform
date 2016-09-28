@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.services.GroupBroker;
+import za.org.grassroot.services.GroupImageBroker;
 import za.org.grassroot.webapp.util.ImageUtil;
 
 import javax.servlet.http.HttpServletRequest;
@@ -25,10 +25,9 @@ import java.io.IOException;
 public class ImageController {
 
     private Logger log = LoggerFactory.getLogger(ImageController.class);
-    private static final String RELATIVE_PATH = "/image/get?imageId=";
 
     @Autowired
-    private GroupBroker groupBroker;
+    private GroupImageBroker groupImageBroker;
 
     @RequestMapping(value = "get", method = RequestMethod.GET)
     public ResponseEntity<?> getImage(@RequestParam String imageId, HttpServletRequest request) throws IOException {
@@ -45,7 +44,7 @@ public class ImageController {
                 .append(imageId).toString();
 
         HttpHeaders headers = new HttpHeaders();
-        Group group = groupBroker.getGroupByImageUrl(imageUrl);
+        Group group = groupImageBroker.getGroupByImageUrl(imageUrl);
 
         if(group != null) {
             byte[] image = group.getImage();

@@ -15,6 +15,8 @@ public interface GeoLocationBroker {
 
 	void calculatePreviousPeriodUserLocations(LocalDate localDate);
 
+	void calculateGroupLocation(String groupUid, LocalDate localDate);
+
 	CenterCalculationResult calculateCenter(Set<String> userUids, LocalDate date);
 
 	PreviousPeriodUserLocation fetchUserLocation(String userUid, LocalDate localDate);

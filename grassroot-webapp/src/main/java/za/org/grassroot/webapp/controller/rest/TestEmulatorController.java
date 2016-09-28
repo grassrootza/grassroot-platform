@@ -14,6 +14,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GroupLocation;
 import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
 import za.org.grassroot.services.GroupBroker;
+import za.org.grassroot.services.GroupQueryBroker;
 import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.webapp.controller.BaseController;
@@ -31,10 +32,10 @@ public class TestEmulatorController extends BaseController {
     private static final Logger log = LoggerFactory.getLogger(TestEmulatorController.class);
 
     @Autowired
-    private UserManagementService userManagementService;
+    private GroupBroker groupBroker;
 
     @Autowired
-    private GroupBroker groupBroker;
+    private GroupQueryBroker groupQueryBroker;
 
     @Autowired
     private GeoLocationBroker geoLocationBroker;
@@ -97,7 +98,7 @@ public class TestEmulatorController extends BaseController {
         final LocalDate today = LocalDate.now();
 
         if (groupUid != null && !groupUid.trim().equals("")) {
-            if (calculate) groupBroker.calculateGroupLocation(groupUid, LocalDate.now());
+            if (calculate) geoLocationBroker.calculateGroupLocation(groupUid, LocalDate.now());
 
             Group group = groupBroker.load(groupUid);
             GroupLocation groupLocation = geoLocationBroker.fetchGroupLocationWithScoreAbove(groupUid, today, 0);
@@ -111,13 +112,12 @@ public class TestEmulatorController extends BaseController {
             model.addAttribute("userLocations", memberLocations);
 
             return "emulator/geo_group_single_result";
-
         } else {
-            List<Group> allGroups = groupBroker.loadAll();
+            List<Group> allGroups = groupQueryBroker.loadAll();
             List<GroupLocation> allGroupLocations = new ArrayList<>();
 
             for (Group g : allGroups) {
-                if (calculate) groupBroker.calculateGroupLocation(g.getUid(), LocalDate.now());
+                if (calculate) geoLocationBroker.calculateGroupLocation(g.getUid(), LocalDate.now());
                 allGroupLocations.add(geoLocationBroker.fetchGroupLocationWithScoreAbove(g.getUid(), today, 0));
             }
 

@@ -5,51 +5,42 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.env.Environment;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.domain.geo.GeoLocation;
-import za.org.grassroot.core.domain.geo.GroupLocation;
-import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
 import za.org.grassroot.core.domain.notification.EventInfoNotification;
-import za.org.grassroot.core.dto.GroupTreeDTO;
-import za.org.grassroot.core.enums.*;
-import za.org.grassroot.core.repository.*;
+import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.core.enums.GroupDefaultImage;
+import za.org.grassroot.core.enums.GroupLogType;
+import za.org.grassroot.core.enums.UserLogType;
+import za.org.grassroot.core.repository.GroupLocationRepository;
+import za.org.grassroot.core.repository.GroupLogRepository;
+import za.org.grassroot.core.repository.GroupRepository;
+import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.services.exception.GroupDeactivationNotAvailableException;
 import za.org.grassroot.services.exception.InvalidTokenException;
-import za.org.grassroot.services.geo.CenterCalculationResult;
 import za.org.grassroot.services.geo.GeoLocationBroker;
-import za.org.grassroot.services.util.FullTextSearchUtils;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 import za.org.grassroot.services.util.TokenGeneratorService;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static za.org.grassroot.core.enums.UserInterfaceType.UNKNOWN;
 import static za.org.grassroot.core.util.DateTimeUtil.*;
 
 @Service
 public class GroupBrokerImpl implements GroupBroker {
-    private static final int DEFAULT_RADIUS = 10000; // 10 km
-    private static final float LOCATION_FILTER_SCORE_MIN = 0.2f;
 
     private final Logger logger = LoggerFactory.getLogger(GroupBrokerImpl.class);
 
@@ -60,8 +51,6 @@ public class GroupBrokerImpl implements GroupBroker {
     private GroupRepository groupRepository;
     @Autowired
     private UserRepository userRepository;
-    @Autowired
-    private EventRepository eventRepository;
     @Autowired
     private GroupLogRepository groupLogRepository;
 
@@ -79,35 +68,11 @@ public class GroupBrokerImpl implements GroupBroker {
     private GeoLocationBroker geoLocationBroker;
     @Autowired
     private GroupLocationRepository groupLocationRepository;
-    @Autowired
-    private EventLogRepository eventLogRepository;
 
     @Override
     @Transactional(readOnly = true)
     public Group load(String groupUid) {
         return groupRepository.findOneByUid(groupUid);
-    }
-
-    @Override
-    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    @Transactional(readOnly = true)
-    public List<Group> loadAll() {
-        return groupRepository.findAll();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<Group> searchUsersGroups(String userUid, String searchTerm) {
-	    Objects.requireNonNull(userUid);
-	    Objects.requireNonNull(searchTerm);
-
-	    if (searchTerm.trim().isEmpty()) {
-		    throw new IllegalArgumentException("Error, cannot search for blank term");
-	    }
-
-	    User user = userRepository.findOneByUid(userUid);
-        String tsQuery = FullTextSearchUtils.encodeAsTsQueryText(searchTerm);
-        return groupRepository.findByActiveAndMembershipsUserWithNameContainsText(user.getId(), tsQuery);
     }
 
     @Override
@@ -171,9 +136,7 @@ public class GroupBrokerImpl implements GroupBroker {
         if (!actionLogs.isEmpty()) {
             LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
             bundle.addLogs(actionLogs);
-
-            // we want to log group events after transaction has committed
-            AfterTxCommitTask afterTxCommitTask = () -> logsAndNotificationsBroker.asyncStoreBundle(bundle);
+            AfterTxCommitTask afterTxCommitTask = () -> logsAndNotificationsBroker.asyncStoreBundle(bundle); // we want to log group events after transaction has committed
             applicationEventPublisher.publishEvent(afterTxCommitTask);
         }
     }
@@ -580,7 +543,6 @@ public class GroupBrokerImpl implements GroupBroker {
         if (createNew) {
             Set<MembershipInfo> membershipInfos = MembershipInfo.createFromMembers(groupInto.getMemberships());
             membershipInfos.addAll(MembershipInfo.createFromMembers(groupFrom.getMemberships()));
-            // todo: work out what to do about templates ... probably a UX issue more than solving here
             resultGroup = create(user.getUid(), newGroupName, null, membershipInfos, GroupPermissionTemplate.DEFAULT_GROUP, null, null, false);
             if (!leaveActive) {
                 deactivate(user.getUid(), groupInto.getUid(), false);
@@ -769,7 +731,7 @@ public class GroupBrokerImpl implements GroupBroker {
 
         if (includeSubGroups) {
             List<Group> subGroups = new ArrayList<>(groupRepository.findByParentAndActiveTrue(group));
-            if (subGroups != null && !subGroups.isEmpty()) {
+            if (!subGroups.isEmpty()) {
                 for (Group subGroup : subGroups)
                     updateGroupDefaultLanguage(userUid, subGroup.getUid(), newLocale, true);
             }
@@ -910,128 +872,6 @@ public class GroupBrokerImpl implements GroupBroker {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public List<Group> findPublicGroups(String userUid, String searchTerm, GroupLocationFilter locationFilter, boolean restrictToGroupName) {
-        Objects.requireNonNull(userUid);
-
-        logger.info("Finding public groups: userUid={}, searchTerm={}, locationFilter={}", userUid, searchTerm, locationFilter);
-
-        User user = userRepository.findOneByUid(userUid);
-        String tsQuery = FullTextSearchUtils.encodeAsTsQueryText(searchTerm);
-        List<Group> groups = restrictToGroupName ? groupRepository.findDiscoverableGroupsWithNameWithoutMember(user.getId(), tsQuery) :
-                groupRepository.findDiscoverableGroupsWithNameOrTaskTextWithoutMember(user.getId(), tsQuery);
-
-        Predicate<Group> locationPredicate = constructLocationPredicate(user, new HashSet<>(groups), locationFilter);
-        return groups.stream()
-                .filter(locationPredicate)
-                .collect(Collectors.toList());
-    }
-
-    private Predicate<Group> constructLocationPredicate(User user, Set<Group> groups, GroupLocationFilter locationFilter) {
-        if (locationFilter == null) {
-            return group -> true; // always included predicate
-
-        } else {
-            LocalDate localDate = LocalDate.now();
-            GeoLocation center = resolveAreaCenter(locationFilter.getCenter(), user, localDate);
-
-            if (center == null) {
-                return group -> true; // always included predicate if user's location is not found (center is null)
-
-            } else {
-                int radius = resolveRadius(locationFilter.getRadius());
-                List<GroupLocation> groupLocations = groupLocationRepository.findByGroupInAndLocalDateAndScoreGreaterThan(groups, localDate, LOCATION_FILTER_SCORE_MIN);
-                // useful map for quick search of group location; used within following predicate
-                Map<Group, GeoLocation> groupGeoLocations = groupLocations.stream()
-                        .collect(Collectors.toMap(GroupLocation::getGroup, GroupLocation::getLocation));
-
-                return group -> {
-                    GeoLocation geoLocation = groupGeoLocations.get(group);
-                    if (geoLocation == null) {
-                        return locationFilter.isIncludeWithoutLocation();
-
-                    } else {
-                        // is group location within radius ?
-                        int distanceFromCenter = geoLocation.calculateDistanceInMetersFrom(center);
-                        return distanceFromCenter < radius;
-                    }
-                };
-            }
-        }
-    }
-
-    private GeoLocation resolveAreaCenter(GeoLocation centerDefinition, User user, LocalDate localDate) {
-        // if there is no center specified, we try to take user's current location
-        if (centerDefinition == null) {
-            PreviousPeriodUserLocation previousPeriodUserLocation = geoLocationBroker.fetchUserLocation(user.getUid(), localDate);
-            if (previousPeriodUserLocation == null) {
-                return null;
-            }
-            return previousPeriodUserLocation.getLocation();
-
-        } else {
-            return centerDefinition;
-        }
-    }
-
-    private int resolveRadius(Integer radiusDefinition) {
-        if (radiusDefinition == null) {
-            return DEFAULT_RADIUS;
-        } else {
-            return radiusDefinition;
-        }
-    }
-
-    @Override
-    public Optional<Group> findGroupFromJoinCode(String joinCode) {
-        Group groupToReturn = groupRepository.findByGroupTokenCode(joinCode);
-        if (groupToReturn == null) return Optional.empty();
-        if (groupToReturn.getTokenExpiryDateTime().isBefore(Instant.now())) return null;
-        return Optional.of(groupToReturn);
-    }
-
-    @Override
-    public Set<Group> subGroups(String groupUid) {
-        Group group = groupRepository.findOneByUid(groupUid);
-        return new HashSet<>(groupRepository.findByParentAndActiveTrue(group));
-    }
-
-    @Override
-    public List<Group> parentChain(String groupUid) {
-        Group group = groupRepository.findOneByUid(groupUid);
-        List<Group> parentGroups = new ArrayList<Group>();
-        recursiveParentGroups(group, parentGroups);
-        return parentGroups;
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<GroupTreeDTO> groupTree(String userUid) {
-        User user = userRepository.findOneByUid(userUid);
-        List<Object[]> listObjArray = groupRepository.getGroupMemberTree(user.getId());
-        List<GroupTreeDTO> list = new ArrayList<>();
-        for (Object[] objArray : listObjArray) {
-            list.add(new GroupTreeDTO(objArray));
-        }
-        return list;
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Set<Group> possibleParents(String userUid, String groupUid) {
-        Objects.requireNonNull(userUid);
-        Objects.requireNonNull(groupUid);
-
-        User user = userRepository.findOneByUid(userUid);
-        Group groupToMakeChild = groupRepository.findOneByUid(groupUid);
-
-        Set<Group> groupsWithPermission = permissionBroker.getActiveGroupsWithPermission(user,Permission.GROUP_PERMISSION_CREATE_SUBGROUP);
-        groupsWithPermission.remove(groupToMakeChild);
-
-        return groupsWithPermission.stream().filter(g -> !isGroupAlsoParent(groupToMakeChild, g)).collect(Collectors.toSet());
-    }
-
-    @Override
     @Transactional
     public void link(String userUid, String childGroupUid, String parentGroupUid) {
         Objects.requireNonNull(userUid);
@@ -1053,218 +893,4 @@ public class GroupBrokerImpl implements GroupBroker {
         logActionLogsAfterCommit(actionLogs);
     }
 
-    @Override
-    public Set<Group> mergeCandidates(String userUid, String groupUid) {
-        Objects.requireNonNull(userUid);
-        Objects.requireNonNull(groupUid);
-
-        User user = userRepository.findOneByUid(userUid);
-        Group group = groupRepository.findOneByUid(groupUid);
-
-        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
-
-        // todo: may want to check for both update and add members ...
-        Set<Group> otherGroups = permissionBroker.getActiveGroupsWithPermission(user, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
-        otherGroups.remove(group);
-        return otherGroups;
-    }
-
-    // if this returns true, then the group being passed as child is already in the parent chain of the desired
-    // parent, which will create an infinite loop, hence prevent it
-    private boolean isGroupAlsoParent(Group possibleChildGroup, Group possibleParentGroup) {
-        for (Group g : parentChain(possibleParentGroup.getUid())) {
-            if (g.getId() == possibleChildGroup.getId()) return true;
-        }
-        return false;
-    }
-
-    // todo: watch & verify this method
-    private void recursiveParentGroups(Group childGroup, List<Group> parentGroups) {
-        parentGroups.add(childGroup);
-        if (childGroup.getParent() != null && childGroup.getParent().getId() != 0) {
-            recursiveParentGroups(childGroup.getParent(),parentGroups);
-        }
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public LocalDateTime getLastTimeGroupActiveOrModified(String groupUid) {
-        LocalDateTime lastActive = getLastTimeGroupActive(groupUid);
-        LocalDateTime lastModified = getLastTimeGroupModified(groupUid);
-        return (lastActive != null && lastActive.isAfter(lastModified)) ? lastActive : lastModified;
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public GroupLog getMostRecentLog(Group group) {
-        return groupLogRepository.findFirstByGroupOrderByCreatedDateTimeDesc(group);
-    }
-
-    private LocalDateTime getLastTimeGroupActive(String groupUid) {
-        Group group = groupRepository.findOneByUid(groupUid);
-        Event latestEvent = eventRepository.findTopByParentGroupAndEventStartDateTimeNotNullOrderByEventStartDateTimeDesc(group);
-        return (latestEvent != null) ? latestEvent.getEventDateTimeAtSAST() :
-                LocalDateTime.ofInstant(group.getCreatedDateTime(), getSAST());
-    }
-
-    private LocalDateTime getLastTimeGroupModified(String groupUid) {
-        Group group = groupRepository.findOneByUid(groupUid);
-        GroupLog latestGroupLog = groupLogRepository.findFirstByGroupOrderByCreatedDateTimeDesc(group);
-        return (latestGroupLog != null) ? LocalDateTime.ofInstant(latestGroupLog.getCreatedDateTime(), getSAST()) :
-                LocalDateTime.ofInstant(group.getCreatedDateTime(), getSAST());
-    }
-
-    @Override
-    public List<LocalDate> getMonthsGroupActive(String groupUid) {
-        // todo: make this somewhat more sophisticated, including checking for active/inactive months, paid months etc
-        Group group = groupRepository.findOneByUid(groupUid);
-        LocalDate groupStartDate = LocalDateTime.ofInstant(group.getCreatedDateTime(), getSAST()).toLocalDate();
-        LocalDate today = LocalDate.now();
-        LocalDate monthIterator = LocalDate.of(groupStartDate.getYear(), groupStartDate.getMonth(), 1);
-        List<LocalDate> months = new ArrayList<>();
-        while (monthIterator.isBefore(today)) {
-            months.add(monthIterator);
-            monthIterator = monthIterator.plusMonths(1L);
-        }
-        return months;
-    }
-
-    @Override
-    public List<GroupLog> getLogsForGroup(Group group, LocalDateTime periodStart, LocalDateTime periodEnd) {
-        Sort sort = new Sort(Sort.Direction.ASC, "CreatedDateTime");
-        return groupLogRepository.findByGroupAndCreatedDateTimeBetween(group, convertToSystemTime(periodStart, getSAST()),
-                                                                         convertToSystemTime(periodEnd, getSAST()), sort);
-    }
-
-    @Override
-    @Transactional
-    public void calculateGroupLocation(String groupUid, LocalDate localDate) {
-        Objects.requireNonNull(groupUid);
-        Objects.requireNonNull(localDate);
-
-        Group group = groupRepository.findOneByUid(groupUid);
-
-        // delete so we can recalculate
-        groupLocationRepository.deleteByGroupAndLocalDate(group, localDate);
-
-        Set<String> memberUids = group.getMembers().stream().map(User::getUid).collect(Collectors.toSet());
-        CenterCalculationResult result = geoLocationBroker.calculateCenter(memberUids, localDate);
-        if (result.isDefined()) {
-            // for now, score is simply ratio of found member locations to total member count
-            float score = result.getUserCount() / (float) memberUids.size();
-            GroupLocation groupLocation = new GroupLocation(group, localDate, result.getCenter(), score);
-            groupLocationRepository.save(groupLocation);
-        } else {
-            logger.debug("No member location data found for group {} for local date {}", group, localDate);
-        }
-    }
-
-    @Override
-    @Transactional
-    public void saveGroupImage(String userUid, String groupUid, String imageUrl, byte[] image) {
-        Objects.requireNonNull(groupUid);
-        Objects.requireNonNull(imageUrl);
-        Objects.requireNonNull(image);
-
-        User user = userRepository.findOneByUid(userUid);
-        Group group = groupRepository.findOneByUid(groupUid);
-        group.setImage(image);
-        group.setImageUrl(imageUrl);
-
-        GroupLog groupLog = new GroupLog(group, user, GroupLogType.GROUP_AVATAR_UPLOADED, group.getId(), "Group avatar uploaded");
-        logActionLogsAfterCommit(Collections.singleton(groupLog));
-
-    }
-
-    @Override
-    public Group getGroupByImageUrl(String imageUrl) {
-        return groupRepository.findOneByImageUrl(imageUrl);
-    }
-
-    @Override
-    @Transactional
-    public void setGroupImageToDefault(String userUid, String groupUid, GroupDefaultImage defaultImage, boolean removeCustomImage) {
-        Objects.requireNonNull(userUid);
-        Objects.requireNonNull(groupUid);
-        Objects.requireNonNull(defaultImage);
-
-        User user = userRepository.findOneByUid(userUid);
-        Group group = groupRepository.findOneByUid(groupUid);
-
-        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
-
-        group.setDefaultImage(defaultImage);
-
-        if (removeCustomImage) {
-            group.setImage(null);
-            group.setImageUrl(null);
-        }
-
-        logActionLogsAfterCommit(Collections.singleton(new GroupLog(group, user, GroupLogType.GROUP_DEFAULT_IMAGE_CHANGED,
-                group.getId(), defaultImage.toString())));
-    }
-
-    @Override
-	@Transactional(readOnly = true)
-	public List<Group> fetchGroupsWithOneCharNames(User user, int sizeThreshold) {
-        //for now limiting this to only groups created by the user
-		List<Group> candidateGroups = new ArrayList<>(groupRepository.findActiveGroupsWithNamesLessThanOneCharacter(user));
-		return candidateGroups.stream()
-				.filter(group -> group.getMembers().size() <= sizeThreshold)
-				.sorted(Collections.reverseOrder())
-				.collect(Collectors.toList());
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Page<Group> fetchUserCreatedGroups(User user, int pageNumber, int pageSize) {
-        Objects.nonNull(user);
-        return groupRepository.findByCreatedByUserAndActiveTrueOrderByCreatedDateTimeDesc(user, new PageRequest(pageNumber, pageSize));
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public ChangedSinceData<Group> getActiveGroups(User user, Instant changedSince) {
-        Objects.requireNonNull(user, "User cannot be null");
-
-        List<Group> activeGroups = groupRepository.findByMembershipsUserAndActiveTrue(user);
-
-        // here we put all those groups that have been satisfying query above, but not anymore since 'changedSince' moment
-        Set<String> removedUids = new HashSet<>();
-        if (changedSince != null) {
-            List<Group> deactivatedAfter = groupRepository.findMemberGroupsDeactivatedAfter(user, changedSince);
-            List<Group> formerMembersGroups = groupRepository.findMembershipRemovedAfter(user.getId(), changedSince);
-            removedUids = Stream.concat(deactivatedAfter.stream(), formerMembersGroups.stream())
-                    .map(Group::getUid)
-                    .collect(Collectors.toSet());
-        }
-
-        List<Group> groups = activeGroups.stream()
-                .filter(group -> changedSince == null || isGroupChangedSince(group, changedSince))
-                .collect(Collectors.toList());
-
-        return new ChangedSinceData<>(groups, removedUids);
-    }
-
-    private boolean isGroupChangedSince(Group group, Instant changedSince) {
-        GroupLog mostRecentLog = getMostRecentLog(group);
-        if (mostRecentLog.getCreatedDateTime().isAfter(changedSince)) {
-            return true;
-        }
-
-        Event mostRecentEvent = eventRepository.findTopByParentGroupAndEventStartDateTimeNotNullOrderByEventStartDateTimeDesc(group);
-        if (mostRecentEvent != null) {
-            if (mostRecentEvent.getCreatedDateTime().isAfter(changedSince)) {
-				return true;
-			}
-
-            // if most recent event is created before last time user checked this group, then we check if this event has been changed after this last time
-            EventLog lastChangeEventLog = eventLogRepository.findFirstByEventAndEventLogTypeOrderByCreatedDateTimeDesc(mostRecentEvent, EventLogType.CHANGE);
-            if (lastChangeEventLog != null && lastChangeEventLog.getCreatedDateTime().isAfter(changedSince)) {
-				return true;
-			}
-        }
-
-        return false;
-    }
 }

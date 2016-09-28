@@ -1,29 +1,19 @@
 package za.org.grassroot.services;
 
-import org.springframework.data.domain.Page;
 import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.GroupLog;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.dto.GroupTreeDTO;
 import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 public interface GroupBroker {
 
     Group load(String groupUid);
-
-    List<Group> loadAll();
-
-    List<Group> searchUsersGroups(String userUid, String searchTerm);
 
     Group checkForDuplicate(String userUid, String groupName);
 
@@ -80,58 +70,11 @@ public interface GroupBroker {
 
     void updateDiscoverable(String userUid, String groupUid, boolean discoverable, String authUserPhoneNumber);
 
-	/**
-     * Core search method. Finds discoverable groups corresponding to the term given, for which the user is not a member.
-     * If location filter is null, then no location filtering is performed.
-     *
-     * @param userUid user searcher
-     * @param searchTerm query string
-     * @param locationFilter optional, nullable, location filter options
-     * @param restrictToGroupName restricts to just the group name, e.g., if want to display separately
-     * @return group list
-     */
-    List<Group> findPublicGroups(String userUid, String searchTerm, GroupLocationFilter locationFilter, boolean restrictToGroupName);
-
-    Optional<Group> findGroupFromJoinCode(String joinCode);
-
-    /** METHODS FOR DEALING WITH SUBGROUPS, LINKING GROUPS, AND MERGING **/
-
-    Set<Group> subGroups(String groupUid);
-
-    List<Group> parentChain(String groupUid);
-
-    List<GroupTreeDTO> groupTree(String userUid);
-
-    Set<Group> possibleParents(String userUid, String groupUid);
+    /** METHODS FOR DEALING WITH SUBGROUPS, LINKING GROUPS, AND MERGING **/ // major todo: move to paid group (since will migrate to paid account feature)
 
     void link(String userUid, String childGroupUid, String parentGroupUid);
-
-    Set<Group> mergeCandidates(String userUid, String groupUid);
 
     Group merge(String userUid, String firstGroupUid, String secondGroupUid,
                 boolean leaveActive, boolean orderSpecified, boolean createNew, String newGroupName);
 
-    /** METHODS FOR RETRIEVING GROUP HISTORY & GROUP LOGS **/
-
-    LocalDateTime getLastTimeGroupActiveOrModified(String groupUid);
-
-    GroupLog getMostRecentLog(Group group);
-
-    List<LocalDate> getMonthsGroupActive(String groupUid);
-
-    List<GroupLog> getLogsForGroup(Group group, LocalDateTime periodStart, LocalDateTime periodEnd);
-
-    List<Group> fetchGroupsWithOneCharNames(User creatingUser, int sizeThreshold);
-
-    Page<Group> fetchUserCreatedGroups(User user, int pageNumber, int pageSize);
-
-    void calculateGroupLocation(String groupUid, LocalDate localDate);
-
-    void setGroupImageToDefault(String userUid, String groupUid, GroupDefaultImage defaultImage, boolean removeCustomImage);
-
-    void saveGroupImage(String userUid, String groupUid, String format, byte[] image);
-
-    Group getGroupByImageUrl(String imageUrl); //todo this needs to be in a separate interface
-
-    ChangedSinceData<Group> getActiveGroups(User user, Instant changedSince);
 }

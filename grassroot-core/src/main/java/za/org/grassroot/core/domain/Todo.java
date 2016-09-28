@@ -22,11 +22,10 @@ import java.util.Set;
 @Table(name = "action_todo",
         indexes = {
                 @Index(name = "idx_action_todo_group_id", columnList = "parent_group_id"),
-                @Index(name = "idx_action_todo_retries_left", columnList = "number_of_reminders_left_to_send"),
-                @Index(name = "idx_action_todo_replicated_group_id", columnList = "replicated_group_id")})
+                @Index(name = "idx_action_todo_retries_left", columnList = "number_of_reminders_left_to_send")})
 public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, VoteContainer, MeetingContainer {
 
-    private static Logger logger = LoggerFactory.getLogger(Todo.class);
+    private static final Logger logger = LoggerFactory.getLogger(Todo.class);
 
     @Transient
     @Value("{grassroot.todos.number.reminders:1")
@@ -44,9 +43,9 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
     @Column(name="completion_percentage", nullable = false)
     private double completionPercentage;
 
-    @ManyToOne(cascade = CascadeType.ALL)
-   	@JoinColumn(name = "replicated_group_id")
-   	private Group replicatedGroup;
+    @ManyToOne
+    @JoinColumn(name = "source_todo")
+    private Todo sourceTodo;
 
     @ManyToMany(cascade = CascadeType.ALL)
     @JoinTable(name = "action_todo_assigned_members",
@@ -71,13 +70,13 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
     }
 
     public Todo(User createdByUser, TodoContainer parent, String message, Instant actionByDate, int reminderMinutes,
-                Group replicatedGroup, Integer numberOfRemindersLeftToSend, boolean reminderActive) {
+                Todo sourceTodo, Integer numberOfRemindersLeftToSend, boolean reminderActive) {
         super(createdByUser, parent, message, actionByDate, reminderMinutes, reminderActive);
 
         this.ancestorGroup = parent.getThisOrAncestorGroup();
         this.ancestorGroup.addDescendantTodo(this);
 
-        this.replicatedGroup = replicatedGroup;
+        this.sourceTodo = sourceTodo;
         this.numberOfRemindersLeftToSend = numberOfRemindersLeftToSend == null ? DEFAULT_NUMBER_REMINDERS : numberOfRemindersLeftToSend;
         this.cancelled = false;
     }
@@ -98,10 +97,6 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
 
     public void setNumberOfRemindersLeftToSend(int numberOfRemindersLeftToSend) {
         this.numberOfRemindersLeftToSend = numberOfRemindersLeftToSend;
-    }
-
-    public Group getReplicatedGroup() {
-        return replicatedGroup;
     }
 
     @Override
@@ -166,7 +161,7 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
         return wasBelowThreshold && (this.completionPercentage > threshold);
     }
 
-    public TodoCompletionStatus calculateCompletionStatus() {
+    private TodoCompletionStatus calculateCompletionStatus() {
         Set<User> members = getMembers();
         int membersCount = members.size();
         // we count only those confirmations that mark as complete and are from users that are currently members (these can always change)
