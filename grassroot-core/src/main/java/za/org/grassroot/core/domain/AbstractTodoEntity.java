@@ -155,13 +155,14 @@ public abstract class AbstractTodoEntity {
 
 	public void calculateScheduledReminderTime() {
 		this.scheduledReminderTime = reminderActive
-				? DateTimeUtil.restrictToDaytime(actionByDate.minus(reminderMinutes, ChronoUnit.MINUTES), DateTimeUtil.getSAST())
-				: null;
+				? DateTimeUtil.restrictToDaytime(actionByDate.minus(reminderMinutes, ChronoUnit.MINUTES), actionByDate,
+				DateTimeUtil.getSAST()) : null;
 
 		// if reminder time is already in the past (e.g., set to 1 week but deadline in 5 days), try set it to tomorrow, else set it to deadline
 		if (reminderActive && this.scheduledReminderTime.isBefore(Instant.now())) {
 			if (Instant.now().plus(1, ChronoUnit.DAYS).isBefore(actionByDate)) {
-				this.scheduledReminderTime = DateTimeUtil.restrictToDaytime(Instant.now().plus(1, ChronoUnit.DAYS), DateTimeUtil.getSAST());
+				this.scheduledReminderTime = DateTimeUtil.restrictToDaytime(Instant.now().plus(1, ChronoUnit.DAYS),
+						actionByDate, DateTimeUtil.getSAST());
 			} else {
 				this.scheduledReminderTime = actionByDate;
 			}

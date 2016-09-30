@@ -81,7 +81,8 @@ public class EventRequestBrokerImpl implements EventRequestBroker {
 		Objects.requireNonNull(name);
 
 		EventRequest request = eventRequestRepository.findOneByUid(eventRequestUid);
-		request.setName(name);
+		String sizedName = name.length() > 40 ? name.substring(0, 40) : name;
+		request.setName(sizedName);
 	}
 
 	@Override

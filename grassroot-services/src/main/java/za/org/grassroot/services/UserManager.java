@@ -20,6 +20,7 @@ import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.repository.UserRequestRepository;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.services.GcmService;
 import za.org.grassroot.integration.sms.SmsSendingService;
@@ -34,9 +35,11 @@ import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import java.time.Instant;
 import java.time.ZonedDateTime;
-import java.time.temporal.ChronoField;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.TimeZone;
 
 /**
  * @author Lesetse Kimwaga
@@ -106,6 +109,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
             if (!userToUpdate.hasName()) {
                 userToUpdate.setDisplayName(userProfile.getDisplayName());
+                userToUpdate.setHasSetOwnName(true);
             }
 
             userToUpdate.setUsername(phoneNumber);
@@ -117,6 +121,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
             userToSave = new User(phoneNumber, userProfile.getDisplayName());
             userToSave.setUsername(phoneNumber);
             userToSave.setHasWebProfile(true);
+            userToSave.setHasSetOwnName(true);
         }
 
         if (passwordEncoder != null) {
@@ -166,6 +171,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
             userProfile.setPhoneNumber(phoneNumber);
             userProfile.setUsername(phoneNumber);
             userProfile.setDisplayName(userDTO.getDisplayName());
+            userProfile.setHasSetOwnName(true);
             userProfile.setHasAndroidProfile(true);
             userProfile.setMessagingPreference(UserMessagingPreference.ANDROID_APP);
             userProfile.setAlertPreference(AlertPreference.NOTIFY_NEW_AND_REMINDERS);
@@ -187,7 +193,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
-    public User deleteAndroidUserProfile(User user) {
+    public User deactiveAndroidProfile(User user) {
 
         if (!user.hasAndroidProfile()) {
             throw new NoSuchProfileException();
@@ -212,12 +218,15 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Transactional
     public void updateUser(String userUid, String displayName, AlertPreference alertPreference, Locale locale)
             throws IllegalArgumentException {
-
         Objects.nonNull(userUid);
 
         User user = userRepository.findOneByUid(userUid);
 
-        user.setDisplayName(displayName);
+        if (!StringUtils.isEmpty(displayName)) {
+            user.setDisplayName(displayName);
+            user.setHasSetOwnName(true);
+        }
+
         user.setLanguageCode(locale.getLanguage());
         user.setAlertPreference(alertPreference);
         user.setNotificationPriority(alertPreference.getPriority());
@@ -400,19 +409,8 @@ public class UserManager implements UserManagementService, UserDetailsService {
             WelcomeNotification notification = new WelcomeNotification(sessionUser, message, userLog);
             // notification sending delay of 2days
             ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(Instant.now().plus(48, ChronoUnit.HOURS),TimeZone.getTimeZone("Africa/Johannesburg").toZoneId());
-            if(zonedDateTime.get(ChronoField.HOUR_OF_DAY) >= 21 || zonedDateTime.get(ChronoField.HOUR_OF_DAY) < 8) {
-                if (zonedDateTime.get(ChronoField.HOUR_OF_DAY) >= 21) {
-                    long difference = zonedDateTime.get(ChronoField.HOUR_OF_DAY) - 21;
-                    zonedDateTime = zonedDateTime.minus(difference + 1, ChronoUnit.HOURS);
-
-                } else if (zonedDateTime.get(ChronoField.HOUR_OF_DAY) < 8) {
-                    long difference = 8 -  zonedDateTime.get(ChronoField.HOUR_OF_DAY);
-                    zonedDateTime = zonedDateTime.plus(difference, ChronoUnit.HOURS);
-
-                }
-            }
-            notification.setNextAttemptTime(zonedDateTime.toInstant());
-            log.info("time" + zonedDateTime.toInstant());
+            notification.setNextAttemptTime(DateTimeUtil.restrictToDaytime(zonedDateTime.toInstant(), null, DateTimeUtil.getSAST()));
+            log.info("time for welcome notice" + notification.getNextAttemptTime());
             bundle.addNotification(notification);
         }
 
@@ -438,6 +436,24 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
         User user = userRepository.findOneByUid(userUid);
         user.setDisplayName(displayName);
+        user.setHasSetOwnName(true);
+    }
+
+    @Override
+    @Transactional
+    public void setDisplayNameByOther(String updatingUserUid, String targetUserUid, String displayName) {
+        Objects.requireNonNull(updatingUserUid);
+        Objects.requireNonNull(targetUserUid);
+        Objects.requireNonNull(displayName);
+
+        User updatingUser = userRepository.findOneByUid(updatingUserUid); // major todo : check if user is in graph
+        User targetUser = userRepository.findOneByUid(targetUserUid);
+
+        if (targetUser.isHasSetOwnName()) {
+            throw new AccessDeniedException("Error! User has set their own name, only they can update it");
+        }
+
+        targetUser.setDisplayName(displayName);
     }
 
     @Override
@@ -463,22 +479,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
         User user = userRepository.findOneByUid(userUid);
         user.setAlertPreference(alertPreference);
         user.setNotificationPriority(alertPreference.getPriority());
-    }
-
-    @Override
-    public LinkedHashMap<String, String> getImplementedLanguages() {
-
-        // todo: make this static and move to webapp module
-
-        LinkedHashMap<String, String> languages = new LinkedHashMap<>();
-
-        languages.put("en", "English");
-        languages.put("nso", "Sepedi");
-        languages.put("st", "Sesotho");
-        languages.put("ts", "Tsonga");
-        languages.put("zu", "Zulu");
-
-        return languages;
     }
 
     /*

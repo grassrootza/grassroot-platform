@@ -244,21 +244,26 @@ public class AccountRepositoryTest {
 
     @Test
     @Rollback
-    public void shouldSaveBooleanFlags() {
+    public void shouldSaveGroupLimits() {
 
         assertThat(accountRepository.count(), is(0L));
 
         Account account = new Account(testUser, accountName);
+        account.setMaxSizePerGroup(500);
+        account.setMaxSubGroupDepth(3);
+        account.setFreeFormMessages(true);
+        account.setNumberOfGroups(10);
+
         accountRepository.save(account);
 
         Account accountFromDb = accountRepository.findByAccountName(accountName).get(0);
 
-        assertTrue(accountFromDb.isRelayableMessages());
-        accountFromDb.setRelayableMessages(false);
-        accountFromDb = accountRepository.save(accountFromDb);
-        assertFalse(accountFromDb.isRelayableMessages());
-
         assertTrue(accountFromDb.isFreeFormMessages());
+        assertEquals(accountFromDb.getMaxSizePerGroup(), 500);
+        assertEquals(accountFromDb.getMaxSubGroupDepth(), 3);
+        assertEquals(accountFromDb.getNumberOfGroups(), 10);
+        assertEquals(accountFromDb.getMaxSubGroupDepth(), 3);
+
         accountFromDb.setFreeFormMessages(false);
         accountFromDb = accountRepository.save(accountFromDb);
         assertFalse(accountFromDb.isFreeFormMessages());

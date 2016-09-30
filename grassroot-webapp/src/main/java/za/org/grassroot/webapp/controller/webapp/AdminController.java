@@ -67,7 +67,7 @@ public class AdminController extends BaseController {
     private PasswordTokenService passwordTokenService;
 
     @Autowired
-    private AccountManagementService accountManagementService;
+    private AccountBroker accountBroker;
 
     @Autowired
     private AdminService adminService;
@@ -278,14 +278,14 @@ public class AdminController extends BaseController {
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping("/admin/accounts/home")
     public String listAccounts(Model model) {
-        model.addAttribute("accounts", new ArrayList<>(accountManagementService.loadAllAccounts()));
+        model.addAttribute("accounts", new ArrayList<>(accountBroker.loadAllAccounts()));
         return "admin/accounts/home";
     }
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping("/admin/accounts/view")
     public String adminViewAccount(Model model, @RequestParam("accountUid") String accountUid) {
-        Account account = accountManagementService.loadAccount(accountUid);
+        Account account = accountBroker.loadAccount(accountUid);
         log.info("Viewing account ... " + account.toString());
         model.addAttribute("account", account);
         return "admin/accounts/view";
@@ -305,8 +305,8 @@ public class AdminController extends BaseController {
         // todo: all the checks & validation, e.g., whether account already exists, etc
 
         log.info("Okay, we're going to create an account ... with name: " + accountName);
-        String createdAccountUid = accountManagementService.createAccount(getUserProfile().getUid(), accountName, null, billingEmail);
-        model.addAttribute("account", accountManagementService.loadAccount(createdAccountUid));
+        String createdAccountUid = accountBroker.createAccount(getUserProfile().getUid(), accountName, null, billingEmail);
+        model.addAttribute("account", accountBroker.loadAccount(createdAccountUid));
         return "admin/accounts/view";
     }
 
@@ -314,7 +314,7 @@ public class AdminController extends BaseController {
     @RequestMapping("/admin/accounts/designate")
     public String designateUserForm(Model model, @RequestParam(value = "accountUid", required = false) String accountUid) {
         // todo: use a selector box if accountId not specified
-        model.addAttribute("account", accountManagementService.loadAccount(accountUid));
+        model.addAttribute("account", accountBroker.loadAccount(accountUid));
         return "admin/accounts/designate";
     }
 
@@ -323,7 +323,7 @@ public class AdminController extends BaseController {
     public String designateUserConfirm(Model model, @RequestParam("searchNumber") String searchNumber,
                                        @RequestParam("accountUid") String accountUid, HttpServletRequest request) {
 
-        Account account = accountManagementService.loadAccount(accountUid);
+        Account account = accountBroker.loadAccount(accountUid);
         model.addAttribute("account", account);
 
         try {
@@ -343,12 +343,12 @@ public class AdminController extends BaseController {
 
         // todo: add error handling, etc
         User userToDesignate = userManagementService.load(administratorUid);
-        Account account = accountManagementService.loadAccount(accountUid);
+        Account account = accountBroker.loadAccount(accountUid);
 
         log.info("Inside designating method, going to add role on this account: " + account.getAccountName() + ", " +
                          "for this user: " + userToDesignate.nameToDisplay());
 
-        accountManagementService.addAdministrator(getUserProfile().getUid(), accountUid, administratorUid);
+        accountBroker.addAdministrator(getUserProfile().getUid(), accountUid, administratorUid);
 
         log.info("Added the user to the account and saved it");
 
@@ -358,14 +358,14 @@ public class AdminController extends BaseController {
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping(value = "/admin/accounts/settings")
     public String viewAccountSettings(Model model, @RequestParam String accountUid) {
-        model.addAttribute("account", accountManagementService.loadAccount(accountUid));
+        model.addAttribute("account", accountBroker.loadAccount(accountUid));
         return "admin/accounts/settings";
     }
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping(value = "/admin/accounts/settings", method = RequestMethod.POST)
     public String changeAccountSettings(Model model, @ModelAttribute Account account) {
-        accountManagementService.updateSettings(account);
+        accountBroker.updateSettings(account);
         return adminViewAccount(model, account.getUid());
     }
 

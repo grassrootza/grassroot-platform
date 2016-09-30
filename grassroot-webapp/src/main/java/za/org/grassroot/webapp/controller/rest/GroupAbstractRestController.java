@@ -3,9 +3,7 @@ package za.org.grassroot.webapp.controller.rest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.services.EventBroker;
-import za.org.grassroot.services.GroupBroker;
-import za.org.grassroot.services.GroupQueryBroker;
+import za.org.grassroot.services.*;
 import za.org.grassroot.webapp.model.rest.wrappers.GroupResponseWrapper;
 
 /**
@@ -13,6 +11,9 @@ import za.org.grassroot.webapp.model.rest.wrappers.GroupResponseWrapper;
  */
 @Controller
 public class GroupAbstractRestController {
+
+    @Autowired
+    protected UserManagementService userManagementService;
 
     @Autowired
     protected EventBroker eventBroker;
@@ -23,19 +24,17 @@ public class GroupAbstractRestController {
     @Autowired
     protected GroupQueryBroker groupQueryBroker;
 
+    @Autowired
+    protected PermissionBroker permissionBroker;
+
     protected GroupResponseWrapper createGroupWrapper(Group group, User caller) {
         Role role = group.getMembership(caller).getRole();
         Event event = eventBroker.getMostRecentEvent(group.getUid());
         GroupLog groupLog = groupQueryBroker.getMostRecentLog(group);
 
         boolean hasTask = event != null;
-        GroupResponseWrapper responseWrapper;
-        if (hasTask && event.getEventStartDateTime().isAfter(groupLog.getCreatedDateTime())) {
-            responseWrapper = new GroupResponseWrapper(group, event, role, true);
-        } else {
-            responseWrapper = new GroupResponseWrapper(group, groupLog, role, hasTask);
-        }
-        // log.info("created response wrapper = {}", responseWrapper);
+        GroupResponseWrapper responseWrapper = hasTask && event.getEventStartDateTime().isAfter(groupLog.getCreatedDateTime()) ?
+                new GroupResponseWrapper(group, event, role, true) : new GroupResponseWrapper(group, groupLog, role, hasTask);
         return responseWrapper;
     }
 

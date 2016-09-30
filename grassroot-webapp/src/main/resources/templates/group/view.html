@@ -125,7 +125,7 @@
             <li class="divider"></li>
             <li th:if="${not hasParent}"><a th:href="@{/group/parent(groupUid=${group.uid})}">Link to a parent group</a></li>
             <li><a href="" th:href="@{/group/consolidate/select(groupUid=${group.uid})}">Merge with another group</a></li>
-            <li th:if="${canCreateSubGroup}"><a href="" th:href="@{/group/create(parent=${group.uid})}">Create a sub-group</a></li>
+            <!-- <li th:if="${canCreateSubGroup}"><a href="" th:href="@{/group/create(parent=${group.uid})}">Create a sub-group</a></li> -->
             <li th:if="${canDeleteGroup}"><a href="javascript:void(0)" data-toggle="modal" data-target="#delModal">Delete group</a></li>
             <li><a href="javascript:void(0)" data-toggle="modal" data-target="#unsubModal">Unsubscribe</a></li>
           </ul>
@@ -172,9 +172,9 @@
                 <div class="form-group">
                   <label for="group-locale" class="control-label">Select language:</label>
                   <select name="locale" id="group-locale" class="form-control">
-                    <option th:each="language: ${languages}"
+                    <option th:each="language: ${T(za.org.grassroot.webapp.controller.BaseController).getImplementedLanguages()}"
                             th:value="${language.key}"
-                            th:text="${language.value}" />
+                            th:text="${language.value}"></option>
                   </select>
                 </div>
                 <div class="checkbox" th:if="${not #lists.isEmpty(subGroups)}">
@@ -383,7 +383,13 @@
           </thead>
           <tbody>
           <tr th:each="member : ${groupMembers}">
-            <td><span th:text="${member.displayName}">User name</span></td>
+            <td>
+              <span th:unless="${#strings.isEmpty(member.displayName)}" th:text="${member.displayName}">User name</span>
+              <span th:if="${#strings.isEmpty(member.displayName)}">Unnamed</span>
+              <span th:unless="${member.userSetName or not canAlter}"><!-- todo : add a check on permissions, clean up link icon -->
+                <a href="javascript:void(0)" data-toggle="modal" data-target="#editNameModal" th:attr="data-phone=${member.phoneNumber}">(edit)</a>
+              </span>
+            </td>
             <td><span th:text="${member.getNationalFormattedNumber()}">Phone number</span></td>
             <td><span th:text="#{web.group.role.__${member.roleName}__}">Role name</span></td>
 
@@ -458,6 +464,31 @@
           </div>
         </div>
 
+        <div class="modal fade" id="editNameModal" tabindex="-1" role="dialog" aria-labelledby="editNameModalLabel">
+          <div class="modal-dialog" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="editNameModal">Edit name</h4>
+              </div>
+              <form th:action="@{/group/rename_member}" method="post">
+                <input type="hidden" name="groupUid" th:value="${group.getUid()}" />
+                <input type="hidden" name="phoneNumber" id="phoneNumber" value="ABC" />
+                <div class="modal-body">
+                  <div class="form-group">
+                    <label for="new-name" class="control-label">Please enter a new name:</label>
+                    <input type="text" class="form-control" id="new-name" name="displayName" />
+                  </div>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                  <button type="submit" class="btn btn-warning">Change</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
@@ -500,6 +531,13 @@
       var phone = button.data('phone'); // Extract info from data-* attributes
       var modal = $(this);
       modal.find('#msisdn').val(phone);
+    });
+
+    $('#editNameModal').on('show.bs.modal', function (event) {
+      var button = $(event.relatedTarget);
+      var phone = button.data('phone');
+      var modal = $(this);
+      modal.find('#phoneNumber').val(phone);
     });
 
     $(document).ready(function () {

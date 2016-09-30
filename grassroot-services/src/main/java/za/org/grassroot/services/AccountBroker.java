@@ -9,7 +9,7 @@ import java.util.List;
 /**
  * Created by luke on 2015/11/12.
  */
-public interface AccountManagementService {
+public interface AccountBroker {
 
     Account loadAccount(String accountUid);
 
@@ -21,6 +21,9 @@ public interface AccountManagementService {
     // Methods to create institutional accounts, designate administrators and deactivate them
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     String createAccount(String userUid, String accountName, String administratorUid, String billingEmail);
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    void disableAccount(String administratorUid, String accountUid);
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     void addAdministrator(String userUid, String accountUid, String administratorUid);

@@ -15,7 +15,7 @@ import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.repository.RoleRepository;
 import za.org.grassroot.core.repository.UserRepository;
-import za.org.grassroot.services.AccountManagementService;
+import za.org.grassroot.services.AccountBroker;
 import za.org.grassroot.services.GroupBroker;
 import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.services.exception.GroupAlreadyPaidForException;
@@ -30,12 +30,12 @@ import static za.org.grassroot.services.enums.GroupPermissionTemplate.DEFAULT_GR
 @ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
 @WithMockUser(username = "0605550000", roles={"SYSTEM_ADMIN"})
 @Transactional
-public class AccountManagementServiceTest {
+public class AccountBrokerTest {
 
-    private static final Logger log = LoggerFactory.getLogger(AccountManagementServiceTest.class);
+    private static final Logger log = LoggerFactory.getLogger(AccountBrokerTest.class);
 
     @Autowired
-    private AccountManagementService accountManagementService;
+    private AccountBroker accountBroker;
 
     @Autowired
     private UserManagementService userManagementService;
@@ -77,15 +77,15 @@ public class AccountManagementServiceTest {
     }
 
     private Account createTestAccount(String billingEmail) {
-        String accountUid = accountManagementService.createAccount(testUser.getUid(), accountName, testAdmin.getUid(), billingEmail);
-        Account account = accountManagementService.loadAccount(accountUid);
+        String accountUid = accountBroker.createAccount(testUser.getUid(), accountName, testAdmin.getUid(), billingEmail);
+        Account account = accountBroker.loadAccount(accountUid);
         return account;
     }
 
     @Test
     public void shouldSaveBilling() {
-        String accountUid = accountManagementService.createAccount(testUser.getUid(), accountName, testAdmin.getUid(), billingEmail);
-        Account account = accountManagementService.loadAccount(accountUid);
+        String accountUid = accountBroker.createAccount(testUser.getUid(), accountName, testAdmin.getUid(), billingEmail);
+        Account account = accountBroker.loadAccount(accountUid);
         assertNotEquals(null,account.getId());
         assertEquals(billingEmail, account.getPrimaryEmail());
     }
@@ -119,7 +119,7 @@ public class AccountManagementServiceTest {
         Account account = createTestAccount(null);
         User admin2 = userManagementService.loadOrCreateUser("0605550022");
         assertEquals(account.getAdministrators().size(), 1);
-        accountManagementService.addAdministrator(testUser.getUid(), account.getUid(), admin2.getUid());
+        accountBroker.addAdministrator(testUser.getUid(), account.getUid(), admin2.getUid());
         assertEquals(account.getAdministrators().size(), 2);
         assertTrue(account.getAdministrators().contains(testAdmin));
         assertTrue(account.getAdministrators().contains(admin2));
@@ -133,7 +133,7 @@ public class AccountManagementServiceTest {
         Account account = createTestAccount(null);
         assertEquals(account.getAdministrators().size(), 1);
         // assertTrue(testUser.getStandardRoles().contains(roleRepository.findOneByNameAndRoleType(accountAdminRole, Role.RoleType.STANDARD)));
-        // accountManagementService.removeAdministrator(account, testUser); // note: need to fix this */
+        // accountBroker.removeAdministrator(account, testUser); // note: need to fix this */
     }
 
     @Test
@@ -141,10 +141,10 @@ public class AccountManagementServiceTest {
         // todo: add tests to check it fails if not done by admin
         // todo: add lots more asserts, to make sure group added is the actual group
         Account account = createTestAccount(null);
-        accountManagementService.addGroupToAccount(account.getUid(), testGroup.getUid(), testAdmin.getUid());
+        accountBroker.addGroupToAccount(account.getUid(), testGroup.getUid(), testAdmin.getUid());
         assertTrue(testGroup.isPaidFor());
-        assertNotNull(accountManagementService.findAccountForGroup(testGroup.getUid()));
-        assertEquals(accountManagementService.findAccountForGroup(testGroup.getUid()).getId(), account.getId());
+        assertNotNull(accountBroker.findAccountForGroup(testGroup.getUid()));
+        assertEquals(accountBroker.findAccountForGroup(testGroup.getUid()).getId(), account.getId());
     }
 
     @Test
@@ -152,9 +152,9 @@ public class AccountManagementServiceTest {
         // todo: work out why the removeGroupFromAccount method is causing optimistic locking fail
         /*User testUser2 = userManagementService.loadOrCreateUser("0813074085");
         Group testGroup2 = groupManagementService.createNewGroup(testUser2, "lesetse");
-        Account account2 = accountManagementService.createAccount("some other name");
-        accountManagementService.addGroupToAccount(account2, testGroup2, testUser2);
-        testGroup2 = accountManagementService.removeGroupFromAccount(account2, testGroup2, testUser2);
+        Account account2 = accountBroker.createAccount("some other name");
+        accountBroker.addGroupToAccount(account2, testGroup2, testUser2);
+        testGroup2 = accountBroker.removeGroupFromAccount(account2, testGroup2, testUser2);
         assertFalse(testGroup2.isPaidFor());*/
     }
 
@@ -162,9 +162,9 @@ public class AccountManagementServiceTest {
     public void shouldNotAllowDuplicatePaidGroups() {
         // todo: change this to try/catch, to handle it better
         Account account = createTestAccount(null);
-        String account2Uid = accountManagementService.createAccount(testUser.getUid(), accountName + "2", testAdmin.getUid(), null);
-        accountManagementService.addGroupToAccount(account.getUid(), testGroup.getUid(), testAdmin.getUid());
-        accountManagementService.addGroupToAccount(account2Uid, testGroup.getUid(), testAdmin.getUid());
+        String account2Uid = accountBroker.createAccount(testUser.getUid(), accountName + "2", testAdmin.getUid(), null);
+        accountBroker.addGroupToAccount(account.getUid(), testGroup.getUid(), testAdmin.getUid());
+        accountBroker.addGroupToAccount(account2Uid, testGroup.getUid(), testAdmin.getUid());
     }
 
 }

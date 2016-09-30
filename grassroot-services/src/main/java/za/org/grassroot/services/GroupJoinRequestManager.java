@@ -198,7 +198,7 @@ public class GroupJoinRequestManager implements GroupJoinRequestService {
             throw new JoinRequestNotOpenException();
         }
 
-        // todo : generate logs & notifications ?
+        // for the moment, we do not log denials or notify the requester, as will generate a lot of noise, but reconsider based on feedback
         Instant time = Instant.now();
         request.setStatus(GroupJoinRequestStatus.CANCELLED);
         request.setProcessedTime(time);

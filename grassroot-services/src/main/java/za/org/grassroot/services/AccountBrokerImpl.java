@@ -25,9 +25,9 @@ import java.util.stream.Collectors;
  * Created by luke on 2015/11/12.
  */
 @Service
-public class AccountManager implements AccountManagementService {
+public class AccountBrokerImpl implements AccountBroker {
 
-    private static final Logger log = LoggerFactory.getLogger(AccountManager.class);
+    private static final Logger log = LoggerFactory.getLogger(AccountBroker.class);
 
     @Autowired
     private AccountRepository accountRepository;
@@ -86,6 +86,23 @@ public class AccountManager implements AccountManagementService {
 
     @Override
     @Transactional
+    public void disableAccount(String administratorUid, String accountUid) {
+        User user = userRepository.findOneByUid(administratorUid);
+        permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
+
+        Account account = accountRepository.findOneByUid(accountUid);
+        account.setEnabled(false);
+        account.setDisabledByUser(user);
+        account.setDisabledDateTime(Instant.now());
+
+        for (PaidGroup paidGroup : account.getPaidGroups()) {
+            paidGroup.setExpireDateTime(Instant.now());
+            paidGroup.setRemovedByUser(user);
+        }
+    }
+
+    @Override
+    @Transactional
     public void updateBillingEmail(String userUid, String accountUid, String billingEmail) {
         User user = userRepository.findOneByUid(userUid);
         Account account = accountRepository.findOneByUid(accountUid);
@@ -103,8 +120,6 @@ public class AccountManager implements AccountManagementService {
     public void updateSettings(Account changedAccount) {
         Account savedAccount = accountRepository.findOne(changedAccount.getId());
         savedAccount.setFreeFormMessages(changedAccount.isFreeFormMessages());
-        savedAccount.setRelayableMessages(changedAccount.isRelayableMessages());
-        savedAccount.setTodoExtraMessages(changedAccount.isTodoExtraMessages());
     }
 
     @Override

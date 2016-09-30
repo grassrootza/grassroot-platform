@@ -76,6 +76,9 @@ public class User implements UserDetails, Comparable<User> {
     @Column(name = "initiated_session")
     private boolean hasInitiatedSession;
 
+    @Column(name = "has_set_name")
+    private boolean hasSetOwnName;
+
     @ManyToOne
     @JoinColumn(name = "safety_group_id")
     private Group safetyGroup;
@@ -170,6 +173,10 @@ public class User implements UserDetails, Comparable<User> {
     public void setDisplayName(String displayName) {
         this.displayName = displayName;
     }
+
+    public boolean isHasSetOwnName() { return hasSetOwnName; }
+
+    public void setHasSetOwnName(boolean hasSetOwnName) { this.hasSetOwnName = hasSetOwnName; }
 
     public String getLanguageCode() {
         return languageCode;

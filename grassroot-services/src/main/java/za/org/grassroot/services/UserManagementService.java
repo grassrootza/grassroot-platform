@@ -9,7 +9,6 @@ import za.org.grassroot.services.exception.NoSuchProfileException;
 import za.org.grassroot.services.exception.NoSuchUserException;
 import za.org.grassroot.services.exception.UserExistsException;
 
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 
@@ -42,7 +41,7 @@ public interface UserManagementService {
 
     User createUserProfile(User userProfile);
 
-    User deleteAndroidUserProfile(User user) throws NoSuchProfileException;
+    User deactiveAndroidProfile(User user) throws NoSuchProfileException;
 
     UserDTO loadUserCreateRequest(String phoneNumber);
 
@@ -61,6 +60,8 @@ public interface UserManagementService {
     void updateUser(String userUid, String displayName, AlertPreference alertPreference, Locale locale);
 
     void updateDisplayName(String userUid, String displayName);
+
+    void setDisplayNameByOther(String updatingUserUid, String targetUserUid, String displayName);
 
     void updateUserLanguage(String userUid, Locale locale);
 
@@ -81,7 +82,5 @@ public interface UserManagementService {
     void sendAndroidLinkSms(String userUid);
 
     Group fetchGroupUserMustRename(User user);
-
-    LinkedHashMap<String, String> getImplementedLanguages();
 
 }

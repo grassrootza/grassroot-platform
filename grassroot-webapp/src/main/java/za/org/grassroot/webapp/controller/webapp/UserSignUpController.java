@@ -61,12 +61,9 @@ public class UserSignUpController extends BaseController {
                 return new ModelAndView("signup", model.asMap());
             }
 
-            String unencryptedPassword = userRegistration.getPassword();
-
             User user = userManagementService.createUserWebProfile(userRegistration.getUser());
 
             addMessage(redirectAttributes, MessageType.SUCCESS, "user.creation.successful", request);
-
             return new ModelAndView(autoLogonUser(user,request));
 
         } catch (UserExistsException userException) {

@@ -39,9 +39,9 @@
           <div class="form-group">
             <label class="control-label">Your SMS and menu language:</label>
             <select th:field="*{languageCode}" class="form-control">
-              <option th:each="language: ${languages}"
+              <option th:each="language: ${T(za.org.grassroot.webapp.controller.BaseController).getImplementedLanguages()}"
                       th:value="${language.key}"
-                      th:text="${language.value}" />
+                      th:text="${language.value}"></option>
             </select>
           </div>
           <div class="form-group pull-right">

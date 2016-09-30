@@ -126,7 +126,6 @@ public class USSDVoteController extends USSDController {
 
     /*
     Second menu asks the user to enter the issue that will be voted upon
-    todo: some form of length restriction / checking
      */
     @RequestMapping(value = path + "issue")
     @ResponseBody

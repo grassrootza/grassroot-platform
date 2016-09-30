@@ -128,7 +128,8 @@ public abstract class Event<P extends UidIdentifiable> extends AbstractEventEnti
 		}
 
         if (this.scheduledReminderTime != null) {
-            this.scheduledReminderTime = DateTimeUtil.restrictToDaytime(this.scheduledReminderTime, DateTimeUtil.getSAST());
+            this.scheduledReminderTime = DateTimeUtil.restrictToDaytime(this.scheduledReminderTime, this.eventStartDateTime,
+					DateTimeUtil.getSAST());
 	        if (this.scheduledReminderTime.isAfter(Instant.now())) {
 		        this.scheduledReminderActive = false; // disable it if it's in the future
 	        }

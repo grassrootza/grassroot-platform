@@ -40,7 +40,6 @@ public class UserProfileController extends BaseController {
 
     @RequestMapping(value = "settings", method = RequestMethod.GET)
     public String index(Model model) {
-        model.addAttribute("languages", userManagementService.getImplementedLanguages().entrySet());
         return "user/settings";
     }
 
@@ -51,7 +50,6 @@ public class UserProfileController extends BaseController {
         try {
             userManagementService.updateUser(getUserProfile().getUid(), sessionUser.getDisplayName(), sessionUser.getAlertPreference(),
                     new Locale(sessionUser.getLanguageCode()));
-            // sessionUser = userManagementService.load(sessionUser.getUid());
             addMessage(redirectAttributes, MessageType.SUCCESS, "user.profile.change.success", request);
             return "redirect:settings"; // using redirect to avoid reposting
         } catch (IllegalArgumentException e) {

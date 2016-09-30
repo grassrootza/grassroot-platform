@@ -62,7 +62,7 @@ public class RestAbstractUnitTest {
     @Mock
     protected PermissionBroker permissionBrokerMock;
     @Mock
-    protected AccountManagementService accountManagementServiceMock;
+    protected AccountBroker accountBrokerMock;
     @Mock
     protected EventLogBroker eventLogBrokerMock;
     @Mock

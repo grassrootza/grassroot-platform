@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -400,11 +401,12 @@ public class USSDMeetingController extends USSDController {
         User user = userManager.findByInputNumber(inputNumber);
         Event event = eventBroker.load(eventUid);
 
-        // todo: have a fallback menu in case user is also not part of the meeting
         if (user.equals(event.getCreatedByUser())) {
             menu = meetingCallerMenu(user, eventUid);
-        } else {
+        } else if (event.getAllMembers().contains(user)) {
             menu = meetingAttendeeMenu(user, event);
+        } else {
+            throw new AccessDeniedException("Error! Should not be able to access meeting menu");
         }
 
         return menuBuilder(menu);

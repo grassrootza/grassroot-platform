@@ -98,7 +98,6 @@ public class GroupController extends BaseController {
 
         model.addAttribute("group", group);
         model.addAttribute("reminderOptions", reminderMinuteOptions(true));
-        model.addAttribute("languages", userManagementService.getImplementedLanguages().entrySet());
         model.addAttribute("hasParent", (group.getParent() != null));
 
         List<TaskDTO> tasks = taskBroker.fetchUpcomingIncompleteGroupTasks(user.getUid(), groupUid);
@@ -158,6 +157,21 @@ public class GroupController extends BaseController {
         }
 
         return viewGroupIndex(model, groupUid);
+    }
+
+    @RequestMapping(value = "rename_member", method = RequestMethod.POST)
+    public String renameMember(RedirectAttributes attributes, @RequestParam String groupUid, @RequestParam String phoneNumber,
+                               @RequestParam String displayName, HttpServletRequest request) {
+        try {
+            User user = userManagementService.findByInputNumber(phoneNumber);
+            userManagementService.setDisplayNameByOther(getUserProfile().getUid(), user.getUid(), displayName);
+            addMessage(attributes, MessageType.SUCCESS, "group.member.rename.success", request);
+        } catch (AccessDeniedException e) {
+            log.info("Error! Description: {}", e.toString());
+            addMessage(attributes, MessageType.ERROR, "group.member.rename.error", request);
+        }
+        attributes.addAttribute("groupUid", groupUid);
+        return "redirect:view";
     }
 
     @RequestMapping(value = "rename")

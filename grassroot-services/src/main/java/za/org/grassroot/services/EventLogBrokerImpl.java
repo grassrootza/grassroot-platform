@@ -78,30 +78,29 @@ public class EventLogBrokerImpl implements EventLogBroker {
             cacheUtilService.clearRsvpCacheForUser(user, event.getEventType());
 
             // see if everyone voted, if they did expire the vote so that the results are sent out
-
             if (event.getEventType().equals(EventType.VOTE)) {
-                ResponseTotalsDTO rsvpTotalsDTO = getResponseCountForEvent(event);
-                log.info("rsvpForEvent... response total DTO for vote : " + rsvpTotalsDTO.toString());
-                if (rsvpTotalsDTO.getNumberNoRSVP() < 1) {
-                    log.info("rsvpForEvent...everyone has voted... sending out results for {}", event.getName());
-                    event.setEventStartDateTime(Instant.now());
-                }
-            } else {
-                if (event.getEventType().equals(EventType.MEETING) && !user.equals(event.getCreatedByUser())) {
-                    generateMeetingResponseMessage(event, eventLog, rsvpResponse);
-                }
+                checkIfAllUsersVoted(event);
+            } else if (event.getEventType().equals(EventType.MEETING) && !user.equals(event.getCreatedByUser())) {
+                generateMeetingResponseMessage(event, eventLog, rsvpResponse);
             }
         } else if (event.getEventStartDateTime().isAfter(Instant.now())) {
             // allow the user to change their rsvp / vote as long as meeting is open
             EventLog eventLog = eventLogRepository.findByEventAndUserAndEventLogType(event, user, EventLogType.RSVP);
             eventLog.setResponse(rsvpResponse);
             log.info("rsvpForEvent... changing response to {} on eventLog {}", rsvpResponse.toString(), eventLog);
-            eventLogRepository.saveAndFlush(eventLog); // todo: shouldn't need this, but it's not persisting (cleaning needed)
             if (event.getEventType().equals(EventType.MEETING) && !user.equals(event.getCreatedByUser())) {
                 generateMeetingResponseMessage(event, eventLog, rsvpResponse);
             }
         }
+    }
 
+    private void checkIfAllUsersVoted(Event event) {
+        ResponseTotalsDTO rsvpTotalsDTO = getResponseCountForEvent(event);
+        log.info("rsvpForEvent... response total DTO for vote : " + rsvpTotalsDTO.toString());
+        if (rsvpTotalsDTO.getNumberNoRSVP() < 1) {
+            log.info("rsvpForEvent...everyone has voted... sending out results for {}", event.getName());
+            event.setEventStartDateTime(Instant.now());
+        }
     }
 
     @Override

@@ -1,7 +1,5 @@
 package za.org.grassroot.core.domain;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.enums.TodoCompletionConfirmType;
@@ -16,7 +14,6 @@ import java.util.Set;
 
 /**
  * Created by aakilomar on 12/3/15.
- * major todo : change replication reference from group to the base level action/todo
  */
 @Entity
 @Table(name = "action_todo",
@@ -25,7 +22,7 @@ import java.util.Set;
                 @Index(name = "idx_action_todo_retries_left", columnList = "number_of_reminders_left_to_send")})
 public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, VoteContainer, MeetingContainer {
 
-    private static final Logger logger = LoggerFactory.getLogger(Todo.class);
+    // private static final Logger logger = LoggerFactory.getLogger();
 
     @Transient
     @Value("{grassroot.todos.number.reminders:1")
@@ -202,6 +199,8 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
     public Instant getDeadlineTime() {
         return actionByDate;
     }
+
+    public Todo getSourceTodo() { return sourceTodo; }
 
     @Override
     public String toString() {

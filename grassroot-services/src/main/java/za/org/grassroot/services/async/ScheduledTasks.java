@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
+import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.*;
@@ -17,6 +18,7 @@ import za.org.grassroot.services.GroupBroker;
 import za.org.grassroot.services.SafetyEventBroker;
 import za.org.grassroot.services.TodoBroker;
 import za.org.grassroot.services.geo.GeoLocationBroker;
+import za.org.grassroot.services.specifications.TodoSpecifications;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -160,7 +162,12 @@ public class ScheduledTasks {
 
     @Scheduled(fixedRate = 300000) //runs every 5 minutes
     public void sendTodoReminders() {
-        List<Todo> todos = todoRepository.findAllTodosForReminding(Instant.now(), COMPLETION_PERCENTAGE_BOUNDARY);
+        List<Todo> todos = todoRepository.findAll(Specifications.where(TodoSpecifications.notCancelled())
+                .and(TodoSpecifications.remindersLeftToSend())
+                .and(TodoSpecifications.reminderTimeBefore(Instant.now()))
+                .and(TodoSpecifications.completionConfirmsBelow(COMPLETION_PERCENTAGE_BOUNDARY))
+                .and(TodoSpecifications.todoNotConfirmedByCreator()));
+
         logger.info("Sending scheduled reminders for {} todos, after using threshold of {}", todos.size(), COMPLETION_PERCENTAGE_BOUNDARY);
         for (Todo todo : todos) {
             try {

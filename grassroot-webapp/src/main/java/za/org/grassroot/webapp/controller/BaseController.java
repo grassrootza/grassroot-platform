@@ -21,9 +21,7 @@ import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.webapp.util.LocalDateTimePropertyEditor;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 
 /**
  * @author Lesetse Kimwaga
@@ -64,6 +62,18 @@ public class BaseController {
     @InitBinder
     protected void initBinder(HttpServletRequest request, ServletRequestDataBinder binder) {
         binder.registerCustomEditor(java.time.LocalDateTime.class, new LocalDateTimePropertyEditor());
+    }
+
+    public static Map<String, String> getImplementedLanguages() {
+        final LinkedHashMap<String, String> languages = new LinkedHashMap<>();
+
+        languages.put("en", "English");
+        languages.put("nso", "Sepedi");
+        languages.put("st", "Sesotho");
+        languages.put("ts", "Tsonga");
+        languages.put("zu", "Zulu");
+
+        return languages;
     }
 
     protected User getUserProfile() {

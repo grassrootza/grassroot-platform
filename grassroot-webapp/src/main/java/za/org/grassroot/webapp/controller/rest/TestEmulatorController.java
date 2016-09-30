@@ -15,7 +15,6 @@ import za.org.grassroot.core.domain.geo.GroupLocation;
 import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
 import za.org.grassroot.services.GroupBroker;
 import za.org.grassroot.services.GroupQueryBroker;
-import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 
@@ -67,7 +66,6 @@ public class TestEmulatorController extends BaseController {
     public String locationUserCalculate(Model model, @RequestParam(value = "groupUid", required = false) String groupUid,
                                         @RequestParam(value="calculate", required = false) boolean calculate) {
 
-        // todo: add something to do flexible local date
         log.info("Inside user calculation! For this groupUid = " + groupUid);
 
         final LocalDate today = LocalDate.now();

@@ -74,15 +74,14 @@ public class DateTimeUtil {
     }
 
     public static ZonedDateTime convertToUserTimeZone(Instant timeInSystem, ZoneId userZoneId) {
-        ZonedDateTime zonedDateTime = timeInSystem.atZone(userZoneId);
-        return zonedDateTime;
+        return timeInSystem.atZone(userZoneId);
     }
 
-    public static Instant restrictToDaytime(Instant instantToRestrict, ZoneId userZoneId) {
+    public static Instant restrictToDaytime(Instant instantToRestrict, Instant thresholdTime, ZoneId userZoneId) {
         ZonedDateTime zonedDateTime = instantToRestrict.atZone(userZoneId);
         if (zonedDateTime.getHour() <= earliestHourForAutomatedMessage) {
             zonedDateTime = ZonedDateTime.of(zonedDateTime.toLocalDate(), earliestHour, userZoneId);
-            return zonedDateTime.toInstant();
+            return thresholdTime == null || zonedDateTime.toInstant().isBefore(thresholdTime) ? zonedDateTime.toInstant() : thresholdTime;
         } else if (zonedDateTime.getHour() >= latestHourForAutomatedMessages) {
             zonedDateTime = ZonedDateTime.of(zonedDateTime.toLocalDate(), latestHour, userZoneId);
             return zonedDateTime.toInstant();

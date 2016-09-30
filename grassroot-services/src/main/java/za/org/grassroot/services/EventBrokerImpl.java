@@ -19,6 +19,7 @@ import za.org.grassroot.core.enums.MeetingImportance;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.enums.EventListTimeType;
+import za.org.grassroot.services.exception.TaskNameTooLongException;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.services.util.CacheUtilService;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
@@ -101,6 +102,10 @@ public class EventBrokerImpl implements EventBroker {
 		}
 
 		permissionBroker.validateGroupPermission(user, parent.getThisOrAncestorGroup(), Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING);
+
+		if (name.length() > 40) {
+			throw new TaskNameTooLongException();
+		}
 
 		Meeting meeting = new Meeting(name, eventStartDateTimeInSystem, user, parent, eventLocation,
                                       includeSubGroups, rsvpRequired, relayable, reminderType, customReminderMinutes, description);
@@ -192,6 +197,10 @@ public class EventBrokerImpl implements EventBroker {
 			throw new AccessDeniedException("Error! Only meeting caller can change meeting");
 		}
 
+		if (name.length() > 40) {
+			throw new TaskNameTooLongException();
+		}
+
         Instant convertedStartDateTime = convertToSystemTime(eventStartDateTime, getSAST());
         boolean startTimeChanged = !convertedStartDateTime.equals(meeting.getEventStartDateTime());
         if (startTimeChanged) {
@@ -235,6 +244,10 @@ public class EventBrokerImpl implements EventBroker {
 		if (!meeting.getCreatedByUser().equals(user) ||
 				permissionBroker.isGroupPermissionAvailable(user, meeting.getAncestorGroup(), Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS)) {
 			throw new AccessDeniedException("Error! Only meeting caller or group organizer can change meeting");
+		}
+
+		if (name.length() > 40) {
+			throw new TaskNameTooLongException();
 		}
 
 		Instant convertedStartDateTime = convertToSystemTime(eventStartDateTime, getSAST());
@@ -317,6 +330,9 @@ public class EventBrokerImpl implements EventBroker {
 			}
 		}
 
+		if (name.length() > 40) {
+			throw new TaskNameTooLongException();
+		}
 
 		Vote vote = new Vote(name, convertedClosingDateTime, user, parent, includeSubGroups, relayable, description);
 		if (assignMemberUids != null && !assignMemberUids.isEmpty()) {

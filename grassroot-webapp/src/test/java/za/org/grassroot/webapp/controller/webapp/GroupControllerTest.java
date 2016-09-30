@@ -113,7 +113,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
     @Test
     public void removeMemberModifyWorks() throws Exception {
         GroupWrapper groupCreator = new GroupWrapper();
-        groupCreator.addMember(new MembershipInfo(sessionTestUser));
+        groupCreator.addMember(new MembershipInfo(sessionTestUser, BaseRoles.ROLE_GROUP_ORGANIZER));
         mockMvc.perform(post("/group/change_multiple").param("removeMember", String.valueOf(0)).param("removeMember", "")
                 .sessionAttr("groupModifier", groupCreator))
                 .andExpect(status().isOk()).andExpect(view().name("group/change_multiple"));

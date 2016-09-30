@@ -31,18 +31,6 @@ public interface TodoRepository extends JpaRepository<Todo, Long>, JpaSpecificat
         "where m.user_id = ?1 and to_tsvector('english', l.message) @@ to_tsquery('english', ?2)", nativeQuery = true)
     List<Todo> findByParentGroupMembershipsUserAndMessageSearchTerm(Long userId, String tsQueryText);
 
-    // todo : consider switching this to specifications as well
-    @Transactional
-    @Query(value = "select td from Todo td " +
-            "left join td.completionConfirmations cm " +
-            "where td.cancelled = false " +
-            "and td.completionPercentage < ?2 " +
-            "and td.numberOfRemindersLeftToSend > 0 " +
-            "and td.scheduledReminderTime < ?1 " +
-            "and td.reminderActive = true " +
-            "and (cm.member is null or cm.member != td.createdByUser)")
-    List<Todo> findAllTodosForReminding(Instant referenceInstant, double threshold);
-
     // these are in test only and have been superceded in the main code -- delete once test coverage for services built out
     List<Todo> findByParentGroupAndCancelledFalse(Group group);
     List<Todo> findByAssignedMembersAndActionByDateBetweenAndCompletionPercentageGreaterThanEqual(User user, Instant start, Instant end, double minCompletionPercentage, Sort sort);

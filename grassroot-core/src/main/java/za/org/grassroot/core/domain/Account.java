@@ -35,6 +35,13 @@ public class Account implements Serializable {
     @Column(name="created_date_time", insertable = true, updatable = false)
     private Instant createdDateTime;
 
+    @ManyToOne
+    @JoinColumn(name = "disabled_by_user")
+    private User disabledByUser;
+
+    @Column(name = "disabled_date_time")
+    private Instant disabledDateTime;
+
     /*
     Doing this as one-to-many from account to users, rather than the inverse, because we are (much) more likely to have
     an account with 2-3 administrators than to have a user administering two accounts. The latter is not a non-zero
@@ -54,25 +61,34 @@ public class Account implements Serializable {
     @Column(name = "primary_email")
     private String primaryEmail;
 
-    /*
-    Now a set of flags for which features the account has enabled (all will set to 'true' at first)
-     */
-
     @Basic
     @Column
     private boolean enabled; // for future, in case we want to toggle a non-paying account on/off
+
+    /*
+    Range of account features
+     */
+
+    // how many groups the account can set as paid
+    @Basic
+    @Column(name = "max_group_number")
+    private int numberOfGroups;
+
+    @Basic
+    @Column(name = "max_group_size")
+    private int maxSizePerGroup;
+
+    @Basic
+    @Column(name = "max_sub_group_depth")
+    private int maxSubGroupDepth;
 
     @Basic
     @Column(name="free_form")
     private boolean freeFormMessages;
 
     @Basic
-    @Column(name="relayable")
-    private boolean relayableMessages;
-
-    @Basic
-    @Column(name="action_todo_extra")
-    private boolean todoExtraMessages;
+    @Column(name="additional_reminders")
+    private int extraReminders;
 
     @Version
     private Integer version;
@@ -104,9 +120,6 @@ public class Account implements Serializable {
 
         this.enabled = true;
         this.freeFormMessages = true;
-        this.relayableMessages = true;
-        this.todoExtraMessages = true;
-
     }
 
     /*
@@ -124,6 +137,14 @@ public class Account implements Serializable {
     }
 
     public User getCreatedByUser() { return createdByUser; }
+
+    public void setDisabledByUser(User disabledByUser) { this.disabledByUser = disabledByUser; }
+
+    public void setDisabledDateTime(Instant disabledDateTime) { this.disabledDateTime = disabledDateTime; }
+
+    public User getDisabledByUser() { return disabledByUser; }
+
+    public Instant getDisabledDateTime() { return disabledDateTime; }
 
     public Set<User> getAdministrators() {
         return administrators;
@@ -173,18 +194,6 @@ public class Account implements Serializable {
         this.freeFormMessages = freeFormMessages;
     }
 
-    public boolean isRelayableMessages() {
-        return relayableMessages;
-    }
-
-    public void setRelayableMessages(boolean relayableMessages) {
-        this.relayableMessages = relayableMessages;
-    }
-
-    public boolean isTodoExtraMessages() { return todoExtraMessages; }
-
-    public void setTodoExtraMessages(boolean todoExtraMessages) { this.todoExtraMessages = todoExtraMessages; }
-
     /*
     Helper methods for adding and removing administrators and groups
      */
@@ -203,6 +212,38 @@ public class Account implements Serializable {
 
     public void removePaidGroup(PaidGroup paidGroup) {
         paidGroups.remove(paidGroup);
+    }
+
+    public int getNumberOfGroups() {
+        return numberOfGroups;
+    }
+
+    public void setNumberOfGroups(int numberOfGroups) {
+        this.numberOfGroups = numberOfGroups;
+    }
+
+    public int getMaxSizePerGroup() {
+        return maxSizePerGroup;
+    }
+
+    public void setMaxSizePerGroup(int maxSizePerGroup) {
+        this.maxSizePerGroup = maxSizePerGroup;
+    }
+
+    public int getMaxSubGroupDepth() {
+        return maxSubGroupDepth;
+    }
+
+    public void setMaxSubGroupDepth(int maxSubGroupDepth) {
+        this.maxSubGroupDepth = maxSubGroupDepth;
+    }
+
+    public int getExtraReminders() {
+        return extraReminders;
+    }
+
+    public void setExtraReminders(int extraReminders) {
+        this.extraReminders = extraReminders;
     }
 
     public Integer getVersion() {
@@ -237,9 +278,6 @@ public class Account implements Serializable {
                 ", primaryEmail=" + primaryEmail +
                 ", enabled=" + enabled +
                 ", free form messages='" + freeFormMessages + '\'' +
-                ", relayable messages='" + relayableMessages + '\'' +
-//                ", number administrators='" + administrators.size() + '\'' +
-//                ", number groups paid for='" + paidGroups.size() + '\'' +
                 '}';
     }
 

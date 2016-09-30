@@ -55,7 +55,7 @@ public class MeetingController extends BaseController {
     private EventLogBroker eventLogBroker;
 
     @Autowired
-    private AccountManagementService accountManagementService;
+    private AccountBroker accountBroker;
 
     /**
      * Meeting creation
@@ -258,7 +258,7 @@ public class MeetingController extends BaseController {
         log.info("Sending free form message: {}, to this group: {}", message, groupUid);
 
         try {
-            accountManagementService.sendFreeFormMessage(getUserProfile().getUid(), groupUid, message);
+            accountBroker.sendFreeFormMessage(getUserProfile().getUid(), groupUid, message);
             addMessage(redirectAttributes, MessageType.SUCCESS, "sms.message.sent", request);
             log.info("Sent message, redirecting to home");
 

@@ -23,6 +23,7 @@ public class MembershipInfo implements Comparable<MembershipInfo> {
     private String phoneNumber;
     private String roleName; // optional
     private String displayName; // optional
+    private boolean userSetName;
 
     public MembershipInfo() {
         // need empty constructor for Spring MVC form submission
@@ -34,13 +35,15 @@ public class MembershipInfo implements Comparable<MembershipInfo> {
         this.phoneNumber = Objects.requireNonNull(phoneNumber);
         this.roleName = roleName;
         this.displayName = displayName;
+        this.userSetName = false; // since only true if user themselves set the name recorded in the info entity
     }
 
     // constructor to create a membership info with an empty role
-    public MembershipInfo(User user) {
+    public MembershipInfo(User user, String roleName) {
         this.phoneNumber = user.getPhoneNumber();
         this.displayName = user.getDisplayName();
-        this.roleName = null;
+        this.userSetName = user.isHasSetOwnName();
+        this.roleName = roleName;
     }
 
     public static MembershipInfo makeEmpty() {
@@ -49,9 +52,7 @@ public class MembershipInfo implements Comparable<MembershipInfo> {
 
     public static Set<MembershipInfo> createFromMembers(Set<Membership> members) {
         Set<MembershipInfo> membershipInfoSet = new HashSet<>();
-        for (Membership member : members)
-            membershipInfoSet.add(new MembershipInfo(member.getUser().getPhoneNumber(), member.getRole().getName(),
-                                                     member.getUser().getDisplayName()));
+        members.forEach(m -> membershipInfoSet.add(new MembershipInfo(m.getUser(), m.getRole().getName())));
         return membershipInfoSet;
     }
 
@@ -74,6 +75,14 @@ public class MembershipInfo implements Comparable<MembershipInfo> {
     public void setRoleName(String roleName) { this.roleName = roleName; }
 
     public void setDisplayName(String displayName) { this.displayName = displayName; }
+
+    public boolean isUserSetName() {
+        return userSetName;
+    }
+
+    public void setUserSetName(boolean userSetName) {
+        this.userSetName = userSetName;
+    }
 
     // need to use PhoneNumberUtil here to make sure return number with country code (or vice versa)
 

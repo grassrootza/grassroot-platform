@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
@@ -93,7 +94,7 @@ public class USSDUserController extends USSDController {
 
         USSDMenu thisMenu = new USSDMenu(getMessage(thisSection, keyLanguage, promptKey, sessionUser));
 
-        for (Map.Entry<String, String> entry : userManager.getImplementedLanguages().entrySet()) {
+        for (Map.Entry<String, String> entry : BaseController.getImplementedLanguages().entrySet()) {
             thisMenu.addMenuOption(userMenus + keyLanguage + doSuffix + "?language=" + entry.getKey(), entry.getValue());
         }
 

@@ -41,6 +41,15 @@ public final class TodoSpecifications {
         return (root, query, cb) -> cb.between(root.get(AbstractTodoEntity_.createdDateTime), start, end);
     }
 
+    public static Specification<Todo> remindersLeftToSend() {
+        return (root, query, cb) -> cb.and(cb.greaterThan(root.get(Todo_.numberOfRemindersLeftToSend), 0),
+                cb.equal(root.get(Todo_.reminderActive), true));
+    }
+
+    public static Specification<Todo> reminderTimeBefore(Instant time) {
+        return (root, query, cb) -> cb.lessThan(root.get(AbstractTodoEntity_.scheduledReminderTime), time);
+    }
+
     public static Specification<Todo> userPartOfGroup(final User user) {
         return (root, query, cb) -> {
             Join<Todo, Group> groups = root.join(AbstractTodoEntity_.parentGroup);

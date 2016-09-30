@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.SessionAttributes;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.DateTimeUtil;
-import za.org.grassroot.services.AccountManagementService;
+import za.org.grassroot.services.AccountBroker;
 import za.org.grassroot.services.EventBroker;
 import za.org.grassroot.services.GroupBroker;
 import za.org.grassroot.services.GroupQueryBroker;
@@ -40,7 +40,7 @@ public class PaidAccountController extends BaseController {
     private static final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd-M-yyyy");
 
     @Autowired
-    private AccountManagementService accountManagementService;
+    private AccountBroker accountBroker;
 
     @Autowired
     private GroupBroker groupBroker;
@@ -55,7 +55,7 @@ public class PaidAccountController extends BaseController {
     @RequestMapping("/index")
     public String paidAccountIndex(Model model, HttpServletRequest request) {
         if (request.isUserInRole("ROLE_SYSTEM_ADMIN")) {
-            model.addAttribute("accounts", accountManagementService.loadAllAccounts());
+            model.addAttribute("accounts", accountBroker.loadAllAccounts());
             return "paid_account/index";
         } else if (request.isUserInRole("ROLE_ACCOUNT_ADMIN")) {
             User user = userManagementService.load(getUserProfile().getUid());
@@ -69,7 +69,7 @@ public class PaidAccountController extends BaseController {
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/view")
     public String viewPaidAccount(Model model, @RequestParam("accountUid") String accountUid) {
-        Account account = accountManagementService.loadAccount(accountUid);
+        Account account = accountBroker.loadAccount(accountUid);
         validateUserIsAdministrator(account);
 
         List<PaidGroup> currentlyPaidGroups = account.getPaidGroups().stream()
@@ -85,7 +85,7 @@ public class PaidAccountController extends BaseController {
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/settings", method = RequestMethod.POST)
     public String changeAccountSettings(Model model, @RequestParam("accountId") String accountUid, HttpServletRequest request) {
-        Account account = accountManagementService.loadAccount(accountUid);
+        Account account = accountBroker.loadAccount(accountUid);
         validateUserIsAdministrator(account);
         return "paid_account/settings";
     }
@@ -95,7 +95,7 @@ public class PaidAccountController extends BaseController {
     public String viewPaidAccountLogs(Model model, @RequestParam String accountUid, @RequestParam String paidGroupUid,
                                       @RequestParam(value = "monthToView", required = false) String monthToView, HttpServletRequest request) {
 
-        Account account = accountManagementService.loadAccount(accountUid);
+        Account account = accountBroker.loadAccount(accountUid);
         validateUserIsAdministrator(account);
 
         final LocalDateTime beginDate;
@@ -115,7 +115,7 @@ public class PaidAccountController extends BaseController {
         }
 
         final Long timeStart = System.currentTimeMillis();
-        PaidGroup paidGroupRecord = accountManagementService.loadPaidGroup(paidGroupUid);
+        PaidGroup paidGroupRecord = accountBroker.loadPaidGroup(paidGroupUid);
         Group underlyingGroup = paidGroupRecord.getGroup();
 
         addRecordsToModel("meetingsInPeriod", model, underlyingGroup, EventType.MEETING, beginDate, endDate);
@@ -138,7 +138,7 @@ public class PaidAccountController extends BaseController {
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/group/designate")
     public String designateGroupPaidFor(Model model, @RequestParam("accountUid") String accountUid, HttpServletRequest request) {
-        Account account = accountManagementService.loadAccount(accountUid);
+        Account account = accountBroker.loadAccount(accountUid);
         validateUserIsAdministrator(account);
         model.addAttribute("account", account);
         model.addAttribute("candidateGroups", getCandidateGroupsToDesignate(getUserProfile()));
@@ -149,7 +149,7 @@ public class PaidAccountController extends BaseController {
     @RequestMapping(value = "/group/search")
     public String searchForGroup(Model model, @RequestParam String accountUid, @RequestParam String searchTerm,
                                  @RequestParam boolean tokenSearch) {
-        Account account = accountManagementService.loadAccount(accountUid);
+        Account account = accountBroker.loadAccount(accountUid);
         validateUserIsAdministrator(account);
 
         model.addAttribute("account", account);
@@ -171,9 +171,9 @@ public class PaidAccountController extends BaseController {
     @RequestMapping(value = "/group/designate", method = RequestMethod.POST)
     public String doDesignation(Model model, @RequestParam String accountUid, @RequestParam String groupUid,
                                 HttpServletRequest request) {
-        Account account = accountManagementService.loadAccount(accountUid);
+        Account account = accountBroker.loadAccount(accountUid);
         validateUserIsAdministrator(account);
-        accountManagementService.addGroupToAccount(accountUid, groupUid, getUserProfile().getUid());
+        accountBroker.addGroupToAccount(accountUid, groupUid, getUserProfile().getUid());
         addMessage(model, MessageType.SUCCESS, "account.addgroup.success", request);
         return viewPaidAccount(model, accountUid);
     }
@@ -182,10 +182,10 @@ public class PaidAccountController extends BaseController {
     @RequestMapping(value = "/group/remove", method = RequestMethod.POST)
     public String removePaidForDesignation(Model model, @RequestParam String accountUid, @RequestParam String paidGroupUid,
                                            @RequestParam(value = "confirm_field") String confirmed, HttpServletRequest request) {
-        Account account = accountManagementService.loadAccount(accountUid);
+        Account account = accountBroker.loadAccount(accountUid);
         validateUserIsAdministrator(account);
         if (confirmed.equalsIgnoreCase("confirmed")) {
-            accountManagementService.removeGroupFromAccount(accountUid, paidGroupUid, getUserProfile().getUid());
+            accountBroker.removeGroupFromAccount(accountUid, paidGroupUid, getUserProfile().getUid());
             addMessage(model, MessageType.INFO, "account.remgroup.success", request);
         } else {
             addMessage(model, MessageType.ERROR, "account.remgroup.failed", request);
