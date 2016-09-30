@@ -1,18 +1,17 @@
 package za.org.grassroot.integration.services;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.MessengerSettings;
+import za.org.grassroot.core.domain.GroupChatSettings;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.repository.GcmRegistrationRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.MessengerSettingsRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.integration.exception.MessengerSettingNotFoundException;
 
-import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
@@ -21,7 +20,7 @@ import java.util.Objects;
  * Created by paballo on 2016/09/08.
  */
 @Service
-public class MessengerSettingsManager implements MessengerSettingsService {
+public class GroupChatSettingsManager implements GroupChatSettingsService {
 
     @Autowired
     private UserRepository userRepository;
@@ -43,22 +42,23 @@ public class MessengerSettingsManager implements MessengerSettingsService {
         User user =  userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
 
-        MessengerSettings messengerSettings = new MessengerSettings(user,group,active,true,true,true);
-        messengerSettingsRepository.save(messengerSettings);
+        GroupChatSettings groupChatSettings = new GroupChatSettings(user,group,active,true,true,true);
+        messengerSettingsRepository.save(groupChatSettings);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public MessengerSettings load(String userUid, String groupUid) {
+    @Cacheable(value = "groupChatSettings")
+    public GroupChatSettings load(String userUid, String groupUid) {
         Objects.nonNull(userUid);
         Objects.nonNull(groupUid);
 
         User user =  userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
 
-        MessengerSettings messengerSettings = messengerSettingsRepository.findByUserAndGroup(user, group);
+        GroupChatSettings groupChatSettings = messengerSettingsRepository.findByUserAndGroup(user, group);
 
-        return  messengerSettings;
+        return groupChatSettings;
     }
 
     @Override
@@ -72,16 +72,16 @@ public class MessengerSettingsManager implements MessengerSettingsService {
         User user =  userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
 
-        MessengerSettings messengerSettings = messengerSettingsRepository.findByUserAndGroup(user,group);
-        if(null== messengerSettings){
-            throw new MessengerSettingNotFoundException("Message settings not found for user with id " + userUid);
+        GroupChatSettings groupChatSettings = messengerSettingsRepository.findByUserAndGroup(user,group);
+        if(null== groupChatSettings){
+            throw new MessengerSettingNotFoundException("Message settings not found for user with uid " + userUid);
         }
-        messengerSettings.setActive(active);
-        messengerSettings.setCanSend(canSend);
-        messengerSettings.setCanReceive(canReceive);
-        messengerSettings.setReactivationTime(reactivationTime);
+        groupChatSettings.setActive(active);
+        groupChatSettings.setCanSend(canSend);
+        groupChatSettings.setCanReceive(canReceive);
+        groupChatSettings.setReactivationTime(reactivationTime);
 
-        messengerSettingsRepository.save(messengerSettings);
+        messengerSettingsRepository.save(groupChatSettings);
 
     }
 
@@ -94,12 +94,12 @@ public class MessengerSettingsManager implements MessengerSettingsService {
         User user = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
 
-        MessengerSettings messengerSettings = messengerSettingsRepository.findByUserAndGroup(user,group);
-        if(null== messengerSettings){
-            throw new MessengerSettingNotFoundException("Message settings not found for user with id " + userUid);
+        GroupChatSettings groupChatSettings = messengerSettingsRepository.findByUserAndGroup(user,group);
+        if(null== groupChatSettings){
+            throw new MessengerSettingNotFoundException("Message settings not found for user with uid " + userUid);
         }
 
-        return messengerSettings.isCanSend();
+        return groupChatSettings.isCanSend();
     }
 
     @Override
@@ -111,17 +111,17 @@ public class MessengerSettingsManager implements MessengerSettingsService {
         User user = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
 
-        MessengerSettings messengerSettings = messengerSettingsRepository.findByUserAndGroup(user,group);
-        if(null== messengerSettings){
-            throw new MessengerSettingNotFoundException("Message settings not found for user with id " + userUid);
+        GroupChatSettings groupChatSettings = messengerSettingsRepository.findByUserAndGroup(user,group);
+        if(null== groupChatSettings){
+            throw new MessengerSettingNotFoundException("Message settings not found for user with uid " + userUid);
         }
-        messengerSettings.setActive(active);
-        messengerSettings.setUserInitiated(userInitiated);
-        messengerSettings.setCanSend(active);
+        groupChatSettings.setActive(active);
+        groupChatSettings.setUserInitiated(userInitiated);
+        groupChatSettings.setCanSend(active);
         if(userInitiated){
-            messengerSettings.setCanReceive(active);
+            groupChatSettings.setCanReceive(active);
         }
-        messengerSettingsRepository.save(messengerSettings);
+        messengerSettingsRepository.save(groupChatSettings);
 
     }
 
@@ -134,13 +134,13 @@ public class MessengerSettingsManager implements MessengerSettingsService {
         User user = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
 
-        MessengerSettings messengerSettings = messengerSettingsRepository.findByUserAndGroup(user,group);
+        GroupChatSettings groupChatSettings = messengerSettingsRepository.findByUserAndGroup(user,group);
 
-        if(null== messengerSettings){
-            throw new Exception("Message settings not found for user with id " + userUid);
+        if(null== groupChatSettings){
+            throw new Exception("Message settings not found for user with uid " + userUid);
         }
 
-        return messengerSettings.isCanSend();
+        return groupChatSettings.isCanSend();
     }
 
     @Override
@@ -153,15 +153,15 @@ public class MessengerSettingsManager implements MessengerSettingsService {
         User user = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
 
-        MessengerSettings messengerSettings = messengerSettingsRepository.findByUserAndGroup(user,group);
-        return (messengerSettings != null);
+        GroupChatSettings groupChatSettings = messengerSettingsRepository.findByUserAndGroup(user,group);
+        return (groupChatSettings != null);
 
     }
 
 
     @Override
     @Transactional(readOnly = true)
-    public List<MessengerSettings> loadMutedUsersMessengerSettings(){
+    public List<GroupChatSettings> loadUsersToBeUnmuted(){
         return  messengerSettingsRepository.findByActiveAndUserInitiatedAndReactivationTimeBefore(false,false, Instant.now());
 
     }

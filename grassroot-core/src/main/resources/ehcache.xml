@@ -34,4 +34,12 @@
            timeToIdleSeconds="3600">
     </cache>
 
+    <cache name="groupChatSettings"
+           maxEntriesLocalHeap="10000"
+           eternal="false"
+           timeToIdleSeconds="300" timeToLiveSeconds="600"
+           memoryStoreEvictionPolicy="LFU"
+           transactionalMode="off">
+    </cache>
+
 </ehcache>

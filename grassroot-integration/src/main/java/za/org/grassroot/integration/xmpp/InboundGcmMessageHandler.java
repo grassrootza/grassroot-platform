@@ -4,11 +4,13 @@ import org.jivesoftware.smack.packet.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.integration.annotation.ServiceActivator;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.MessengerSettings;
+import za.org.grassroot.core.domain.GroupChatSettings;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.UserMessagingPreference;
@@ -21,7 +23,6 @@ import za.org.grassroot.integration.exception.MessengerSettingNotFoundException;
 import za.org.grassroot.integration.services.*;
 import za.org.grassroot.integration.utils.MessageUtils;
 
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -51,10 +52,14 @@ public class InboundGcmMessageHandler {
     private UserRepository userRepository;
 
     @Autowired
-    private MessengerSettingsService messengerSettingsService;
+    private GroupChatSettingsService groupChatSettingsService;
 
     @Autowired
     private LearningService learningService;
+
+    @Autowired
+    @Qualifier("integrationMessageSourceAccessor")
+    MessageSourceAccessor messageSourceAccessor;
 
 
     private static final String ORIGINAL_MESSAGE_ID = "original_message_id";
@@ -159,20 +164,34 @@ public class InboundGcmMessageHandler {
         String phoneNumber = (String) input.getData().get("phoneNumber");
         String groupUid = (String) input.getData().get("groupUid");
         User user = userRepository.findByPhoneNumber(phoneNumber);
-        MessengerSettings messengerSettings = messengerSettingsService.load(user.getUid(), groupUid);
-        Group group = messengerSettings.getGroup();
+        GroupChatSettings groupChatSettings = groupChatSettingsService.load(user.getUid(), groupUid);
+        Group group = groupChatSettings.getGroup();
+        org.springframework.messaging.Message<Message> message;
         log.info("Posting to topic with id={}", groupUid);
         try {
-            if (messengerSettingsService.isCanSend(user.getUid(), groupUid)) {
+            if (groupChatSettingsService.isCanSend(user.getUid(), groupUid)) {
                 log.info("Posting to topic with id={}", groupUid);
-                org.springframework.messaging.Message<Message> message = generateMessage(user, input, group);
-                gcmXmppOutboundChannel.send(message);
-            }
+                message = generateMessage(user, input, group);
+            }else{
+                message = generateCannotSendMessage(input,group);
+             }
+            gcmXmppOutboundChannel.send(message);
+
         } catch (MessengerSettingNotFoundException e) {
             log.info("User with phoneNumber={} is not enabled to send messages to this group", phoneNumber);
         }
 
     }
+
+
+    public org.springframework.messaging.Message<Message> generateCannotSendMessage(GcmUpstreamMessage input, Group group){
+        Map<String, Object> data = MessageUtils.generateUserMutedResponseData(messageSourceAccessor,input,group);
+        return GcmXmppMessageCodec.encode(input.getFrom(), String.valueOf(data.get("messageId")),
+                null, null, null,
+                AndroidClickActionType.CHAT_MESSAGE.name(), data);
+
+    }
+
 
     public org.springframework.messaging.Message<Message> generateMessage(User user, GcmUpstreamMessage input, Group group) {
         org.springframework.messaging.Message<Message> gcmMessage;
@@ -186,13 +205,13 @@ public class InboundGcmMessageHandler {
         } else {
             String[] tokens = MessageUtils.tokenize(String.valueOf(input.getData().get("message")));
             if (tokens.length < 2) {
-                data = MessageUtils.generateInvalidCommandResponseData(input, group);
+                data = MessageUtils.generateInvalidCommandResponseData(messageSourceAccessor,input, group);
             } else {
                 try {
                     tokens[1] = learningService.parse(tokens[1]).toString();
-                    data = MessageUtils.generateCommandResponseData(input, group, tokens);
+                    data = MessageUtils.generateCommandResponseData(messageSourceAccessor,input, group, tokens);
                 } catch (SeloParseDateTimeFailure e) {
-                    data = MessageUtils.generateInvalidCommandResponseData(input, group);
+                    data = MessageUtils.generateInvalidCommandResponseData(messageSourceAccessor,input, group);
                 }
             }
                 gcmMessage = GcmXmppMessageCodec.encode(input.getFrom(), String.valueOf(data.get("messageId")),

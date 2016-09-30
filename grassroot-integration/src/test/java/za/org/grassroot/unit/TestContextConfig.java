@@ -5,7 +5,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.integration.xmpp.config.XmppConnectionFactoryBean;
 import org.springframework.messaging.MessageChannel;
-import za.org.grassroot.core.domain.MessengerSettings;
 import za.org.grassroot.core.repository.GcmRegistrationRepository;
 import za.org.grassroot.core.repository.TodoRepository;
 import za.org.grassroot.core.repository.UserRepository;
@@ -68,8 +67,8 @@ public class TestContextConfig {
     }
 
     @Bean()
-    public FactoryBean<MessengerSettingsService> messengerSettingsService() {
-        return new MockitoFactoryBean<>(MessengerSettingsService.class);
+    public FactoryBean<GroupChatSettingsService> messengerSettingsService() {
+        return new MockitoFactoryBean<>(GroupChatSettingsService.class);
     }
 
     @Bean()

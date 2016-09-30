@@ -8,7 +8,7 @@ import java.time.Instant;
  */
 @Entity
 @Table(name = "messenger_settings")
-public class MessengerSettings {
+public class GroupChatSettings {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -43,9 +43,9 @@ public class MessengerSettings {
     @Column(name="reactivation_time")
     private Instant reactivationTime;
 
-    private MessengerSettings(){}
+    private GroupChatSettings(){}
 
-    public MessengerSettings(User user, Group group, boolean active, boolean userInitiated, boolean canSend, boolean canReceive){
+    public GroupChatSettings(User user, Group group, boolean active, boolean userInitiated, boolean canSend, boolean canReceive){
         this.user = user;
         this.group=group;
         this.createdDateTime = Instant.now();

@@ -32,7 +32,7 @@ public interface GcmService {
 
     @Transactional
     @Async
-    void unsubScribeFromTopic(String registrationId, String topicId) throws Exception;
+    void unsubscribeFromTopic(String registrationId, String topicId) throws Exception;
 
     @Transactional
     @Async

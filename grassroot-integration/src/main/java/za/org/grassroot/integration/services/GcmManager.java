@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -42,21 +43,33 @@ public class GcmManager implements GcmService {
     private RestTemplate restTemplate;
 
     @Autowired
-    private MessengerSettingsService messengerSettingsService;
+    private GroupChatSettingsService groupChatSettingsService;
 
-    private final static String INSTANCE_ID_SERVICE_GATEWAY = "iid.googleapis.com";
-    private final static String AUTH_KEY = System.getenv("GCM_KEY");
-    private final static String HEADER_AUTH = "Authorization";
-    private final static int MAX_RETRIES = 3;
-    private final static int BACKOFF_INITIAL_DELAY = 1000;
-    private final static int MAX_BACKOFF_DELAY = 60 * 1000;
-    private final static Random random = new Random();
-    private final static String DESTINATION = "to";
-    private final static String REGISTRATION_TOKENS = "registration_tokens";
-    private final static String BATCH_REMOVE= ":batchRemove";
-    private final static String BATCH_ADD= ":batchAdd";
-    private final static String TOPICS = "/topics/";
+    @Value("${gcm.topics.url}")
+    private String INSTANCE_ID_SERVICE_GATEWAY;
+    @Value("${gcm.sender.key}")
+    private String AUTH_KEY;
+    @Value("${gcm.topics.authorization}")
+    private String HEADER_AUTH;
+    @Value("${gcm.topics.max.retries}")
+    private int MAX_RETRIES;
+    @Value("${gcm.topics.backoff.initial.delay}")
+    private int BACKOFF_INITIAL_DELAY ;
+    @Value("${gcm.topics.backoff.max.delay}")
+    private int MAX_BACKOFF_DELAY;
+    @Value("${gcm.topics.destination}")
+    private String DESTINATION;
+    @Value("${gcm.topics.tokens}")
+    private String REGISTRATION_TOKENS;
+    @Value("${gcm.topics.batch.remove}")
+    private String BATCH_REMOVE;
+    @Value("${gcm.topics.batch.add}")
+    private String BATCH_ADD;
+    @Value("${gcm.topics.path}")
+    private String TOPICS ;
+
     private static final ObjectMapper mapper = new ObjectMapper();
+    private final static Random random = new Random();
 
 
     @Override
@@ -96,13 +109,12 @@ public class GcmManager implements GcmService {
         List<Group> groupsPartOf = groupRepository.findByMembershipsUserAndActiveTrue(user);
         for (Group group : groupsPartOf) {
             try {
-                if(messengerSettingsService.messengerSettingExist(user.getUid(),group.getUid())){
-                    if(messengerSettingsService.isCanReceive(user.getUid(),group.getUid())){
+                if(groupChatSettingsService.messengerSettingExist(user.getUid(),group.getUid())){
+                    if(groupChatSettingsService.isCanReceive(user.getUid(),group.getUid())){
                         subscribeToTopic(registrationId, group.getUid());
                     }
                 }else{
-                    //todo introduce role based  group permission for upstream messages?
-                    messengerSettingsService.createUserGroupMessagingSetting(user.getUid(),group.getUid(),true,true,true);
+                    groupChatSettingsService.createUserGroupMessagingSetting(user.getUid(),group.getUid(),true,true,true);
                     subscribeToTopic(registrationId, group.getUid());
                 }
 
@@ -120,7 +132,7 @@ public class GcmManager implements GcmService {
         List<Group> groupsPartOf = groupRepository.findByMembershipsUserAndActiveTrue(user);
         for (Group group : groupsPartOf) {
             try {
-                unsubScribeFromTopic(gcmRegistration.getRegistrationId(), group.getUid());
+                unsubscribeFromTopic(gcmRegistration.getRegistrationId(), group.getUid());
             } catch (Exception ignored) {
             }
         }
@@ -152,7 +164,7 @@ public class GcmManager implements GcmService {
         }
         while (retry);
         if (!response.getStatusCode().is2xxSuccessful()) {
-            throw new IOException("Could not send message after " + noAttempts + " attempts");
+            throw new IOException("Could not send subscibe user after " + noAttempts + " attempts");
         }
 
     }
@@ -160,7 +172,7 @@ public class GcmManager implements GcmService {
     @Override
     @Transactional
     @Async
-    public void unsubScribeFromTopic(String registrationId, String topicId) throws Exception {
+    public void unsubscribeFromTopic(String registrationId, String topicId) throws Exception {
         UriComponentsBuilder gatewayURI = UriComponentsBuilder.newInstance().scheme("https").host(INSTANCE_ID_SERVICE_GATEWAY
         ).path("/iid/v1".concat(BATCH_REMOVE));
         int noAttempts = 0;

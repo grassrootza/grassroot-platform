@@ -17,8 +17,8 @@ import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.integration.exception.MessengerSettingNotFoundException;
 import za.org.grassroot.integration.services.GcmService;
-import za.org.grassroot.integration.services.MessengerSettingsService;
-import za.org.grassroot.services.MembershipInfo;
+import za.org.grassroot.integration.services.GroupChatSettingsService;
+import za.org.grassroot.services.*;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
@@ -43,7 +43,7 @@ public class GroupRestController extends GroupAbstractRestController {
     private static final Logger log = LoggerFactory.getLogger(GroupRestController.class);
 
 	@Autowired
-	private MessengerSettingsService messengerSettingsService;
+	private GroupChatSettingsService groupChatSettingsService;
 
 	@Autowired
 	private GcmService gcmService;
@@ -348,20 +348,17 @@ public class GroupRestController extends GroupAbstractRestController {
 
 		User user = userManagementService.findByInputNumber(phoneNumber);
 		String userSettingTobeUpdated = (userInitiated)?user.getUid():userUid;
-		log.info("userInitiated " + userInitiated);
-		log.info("active " + active);
-		log.info("userUid"  +userUid);
         if(!userInitiated){
             Group group = groupBroker.load(groupUid);
             permissionBroker.isGroupPermissionAvailable(user,group,Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER);
         }
-		messengerSettingsService.updateActivityStatus(userSettingTobeUpdated,groupUid,active,userInitiated);
+		groupChatSettingsService.updateActivityStatus(userSettingTobeUpdated,groupUid,active,userInitiated);
 		if(userInitiated){
 			String registrationId = gcmService.getGcmKey(user);
 			if(active){
 				gcmService.subscribeToTopic(registrationId,groupUid);
 			}else{
-				gcmService.unsubScribeFromTopic(registrationId,groupUid);
+				gcmService.unsubscribeFromTopic(registrationId,groupUid);
 			}
 		}
 		return RestUtil.messageOkayResponse((!active) ? RestMessage.CHAT_DEACTIVATED : RestMessage.CHAT_ACTIVATED);
@@ -374,9 +371,9 @@ public class GroupRestController extends GroupAbstractRestController {
 																	   @PathVariable("groupUid") String groupUid, @RequestParam(value = "userUid",required = false) String userUid) throws MessengerSettingNotFoundException{
 
 		User user = userManagementService.findByInputNumber(phoneNumber);
-		MessengerSettings messengerSettings = userUid != null ? messengerSettingsService.load(userUid, groupUid)
-				: messengerSettingsService.load(user.getUid(), groupUid);
-		return new ResponseEntity<>(new MessengerSettingsDTO(messengerSettings),HttpStatus.OK);
+		GroupChatSettings groupChatSettings = userUid != null ? groupChatSettingsService.load(userUid, groupUid)
+				: groupChatSettingsService.load(user.getUid(), groupUid);
+		return new ResponseEntity<>(new MessengerSettingsDTO(groupChatSettings),HttpStatus.OK);
 
 	}
 
