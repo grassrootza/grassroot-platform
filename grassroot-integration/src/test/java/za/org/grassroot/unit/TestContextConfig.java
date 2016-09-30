@@ -1,8 +1,11 @@
 package za.org.grassroot.unit;
 
 import org.springframework.beans.factory.FactoryBean;
+import org.springframework.beans.factory.config.PropertyPlaceholderConfigurer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.support.MessageSourceAccessor;
+import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.integration.xmpp.config.XmppConnectionFactoryBean;
 import org.springframework.messaging.MessageChannel;
 import za.org.grassroot.core.repository.GcmRegistrationRepository;
@@ -74,6 +77,23 @@ public class TestContextConfig {
     @Bean()
     public FactoryBean<LearningService> learningService(){
         return new MockitoFactoryBean<>(LearningService.class);
+    }
+
+    @Bean(name ="integrationMessageSourceAccessor")
+    public FactoryBean<MessageSourceAccessor> messageSourceAccessor(){
+        return new MockitoFactoryBean<>(MessageSourceAccessor.class);
+    }
+
+    @Bean(name ="integrationMessageSource")
+    public FactoryBean<ResourceBundleMessageSource> messageSource(){
+        return new MockitoFactoryBean<>(ResourceBundleMessageSource.class);
+    }
+
+    @Bean
+    public static PropertyPlaceholderConfigurer propertyPlaceholderConfigurer() {
+        PropertyPlaceholderConfigurer ppc = new PropertyPlaceholderConfigurer();
+        ppc.setIgnoreResourceNotFound(true);
+        return ppc;
     }
 
     class MockitoFactoryBean<T> implements FactoryBean<T> {

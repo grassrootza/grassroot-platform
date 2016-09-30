@@ -29,6 +29,11 @@ dependencies {
     // compile group: 'org.igniterealtime.smack', name: 'smack-experimental', version: '4.1.0-beta1'
     testCompile group: 'org.hamcrest', name: 'hamcrest-library', version: '1.3'
 }
+test {
+    systemProperty "gcm.topics.url", "iid.googleapis.com"
+
+
+}
 
 
 
