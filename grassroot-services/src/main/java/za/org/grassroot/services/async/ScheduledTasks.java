@@ -212,7 +212,7 @@ public class ScheduledTasks {
     @Scheduled(cron = "0 0 15 * * *") // runs at 3pm (= 5pm SAST) every day
     public void sendGroupJoinNotifications() { groupBroker.notifyOrganizersOfJoinCodeUse(Instant.now().minus(1, ChronoUnit.DAYS),
                                                                                          Instant.now());}
-    @Scheduled(fixedRate = 30000)
+    @Scheduled(fixedRate = 300000) // runs every five minutes
     public void gcmKeepAlive(){
         messageSendingService.sendPollingMessage();
     }
