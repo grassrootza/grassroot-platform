@@ -1,6 +1,6 @@
 package za.org.grassroot.webapp.model;
 
-import za.org.grassroot.core.domain.MessengerSettings;
+import za.org.grassroot.core.domain.GroupChatSettings;
 
 /**
  * Created by paballo on 2016/09/15.
@@ -16,13 +16,13 @@ public class MessengerSettingsDTO {
 
     public MessengerSettingsDTO(){}
 
-    public MessengerSettingsDTO(MessengerSettings messengerSettings){
-        this.groupUid = messengerSettings.getGroup().getUid();
-        this.userUid = messengerSettings.getUser().getUid();
-        this.active = messengerSettings.isActive();
-        this.userInitiated = messengerSettings.isUserInitiated();
-        this.canReceive = messengerSettings.isCanReceive();
-        this.canSend = messengerSettings.isCanSend();
+    public MessengerSettingsDTO(GroupChatSettings groupChatSettings){
+        this.groupUid = groupChatSettings.getGroup().getUid();
+        this.userUid = groupChatSettings.getUser().getUid();
+        this.active = groupChatSettings.isActive();
+        this.userInitiated = groupChatSettings.isUserInitiated();
+        this.canReceive = groupChatSettings.isCanReceive();
+        this.canSend = groupChatSettings.isCanSend();
     }
 
     public String getGroupUid() {

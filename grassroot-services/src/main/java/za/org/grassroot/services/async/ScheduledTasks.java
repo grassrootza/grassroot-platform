@@ -12,7 +12,7 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.integration.exception.MessengerSettingNotFoundException;
 import za.org.grassroot.integration.services.MessageSendingService;
-import za.org.grassroot.integration.services.MessengerSettingsService;
+import za.org.grassroot.integration.services.GroupChatSettingsService;
 import za.org.grassroot.services.EventBroker;
 import za.org.grassroot.services.GroupBroker;
 import za.org.grassroot.services.SafetyEventBroker;
@@ -73,7 +73,7 @@ public class ScheduledTasks {
     private GroupRepository groupRepository;
 
     @Autowired
-    private MessengerSettingsService messengerSettingsService;
+    private GroupChatSettingsService groupChatSettingsService;
 
     @Autowired
     private SafetyEventRepository safetyEventRepository;
@@ -180,12 +180,12 @@ public class ScheduledTasks {
 
     @Scheduled(fixedRate= 300000)
     public void reactivateMutedUsers() throws Exception {
-        List<MessengerSettings> messengerSettingses = messengerSettingsService.loadMutedUsersMessengerSettings();
-        for(MessengerSettings messengerSetting: messengerSettingses){
+        List<GroupChatSettings> groupChatSettingses = groupChatSettingsService.loadUsersToBeUnmuted();
+        for(GroupChatSettings messengerSetting: groupChatSettingses){
             String userUid = messengerSetting.getUser().getUid();
             String groupUid = messengerSetting.getGroup().getUid();
             try {
-                messengerSettingsService.updateActivityStatus(userUid,groupUid,true,false);
+                groupChatSettingsService.updateActivityStatus(userUid,groupUid,true,false);
             } catch (MessengerSettingNotFoundException e) {
                 logger.error("Error while trying unmute user with " + userUid);
             }
@@ -212,7 +212,7 @@ public class ScheduledTasks {
     @Scheduled(cron = "0 0 15 * * *") // runs at 3pm (= 5pm SAST) every day
     public void sendGroupJoinNotifications() { groupBroker.notifyOrganizersOfJoinCodeUse(Instant.now().minus(1, ChronoUnit.DAYS),
                                                                                          Instant.now());}
-    @Scheduled(fixedRate = 300000)
+    @Scheduled(fixedRate = 30000)
     public void gcmKeepAlive(){
         messageSendingService.sendPollingMessage();
     }

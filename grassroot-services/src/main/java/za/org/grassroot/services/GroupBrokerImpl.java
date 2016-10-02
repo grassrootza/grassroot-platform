@@ -20,6 +20,8 @@ import za.org.grassroot.core.repository.GroupLogRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
+import za.org.grassroot.integration.services.GcmService;
+import za.org.grassroot.integration.services.GroupChatSettingsService;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.services.exception.GroupDeactivationNotAvailableException;
 import za.org.grassroot.services.exception.InvalidTokenException;
@@ -28,6 +30,7 @@ import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 import za.org.grassroot.services.util.TokenGeneratorService;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -68,12 +71,18 @@ public class GroupBrokerImpl implements GroupBroker {
     private GeoLocationBroker geoLocationBroker;
     @Autowired
     private GroupLocationRepository groupLocationRepository;
+    @Autowired
+    private GroupChatSettingsService groupChatSettingsService;
+    @Autowired
+    private GcmService gcmService;
 
     @Override
     @Transactional(readOnly = true)
     public Group load(String groupUid) {
         return groupRepository.findOneByUid(groupUid);
     }
+
+
 
     @Override
     @Transactional(readOnly = true)
@@ -119,6 +128,11 @@ public class GroupBrokerImpl implements GroupBroker {
 
         permissionBroker.setRolePermissionsFromTemplate(group, groupPermissionTemplate);
         group = groupRepository.save(group);
+
+        logger.info("Group created under UID {}", group.getUid());
+
+        addMembersToGroupChat(group);
+
 
         logger.info("Group created under UID {}", group.getUid());
 
@@ -345,6 +359,9 @@ public class GroupBrokerImpl implements GroupBroker {
         Set<Meeting> meetings = (Set) group.getUpcomingEventsIncludingParents(event -> event.getEventType().equals(EventType.MEETING));
 
         final GroupLogType logType = duringGroupCreation ? GroupLogType.GROUP_MEMBER_ADDED_AT_CREATION : GroupLogType.GROUP_MEMBER_ADDED;
+
+        if (!duringGroupCreation) addMembersToGroupChat(group);
+
         for (Membership membership : memberships) {
             User member = membership.getUser();
 
@@ -891,6 +908,25 @@ public class GroupBrokerImpl implements GroupBroker {
         actionLogs.add(new GroupLog(parent, user, GroupLogType.SUBGROUP_ADDED, child.getId(), "Subgroup added"));
         actionLogs.add(new GroupLog(child, user, GroupLogType.PARENT_CHANGED, parent.getId(), "Parent group added or changed"));
         logActionLogsAfterCommit(actionLogs);
+    }
+
+    private void addMembersToGroupChat(Group group) {
+
+        String groupUid = group.getUid();
+        Set<Membership> memberships = group.getMemberships();
+        for (Membership membership : memberships) {
+            User user = membership.getUser();
+            if (gcmService.hasGcmKey(user) && !groupChatSettingsService.messengerSettingExist(user.getUid(), groupUid)) {
+                groupChatSettingsService.createUserGroupMessagingSetting(user.getUid(), groupUid, true, true, true);
+                String registrationId = gcmService.getGcmKey(user);
+                try {
+                    gcmService.subscribeToTopic(registrationId, groupUid);
+                } catch (IOException e) {
+                    logger.info("Could not subscribe user to group topic {}", groupUid);
+                }
+
+            }
+        }
     }
 
 }
