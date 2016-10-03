@@ -355,24 +355,4 @@ public class AdminController extends BaseController {
         return listAccounts(model);
     }
 
-    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    @RequestMapping(value = "/admin/accounts/settings")
-    public String viewAccountSettings(Model model, @RequestParam String accountUid) {
-        model.addAttribute("account", accountBroker.loadAccount(accountUid));
-        return "admin/accounts/settings";
-    }
-
-    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    @RequestMapping(value = "/admin/accounts/settings", method = RequestMethod.POST)
-    public String changeAccountSettings(Model model, @ModelAttribute Account account) {
-        accountBroker.updateSettings(account);
-        return adminViewAccount(model, account.getUid());
-    }
-
-    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    @RequestMapping("/admin/designate/group")
-    public String designateGroup(Model model) {
-        return "admin/group";
-    }
-
 }

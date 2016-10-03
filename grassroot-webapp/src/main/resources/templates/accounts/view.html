@@ -24,13 +24,13 @@
 
     <div class="row">
       <div class="col-md-12 text-center">
-        <a th:href="@{/paid_account/group/designate(accountUid=${account.uid})}">
+        <a th:href="@{/accounts/group/designate(accountUid=${account.uid})}">
           <button class="btn btn-default">Add a group to this account</button>
         </a>
-        <a th:href="@{/paid_account/settings(accountUid=${account.uid})}">
+        <a th:href="@{/accounts/settings/view(accountUid=${account.uid})}">
           <button class="btn btn-default">Change account settings</button>
         </a>
-        <a th:href="@{/paid_account/history(accountUid=${account.uid})}">
+        <a th:href="@{/accounts/history(accountUid=${account.uid})}">
           <button class="btn btn-default">Account history</button>
         </a>
       </div>
@@ -56,7 +56,7 @@
                 <td><span th:text="${paidGroup.group.getName('')}">Group name</span></td>
                 <td><span th:text="${paidGroup.group.getMembers().size()}">size</span></td>
                 <td><span th:text="${#dates.format(paidGroup.activeDateTime, 'dd-MMM-yyyy')}">date</span></td>
-                <td><a class="btn btn-primary btn-xs" th:href="@{/paid_account/group/view(paidGroupUid=${paidGroup.uid}, accountUid=${account.uid})}">View details</a></td>
+                <td><a class="btn btn-primary btn-xs" th:href="@{/accounts/group/view(paidGroupUid=${paidGroup.uid}, accountUid=${account.uid})}">View details</a></td>
                 <td><button type="button" class="btn btn-default btn-xs" data-toggle="modal" data-target="#remGroupModal"
                   th:attr="data-groupuid=${paidGroup.uid}">Remove group</button>
               </tr>
@@ -76,7 +76,7 @@
             </button>
             <h4 class="modal-title" id="remGroupModalTitle">Are you sure?</h4>
           </div>
-          <form th:action="@{/paid_account/group/remove}" method="post">
+          <form th:action="@{/accounts/group/remove}" method="post">
             <input type="hidden" name="accountUid" th:value="${account.uid}" />
             <input type="hidden" name="paidGroupUid" id="paidGroupUid" />
             <div class="modal-body">

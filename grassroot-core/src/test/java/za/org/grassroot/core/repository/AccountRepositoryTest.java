@@ -252,7 +252,7 @@ public class AccountRepositoryTest {
         account.setMaxSizePerGroup(500);
         account.setMaxSubGroupDepth(3);
         account.setFreeFormMessages(true);
-        account.setNumberOfGroups(10);
+        account.setMaxNumberGroups(10);
 
         accountRepository.save(account);
 
@@ -261,7 +261,7 @@ public class AccountRepositoryTest {
         assertTrue(accountFromDb.isFreeFormMessages());
         assertEquals(accountFromDb.getMaxSizePerGroup(), 500);
         assertEquals(accountFromDb.getMaxSubGroupDepth(), 3);
-        assertEquals(accountFromDb.getNumberOfGroups(), 10);
+        assertEquals(accountFromDb.getMaxNumberGroups(), 10);
         assertEquals(accountFromDb.getMaxSubGroupDepth(), 3);
 
         accountFromDb.setFreeFormMessages(false);

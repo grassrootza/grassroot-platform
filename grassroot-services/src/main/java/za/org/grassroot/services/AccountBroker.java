@@ -32,7 +32,10 @@ public interface AccountBroker {
     void updateBillingEmail(String userUid, String accountUid, String billingEmail);
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
-    void updateSettings(Account changedAccount);
+    void updateAccountGroupLimits(String userUid, String accountUid, Integer numberOfGroups, Integer maxSizePerGroup, Integer maxDepth);
+
+    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
+    void updateAccountMessageSettings(String userUid, String accountUid, Boolean freeFormEnabled, Integer costPerMessage);
 
     // Methods to designate groups as paid for by accounts (and remove the designation)
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")

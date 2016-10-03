@@ -72,7 +72,7 @@ public class Account implements Serializable {
     // how many groups the account can set as paid
     @Basic
     @Column(name = "max_group_number")
-    private int numberOfGroups;
+    private int maxNumberGroups;
 
     @Basic
     @Column(name = "max_group_size")
@@ -89,6 +89,10 @@ public class Account implements Serializable {
     @Basic
     @Column(name="additional_reminders")
     private int extraReminders;
+
+    @Basic
+    @Column(name="free_form_cost")
+    private int freeFormCost; // stored as cents
 
     @Version
     private Integer version;
@@ -132,6 +136,8 @@ public class Account implements Serializable {
 
     public String getUid() { return uid; }
 
+    public void setUid(String uid) { this.uid = uid; }
+
     public Instant getCreatedDateTime() {
         return createdDateTime;
     }
@@ -147,6 +153,9 @@ public class Account implements Serializable {
     public Instant getDisabledDateTime() { return disabledDateTime; }
 
     public Set<User> getAdministrators() {
+        if (administrators == null) {
+            administrators = new HashSet<>();
+        }
         return administrators;
     }
 
@@ -214,12 +223,12 @@ public class Account implements Serializable {
         paidGroups.remove(paidGroup);
     }
 
-    public int getNumberOfGroups() {
-        return numberOfGroups;
+    public int getMaxNumberGroups() {
+        return maxNumberGroups;
     }
 
-    public void setNumberOfGroups(int numberOfGroups) {
-        this.numberOfGroups = numberOfGroups;
+    public void setMaxNumberGroups(int maxNumberGroups) {
+        this.maxNumberGroups = maxNumberGroups;
     }
 
     public int getMaxSizePerGroup() {
@@ -250,6 +259,14 @@ public class Account implements Serializable {
         return version;
     }
 
+    public int getFreeFormCost() {
+        return freeFormCost;
+    }
+
+    public void setFreeFormCost(int freeFormCost) {
+        this.freeFormCost = freeFormCost;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -272,7 +289,7 @@ public class Account implements Serializable {
     @Override
     public String toString() {
         return "Account{" +
-                "id=" + id +
+                "uid=" + uid +
                 ", createdDateTime=" + createdDateTime +
                 ", accountName=" + accountName +
                 ", primaryEmail=" + primaryEmail +

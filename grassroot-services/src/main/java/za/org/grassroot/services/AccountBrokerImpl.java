@@ -104,10 +104,15 @@ public class AccountBrokerImpl implements AccountBroker {
     @Override
     @Transactional
     public void updateBillingEmail(String userUid, String accountUid, String billingEmail) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(accountUid);
+
         User user = userRepository.findOneByUid(userUid);
         Account account = accountRepository.findOneByUid(accountUid);
 
-        if (account.getAdministrators().contains(user)) {
+        log.info("Looking up administrators for this account: {}, from this uid: {}", account, accountUid);
+
+        if (!account.getAdministrators().contains(user)) {
             permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
         }
 
@@ -117,9 +122,50 @@ public class AccountBrokerImpl implements AccountBroker {
 
     @Override
     @Transactional
-    public void updateSettings(Account changedAccount) {
-        Account savedAccount = accountRepository.findOne(changedAccount.getId());
-        savedAccount.setFreeFormMessages(changedAccount.isFreeFormMessages());
+    public void updateAccountGroupLimits(String userUid, String accountUid, Integer maxGroups, Integer maxSizePerGroup, Integer maxDepth) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(accountUid);
+
+        Account account = accountRepository.findOneByUid(accountUid);
+        User user = userRepository.findOneByUid(userUid);
+
+        if (!account.getAdministrators().contains(user)) {
+            permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
+        }
+
+        if (maxGroups != null) {
+            account.setMaxNumberGroups(maxGroups);
+        }
+
+        if (maxSizePerGroup != null) {
+            account.setMaxSizePerGroup(maxSizePerGroup);
+        }
+
+        if (maxDepth != null) {
+            account.setMaxSubGroupDepth(maxDepth);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void updateAccountMessageSettings(String userUid, String accountUid, Boolean freeFormEnabled, Integer costPerMessage) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(accountUid);
+
+        Account account = accountRepository.findOneByUid(accountUid);
+        User user = userRepository.findOneByUid(userUid);
+
+        if (!account.getAdministrators().contains(user)) {
+            permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
+        }
+
+        if (freeFormEnabled != null) {
+            account.setFreeFormMessages(freeFormEnabled);
+        }
+
+        if (costPerMessage != null) {
+            account.setFreeFormCost(costPerMessage);
+        }
     }
 
     @Override

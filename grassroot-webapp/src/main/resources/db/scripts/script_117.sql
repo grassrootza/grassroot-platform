@@ -1,0 +1,1 @@
+ALTER TABLE paid_account ADD COLUMN free_form_cost integer DEFAULT 0;

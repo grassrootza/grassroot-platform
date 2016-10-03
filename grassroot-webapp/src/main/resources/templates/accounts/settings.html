@@ -1,0 +1,62 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" xmlns:data="http://www.w3.org/1999/xhtml"
+      data-layout-decorate="layout">
+<head>
+  <title>Grassroot -- Account settings</title>
+</head>
+
+<body>
+
+<div layout:fragment="header">
+  <div class="jumbotron narrow-vertical">
+    <h2 class="text-center">
+      Account: "<span th:text="${account.accountName}">Account</span>"
+    </h2>
+  </div>
+</div>
+
+<div layout:fragment="overview"></div>
+
+<div layout:fragment="content">
+
+  <div class="row">
+    <div class="col-md-6 col-md-offset-3">
+      <form class="form-vertical" th:action="@{change}" method="post" th:object="${account}">
+        <input type="hidden" th:field="*{uid}" />
+        <div class="form-group">
+          <label for="email" class="control-label">Billing email:</label>
+          <input id="email" type="text" th:field="*{primaryEmail}" class="form-control"/>
+        </div>
+        <div class="form-group">
+          <label class="checkbox-inline">
+            <input th:field="*{freeFormMessages}" type="checkbox" />
+            Free form messages enabled
+          </label>
+        </div>
+        <div class="form-group">
+          <label for="cost" class="control-label">Cost per message:</label>
+          <input id="cost" type="number" th:field="*{freeFormCost}" class="form-control" />
+        </div>
+        <div class="form-group">
+          <label for="maxgroups" class="control-label">Maximum groups in account:</label>
+          <input id="maxgroups" type="number" th:field="*{maxNumberGroups}" class="form-control" />
+        </div>
+        <div class="form-group">
+          <label for="subgroups" class="control-label">Maximum sub-group depth</label>
+          <input id="subgroups" type="number" th:field="*{maxSubGroupDepth}" class="form-control" />
+        </div>
+        <div class="form-group">
+          <label for="groupsize" class="control-label">Maximum group size</label>
+          <input id="groupsize" type="number" th:field="*{maxSizePerGroup}" class="form-control" />
+        </div>
+        <div class="form-group pull-right">
+          <button type="submit" class="btn btn-primary">Submit</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

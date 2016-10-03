@@ -57,7 +57,7 @@
               <li sec:authorize="isAuthenticated()" class="active"><a href="javascript:void(0)" th:href="@{/vote/create}"><span class="white-text">Take Vote</span></a></li>
               <li sec:authorize="isAuthenticated()" class="active"><a href="javascript:void(0)" th:href="@{/todo/create}"><span class="white-text">Create to-do</span></a></li>
               <li sec:authorize="hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')" class="active"><a href="javascript:void(0)" th:href="@{/meeting/free}"><span class="white-text">Send Message</span></a></li>
-              <li sec:authorize="hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')" class="active"><a href="javascript:void(0)" th:href="@{/paid_account/index}"><span class="white-text">Manage account</span></a></li>
+              <li sec:authorize="hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')" class="active"><a href="javascript:void(0)" th:href="@{/accounts/index}"><span class="white-text">Manage account</span></a></li>
               <li sec:authorize="hasRole('ROLE_SYSTEM_ADMIN')" class="active"><a href="javascript:void(0)" th:href="@{/admin/home}"><span class="white-text">System admin</span></a></li>
 
             </ul>
