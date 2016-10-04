@@ -2,10 +2,12 @@ package za.org.grassroot.webapp.model;
 
 import za.org.grassroot.core.domain.GroupChatSettings;
 
+import java.util.List;
+
 /**
  * Created by paballo on 2016/09/15.
  */
-public class MessengerSettingsDTO {
+public class GroupChatSettingsDTO {
 
     private String groupUid;
     private String userUid;
@@ -13,16 +15,18 @@ public class MessengerSettingsDTO {
     private boolean userInitiated;
     private boolean canReceive;
     private boolean canSend;
+    private List<String> mutedUsersUids;
 
-    public MessengerSettingsDTO(){}
+    public GroupChatSettingsDTO(){}
 
-    public MessengerSettingsDTO(GroupChatSettings groupChatSettings){
+    public GroupChatSettingsDTO(GroupChatSettings groupChatSettings, List<String> mutedUsersUids){
         this.groupUid = groupChatSettings.getGroup().getUid();
         this.userUid = groupChatSettings.getUser().getUid();
         this.active = groupChatSettings.isActive();
         this.userInitiated = groupChatSettings.isUserInitiated();
         this.canReceive = groupChatSettings.isCanReceive();
         this.canSend = groupChatSettings.isCanSend();
+        this.mutedUsersUids = mutedUsersUids;
     }
 
     public String getGroupUid() {
@@ -49,6 +53,8 @@ public class MessengerSettingsDTO {
         return canSend;
     }
 
-
+    public List<String> getMutedUsersUids() {
+        return mutedUsersUids;
+    }
 }
 
