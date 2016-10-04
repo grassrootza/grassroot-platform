@@ -13,6 +13,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.enums.AccountType;
 import za.org.grassroot.core.repository.RoleRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.AccountBroker;
@@ -77,14 +78,14 @@ public class AccountBrokerTest {
     }
 
     private Account createTestAccount(String billingEmail) {
-        String accountUid = accountBroker.createAccount(testUser.getUid(), accountName, testAdmin.getUid(), billingEmail);
+        String accountUid = accountBroker.createAccount(testUser.getUid(), accountName, testAdmin.getUid(), billingEmail, AccountType.STANDARD);
         Account account = accountBroker.loadAccount(accountUid);
         return account;
     }
 
     @Test
     public void shouldSaveBilling() {
-        String accountUid = accountBroker.createAccount(testUser.getUid(), accountName, testAdmin.getUid(), billingEmail);
+        String accountUid = accountBroker.createAccount(testUser.getUid(), accountName, testAdmin.getUid(), billingEmail, AccountType.STANDARD);
         Account account = accountBroker.loadAccount(accountUid);
         assertNotEquals(null,account.getId());
         assertEquals(billingEmail, account.getPrimaryEmail());
@@ -162,7 +163,7 @@ public class AccountBrokerTest {
     public void shouldNotAllowDuplicatePaidGroups() {
         // todo: change this to try/catch, to handle it better
         Account account = createTestAccount(null);
-        String account2Uid = accountBroker.createAccount(testUser.getUid(), accountName + "2", testAdmin.getUid(), null);
+        String account2Uid = accountBroker.createAccount(testUser.getUid(), accountName + "2", testAdmin.getUid(), null, AccountType.STANDARD);
         accountBroker.addGroupToAccount(account.getUid(), testGroup.getUid(), testAdmin.getUid());
         accountBroker.addGroupToAccount(account2Uid, testGroup.getUid(), testAdmin.getUid());
     }

@@ -9,6 +9,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.enums.AccountType;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.AccountBroker;
@@ -85,15 +86,17 @@ public class AccountsController extends BaseController {
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/settings/change", method = RequestMethod.POST)
-    public String changeAccountSettingsDo(Model model, @ModelAttribute("account") Account account, HttpServletRequest request) {
+    public String changeAccountSettingsDo(Model model, @RequestAttribute String accountUid, @RequestAttribute String billingEmail,
+                                          @RequestAttribute AccountType accountType, HttpServletRequest request) {
         try {
-            log.info("Received account back: " + account);
-            // major todo : aggregate these into account type enum
-            accountBroker.updateBillingEmail(getUserProfile().getUid(), account.getUid(), account.getPrimaryEmail());
-            accountBroker.updateAccountGroupLimits(getUserProfile().getUid(), account.getUid(), account.getMaxNumberGroups(),
-                    account.getMaxSizePerGroup(), account.getMaxSubGroupDepth());
-            accountBroker.updateAccountMessageSettings(getUserProfile().getUid(), account.getUid(), account.isFreeFormMessages(),
-                    account.getFreeFormCost());
+            Account account = accountBroker.loadAccount(accountUid);
+            if (!billingEmail.equals(account.getPrimaryEmail())) {
+                accountBroker.updateBillingEmail(getUserProfile().getUid(), accountUid, billingEmail);
+            }
+
+            if (!accountType.equals(account.getType())) {
+                accountBroker.changeAccountType(getUserProfile().getUid(), accountUid, accountType);
+            }
 
             addMessage(model, MessageType.SUCCESS, "account.settings.changed.success", request);
             model.addAttribute("account", account);

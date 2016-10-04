@@ -1,9 +1,9 @@
 package za.org.grassroot.core.domain;
 
+import za.org.grassroot.core.enums.AccountType;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
-import java.io.Serializable;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Objects;
@@ -17,7 +17,7 @@ import java.util.Set;
 
 @Entity
 @Table(name="paid_account")
-public class Account implements Serializable {
+public class Account {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -64,6 +64,10 @@ public class Account implements Serializable {
     @Basic
     @Column
     private boolean enabled; // for future, in case we want to toggle a non-paying account on/off
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "account_type", length = 50, nullable = false)
+    protected AccountType type;
 
     /*
     Range of account features
@@ -113,7 +117,7 @@ public class Account implements Serializable {
         // For JPA
     }
 
-    public Account(User createdByUser, String accountName) {
+    public Account(User createdByUser, String accountName, AccountType accountType) {
         Objects.requireNonNull(createdByUser);
         Objects.requireNonNull(accountName);
 
@@ -121,6 +125,7 @@ public class Account implements Serializable {
 
         this.accountName = accountName;
         this.createdByUser = createdByUser;
+        this.type = accountType;
 
         this.enabled = true;
         this.freeFormMessages = true;
@@ -193,6 +198,14 @@ public class Account implements Serializable {
 
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
+    }
+
+    public AccountType getType() {
+        return type;
+    }
+
+    public void setType(AccountType type) {
+        this.type = type;
     }
 
     public boolean isFreeFormMessages() {

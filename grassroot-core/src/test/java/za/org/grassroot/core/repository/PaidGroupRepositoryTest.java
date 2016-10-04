@@ -7,7 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.junit4.SpringRunner;
 import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
@@ -15,6 +14,7 @@ import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.PaidGroup;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.AccountType;
 
 import javax.transaction.Transactional;
 import java.time.Instant;
@@ -59,8 +59,8 @@ public class PaidGroupRepositoryTest {
         testUser = userRepository.save(new User(testPhoneNumber));
         testGroup = groupRepository.save(new Group(testGroupName, testUser));
         testGroup2 = groupRepository.save(new Group(testGroupName + "2", testUser));
-        testAccount = accountRepository.save(new Account(testUser, testAccountName));
-        testAccount2 = accountRepository.save(new Account(testUser, testAccountName + "2"));
+        testAccount = accountRepository.save(new Account(testUser, testAccountName, AccountType.STANDARD));
+        testAccount2 = accountRepository.save(new Account(testUser, testAccountName + "2", AccountType.STANDARD));
 
     }
 
@@ -162,7 +162,7 @@ public class PaidGroupRepositoryTest {
     public void shouldFindPaidGroupByGroup() {
         assertThat(paidGroupRepository.count(), is(0L));
         PaidGroup paidGroup = paidGroupRepository.save(new PaidGroup(testGroup, testAccount, testUser));
-        PaidGroup paidGroupFromDb = paidGroupRepository.findByGroupOrderByExpireDateTimeDesc(testGroup).iterator().next();
+        PaidGroup paidGroupFromDb = paidGroupRepository.findOneByGroupOrderByExpireDateTimeDesc(testGroup);
         assertNotNull(paidGroupFromDb);
         assertThat(paidGroupFromDb, is(paidGroup));
     }
@@ -174,13 +174,11 @@ public class PaidGroupRepositoryTest {
         assertThat(paidGroupRepository.count(), is(0L));
         PaidGroup paidGroup1 = paidGroupRepository.save(new PaidGroup(testGroup, testAccount, testUser));
         PaidGroup paidGroup2 = paidGroupRepository.save(new PaidGroup(testGroup, testAccount2, testUser));
-        List<PaidGroup> firstList = paidGroupRepository.findByGroupOrderByExpireDateTimeDesc(testGroup);
-        assertThat(firstList.size(), is(2));
         paidGroup1.setExpireDateTime(Instant.now());
         paidGroup1.setRemovedByUser(testUser);
         paidGroupRepository.save(paidGroup1);
-        List<PaidGroup> secondList = paidGroupRepository.findByGroupOrderByExpireDateTimeDesc(testGroup);
-        assertEquals(secondList.get(0).getId(), paidGroup2.getId()); // straight equals gives errors on hash codes
+        PaidGroup fromReport = paidGroupRepository.findOneByGroupOrderByExpireDateTimeDesc(testGroup);
+        assertEquals(fromReport.getId(), paidGroup2.getId()); // straight equals gives errors on hash codes
     }
 
 }

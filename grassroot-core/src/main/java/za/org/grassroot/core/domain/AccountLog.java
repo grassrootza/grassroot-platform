@@ -5,6 +5,7 @@ import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
 import java.time.Instant;
+import java.util.Objects;
 
 /**
  * Created by luke on 2016/04/03.
@@ -48,16 +49,24 @@ public class AccountLog implements ActionLog {
         // for JPA
     }
 
-    public AccountLog(String userUid, Account account, AccountLogType accountLogType, String groupUid,
-                      String paidGroupUid, String description) {
+    public AccountLog(String userUid, Account account, AccountLogType accountLogType, String auxiliary) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(account);
+        Objects.requireNonNull(accountLogType);
+
         this.uid = UIDGenerator.generateId();
         this.userUid = userUid;
         this.account = account;
         this.accountLogType = accountLogType;
+        this.description = auxiliary;
+        this.creationTime = Instant.now();
+    }
+
+    public AccountLog(String userUid, Account account, AccountLogType accountLogType, String groupUid,
+                      String paidGroupUid, String description) {
+        this(userUid, account, accountLogType, description);
         this.groupUid = groupUid;
         this.paidGroupUid = paidGroupUid;
-        this.description = description;
-        this.creationTime = Instant.now();
     }
 
     public Long getId() {
