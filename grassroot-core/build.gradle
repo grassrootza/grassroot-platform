@@ -1,8 +1,10 @@
 description = 'Grassroot Core'
 
-// major todo : get jpa model generator working with multi-project structure (left for post-1.0, as simple tutorials not working)
-
 dependencies {
+
+    // note: to work well with IntelliJ, enable 'annotation processing', with sources generated relative to content root
+    // do a build, then mark the generated folder as 'generated sources' (note: may require a reimport of the project)
+    compile group: 'org.hibernate', name: 'hibernate-jpamodelgen', version: '5.0.9.Final'
 
     compile group: 'org.springframework', name: 'spring-context', version:'4.3.2.RELEASE'
     compile group: 'org.springframework', name: 'spring-context-support', version:'4.3.2.RELEASE'

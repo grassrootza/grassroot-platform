@@ -54,7 +54,7 @@ public final class TodoSpecifications {
         return (root, query, cb) -> {
             Join<Todo, Group> groups = root.join(AbstractTodoEntity_.parentGroup);
             Join<Group, Membership> members = groups.join(Group_.memberships);
-            return cb.equal(members.get("user"), user); // switch this to type safe when static meta model generation is fixed
+            return cb.equal(members.get(Membership_.user), user);
         };
     }
 

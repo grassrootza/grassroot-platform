@@ -56,9 +56,8 @@ grassroot.log*
 ## Hibernate schema export DDL script
 schema-export-create.sql
 
-# Natty
-**/generated/*.java
-*.tokens
+# Hibernate metamodel
+**/generated/
 
 # Include the Gradle Wrapper
 !gradle-wrapper.jar
