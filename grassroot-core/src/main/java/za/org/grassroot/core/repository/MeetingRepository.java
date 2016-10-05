@@ -3,8 +3,10 @@ package za.org.grassroot.core.repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Transactional;
+import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Meeting;
 import za.org.grassroot.core.domain.User;
@@ -12,7 +14,7 @@ import za.org.grassroot.core.domain.User;
 import java.time.Instant;
 import java.util.List;
 
-public interface MeetingRepository extends JpaRepository<Meeting, Long> {
+public interface MeetingRepository extends JpaRepository<Meeting, Long>, JpaSpecificationExecutor<Event> {
 
 	Meeting findOneByUid(String uid);
 

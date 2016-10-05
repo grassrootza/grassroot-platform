@@ -36,7 +36,7 @@ public class LearningManager implements LearningService {
 
     @PostConstruct
     public void init() {
-        learningIP = environment.getProperty("LEARNING_IP", "127.0.0.1"); // default to localhost if not set
+        learningIP = environment.getProperty("LEARNING_IP", "http://localhost:9000"); // default to localhost if not set
     }
 
     @Override

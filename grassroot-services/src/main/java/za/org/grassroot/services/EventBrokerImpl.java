@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,8 +20,9 @@ import za.org.grassroot.core.enums.MeetingImportance;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.enums.EventListTimeType;
-import za.org.grassroot.services.exception.TaskNameTooLongException;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
+import za.org.grassroot.services.exception.TaskNameTooLongException;
+import za.org.grassroot.services.specifications.EventSpecifications;
 import za.org.grassroot.services.util.CacheUtilService;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
@@ -823,20 +825,17 @@ public class EventBrokerImpl implements EventBroker {
 	@Transactional(readOnly = true)
 	@SuppressWarnings("unchecked")
 	public List<Event> retrieveGroupEvents(Group group, EventType eventType, Instant periodStart, Instant periodEnd) {
-		List<Event> events;
 		Sort sort = new Sort(Sort.Direction.DESC, "eventStartDateTime");
 		Instant beginning = (periodStart == null) ? group.getCreatedDateTime() : periodStart;
 		Instant end = (periodEnd == null) ? DateTimeUtil.getVeryLongAwayInstant() : periodEnd;
 
-		if (eventType == null) {
-			events = eventRepository.findByParentGroupAndEventStartDateTimeBetweenAndCanceledFalse(group, beginning, end, sort);
-		} else {
-			events = eventType.equals(EventType.MEETING) ?
-					(List) meetingRepository.findByParentGroupAndEventStartDateTimeBetweenAndCanceledFalse(group, beginning, end) :
-					(List) voteRepository.findByParentGroupAndEventStartDateTimeBetweenAndCanceledFalse(group, beginning, end);
-		}
+		Specifications<Event> specifications = Specifications.where(EventSpecifications.notCancelled())
+				.and(EventSpecifications.hasGroupAsParent(group))
+				.and(EventSpecifications.startDateTimeBetween(beginning, end));
 
-		return events;
+		return (eventType == null) ? eventRepository.findAll(specifications, sort) :
+				(List) (eventType.equals(EventType.MEETING) ? meetingRepository.findAll(specifications, sort) :
+					voteRepository.findAll(specifications, sort));
 	}
 
 

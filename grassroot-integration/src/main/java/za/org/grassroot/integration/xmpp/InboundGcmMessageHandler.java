@@ -180,7 +180,6 @@ public class InboundGcmMessageHandler {
         } catch (MessengerSettingNotFoundException e) {
             log.info("User with phoneNumber={} is not enabled to send messages to this group", phoneNumber);
         }
-
     }
 
 
