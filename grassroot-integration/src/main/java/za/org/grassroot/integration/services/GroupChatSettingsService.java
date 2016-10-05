@@ -35,8 +35,11 @@ public interface GroupChatSettingsService {
     @Transactional(readOnly =true)
     boolean messengerSettingExist(String userUid, String groupUid);
 
-    @Transactional
+    @Transactional(readOnly = true)
     List<GroupChatSettings> loadUsersToBeUnmuted();
+
+    @Transactional
+    List<String> usersMutedInGroup(String groupUid);
 }
 
 

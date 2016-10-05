@@ -11,12 +11,14 @@ import java.util.List;
 /**
  * Created by paballo on 2016/09/08.
  */
-public interface MessengerSettingsRepository extends JpaRepository<GroupChatSettings, Long> {
+public interface GroupChatSettingsRepository extends JpaRepository<GroupChatSettings, Long> {
 
     GroupChatSettings findByUserAndGroup(User user, Group group);
 
     List<GroupChatSettings> findByUser(User user);
 
     List<GroupChatSettings> findByActiveAndUserInitiatedAndReactivationTimeBefore(boolean active, boolean userInitiated, Instant reactivationTime);
+
+    List<GroupChatSettings> findByGroupAndActiveAndCanSend(Group group, boolean active, boolean canSend);
 
  }

@@ -22,7 +22,7 @@ import za.org.grassroot.services.*;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
-import za.org.grassroot.webapp.model.MessengerSettingsDTO;
+import za.org.grassroot.webapp.model.GroupChatSettingsDTO;
 import za.org.grassroot.webapp.model.rest.PermissionDTO;
 import za.org.grassroot.webapp.model.rest.wrappers.GenericResponseWrapper;
 import za.org.grassroot.webapp.model.rest.wrappers.GroupResponseWrapper;
@@ -350,7 +350,7 @@ public class GroupRestController extends GroupAbstractRestController {
 		String userSettingTobeUpdated = (userInitiated)?user.getUid():userUid;
         if(!userInitiated){
             Group group = groupBroker.load(groupUid);
-            permissionBroker.isGroupPermissionAvailable(user,group,Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER);
+            permissionBroker.isGroupPermissionAvailable(user,group,Permission.GROUP_PERMISSION_FORCE_DELETE_MEMBER);
         }
 		groupChatSettingsService.updateActivityStatus(userSettingTobeUpdated,groupUid,active,userInitiated);
 		if(userInitiated){
@@ -366,14 +366,15 @@ public class GroupRestController extends GroupAbstractRestController {
 	}
 
 	@RequestMapping(value ="messenger/fetch_settings/{phoneNumber}/{code}/{groupUid}", method = RequestMethod.GET)
-	public ResponseEntity<MessengerSettingsDTO> fetchMemberGroupChatSetting(@PathVariable String phoneNumber,
-																	   @PathVariable String code,
-																	   @PathVariable("groupUid") String groupUid, @RequestParam(value = "userUid",required = false) String userUid) throws MessengerSettingNotFoundException{
+	public ResponseEntity<GroupChatSettingsDTO> fetchMemberGroupChatSetting(@PathVariable String phoneNumber,
+																			@PathVariable String code,
+																			@PathVariable("groupUid") String groupUid, @RequestParam(value = "userUid",required = false) String userUid) throws MessengerSettingNotFoundException{
 
 		User user = userManagementService.findByInputNumber(phoneNumber);
 		GroupChatSettings groupChatSettings = userUid != null ? groupChatSettingsService.load(userUid, groupUid)
 				: groupChatSettingsService.load(user.getUid(), groupUid);
-		return new ResponseEntity<>(new MessengerSettingsDTO(groupChatSettings),HttpStatus.OK);
+		List<String> mutedUsers = groupChatSettingsService.usersMutedInGroup(groupUid);
+		return new ResponseEntity<>(new GroupChatSettingsDTO(groupChatSettings, mutedUsers),HttpStatus.OK);
 
 	}
 
