@@ -61,5 +61,5 @@ public interface AccountBroker {
 
     // void generateMonthlyAccountStatements();
 
-    // int calculateAccountCostsInPeriod(String accountUid, Instant periodStart, Instant periodEnd, boolean generateLog);
+    long calculateAccountCostsInPeriod(String accountUid, Instant periodStart, Instant periodEnd, boolean generateLog);
 }

@@ -4,6 +4,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -15,15 +17,16 @@ import za.org.grassroot.core.repository.*;
 import za.org.grassroot.services.exception.GroupAccountMismatchException;
 import za.org.grassroot.services.exception.GroupAlreadyPaidForException;
 import za.org.grassroot.services.exception.GroupNotPaidForException;
+import za.org.grassroot.services.specifications.NotificationSpecifications;
+import za.org.grassroot.services.specifications.TodoSpecifications;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import javax.annotation.PostConstruct;
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
+
+import static za.org.grassroot.services.specifications.NotificationSpecifications.*;
 
 /**
  * Created by luke on 2015/11/12.
@@ -54,6 +57,9 @@ public class AccountBrokerImpl implements AccountBroker {
 
     @Autowired
     private RoleRepository roleRepository;
+
+    @Autowired
+    private NotificationRepository notificationRepository;
 
    	@Autowired
    	private LogsAndNotificationsBroker logsAndNotificationsBroker;
@@ -355,7 +361,46 @@ public class AccountBrokerImpl implements AccountBroker {
    		logsAndNotificationsBroker.storeBundle(bundle);
    	}
 
-   	private void authorizeFreeFormMessageSending(User user, Account account, Group group, PaidGroup paidGroup) {
+    @Override
+    @Transactional
+    public long calculateAccountCostsInPeriod(String accountUid, Instant periodStart, Instant periodEnd, boolean generateLog) {
+        Account account = accountRepository.findOneByUid(accountUid);
+
+        if (account.getDisabledDateTime().isBefore(periodStart)) {
+            return 0;
+        }
+
+        // todo : watch Hibernate on this for excessive DB calls (though this is, for the moment, an infrequent batch call)
+        Set<PaidGroup> paidGroups = account.getPaidGroups();
+        final int messageCost = account.getFreeFormCost(); // todo : make time based? else will mess up retrospective ...
+
+        Specifications<Notification> notificationCounter = Specifications.where(wasDelivered())
+                .and(createdTimeBetween(periodStart, periodEnd))
+                .and(belongsToAccount(account));
+
+        long costAccumulator = notificationRepository.count(notificationCounter) * messageCost;
+
+        for (PaidGroup paidGroup : paidGroups) {
+            costAccumulator += (countMessagesForPaidGroup(paidGroup, periodStart, periodEnd) * messageCost);
+        }
+
+        return costAccumulator;
+    }
+
+    private long countMessagesForPaidGroup(PaidGroup paidGroup, Instant periodStart, Instant periodEnd) {
+        Group group = paidGroup.getGroup();
+        Instant start = paidGroup.getActiveDateTime().isBefore(periodStart) ? periodStart : paidGroup.getActiveDateTime();
+        Instant end = paidGroup.getExpireDateTime() == null || paidGroup.getExpireDateTime().isAfter(periodEnd) ?
+                periodEnd : paidGroup.getExpireDateTime();
+
+        Specifications<Notification> specifications = Specifications.where(wasDelivered())
+                .and(createdTimeBetween(start, end))
+                .and(ancestorGroupIs(group));
+
+        return notificationRepository.count(specifications);
+    }
+
+    private void authorizeFreeFormMessageSending(User user, Account account, Group group, PaidGroup paidGroup) {
    		if (account == null || !account.getAdministrators().contains(user)) {
    			permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
    		}
