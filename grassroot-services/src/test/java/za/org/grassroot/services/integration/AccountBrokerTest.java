@@ -55,8 +55,7 @@ public class AccountBrokerTest {
     private final String groupName = "testGroup";
     private final String userNumber = "0605550000";
     private final String accountAdminNumber = "0605550011";
-    private final String accountAdminRole = "ROLE_ACCOUNT_ADMIN";
-
+    
     private User testUser;
     private User testAdmin;
     private Group testGroup;
@@ -75,6 +74,8 @@ public class AccountBrokerTest {
 
         Role accountAdmin = new Role(BaseRoles.ROLE_ACCOUNT_ADMIN, null);
         roleRepository.save(accountAdmin);
+
+        // todo : wire up account broker properties ...
     }
 
     private Account createTestAccount(String billingEmail) {

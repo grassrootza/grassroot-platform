@@ -4,28 +4,27 @@ description = 'GrassRoot Integration'
 dependencies {
     compile project(':grassroot-core')
 
-    compile group: 'org.springframework', name: 'spring-oxm', version: '4.3.2.RELEASE'
-    compile group: 'org.springframework', name: 'spring-web', version: '4.3.2.RELEASE'
-    compile group: 'org.springframework.integration', name: 'spring-integration-core', version: '4.3.1.RELEASE'
-    compile group: 'org.springframework.integration', name: 'spring-integration-xmpp', version: '4.3.1.RELEASE'
+    compile group: 'org.springframework', name: 'spring-oxm', version: libs.springVersion
+    compile group: 'org.springframework', name: 'spring-web', version: libs.springVersion
+    compile group: 'org.springframework.integration', name: 'spring-integration-core', version: libs.springIntegrationVersion
+    compile group: 'org.springframework.integration', name: 'spring-integration-xmpp', version: libs.springIntegrationVersion
 
     compile(group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.2') {
         exclude(module: 'commons-logging')
     }
+
     compile(group: 'org.apache.httpcomponents', name: 'httpasyncclient', version: '4.1.2') {
         exclude(module: 'commons-logging')
     }
 
-    compile group: 'org.igniterealtime.smack', name: 'smack-core', version: '4.1.8'
-    compile group: 'org.igniterealtime.smack', name: 'smack-tcp', version: '4.1.8'
-    compile group: 'org.igniterealtime.smack', name: 'smack-extensions', version: '4.1.8'
-    compile group: 'org.igniterealtime.smack', name: 'smack-java7', version: '4.1.8'
-    testCompile group: 'org.hamcrest', name: 'hamcrest-library', version: '1.3'
+    compile group: 'org.igniterealtime.smack', name: 'smack-core', version: libs.smackVersion
+    compile group: 'org.igniterealtime.smack', name: 'smack-tcp', version: libs.smackVersion
+    compile group: 'org.igniterealtime.smack', name: 'smack-extensions', version: libs.smackVersion
+    compile group: 'org.igniterealtime.smack', name: 'smack-java7', version: libs.smackVersion
 }
+
 test {
     systemProperty "gcm.topics.url", "iid.googleapis.com"
-
-
 }
 
 

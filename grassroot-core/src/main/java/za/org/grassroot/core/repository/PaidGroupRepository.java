@@ -20,6 +20,6 @@ public interface PaidGroupRepository extends JpaRepository<PaidGroup, Long> {
 
     List<PaidGroup> findByAccount(Account account);
 
-    PaidGroup findOneByGroupOrderByExpireDateTimeDesc(Group group);
+    PaidGroup findTopByGroupOrderByExpireDateTimeDesc(Group group);
 
 }

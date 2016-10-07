@@ -162,7 +162,7 @@ public class PaidGroupRepositoryTest {
     public void shouldFindPaidGroupByGroup() {
         assertThat(paidGroupRepository.count(), is(0L));
         PaidGroup paidGroup = paidGroupRepository.save(new PaidGroup(testGroup, testAccount, testUser));
-        PaidGroup paidGroupFromDb = paidGroupRepository.findOneByGroupOrderByExpireDateTimeDesc(testGroup);
+        PaidGroup paidGroupFromDb = paidGroupRepository.findTopByGroupOrderByExpireDateTimeDesc(testGroup);
         assertNotNull(paidGroupFromDb);
         assertThat(paidGroupFromDb, is(paidGroup));
     }
@@ -177,7 +177,7 @@ public class PaidGroupRepositoryTest {
         paidGroup1.setExpireDateTime(Instant.now());
         paidGroup1.setRemovedByUser(testUser);
         paidGroupRepository.save(paidGroup1);
-        PaidGroup fromReport = paidGroupRepository.findOneByGroupOrderByExpireDateTimeDesc(testGroup);
+        PaidGroup fromReport = paidGroupRepository.findTopByGroupOrderByExpireDateTimeDesc(testGroup);
         assertEquals(fromReport.getId(), paidGroup2.getId()); // straight equals gives errors on hash codes
     }
 

@@ -4,7 +4,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,8 +16,6 @@ import za.org.grassroot.core.repository.*;
 import za.org.grassroot.services.exception.GroupAccountMismatchException;
 import za.org.grassroot.services.exception.GroupAlreadyPaidForException;
 import za.org.grassroot.services.exception.GroupNotPaidForException;
-import za.org.grassroot.services.specifications.NotificationSpecifications;
-import za.org.grassroot.services.specifications.TodoSpecifications;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
@@ -71,7 +68,7 @@ public class AccountBrokerImpl implements AccountBroker {
     private Environment environment;
 
     @PostConstruct
-    private void init() {
+    public void init() {
         messagesEnabled = new HashMap<>();
         messagesCost = new HashMap<>();
         maxGroupSize = new HashMap<>();
@@ -307,7 +304,7 @@ public class AccountBrokerImpl implements AccountBroker {
         if (!group.isPaidFor())
             return null;
         else
-            return paidGroupRepository.findOneByGroupOrderByExpireDateTimeDesc(group).getAccount();
+            return paidGroupRepository.findTopByGroupOrderByExpireDateTimeDesc(group).getAccount();
     }
 
     @Override
@@ -343,7 +340,7 @@ public class AccountBrokerImpl implements AccountBroker {
    		User user = userRepository.findOneByUid(userUid);
    		Group group = groupRepository.findOneByUid(groupUid);
    		Account account = user.getAccountAdministered();
-        PaidGroup paidGroup = paidGroupRepository.findOneByGroupOrderByExpireDateTimeDesc(group);
+        PaidGroup paidGroup = paidGroupRepository.findTopByGroupOrderByExpireDateTimeDesc(group);
 
    		authorizeFreeFormMessageSending(user, account, group, paidGroup);
 
