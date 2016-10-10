@@ -19,7 +19,7 @@ import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.domain.AndroidClickActionType;
 import za.org.grassroot.integration.domain.GcmUpstreamMessage;
 import za.org.grassroot.integration.domain.SeloParseDateTimeFailure;
-import za.org.grassroot.integration.exception.MessengerSettingNotFoundException;
+import za.org.grassroot.integration.exception.GroupChatSettingNotFoundException;
 import za.org.grassroot.integration.services.*;
 import za.org.grassroot.integration.utils.MessageUtils;
 
@@ -178,7 +178,7 @@ public class InboundGcmMessageHandler {
              }
             gcmXmppOutboundChannel.send(message);
 
-        } catch (MessengerSettingNotFoundException e) {
+        } catch (GroupChatSettingNotFoundException e) {
             log.info("User with phoneNumber={} is not enabled to send messages to this group", phoneNumber);
         }
 

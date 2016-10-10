@@ -10,7 +10,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.repository.*;
-import za.org.grassroot.integration.exception.MessengerSettingNotFoundException;
+import za.org.grassroot.integration.exception.GroupChatSettingNotFoundException;
 import za.org.grassroot.integration.services.MessageSendingService;
 import za.org.grassroot.integration.services.GroupChatSettingsService;
 import za.org.grassroot.services.EventBroker;
@@ -186,7 +186,7 @@ public class ScheduledTasks {
             String groupUid = messengerSetting.getGroup().getUid();
             try {
                 groupChatSettingsService.updateActivityStatus(userUid,groupUid,true,false);
-            } catch (MessengerSettingNotFoundException e) {
+            } catch (GroupChatSettingNotFoundException e) {
                 logger.error("Error while trying unmute user with " + userUid);
             }
         }

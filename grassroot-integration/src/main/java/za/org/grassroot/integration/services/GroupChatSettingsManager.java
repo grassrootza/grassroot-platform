@@ -11,7 +11,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.GroupChatSettingsRepository;
 import za.org.grassroot.core.repository.UserRepository;
-import za.org.grassroot.integration.exception.MessengerSettingNotFoundException;
+import za.org.grassroot.integration.exception.GroupChatSettingNotFoundException;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -51,7 +51,7 @@ public class GroupChatSettingsManager implements GroupChatSettingsService {
     @Override
     @Transactional(readOnly = true)
     @Cacheable(value = "groupChatSettings",key = "userUid + '_'+ groupUid")
-    public GroupChatSettings load(String userUid, String groupUid) {
+    public GroupChatSettings load(String userUid, String groupUid) throws GroupChatSettingNotFoundException {
         Objects.nonNull(userUid);
         Objects.nonNull(groupUid);
 
@@ -60,13 +60,17 @@ public class GroupChatSettingsManager implements GroupChatSettingsService {
 
         GroupChatSettings groupChatSettings = groupChatSettingsRepository.findByUserAndGroup(user, group);
 
+        if(groupChatSettings == null){
+            throw  new GroupChatSettingNotFoundException("Group chat setting not found found for user with uid " + userUid);
+        }
+
         return groupChatSettings;
     }
 
     @Override
     @Transactional
     @CacheEvict(value = "groupChatSettings", key = "userUid + '_'+ groupUid" )
-    public void updateUserGroupMessageSettings(String userUid, String groupUid, boolean active, boolean canSend, boolean canReceive, Instant reactivationTime) throws MessengerSettingNotFoundException {
+    public void updateUserGroupMessageSettings(String userUid, String groupUid, boolean active, boolean canSend, boolean canReceive, Instant reactivationTime) throws GroupChatSettingNotFoundException {
         Objects.nonNull(userUid);
         Objects.nonNull(groupUid);
         Objects.nonNull(reactivationTime);
@@ -77,7 +81,7 @@ public class GroupChatSettingsManager implements GroupChatSettingsService {
 
         GroupChatSettings groupChatSettings = groupChatSettingsRepository.findByUserAndGroup(user,group);
         if(null== groupChatSettings){
-            throw new MessengerSettingNotFoundException("Message settings not found for user with uid " + userUid);
+            throw new GroupChatSettingNotFoundException("Message settings not found for user with uid " + userUid);
         }
         groupChatSettings.setActive(active);
         groupChatSettings.setCanSend(canSend);
@@ -90,7 +94,7 @@ public class GroupChatSettingsManager implements GroupChatSettingsService {
 
     @Override
     @Transactional(readOnly = true)
-    public boolean isCanSend(String userUid, String groupUid) throws MessengerSettingNotFoundException {
+    public boolean isCanSend(String userUid, String groupUid) throws GroupChatSettingNotFoundException {
         Objects.nonNull(userUid);
         Objects.nonNull(groupUid);
 
@@ -99,7 +103,7 @@ public class GroupChatSettingsManager implements GroupChatSettingsService {
 
         GroupChatSettings groupChatSettings = groupChatSettingsRepository.findByUserAndGroup(user,group);
         if(null== groupChatSettings){
-            throw new MessengerSettingNotFoundException("Message settings not found for user with uid " + userUid);
+            throw new GroupChatSettingNotFoundException("Message settings not found for user with uid " + userUid);
         }
 
         return groupChatSettings.isCanSend();
@@ -116,7 +120,7 @@ public class GroupChatSettingsManager implements GroupChatSettingsService {
 
         GroupChatSettings groupChatSettings = groupChatSettingsRepository.findByUserAndGroup(user,group);
         if(null== groupChatSettings){
-            throw new MessengerSettingNotFoundException("Message settings not found for user with uid " + userUid);
+            throw new GroupChatSettingNotFoundException("Message settings not found for user with uid " + userUid);
         }
         groupChatSettings.setActive(active);
         groupChatSettings.setUserInitiated(userInitiated);
