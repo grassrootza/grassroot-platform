@@ -45,7 +45,8 @@ public class PermissionBrokerImpl implements PermissionBroker {
                     Permission.GROUP_PERMISSION_FORCE_ADD_MEMBER,
                     Permission.GROUP_PERMISSION_CREATE_SUBGROUP,
                     Permission.GROUP_PERMISSION_AUTHORIZE_SUBGROUP,
-                    Permission.GROUP_PERMISSION_DELEGATE_SUBGROUP_CREATION);
+                    Permission.GROUP_PERMISSION_DELEGATE_SUBGROUP_CREATION,
+                    Permission.GROUP_PERMISSION_MUTE_MEMBER);
 
     private static final Set<Permission> defaultGroupOrganizerPermissions =
             constructPermissionSet(defaultCommitteeMemberPermissions,
@@ -71,7 +72,8 @@ public class PermissionBrokerImpl implements PermissionBroker {
                     Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE,
                     Permission.GROUP_PERMISSION_VIEW_MEETING_RSVPS,
                     Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY,
-                    Permission.GROUP_PERMISSION_CLOSE_OPEN_LOGBOOK);
+                    Permission.GROUP_PERMISSION_CLOSE_OPEN_LOGBOOK,
+                    Permission.GROUP_PERMISSION_MUTE_MEMBER);
 
     private static final Set<Permission> closedGroupOrganizerPermissions =
             constructPermissionSet(defaultCommitteeMemberPermissions,

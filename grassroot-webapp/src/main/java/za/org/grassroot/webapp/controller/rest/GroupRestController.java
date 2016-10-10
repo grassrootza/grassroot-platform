@@ -350,7 +350,7 @@ public class GroupRestController extends GroupAbstractRestController {
 		String userSettingTobeUpdated = (userInitiated)?user.getUid():userUid;
         if(!userInitiated){
             Group group = groupBroker.load(groupUid);
-            permissionBroker.isGroupPermissionAvailable(user,group,Permission.GROUP_PERMISSION_FORCE_DELETE_MEMBER);
+            permissionBroker.isGroupPermissionAvailable(user,group,Permission.GROUP_PERMISSION_MUTE_MEMBER);
         }
 		groupChatSettingsService.updateActivityStatus(userSettingTobeUpdated,groupUid,active,userInitiated);
 		if(userInitiated){
@@ -363,6 +363,18 @@ public class GroupRestController extends GroupAbstractRestController {
 		}
 		return RestUtil.messageOkayResponse((!active) ? RestMessage.CHAT_DEACTIVATED : RestMessage.CHAT_ACTIVATED);
 
+	}
+
+	@RequestMapping(value ="messenger/ping/{phoneNumber}/{code}/{groupUid}", method = RequestMethod.GET)
+	public ResponseEntity<ResponseWrapper> ping(@PathVariable String phoneNumber,
+																			@PathVariable String code,
+																			@PathVariable("groupUid") String groupUid) throws MessengerSettingNotFoundException{
+
+		User user = userManagementService.findByInputNumber(phoneNumber);
+		Group group = groupBroker.load(groupUid);
+		gcmService.pingUserForGroupChat(user,group);
+
+		return RestUtil.messageOkayResponse(RestMessage.PING);
 	}
 
 	@RequestMapping(value ="messenger/fetch_settings/{phoneNumber}/{code}/{groupUid}", method = RequestMethod.GET)

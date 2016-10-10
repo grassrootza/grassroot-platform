@@ -3,6 +3,7 @@ package za.org.grassroot.integration.services;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.GcmRegistration;
+import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 
 import java.io.IOException;
@@ -37,4 +38,9 @@ public interface GcmService {
     @Transactional
     @Async
     void batchAddUsersToTopic(List<String> registrationIds, String topicId) throws IOException;
+
+    @Transactional(readOnly = true)
+    @Async
+    void pingUserForGroupChat(User user, Group group);
+
 }

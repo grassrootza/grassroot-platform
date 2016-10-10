@@ -165,6 +165,7 @@ public class InboundGcmMessageHandler {
         String groupUid = (String) input.getData().get("groupUid");
         User user = userRepository.findByPhoneNumber(phoneNumber);
         GroupChatSettings groupChatSettings = groupChatSettingsService.load(user.getUid(), groupUid);
+        if(groupChatSettings !=null){
         Group group = groupChatSettings.getGroup();
         org.springframework.messaging.Message<Message> message;
         log.info("Posting to topic with id={}", groupUid);
@@ -181,7 +182,7 @@ public class InboundGcmMessageHandler {
             log.info("User with phoneNumber={} is not enabled to send messages to this group", phoneNumber);
         }
 
-    }
+    }}
 
 
     public org.springframework.messaging.Message<Message> generateCannotSendMessage(GcmUpstreamMessage input, Group group){
