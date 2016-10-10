@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
-import za.org.grassroot.integration.exception.MessengerSettingNotFoundException;
+import za.org.grassroot.integration.exception.GroupChatSettingNotFoundException;
 import za.org.grassroot.integration.services.GcmService;
 import za.org.grassroot.integration.services.GroupChatSettingsService;
 import za.org.grassroot.services.*;
@@ -350,7 +350,7 @@ public class GroupRestController extends GroupAbstractRestController {
 		String userSettingTobeUpdated = (userInitiated)?user.getUid():userUid;
         if(!userInitiated){
             Group group = groupBroker.load(groupUid);
-            permissionBroker.isGroupPermissionAvailable(user,group,Permission.GROUP_PERMISSION_FORCE_DELETE_MEMBER);
+            permissionBroker.isGroupPermissionAvailable(user,group,Permission.GROUP_PERMISSION_MUTE_MEMBER);
         }
 		groupChatSettingsService.updateActivityStatus(userSettingTobeUpdated,groupUid,active,userInitiated);
 		if(userInitiated){
@@ -365,10 +365,22 @@ public class GroupRestController extends GroupAbstractRestController {
 
 	}
 
+	@RequestMapping(value ="messenger/ping/{phoneNumber}/{code}/{groupUid}", method = RequestMethod.GET)
+	public ResponseEntity<ResponseWrapper> ping(@PathVariable String phoneNumber,
+																			@PathVariable String code,
+																			@PathVariable("groupUid") String groupUid) throws GroupChatSettingNotFoundException {
+
+		User user = userManagementService.findByInputNumber(phoneNumber);
+		Group group = groupBroker.load(groupUid);
+		gcmService.pingUserForGroupChat(user,group);
+
+		return RestUtil.messageOkayResponse(RestMessage.PING);
+	}
+
 	@RequestMapping(value ="messenger/fetch_settings/{phoneNumber}/{code}/{groupUid}", method = RequestMethod.GET)
 	public ResponseEntity<GroupChatSettingsDTO> fetchMemberGroupChatSetting(@PathVariable String phoneNumber,
 																			@PathVariable String code,
-																			@PathVariable("groupUid") String groupUid, @RequestParam(value = "userUid",required = false) String userUid) throws MessengerSettingNotFoundException{
+																			@PathVariable("groupUid") String groupUid, @RequestParam(value = "userUid",required = false) String userUid) throws GroupChatSettingNotFoundException {
 
 		User user = userManagementService.findByInputNumber(phoneNumber);
 		GroupChatSettings groupChatSettings = userUid != null ? groupChatSettingsService.load(userUid, groupUid)
@@ -399,7 +411,7 @@ public class GroupRestController extends GroupAbstractRestController {
 		return ImmutableMap.of("ADDED", permissionsAdded, "REMOVED", permissionsRemoved);
 	}
 
-	@ExceptionHandler(MessengerSettingNotFoundException.class)
+	@ExceptionHandler(GroupChatSettingNotFoundException.class)
 	public ResponseEntity<ResponseWrapper> messageSettingNotFound(){
 		return RestUtil.errorResponse(HttpStatus.NOT_FOUND, RestMessage.MESSAGE_SETTING_NOT_FOUND);
 	}

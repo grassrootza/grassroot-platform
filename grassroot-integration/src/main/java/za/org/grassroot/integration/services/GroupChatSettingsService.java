@@ -1,9 +1,8 @@
 package za.org.grassroot.integration.services;
 
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.GroupChatSettings;
-import za.org.grassroot.integration.exception.MessengerSettingNotFoundException;
+import za.org.grassroot.integration.exception.GroupChatSettingNotFoundException;
 
 import java.time.Instant;
 import java.util.List;
@@ -17,14 +16,14 @@ public interface GroupChatSettingsService {
     public void createUserGroupMessagingSetting(String userUid, String groupUid, boolean active, boolean canSend, boolean canReceive);
 
     @Transactional
-    GroupChatSettings load(String userUid, String groupUid);
+    GroupChatSettings load(String userUid, String groupUid)  throws GroupChatSettingNotFoundException;
 
 
     @Transactional
-    void updateUserGroupMessageSettings(String userUid, String groupUid, boolean active, boolean canSend, boolean canReceive, Instant reactivationTime) throws MessengerSettingNotFoundException;
+    void updateUserGroupMessageSettings(String userUid, String groupUid, boolean active, boolean canSend, boolean canReceive, Instant reactivationTime) throws GroupChatSettingNotFoundException;
 
     @Transactional(readOnly = true)
-    boolean isCanSend(String userUid, String groupUid) throws MessengerSettingNotFoundException;
+    boolean isCanSend(String userUid, String groupUid) throws GroupChatSettingNotFoundException;
 
     @Transactional
     void updateActivityStatus(String userUid, String groupUid, boolean active, boolean userInitiated) throws Exception;

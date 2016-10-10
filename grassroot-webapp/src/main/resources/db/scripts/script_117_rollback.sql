@@ -1,0 +1,1 @@
+delete from role_permissions where permission ='GROUP_PERMISSION_MUTE_MEMBER'

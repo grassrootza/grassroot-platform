@@ -9,6 +9,8 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.MessageChannel;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +21,9 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.repository.GcmRegistrationRepository;
 import za.org.grassroot.core.repository.GroupRepository;
+import za.org.grassroot.integration.domain.AndroidClickActionType;
+import za.org.grassroot.integration.utils.MessageUtils;
+import za.org.grassroot.integration.xmpp.GcmXmppMessageCodec;
 
 import java.io.IOException;
 import java.util.*;
@@ -44,6 +49,9 @@ public class GcmManager implements GcmService {
 
     @Autowired
     private GroupChatSettingsService groupChatSettingsService;
+
+    @Autowired
+    private MessageChannel gcmXmppOutboundChannel;
 
     @Value("${gcm.topics.url}")
     private String INSTANCE_ID_SERVICE_GATEWAY;
@@ -235,6 +243,20 @@ public class GcmManager implements GcmService {
         }
 
     }
+
+    @Override
+    public void pingUserForGroupChat(User user, Group group) {
+        GcmRegistration gcmRegistration = gcmRegistrationRepository.findByUser(user);
+        if(gcmRegistration != null){
+            Map<String, Object> data = MessageUtils.generatePingMessageData(user,group);
+            Message gcmMessage = GcmXmppMessageCodec.encode(gcmRegistration.getRegistrationId(),(String) data.get("messageId") ,
+                    null, null, null,
+                    AndroidClickActionType.CHAT_MESSAGE.name(), data);
+            gcmXmppOutboundChannel.send(gcmMessage);
+        }
+
+    }
+
 
     private HttpHeaders getHttpHeaders() {
         HttpHeaders headers = new HttpHeaders();

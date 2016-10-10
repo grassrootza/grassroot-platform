@@ -19,7 +19,7 @@ import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.domain.AndroidClickActionType;
 import za.org.grassroot.integration.domain.GcmUpstreamMessage;
 import za.org.grassroot.integration.domain.SeloParseDateTimeFailure;
-import za.org.grassroot.integration.exception.MessengerSettingNotFoundException;
+import za.org.grassroot.integration.exception.GroupChatSettingNotFoundException;
 import za.org.grassroot.integration.services.*;
 import za.org.grassroot.integration.utils.MessageUtils;
 
@@ -165,6 +165,7 @@ public class InboundGcmMessageHandler {
         String groupUid = (String) input.getData().get("groupUid");
         User user = userRepository.findByPhoneNumber(phoneNumber);
         GroupChatSettings groupChatSettings = groupChatSettingsService.load(user.getUid(), groupUid);
+        if(groupChatSettings !=null){
         Group group = groupChatSettings.getGroup();
         org.springframework.messaging.Message<Message> message;
         log.info("Posting to topic with id={}", groupUid);
@@ -177,11 +178,11 @@ public class InboundGcmMessageHandler {
              }
             gcmXmppOutboundChannel.send(message);
 
-        } catch (MessengerSettingNotFoundException e) {
+        } catch (GroupChatSettingNotFoundException e) {
             log.info("User with phoneNumber={} is not enabled to send messages to this group", phoneNumber);
         }
 
-    }
+    }}
 
 
     public org.springframework.messaging.Message<Message> generateCannotSendMessage(GcmUpstreamMessage input, Group group){
