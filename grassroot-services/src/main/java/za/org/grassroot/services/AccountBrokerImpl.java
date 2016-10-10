@@ -3,23 +3,27 @@ package za.org.grassroot.services;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.AccessDeniedException;
+import org.springframework.core.env.Environment;
+import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.notification.FreeFormMessageNotification;
 import za.org.grassroot.core.enums.AccountLogType;
+import za.org.grassroot.core.enums.AccountType;
 import za.org.grassroot.core.repository.*;
+import za.org.grassroot.services.exception.GroupAccountMismatchException;
 import za.org.grassroot.services.exception.GroupAlreadyPaidForException;
+import za.org.grassroot.services.exception.GroupNotPaidForException;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
+import javax.annotation.PostConstruct;
 import java.time.Instant;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.*;
+
+import static za.org.grassroot.services.specifications.NotificationSpecifications.*;
 
 /**
  * Created by luke on 2015/11/12.
@@ -28,6 +32,13 @@ import java.util.stream.Collectors;
 public class AccountBrokerImpl implements AccountBroker {
 
     private static final Logger log = LoggerFactory.getLogger(AccountBroker.class);
+
+    private Map<AccountType, Boolean> messagesEnabled;
+    private Map<AccountType, Integer> messagesCost;
+
+    private Map<AccountType, Integer> maxGroupSize;
+    private Map<AccountType, Integer> maxGroupNumber;
+    private Map<AccountType, Integer> maxSubGroupDepth;
 
     @Autowired
     private AccountRepository accountRepository;
@@ -44,11 +55,37 @@ public class AccountBrokerImpl implements AccountBroker {
     @Autowired
     private RoleRepository roleRepository;
 
+    @Autowired
+    private NotificationRepository notificationRepository;
+
    	@Autowired
    	private LogsAndNotificationsBroker logsAndNotificationsBroker;
 
     @Autowired
     private PermissionBroker permissionBroker;
+
+    @Autowired
+    private Environment environment;
+
+    @PostConstruct
+    public void init() {
+        messagesEnabled = new HashMap<>();
+        messagesCost = new HashMap<>();
+        maxGroupSize = new HashMap<>();
+        maxGroupNumber = new HashMap<>();
+        maxSubGroupDepth = new HashMap<>();
+
+        for (AccountType accountType : AccountType.values()) {
+            final String key = accountType.name().toLowerCase();
+            messagesEnabled.put(accountType, environment.getProperty("accounts.messages.enabled." + key, Boolean.class));
+            messagesCost.put(accountType, environment.getProperty("accounts.messages.msgcost." + key, Integer.class));
+            maxGroupSize.put(accountType, environment.getProperty("accounts.group.limit." + key, Integer.class));
+            maxGroupNumber.put(accountType, environment.getProperty("accounts.group.max." + key, Integer.class));
+            maxSubGroupDepth.put(accountType, environment.getProperty("accounts.group.subdepth." + key, Integer.class));
+        }
+
+        log.info("Loaded account settings : messages = {}, group depth = {}", messagesEnabled, maxGroupNumber);
+    }
 
     @Override
     public Account loadAccount(String accountUid) {
@@ -63,12 +100,13 @@ public class AccountBrokerImpl implements AccountBroker {
 
     @Override
     @Transactional
-    public String createAccount(String userUid, String accountName, String administratorUid, String billingEmail) {
+    public String createAccount(String userUid, String accountName, String administratorUid, String billingEmail, AccountType accountType) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(accountName);
+        Objects.requireNonNull(accountType);
 
         User creatingUser = userRepository.findOneByUid(userUid);
-        Account account = new Account(creatingUser, accountName);
+        Account account = new Account(creatingUser, accountName, accountType);
         final String accountUid = account.getUid();
 
         if (!StringUtils.isEmpty(billingEmail)) {
@@ -81,12 +119,20 @@ public class AccountBrokerImpl implements AccountBroker {
             addAdministrator(userUid, accountUid, administratorUid);
         }
 
+        account.setFreeFormMessages(messagesEnabled.get(accountType));
+        account.setFreeFormCost(messagesCost.get(accountType));
+        account.setMaxSizePerGroup(maxGroupSize.get(accountType));
+        account.setMaxSubGroupDepth(maxSubGroupDepth.get(accountType));
+        account.setMaxNumberGroups(maxGroupNumber.get(accountType));
+
+        createAndStoreSingleAccountLog(new AccountLog(userUid, account, AccountLogType.ACCOUNT_CREATED, accountType.name()));
+
         return account.getUid();
     }
 
     @Override
     @Transactional
-    public void disableAccount(String administratorUid, String accountUid) {
+    public void disableAccount(String administratorUid, String accountUid, String reasonToRecord) {
         User user = userRepository.findOneByUid(administratorUid);
         permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
 
@@ -99,27 +145,101 @@ public class AccountBrokerImpl implements AccountBroker {
             paidGroup.setExpireDateTime(Instant.now());
             paidGroup.setRemovedByUser(user);
         }
+
+        createAndStoreSingleAccountLog(new AccountLog(administratorUid, account, AccountLogType.ACCOUNT_DISABLED, reasonToRecord));
     }
 
     @Override
     @Transactional
     public void updateBillingEmail(String userUid, String accountUid, String billingEmail) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(accountUid);
+
         User user = userRepository.findOneByUid(userUid);
         Account account = accountRepository.findOneByUid(accountUid);
 
-        if (account.getAdministrators().contains(user)) {
+        log.info("Looking up administrators for this account: {}, from this uid: {}", account, accountUid);
+
+        if (!account.getAdministrators().contains(user)) {
             permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
         }
 
         account.setPrimaryEmail(billingEmail);
-        createAndStoreSingleAccountLog(new AccountLog(userUid, account, AccountLogType.DETAILS_CHANGED, null, null, "billing email changed to " + billingEmail));
+        createAndStoreSingleAccountLog(new AccountLog(userUid, account, AccountLogType.EMAIL_CHANGED, billingEmail));
     }
 
     @Override
     @Transactional
-    public void updateSettings(Account changedAccount) {
-        Account savedAccount = accountRepository.findOne(changedAccount.getId());
-        savedAccount.setFreeFormMessages(changedAccount.isFreeFormMessages());
+    public void changeAccountType(String userUid, String accountUid, AccountType accountType) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(accountUid);
+        Objects.requireNonNull(accountType);
+
+        User user = userRepository.findOneByUid(userUid);
+        Account account = accountRepository.findOneByUid(accountUid);
+
+        if (!account.getAdministrators().contains(user)) {
+            permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
+        }
+
+        account.setType(accountType);
+        createAndStoreSingleAccountLog(new AccountLog(userUid, account, AccountLogType.TYPE_CHANGED, accountType.name()));
+    }
+
+    @Override
+    @Transactional
+    public void updateAccountGroupLimits(String userUid, String accountUid, Integer maxGroups, Integer maxSizePerGroup, Integer maxDepth) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(accountUid);
+
+        Account account = accountRepository.findOneByUid(accountUid);
+        User user = userRepository.findOneByUid(userUid);
+
+        permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
+        StringBuilder sb = new StringBuilder("Group settings changed: ");
+
+        if (maxGroups != null) {
+            account.setMaxNumberGroups(maxGroups);
+            sb.append("MaxGroups: ").append(maxGroups).append("; ");
+        }
+
+        if (maxSizePerGroup != null) {
+            account.setMaxSizePerGroup(maxSizePerGroup);
+            sb.append("MaxSize: ").append(maxSizePerGroup).append("; ");
+        }
+
+        if (maxDepth != null) {
+            account.setMaxSubGroupDepth(maxDepth);
+            sb.append("Depth: ").append(maxDepth).append(";");
+        }
+
+        createAndStoreSingleAccountLog(new AccountLog(userUid, account, AccountLogType.DISCRETE_SETTING_CHANGE, sb.toString()));
+    }
+
+    @Override
+    @Transactional
+    public void updateAccountMessageSettings(String userUid, String accountUid, Boolean freeFormEnabled, Integer costPerMessage) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(accountUid);
+
+        Account account = accountRepository.findOneByUid(accountUid);
+        User user = userRepository.findOneByUid(userUid);
+
+        permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
+
+        StringBuilder sb = new StringBuilder("Messaging settings changed: ");
+
+        if (freeFormEnabled != null) {
+            account.setFreeFormMessages(freeFormEnabled);
+            sb.append("FreeForm: ").append(freeFormEnabled).append("; ");
+        }
+
+        if (costPerMessage != null) {
+            account.setFreeFormCost(costPerMessage);
+            sb.append("CostPerMsg: ").append(costPerMessage).append(";");
+        }
+
+        createAndStoreSingleAccountLog(new AccountLog(userUid, account, AccountLogType.DISCRETE_SETTING_CHANGE, sb.toString()));
     }
 
     @Override
@@ -142,7 +262,7 @@ public class AccountBrokerImpl implements AccountBroker {
         Role adminRole = roleRepository.findByNameAndRoleType(BaseRoles.ROLE_ACCOUNT_ADMIN, Role.RoleType.STANDARD).get(0);
         administrator.addStandardRole(adminRole);
 
-        createAndStoreSingleAccountLog(new AccountLog(userUid, account, AccountLogType.ADMIN_CHANGED, null, null, "administrator added : " + administrator.getName("")));
+        createAndStoreSingleAccountLog(new AccountLog(userUid, account, AccountLogType.ADMIN_ADDED, administrator.getUid()));
     }
 
     @Override
@@ -174,7 +294,7 @@ public class AccountBrokerImpl implements AccountBroker {
         paidGroupRepository.saveAndFlush(paidGroup);
         account.addPaidGroup(paidGroup);
         group.setPaidFor(true);
-        createAndStoreSingleAccountLog(new AccountLog(addingUserUid, account, AccountLogType.GROUP_ADDED, groupUid, paidGroup.getUid(), "paid group added : " + group.getName()));
+        createAndStoreSingleAccountLog(new AccountLog(addingUserUid, account, AccountLogType.GROUP_ADDED, groupUid, paidGroup.getUid(), group.getName()));
     }
 
     @Override
@@ -184,7 +304,7 @@ public class AccountBrokerImpl implements AccountBroker {
         if (!group.isPaidFor())
             return null;
         else
-            return paidGroupRepository.findByGroupOrderByExpireDateTimeDesc(group).get(0).getAccount();
+            return paidGroupRepository.findTopByGroupOrderByExpireDateTimeDesc(group).getAccount();
     }
 
     @Override
@@ -208,7 +328,7 @@ public class AccountBrokerImpl implements AccountBroker {
         account.removePaidGroup(record);
         group.setPaidFor(false);
         createAndStoreSingleAccountLog(new AccountLog(removingUserUid, account, AccountLogType.GROUP_REMOVED, group.getUid(),
-                paidGroupUid, "paid group removed : " + group.getName("")));
+                paidGroupUid, group.getName()));
     }
 
     @Override
@@ -220,17 +340,17 @@ public class AccountBrokerImpl implements AccountBroker {
    		User user = userRepository.findOneByUid(userUid);
    		Group group = groupRepository.findOneByUid(groupUid);
    		Account account = user.getAccountAdministered();
+        PaidGroup paidGroup = paidGroupRepository.findTopByGroupOrderByExpireDateTimeDesc(group);
 
-        log.info("loaded user, group, now loading account ...");
-
-   		authorizeFreeFormMessageSending(user, account);
+   		authorizeFreeFormMessageSending(user, account, group, paidGroup);
 
    		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
-   		AccountLog accountLog = new AccountLog(userUid, account, AccountLogType.MESSAGE_SENT, groupUid, null,
-   				"Sent free form message: " + message);
-   		bundle.addLog(accountLog);
+        String description = group.getMembers().size() + " members @ : " + account.getFreeFormCost(); // so it's recorded at cost of sending
 
+   		AccountLog accountLog = new AccountLog(userUid, account, AccountLogType.MESSAGE_SENT, groupUid, paidGroup.getUid(), description);
+
+        bundle.addLog(accountLog);
    		for (User member : group.getMembers()) {
    			bundle.addNotification(new FreeFormMessageNotification(member, message, accountLog));
    		}
@@ -238,11 +358,57 @@ public class AccountBrokerImpl implements AccountBroker {
    		logsAndNotificationsBroker.storeBundle(bundle);
    	}
 
-   	private void authorizeFreeFormMessageSending(User user, Account account) {
-   		Set<String> standardRoleNames = user.getStandardRoles().stream().map(Role::getName).collect(Collectors.toSet());
-   		if (account == null || !standardRoleNames.contains(BaseRoles.ROLE_ACCOUNT_ADMIN)) {
-   			throw new AccessDeniedException("User not account admin!");
+    @Override
+    @Transactional
+    public long calculateAccountCostsInPeriod(String accountUid, Instant periodStart, Instant periodEnd, boolean generateLog) {
+        Account account = accountRepository.findOneByUid(accountUid);
+
+        if (account.getDisabledDateTime().isBefore(periodStart)) {
+            return 0;
+        }
+
+        // todo : watch Hibernate on this for excessive DB calls (though this is, for the moment, an infrequent batch call)
+        Set<PaidGroup> paidGroups = account.getPaidGroups();
+        final int messageCost = account.getFreeFormCost(); // todo : make time based? else will mess up retrospective ...
+
+        Specifications<Notification> notificationCounter = Specifications.where(wasDelivered())
+                .and(createdTimeBetween(periodStart, periodEnd))
+                .and(belongsToAccount(account));
+
+        long costAccumulator = notificationRepository.count(notificationCounter) * messageCost;
+
+        for (PaidGroup paidGroup : paidGroups) {
+            costAccumulator += (countMessagesForPaidGroup(paidGroup, periodStart, periodEnd) * messageCost);
+        }
+
+        return costAccumulator;
+    }
+
+    private long countMessagesForPaidGroup(PaidGroup paidGroup, Instant periodStart, Instant periodEnd) {
+        Group group = paidGroup.getGroup();
+        Instant start = paidGroup.getActiveDateTime().isBefore(periodStart) ? periodStart : paidGroup.getActiveDateTime();
+        Instant end = paidGroup.getExpireDateTime() == null || paidGroup.getExpireDateTime().isAfter(periodEnd) ?
+                periodEnd : paidGroup.getExpireDateTime();
+
+        Specifications<Notification> specifications = Specifications.where(wasDelivered())
+                .and(createdTimeBetween(start, end))
+                .and(ancestorGroupIs(group));
+
+        return notificationRepository.count(specifications);
+    }
+
+    private void authorizeFreeFormMessageSending(User user, Account account, Group group, PaidGroup paidGroup) {
+   		if (account == null || !account.getAdministrators().contains(user)) {
+   			permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
    		}
+
+   		if (!group.isPaidFor() || !paidGroup.isActive()) {
+            throw new GroupNotPaidForException();
+        }
+
+        if (!paidGroup.getAccount().equals(account)) {
+            throw new GroupAccountMismatchException();
+        }
    	}
 
     private void createAndStoreSingleAccountLog(AccountLog accountLog) {

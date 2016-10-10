@@ -48,10 +48,10 @@ public class UserAccountsRecoveryController extends BaseController {
         binder.setValidator(validator);
     }
 
-    @RequestMapping(value = "/accounts/recovery", method = RequestMethod.GET)
+    @RequestMapping(value = "/user/recovery", method = RequestMethod.GET)
     public String index(Model model) {
         model.addAttribute("userAccountRecovery", new UserAccountRecovery());
-        return "accounts/recovery";
+        return "user/recovery";
     }
 
 
@@ -72,7 +72,7 @@ public class UserAccountsRecoveryController extends BaseController {
         return null;
     }
 
-    @RequestMapping(value = "/accounts/recovery", method = RequestMethod.POST)
+    @RequestMapping(value = "/user/recovery", method = RequestMethod.POST)
     public ModelAndView handleAccountRecovery(Model model,
                                               @ModelAttribute("userAccountRecovery") @Validated UserAccountRecovery userAccountRecovery,
                                               BindingResult bindingResult, HttpServletRequest request,
@@ -88,7 +88,7 @@ public class UserAccountsRecoveryController extends BaseController {
             } else {
                 addMessage(model, MessageType.ERROR, "user.account.recovery.error", request);
             }
-            return new ModelAndView("accounts/recovery", model.asMap());
+            return new ModelAndView("user/recovery", model.asMap());
         }
 
         userManagementService.resetUserPassword(userAccountRecovery.getUsername(), userAccountRecovery.getNewPassword(),
@@ -101,14 +101,14 @@ public class UserAccountsRecoveryController extends BaseController {
         return modelView;
     }
 
-    @RequestMapping(value = "/accounts/recovery/success", method = RequestMethod.GET)
+    @RequestMapping(value = "/user/recovery/success", method = RequestMethod.GET)
     public ModelAndView index(Model model, RedirectAttributes redirectAttributes, HttpServletRequest request) {
         if (redirectAttributes.getFlashAttributes().containsKey("accountRecoverySuccess")) {
             addMessage(model, MessageType.SUCCESS, "user.account.recovery.password.reset.success", request);
         } else {
             new ModelAndView(new RedirectView("/login"));
         }
-        return new ModelAndView("accounts/recovery-success", model.asMap());
+        return new ModelAndView("user/recovery-success", model.asMap());
 
     }
 

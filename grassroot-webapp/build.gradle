@@ -2,7 +2,7 @@ description = 'Grassroot Web Application'
 
 buildscript {
     dependencies {
-        classpath("org.springframework.boot:spring-boot-gradle-plugin:1.4.0.RELEASE")
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:$libs.springBootVersion")
     }
 
     repositories {
@@ -17,33 +17,30 @@ dependencies {
     compile project(':grassroot-services')
     compile project(':grassroot-integration')
 
-    compile group: 'org.springframework.boot', name: 'spring-boot-starter-security', version: '1.4.0.RELEASE'
-    compile group: 'org.springframework.boot', name: 'spring-boot-starter-thymeleaf', version: '1.4.0.RELEASE'
-    compile group: 'org.springframework.boot', name: 'spring-boot-starter-data-jpa', version: '1.4.0.RELEASE'
-    compile group: 'org.springframework.boot', name: 'spring-boot-starter-web', version: '1.4.0.RELEASE'
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter-security', version: libs.springBootVersion
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter-thymeleaf', version: libs.springBootVersion
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter-data-jpa', version: libs.springBootVersion
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter-web', version: libs.springBootVersion
 
-    compile group: 'org.springframework.security', name: 'spring-security-web', version: '4.1.3.RELEASE'
+    compile group: 'org.springframework.security', name: 'spring-security-web', version: libs.springSecurityVersion
 
-    compile group: 'org.thymeleaf', name: 'thymeleaf', version: '3.0.0.RELEASE'
-    compile group: 'org.thymeleaf', name: 'thymeleaf-spring4', version: '3.0.0.RELEASE'
-    compile group: 'org.thymeleaf.extras', name: 'thymeleaf-extras-springsecurity4', version: '3.0.0.RELEASE'
-    compile group: 'org.thymeleaf.extras', name: 'thymeleaf-extras-java8time', version: '3.0.0.RELEASE'
+    compile group: 'org.thymeleaf', name: 'thymeleaf', version: libs.thymeleafVersion
+    compile group: 'org.thymeleaf', name: 'thymeleaf-spring4', version: libs.thymeleafVersion
+    compile group: 'org.thymeleaf.extras', name: 'thymeleaf-extras-springsecurity4', version: libs.thymeleafVersion
+    compile group: 'org.thymeleaf.extras', name: 'thymeleaf-extras-java8time', version: libs.thymeleafVersion
 
     compile group: 'nz.net.ultraq.thymeleaf', name: 'thymeleaf-layout-dialect', version: '2.0.3'
     compile group: 'com.github.mxab.thymeleaf.extras', name: 'thymeleaf-extras-data-attribute', version: '2.0.1'
 
     compile group: 'org.liquibase', name: 'liquibase-core', version: '3.5.1'
 
-    compile group: 'xmlunit', name: 'xmlunit', version: '1.6'
-    compile(group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.2') {
-        exclude(module: 'commons-logging')
-    }
+    compile group: 'org.springframework.boot', name: 'spring-boot-devtools', version: libs.springBootVersion
 
-    compile(group: 'org.powermock', name: 'powermock-api-mockito', version: '1.6.5') {
+    testCompile group: 'xmlunit', name: 'xmlunit', version: '1.6'
+    testCompile(group: 'org.powermock', name: 'powermock-api-mockito', version: '1.6.5') {
         exclude(module: 'powermock-api-support')
     }
-    compile group: 'org.springframework.boot', name: 'spring-boot-devtools', version: '1.4.0.RELEASE'
-    testCompile(group: 'org.springframework.boot', name: 'spring-boot-starter-test', version: '1.4.0.RELEASE') {
+    testCompile(group: 'org.springframework.boot', name: 'spring-boot-starter-test', version: libs.springBootVersion) {
         exclude(module: 'commons-logging')
     }
     testCompile group: 'org.hsqldb', name: 'hsqldb', version: '2.3.4'

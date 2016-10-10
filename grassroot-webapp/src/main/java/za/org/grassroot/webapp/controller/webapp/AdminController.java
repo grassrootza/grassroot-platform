@@ -19,6 +19,7 @@ import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.MaskedUserDTO;
+import za.org.grassroot.core.enums.AccountType;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.util.PhoneNumberUtil;
@@ -300,14 +301,23 @@ public class AdminController extends BaseController {
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping(value = "/admin/accounts/create", method = RequestMethod.POST)
     public String createAccountDo(Model model, @RequestParam("accountName") String accountName,
-                                  @RequestParam("billingAddress") String billingEmail, HttpServletRequest request) {
+                                  @RequestParam("billingAddress") String billingEmail, @RequestParam("accountType") AccountType accountType) {
 
         // todo: all the checks & validation, e.g., whether account already exists, etc
 
         log.info("Okay, we're going to create an account ... with name: " + accountName);
-        String createdAccountUid = accountBroker.createAccount(getUserProfile().getUid(), accountName, null, billingEmail);
+        String createdAccountUid = accountBroker.createAccount(getUserProfile().getUid(), accountName, null, billingEmail, AccountType.STANDARD);
         model.addAttribute("account", accountBroker.loadAccount(createdAccountUid));
         return "admin/accounts/view";
+    }
+
+    // wire this up properly
+    public void changeAccountSettings(Account account) {
+        accountBroker.updateBillingEmail(getUserProfile().getUid(), account.getUid(), account.getPrimaryEmail());
+        accountBroker.updateAccountGroupLimits(getUserProfile().getUid(), account.getUid(), account.getMaxNumberGroups(),
+                account.getMaxSizePerGroup(), account.getMaxSubGroupDepth());
+        accountBroker.updateAccountMessageSettings(getUserProfile().getUid(), account.getUid(), account.isFreeFormMessages(),
+                account.getFreeFormCost());
     }
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
@@ -353,26 +363,6 @@ public class AdminController extends BaseController {
         log.info("Added the user to the account and saved it");
 
         return listAccounts(model);
-    }
-
-    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    @RequestMapping(value = "/admin/accounts/settings")
-    public String viewAccountSettings(Model model, @RequestParam String accountUid) {
-        model.addAttribute("account", accountBroker.loadAccount(accountUid));
-        return "admin/accounts/settings";
-    }
-
-    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    @RequestMapping(value = "/admin/accounts/settings", method = RequestMethod.POST)
-    public String changeAccountSettings(Model model, @ModelAttribute Account account) {
-        accountBroker.updateSettings(account);
-        return adminViewAccount(model, account.getUid());
-    }
-
-    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    @RequestMapping("/admin/designate/group")
-    public String designateGroup(Model model) {
-        return "admin/group";
     }
 
 }

@@ -54,7 +54,7 @@ public final class TodoSpecifications {
         return (root, query, cb) -> {
             Join<Todo, Group> groups = root.join(AbstractTodoEntity_.parentGroup);
             Join<Group, Membership> members = groups.join(Group_.memberships);
-            return cb.equal(members.get("user"), user); // switch this to type safe when static meta model generation is fixed
+            return cb.equal(members.get(Membership_.user), user);
         };
     }
 
@@ -63,10 +63,10 @@ public final class TodoSpecifications {
             // note : keep an eye on this (e.g., whether not should go in here, or outside
             query.distinct(true);
             Join<Todo, TodoCompletionConfirmation> join = root.join(Todo_.completionConfirmations, JoinType.LEFT);
+
             /*return cb.not(cb.and(
                     cb.equal(root.get(Todo_.createdByUser), join.get(TodoCompletionConfirmation_.member)),
                     cb.equal(join.get(TodoCompletionConfirmation_.confirmType), TodoCompletionConfirmType.COMPLETED)));*/
-
             return cb.or(cb.or(cb.isNull(join.get(TodoCompletionConfirmation_.member)),
                     cb.or(cb.notEqual(root.get(Todo_.createdByUser), join.get(TodoCompletionConfirmation_.member))),
                     cb.notEqual(join.get(TodoCompletionConfirmation_.confirmType), TodoCompletionConfirmType.COMPLETED)));

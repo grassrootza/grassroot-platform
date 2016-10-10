@@ -2,6 +2,7 @@ package za.org.grassroot.core.repository;
 
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Event;
@@ -12,7 +13,7 @@ import java.time.Instant;
 import java.util.List;
 
 // major todo: switch to JPA specifications
-public interface EventRepository extends JpaRepository<Event, Long> {
+public interface EventRepository extends JpaRepository<Event, Long>, JpaSpecificationExecutor<Event> {
 
 	Event findOneByUid(String uid);
 

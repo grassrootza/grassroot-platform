@@ -165,26 +165,24 @@ public class InboundGcmMessageHandler {
         String groupUid = (String) input.getData().get("groupUid");
         User user = userRepository.findByPhoneNumber(phoneNumber);
         GroupChatSettings groupChatSettings = groupChatSettingsService.load(user.getUid(), groupUid);
-        if(groupChatSettings !=null){
-        Group group = groupChatSettings.getGroup();
-        org.springframework.messaging.Message<Message> message;
-        log.info("Posting to topic with id={}", groupUid);
-        try {
-            if (groupChatSettingsService.isCanSend(user.getUid(), groupUid)) {
-                log.info("Posting to topic with id={}", groupUid);
-                message = generateMessage(user, input, group);
-            }else{
-                message = generateCannotSendMessage(input,group);
-             }
-            gcmXmppOutboundChannel.send(message);
-
-        } catch (GroupChatSettingNotFoundException e) {
-            log.info("User with phoneNumber={} is not enabled to send messages to this group", phoneNumber);
+        if (groupChatSettings != null) {
+            Group group = groupChatSettings.getGroup();
+            org.springframework.messaging.Message<Message> message;
+            log.info("Posting to topic with id={}", groupUid);
+            try {
+                if (groupChatSettingsService.isCanSend(user.getUid(), groupUid)) {
+                    log.info("Posting to topic with id={}", groupUid);
+                    message = generateMessage(user, input, group);
+                } else {
+                    message = generateCannotSendMessage(input, group);
+                }
+                gcmXmppOutboundChannel.send(message);
+            } catch (GroupChatSettingNotFoundException e) {
+                log.info("User with phoneNumber={} is not enabled to send messages to this group", phoneNumber);
+            }
         }
-
-    }}
-
-
+    }
+    
     public org.springframework.messaging.Message<Message> generateCannotSendMessage(GcmUpstreamMessage input, Group group){
         Map<String, Object> data = MessageUtils.generateUserMutedResponseData(messageSourceAccessor,input,group);
         return GcmXmppMessageCodec.encode(input.getFrom(), String.valueOf(data.get("messageId")),

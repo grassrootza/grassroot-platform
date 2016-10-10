@@ -7,16 +7,13 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.SessionAttributes;
+import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.enums.AccountType;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.AccountBroker;
 import za.org.grassroot.services.EventBroker;
-import za.org.grassroot.services.GroupBroker;
 import za.org.grassroot.services.GroupQueryBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 
@@ -32,18 +29,15 @@ import java.util.stream.Collectors;
  * Created by luke on 2016/01/13.
  */
 @Controller
-@RequestMapping("/paid_account")
+@RequestMapping("/accounts")
 @SessionAttributes("user")
-public class PaidAccountController extends BaseController {
+public class AccountsController extends BaseController {
 
-    private static final Logger log = LoggerFactory.getLogger(PaidAccountController.class);
+    private static final Logger log = LoggerFactory.getLogger(AccountsController.class);
     private static final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd-M-yyyy");
 
     @Autowired
     private AccountBroker accountBroker;
-
-    @Autowired
-    private GroupBroker groupBroker;
 
     @Autowired
     private GroupQueryBroker groupQueryBroker;
@@ -56,7 +50,7 @@ public class PaidAccountController extends BaseController {
     public String paidAccountIndex(Model model, HttpServletRequest request) {
         if (request.isUserInRole("ROLE_SYSTEM_ADMIN")) {
             model.addAttribute("accounts", accountBroker.loadAllAccounts());
-            return "paid_account/index";
+            return "accounts/index";
         } else if (request.isUserInRole("ROLE_ACCOUNT_ADMIN")) {
             User user = userManagementService.load(getUserProfile().getUid());
             Account account = user.getAccountAdministered();
@@ -78,16 +72,38 @@ public class PaidAccountController extends BaseController {
 
         model.addAttribute("account", account);
         model.addAttribute("paidGroups", currentlyPaidGroups);
-        return "paid_account/view";
+        return "accounts/view";
     }
 
-    // major todo : insert these
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
-    @RequestMapping(value = "/settings", method = RequestMethod.POST)
-    public String changeAccountSettings(Model model, @RequestParam("accountId") String accountUid, HttpServletRequest request) {
+    @RequestMapping(value = "/settings/view", method = RequestMethod.GET)
+    public String changeAccountSettingsView(Model model, @RequestParam("accountUid") String accountUid) {
         Account account = accountBroker.loadAccount(accountUid);
         validateUserIsAdministrator(account);
-        return "paid_account/settings";
+        model.addAttribute("account", account);
+        return "accounts/settings";
+    }
+
+    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
+    @RequestMapping(value = "/settings/change", method = RequestMethod.POST)
+    public String changeAccountSettingsDo(Model model, @RequestAttribute String accountUid, @RequestAttribute String billingEmail,
+                                          @RequestAttribute AccountType accountType, HttpServletRequest request) {
+        try {
+            Account account = accountBroker.loadAccount(accountUid);
+            if (!billingEmail.equals(account.getPrimaryEmail())) {
+                accountBroker.updateBillingEmail(getUserProfile().getUid(), accountUid, billingEmail);
+            }
+
+            if (!accountType.equals(account.getType())) {
+                accountBroker.changeAccountType(getUserProfile().getUid(), accountUid, accountType);
+            }
+
+            addMessage(model, MessageType.SUCCESS, "account.settings.changed.success", request);
+            model.addAttribute("account", account);
+        } catch (AccessDeniedException e) {
+            addMessage(model, MessageType.ERROR, "account.settings.changed.error", request);
+        }
+        return "accounts/settings";
     }
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
@@ -132,7 +148,7 @@ public class PaidAccountController extends BaseController {
         model.addAttribute("beginDate", beginDate.toLocalDate());
         model.addAttribute("monthsToView", groupQueryBroker.getMonthsGroupActive(underlyingGroup.getUid()));
 
-        return "paid_account/view_logs";
+        return "accounts/view_logs";
     }
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
@@ -142,7 +158,7 @@ public class PaidAccountController extends BaseController {
         validateUserIsAdministrator(account);
         model.addAttribute("account", account);
         model.addAttribute("candidateGroups", getCandidateGroupsToDesignate(getUserProfile()));
-        return "paid_account/designate";
+        return "accounts/designate";
     }
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
@@ -164,7 +180,7 @@ public class PaidAccountController extends BaseController {
             model.addAttribute("groupCandidates", groupQueryBroker.findPublicGroups(getUserProfile().getUid(), searchTerm, null, false));
         }
 
-        return "paid_account/find_group";
+        return "accounts/find_group";
     }
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
