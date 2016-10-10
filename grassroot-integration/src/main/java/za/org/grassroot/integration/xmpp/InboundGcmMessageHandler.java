@@ -182,7 +182,7 @@ public class InboundGcmMessageHandler {
             }
         }
     }
-    
+
     public org.springframework.messaging.Message<Message> generateCannotSendMessage(GcmUpstreamMessage input, Group group){
         Map<String, Object> data = MessageUtils.generateUserMutedResponseData(messageSourceAccessor,input,group);
         return GcmXmppMessageCodec.encode(input.getFrom(), String.valueOf(data.get("messageId")),
