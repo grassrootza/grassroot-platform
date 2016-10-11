@@ -1,5 +1,7 @@
 package za.org.grassroot.webapp.controller.rest;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -7,7 +9,6 @@ import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.integration.services.GcmService;
-import za.org.grassroot.services.GroupBroker;
 import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.services.exception.NoSuchProfileException;
 import za.org.grassroot.webapp.enums.RestMessage;
@@ -22,9 +23,10 @@ import za.org.grassroot.webapp.util.RestUtil;
 @RequestMapping(value = "/api/gcm")
 public class GcmRestController {
 
+    private static final Logger logger = LoggerFactory.getLogger(GcmRestController.class);
+
     @Autowired
     private UserManagementService userManagementService;
-
 
     @Autowired
     private GcmService gcmService;
@@ -34,8 +36,10 @@ public class GcmRestController {
                                                           @PathVariable("code") String code,
                                                           @RequestParam("registration_id") String registrationId) {
 
+        logger.info("Inside GCM registration ... for ID: {}", registrationId);
         User user = userManagementService.findByInputNumber(phoneNumber);
         gcmService.registerUser(user, registrationId);
+        gcmService.refreshAllGroupTopicSubscriptions(user.getUid(), registrationId); // separate this call from above as can be _very_ long so needs to be async
         userManagementService.setMessagingPreference(user.getUid(), UserMessagingPreference.ANDROID_APP);
         return RestUtil.messageOkayResponse(RestMessage.REGISTERED_FOR_PUSH);
 

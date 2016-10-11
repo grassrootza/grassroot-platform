@@ -47,7 +47,7 @@ public class GcmRegistrationRepositoryTest {
     public void shouldFindByUser() throws Exception{
         User user = userRepository.save(new User("0848875097"));
         gcmRegistrationRepository.save(new GcmRegistration(user, "xx77f"));
-        GcmRegistration gcmRegistration = gcmRegistrationRepository.findByUser(user);
+        GcmRegistration gcmRegistration = gcmRegistrationRepository.findTopByUserOrderByCreationTimeDesc(user);
         assertNotEquals(null, gcmRegistration);
         assertEquals(gcmRegistration.getUser(),user);
     }

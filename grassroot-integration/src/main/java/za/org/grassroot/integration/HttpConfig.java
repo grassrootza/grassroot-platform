@@ -53,12 +53,10 @@ public class HttpConfig {
                 .setConnectTimeout(DEFAULT_READ_TIMEOUT_MILLISECONDS)
                 .build();
 
-        CloseableHttpClient defaultHttpClient = HttpClientBuilder.create()
+        return HttpClientBuilder.create()
                 .setConnectionManager(connectionManager)
                 .setDefaultRequestConfig(config)
                 .build();
-
-        return defaultHttpClient;
     }
 
     @Bean
@@ -82,12 +80,10 @@ public class HttpConfig {
                     .setConnectTimeout(DEFAULT_READ_TIMEOUT_MILLISECONDS)
                     .build();
 
-            CloseableHttpAsyncClient httpAsyncClient = HttpAsyncClientBuilder.create()
+            return HttpAsyncClientBuilder.create()
                     .setConnectionManager(connectionManager)
                     .setDefaultRequestConfig(config)
                     .build();
-
-            return httpAsyncClient;
         } catch (Exception e) {
             throw Throwables.propagate(e);
         }

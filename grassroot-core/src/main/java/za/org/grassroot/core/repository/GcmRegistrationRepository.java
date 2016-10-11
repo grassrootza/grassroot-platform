@@ -9,7 +9,7 @@ import za.org.grassroot.core.domain.User;
  */
 public interface GcmRegistrationRepository extends JpaRepository<GcmRegistration, Long> {
 
-    GcmRegistration findByUser(User user);
+    GcmRegistration findTopByUserOrderByCreationTimeDesc(User user);
 
     GcmRegistration findByUid(String uid);
 

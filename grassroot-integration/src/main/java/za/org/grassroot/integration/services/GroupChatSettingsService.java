@@ -1,10 +1,8 @@
 package za.org.grassroot.integration.services;
 
-import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.GroupChatSettings;
 import za.org.grassroot.integration.exception.GroupChatSettingNotFoundException;
 
-import java.time.Instant;
 import java.util.List;
 
 /**
@@ -12,32 +10,18 @@ import java.util.List;
  */
 public interface GroupChatSettingsService {
 
-    @Transactional
-    public void createUserGroupMessagingSetting(String userUid, String groupUid, boolean active, boolean canSend, boolean canReceive);
+    void createUserGroupMessagingSetting(String userUid, String groupUid, boolean active, boolean canSend, boolean canReceive);
 
-    @Transactional
     GroupChatSettings load(String userUid, String groupUid)  throws GroupChatSettingNotFoundException;
 
-
-    @Transactional
-    void updateUserGroupMessageSettings(String userUid, String groupUid, boolean active, boolean canSend, boolean canReceive, Instant reactivationTime) throws GroupChatSettingNotFoundException;
-
-    @Transactional(readOnly = true)
     boolean isCanSend(String userUid, String groupUid) throws GroupChatSettingNotFoundException;
 
-    @Transactional
     void updateActivityStatus(String userUid, String groupUid, boolean active, boolean userInitiated) throws Exception;
 
-    @Transactional(readOnly = true)
-    boolean isCanReceive(String userUid, String groupUid) throws Exception;
-
-    @Transactional(readOnly =true)
     boolean messengerSettingExist(String userUid, String groupUid);
 
-    @Transactional(readOnly = true)
     List<GroupChatSettings> loadUsersToBeUnmuted();
 
-    @Transactional
     List<String> usersMutedInGroup(String groupUid);
 }
 

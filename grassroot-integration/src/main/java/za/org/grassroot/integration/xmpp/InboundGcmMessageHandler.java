@@ -128,8 +128,12 @@ public class InboundGcmMessageHandler {
     private void handleNotAcknowledged(GcmUpstreamMessage input) {
         String messageId = input.getMessageId();
         Notification notification = notificationService.loadNotification(messageId);
-        log.info("Push Notification delivery failed, now sending SMS to  {}", notification.getTarget().getPhoneNumber());
-        messageSendingService.sendMessage(UserMessagingPreference.SMS.name(), notification);
+        if (notification != null) {
+            log.info("Push Notification delivery failed, now sending SMS to  {}", notification.getTarget().getPhoneNumber());
+            messageSendingService.sendMessage(UserMessagingPreference.SMS.name(), notification);
+        } else {
+            log.info("Received an upstream message without notification, must be chat message");
+        }
     }
 
     private void handleDeliveryReceipts(GcmUpstreamMessage input) {

@@ -7,7 +7,8 @@ import java.time.Instant;
  * Created by paballo on 2016/09/08.
  */
 @Entity
-@Table(name = "messenger_settings")
+@Table(name = "messenger_settings",
+        uniqueConstraints = @UniqueConstraint(name = "uk_chat_settings_user_group", columnNames = {"user_id", "group_id"}))
 public class GroupChatSettings {
 
     @Id

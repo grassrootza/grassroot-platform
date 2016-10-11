@@ -61,7 +61,7 @@ public class MessageSendingManager implements MessageSendingService {
     @Transactional
     private boolean checkGcmRegistration(Notification notification) {
         User user = notification.getTarget();
-        if (gcmRegistrationRepository.findByUser(user) != null) {
+        if (gcmRegistrationRepository.findTopByUserOrderByCreationTimeDesc(user) != null) {
             return true;
         } else {
             logger.error("user had preference set to Android, but no GCM registration, correcting");

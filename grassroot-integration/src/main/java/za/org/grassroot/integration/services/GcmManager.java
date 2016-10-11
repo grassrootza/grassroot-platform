@@ -18,9 +18,12 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import za.org.grassroot.core.domain.GcmRegistration;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.GroupChatSettings;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.repository.GcmRegistrationRepository;
+import za.org.grassroot.core.repository.GroupChatSettingsRepository;
 import za.org.grassroot.core.repository.GroupRepository;
+import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.integration.domain.AndroidClickActionType;
 import za.org.grassroot.integration.utils.MessageUtils;
 import za.org.grassroot.integration.xmpp.GcmXmppMessageCodec;
@@ -39,6 +42,9 @@ public class GcmManager implements GcmService {
     private static final Logger log = LoggerFactory.getLogger(GcmManager.class);
 
     @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
     private GcmRegistrationRepository gcmRegistrationRepository;
 
     @Autowired
@@ -48,10 +54,12 @@ public class GcmManager implements GcmService {
     private RestTemplate restTemplate;
 
     @Autowired
-    private GroupChatSettingsService groupChatSettingsService;
+    private GroupChatSettingsRepository groupChatSettingsRepository;
 
     @Autowired
     private MessageChannel gcmXmppOutboundChannel;
+
+    private final static String INSTANCE_ID_FIXED_PATH = "/iid/v1";
 
     @Value("${gcm.topics.url}")
     private String INSTANCE_ID_SERVICE_GATEWAY;
@@ -79,7 +87,6 @@ public class GcmManager implements GcmService {
     private static final ObjectMapper mapper = new ObjectMapper();
     private final static Random random = new Random();
 
-
     @Override
     @Transactional(readOnly = true)
     public GcmRegistration load(String uid) {
@@ -88,54 +95,70 @@ public class GcmManager implements GcmService {
 
     @Override
     @Transactional(readOnly = true)
-    public GcmRegistration loadByRegistrationId(String registrationId) {
-        return gcmRegistrationRepository.findByRegistrationId(registrationId);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
     public String getGcmKey(User user) {
-        return gcmRegistrationRepository.findByUser(user).getRegistrationId();
+        GcmRegistration gcmRegistration = gcmRegistrationRepository.findTopByUserOrderByCreationTimeDesc(user);
+        if (gcmRegistration != null) {
+            return gcmRegistration.getRegistrationId();
+        } else {
+            return null;
+        }
     }
-
 
     @Override
     @Transactional(readOnly = true)
     public boolean hasGcmKey(User user){
-        return gcmRegistrationRepository.findByUser(user) !=null;
+        return gcmRegistrationRepository.findTopByUserOrderByCreationTimeDesc(user) !=null;
     }
 
     @Override
     @Transactional
     public GcmRegistration registerUser(User user, String registrationId) {
-        GcmRegistration gcmRegistration = gcmRegistrationRepository.findByUser(user);
+        // todo : periodic cleaning of duplicate gcm registrations
+        GcmRegistration gcmRegistration = gcmRegistrationRepository.findTopByUserOrderByCreationTimeDesc(user);
+        log.info("Inside register user ...");
         if (gcmRegistration != null) {
+            log.info("Found a gcm registration ... updating ID");
             gcmRegistration.setRegistrationId(registrationId);
         } else {
             gcmRegistration = new GcmRegistration(user, registrationId);
         }
+
+        return gcmRegistrationRepository.save(gcmRegistration);
+    }
+
+    @Async
+    @Override
+    @Transactional
+    public void refreshAllGroupTopicSubscriptions(String userUid, final String registrationId) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(registrationId);
+
+        User user = userRepository.findOneByUid(userUid);
         List<Group> groupsPartOf = groupRepository.findByMembershipsUserAndActiveTrue(user);
         for (Group group : groupsPartOf) {
             try {
-                if(groupChatSettingsService.messengerSettingExist(user.getUid(),group.getUid())){
-                    if(groupChatSettingsService.isCanReceive(user.getUid(),group.getUid())){
+                GroupChatSettings settings = groupChatSettingsRepository.findByUserAndGroup(user, group);
+                if (settings != null) {
+                    if (settings.isCanReceive()) {
                         subscribeToTopic(registrationId, group.getUid());
                     }
-                }else{
-                    groupChatSettingsService.createUserGroupMessagingSetting(user.getUid(),group.getUid(),true,true,true);
+                } else {
+                    groupChatSettingsRepository.save(new GroupChatSettings(user, group, true, true, true, true));
                     subscribeToTopic(registrationId, group.getUid());
                 }
-
-            } catch (Exception ignored) {
+            } catch (IOException e) {
+                log.info("IO exception in loop ... XMPP connection must be down");
+                e.printStackTrace();
             }
         }
-        return gcmRegistrationRepository.save(gcmRegistration);
+
+        log.info("Finished doing the registration");
     }
 
     @Override
     @Transactional
     public void unregisterUser(User user) {
-        GcmRegistration gcmRegistration = gcmRegistrationRepository.findByUser(user);
+        GcmRegistration gcmRegistration = gcmRegistrationRepository.findTopByUserOrderByCreationTimeDesc(user);
 
         List<Group> groupsPartOf = groupRepository.findByMembershipsUserAndActiveTrue(user);
         for (Group group : groupsPartOf) {
@@ -148,12 +171,16 @@ public class GcmManager implements GcmService {
         gcmRegistrationRepository.delete(gcmRegistration);
     }
 
-    @Override
-    @Transactional
     @Async
+    @Override
     public void subscribeToTopic(String registrationId, String topicId) throws IOException {
-       UriComponentsBuilder gatewayURI = UriComponentsBuilder.newInstance().scheme("https").host(INSTANCE_ID_SERVICE_GATEWAY);
-       gatewayURI.path("/iid/v1").path(registrationId).path("/rel/topics/").path(topicId);
+        UriComponentsBuilder gatewayURI = UriComponentsBuilder.newInstance()
+                .scheme("https")
+                .host(INSTANCE_ID_SERVICE_GATEWAY)
+                .path(INSTANCE_ID_FIXED_PATH)
+                .path(registrationId)
+                .path("/rel" + TOPICS)
+                .path(topicId);
 
         int noAttempts = 0;
         int backoff = BACKOFF_INITIAL_DELAY;
@@ -162,27 +189,27 @@ public class GcmManager implements GcmService {
         ResponseEntity<String> response;
         do {
             noAttempts++;
-            response = restTemplate.exchange(gatewayURI.build().toUri(), POST,
-                    new HttpEntity<String>(getHttpHeaders()),
-                    String.class);
+            // todo : work out why this is so slow (~ 3 secs ... seems like it's not pooling, which is strange)
+            response = restTemplate.exchange(gatewayURI.build().toUri(), POST, new HttpEntity<String>(getHttpHeaders()), String.class);
             retry = (!response.getStatusCode().is2xxSuccessful() && noAttempts <= MAX_RETRIES);
             if (retry) {
                 backoff = exponentialBackoffSleep(backoff);
             }
-        }
-        while (retry);
+        } while (retry);
+
         if (!response.getStatusCode().is2xxSuccessful()) {
             throw new IOException("Could not send subscibe user after " + noAttempts + " attempts");
         }
-
     }
 
-    @Override
-    @Transactional
     @Async
+    @Override
     public void unsubscribeFromTopic(String registrationId, String topicId) throws Exception {
-        UriComponentsBuilder gatewayURI = UriComponentsBuilder.newInstance().scheme("https").host(INSTANCE_ID_SERVICE_GATEWAY
-        ).path("/iid/v1".concat(BATCH_REMOVE));
+        UriComponentsBuilder gatewayURI = UriComponentsBuilder.newInstance()
+                .scheme("https")
+                .host(INSTANCE_ID_SERVICE_GATEWAY)
+                .path(INSTANCE_ID_FIXED_PATH.concat(BATCH_REMOVE));
+
         int noAttempts = 0;
         int backoff = BACKOFF_INITIAL_DELAY;
         boolean retry;
@@ -194,59 +221,24 @@ public class GcmManager implements GcmService {
         body.put(DESTINATION, topicName);
         body.put(REGISTRATION_TOKENS, registrationTokens);
         HttpEntity<String> entity = new HttpEntity<>(mapper.writeValueAsString(body), getHttpHeaders());
+
         do {
             noAttempts++;
-            response = restTemplate.exchange(gatewayURI.build().toUri(), POST,
-                    entity,
-                    String.class);
+            response = restTemplate.exchange(gatewayURI.build().toUri(), POST, entity, String.class);
             retry = (!response.getStatusCode().is2xxSuccessful() && noAttempts <= MAX_RETRIES);
             if (retry) {
                 backoff = exponentialBackoffSleep(backoff);
             }
-        }
-        while (retry);
+        } while (retry);
+
         if (!response.getStatusCode().is2xxSuccessful()) {
-            throw new IOException("Could not unsubscibe user after " + noAttempts + " attempts");
+            throw new IOException("Could not unsubscribe user after " + noAttempts + " attempts");
         }
-    }
-
-
-    @Override
-    @Transactional
-    @Async
-    public void batchAddUsersToTopic(List<String> registrationIds, String topicId) throws IOException {
-        UriComponentsBuilder gatewayURI = UriComponentsBuilder.newInstance().scheme("https").host(INSTANCE_ID_SERVICE_GATEWAY
-        ).path("/iid/v1".concat(BATCH_ADD));
-        int noAttempts = 0;
-        int backoff = BACKOFF_INITIAL_DELAY;
-        boolean retry;
-
-        ResponseEntity<String> response;
-        String topicName = TOPICS.concat(topicId);
-        Map<String, Object> body = new HashMap<>();
-        body.put(DESTINATION, topicName);
-        body.put(REGISTRATION_TOKENS, registrationIds);
-        HttpEntity<String> entity = new HttpEntity<>(mapper.writeValueAsString(body), getHttpHeaders());
-        do {
-            noAttempts++;
-            response = restTemplate.exchange(gatewayURI.build().toUri(), POST,
-                    entity,
-                    String.class);
-            retry = (!response.getStatusCode().is2xxSuccessful() && noAttempts <= MAX_RETRIES);
-            if (retry) {
-                backoff = exponentialBackoffSleep(backoff);
-            }
-        }
-        while (retry);
-        if (!response.getStatusCode().is2xxSuccessful()) {
-            throw new IOException("Could not batch add users after " + noAttempts + " attempts");
-        }
-
     }
 
     @Override
     public void pingUserForGroupChat(User user, Group group) {
-        GcmRegistration gcmRegistration = gcmRegistrationRepository.findByUser(user);
+        GcmRegistration gcmRegistration = gcmRegistrationRepository.findTopByUserOrderByCreationTimeDesc(user);
         if(gcmRegistration != null){
             Map<String, Object> data = MessageUtils.generatePingMessageData(user,group);
             Message gcmMessage = GcmXmppMessageCodec.encode(gcmRegistration.getRegistrationId(),(String) data.get("messageId") ,
@@ -257,12 +249,10 @@ public class GcmManager implements GcmService {
 
     }
 
-
     private HttpHeaders getHttpHeaders() {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set(HEADER_AUTH, "key=".concat(AUTH_KEY));
-
         return headers;
     }
 

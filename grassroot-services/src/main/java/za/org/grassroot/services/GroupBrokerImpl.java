@@ -15,17 +15,16 @@ import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.enums.UserLogType;
-import za.org.grassroot.core.repository.GroupLocationRepository;
 import za.org.grassroot.core.repository.GroupLogRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.integration.services.GcmService;
 import za.org.grassroot.integration.services.GroupChatSettingsService;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.services.exception.GroupDeactivationNotAvailableException;
 import za.org.grassroot.services.exception.InvalidTokenException;
-import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 import za.org.grassroot.services.util.TokenGeneratorService;
@@ -67,10 +66,7 @@ public class GroupBrokerImpl implements GroupBroker {
     private TokenGeneratorService tokenGeneratorService;
     @Autowired
     private MessageAssemblingService messageAssemblingService;
-    @Autowired
-    private GeoLocationBroker geoLocationBroker;
-    @Autowired
-    private GroupLocationRepository groupLocationRepository;
+
     @Autowired
     private GroupChatSettingsService groupChatSettingsService;
     @Autowired

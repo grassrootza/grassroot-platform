@@ -353,11 +353,11 @@ public class GroupRestController extends GroupAbstractRestController {
             permissionBroker.isGroupPermissionAvailable(user,group,Permission.GROUP_PERMISSION_MUTE_MEMBER);
         }
 		groupChatSettingsService.updateActivityStatus(userSettingTobeUpdated,groupUid,active,userInitiated);
-		if(userInitiated){
+		if (userInitiated && gcmService.hasGcmKey(user)) {
 			String registrationId = gcmService.getGcmKey(user);
-			if(active){
+			if (active){
 				gcmService.subscribeToTopic(registrationId,groupUid);
-			}else{
+			} else {
 				gcmService.unsubscribeFromTopic(registrationId,groupUid);
 			}
 		}
