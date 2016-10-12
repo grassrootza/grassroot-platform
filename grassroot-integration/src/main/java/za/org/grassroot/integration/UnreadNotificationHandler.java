@@ -1,4 +1,4 @@
-package za.org.grassroot.integration.services;
+package za.org.grassroot.integration;
 
 /**
  * Created by luke on 2016/06/14.

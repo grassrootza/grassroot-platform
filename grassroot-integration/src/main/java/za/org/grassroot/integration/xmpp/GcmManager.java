@@ -1,4 +1,4 @@
-package za.org.grassroot.integration.services;
+package za.org.grassroot.integration.xmpp;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -25,9 +25,7 @@ import za.org.grassroot.core.repository.GroupChatSettingsRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.integration.domain.AndroidClickActionType;
-import za.org.grassroot.integration.exception.GroupChatSettingNotFoundException;
 import za.org.grassroot.integration.utils.MessageUtils;
-import za.org.grassroot.integration.xmpp.GcmXmppMessageCodec;
 
 import java.io.IOException;
 import java.util.*;
@@ -83,7 +81,7 @@ public class GcmManager implements GcmService {
     @Value("${gcm.topics.batch.add}")
     private String BATCH_ADD;
     @Value("${gcm.topics.path}")
-    private String TOPICS ;
+    private String TOPICS;
 
     private static final ObjectMapper mapper = new ObjectMapper();
     private final static Random random = new Random();
@@ -108,7 +106,7 @@ public class GcmManager implements GcmService {
     @Override
     @Transactional(readOnly = true)
     public boolean hasGcmKey(User user){
-        return gcmRegistrationRepository.findTopByUserOrderByCreationTimeDesc(user) !=null;
+        return gcmRegistrationRepository.findTopByUserOrderByCreationTimeDesc(user) != null;
     }
 
     @Override
@@ -116,9 +114,7 @@ public class GcmManager implements GcmService {
     public GcmRegistration registerUser(User user, String registrationId) {
         // todo : periodic cleaning of duplicate gcm registrations
         GcmRegistration gcmRegistration = gcmRegistrationRepository.findTopByUserOrderByCreationTimeDesc(user);
-        log.info("Inside register user ...");
         if (gcmRegistration != null) {
-            log.info("Found a gcm registration ... updating ID");
             gcmRegistration.setRegistrationId(registrationId);
         } else {
             gcmRegistration = new GcmRegistration(user, registrationId);
@@ -160,7 +156,6 @@ public class GcmManager implements GcmService {
     @Transactional
     public void unregisterUser(User user) {
         GcmRegistration gcmRegistration = gcmRegistrationRepository.findTopByUserOrderByCreationTimeDesc(user);
-
         List<Group> groupsPartOf = groupRepository.findByMembershipsUserAndActiveTrue(user);
         for (Group group : groupsPartOf) {
             try {
@@ -168,7 +163,6 @@ public class GcmManager implements GcmService {
             } catch (Exception ignored) {
             }
         }
-
         gcmRegistrationRepository.delete(gcmRegistration);
     }
 
@@ -247,7 +241,6 @@ public class GcmManager implements GcmService {
                     AndroidClickActionType.CHAT_MESSAGE.name(), data);
             gcmXmppOutboundChannel.send(gcmMessage);
         }
-
     }
 
     private HttpHeaders getHttpHeaders() {

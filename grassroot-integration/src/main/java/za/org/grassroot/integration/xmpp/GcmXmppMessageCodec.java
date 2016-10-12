@@ -2,6 +2,7 @@ package za.org.grassroot.integration.xmpp;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.http.util.TextUtils;
 import org.jivesoftware.smack.packet.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,14 +74,18 @@ public class GcmXmppMessageCodec {
 		}
 	}
 
-	public static Map<String, Object> createDataPart(String notificationUid, String title, String group, String description, Object id,
-	                                                 Instant createdDateTime, NotificationType alertType, String entityType,
-	                                                 AndroidClickActionType clickAction, int priority) {
+	public static Map<String, Object> createDataPart(String notificationUid, String title, String groupName, String groupUid, String description, Object id,
+													 Instant createdDateTime, NotificationType alertType, String entityType,
+													 AndroidClickActionType clickAction, int priority) {
 		Map<String, Object> data = new HashMap<>();
 		data.put("title", title);
 
-		if (group != null) {
-			data.put("group", group);
+		if (groupName != null) {
+			data.put("group", groupName);
+		}
+
+		if (!TextUtils.isEmpty(groupUid)) {
+			data.put("groupUid", groupUid);
 		}
 
 		data.put("notificationUid", notificationUid);

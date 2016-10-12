@@ -1,4 +1,4 @@
-package za.org.grassroot.integration.services;
+package za.org.grassroot.integration;
 
 import org.springframework.stereotype.Service;
 

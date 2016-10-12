@@ -16,8 +16,8 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.integration.exception.GroupChatSettingNotFoundException;
-import za.org.grassroot.integration.services.GcmService;
-import za.org.grassroot.integration.services.GroupChatSettingsService;
+import za.org.grassroot.integration.xmpp.GcmService;
+import za.org.grassroot.integration.GroupChatService;
 import za.org.grassroot.services.*;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.webapp.enums.RestMessage;
@@ -43,7 +43,7 @@ public class GroupRestController extends GroupAbstractRestController {
     private static final Logger log = LoggerFactory.getLogger(GroupRestController.class);
 
 	@Autowired
-	private GroupChatSettingsService groupChatSettingsService;
+	private GroupChatService groupChatSettingsService;
 
 	@Autowired
 	private GcmService gcmService;

@@ -11,7 +11,7 @@ import java.util.Map;
  */
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class GcmUpstreamMessage {
+public class GcmUpstreamMessage implements IncomingChatMessage {
 
     private String from;
 
@@ -28,7 +28,7 @@ public class GcmUpstreamMessage {
     @JsonProperty("message_type")
     private String messageType;
 
-
+    @Override
     public String getFrom() {
         return from;
     }
@@ -37,18 +37,22 @@ public class GcmUpstreamMessage {
         return category;
     }
 
+    @Override
     public Map<String, Object> getData() {
         return data;
     }
 
+    @Override
     public String getTo() {
         return to;
     }
 
+    @Override
     public String getMessageId() {
         return messageId;
     }
 
+    @Override
     public String getMessageType() {
         return messageType;
     }

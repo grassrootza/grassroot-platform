@@ -1,6 +1,6 @@
-package za.org.grassroot.integration.services;
+package za.org.grassroot.integration;
 
-import za.org.grassroot.integration.domain.SeloParseDateTimeFailure;
+import za.org.grassroot.integration.exception.SeloParseDateTimeFailure;
 
 import java.time.LocalDateTime;
 

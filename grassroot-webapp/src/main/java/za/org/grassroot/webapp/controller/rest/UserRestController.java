@@ -15,7 +15,7 @@ import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.core.enums.VerificationCodeType;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.core.util.PhoneNumberUtil;
-import za.org.grassroot.integration.services.NotificationService;
+import za.org.grassroot.integration.NotificationService;
 import za.org.grassroot.integration.sms.SmsSendingService;
 import za.org.grassroot.services.PasswordTokenService;
 import za.org.grassroot.services.PermissionBroker;

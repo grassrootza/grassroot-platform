@@ -7,7 +7,7 @@ import org.springframework.integration.annotation.MessageEndpoint;
 import org.springframework.integration.annotation.ServiceActivator;
 import org.springframework.messaging.Message;
 import za.org.grassroot.core.domain.Notification;
-import za.org.grassroot.integration.services.NotificationService;
+import za.org.grassroot.integration.NotificationService;
 
 /**
  * Created by paballo on 2016/04/06.

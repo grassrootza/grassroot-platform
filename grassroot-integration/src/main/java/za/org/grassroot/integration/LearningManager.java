@@ -1,4 +1,4 @@
-package za.org.grassroot.integration.services;
+package za.org.grassroot.integration;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -7,8 +7,8 @@ import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
-import za.org.grassroot.integration.domain.SeloApiCallFailure;
-import za.org.grassroot.integration.domain.SeloParseDateTimeFailure;
+import za.org.grassroot.integration.exception.SeloApiCallFailure;
+import za.org.grassroot.integration.exception.SeloParseDateTimeFailure;
 
 import javax.annotation.PostConstruct;
 import java.time.LocalDateTime;

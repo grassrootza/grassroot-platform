@@ -6,7 +6,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.util.UIDGenerator;
 import za.org.grassroot.integration.domain.AndroidClickActionType;
-import za.org.grassroot.integration.domain.GcmUpstreamMessage;
+import za.org.grassroot.integration.domain.IncomingChatMessage;
 
 import java.time.Instant;
 import java.util.Arrays;
@@ -18,13 +18,12 @@ import java.util.Map;
  */
 public class MessageUtils {
 
-    public static Map<String, Object> generateCommandResponseData(MessageSourceAccessor messageSourceAccessor, GcmUpstreamMessage input, Group group, String[] tokens) {
+    public static Map<String, Object> generateCommandResponseData(MessageSourceAccessor messageSourceAccessor, IncomingChatMessage input,
+                                                                  Group group, String[] tokens) {
         String groupUid = (String) input.getData().get(Constants.GROUP_UID);
         String messageId = UIDGenerator.generateId().concat(String.valueOf(System.currentTimeMillis()));
         String message = String.valueOf(input.getData().get("message"));
-        Map<String, Object> data = new HashMap<>();
-        data.put(Constants.GROUP_UID, groupUid);
-        data.put(Constants.GROUP_NAME, group.getGroupName());
+        Map<String, Object> data = prePopWithGroupData(group);
         data.put("messageId", messageId);
         data.put("messageUid", input.getMessageId());
         data.put(Constants.TITLE, "Grassroot");
@@ -32,11 +31,11 @@ public class MessageUtils {
             String text = messageSourceAccessor.getMessage("gcm.xmpp.command.meeting",tokens);
             data.put("type", TaskType.MEETING.toString());
             data.put(Constants.BODY, text);
-        }else if(message.contains("/vote")){
+        } else if(message.contains("/vote")) {
             String text = messageSourceAccessor.getMessage("gcm.xmpp.command.vote",tokens);
             data.put("type", TaskType.VOTE.toString());
             data.put(Constants.BODY, text);
-        }else{
+        } else {
             String text = messageSourceAccessor.getMessage("gcm.xmpp.command.todo",tokens);
             data.put("type", TaskType.TODO.toString());
             data.put(Constants.BODY, text);
@@ -47,18 +46,13 @@ public class MessageUtils {
         data.put("time", input.getData().get("time"));
 
         return data;
-
     }
 
 
-    public static Map<String, Object> generateChatMessageData(GcmUpstreamMessage input, User user, Group group) {
-
+    public static Map<String, Object> generateChatMessageData(IncomingChatMessage input, User user, Group group) {
         String message = (String) input.getData().get("message");
-        Map<String, Object> data = new HashMap<>();
+        Map<String, Object> data = prePopWithGroupData(group);
         String messageId = UIDGenerator.generateId().concat(String.valueOf(System.currentTimeMillis()));
-        data.put(Constants.GROUP_UID, group.getUid());
-        data.put(Constants.GROUP_NAME, group.getGroupName());
-        data.put("groupIcon", group.getImageUrl());
         data.put(Constants.BODY, message);
         data.put("messageId", messageId);
         data.put("messageUid", input.getMessageId());
@@ -69,11 +63,16 @@ public class MessageUtils {
         data.put(Constants.ENTITY_TYPE, AndroidClickActionType.CHAT_MESSAGE.toString());
         data.put("click_action", AndroidClickActionType.CHAT_MESSAGE.toString());
         data.put("time", input.getData().get("time"));
-
         return data;
-
     }
 
+    private static Map<String, Object> prePopWithGroupData(Group group) {
+        Map<String, Object> data = new HashMap<>();
+        data.put(Constants.GROUP_UID, group.getUid());
+        data.put(Constants.GROUP_NAME, group.getName());
+        data.put("groupIcon", group.getImageUrl());
+        return data;
+    }
 
     public static Map<String, Object> generatePingMessageData(User user, Group group) {
 
@@ -95,7 +94,7 @@ public class MessageUtils {
 
     }
 
-    public static boolean isCommand(GcmUpstreamMessage input) {
+    public static boolean isCommand(IncomingChatMessage input) {
         String text = (String)input.getData().get("message");
         return text.startsWith("/");
     }
@@ -114,7 +113,7 @@ public class MessageUtils {
     }
 
 
-    public static Map<String, Object> generateUserMutedResponseData(MessageSourceAccessor messageSourceAccessor,GcmUpstreamMessage input, Group group) {
+    public static Map<String, Object> generateUserMutedResponseData(MessageSourceAccessor messageSourceAccessor, IncomingChatMessage input, Group group) {
         String groupUid = (String) input.getData().get(Constants.GROUP_UID);
         String messageId = UIDGenerator.generateId().concat(String.valueOf(System.currentTimeMillis()));
         String responseMessage = messageSourceAccessor.getMessage("gcm.xmpp.chat.muted");
@@ -132,7 +131,7 @@ public class MessageUtils {
         return data;
     }
 
-    public static Map<String, Object> generateInvalidCommandResponseData(MessageSourceAccessor messageSourceAccessor,GcmUpstreamMessage input, Group group) {
+    public static Map<String, Object> generateInvalidCommandResponseData(MessageSourceAccessor messageSourceAccessor,IncomingChatMessage input, Group group) {
         String groupUid = (String) input.getData().get(Constants.GROUP_UID);
         String messageId = UIDGenerator.generateId().concat(String.valueOf(System.currentTimeMillis()));
         String responseMessage = messageSourceAccessor.getMessage("gcm.xmpp.command.invalid");

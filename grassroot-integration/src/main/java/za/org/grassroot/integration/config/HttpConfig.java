@@ -1,4 +1,4 @@
-package za.org.grassroot.integration;
+package za.org.grassroot.integration.config;
 
 import com.google.common.base.Throwables;
 import org.apache.http.client.config.RequestConfig;

@@ -1,4 +1,4 @@
-package za.org.grassroot.integration.services;
+package za.org.grassroot.integration;
 
 import za.org.grassroot.core.domain.Notification;
 

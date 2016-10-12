@@ -1,4 +1,4 @@
-package za.org.grassroot.integration;
+package za.org.grassroot.integration.config;
 
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.domain.EntityScan;

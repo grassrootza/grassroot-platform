@@ -122,16 +122,17 @@ public class NotificationToGcmXmppTransformer {
                 return createDataPart(
 		                notification.getEventLog().getEvent().getAncestorGroup().getGroupName(),
 		                notification.getEventLog().getEvent().getAncestorGroup().getGroupName(),
-		                notification.getEventLog().getEvent().getUid(),
+						notification.getEventLog().getEvent().getAncestorGroup().getUid(),
+						notification.getEventLog().getEvent().getUid(),
 		                notification.getEventLog().getEvent().getEventType().name(),
 		                notification);
-
 	        case TODO:
                 Todo todo = notification.getTodoLog().getTodo();
                 return createDataPart(
 		                todo.getAncestorGroup().getGroupName(),
-		                null,
-		                todo.getUid(),
+		                todo.getAncestorGroup().getGroupName(),
+						todo.getAncestorGroup().getUid(),
+						todo.getUid(),
 		                TaskType.TODO.name(),
 		                notification);
 	        case USER:
@@ -142,12 +143,13 @@ public class NotificationToGcmXmppTransformer {
         }
     }
 
-	private Map<String, Object> createDataPart(final String title, final String groupName, final String entityUid,
-	                                           final String entityType, Notification notification) {
+	private Map<String, Object> createDataPart(final String title, final String group, String groupUid, final String entityUid,
+											   final String entityType, Notification notification) {
 		return GcmXmppMessageCodec.createDataPart(
 				notification.getUid(),
 				title,
-				groupName,
+				group,
+				groupUid,
 				notification.getMessage(),
 				entityUid,
 				notification.getCreatedDateTime(),
@@ -164,12 +166,14 @@ public class NotificationToGcmXmppTransformer {
 				return createDataPart(
 						getGroupNameFromUserNotification(notification),
 						getGroupUidFromJoinRequestNotification(notification),
+						getGroupUidFromJoinRequestNotification(notification),
 						getRequestUidFromJoinRequestNotification(notification),
 						type.name(),
 						notification);
 			case JOIN_REQUEST_REMINDER:
 				return createDataPart(
 						getGroupNameFromUserNotification(notification),
+						getGroupUidFromJoinRequestNotification(notification),
 						getGroupUidFromJoinRequestNotification(notification),
 						getRequestUidFromJoinRequestNotification(notification),
 						type.name(),
@@ -178,6 +182,7 @@ public class NotificationToGcmXmppTransformer {
 				return createDataPart(
 						getGroupNameFromUserNotification(notification),
 						getGroupUidFromJoinRequestNotification(notification),
+						getGroupUidFromJoinRequestNotification(notification),
 						getRequestUidFromJoinRequestNotification(notification),
 						type.name(),
 						notification);
@@ -185,6 +190,7 @@ public class NotificationToGcmXmppTransformer {
 				return createDataPart(
 						getGroupNameFromUserNotification(notification),
 						getGroupNameFromUserNotification(notification),
+						getGroupUidFromJoinRequestNotification(notification),
 						getRequestUidFromJoinRequestNotification(notification),
 						type.name(),
 						notification);
@@ -192,7 +198,7 @@ public class NotificationToGcmXmppTransformer {
 				return createDataPart(
 						"Grassroot",
 						null,
-						null,
+						null, null,
 						type.name(),
 						notification);
 		}

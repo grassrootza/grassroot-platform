@@ -1,4 +1,4 @@
-package za.org.grassroot.integration.domain;
+package za.org.grassroot.integration.exception;
 
 /**
  * Created by luke on 2016/08/20.

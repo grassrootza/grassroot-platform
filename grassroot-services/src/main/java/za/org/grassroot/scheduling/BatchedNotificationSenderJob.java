@@ -4,7 +4,7 @@ import org.quartz.DisallowConcurrentExecution;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.springframework.context.ApplicationContext;
-import za.org.grassroot.integration.services.BatchedNotificationSender;
+import za.org.grassroot.integration.BatchedNotificationSender;
 
 /**
  * This job class is instantiated by Quartz, not Spring, so there is no bean injection mechanism in play here and

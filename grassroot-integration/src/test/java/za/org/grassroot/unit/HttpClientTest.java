@@ -10,7 +10,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.context.support.AnnotationConfigContextLoader;
 import org.springframework.web.client.AsyncRestTemplate;
 import org.springframework.web.client.RestTemplate;
-import za.org.grassroot.integration.HttpConfig;
+import za.org.grassroot.integration.config.HttpConfig;
 
 import java.util.Map;
 import java.util.concurrent.ExecutionException;

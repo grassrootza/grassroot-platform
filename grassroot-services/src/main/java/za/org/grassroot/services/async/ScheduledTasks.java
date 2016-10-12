@@ -11,8 +11,8 @@ import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.integration.exception.GroupChatSettingNotFoundException;
-import za.org.grassroot.integration.services.MessageSendingService;
-import za.org.grassroot.integration.services.GroupChatSettingsService;
+import za.org.grassroot.integration.MessageSendingService;
+import za.org.grassroot.integration.GroupChatService;
 import za.org.grassroot.services.EventBroker;
 import za.org.grassroot.services.GroupBroker;
 import za.org.grassroot.services.SafetyEventBroker;
@@ -73,7 +73,7 @@ public class ScheduledTasks {
     private GroupRepository groupRepository;
 
     @Autowired
-    private GroupChatSettingsService groupChatSettingsService;
+    private GroupChatService groupChatSettingsService;
 
     @Autowired
     private SafetyEventRepository safetyEventRepository;

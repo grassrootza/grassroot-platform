@@ -8,7 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.UserMessagingPreference;
-import za.org.grassroot.integration.services.GcmService;
+import za.org.grassroot.integration.xmpp.GcmService;
 import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.services.exception.NoSuchProfileException;
 import za.org.grassroot.webapp.enums.RestMessage;

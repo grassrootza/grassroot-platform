@@ -16,7 +16,7 @@ import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.EventLogRepository;
-import za.org.grassroot.integration.domain.SeloParseDateTimeFailure;
+import za.org.grassroot.integration.exception.SeloParseDateTimeFailure;
 import za.org.grassroot.services.EventLogBroker;
 import za.org.grassroot.services.EventRequestBroker;
 import za.org.grassroot.services.MembershipInfo;

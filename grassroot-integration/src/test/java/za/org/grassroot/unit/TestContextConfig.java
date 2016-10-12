@@ -11,8 +11,12 @@ import org.springframework.messaging.MessageChannel;
 import za.org.grassroot.core.repository.GcmRegistrationRepository;
 import za.org.grassroot.core.repository.TodoRepository;
 import za.org.grassroot.core.repository.UserRepository;
-import za.org.grassroot.integration.services.*;
+import za.org.grassroot.integration.LearningService;
+import za.org.grassroot.integration.MessageSendingService;
+import za.org.grassroot.integration.NotificationService;
+import za.org.grassroot.integration.GroupChatService;
 import za.org.grassroot.integration.sms.SmsSendingService;
+import za.org.grassroot.integration.xmpp.GcmService;
 
 import static org.mockito.Mockito.mock;
 
@@ -70,8 +74,8 @@ public class TestContextConfig {
     }
 
     @Bean()
-    public FactoryBean<GroupChatSettingsService> messengerSettingsService() {
-        return new MockitoFactoryBean<>(GroupChatSettingsService.class);
+    public FactoryBean<GroupChatService> messengerSettingsService() {
+        return new MockitoFactoryBean<>(GroupChatService.class);
     }
 
     @Bean()
