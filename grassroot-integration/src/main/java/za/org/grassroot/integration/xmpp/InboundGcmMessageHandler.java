@@ -48,9 +48,7 @@ public class InboundGcmMessageHandler {
 
     @ServiceActivator(inputChannel = "gcmInboundChannel")
     public void handleUpstreamMessage(GcmUpstreamMessage message) throws Exception {
-
         String message_type = message.getMessageType();
-        log.info(message.toString());
         if (message_type == null) {
             handleOrdinaryMessage(message);
         } else {
@@ -81,7 +79,7 @@ public class InboundGcmMessageHandler {
     }
 
     private void handleOrdinaryMessage(GcmUpstreamMessage input) {
-        log.info("Ordinary message received");
+        log.debug("Ordinary message received");
         String messageId = input.getMessageId();
         String from = input.getFrom();
 

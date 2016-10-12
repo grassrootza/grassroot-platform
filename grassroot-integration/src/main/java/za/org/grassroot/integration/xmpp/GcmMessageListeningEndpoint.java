@@ -2,7 +2,6 @@ package za.org.grassroot.integration.xmpp;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.log4j.Logger;
 import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.StanzaListener;
 import org.jivesoftware.smack.XMPPConnection;
@@ -10,6 +9,8 @@ import org.jivesoftware.smack.packet.ExtensionElement;
 import org.jivesoftware.smack.packet.Stanza;
 import org.jivesoftware.smack.provider.ExtensionElementProvider;
 import org.jivesoftware.smack.provider.ProviderManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.integration.support.MessageBuilder;
 import org.springframework.integration.xmpp.inbound.ChatMessageListeningEndpoint;
 import org.springframework.integration.xmpp.support.DefaultXmppHeaderMapper;
@@ -26,7 +27,8 @@ import java.util.Map;
  */
 public class GcmMessageListeningEndpoint extends ChatMessageListeningEndpoint {
 
-    private Logger log = Logger.getLogger(GcmMessageListeningEndpoint.class);
+    private static final Logger log = LoggerFactory.getLogger(GcmMessageListeningEndpoint.class);
+
     private StanzaListener stanzaListener = new GcmPacketListener();
     private XmppHeaderMapper headerMapper = new DefaultXmppHeaderMapper();
     private ObjectMapper mapper = new ObjectMapper();
@@ -69,15 +71,14 @@ public class GcmMessageListeningEndpoint extends ChatMessageListeningEndpoint {
     private class GcmPacketListener implements StanzaListener {
         @Override
         public void processPacket(Stanza packet) throws SmackException.NotConnectedException {
-
-            log.info("Packet received from gcm " + packet.toString());
+            log.debug("Packet received from gcm " + packet.toString());
             if (packet instanceof org.jivesoftware.smack.packet.Message) {
                 org.jivesoftware.smack.packet.Message xmppMessage = (org.jivesoftware.smack.packet.Message) packet;
                 final GcmPacketExtension gcmExtension = (GcmPacketExtension)xmppMessage.getExtension(GcmPacketExtension.GCM_NAMESPACE);
-                log.info("Message received: " + xmppMessage.toXML().toString());
                 try {
                     mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
                     final GcmUpstreamMessage entity = mapper.readValue(gcmExtension.getJson(), GcmUpstreamMessage.class);
+                    log.info("Relaying chat message : {}", entity.toString());
                     Map<String, Object> mappedHeaders = headerMapper.toHeadersFromRequest(xmppMessage);
                     sendMessage(MessageBuilder.withPayload(entity).copyHeaders(mappedHeaders).build());
                 } catch (IOException e) {

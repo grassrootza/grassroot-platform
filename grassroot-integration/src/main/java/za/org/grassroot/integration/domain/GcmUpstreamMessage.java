@@ -56,4 +56,12 @@ public class GcmUpstreamMessage implements IncomingChatMessage {
     public String getMessageType() {
         return messageType;
     }
+
+    @Override
+    public String toString() {
+        return "GcmUpstreamMessage{" +
+                "messageType='" + messageType + '\'' +
+                ", data=" + data +
+                '}';
+    }
 }
