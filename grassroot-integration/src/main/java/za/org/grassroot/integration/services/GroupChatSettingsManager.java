@@ -83,7 +83,7 @@ public class GroupChatSettingsManager implements GroupChatSettingsService {
 
     @Override
     @Transactional
-    public void updateActivityStatus(String userUid, String groupUid, boolean active, boolean userInitiated) throws Exception {
+    public void updateActivityStatus(String userUid, String groupUid, boolean active, boolean userInitiated) throws GroupChatSettingNotFoundException {
         Objects.nonNull(userUid);
         Objects.nonNull(groupUid);
 

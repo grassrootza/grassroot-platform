@@ -94,7 +94,7 @@ public class InboundGcmMessageHandler {
     private void handleAcknowledgementReceipt(GcmUpstreamMessage input) {
         String messageId = input.getMessageId();
         String data = String.valueOf(input.getData());
-        log.info("Gcm acknowledges receipt of message {}, with payload {}", messageId, data);
+        log.debug("Gcm acknowledges receipt of message {}, with payload {}", messageId, data);
 
     }
 
@@ -138,28 +138,28 @@ public class InboundGcmMessageHandler {
 
     private void handleDeliveryReceipts(GcmUpstreamMessage input) {
         String messageId = String.valueOf(input.getData().get(ORIGINAL_MESSAGE_ID));
-        log.info("Message " + messageId + " delivery successful, updating notification to delivered status.");
+        log.debug("Message " + messageId + " delivery successful, updating notification to delivered status.");
         notificationService.markNotificationAsDelivered(messageId);
     }
 
 
     private void sendAcknowledment(String registrationId, String messageId) {
         org.springframework.messaging.Message<Message> gcmMessage = GcmXmppMessageCodec.encode(registrationId, messageId, "ack");
-        log.info("Acknowledging message with id ={}", messageId);
+        log.debug("Acknowledging message with id ={}", messageId);
         gcmXmppOutboundChannel.send(gcmMessage);
     }
 
     public void registerUser(String registrationId, String phoneNumber) {
         String convertedNumber = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
         User user = userRepository.findByPhoneNumber(convertedNumber);
-        log.info("Registering user with phoneNumber={} as a push notification receipient, found user={}", convertedNumber, user);
+        log.debug("Registering user with phoneNumber={} as a push notification receipient, found user={}", convertedNumber, user);
         gcmService.registerUser(user, registrationId);
         user.setMessagingPreference(UserMessagingPreference.ANDROID_APP);
         userRepository.save(user);
     }
 
     public void updateReadStatus(String messageId) {
-        log.info("Marking notification with id={} as read", messageId);
+        log.debug("Marking notification with id={} as read", messageId);
         notificationService.updateNotificationReadStatus(messageId, true);
 
     }
@@ -172,17 +172,17 @@ public class InboundGcmMessageHandler {
         if (groupChatSettings != null) {
             Group group = groupChatSettings.getGroup();
             org.springframework.messaging.Message<Message> message;
-            log.info("Posting to topic with id={}", groupUid);
+            log.debug("Posting to topic with id={}", groupUid);
             try {
                 if (groupChatSettingsService.isCanSend(user.getUid(), groupUid)) {
-                    log.info("Posting to topic with id={}", groupUid);
+                    log.debug("Posting to topic with id={}", groupUid);
                     message = generateMessage(user, input, group);
                 } else {
                     message = generateCannotSendMessage(input, group);
                 }
                 gcmXmppOutboundChannel.send(message);
             } catch (GroupChatSettingNotFoundException e) {
-                log.info("User with phoneNumber={} is not enabled to send messages to this group", phoneNumber);
+                log.debug("User with phoneNumber={} is not enabled to send messages to this group", phoneNumber);
             }
         }
     }
