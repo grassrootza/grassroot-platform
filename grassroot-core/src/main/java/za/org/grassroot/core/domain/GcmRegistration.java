@@ -18,7 +18,6 @@ public class GcmRegistration {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
     private Long id;
-
     @Column(name = "uid", nullable = false, length = 50)
     private String uid;
 

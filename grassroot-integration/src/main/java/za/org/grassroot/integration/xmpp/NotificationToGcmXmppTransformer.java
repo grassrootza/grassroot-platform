@@ -41,7 +41,7 @@ public class NotificationToGcmXmppTransformer {
 		if(message.getPayload() instanceof Notification){
 			Notification notification = (Notification) message.getPayload();
 			gcmMessage = constructGcmMessage(notification);
-			log.info("Message with id {}, transformed to {}", notification.getUid(),
+			log.debug("Message with id {}, transformed to {}", notification.getUid(),
 					gcmMessage != null && gcmMessage.getPayload() != null ? gcmMessage.getPayload().toXML().toString() : "null");
 		}else{
 			gcmMessage = GcmXmppMessageCodec.encode(TOPICS.concat("keepalive"), UIDGenerator.generateId(), null);
@@ -56,9 +56,9 @@ public class NotificationToGcmXmppTransformer {
         String registrationID = gcmRegistration.getRegistrationId();
         String messageId = notification.getUid();
 
-        log.info("Attempting to transform message for registration ID {}, with message id {}", messageId, registrationID);
+        log.debug("Attempting to transform message for registration ID {}, with message id {}", messageId, registrationID);
         String collapseKey = generateCollapseKey(notification);
-        log.info("Generated collapseKey " + collapseKey);
+        log.debug("Generated collapseKey " + collapseKey);
         Map<String, Object> dataPart = createDataPart(notification);
 
         String title;
