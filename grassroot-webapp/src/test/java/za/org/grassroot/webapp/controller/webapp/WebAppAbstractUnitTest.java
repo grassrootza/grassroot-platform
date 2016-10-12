@@ -17,11 +17,9 @@ import za.org.grassroot.webapp.controller.BaseController;
 
 import java.util.ArrayList;
 
-
 /*
  * Paballo Ditshego
  */
-
 
 @RunWith(MockitoJUnitRunner.class)
 @ContextConfiguration

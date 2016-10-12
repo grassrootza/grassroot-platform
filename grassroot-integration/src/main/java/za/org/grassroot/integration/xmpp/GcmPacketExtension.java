@@ -25,7 +25,7 @@ public class GcmPacketExtension extends DefaultExtensionElement {
     public CharSequence toXML() {
         XmlStringBuilder buffer = new XmlStringBuilder();
         final String elementName = getElementName();
-        buffer.halfOpenElement(elementName).xmlnsAttribute(getNamespace()).rightAngelBracket();
+        buffer.halfOpenElement(elementName).xmlnsAttribute(getNamespace()).rightAngleBracket();
         buffer.append(json);
         buffer.closeElement(elementName);
         return buffer;

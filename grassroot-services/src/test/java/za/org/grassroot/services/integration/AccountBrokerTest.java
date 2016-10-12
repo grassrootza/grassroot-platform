@@ -10,6 +10,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.*;
@@ -21,7 +22,9 @@ import za.org.grassroot.services.GroupBroker;
 import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.services.exception.GroupAlreadyPaidForException;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 
 import static org.junit.Assert.*;
 import static za.org.grassroot.services.enums.GroupPermissionTemplate.DEFAULT_GROUP;
@@ -29,8 +32,8 @@ import static za.org.grassroot.services.enums.GroupPermissionTemplate.DEFAULT_GR
 @RunWith(SpringRunner.class)
 @ContextConfiguration(classes = TestContextConfig.class)
 @ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
-@WithMockUser(username = "0605550000", roles={"SYSTEM_ADMIN"})
 @Transactional
+@WithMockUser(username = "0605550000", roles={"SYSTEM_ADMIN"})
 public class AccountBrokerTest {
 
     private static final Logger log = LoggerFactory.getLogger(AccountBrokerTest.class);
@@ -75,7 +78,27 @@ public class AccountBrokerTest {
         Role accountAdmin = new Role(BaseRoles.ROLE_ACCOUNT_ADMIN, null);
         roleRepository.save(accountAdmin);
 
-        // todo : wire up account broker properties ...
+        setAccountFields();
+    }
+
+    // this is cumbersome, but test isn't picking up the rest of the properties, or running init, so ...
+    private void setAccountFields() {
+        Map<AccountType, Boolean> messagesEnabled = new HashMap<>();
+        messagesEnabled.put(AccountType.STANDARD, true);
+        Map<AccountType, Integer> messagesCost = new HashMap<>();
+        messagesCost.put(AccountType.STANDARD, 30);
+        Map<AccountType, Integer> maxGroupSize = new HashMap<>();
+        maxGroupSize.put(AccountType.STANDARD, 300);
+        Map<AccountType, Integer> maxGroupNumber = new HashMap<>();
+        maxGroupNumber.put(AccountType.STANDARD, 20);
+        Map<AccountType, Integer> maxSubGroupDepth = new HashMap<>();
+        maxSubGroupDepth.put(AccountType.STANDARD, 3);
+
+        ReflectionTestUtils.setField(accountBroker, "messagesEnabled", messagesEnabled);
+        ReflectionTestUtils.setField(accountBroker, "messagesCost", messagesCost);
+        ReflectionTestUtils.setField(accountBroker, "maxGroupSize", maxGroupSize);
+        ReflectionTestUtils.setField(accountBroker, "maxGroupNumber", maxGroupNumber);
+        ReflectionTestUtils.setField(accountBroker, "maxSubGroupDepth", maxSubGroupDepth);
     }
 
     private Account createTestAccount(String billingEmail) {

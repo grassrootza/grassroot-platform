@@ -33,12 +33,12 @@ public class AccountBrokerImpl implements AccountBroker {
 
     private static final Logger log = LoggerFactory.getLogger(AccountBroker.class);
 
-    private Map<AccountType, Boolean> messagesEnabled;
-    private Map<AccountType, Integer> messagesCost;
+    private Map<AccountType, Boolean> messagesEnabled = new HashMap<>();
+    private Map<AccountType, Integer> messagesCost = new HashMap<>();
 
-    private Map<AccountType, Integer> maxGroupSize;
-    private Map<AccountType, Integer> maxGroupNumber;
-    private Map<AccountType, Integer> maxSubGroupDepth;
+    private Map<AccountType, Integer> maxGroupSize = new HashMap<>();
+    private Map<AccountType, Integer> maxGroupNumber = new HashMap<>();
+    private Map<AccountType, Integer> maxSubGroupDepth = new HashMap<>();
 
     @Autowired
     private AccountRepository accountRepository;
@@ -69,12 +69,6 @@ public class AccountBrokerImpl implements AccountBroker {
 
     @PostConstruct
     public void init() {
-        messagesEnabled = new HashMap<>();
-        messagesCost = new HashMap<>();
-        maxGroupSize = new HashMap<>();
-        maxGroupNumber = new HashMap<>();
-        maxSubGroupDepth = new HashMap<>();
-
         for (AccountType accountType : AccountType.values()) {
             final String key = accountType.name().toLowerCase();
             messagesEnabled.put(accountType, environment.getProperty("accounts.messages.enabled." + key, Boolean.class));

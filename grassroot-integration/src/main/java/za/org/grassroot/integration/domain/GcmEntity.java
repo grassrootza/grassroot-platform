@@ -1,5 +1,6 @@
 package za.org.grassroot.integration.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -18,7 +19,7 @@ public class GcmEntity {
 
     @JsonProperty("collapse_key")
     private String collapseKey;
-    @JsonProperty("time_to_live")
+    @JsonIgnore // leaving in here to test GCM using default (4 weeks)
     private Long timeToLive = 0L; //5 minutes
     @JsonProperty("delay_while_idle")
     private boolean delayWhileIdle = false;

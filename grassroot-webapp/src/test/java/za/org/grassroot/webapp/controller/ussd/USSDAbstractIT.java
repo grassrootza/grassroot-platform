@@ -7,13 +7,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.TestRestTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.User;
@@ -52,11 +51,12 @@ public class USSDAbstractIT {
     @Autowired
     protected EventLogBroker eventLogManager;
 
+    @Autowired
+    protected TestRestTemplate template;
+
     @Value("${grassroot.http.port}")
     protected int port;
 
-    //protected RestTemplate template = new TestRestTemplate(TestRestTemplate.HttpClientOption.ENABLE_REDIRECTS);
-    protected RestTemplate template = new TestRestTemplate();
     protected UriComponentsBuilder base = UriComponentsBuilder.newInstance().scheme("https").host("localhost").port(port);
 
     // Common parameters for assembling the USSD urls
@@ -85,16 +85,6 @@ public class USSDAbstractIT {
 
     @PostConstruct
     public void init() {
-        final MySimpleClientHttpRequestFactory factory = new MySimpleClientHttpRequestFactory(
-                new HostnameVerifier() {
-
-                    @Override
-                    public boolean verify(final String hostname,
-                                          final SSLSession session) {
-                        return true; // these guys are alright by me...
-                    }
-                });
-        template.setRequestFactory(factory);
     }
 
     @BeforeClass
