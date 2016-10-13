@@ -6,9 +6,10 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.util.UIDGenerator;
 import za.org.grassroot.integration.domain.AndroidClickActionType;
-import za.org.grassroot.integration.domain.IncomingChatMessage;
+import za.org.grassroot.integration.domain.GroupChatMessage;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -18,55 +19,7 @@ import java.util.Map;
  */
 public class MessageUtils {
 
-    public static Map<String, Object> generateCommandResponseData(MessageSourceAccessor messageSourceAccessor, IncomingChatMessage input,
-                                                                  Group group, String[] tokens) {
-        String groupUid = (String) input.getData().get(Constants.GROUP_UID);
-        String messageId = UIDGenerator.generateId().concat(String.valueOf(System.currentTimeMillis()));
-        String message = String.valueOf(input.getData().get("message"));
-        Map<String, Object> data = prePopWithGroupData(group);
-        data.put("messageId", messageId);
-        data.put("messageUid", input.getMessageId());
-        data.put(Constants.TITLE, "Grassroot");
-        if (message.contains("/meeting")) {
-            String text = messageSourceAccessor.getMessage("gcm.xmpp.command.meeting",tokens);
-            data.put("type", TaskType.MEETING.toString());
-            data.put(Constants.BODY, text);
-        } else if(message.contains("/vote")) {
-            String text = messageSourceAccessor.getMessage("gcm.xmpp.command.vote",tokens);
-            data.put("type", TaskType.VOTE.toString());
-            data.put(Constants.BODY, text);
-        } else {
-            String text = messageSourceAccessor.getMessage("gcm.xmpp.command.todo",tokens);
-            data.put("type", TaskType.TODO.toString());
-            data.put(Constants.BODY, text);
-        }
-        data.put("tokens", Arrays.asList(tokens));
-        data.put(Constants.ENTITY_TYPE, AndroidClickActionType.CHAT_MESSAGE.toString());
-        data.put("click_action", AndroidClickActionType.CHAT_MESSAGE.toString());
-        data.put("time", input.getData().get("time"));
-
-        return data;
-    }
-
-
-    public static Map<String, Object> generateChatMessageData(IncomingChatMessage input, User user, Group group) {
-        String message = (String) input.getData().get("message");
-        Map<String, Object> data = prePopWithGroupData(group);
-        String messageId = UIDGenerator.generateId().concat(String.valueOf(System.currentTimeMillis()));
-        data.put(Constants.BODY, message);
-        data.put("messageId", messageId);
-        data.put("messageUid", input.getMessageId());
-        data.put(Constants.TITLE, user.nameToDisplay());
-        data.put("type", "normal");
-        data.put("phone_number", user.getPhoneNumber());
-        data.put("userUid", user.getUid());
-        data.put(Constants.ENTITY_TYPE, AndroidClickActionType.CHAT_MESSAGE.toString());
-        data.put("click_action", AndroidClickActionType.CHAT_MESSAGE.toString());
-        data.put("time", input.getData().get("time"));
-        return data;
-    }
-
-    private static Map<String, Object> prePopWithGroupData(Group group) {
+    public static Map<String, Object> prePopWithGroupData(Group group) {
         Map<String, Object> data = new HashMap<>();
         data.put(Constants.GROUP_UID, group.getUid());
         data.put(Constants.GROUP_NAME, group.getName());
@@ -91,10 +44,9 @@ public class MessageUtils {
         data.put("time", Instant.now());
 
         return data;
-
     }
 
-    public static boolean isCommand(IncomingChatMessage input) {
+    public static boolean isCommand(GroupChatMessage input) {
         String text = (String)input.getData().get("message");
         return text.startsWith("/");
     }
@@ -113,7 +65,7 @@ public class MessageUtils {
     }
 
 
-    public static Map<String, Object> generateUserMutedResponseData(MessageSourceAccessor messageSourceAccessor, IncomingChatMessage input, Group group) {
+    public static Map<String, Object> generateUserMutedResponseData(MessageSourceAccessor messageSourceAccessor, GroupChatMessage input, Group group) {
         String groupUid = (String) input.getData().get(Constants.GROUP_UID);
         String messageId = UIDGenerator.generateId().concat(String.valueOf(System.currentTimeMillis()));
         String responseMessage = messageSourceAccessor.getMessage("gcm.xmpp.chat.muted");
@@ -121,30 +73,11 @@ public class MessageUtils {
         data.put(Constants.GROUP_UID, groupUid);
         data.put(Constants.GROUP_NAME, group.getGroupName());
         data.put("messageId", messageId);
-        data.put("messageUid", input.getMessageId());
+        data.put("messageUid", input.getMessageUid());
         data.put(Constants.TITLE, "Grassroot");
         data.put(Constants.BODY, responseMessage);
         data.put(Constants.ENTITY_TYPE, AndroidClickActionType.CHAT_MESSAGE.toString());
         data.put("click_action", AndroidClickActionType.CHAT_MESSAGE.toString());
-        data.put("time", input.getData().get("time"));
-
-        return data;
-    }
-
-    public static Map<String, Object> generateInvalidCommandResponseData(MessageSourceAccessor messageSourceAccessor,IncomingChatMessage input, Group group) {
-        String groupUid = (String) input.getData().get(Constants.GROUP_UID);
-        String messageId = UIDGenerator.generateId().concat(String.valueOf(System.currentTimeMillis()));
-        String responseMessage = messageSourceAccessor.getMessage("gcm.xmpp.command.invalid");
-        Map<String, Object> data = new HashMap<>();
-        data.put(Constants.GROUP_UID, groupUid);
-        data.put(Constants.GROUP_NAME, group.getGroupName());
-        data.put("messageId", messageId);
-        data.put("messageUid", input.getMessageId());
-        data.put(Constants.TITLE, "Grassroot");
-        data.put(Constants.BODY, responseMessage);
-        data.put(Constants.ENTITY_TYPE, AndroidClickActionType.CHAT_MESSAGE.toString());
-        data.put("click_action", AndroidClickActionType.CHAT_MESSAGE.toString());
-        data.put("type", "error");
         data.put("time", input.getData().get("time"));
 
         return data;

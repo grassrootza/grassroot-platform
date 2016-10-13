@@ -1,7 +1,7 @@
 package za.org.grassroot.integration;
 
 import za.org.grassroot.core.domain.GroupChatSettings;
-import za.org.grassroot.integration.domain.IncomingChatMessage;
+import za.org.grassroot.integration.domain.GroupChatMessage;
 import za.org.grassroot.integration.exception.GroupChatSettingNotFoundException;
 
 import java.util.List;
@@ -11,7 +11,9 @@ import java.util.List;
  */
 public interface GroupChatService {
 
-    void processAndRouteIncomingChatMessage(IncomingChatMessage message);
+    void relayChatMessage(String userPhoneNumber, String groupUid, String message, String clientMsgUid, String userGcmKey);
+
+    void processAndRouteIncomingChatMessage(GroupChatMessage message);
 
     GroupChatSettings load(String userUid, String groupUid) throws GroupChatSettingNotFoundException;
 

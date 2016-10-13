@@ -5,7 +5,7 @@ import java.util.Map;
 /**
  * Created by luke on 2016/10/12.
  */
-public interface IncomingChatMessage {
+public interface GroupChatMessage {
 
     Map<String, Object> getData();
 
@@ -13,7 +13,7 @@ public interface IncomingChatMessage {
 
     String getTo();
 
-    String getMessageId();
+    String getMessageUid();
 
     String getMessageType();
 

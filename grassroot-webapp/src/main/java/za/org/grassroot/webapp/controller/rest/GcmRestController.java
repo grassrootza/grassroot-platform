@@ -8,6 +8,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.UserMessagingPreference;
+import za.org.grassroot.integration.GroupChatService;
+import za.org.grassroot.integration.exception.GroupChatSettingNotFoundException;
 import za.org.grassroot.integration.xmpp.GcmService;
 import za.org.grassroot.services.UserManagementService;
 import za.org.grassroot.services.exception.NoSuchProfileException;
@@ -31,6 +33,9 @@ public class GcmRestController {
     @Autowired
     private GcmService gcmService;
 
+    @Autowired
+    private GroupChatService groupChatService;
+
     @RequestMapping(value = "/register/{phoneNumber}/{code}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> registerForGcm(@PathVariable("phoneNumber") String phoneNumber,
                                                           @PathVariable("code") String code,
@@ -51,6 +56,18 @@ public class GcmRestController {
         User user = userManagementService.findByInputNumber(phoneNumber);
         userManagementService.setMessagingPreference(user.getUid(), UserMessagingPreference.SMS);
         return RestUtil.messageOkayResponse(RestMessage.DEREGISTERED_FOR_PUSH);
+    }
+
+    @RequestMapping(value = "/chat/send/{phoneNumber}/{code}/{groupUid}", method = RequestMethod.GET)
+    public ResponseEntity<ResponseWrapper> relayChatMessage(@PathVariable String phoneNumber, @PathVariable String groupUid,
+                                                            @RequestParam String messageText, @RequestParam String messageUid,
+                                                            @RequestParam String gcmKey) {
+        try {
+            groupChatService.relayChatMessage(phoneNumber, groupUid, messageText, messageUid, gcmKey);
+            return RestUtil.messageOkayResponse(RestMessage.CHAT_SENT);
+        } catch (GroupChatSettingNotFoundException e) {
+            return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.MESSAGE_SETTING_NOT_FOUND);
+        }
     }
 
     @ExceptionHandler(NoSuchProfileException.class)

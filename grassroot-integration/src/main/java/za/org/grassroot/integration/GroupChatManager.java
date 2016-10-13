@@ -14,21 +14,24 @@ import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.GroupChatSettings;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.repository.GroupChatSettingsRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.util.UIDGenerator;
 import za.org.grassroot.integration.domain.AndroidClickActionType;
-import za.org.grassroot.integration.domain.IncomingChatMessage;
+import za.org.grassroot.integration.domain.GroupChatMessage;
+import za.org.grassroot.integration.domain.RelayedChatMessage;
 import za.org.grassroot.integration.exception.GroupChatSettingNotFoundException;
 import za.org.grassroot.integration.exception.SeloParseDateTimeFailure;
+import za.org.grassroot.integration.utils.Constants;
 import za.org.grassroot.integration.utils.MessageUtils;
 import za.org.grassroot.integration.xmpp.GcmXmppMessageCodec;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 
 /**
  * Created by paballo on 2016/09/08.
@@ -37,6 +40,10 @@ import java.util.Objects;
 public class GroupChatManager implements GroupChatService {
 
     private static final Logger logger = LoggerFactory.getLogger(GroupChatManager.class);
+
+    // todo : externalize property, of course
+    private static final DateTimeFormatter cmdMessageFormat = DateTimeFormatter.ofPattern("HH:mm, EEE d MMM");
+    private static final DateTimeFormatter cmdMessageSystemFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
 
     @Value("${gcm.topics.path}")
     private String TOPICS;
@@ -74,7 +81,31 @@ public class GroupChatManager implements GroupChatService {
     }
 
     @Override
-    public void processAndRouteIncomingChatMessage(IncomingChatMessage incoming) {
+    @Transactional(readOnly = true)
+    public void relayChatMessage(String userPhoneNumber, String groupUid, String message, String localMsgUid, String userGcmKey) {
+        User user = userRepository.findByPhoneNumber(userPhoneNumber);
+        GroupChatSettings settings = load(user.getUid(), groupUid);
+
+        GroupChatMessage msg = new RelayedChatMessage.ChatMessageBuilder("org.grassroot.android")
+                .from(userGcmKey)
+                .to(groupUid)
+                .text(message)
+                .messageUid(localMsgUid)
+                .senderPhone(userPhoneNumber)
+                .build();
+
+        if (settings != null) {
+            Group group = settings.getGroup();
+            org.springframework.messaging.Message<Message> outboundMessage = settings.isCanSend() ?
+                    generateMessage(user, msg, group) : generateCannotSendMessage(msg, group);
+            gcmXmppOutboundChannel.send(outboundMessage);
+        } else {
+            throw new GroupChatSettingNotFoundException("User does not have chat settings, cannot be part of group");
+        }
+    }
+
+    @Override
+    public void processAndRouteIncomingChatMessage(GroupChatMessage incoming) {
         String phoneNumber = (String) incoming.getData().get("phoneNumber");
         String groupUid = (String) incoming.getData().get("groupUid");
         User user = userRepository.findByPhoneNumber(phoneNumber);
@@ -97,30 +128,31 @@ public class GroupChatManager implements GroupChatService {
         }
     }
 
-    public org.springframework.messaging.Message<Message> generateCannotSendMessage(IncomingChatMessage input, Group group){
+    public org.springframework.messaging.Message<Message> generateCannotSendMessage(GroupChatMessage input, Group group){
         Map<String, Object> data = MessageUtils.generateUserMutedResponseData(messageSourceAccessor, input, group);
         return GcmXmppMessageCodec.encode(input.getFrom(), String.valueOf(data.get("messageId")),
                 null, null, null, AndroidClickActionType.CHAT_MESSAGE.name(), data);
     }
 
-    public org.springframework.messaging.Message<Message> generateMessage(User user, IncomingChatMessage input, Group group) {
+    public org.springframework.messaging.Message<Message> generateMessage(User user, GroupChatMessage input, Group group) {
         org.springframework.messaging.Message<Message> gcmMessage;
         Map<String, Object> data;
         if (!MessageUtils.isCommand((input))) {
             String topic = TOPICS.concat(group.getUid());
-            data = MessageUtils.generateChatMessageData(input, user, group);
+            data = generateChatMessageData(input, user, group);
             gcmMessage = GcmXmppMessageCodec.encode(topic, String.valueOf(data.get("messageId")),
                     null, null, null, AndroidClickActionType.CHAT_MESSAGE.name(), data);
         } else {
             String[] tokens = MessageUtils.tokenize(String.valueOf(input.getData().get("message")));
             if (tokens.length < 2) {
-                data = MessageUtils.generateInvalidCommandResponseData(messageSourceAccessor,input, group);
+                data = generateInvalidCommandResponseData(messageSourceAccessor,input, group);
             } else {
-                try {
-                    tokens[1] = learningService.parse(tokens[1]).toString();
-                    data = MessageUtils.generateCommandResponseData(messageSourceAccessor,input, group, tokens);
+                try { // todo : more subtle error handling & response here
+                    final LocalDateTime parsedDateTime = learningService.parse(tokens[1]);
+                    tokens[1] = parsedDateTime.format(cmdMessageFormat);
+                    data = generateCommandResponseData(messageSourceAccessor, input, group, tokens, parsedDateTime);
                 } catch (SeloParseDateTimeFailure e) {
-                    data = MessageUtils.generateInvalidCommandResponseData(messageSourceAccessor,input, group);
+                    data = generateInvalidCommandResponseData(messageSourceAccessor,input, group);
                 }
             }
             gcmMessage = GcmXmppMessageCodec.encode(input.getFrom(), String.valueOf(data.get("messageId")),
@@ -129,7 +161,6 @@ public class GroupChatManager implements GroupChatService {
 
         return gcmMessage;
     }
-
 
     @Override
     @Transactional(readOnly = true)
@@ -222,6 +253,76 @@ public class GroupChatManager implements GroupChatService {
             mutedUsersUids.add(user.getUsername());
         }
         return mutedUsersUids;
+    }
+
+    private Map<String, Object> generateChatMessageData(GroupChatMessage input, User user, Group group) {
+        String message = (String) input.getData().get("message");
+        Map<String, Object> data = MessageUtils.prePopWithGroupData(group);
+        String messageId = UIDGenerator.generateId().concat(String.valueOf(System.currentTimeMillis()));
+        data.put(Constants.BODY, message);
+        data.put("messageId", messageId);
+        data.put("messageUid", input.getMessageUid());
+        data.put(Constants.TITLE, user.nameToDisplay());
+        data.put("type", "normal");
+        data.put("phone_number", user.getPhoneNumber());
+        data.put("userUid", user.getUid());
+        data.put(Constants.ENTITY_TYPE, AndroidClickActionType.CHAT_MESSAGE.toString());
+        data.put("click_action", AndroidClickActionType.CHAT_MESSAGE.toString());
+        data.put("time", input.getData().get("time"));
+        return data;
+    }
+
+    private Map<String, Object> generateCommandResponseData(MessageSourceAccessor messageSourceAccessor, GroupChatMessage input,
+                                                                  Group group, String[] tokens, LocalDateTime taskDateTime) {
+
+        final String messageId = UIDGenerator.generateId().concat(String.valueOf(System.currentTimeMillis()));
+        final String message = String.valueOf(input.getData().get("message"));
+        Map<String, Object> data = MessageUtils.prePopWithGroupData(group);
+
+        data.put("messageId", messageId);
+        data.put("messageUid", input.getMessageUid());
+        data.put(Constants.TITLE, "Grassroot");
+
+        if (message.contains("/meeting")) {
+            final String text = messageSourceAccessor.getMessage("gcm.xmpp.command.meeting",tokens);
+            data.put("type", TaskType.MEETING.toString());
+            data.put(Constants.BODY, text);
+        } else if(message.contains("/vote")) {
+            final String text = messageSourceAccessor.getMessage("gcm.xmpp.command.vote",tokens);
+            data.put("type", TaskType.VOTE.toString());
+            data.put(Constants.BODY, text);
+        } else {
+            final String text = messageSourceAccessor.getMessage("gcm.xmpp.command.todo",tokens);
+            data.put("type", TaskType.TODO.toString());
+            data.put(Constants.BODY, text);
+        }
+        data.put("tokens", Arrays.asList(tokens));
+        data.put(Constants.ENTITY_TYPE, AndroidClickActionType.CHAT_MESSAGE.toString());
+        data.put("click_action", AndroidClickActionType.CHAT_MESSAGE.toString());
+        data.put("time", input.getData().get("time"));
+
+        if (taskDateTime != null) {
+            data.put("task_date_time", taskDateTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+        }
+
+        return data;
+    }
+
+    private Map<String, Object> generateInvalidCommandResponseData(MessageSourceAccessor messageSourceAccessor, GroupChatMessage input, Group group) {
+
+        String messageId = UIDGenerator.generateId().concat(String.valueOf(System.currentTimeMillis()));
+        String responseMessage = messageSourceAccessor.getMessage("gcm.xmpp.command.invalid");
+        Map<String, Object> data = MessageUtils.prePopWithGroupData(group);
+        data.put("messageId", messageId);
+        data.put("messageUid", input.getMessageUid());
+        data.put(Constants.TITLE, "Grassroot");
+        data.put(Constants.BODY, responseMessage);
+        data.put(Constants.ENTITY_TYPE, AndroidClickActionType.CHAT_MESSAGE.toString());
+        data.put("click_action", AndroidClickActionType.CHAT_MESSAGE.toString());
+        data.put("type", "error");
+        data.put("time", input.getData().get("time"));
+
+        return data;
     }
 
 

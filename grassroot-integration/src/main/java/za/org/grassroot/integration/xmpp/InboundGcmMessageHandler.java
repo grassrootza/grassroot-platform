@@ -72,7 +72,7 @@ public class InboundGcmMessageHandler {
     }
 
     private void handleAcknowledgementReceipt(GcmUpstreamMessage input) {
-        String messageId = input.getMessageId();
+        String messageId = input.getMessageUid();
         String data = String.valueOf(input.getData());
         log.debug("Gcm acknowledges receipt of message {}, with payload {}", messageId, data);
 
@@ -80,7 +80,7 @@ public class InboundGcmMessageHandler {
 
     private void handleOrdinaryMessage(GcmUpstreamMessage input) {
         log.debug("Ordinary message received");
-        String messageId = input.getMessageId();
+        String messageId = input.getMessageUid();
         String from = input.getFrom();
 
         String action = String.valueOf(input.getData().get("action"));
@@ -106,7 +106,7 @@ public class InboundGcmMessageHandler {
     }
 
     private void handleNotAcknowledged(GcmUpstreamMessage input) {
-        String messageId = input.getMessageId();
+        String messageId = input.getMessageUid();
         Notification notification = notificationService.loadNotification(messageId);
         if (notification != null) {
             log.info("Push Notification delivery failed, now sending SMS to  {}", notification.getTarget().getPhoneNumber());

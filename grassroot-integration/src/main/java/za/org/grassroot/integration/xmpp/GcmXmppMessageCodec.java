@@ -47,15 +47,6 @@ public class GcmXmppMessageCodec {
 		return constructGcmMessage(gcmPayload);
 	}
 
-	private static Map<String, Object> createNotificationPart(String title, String body, String clickAction) {
-		Map<String, Object> data = new HashMap<>();
-		data.put("title", title);
-		data.put("body", body);
-		data.put("icon", notificationIcon);
-		data.put("click_action", clickAction);
-		return data;
-	}
-
 	private static org.springframework.messaging.Message<Message> constructGcmMessage(GcmEntity gcmPayload) {
 		Message xmppMessage = new Message();
 		try {

@@ -185,6 +185,7 @@ public class GcmManager implements GcmService {
         do {
             noAttempts++;
             // todo : work out why this is so slow (~ 3 secs ... seems like it's not pooling, which is strange)
+            // todo : also error handling (404s and time outs)
             response = restTemplate.exchange(gatewayURI.build().toUri(), POST, new HttpEntity<String>(getHttpHeaders()), String.class);
             retry = (!response.getStatusCode().is2xxSuccessful() && noAttempts <= MAX_RETRIES);
             if (retry) {
