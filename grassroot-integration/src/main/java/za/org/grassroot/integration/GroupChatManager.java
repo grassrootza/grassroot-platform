@@ -18,6 +18,7 @@ import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.repository.GroupChatSettingsRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 import za.org.grassroot.integration.domain.AndroidClickActionType;
 import za.org.grassroot.integration.domain.GroupChatMessage;
@@ -143,16 +144,23 @@ public class GroupChatManager implements GroupChatService {
             gcmMessage = GcmXmppMessageCodec.encode(topic, String.valueOf(data.get("messageId")),
                     null, null, null, AndroidClickActionType.CHAT_MESSAGE.name(), data);
         } else {
-            String[] tokens = MessageUtils.tokenize(String.valueOf(input.getData().get("message")));
-            if (tokens.length < 2) {
-                data = generateInvalidCommandResponseData(messageSourceAccessor,input, group);
+            final String msg = String.valueOf(input.getData().get("message"));
+            final String[] tokens = MessageUtils.tokenize(msg);
+            final TaskType cmdType = msg.contains("/meeting") ? TaskType.MEETING : msg.contains("/vote") ? TaskType.VOTE : TaskType.TODO;
+
+            if (tokens.length < (TaskType.MEETING.equals(cmdType) ? 3 : 2)) {
+                data = generateInvalidCommandResponseData(input, group);
             } else {
-                try { // todo : more subtle error handling & response here
+                try {
                     final LocalDateTime parsedDateTime = learningService.parse(tokens[1]);
-                    tokens[1] = parsedDateTime.format(cmdMessageFormat);
-                    data = generateCommandResponseData(messageSourceAccessor, input, group, tokens, parsedDateTime);
+                    if (DateTimeUtil.convertToSystemTime(parsedDateTime, DateTimeUtil.getSAST()).isBefore(Instant.now())) {
+                        data = generateDateInPastData(input, group);
+                    } else {
+                        tokens[1] = parsedDateTime.format(cmdMessageFormat);
+                        data = generateCommandResponseData(input, group, cmdType, tokens, parsedDateTime);
+                    }
                 } catch (SeloParseDateTimeFailure e) {
-                    data = generateInvalidCommandResponseData(messageSourceAccessor,input, group);
+                    data = generateInvalidCommandResponseData(input, group);
                 }
             }
             gcmMessage = GcmXmppMessageCodec.encode(input.getFrom(), String.valueOf(data.get("messageId")),
@@ -214,7 +222,7 @@ public class GroupChatManager implements GroupChatService {
         groupChatSettings.setActive(active);
         groupChatSettings.setUserInitiated(userInitiated);
         groupChatSettings.setCanSend(active);
-        if(userInitiated){
+        if(userInitiated) {
             groupChatSettings.setCanReceive(active);
         }
         groupChatSettingsRepository.save(groupChatSettings);
@@ -272,22 +280,19 @@ public class GroupChatManager implements GroupChatService {
         return data;
     }
 
-    private Map<String, Object> generateCommandResponseData(MessageSourceAccessor messageSourceAccessor, GroupChatMessage input,
-                                                                  Group group, String[] tokens, LocalDateTime taskDateTime) {
-
+    private Map<String, Object> generateCommandResponseData(GroupChatMessage input, Group group, TaskType type, String[] tokens, LocalDateTime taskDateTime) {
         final String messageId = UIDGenerator.generateId().concat(String.valueOf(System.currentTimeMillis()));
-        final String message = String.valueOf(input.getData().get("message"));
         Map<String, Object> data = MessageUtils.prePopWithGroupData(group);
 
         data.put("messageId", messageId);
         data.put("messageUid", input.getMessageUid());
         data.put(Constants.TITLE, "Grassroot");
 
-        if (message.contains("/meeting")) {
+        if (TaskType.MEETING.equals(type)) {
             final String text = messageSourceAccessor.getMessage("gcm.xmpp.command.meeting",tokens);
             data.put("type", TaskType.MEETING.toString());
             data.put(Constants.BODY, text);
-        } else if(message.contains("/vote")) {
+        } else if(TaskType.VOTE.equals(type)) {
             final String text = messageSourceAccessor.getMessage("gcm.xmpp.command.vote",tokens);
             data.put("type", TaskType.VOTE.toString());
             data.put(Constants.BODY, text);
@@ -296,6 +301,7 @@ public class GroupChatManager implements GroupChatService {
             data.put("type", TaskType.TODO.toString());
             data.put(Constants.BODY, text);
         }
+
         data.put("tokens", Arrays.asList(tokens));
         data.put(Constants.ENTITY_TYPE, AndroidClickActionType.CHAT_MESSAGE.toString());
         data.put("click_action", AndroidClickActionType.CHAT_MESSAGE.toString());
@@ -308,8 +314,8 @@ public class GroupChatManager implements GroupChatService {
         return data;
     }
 
-    private Map<String, Object> generateInvalidCommandResponseData(MessageSourceAccessor messageSourceAccessor, GroupChatMessage input, Group group) {
-
+    // todo : switch a lot of these field names to constants / enums
+    private Map<String, Object> generateInvalidCommandResponseData(GroupChatMessage input, Group group) {
         String messageId = UIDGenerator.generateId().concat(String.valueOf(System.currentTimeMillis()));
         String responseMessage = messageSourceAccessor.getMessage("gcm.xmpp.command.invalid");
         Map<String, Object> data = MessageUtils.prePopWithGroupData(group);
@@ -321,7 +327,19 @@ public class GroupChatManager implements GroupChatService {
         data.put("click_action", AndroidClickActionType.CHAT_MESSAGE.toString());
         data.put("type", "error");
         data.put("time", input.getData().get("time"));
+        return data;
+    }
 
+    private Map<String, Object> generateDateInPastData(GroupChatMessage input, Group group) {
+        Map<String, Object> data = MessageUtils.prePopWithGroupData(group);
+        data.put("messageId", UIDGenerator.generateId());
+        data.put("messageUid", input.getMessageUid());
+        data.put(Constants.TITLE, "Grassroot");
+        data.put(Constants.BODY, messageSourceAccessor.getMessage("gcm.xmpp.command.timepast"));
+        data.put(Constants.ENTITY_TYPE, AndroidClickActionType.CHAT_MESSAGE);
+        data.put("click_action", AndroidClickActionType.CHAT_MESSAGE);
+        data.put("type", "error");
+        data.put("time", input.getData().get("time"));
         return data;
     }
 
