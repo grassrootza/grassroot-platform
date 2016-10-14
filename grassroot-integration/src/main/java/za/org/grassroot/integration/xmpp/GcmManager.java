@@ -14,6 +14,7 @@ import org.springframework.messaging.MessageChannel;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import za.org.grassroot.core.domain.GcmRegistration;
@@ -181,13 +182,16 @@ public class GcmManager implements GcmService {
         int backoff = BACKOFF_INITIAL_DELAY;
         boolean retry;
 
-        ResponseEntity<String> response;
+        ResponseEntity<String> response = null;
         do {
             noAttempts++;
             // todo : work out why this is so slow (~ 3 secs ... seems like it's not pooling, which is strange)
-            // todo : also error handling (404s and time outs)
-            response = restTemplate.exchange(gatewayURI.build().toUri(), POST, new HttpEntity<String>(getHttpHeaders()), String.class);
-            retry = (!response.getStatusCode().is2xxSuccessful() && noAttempts <= MAX_RETRIES);
+            try {
+                response = restTemplate.exchange(gatewayURI.build().toUri(), POST, new HttpEntity<String>(getHttpHeaders()), String.class);
+            } catch (HttpClientErrorException e) {
+                log.error("Error calling group subscribe, with path: {}, and stacktrace: {}", gatewayURI.build().toString(), e.toString());
+            }
+            retry = (response == null || !response.getStatusCode().is2xxSuccessful()) && noAttempts <= MAX_RETRIES;
             if (retry) {
                 backoff = exponentialBackoffSleep(backoff);
             }
