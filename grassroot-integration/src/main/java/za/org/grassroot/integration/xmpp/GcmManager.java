@@ -199,7 +199,7 @@ public class GcmManager implements GcmService {
         } while (retry);
 
         if (response == null || !response.getStatusCode().is2xxSuccessful()) {
-            throw new IOException("Could not send subscibe user after " + noAttempts + " attempts");
+            log.error("Could not send subscibe user after " + noAttempts + " attempts");
         }
     }
 

@@ -230,7 +230,7 @@ public class USSDGroupUtil extends USSDUtil {
 
         int maxResults = totalResults == null ? permissionBroker.countActiveGroupsWithPermission(user, filter) : totalResults;
 
-        if (pageNumber * PAGE_LENGTH < maxResults)
+        if ((pageNumber + 1) * PAGE_LENGTH < maxResults)
             menu.addMenuOption(paginatedGroupUrl(prompt, urlForExistingGroups, urlForNewGroup, section, pageNumber + 1), getMessage("group.more", user));
         if (pageNumber > 0)
             menu.addMenuOption(paginatedGroupUrl(prompt, urlForExistingGroups, urlForNewGroup, section, pageNumber - 1), getMessage("group.back", user));
