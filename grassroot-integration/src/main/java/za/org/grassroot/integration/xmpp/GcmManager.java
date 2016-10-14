@@ -5,10 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.scheduling.annotation.Async;
@@ -190,6 +187,10 @@ public class GcmManager implements GcmService {
                 response = restTemplate.exchange(gatewayURI.build().toUri(), POST, new HttpEntity<String>(getHttpHeaders()), String.class);
             } catch (HttpClientErrorException e) {
                 log.error("Error calling group subscribe, with path: {}, and stacktrace: {}", gatewayURI.build().toString(), e.toString());
+                if (e.getStatusCode().equals(HttpStatus.NOT_FOUND)) {
+                    removeStaleRegistration(registrationId);
+                    break;
+                }
             }
             retry = (response == null || !response.getStatusCode().is2xxSuccessful()) && noAttempts <= MAX_RETRIES;
             if (retry) {
@@ -197,8 +198,16 @@ public class GcmManager implements GcmService {
             }
         } while (retry);
 
-        if (!response.getStatusCode().is2xxSuccessful()) {
+        if (response == null || !response.getStatusCode().is2xxSuccessful()) {
             throw new IOException("Could not send subscibe user after " + noAttempts + " attempts");
+        }
+    }
+
+    @Transactional
+    private void removeStaleRegistration(final String registrationId) {
+        GcmRegistration registration = gcmRegistrationRepository.findByRegistrationId(registrationId);
+        if (registration != null) {
+            gcmRegistrationRepository.delete(registration);
         }
     }
 
