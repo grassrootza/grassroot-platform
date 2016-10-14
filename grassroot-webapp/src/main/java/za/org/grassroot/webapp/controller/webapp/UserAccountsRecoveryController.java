@@ -104,12 +104,12 @@ public class UserAccountsRecoveryController extends BaseController {
     @RequestMapping(value = "/user/recovery/success", method = RequestMethod.GET)
     public ModelAndView index(Model model, RedirectAttributes redirectAttributes, HttpServletRequest request) {
         if (redirectAttributes.getFlashAttributes().containsKey("accountRecoverySuccess")) {
+            log.info("Succesfully reset password!");
             addMessage(model, MessageType.SUCCESS, "user.account.recovery.password.reset.success", request);
+            return new ModelAndView("user/recovery-success", model.asMap());
         } else {
-            new ModelAndView(new RedirectView("/login"));
+            return new ModelAndView(new RedirectView("/login"));
         }
-        return new ModelAndView("user/recovery-success", model.asMap());
-
     }
 
     private void temporaryTokenSend(VerificationTokenCode verificationTokenCode) {
