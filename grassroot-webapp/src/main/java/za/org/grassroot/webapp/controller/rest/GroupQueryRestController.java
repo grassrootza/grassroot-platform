@@ -11,6 +11,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.GroupJoinRequest;
+import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
 import za.org.grassroot.services.ChangedSinceData;
@@ -82,6 +83,24 @@ public class GroupQueryRestController extends GroupAbstractRestController {
         List<GroupResponseWrapper> groupWrappers = Collections.singletonList(createGroupWrapper(group, user));
         ResponseWrapper rw = new GenericResponseWrapper(HttpStatus.OK, RestMessage.USER_GROUPS, RestStatus.SUCCESS, groupWrappers);
         return new ResponseEntity<>(rw, HttpStatus.OK);
+    }
+
+    @RequestMapping(value = "/members/list/{phoneNumber}/{code}/{groupUid}")
+    public ResponseEntity<ResponseWrapper> getGroupMembers(@PathVariable String phoneNumber, @PathVariable String groupUid) {
+        log.info("Refreshing members for group : {}", groupUid);
+        User user = userManagementService.findByInputNumber(phoneNumber);
+        Group group = groupBroker.load(groupUid);
+
+        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
+
+        List<MembershipResponseWrapper> members = new ArrayList<>();
+        // todo : watch this for n + 1 hibernate query performance ...
+        group.getMemberships()
+                .forEach(m -> members.add(new MembershipResponseWrapper(group, m.getUser(), m.getRole(), false)));
+
+        log.info("From memberships : {}, created wrappers: {}", group.getMemberships(), members);
+
+        return RestUtil.okayResponseWithData(RestMessage.GROUP_MEMBERS, members);
     }
 
     @RequestMapping(value = "/search/{phoneNumber}/{code}", method = RequestMethod.GET)
