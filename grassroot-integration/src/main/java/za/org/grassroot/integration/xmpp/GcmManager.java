@@ -59,7 +59,7 @@ public class GcmManager implements GcmService {
     @Autowired
     private MessageChannel gcmXmppOutboundChannel;
 
-    private final static String INSTANCE_ID_FIXED_PATH = "/iid/v1";
+    private final static String INSTANCE_ID_FIXED_PATH = "/iid/v1/";
 
     @Value("${gcm.topics.url}")
     private String INSTANCE_ID_SERVICE_GATEWAY;
