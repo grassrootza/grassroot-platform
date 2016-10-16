@@ -1,58 +1,31 @@
+/*
+ * Containers & padding definitions
+ */
+
+.logo-container {
+    padding-bottom: 4px;
+    padding-top: 32px;
+}
+
 .header-container {
     padding-bottom: 20px;
-}
-
-.add-group-preview {
-    padding: 46px 46px 46px 248px;
-    cursor: pointer;
-    border: 1px solid #f0f0f0;
-}
-
-.add-group{
-    margin-left: 30px;
-}
-
-.add-meeting{
-    margin-left: 50px;
 }
 
 .user-profile-container{
     width: 400px;padding: 100px 10px 100px 10px;
  }
 
-.basic-separator {
-    border-bottom: 1px solid rgba(0,0,0,.1);
-    margin-bottom: 10px;
-    margin-top: 10px;
-    width: calc(100% - 20px);
+.cover {
+    padding: 0 20px;
 }
 
 .cover-container {
-    margin-right: auto;
-    margin-left: auto;
-}
-
-/* Padding for spacing */
-.inner {
-    padding: 30px;
-}
-
-
-/*
- * Cover
- */
-
-.cover {
-    padding: 0 20px;
+    background-color: transparent;
 }
 
 .cover .btn-lg {
     padding: 10px 20px;
     font-weight: bold;
-}
-
-.cover-container {
-    background-color: transparent;
 }
 
 .jumbotron {
@@ -61,118 +34,6 @@
 
 .cover-heading {
     font-family: 'Roboto', sans-serif;
-}
-
-.lead {
-    font-family: 'Roboto', sans-serif;
-}
-
-.list-header {
-    font-size: 16px !important;
-    margin-top: 10px;
-    margin-bottom: 2px;
-}
-
-/*
- * Footer
- */
-
-.mastfoot {
-    color: #999; /* IE8 proofing */
-    color: rgba(255,255,255,.5);
-}
-
-
-/*
- * Affix and center
- */
-
-@media (min-width: 768px) {
-    /* Pull out the header and footer */
-    .masthead {
-        position: fixed;
-        top: 0;
-    }
-    .mastfoot {
-        position: fixed;
-        bottom: 0;
-    }
-    /* Start the vertical centering */
-    .site-wrapper-inner {
-        vertical-align: middle;
-    }
-    /* Handle the widths */
-    .masthead,
-    .mastfoot,
-    .cover-container {
-        width: 100%; /* Must be percentage or pixels for horizontal alignment */
-    }
-}
-
-@media (min-width: 992px) {
-    .masthead,
-    .mastfoot,
-    .cover-container {
-        width: 700px;
-    }
-}
-
-.grass-icon-md-48
-{
-    font-size: 48px;
-    color: #207A33;
-}
-
-
-.material-icons {
-    font-family: 'Material Icons';
-    font-weight: normal;
-    font-style: normal;
-    font-size: 24px;  /* Preferred icon size */
-    display: inline-block;
-    width: 1em;
-    height: 1em;
-    line-height: 1;
-    text-transform: none;
-    letter-spacing: normal;
-    word-wrap: normal;
-
-    /* Support for all WebKit browsers. */
-    -webkit-font-smoothing: antialiased;
-    /* Support for Safari and Chrome. */
-    text-rendering: optimizeLegibility;
-
-    /* Support for Firefox. */
-    -moz-osx-font-smoothing: grayscale;
-
-    /* Support for IE. */
-    font-feature-settings: 'liga';
-}
-
-.btn-default {
-    border-radius: 0;
-    font-family: 'Roboto', sans-serif;
-    color: #207A33;
-}
-
-.btn-primary {
-    font-family: 'Roboto', sans-serif;
-    background-color: #207A33;
-    border-radius: 1px;
-    border: 0 none;
-}
-
-.btn-danger {
-    font-family: 'Roboto', sans-serif;
-    background-color: white;
-    border-radius: 0;
-    color: #ff2a00;
-    border-color: #808080;
-}
-
-.label-light {
-    font-family: 'Roboto', sans-serif;
-    font-weight: 300;
 }
 
 .well {
@@ -217,6 +78,159 @@
     border-radius: 5px !important;
 }
 
+.borderless {
+    border: 0px solid transparent !important;
+}
+
+.no-padding {
+    padding: 0px 0px 0px 0px !important;
+}
+
+.no-margins {
+    margin-top: 0px !important;
+    margin-bottom: 0px !important;
+}
+
+/*
+ * Header styles
+ */
+
+.header-content-title > .jumbotron  {
+    color: #207A33 !important;
+    font-family: 'Roboto', sans-serif !important;
+}
+
+.header-content-title > h2 {
+    color: #27993F;
+    font-size: 36pt;
+    font-family: 'Roboto', sans-serif;
+}
+
+.header-content-title > h3 {
+    color: #27993F;
+    font-size: 32pt;
+    font-family: 'Roboto', sans-serif;
+}
+
+.header-content-subtitle > h4 {
+    font-size: 18pt;
+    font-family: 'Roboto', sans-serif;
+}
+
+.lead {
+    font-family: 'Roboto', sans-serif;
+}
+
+.list-header {
+    font-size: 16px !important;
+    margin-top: 10px;
+    margin-bottom: 2px;
+}
+
+/*
+ * Form-controls
+ */
+
+.form-group > .control-label {
+    color: #207A33;
+    font-size: 15pt;
+    line-height: 1.8;
+    padding-left: 2px;
+    text-align: left;
+}
+
+.form-group > .btn-lg {
+    border-radius: 2px;
+    min-width: 110px;
+}
+
+.form-group > .checkbox-inline {
+    font-size: 14pt;
+}
+
+.big-checkbox {
+    width: 16px;
+    height: 16px;
+}
+
+/*
+ * Footer
+ */
+
+.mastfoot {
+    color: #999; /* IE8 proofing */
+    color: rgba(255,255,255,.5);
+}
+
+/*
+ * Affix and center
+ */
+
+@media (min-width: 768px) {
+    /* Pull out the header and footer */
+    .masthead {
+        position: fixed;
+        top: 0;
+    }
+    .mastfoot {
+        position: fixed;
+        bottom: 0;
+    }
+    /* Start the vertical centering */
+    .site-wrapper-inner {
+        vertical-align: middle;
+    }
+    /* Handle the widths */
+    .masthead,
+    .mastfoot,
+    .cover-container {
+        width: 100%; /* Must be percentage or pixels for horizontal alignment */
+    }
+}
+
+@media (min-width: 992px) {
+    .masthead,
+    .mastfoot,
+    .cover-container {
+        width: 700px;
+    }
+}
+
+/*
+ * Button styles
+ */
+
+.grass-icon-md-48 {
+    font-size: 48px;
+    color: #207A33;
+}
+
+.btn-default {
+    border-radius: 0;
+    font-family: 'Roboto', sans-serif;
+    color: #207A33;
+}
+
+.btn-primary {
+    font-family: 'Roboto', sans-serif;
+    background-color: #27993F;
+    border-radius: 1px;
+    border: 0 none;
+}
+
+.btn-danger {
+    font-family: 'Roboto', sans-serif;
+    background-color: white;
+    border-radius: 0;
+    color: #ff2a00;
+    border-color: #808080;
+}
+
+.label-light {
+    font-family: 'Roboto', sans-serif;
+    font-weight: 300;
+}
+
 .alert-success {
     background-color: #207A33;
     color: #FFFFFF;
@@ -227,7 +241,10 @@
     border-radius: 2px;
 }
 
-/* Navbar styling */
+/*
+ * Navbar styling
+ * todo : add specifiers in here
+ */
 
 .navbar-colour {
     background-color: #207A33;
@@ -263,24 +280,10 @@
     height: 100%;
 }
 
-.control-label {
-    text-align: left;
-}
-
-.borderless {
-    border: 0px solid transparent !important;
-}
-
-.no-padding {
-    padding: 0px 0px 0px 0px !important;
-}
-
-.no-margins {
-    margin-top: 0px !important;
-    margin-bottom: 0px !important;
-}
-
-/* what follows is somewhat messy, as S/O answers not quite lining up, but CSS */
+/*
+ * Class for helping with alignment on button group (with 4 buttons)
+ * what follows is somewhat messy, as S/O answers not quite lining up, but CSS
+ */
 .button-xs-align {
     text-align: center;
 }

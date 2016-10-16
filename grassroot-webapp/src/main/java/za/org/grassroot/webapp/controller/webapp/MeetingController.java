@@ -93,10 +93,11 @@ public class MeetingController extends BaseController {
         log.info("The meeting wrapper as passed back to us: " + meeting.toString());
 
         // todo: move parent selection into MeetingWrapper when implement non-group meetings
+        // todo : clean up a lot of old / now redundant properties (include rsvp, is relayable, etc
         try {
             eventBroker.createMeeting(getUserProfile().getUid(), selectedGroupUid, JpaEntityType.GROUP,
                     meeting.getTitle(), meeting.getEventDateTime(), meeting.getLocation(),
-                    meeting.isIncludeSubGroups(), meeting.isRsvpRequired(), meeting.isRelayable(),
+                    meeting.isIncludeSubGroups(), true, meeting.isRelayable(),
                     meeting.getReminderType(), meeting.getCustomReminderMinutes(), meeting.getDescription(),
                     Collections.emptySet(), MeetingImportance.ORDINARY);
 

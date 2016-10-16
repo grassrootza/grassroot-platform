@@ -1,6 +1,6 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      layout:decorator="layout">
+      data-layout-decorate="layout">
 <head>
   <title>Grassroot - Call a meeting</title>
 </head>
@@ -11,8 +11,9 @@
 </div>
 
 <div layout:fragment="overview">
-  <h5 class="text-center">Specify who is meeting, where, when and about what</h5>
+  <h4 class="text-center">Specify who is meeting, where, when and about what</h4>
 </div>
+
 <div layout:fragment="content">
   <div layout:fragment="messages"></div>
 
@@ -25,7 +26,7 @@
 
           <div class="form-group">
             <label for="group" class="control-label">Who is meeting? Group:</label>
-            <select th:unless="${groupSpecified}" name="selectedGroupUid" id="selectedgroup" class="form-control">
+            <select th:unless="${groupSpecified}" name="selectedGroupUid" id="selectedgroup" class="form-control input-lg">
               <option th:each="group, iterStat: ${userGroups}"
                       th:value="${group.Uid}"
                       th:text="${group.getName('')}"
@@ -36,28 +37,26 @@
           </div>
           <div class="form-group">
             <label for="name" class="control-label">Meeting subject</label>
-            <input th:field="*{title}" type="text" class="form-control" id="name" placeholder="The topic of the meeting" maxlength="35" data-toggle="tooltip"
+            <input th:field="*{title}" type="text" class="form-control input-lg" id="name" placeholder="The topic of the meeting" maxlength="35" data-toggle="tooltip"
             title="Meeting subject may not be longer than 35 characters. " />
           </div>
           <div class="form-group">
-            <label for="location" class="control-label">Meeting location</label>
-            <input th:field="*{location}" type="text" class="form-control" id="location" placeholder="Where the meeting will happen"/>
+            <label for="location" class="control-label input-lg">Meeting location</label>
+            <input th:field="*{location}" type="text" class="form-control input-lg" id="location" placeholder="Where the meeting will happen"/>
           </div>
           <div class="form-group">
-            <div th:fragment="date-picker">
-              <label for="datepicker" class="control-label">Meeting date and time</label>
-              <div class="input-group date" id="datepicker">
-                <input th:field="*{eventDateTime}" type="text" class="form-control" />
-                <span class="input-group-addon">
-                <span class="glyphicon glyphicon-calendar"></span>
-                </span>
-              </div>
+            <label for="datepicker" class="control-label">Meeting date and time</label>
+            <div class="input-group date" id="datepicker">
+              <input th:field="*{eventDateTime}" type="text" class="form-control input-lg" />
+              <span class="input-group-addon">
+              <span class="glyphicon glyphicon-calendar"></span>
+              </span>
             </div>
           </div>
 
           <div class="form-group">
             <label class="control-label">Reminder:</label>
-            <select th:field="*{reminderType}" class="form-control" id="reminderType">
+            <select th:field="*{reminderType}" class="form-control input-lg" id="reminderType">
               <option value="DISABLED">None</option>
               <option th:if="${groupSpecified}" value="GROUP_CONFIGURED" selected="true">
                 Group default (<span th:text="#{web.meeting.reminder.group.__${group.reminderMinutes}__}">X</span> ahead)
@@ -75,24 +74,12 @@
             </div>
           </div>
 
-          <div class="form-group">
-            <label class="checkbox-inline">
-              <input th:field="*{rsvpRequired}" type="checkbox" id="rsvp" th:checked="${true}" />
-              Ask if members will attend (RSVP)?
-            </label>
-            <!-- <label class="checkbox-inline pull-right">
-              <input th:field="*{includeSubGroups}" type="checkbox" id="subgroups"/>
-              Include sub-groups?
-            </label>-->
-
-          </div>
-
-          <div class="form-group pull-right">
+          <div class="form-group pull-right top-buffer">
             <a th:if="${groupSpecified}"
                th:href="@{/group/view(groupUid=${group.Uid})}" role="button" class="btn btn-default">Cancel</a>
             <a th:if="${not groupSpecified}"
-               th:href="@{/home}" role="button" class="btn btn-default">Cancel</a>
-            <button type="submit" class="btn btn-primary">Call meeting</button>
+               th:href="@{/home}" role="button" class="btn btn-default btn-lg">Cancel</a>
+            <button type="submit" class="btn btn-primary btn-lg">Call meeting</button>
           </div>
         </form>
       </div>

@@ -83,31 +83,25 @@
       </div>
       <!-- // Navigation -->
 
-    <div class="header-container" layout:fragment="header-container">
+    <!-- header fragment -->
+    <div layout:fragment="header-container" class="header-container" >
       <div class="header--content" layout:fragment="header-content">
         <div class="row-fluid container-fluid">
           <div class="span8">
+
             <h1 class="header-content-title" layout:fragment="header">
               First Last
             </h1>
+
             <p class="header-content-subtitle" layout:fragment="overview">
             </p>
           </div>
-          <div class="span4">
-            <div layout:fragment="header-sidebar"></div>
-          </div>
+
         </div>
       </div>
     </div>
-    <div class="container-fluid" layout:fragment="top-content"></div>
 
-    <div class="row">
-      <div class="col-md-6 col-md-offset-3">
-        <span id="grassRootTooltip" data-toggle="snackbar" data-content="Snackbar placeholder" layout:fragment="tooltip"></span>
-      </div>
-    </div>
-
-
+    <!-- snackbar -->
     <div layout:fragment="messages" class="container text-center">
       <div layout:fragment="alert">
         <div th:if="${errorMessage}" class="alert alert-warning alert-dismissible" role="alert">
@@ -128,7 +122,7 @@
       </div>
     </div>
 
-    <main class="body-container container-fluid " layout:fragment="content">
+    <main layout:fragment="content" class="body-container container-fluid ">
       <div id="footer-push-down"></div>
     </main>
 
@@ -138,7 +132,6 @@
           <div class="span8">
             <!-- // might use for copyright or terms of use in future -->
           </div>
-
         </div>
       </div>
     </footer>
