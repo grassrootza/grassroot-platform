@@ -1,6 +1,6 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      layout:decorator="layout">
+      data-layout-decorate="layout">
 <head>
   <title>Grassroot - Record an action</title>
 
@@ -16,7 +16,7 @@
 </div>
 
 <div layout:fragment="overview">
-  <h5 class="text-center">Record a decision and to-do for the group</h5>
+  <h4 class="text-center">Record a decision and to-do for the group</h4>
 </div>
 
 <div layout:fragment="content">
@@ -27,13 +27,12 @@
       <div class="col-md-6 col-md-offset-3">
 
         <form th:object="${actionTodo}" th:action="@{/todo/record}" method="post" class="form-vertical">
-
           <input type="hidden" th:field="*{parentEntityType}" />
 
           <div class="form-group">
             <label for="group" class="control-label">Group:</label>
             <div th:unless="${parentSpecified}">
-              <select th:unless="${parentSpecified}" th:field="*{parentUid}" id="groupSelector" class="form-control">
+              <select th:unless="${parentSpecified}" th:field="*{parentUid}" id="groupSelector" class="form-control input-lg">
                 <option th:each="group: ${possibleGroups}"
                         th:value="${group.Uid}"
                         th:text="${group.getName('')}"
@@ -42,48 +41,37 @@
               <input type="hidden" th:value="${userUid}" id="userUid" />
             </div>
             <div th:if="${parentSpecified}">
-              <input class="form-control" readonly="true" th:placeholder="${parent.name}" id="group" />
+              <input class="form-control input-lg" readonly="true" th:placeholder="${parent.name}" id="group" />
               <input type="hidden" th:field="*{parentUid}" th:value="${parent.uid}" />
             </div>
           </div>
 
           <div class="form-group">
             <label for="name" class="control-label">Title:</label>
-            <input th:field="*{message}" type="text" class="form-control" maxlength="35" data-toggle="tooltip"
+            <input th:field="*{message}" type="text" class="form-control input-lg" maxlength="35" data-toggle="tooltip"
                      title="Description may not be longer than 35 characters." id="name"
                    placeholder="A short summary of the action or decision to record" />
           </div>
 
           <div class="form-group">
-            <div th:fragment="date-picker">
-              <label for="datepicker" class="control-label">Deadline:</label>
-              <div class="input-group date" id="datepicker">
-                <input th:field="*{actionByDate}" type="text" class="form-control" />
-                    <span class="input-group-addon">
-                      <span class="glyphicon glyphicon-calendar"></span>
-                    </span>
-              </div>
+            <label for="datepicker" class="control-label">Deadline:</label>
+            <div class="input-group date" id="datepicker">
+              <input th:field="*{actionByDate}" type="text" class="form-control input-lg" />
+                  <span class="input-group-addon">
+                    <span class="glyphicon glyphicon-calendar"></span>
+                  </span>
             </div>
           </div>
 
           <div class="form-group">
-            <b>Who has responsibility for completing the action?</b>
-            <div class="radio">
-              <label class="radio-inline"><input type="radio" th:field="*{assignmentType}" value="group" id="wholeGroup" />The whole group</label>
-              <label class="radio-inline"><input type="radio" th:field="*{assignmentType}" value="members" id="pickMembers" />Pick members</label>
-              <h5 id="pickedMemberCount">Number of members picked</h5>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label>Notes? Please enter any further description:</label>
-            <textarea class="form-control" rows="1" maxlength="250"
+            <label class="control-label">Notes? Please enter any further description:</label>
+            <textarea class="form-control input-lg" rows="1" maxlength="250"
                       placeholder="This will not be sent with the SMS, but will be seen by app and web users"></textarea>
           </div>
 
           <div class="form-group">
             <label class="control-label">Send a reminder:</label>
-            <select th:field="*{reminderType}" class="form-control" id="reminderType">
+            <select th:field="*{reminderType}" class="form-control input-lg" id="reminderType">
               <option th:if="${parentSpecified}" value="GROUP_CONFIGURED" selected="true">
                 Group default (<span th:text="#{web.meeting.reminder.group.__${parent.reminderMinutes}__}">X</span> ahead)
               </option>
@@ -101,18 +89,22 @@
           </div>
 
           <div class="form-group">
-            <label class="checkbox-inline">
-              <input name="subGroups" type="checkbox" id="subgroups" />
-              Include subgroups?
-            </label>
-            <!-- todo : add a view traffic director to handle the links below for non-group parents -->
-            <div class="btn-container pull-right">
-              <a th:if="${parentSpecified}"
-                 th:href="@{/group/view(groupUid=${parent.uid})}" role="button" class="btn btn-default horizontal-padding">Cancel</a>
-              <a th:if="${not parentSpecified}"
-                 th:href="@{/home}" role="button" class="btn btn-default">Cancel</a>
-              <button type="submit" class="btn btn-primary horizontal-padding">Record</button>
+            <label class="control-label">Who has responsibility for completing the action?</label>
+            <div class="radio">
+              <label class="radio-inline radio-inline-lg"><input type="radio" th:field="*{assignmentType}" value="group" id="wholeGroup" />The whole group</label>
+              <label class="radio-inline radio-inline-lg"><input type="radio" th:field="*{assignmentType}" value="members" id="pickMembers" />Pick members</label>
+              <h5 id="pickedMemberCount">Number of members picked</h5>
             </div>
+          </div>
+
+
+          <div class="form-group pull-right">
+            <!-- todo : add a view traffic director to handle the links below for non-group parents -->
+              <a th:if="${parentSpecified}"
+                 th:href="@{/group/view(groupUid=${parent.uid})}" role="button" class="btn btn-default btn-lg">Cancel</a>
+              <a th:if="${not parentSpecified}"
+                 th:href="@{/home}" role="button" class="btn btn-default btn-lg">Cancel</a>
+              <button type="submit" class="btn btn-primary btn-lg">Record</button>
           </div>
 
           <div class="modal fade" id="memberModal" tabindex="-1" role="dialog" aria-labelledby="memberModalLabel">

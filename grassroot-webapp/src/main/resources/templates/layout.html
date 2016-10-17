@@ -46,30 +46,38 @@
               <span class="icon-bar"></span>
             </button>
             <a class="navbar-left" href="javascript:void(0)" th:href="@{/home}">
-              <img th:src="@{/images/grassroot-logo-navbar.png}" style="padding-bottom: 1px; padding-top: 5px; max-height: 46px"/>
-              <!-- <p class="white-text">Grassroot</p> -->
+              <img th:src="@{/images/grassroot-logo-navbar.png}">
             </a>
           </div>
           <div class="collapse navbar-collapse navbar-responsive-collapse">
             <ul class="nav navbar-nav">
-              <li sec:authorize="isAuthenticated()" class="active"><a href="javascript:void(0)" th:href="@{/group/create}"><span class="white-text">Start Group</span></a></li>
-              <li sec:authorize="isAuthenticated()" class="active"><a href="javascript:void(0)" th:href="@{/meeting/create}"><span class="white-text">Call Meeting</span></a></li>
-              <li sec:authorize="isAuthenticated()" class="active"><a href="javascript:void(0)" th:href="@{/vote/create}"><span class="white-text">Take Vote</span></a></li>
-              <li sec:authorize="isAuthenticated()" class="active"><a href="javascript:void(0)" th:href="@{/todo/create}"><span class="white-text">Create to-do</span></a></li>
-              <li sec:authorize="hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')" class="active"><a href="javascript:void(0)" th:href="@{/meeting/free}"><span class="white-text">Send Message</span></a></li>
-              <li sec:authorize="hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')" class="active"><a href="javascript:void(0)" th:href="@{/accounts/index}"><span class="white-text">Manage account</span></a></li>
-              <li sec:authorize="hasRole('ROLE_SYSTEM_ADMIN')" class="active"><a href="javascript:void(0)" th:href="@{/admin/home}"><span class="white-text">System admin</span></a></li>
-
+              <li sec:authorize="isAuthenticated()" class="active">
+                <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/group/create}"><span class="gr-navbar-text">Start Group</span></a></li>
+              <li sec:authorize="isAuthenticated()" class="active">
+                <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/meeting/create}"><span class="gr-navbar-text">Call Meeting</span></a></li>
+              <li sec:authorize="isAuthenticated()" class="active">
+                <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/vote/create}"><span class="gr-navbar-text">Take Vote</span></a></li>
+              <li sec:authorize="isAuthenticated()" class="active">
+                <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/todo/create}"><span class="gr-navbar-text">Create to-do</span></a></li>
+              <li sec:authorize="hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')" class="active">
+                <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/meeting/free}"><span class="gr-navbar-text">Send Message</span></a></li>
+              <li sec:authorize="hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')" class="active">
+                <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/accounts/index}"><span class="gr-navbar-text">Manage account</span></a></li>
+              <li sec:authorize="hasRole('ROLE_SYSTEM_ADMIN')" class="active">
+                <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/admin/home}"><span class="gr-navbar-text">System admin</span></a></li>
             </ul>
 
             <ul sec:authorize="isAnonymous()" class="nav navbar-nav navbar-right">
-              <li sec:authorize="isAnonymous()" class="active"><a href="javascript:void(0)" th:href="@{/home}"><span class="white-text">Login</span></a></li>
-              <li sec:authorize="isAnonymous()" class="active"><a href="javascript:void(0)" th:href="@{/signup}"><span class="white-text">Register</span></a></li>
+              <li sec:authorize="isAnonymous()" class="active">
+                <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/home}"><span class="gr-navbar-text">Login</span></a></li>
+              <li sec:authorize="isAnonymous()" class="active">
+                <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/signup}"><span class="gr-navbar-text">Register</span></a></li>
             </ul>
 
             <ul sec:authorize="isAuthenticated()" class="nav navbar-nav navbar-right">
               <li class="dropdown">
-                <a href="javascript:void(0)" data-target="#" class="dropdown-toggle white-text" data-toggle="dropdown" aria-expanded="false">My Profile <b class="caret"></b><div class="ripple-wrapper"></div></a>
+                <a href="javascript:void(0)" data-target="#" class="dropdown-toggle gr-navbar-link" data-toggle="dropdown" aria-expanded="false">
+                  <span class="gr-navbar-text">My Profile <b class="caret"></b></span></a>
                 <ul class="dropdown-menu">
                   <li><a href="javascript:void(0)" th:href="@{/user/settings}">Settings</a></li>
                   <li><a href="javascript:void(0)" th:href="@{/user/password}">Change password</a></li>

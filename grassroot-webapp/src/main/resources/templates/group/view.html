@@ -13,11 +13,11 @@
 
 <div layout:fragment="overview">
   <div class="row no-padding no-margins">
-    <h5 class="text-center">
+    <h4 class="text-center">
       Created on <span th:text="${#temporals.format(group.getCreatedDateTimeAtSAST(),'d MMM yyyy')}">Some date</span>
       (<a th:href="@{/group/history(groupUid=${group.uid})}">view history</a>)
-    </h5>
-    <h5 class="text-center" th:if="${canAlter}">
+    </h4>
+    <h4 class="text-center" th:if="${canAlter}">
       <span th:if="${openToken}">Join code: <a href="javascript:void(0)" data-toggle="modal" data-target="#joiningModal">
         *134*1994*<span th:text="${group.groupTokenCode}">1234</span>#</a>
       </span>
@@ -28,7 +28,7 @@
       <span th:unless="${group.discoverable}">Group is private</span>
 
       <a href="javascript:void(0)" data-toggle="modal" data-target="#publicModal">(change this)</a>
-    </h5>
+    </h4>
   </div>
 
   <!-- Joining code modal -->
@@ -107,14 +107,13 @@
     <div layout:fragment="messages"></div>
   </div>
 
-  <!-- toDo : fix the logic here (remove unsubscribe if organizer) -->
   <div class="row">
     <div th:if="${canAlter}" class="row">
       <div class="col-md-2 col-md-offset-5 text-center">
         <div class="dropdown">
-          <a href="javascript:void(0)" data-target="#" class="dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+          <a href="javascript:void(0)" data-target="#" class="dropdown-toggle dropdown-menu-lg" data-toggle="dropdown" aria-expanded="false">
             Manage and modify group<b class="caret"></b><div class="ripple-wrapper"></div></a>
-          <ul class="dropdown-menu">
+          <ul class="dropdown-menu dropdown-menu-lg">
             <li><a th:href="@{/group/roles/members(groupUid=${group.uid})}">Change members' roles</a></li>
             <li><a th:if="${canChangePermissions}" th:href="@{/group/roles/permissions(groupUid=${group.Uid})}">
               Change roles' permissions</a></li>
@@ -127,7 +126,7 @@
             <li><a href="" th:href="@{/group/consolidate/select(groupUid=${group.uid})}">Merge with another group</a></li>
             <!-- <li th:if="${canCreateSubGroup}"><a href="" th:href="@{/group/create(parent=${group.uid})}">Create a sub-group</a></li> -->
             <li th:if="${canDeleteGroup}"><a href="javascript:void(0)" data-toggle="modal" data-target="#delModal">Delete group</a></li>
-            <li><a href="javascript:void(0)" data-toggle="modal" data-target="#unsubModal">Unsubscribe</a></li>
+            <li th:unless="${canChangePermissions}"><a href="javascript:void(0)" data-toggle="modal" data-target="#unsubModal">Unsubscribe</a></li>
           </ul>
         </div>
       </div>
@@ -255,7 +254,7 @@
     </div>
 
     <div th:unless="${canAlter}" class="row">
-      <div class="col-md-2 col-md-offset-5 text-center">
+      <div class="col-md-2 col-md-offset-5 text-center dropdown-menu-lg">
         <a href="javascript:void(0)" data-toggle="modal" data-target="#unsubModal">Unsubscribe</a>
       </div>
     </div>
@@ -296,37 +295,37 @@
     <div class="row top-buffer">
       <div class="col-md-12 text-center">
         <a th:if="${canCallMeeting}" href="" th:href="@{/meeting/create(groupUid=${group.uid})}">
-          <button class="btn btn-default">Call a meeting</button></a>
+          <button class="btn btn-primary btn-lg">Call a meeting</button></a>
         <a th:if="${canCallVote}" href="" th:href="@{/vote/create(groupUid=${group.uid})}">
-          <button class="btn btn-default">Take a vote</button></a>
+          <button class="btn btn-primary btn-lg">Take a vote</button></a>
         <a th:if="${canRecordAction}" href="" th:href="@{/todo/create(parentUid=${group.uid})}">
-          <button class="btn btn-default">Record action</button></a>
+          <button class="btn btn-primary btn-lg">Record action</button></a>
         <a href="" th:href="@{/todo/view(groupUid=${group.uid})}">
-          <button class="btn btn-default">View to-dos</button></a>
+          <button class="btn btn-primary btn-lg">View to-dos</button></a>
       </div>
     </div>
 
   </div>
 
   <!-- List upcoming group tasks -->
-  <div class="row top-buffer">
-    <div class="col-md-8 col-md-offset-2">
+  <div class="row top-buffer-lg">
+    <div class="col-md-6 col-md-offset-3">
       <ul class="list-group" th:if="${not #lists.isEmpty(groupTasks)}">
         <li class="list-group-item clearfix">
-          <b><span th:switch="${groupTasks.size()}">
+          <span class="list-header-new" th:switch="${groupTasks.size()}">
             <span th:case="0" th:text="#{web.group.view.tasks.zero}">This group has no events coming up</span>
             <span th:case="1" th:text="#{web.group.view.tasks.one(${groupTasks.get(0).type})}">This group has one thing coming up</span>
             <span th:case="*" th:text="#{web.group.view.tasks.many(${groupTasks.size()})}">This group has many things happening</span>
-          </span></b>
+          </span>
         </li>
         <li class="list-group-item clearfix" th:each="task, iterStat : ${groupTasks}">
           <div th:switch="${task.type}" th:with="uid=${task.taskUid}">
 
             <div th:case="MEETING"  th:with="deadline=${#temporals.format(task.deadlineDateTime,'dd MMM, HH:mm')}">
-              <a href="" th:href="@{/meeting/view(eventUid=${uid})}">
+              <a class="list-item-lg" href="" th:href="@{/meeting/view(eventUid=${uid})}">
                 <b>MEETING:</b> <span th:text="${task.title}"></span>
               </a>
-              <span th:if="${task.hasResponded}" class="badge pull-right">Happens at <span th:text="${deadline}">11 September 2015</span></span>
+              <span th:if="${task.hasResponded}" class="badge pull-right badge-list-bold">Happens at <span th:text="${deadline}">11 September 2015</span></span>
               <div th:unless="${task.hasResponded}" class="pull-right">
                 <a th:href="@{/meeting/rsvp(eventUid=${uid},answer=yes)}" class="btn btn-primary btn-sm">I'll attend</a>
                 <a th:href="@{/meeting/rsvp(eventUid=${uid},answer=no)}" class="btn btn-default btn-sm">I can't attend</a>
@@ -334,8 +333,8 @@
             </div>
 
             <div th:case="VOTE" th:with="deadline=${#temporals.format(task.deadlineDateTime, 'dd MMM, HH:mm')}">
-              <a href="" th:href="@{/vote/view(eventUid=${task.taskUid})}"><b>VOTE:</b> <span th:text="${task.title}"></span></a>
-              <span th:if="${task.hasResponded}" class="badge pull-right">
+              <a class="list-item-lg" href="" th:href="@{/vote/view(eventUid=${task.taskUid})}"><b>VOTE:</b> <span th:text="${task.title}"></span></a>
+              <span th:if="${task.hasResponded}" class="badge pull-right badge-list-bold">
                 Closes <span th:text="${deadline}">11 September 2015</span>
               </span>
               <div th:unless="${task.hasResponded}" class="pull-right">
@@ -346,7 +345,7 @@
             </div>
 
             <div th:case="TODO" th:with="deadline=${#temporals.format(task.deadlineDateTime,'EEE d MMM')}">
-              <a href="" th:href="@{/todo/details(todoUid=${task.taskUid})}"><b>TODO:</b>
+              <a class="list-item-lg" href="" th:href="@{/todo/details(todoUid=${task.taskUid})}"><b>TODO:</b>
                 <span th:text="${task.title}"></span> (due <span th:text="${#temporals.format(task.deadlineDateTime, 'd MMM')}">11 Sep 2015</span>)</a>
               <div th:unless="${task.hasResponded}" class="pull-right">
                 <a th:href="@{/todo/complete(todoUid=${task.taskUid})}" class="btn btn-default btn-xs">Mark as completed</a>
@@ -360,13 +359,13 @@
   </div>
 
   <!-- List group members -->
-  <div class="well col-md-8 col-md-offset-2" th:unless="${#lists.isEmpty(groupMembers)}">
+  <div class="well col-md-6 col-md-offset-3 border-green" th:unless="${#lists.isEmpty(groupMembers)}">
     <div class="row">
-      <div class="col-md-6">
-        <h5><b>Group members</b></h5>
+      <div class="col-md-6 table-header">
+        Group members
       </div>
       <div th:if="${canAddMembers}" class="form-group col-md-2 pull-right">
-        <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addModal">
+        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addModal">
           <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
           Add member
         </button>

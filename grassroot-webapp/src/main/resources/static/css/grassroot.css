@@ -45,6 +45,10 @@
     margin-top:20px;
 }
 
+.top-buffer-lg {
+    margin-top: 30px;
+}
+
 .padding-sm {
     padding: 2px !important;
 }
@@ -127,6 +131,34 @@
     margin-bottom: 2px;
 }
 
+.list-header-new {
+    font-size: 15pt;
+    color: #207A33;
+    line-height: 1.5;
+    font-family: 'Roboto', sans-serif;
+}
+
+.list-item-lg {
+    font-size: 14pt;
+}
+
+.badge-list-bold {
+    background-color: #207A33;
+    font-size: 11pt;
+}
+
+.dropdown-menu-lg {
+    font-size: 15pt;
+}
+
+.table-header {
+    font-size: 15pt;
+    color: #207A33;
+    line-height: 1.5;
+    padding-left: 20px;
+    font-family: 'Roboto', sans-serif;
+}
+
 /*
  * Form-controls
  */
@@ -145,6 +177,10 @@
 }
 
 .form-group > .checkbox-inline {
+    font-size: 14pt;
+}
+
+.form-group > .radio > .radio-inline-lg {
     font-size: 14pt;
 }
 
@@ -218,6 +254,10 @@
     border: 0 none;
 }
 
+.btn-primary:hover {
+    background-color: #207A33;
+}
+
 .btn-danger {
     font-family: 'Roboto', sans-serif;
     background-color: white;
@@ -243,7 +283,6 @@
 
 /*
  * Navbar styling
- * todo : add specifiers in here
  */
 
 .navbar-colour {
@@ -252,8 +291,30 @@
     border-radius: 0;
 }
 
-.active > a:hover, a:focus {
-    background-color: #185625 !important;
+.navbar .nav > ul {
+    height: 60px;
+}
+
+.gr-navbar-link {
+    height: 60px;
+    vertical-align: middle;
+}
+
+.navbar .nav > li > a:hover {
+    background-color: #185625;
+}
+
+.navbar .nav > li.dropdown.open.active > a:hover,
+.navbar .nav > li.dropdown.open > a {
+    background-color: #185625;
+}
+
+.gr-navbar-text {
+    color: #ffffff;
+    font-family: 'Roboto', sans-serif;
+    font-size: 14pt;
+    margin: 0;
+    line-height: 30px;
 }
 
 .white-text {
@@ -271,7 +332,11 @@
     color: white;
 }
 
-.navbar-colour .navbar-header .navbar-toggle .icon-bar {
+.navbar-toggle {
+    margin-top: 15px;
+}
+
+.icon-bar {
     background-color: white;
 }
 
