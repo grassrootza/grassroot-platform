@@ -43,7 +43,8 @@ public class GcmXmppMessageCodec {
 	public static org.springframework.messaging.Message<Message> encode(String registrationID, String messageId, String collapseKey,
 																		String title, String body, String clickAction, Map<String, Object> dataPart) {
 		logger.debug("Generated collapseKey " + collapseKey);
-		GcmEntity gcmPayload = new GcmEntity(messageId, registrationID, collapseKey, dataPart, null);
+
+		GcmEntity gcmPayload = new GcmEntity(messageId, registrationID, collapseKey, dataPart, createNotificationPart(title,body,clickAction));
 		return constructGcmMessage(gcmPayload);
 	}
 
@@ -83,6 +84,15 @@ public class GcmXmppMessageCodec {
 		data.put("click_action", clickAction);
 		data.put("priority", priority);
 
+		return data;
+	}
+
+	private static Map<String, Object> createNotificationPart(String title, String body, String clickAction) {
+		Map<String, Object> data = new HashMap<>();
+		data.put("title", title);
+		data.put("body", body);
+		data.put("icon", notificationIcon);
+		data.put("click_action", clickAction);
 		return data;
 	}
 
