@@ -143,18 +143,18 @@
                   <div th:switch="${task.type}">
                       <div th:case="MEETING">
                         <a href="#" th:href="'javascript:fetchTaskDescription(\'' + ${task.taskUid} + '\', \'' + ${task.type} + '\')'">
-                          <span class="badge" th:if="${#strings.equalsIgnoreCase(task.reply, 'Yes')}">You're attending</span>
-                          <span class="badge" th:if="${#strings.equalsIgnoreCase(task.reply, 'No')}">You're not attending</span>
+                          <span class="badge badge-list-bold" th:if="${#strings.equalsIgnoreCase(task.reply, 'Yes')}">You're attending</span>
+                          <span class="badge badge-list-bold" th:if="${#strings.equalsIgnoreCase(task.reply, 'No')}">You're not attending</span>
                         </a>
                       </div>
                       <div th:case="VOTE">
                         <a href="#" th:href="'javascript:fetchTaskDescription(\'' + ${task.taskUid} + '\', \'' + ${task.type} + '\')'">
-                          <span class="badge" th:text="#{web.home.vote.answer(${#strings.toLowerCase(task.reply)})}">ABC</span>
+                          <span class="badge badge-list-bold" th:text="#{web.home.vote.answer(${#strings.toLowerCase(task.reply)})}">ABC</span>
                         </a>
                       </div>
                       <div th:case="TODO">
                         <a href="#" th:href="'javascript:fetchTaskDescription(\'' + ${task.taskUid} + '\', \'' + ${task.type} + '\')'">
-                          <span class="badge">You marked it complete</span>
+                          <span class="badge badge-list-bold">You marked it complete</span>
                         </a>
                       </div>
                   </div>
@@ -170,7 +170,7 @@
     </div>
   </div>
 
-  <!-- List of user's groups (but nothing afterwards is showing ...) -->
+  <!-- List of user's groups -->
 
   <div class="container" th:if="${not #lists.isEmpty(userGroups)}">
     <div class="row top-buffer">

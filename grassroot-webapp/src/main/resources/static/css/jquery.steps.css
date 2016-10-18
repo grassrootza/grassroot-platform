@@ -143,11 +143,8 @@
 
 .wizard > .content
 {
-    /*background: #eee;*/
     display: block;
-    margin: 0.5em;
     overflow: auto;
-    min-height: 13em;
     overflow-x: hidden;
     position: relative;
     width: 100%;

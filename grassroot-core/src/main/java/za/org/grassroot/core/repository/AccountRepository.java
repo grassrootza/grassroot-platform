@@ -17,8 +17,6 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
 
     List<Account> findByAccountName(String accountName);
 
-    List<Account> findByPrimaryEmail(String primaryEmail);
-
     List<Account> findByEnabled(boolean enabled);
 
     Account findByAdministrators(User administrator);
