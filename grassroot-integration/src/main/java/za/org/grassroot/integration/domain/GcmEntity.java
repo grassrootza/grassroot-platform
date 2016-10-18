@@ -25,6 +25,7 @@ public class GcmEntity {
     private boolean delayWhileIdle = false;
     @JsonProperty("delivery_receipt_requested")
     private boolean deliveryReceiptRequested =true;
+    private final String priority = "high";
 
     private Map<String,Object> notification;
     private Map<String,Object> data;
@@ -75,6 +76,10 @@ public class GcmEntity {
 
     public boolean isDeliveryReceiptRequested() {
         return deliveryReceiptRequested;
+    }
+
+    public String getPriority() {
+        return priority;
     }
 
     public Map<String,Object> getData() {

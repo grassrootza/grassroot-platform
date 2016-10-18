@@ -142,7 +142,7 @@ public class GroupChatManager implements GroupChatService {
             String topic = TOPICS.concat(group.getUid());
             data = generateChatMessageData(input, user, group);
             gcmMessage = GcmXmppMessageCodec.encode(topic, String.valueOf(data.get("messageId")),
-                    null, null, null, AndroidClickActionType.CHAT_MESSAGE.name(), data);
+                    null, String.valueOf("title"), String.valueOf("body"), AndroidClickActionType.CHAT_MESSAGE.name(), data);
         } else {
             final String msg = String.valueOf(input.getData().get("message"));
             final String[] tokens = MessageUtils.tokenize(msg);
