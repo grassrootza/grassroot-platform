@@ -1,4 +1,29 @@
 /*
+    Color definitions
+    Palette URL: http://paletton.com/#uid=12T0u0knBkgdHu7jfoEsKfdAr9U
+
+*/
+
+/* As hex codes */
+
+.color-primary-0 { color: #207A34 }	/* Main Primary color */
+.color-primary-1 { color: #68B579 }
+.color-primary-2 { color: #3B944F }
+.color-primary-3 { color: #095C1B }
+.color-primary-4 { color: #003C0D }
+
+
+
+/* As RGBa codes */
+
+.rgba-primary-0 { color: rgba( 32,122, 52,1) }	/* Main Primary color */
+.rgba-primary-1 { color: rgba(104,181,121,1) }
+.rgba-primary-2 { color: rgba( 59,148, 79,1) }
+.rgba-primary-3 { color: rgba(  9, 92, 27,1) }
+.rgba-primary-4 { color: rgba(  0, 60, 13,1) }
+
+
+/*
  * Containers & padding definitions
  */
 
@@ -71,14 +96,14 @@
 .thin-separator {
     padding: 0px;
     margin: auto;
-    color: #207A33;
-    background-color: #207A33;
+    color: #3B944F;
+    background-color: #3B944F;
     height: 1px;
     width: 90%;
 }
 
 .border-green {
-    border: 1px solid #207A33 !important;
+    border: 1px solid #3B944F !important;
     border-radius: 5px !important;
 }
 
@@ -100,18 +125,18 @@
  */
 
 .header-content-title > .jumbotron  {
-    color: #207A33 !important;
+    color: #095C1B;
     font-family: 'Roboto', sans-serif !important;
 }
 
 .header-content-title > h2 {
-    color: #27993F;
+    color: #3B944F;
     font-size: 36pt;
     font-family: 'Roboto', sans-serif;
 }
 
 .header-content-title > h3 {
-    color: #27993F;
+    color: #3B944F;
     font-size: 32pt;
     font-family: 'Roboto', sans-serif;
 }
@@ -171,6 +196,18 @@
     text-align: left;
 }
 
+.form-group > .control-label-sm {
+    font-size: 14pt;
+    color: black;
+    line-height: 1.5;
+    font-weight: normal;
+}
+
+.form-group > table > thead > tr > th {
+    font-size: 15pt;
+    color: #207A33;
+}
+
 .form-group > .btn-lg {
     border-radius: 2px;
     min-width: 110px;
@@ -187,6 +224,20 @@
 .big-checkbox {
     width: 16px;
     height: 16px;
+}
+
+/*
+Modal dialogs
+*/
+
+.modal-title {
+    font-size: 16pt;
+    color: #207A33;
+    font-weight: bold;
+}
+
+.modal-body {
+    font-size: 15pt;
 }
 
 /*
@@ -249,13 +300,13 @@
 
 .btn-primary {
     font-family: 'Roboto', sans-serif;
-    background-color: #27993F;
+    background-color: #3B944F;
     border-radius: 1px;
     border: 0 none;
 }
 
 .btn-primary:hover {
-    background-color: #207A33;
+    background-color: #095C1B;
 }
 
 .btn-danger {
@@ -271,13 +322,32 @@
     font-weight: 300;
 }
 
+.close-white-lg {
+    color: #ffffff;
+    font-size: 20pt;
+}
+
+.close-white-lg:hover {
+    color: #ffffff;
+}
+
+.alert-lg {
+    font-family: 'Roboto', sans-serif;
+    font-size: 16pt;
+    font-weight: bold;
+}
+
 .alert-success {
     background-color: #207A33;
     color: #FFFFFF;
+    border-radius: 2px;
+}
+
+.alert-info {
+    border-radius: 2px;
 }
 
 .alert-danger {
-    padding: 2px 10px 2px 10px;
     border-radius: 2px;
 }
 
@@ -301,12 +371,12 @@
 }
 
 .navbar .nav > li > a:hover {
-    background-color: #185625;
+    background-color: #095C1B;
 }
 
 .navbar .nav > li.dropdown.open.active > a:hover,
 .navbar .nav > li.dropdown.open > a {
-    background-color: #185625;
+    background-color: #095C1B;
 }
 
 .gr-navbar-text {
@@ -327,8 +397,8 @@
     font-family: 'Roboto', sans-serif;
 }
 
-.dropdown > a:hover, a:focus {
-    background-color: #185625 !important;
+.navbar > .dropdown > a:hover, a:focus {
+    background-color: #095C1B;
     color: white;
 }
 

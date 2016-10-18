@@ -50,8 +50,8 @@
             </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-            <button type="submit" class="btn btn-primary">Confirm</button>
+            <button type="button" class="btn btn-default btn-lg" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary btn-lg">Confirm</button>
           </div>
         </form>
       </div>
@@ -82,7 +82,7 @@
               </label>
               <p class="small">Making the group public will allow non-members to see it on search results, and request to join. To proceed,
               please select which organizer will be responsible for approving or rejecting join requests:</p>
-              <select class="form-control" id="authorizing-member" name="approverPhoneNumber">
+              <select class="form-control input-lg" id="authorizing-member" name="approverPhoneNumber">
                 <option th:each="member : ${groupMembers}"
                         th:if="${member.roleName == 'ROLE_GROUP_ORGANIZER'}"
                         th:value="${member.getPhoneNumberWithCCode()}"
@@ -91,8 +91,8 @@
             </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-            <button type="submit" class="btn btn-primary">Confirm</button>
+            <button type="button" class="btn btn-default btn-lg" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary btn-lg">Confirm</button>
           </div>
         </form>
       </div>
@@ -144,13 +144,13 @@
               <div class="modal-body">
                 <div class="form-group">
                   <label for="new-group-name" class="control-label">New group name:</label>
-                  <input type="text" class="form-control" id="new-group-name"
+                  <input type="text" class="form-control input-lg" id="new-group-name"
                          name="groupName" th:placeholder="${group.groupName}"/>
                 </div>
               </div>
               <div class="modal-footer">
-                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-                <button type="submit" class="btn btn-primary">Rename</button>
+                <button type="button" class="btn btn-default btn-lg" data-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary btn-lg">Rename</button>
               </div>
             </form>
           </div>
@@ -170,7 +170,7 @@
               <div class="modal-body">
                 <div class="form-group">
                   <label for="group-locale" class="control-label">Select language:</label>
-                  <select name="locale" id="group-locale" class="form-control">
+                  <select name="locale" id="group-locale" class="form-control input-lg">
                     <option th:each="language: ${T(za.org.grassroot.webapp.controller.BaseController).getImplementedLanguages()}"
                             th:value="${language.key}"
                             th:text="${language.value}"></option>
@@ -183,8 +183,8 @@
                 </div>
               </div>
               <div class="modal-footer">
-                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-                <button type="submit" class="btn btn-primary">Set</button>
+                <button type="button" class="btn btn-default input-lg" data-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary input-lg">Set</button>
               </div>
             </form>
           </div>
@@ -197,16 +197,16 @@
           <div class="modal-content">
             <div class="modal-header">
               <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-              <h4 class="modal-title" id="reminderModalLabel">Change group language</h4>
+              <h4 class="modal-title" id="reminderModalLabel">When will reminders be sent?</h4>
             </div>
             <form th:action="@{/group/reminder}" method="get">
               <input type="hidden" name="groupUid" th:value="${group.getUid()}" />
               <div class="modal-body">
                 <div class="form-group">
-                  <label for="reminderMinutes" class="control-label">When will reminders be sent, by default?</label>
-                  <p><small>This will set when reminders for meetings and to-dos will be sent out automatically, unless
-                  a custom time is set when the meeting is called or to-do is recorded</small></p>
-                  <select name="reminderMinutes" id="reminderMinutes" class="form-control">
+                  <label for="reminderMinutes" class="control-label control-label-sm">This will set when reminders for
+                    meetings and to-dos will be sent out automatically, unless a custom time is set when the meeting is
+                    called or to-do is recorded</label>
+                  <select name="reminderMinutes" id="reminderMinutes" class="form-control input-lg">
                     <option th:each="option : ${reminderOptions}"
                             th:value="${option[0]}"
                             th:text="${option[1]}"
@@ -215,8 +215,8 @@
                 </div>
               </div>
               <div class="modal-footer">
-                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-                <button type="submit" class="btn btn-primary">Update</button>
+                <button type="button" class="btn btn-default btn-lg" data-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary btn-lg">Update</button>
               </div>
             </form>
           </div>
@@ -238,13 +238,13 @@
                   <label for="confirm_field" class="control-label">
                     You are about to remove this group. This cannot be undone. To confirm, please type "delete" below".
                   </label>
-                  <input type="text" class="form-control" id="confirm_field"
+                  <input type="text" class="form-control input-lg" id="confirm_field"
                          name="confirm_field" autocomplete="off" />
                 </div>
               </div>
               <div class="modal-footer">
-                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-                <button type="submit" class="btn btn-danger">Confirmed, remove</button>
+                <button type="button" class="btn btn-default btn-lg" data-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-danger btn-lg">Confirmed, remove</button>
               </div>
             </form>
           </div>
@@ -278,13 +278,12 @@
                 </label>
                 <p class="small">You will only be able to rejoin if someone adds you back. Are you sure you want to leave? Please type
                   'unsubscribe' below to confirm.</p>
-                <input type="text" class="form-control" id="confirm_unsub_field"
-                       name="confirm_field" autocomplete="off" />
+                <input type="text" class="form-control input-lg" id="confirm_unsub_field" name="confirm_field" autocomplete="off" />
               </div>
             </div>
             <div class="modal-footer">
-              <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-              <button type="submit" class="btn btn-warning">Unsubscribe</button>
+              <button type="button" class="btn btn-default btn-lg" data-dismiss="modal">Close</button>
+              <button type="submit" class="btn btn-warning btn-lg">Unsubscribe</button>
             </div>
           </form>
         </div>
@@ -385,7 +384,7 @@
             <td>
               <span th:unless="${#strings.isEmpty(member.displayName)}" th:text="${member.displayName}">User name</span>
               <span th:if="${#strings.isEmpty(member.displayName)}">Unnamed</span>
-              <span th:unless="${member.userSetName or not canAlter}"><!-- todo : add a check on permissions, clean up link icon -->
+              <span th:unless="${member.userSetName or not canAlter}">
                 <a href="javascript:void(0)" data-toggle="modal" data-target="#editNameModal" th:attr="data-phone=${member.phoneNumber}">(edit)</a>
               </span>
             </td>
@@ -419,8 +418,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                  <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                  <button type="submit" class="btn btn-warning">Remove</button>
+                  <button type="button" class="btn btn-default btn-lg" data-dismiss="modal">Close</button>
+                  <button type="submit" class="btn btn-warning btn-lg">Remove</button>
                 </div>
               </form>
             </div>
@@ -439,15 +438,15 @@
                 <div class="modal-body">
                   <div class="form-group">
                     <label for="new-member-name" class="control-label">Name</label>
-                    <input type="text" class="form-control" id="new-member-name" name="displayName" />
+                    <input type="text" class="form-control input-lg" id="new-member-name" name="displayName" />
                   </div>
                   <div class="form-group">
                     <label for="newMemberPhone" class="control-label">Phone number</label>
-                    <input type="text" class="form-control" id="newMemberPhone" name="phoneNumber" />
+                    <input type="text" class="form-control input-lg" id="newMemberPhone" name="phoneNumber" />
                   </div>
                   <div class="form-group">
                     <label for="new-member-role" class="control-label">Role</label>
-                    <select class="form-control" id="new-member-role" name="roleName">
+                    <select class="form-control input-lg" id="new-member-role" name="roleName">
                     <option th:each="role : ${T(za.org.grassroot.core.domain.BaseRoles).groupRoles}"
                             th:value="${role}"
                             th:text="#{web.group.role.__${role}__}"></option>
@@ -455,8 +454,8 @@
                   </div>
                 </div>
                 <div class="modal-footer">
-                  <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                  <button type="submit" class="btn btn-primary">Add</button>
+                  <button type="button" class="btn btn-default btn-lg" data-dismiss="modal">Close</button>
+                  <button type="submit" class="btn btn-primary btn-lg">Add</button>
                 </div>
               </form>
             </div>

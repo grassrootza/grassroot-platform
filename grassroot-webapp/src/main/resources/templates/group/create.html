@@ -1,6 +1,6 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      layout:decorator="layout">
+      data-layout-decorate="layout">
 <head>
   <title>Grassroot - Create Group</title>
   <script th:src="@{/js/grassroot-methods.js}"></script>
@@ -8,54 +8,53 @@
 <body>
 
 <div layout:fragment="header" th:switch="${groupCreator.hasParent}">
-  <h2 th:case="false" class="text-center">Start a new group</h2>
-  <h2 th:case="true" class="text-center">Start a subgroup of: "<span th:text="${groupCreator.parentName}">parent</span>"</h2>
+  <h2 th:case="false" class="text-center top-buffer-lg">Start a new group</h2>
+  <h2 th:case="true" class="text-center top-buffer-lg">Start a subgroup of: "<span th:text="${groupCreator.parentName}">parent</span>"</h2>
 </div>
 
 <div layout:fragment="content">
   <div layout:fragment="messages"></div>
+
   <div class="well">
+    <div class="row">
+      <div class="col-md-6 col-md-offset-3">
+        <form th:object="${groupCreator}" th:action="@{/group/create}" method="post" autocomplete="on" class="form-horizontal" id="group_creator">
 
-    <form th:object="${groupCreator}" th:action="@{/group/create}" method="post" autocomplete="on" class="form-horizontal" id="group_creator">
-      <div th:if="*{hasParent}">
-        <input th:field="*{parentId}" type="hidden" th:value="*{parentId}"/>
-        <input th:field="*{hasParent}" type="hidden" th:value="*{hasParent}"/>
-      </div>
-
-      <div class="form-group">
-        <div class="col-md-offset-2 col-md-8">
-          <label for="groupName" class="control-label">What's the group's name?</label>
-          <input th:field="*{groupName}" type="text" class="form-control" id="groupName"
-                 placeholder="Please keep to 35 characters or less" maxlength="20" data-toggle="tooltip"
-                 title="Group name may not be longer than 35 characters and must not contain any symbols "/>
+        <div th:if="*{hasParent}">
+          <input th:field="*{parentId}" type="hidden" th:value="*{parentId}"/>
+          <input th:field="*{hasParent}" type="hidden" th:value="*{hasParent}"/>
         </div>
-      </div>
 
-      <div class="form-group">
-        <div class="col-md-offset-2 col-md-8">
-          <table class="table" id="member-input">
-          <thead>
-          <tr>
-            <th>Name</th>
-            <th>Phone</th>
-            <th>Role</th>
-            <th></th>
-          </tr>
+        <div class="form-group">
+            <label for="groupName" class="control-label">What's the group's name?</label>
+            <input th:field="*{groupName}" type="text" class="form-control input-lg" id="groupName"
+                   placeholder="Please keep to 35 characters or less" maxlength="20" data-toggle="tooltip"
+                   title="Group name may not be longer than 35 characters and must not contain any symbols "/>
+        </div>
+
+        <div class="form-group">
+            <table class="table" id="member-input">
+            <thead>
+            <tr>
+              <th>Name</th>
+              <th>Phone</th>
+              <th>Role</th>
+              <th></th>
+            </tr>
           </thead>
           <tbody>
           <tr th:each="member, iterStat: *{listOfMembers}" class="member_input_row">
             <td>
-              <input type="text" th:field="*{listOfMembers[__${iterStat.index}__].displayName}" class="form-control" placeholder="Member's name" maxlength="35"/>
+              <input type="text" th:field="*{listOfMembers[__${iterStat.index}__].displayName}" class="form-control input-lg" placeholder="Member's name" maxlength="35"/>
             </td>
             <td>
               <div class="form-group" th:class="${#fields.hasErrors('listOfMembers[__${iterStat.index}__].phoneNumber')}? has-error">
-                <!-- todo: format / mask this as on sign-in page -->
-                <input type="text" th:field="*{listOfMembers[__${iterStat.index}__].phoneNumber}" class="form-control" th:errorclass="error" placeholder="Phone number"/>
+                <input type="text" th:field="*{listOfMembers[__${iterStat.index}__].phoneNumberWithoutCCode}" class="form-control input-lg" th:errorclass="error" placeholder="Phone number"/>
                 <span th:if="${#fields.hasErrors('listOfMembers[__${iterStat.index}__].phoneNumber')}" class="alert has-error">Error!</span>
               </div>
             </td>
             <td>
-              <select th:field="*{listOfMembers[__${iterStat.index}__].roleName}" class="form-control">
+              <select th:field="*{listOfMembers[__${iterStat.index}__].roleName}" class="form-control input-lg">
                 <option th:each="role : ${T(za.org.grassroot.core.domain.BaseRoles).groupRoles}"
                         th:value="${role}"
                         th:text="#{web.group.role.__${role}__}"
@@ -63,7 +62,7 @@
               </select>
             </td>
             <td>
-              <button type="button" name="removeMember" class="btn btn-default" aria-label="Remove"
+              <button type="button" name="removeMember" class="btn btn-default btn-lg" aria-label="Remove"
                       th:value="${iterStat.index}">
                 <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
               </button>
@@ -71,53 +70,45 @@
           </tr>
           </tbody>
         </table>
-          <button type="button" name="addMember" id="add_member" class="btn btn-default">
+          <button type="button" name="addMember" id="add_member" class="btn btn-default btn-lg">
             <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
             Add another member</button>
-          <a href="#advancedOptions" class="btn btn-default" role="button" data-toggle="collapse">Advanced options</a>
-        </div>
+          <a href="#advancedOptions" class="btn btn-default btn-lg" role="button" data-toggle="collapse">Advanced options</a>
       </div>
 
       <div class="collapse" id="advancedOptions">
         <div class="form-group">
-          <div class="col-md-offset-2 col-md-8">
             <label for="groupTemplate" class="control-label">Who will be able to call meetings, events, etc?</label>
-            <select name="groupTemplate" id="groupTemplate" class="form-control" th:field="*{permissionTemplate}">
+            <select name="groupTemplate" id="groupTemplate" class="form-control input-lg" th:field="*{permissionTemplate}">
               <option th:each="template : ${T(za.org.grassroot.services.enums.GroupPermissionTemplate).values()}"
                       th:value="${template}"
                       th:text="#{web.group.permissions.__${template}__}"></option>
             </select>
-          </div>
         </div>
         <div class="form-group">
-          <div class="col-md-offset-2 col-md-8">
             <label for="reminderMinutes" class="control-label">When will reminders be sent, by default?</label>
-            <select name="reminderMinutes" id="reminderMinutes" class="form-control" th:field="*{reminderMinutes} ">
+            <select name="reminderMinutes" id="reminderMinutes" class="form-control input-lg" th:field="*{reminderMinutes} ">
               <option th:each="option : ${T(za.org.grassroot.webapp.controller.BaseController).reminderMinuteOptions(false)}"
                       th:value="${option[0]}"
                       th:text="${option[1]}"></option>
             </select>
-          </div>
         </div>
         <div class="form-group">
-          <div class="col-md-offset-2 col-md-8">
             <label for="groupDescription" class="control-label">Longer group description (optional):</label>
-            <textarea th:field="*{groupDescription}" id="groupDescription" class="form-control" rows="2" maxlength="250">
+            <textarea th:field="*{groupDescription}" id="groupDescription" class="form-control input-lg" rows="2" maxlength="250">
               A longer description of the group (visible to web and Android users).
             </textarea>
-          </div>
         </div>
       </div>
 
-      <div class="form-group">
-        <div class="col-md-offset-2 col-md-8">
-          <a th:href="@{/home}" role="button" class="btn btn-default">Cancel</a>
-          <button type="submit" class="btn btn-primary">Create Group</button>
-        </div>
+      <div class="form-group pull-right">
+          <a th:href="@{/home}" role="button" class="btn btn-default btn-lg">Cancel</a>
+          <button type="submit" class="btn btn-primary btn-lg">Create Group</button>
       </div>
 
     </form>
-
+      </div>
+    </div>
   </div>
 </div>
 

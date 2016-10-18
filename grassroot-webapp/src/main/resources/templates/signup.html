@@ -8,26 +8,19 @@
 </head>
 
 <body>
-<div layout:fragment="header"></div>
-<div layout:fragment="overview"></div>
+<div layout:fragment="header">
+  <div class="jumbotron narrow-vertical">
+    <h1 class="text-center">Welcome to Grassroot!</h1>
+  </div>
+</div>
 
 <div layout:fragment="content">
 
-  <div class="jumbotron">
-    <div class="cover-container">
-      <div class="row">
-        <div class="col-md-8 col-md-offset-2">
-          <!-- <h1 class="cover-heading text-center">GRASSROOT</h1> -->
-          <h2 class="lead text-center">Welcome to Grassroot! Sign up</h2>
-        </div>
-      </div>
-    </div>
-
-    <div layout:fragment="messages"></div>
+  <div layout:fragment="messages"></div>
 
     <div class="container">
       <div class="row">
-        <div class="col-md-4 col-md-offset-4">
+        <div class="col-md-6 col-md-offset-3">
           <form name="userRegistration" th:action="@{/signup}" th:object="${userRegistration}" method="post"
                 class="form-vertical" id="register-form">
 
@@ -37,30 +30,30 @@
 
             <div class="form-group" th:class="${#fields.hasErrors('displayName')} ? 'form-group has-error': 'form-group'">
               <label for="displayname" class="control-label">Your name (what people know you by):</label>
-              <input type="text" th:field="*{user.displayName}" class="form-control" id="displayname" placeholder="Siya"
+              <input type="text" th:field="*{user.displayName}" class="form-control input-lg" id="displayname" placeholder="Siya"
                 maxlength="25" />
             </div>
 
             <div class="form-group" th:class="${#fields.hasErrors('username')} ? 'form-group has-error' : 'form-group'">
               <label for="mobile-number" class="control-label">Your mobile number:</label>
-              <input type="text" th:field="*{user.username}" class="form-control" id="mobile-number"
+              <input type="text" th:field="*{user.username}" class="form-control input-lg" id="mobile-number"
                      placeholder="South African numbers only" />
               <input type="hidden" id="full-mobile-number" th:field="*{user.phoneNumber}" />
             </div>
 
             <div class="form-group" th:class="${#fields.hasErrors('password')} ? 'form-group has-error': 'form-group'">
-              <label for="password">Set a password:</label>
-              <input type="password" th:field="*{user.password}" class="form-control" id="password" name="password"
+              <label for="password" class="control-label">Set a password:</label>
+              <input type="password" th:field="*{user.password}" class="form-control input-lg" id="password" name="password"
                      placeholder="Password" />
             </div>
 
-            <button class="btn btn-lg btn-default btn-block" id="register" type="submit">Register</button>
+            <button class="btn btn-lg btn-primary btn-block top-buffer-lg" style="font-size: 16p; font-weight: bold; padding: 15px"
+                    id="register" type="submit">Register</button>
 
           </form>
         </div>
       </div>
     </div>
-  </div>
 
 </div>
 
