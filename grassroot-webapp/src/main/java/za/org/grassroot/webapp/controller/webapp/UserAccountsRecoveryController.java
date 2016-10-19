@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -38,6 +39,8 @@ public class UserAccountsRecoveryController extends BaseController {
     private UserManagementService userManagementService;
     @Autowired
     private SmsSendingService smsSendingService;
+    @Autowired
+    private Environment environment;
 
     @Autowired
     @Qualifier("userAccountRecoveryValidator")
@@ -116,7 +119,9 @@ public class UserAccountsRecoveryController extends BaseController {
         if (verificationTokenCode != null) {
             SmsGatewayResponse messageResult = smsSendingService.sendSMS(getMessage("user.profile.token.message", verificationTokenCode.getCode()),
                     verificationTokenCode.getUsername());
-            log.info("For token {}, sms send result: {}", verificationTokenCode.getCode(), messageResult.toString());
+            if (!environment.acceptsProfiles("production")) {
+                log.info("For token {}, sms send result: {}", verificationTokenCode.getCode(), messageResult.toString());
+            }
         }
     }
 }
