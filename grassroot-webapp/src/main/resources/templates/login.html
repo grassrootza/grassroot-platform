@@ -1,6 +1,6 @@
 <html xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       xmlns:th="http://www.thymeleaf.org"
-      data-layout-decorate="layout">
+      data-layout-decorate="~{layout}">
 <head>
   <title>Grassroot</title>
 
@@ -26,12 +26,13 @@
 
     <div class="container">
       <div class="row">
-        <div class="col-md-6 col-md-offset-3">
+        <div class="col-md-4 col-md-offset-4">
 
           <form id="signin-form" th:action="@{/login}" method="post" autocomplete="off">
 
             <div th:class="${(param.error != null)}? 'alert alert-danger alert-dismissable' : 'hide'">
-              <span class="alert-lg" th:if="${(param.error != null)}">Sorry, invalid phone number or password.<span th:text="${error}"></span></span>
+              <button type="button" class="close close-white-lg" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+              <span class="alert-md" th:if="${(param.error != null)}">Sorry, wrong phone number or password.<span th:text="${error}"></span></span>
             </div>
 
             <div class="form-group">

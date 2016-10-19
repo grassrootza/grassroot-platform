@@ -354,6 +354,11 @@ Modal dialogs
     font-size: 15pt;
 }
 
+.alert-md {
+    font-family: 'Roboto', sans-serif;
+    font-size: 13pt;
+}
+
 .alert-success {
     background-color: #207A33;
     color: #FFFFFF;
