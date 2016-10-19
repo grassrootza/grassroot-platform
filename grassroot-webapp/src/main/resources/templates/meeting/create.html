@@ -76,7 +76,7 @@
 
           <div class="form-group pull-right top-buffer">
             <a th:if="${groupSpecified}"
-               th:href="@{/group/view(groupUid=${group.Uid})}" role="button" class="btn btn-default">Cancel</a>
+               th:href="@{/group/view(groupUid=${group.Uid})}" role="button" class="btn btn-default btn-lg">Cancel</a>
             <a th:if="${not groupSpecified}"
                th:href="@{/home}" role="button" class="btn btn-default btn-lg">Cancel</a>
             <button type="submit" class="btn btn-primary btn-lg">Call meeting</button>
