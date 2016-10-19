@@ -387,6 +387,14 @@ public class GroupBrokerImpl implements GroupBroker {
         Set<ActionLog> actionLogs = new HashSet<>();
         for (Membership membership : memberships) {
             group.removeMembership(membership);
+            if(gcmService.hasGcmKey(membership.getUser())) {
+                try {
+                    gcmService.unsubscribeFromTopic(gcmService.getGcmKey(membership.getUser()),group.getUid());
+                } catch (Exception e) {
+                    logger.error("Unable to unsubscribe member with uid={} from group topic ={}", membership.getUser(), group);
+                }
+            }
+
             actionLogs.add(new GroupLog(group, initiator, GroupLogType.GROUP_MEMBER_REMOVED, membership.getUser().getId()));
         }
         return actionLogs;
