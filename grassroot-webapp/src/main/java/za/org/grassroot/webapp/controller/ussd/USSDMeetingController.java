@@ -19,7 +19,7 @@ import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.integration.exception.SeloParseDateTimeFailure;
 import za.org.grassroot.services.EventLogBroker;
 import za.org.grassroot.services.EventRequestBroker;
-import za.org.grassroot.services.MembershipInfo;
+import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.services.enums.EventListTimeType;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;

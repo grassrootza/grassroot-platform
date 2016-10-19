@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html
+    xmlns:th="http://www.thymeleaf.org"
+    xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+    data-layout-decorate="~{layout}">
+<head>
+  <meta charset="UTF-8">
+  <title>Grassroot - Import group members</title>
+</head>
+<body>
+
+  <div layout:fragment="header">
+    <h1>Import file</h1>
+  </div>
+
+  <div layout:fragment="content">
+    <form th:action="@{upload/excel}" method="post" class="form-vertical" enctype="multipart/form-data">
+      <div class="form-group">
+        <label class="control-label">Selected file:</label>
+        <input type="file" class="form-control input-lg" name="file" />
+      </div>
+      <div class="form-group">
+        <button type="submit" class="btn btn-primary btn-lg">Upload</button>
+      </div>
+    </form>
+  </div>
+
+</body>
+</html>

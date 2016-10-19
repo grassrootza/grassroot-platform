@@ -21,6 +21,9 @@ dependencies {
     compile group: 'org.igniterealtime.smack', name: 'smack-tcp', version: libs.smackVersion
     compile group: 'org.igniterealtime.smack', name: 'smack-extensions', version: libs.smackVersion
     compile group: 'org.igniterealtime.smack', name: 'smack-java7', version: libs.smackVersion
+
+    compile group: 'org.apache.poi', name: 'poi', version: '3.15'
+    compile group: 'org.apache.poi', name: 'poi-ooxml', version: '3.15'
 }
 
 test {

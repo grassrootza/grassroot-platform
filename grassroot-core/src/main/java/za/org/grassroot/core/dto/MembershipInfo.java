@@ -1,4 +1,4 @@
-package za.org.grassroot.services;
+package za.org.grassroot.core.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
