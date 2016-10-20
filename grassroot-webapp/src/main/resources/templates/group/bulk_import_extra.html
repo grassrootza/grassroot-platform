@@ -6,23 +6,110 @@
 <head>
   <meta charset="UTF-8">
   <title>Grassroot - Import group members</title>
+  <script th:src="@{/js/jquery.ui.widget.min.js}"></script>
+  <script th:src="@{/js/jquery.iframe-transport.min.js}"></script>
+  <script th:src="@{/js/jquery.fileupload.min.js}"></script>
+
+  <meta name="_csrf" th:content="${_csrf.token}"/>
+  <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+
 </head>
 <body>
 
   <div layout:fragment="header">
-    <h1>Import file</h1>
+    <h1 class="text-center">Import Members</h1>
+  </div>
+
+  <div layout:fragment="overview">
+    <h4 class="text-center">Import a list of members from Excel</h4>
   </div>
 
   <div layout:fragment="content">
-    <form th:action="@{upload/excel}" method="post" class="form-vertical" enctype="multipart/form-data">
-      <div class="form-group">
-        <label class="control-label">Selected file:</label>
-        <input type="file" class="form-control input-lg" name="file" />
+
+    <div class="row">
+      <div class="col-md-4 col-md-offset-4">
+        <div class="form-vertical" id="add_file">
+          <div class="form-group">
+            <span class="btn btn-primary btn-block btn-cta fileinput-button">
+              <i class="glyphicon glyphicon-plus"></i>
+              <span id="file_btn_text">Add file</span>
+              <input id="fileupload" type="file" name="file" />
+            </span>
+          </div>
+        </div>
+
+        <!-- form populated by response from controller with columns, etc -->
+        <div id="step_2">
+          <form id="file_options" class="form-vertical">
+            <div class="form-group">
+              <label class="radio-inline"><input type="radio" name="header" value="yes" th:checked="true">Sheet has a header row</label>
+              <label class="radio-inline"><input type="radio" name="header" value="no">No header row</label>
+            </div>
+            <div class="form-group">
+              <label class="control-label">Column with member names:</label>
+              <select id="nameColumn" class="form-control input-lg column-selector">
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="control-label">Column with phone numbers:</label>
+              <select id="phoneColumn" class="form-control input-lg column-selector">
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="control-label">Column with roles: (optional)</label>
+              <select id="roleColumn" class="form-control input-lg column-selector">
+              </select>
+            </div>
+            <div class="form-group">
+              <button type="submit" class="btn btn-primary btn-block">Next</button>
+            </div>
+          </form>
+        </div>
       </div>
-      <div class="form-group">
-        <button type="submit" class="btn btn-primary btn-lg">Upload</button>
-      </div>
-    </form>
+    </div>
+  </div>
+
+  <div layout:fragment="script-container">
+
+    <script th:inline="javascript">
+      $(document).ready(function() {
+        $("#step_2").hide();
+
+        var token = $("meta[name='_csrf']").attr("content");
+        var header = $("meta[name='_csrf_header']").attr("content");
+
+        $('#fileupload').fileupload({
+          url: /* [[@{'analyze'}]] */ "analyze",
+          dataType: 'JSON',
+          beforeSend: function(xhr) {
+            xhr.setRequestHeader(header, token);
+          },
+          done: function (e, data) {
+            $('#file_btn_text').text("Change file");
+            addHeadersToSelect(data.result)
+          }
+        });
+
+        function addHeadersToSelect(dataResult) {
+          /*console.log("passed this as dataResult: " + JSON.stringify(dataResult));
+          console.log("and extracted strings: " + dataResult['firstRowCells']);*/
+
+          var colOptions = '';
+          var i = 0;
+
+          $.each(dataResult['firstRowCells'], function() {
+            colOptions += '<option>' + this + '</option>';
+          });
+
+          $(colOptions).appendTo($(".column-selector"));
+
+          console.log("Showing the second step ...");
+          $("#step_2").show();
+
+        }
+
+      });
+    </script>
   </div>
 
 </body>

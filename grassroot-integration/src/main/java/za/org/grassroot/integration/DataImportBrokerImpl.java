@@ -11,7 +11,9 @@ import za.org.grassroot.core.dto.MembershipInfo;
 
 import javax.annotation.PostConstruct;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -28,6 +30,24 @@ public class DataImportBrokerImpl implements DataImportBroker {
     @PostConstruct
     private void init() {
         dataFormatter = new DataFormatter();
+    }
+
+    @Override
+    public List<String> extractFirstRowOfCells(MultipartFile file) {
+        List<String> firstRow = new ArrayList<>();
+        try {
+            Workbook wb = WorkbookFactory.create(file.getInputStream());
+            formulaEvaluator = wb.getCreationHelper().createFormulaEvaluator();
+            Row row = wb.getSheetAt(0).getRow(0);
+            for (Cell cell : row) {
+                firstRow.add(dataFormatter.formatCellValue(cell, formulaEvaluator));
+            }
+        } catch (IOException e) {
+            logger.info("Error, file input stream corrupted");
+        } catch (InvalidFormatException e) {
+            logger.info("Error, invalid file format");
+        }
+        return firstRow;
     }
 
     @Override
