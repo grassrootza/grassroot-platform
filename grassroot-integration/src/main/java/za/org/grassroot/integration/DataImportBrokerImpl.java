@@ -5,16 +5,14 @@ import org.apache.poi.ss.usermodel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.dto.MembershipInfo;
 
 import javax.annotation.PostConstruct;
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Created by luke on 2016/10/19.
@@ -33,10 +31,10 @@ public class DataImportBrokerImpl implements DataImportBroker {
     }
 
     @Override
-    public List<String> extractFirstRowOfCells(MultipartFile file) {
+    public List<String> extractFirstRowOfCells(File file) {
         List<String> firstRow = new ArrayList<>();
         try {
-            Workbook wb = WorkbookFactory.create(file.getInputStream());
+            Workbook wb = WorkbookFactory.create(file);
             formulaEvaluator = wb.getCreationHelper().createFormulaEvaluator();
             Row row = wb.getSheetAt(0).getRow(0);
             for (Cell cell : row) {
@@ -51,19 +49,20 @@ public class DataImportBrokerImpl implements DataImportBroker {
     }
 
     @Override
-    public Set<MembershipInfo> importExcelFile(MultipartFile file, Integer nameColumn, Integer phoneColumn, Integer roleColumn) {
-        Set<MembershipInfo> importedMembers = new HashSet<>();
+    public List<MembershipInfo> processMembers(File file, Integer phoneColumn, Integer nameColumn, Integer roleColumn, boolean headerRow) {
+        List<MembershipInfo> importedMembers = new ArrayList<>();
         try {
-            Workbook wb = WorkbookFactory.create(file.getInputStream());
+            Workbook wb = WorkbookFactory.create(file);
             formulaEvaluator = wb.getCreationHelper().createFormulaEvaluator();
             Sheet sheet = wb.getSheetAt(0);
             int nameRef = nameColumn == null ? 0 : nameColumn;
             int phoneRef = phoneColumn == null ? 1 : phoneColumn;
 
-            for (Row row : sheet) {
+            for (int i = headerRow ? 1 : 0; i <  sheet.getPhysicalNumberOfRows(); i++) {
+                Row row = sheet.getRow(i);
                 MembershipInfo member = memberFromRow(row, nameRef, phoneRef, roleColumn);
                 importedMembers.add(member);
-                logger.info("Read in member: {}", member);
+                logger.debug("Read in member: {}", member);
             }
             logger.info("Read in file!");
         } catch (IOException e) {
@@ -79,7 +78,7 @@ public class DataImportBrokerImpl implements DataImportBroker {
                 : BaseRoles.ROLE_ORDINARY_MEMBER;
 
         return new MembershipInfo(dataFormatter.formatCellValue(row.getCell(phoneCol), formulaEvaluator), roleName,
-                row.getCell(nameCol).getStringCellValue());
+                dataFormatter.formatCellValue(row.getCell(nameCol), formulaEvaluator));
     }
 
     private String convertRoleName(final String cellValue) {

@@ -12,6 +12,7 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.notification.FreeFormMessageNotification;
 import za.org.grassroot.core.enums.AccountLogType;
 import za.org.grassroot.core.enums.AccountType;
+import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.services.exception.GroupAccountMismatchException;
 import za.org.grassroot.services.exception.GroupAlreadyPaidForException;
@@ -288,7 +289,7 @@ public class AccountBrokerImpl implements AccountBroker {
         paidGroupRepository.saveAndFlush(paidGroup);
         account.addPaidGroup(paidGroup);
         group.setPaidFor(true);
-        createAndStoreSingleAccountLog(new AccountLog(addingUserUid, account, AccountLogType.GROUP_ADDED, groupUid, paidGroup.getUid(), group.getName()));
+        storeGroupAddOrRemoveLogs(AccountLogType.GROUP_ADDED, account, group, paidGroup.getUid(), addingUser);
     }
 
     @Override
@@ -303,14 +304,14 @@ public class AccountBrokerImpl implements AccountBroker {
 
     @Override
     @Transactional
-    public void removeGroupFromAccount(String accountUid, String paidGroupUid, String removingUserUid) {
+    public void removeGroupFromAccount(String accountUid, String groupUid, String removingUserUid) {
         Objects.requireNonNull(accountUid);
-        Objects.requireNonNull(paidGroupUid);
+        Objects.requireNonNull(groupUid);
         Objects.requireNonNull(removingUserUid);
 
         Account account = accountRepository.findOneByUid(accountUid);
-        PaidGroup record = paidGroupRepository.findOneByUid(paidGroupUid);
-        Group group = record.getGroup();
+        Group group = groupRepository.findOneByUid(groupUid);
+        PaidGroup record = paidGroupRepository.findTopByGroupOrderByExpireDateTimeDesc(group);
         User user = userRepository.findOneByUid(removingUserUid);
 
         if (!account.getAdministrators().contains(user)) {
@@ -321,8 +322,7 @@ public class AccountBrokerImpl implements AccountBroker {
         record.setRemovedByUser(user);
         account.removePaidGroup(record);
         group.setPaidFor(false);
-        createAndStoreSingleAccountLog(new AccountLog(removingUserUid, account, AccountLogType.GROUP_REMOVED, group.getUid(),
-                paidGroupUid, group.getName()));
+        storeGroupAddOrRemoveLogs(AccountLogType.GROUP_REMOVED, account, group, record.getUid(), user);
     }
 
     @Override
@@ -408,6 +408,14 @@ public class AccountBrokerImpl implements AccountBroker {
     private void createAndStoreSingleAccountLog(AccountLog accountLog) {
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
         bundle.addLog(accountLog);
+        logsAndNotificationsBroker.storeBundle(bundle);
+    }
+
+    private void storeGroupAddOrRemoveLogs(AccountLogType accountLogType, Account account, Group group, String paidGroupUid, User user) {
+        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+        bundle.addLog(new AccountLog(user.getUid(), account, accountLogType, group.getUid(), paidGroupUid, group.getName()));
+        bundle.addLog(new GroupLog(group, user, accountLogType.equals(AccountLogType.GROUP_ADDED) ?
+                GroupLogType.ADDED_TO_ACCOUNT : GroupLogType.GROUP_REMOVED, user.getId(), account.getUid()));
         logsAndNotificationsBroker.storeBundle(bundle);
     }
 }

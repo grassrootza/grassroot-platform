@@ -62,6 +62,9 @@ public class GroupController extends BaseController {
     private GroupQueryBroker groupQueryBroker;
 
     @Autowired
+    private AccountBroker accountBroker;
+
+    @Autowired
     @Qualifier("groupWrapperValidator")
     private Validator groupWrapperValidator;
 
@@ -127,7 +130,14 @@ public class GroupController extends BaseController {
         model.addAttribute("canCallVote", userPermissions.contains(Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE));
         model.addAttribute("canRecordAction", userPermissions.contains(Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY));
 
-        model.addAttribute("canCreateSubGroup", userPermissions.contains(Permission.GROUP_PERMISSION_CREATE_SUBGROUP));
+
+        boolean isGroupPaidFor = groupQueryBroker.isGroupPaidFor(groupUid);
+        model.addAttribute("isPaidFor", isGroupPaidFor);
+        model.addAttribute("canCreateSubGroup", isGroupPaidFor && userPermissions.contains(Permission.GROUP_PERMISSION_CREATE_SUBGROUP));
+        model.addAttribute("canAddToAccount", !isGroupPaidFor && (user.getAccountAdministered() != null)); // todo : check account has space
+
+        model.addAttribute("canRemoveFromAccount", isGroupPaidFor && user.getAccountAdministered() != null &&
+                user.getAccountAdministered().equals(accountBroker.findAccountForGroup(groupUid)));
 
         return "group/view";
     }
@@ -222,6 +232,27 @@ public class GroupController extends BaseController {
         return viewGroupIndex(model, groupUid);
     }
 
+    /*
+    Add and remove group from an account
+     */
+
+    @RequestMapping(value = "account/add")
+    public String addGroupToAccount(Model model, @RequestParam String groupUid, RedirectAttributes attributes, HttpServletRequest request) {
+        // todo : exception handling etc
+        accountBroker.addGroupToAccount(getUserProfile().getAccountAdministered().getUid(), groupUid, getUserProfile().getUid());
+        addMessage(attributes, MessageType.SUCCESS, "group.account.added", request);
+        attributes.addAttribute("groupUid", groupUid);
+        return "redirect:/group/view";
+    }
+
+    @RequestMapping(value = "account/remove")
+    public String removeGroupFromAccount(Model model, @RequestParam String groupUid, RedirectAttributes attributes, HttpServletRequest request) {
+        accountBroker.removeGroupFromAccount(getUserProfile().getAccountAdministered().getUid(), groupUid, getUserProfile().getUid());
+        addMessage(attributes, MessageType.INFO, "group.account.removed", request);
+        attributes.addAttribute("groupUid", groupUid);
+        return "redirect:/group/view";
+    }
+
 
     /*
     Methods and views for adding a few members at a time
@@ -298,6 +329,7 @@ public class GroupController extends BaseController {
         }
     }
 
+    // todo : move this to new controller
     @RequestMapping(value = "add_bulk")
     public String addMembersBulk(Model model, @RequestParam String groupUid, HttpServletRequest request) {
 

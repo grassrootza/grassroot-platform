@@ -60,4 +60,8 @@ public interface GroupQueryBroker {
 
     Page<Group> fetchUserCreatedGroups(User user, int pageNumber, int pageSize);
 
+    /** TO CHECK IF GROUP IS PAID OR NOT **/
+
+    boolean isGroupPaidFor(String groupUid);
+
 }

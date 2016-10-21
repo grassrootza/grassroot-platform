@@ -47,7 +47,7 @@ public interface AccountBroker {
     void addGroupToAccount(String accountUid, String groupUid, String addingUserUid);
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
-    void removeGroupFromAccount(String accountUid, String paidGroupUid, String removingUserUid);
+    void removeGroupFromAccount(String accountUid, String groupUid, String removingUserUid);
 
     Account findAccountForGroup(String groupUid);
 

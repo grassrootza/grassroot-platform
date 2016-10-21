@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +19,7 @@ import za.org.grassroot.core.dto.GroupTreeDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.services.geo.GeoLocationBroker;
+import za.org.grassroot.services.specifications.PaidGroupSpecifications;
 import za.org.grassroot.services.util.FullTextSearchUtils;
 
 import java.time.Instant;
@@ -48,6 +51,9 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
 
     @Autowired
     private GroupRepository groupRepository;
+
+    @Autowired
+    private PaidGroupRepository paidGroupRepository;
 
     @Autowired
     private GroupLocationRepository groupLocationRepository;
@@ -244,6 +250,15 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
     public Page<Group> fetchUserCreatedGroups(User user, int pageNumber, int pageSize) {
         Objects.nonNull(user);
         return groupRepository.findByCreatedByUserAndActiveTrueOrderByCreatedDateTimeDesc(user, new PageRequest(pageNumber, pageSize));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean isGroupPaidFor(String groupUid) {
+        Group group = groupRepository.findOneByUid(groupUid);
+        return paidGroupRepository.count(Specifications
+                .where(PaidGroupSpecifications.isForGroup(group))
+                .and(PaidGroupSpecifications.expiresAfter(Instant.now()))) > 0;
     }
 
     /*

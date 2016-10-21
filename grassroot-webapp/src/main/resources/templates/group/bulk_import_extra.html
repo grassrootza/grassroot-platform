@@ -17,7 +17,7 @@
 <body>
 
   <div layout:fragment="header">
-    <h1 class="text-center">Import Members</h1>
+    <h1 class="text-center">Upload Members</h1>
   </div>
 
   <div layout:fragment="overview">
@@ -40,28 +40,31 @@
 
         <!-- form populated by response from controller with columns, etc -->
         <div id="step_2">
-          <form id="file_options" class="form-vertical">
+          <form th:action="@{confirm}" method="post" id="file_options" class="form-vertical">
+            <input type="hidden" id="tmpFilePath" name="tempPath" />
+            <input type="hidden" name="groupUid" th:value="${groupUid}" />
             <div class="form-group">
               <label class="radio-inline"><input type="radio" name="header" value="yes" th:checked="true">Sheet has a header row</label>
               <label class="radio-inline"><input type="radio" name="header" value="no">No header row</label>
             </div>
             <div class="form-group">
               <label class="control-label">Column with member names:</label>
-              <select id="nameColumn" class="form-control input-lg column-selector">
+              <select name="nameColumn" id="nameColumn" class="form-control input-lg column-selector">
               </select>
             </div>
             <div class="form-group">
               <label class="control-label">Column with phone numbers:</label>
-              <select id="phoneColumn" class="form-control input-lg column-selector">
+              <select name="phoneColumn" id="phoneColumn" class="form-control input-lg column-selector">
               </select>
             </div>
             <div class="form-group">
               <label class="control-label">Column with roles: (optional)</label>
-              <select id="roleColumn" class="form-control input-lg column-selector">
+              <select name="roleColumn" id="roleColumn" class="form-control input-lg column-selector">
+                <option value="-1">None</option>
               </select>
             </div>
             <div class="form-group">
-              <button type="submit" class="btn btn-primary btn-block">Next</button>
+              <button type="submit" class="btn btn-primary btn-block btn-cta">Next</button>
             </div>
           </form>
         </div>
@@ -97,8 +100,12 @@
           var colOptions = '';
           var i = 0;
 
+          $("#tmpFilePath").val(dataResult['tmpFilePath']);
+          console.log("Set file path as: " + $("#tmpFilePath").val());
+
           $.each(dataResult['firstRowCells'], function() {
-            colOptions += '<option>' + this + '</option>';
+            colOptions += '<option value="' + i + '">' + this + '</option>';
+            i++;
           });
 
           $(colOptions).appendTo($(".column-selector"));

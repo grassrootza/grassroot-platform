@@ -1,10 +1,9 @@
 package za.org.grassroot.integration;
 
-import org.springframework.web.multipart.MultipartFile;
 import za.org.grassroot.core.dto.MembershipInfo;
 
+import java.io.File;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Created by luke on 2016/10/19.
@@ -12,8 +11,8 @@ import java.util.Set;
 public interface DataImportBroker {
 
     // todo: error throwing etc
-    List<String> extractFirstRowOfCells(MultipartFile file);
+    List<String> extractFirstRowOfCells(File file);
 
-    Set<MembershipInfo> importExcelFile(MultipartFile file, Integer nameColumn, Integer phoneColumn, Integer roleColumn);
+    List<MembershipInfo> processMembers(File file, Integer phoneColumn, Integer nameColumn, Integer roleColumn, boolean headerRow);
 
 }

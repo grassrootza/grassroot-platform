@@ -7,10 +7,16 @@ import java.util.List;
  */
 public class ExcelSheetAnalysis {
 
+    private final String tmpFilePath;
     private List<String> firstRowCells;
 
-    public ExcelSheetAnalysis(List<String> firstRowCells) {
+    public ExcelSheetAnalysis(String tmpFilePath, List<String> firstRowCells) {
+        this.tmpFilePath = tmpFilePath;
         this.firstRowCells = firstRowCells;
+    }
+
+    public String getTmpFilePath() {
+        return tmpFilePath;
     }
 
     public List<String> getFirstRowCells() {

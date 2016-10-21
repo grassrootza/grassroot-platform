@@ -5,6 +5,7 @@ package za.org.grassroot.core.repository;
  */
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.PaidGroup;
@@ -12,7 +13,7 @@ import za.org.grassroot.core.domain.PaidGroup;
 import java.time.Instant;
 import java.util.List;
 
-public interface PaidGroupRepository extends JpaRepository<PaidGroup, Long> {
+public interface PaidGroupRepository extends JpaRepository<PaidGroup, Long>, JpaSpecificationExecutor<PaidGroup> {
 
     PaidGroup findOneByUid(String paidGroupUid);
 

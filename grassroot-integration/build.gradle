@@ -9,6 +9,8 @@ dependencies {
     compile group: 'org.springframework.integration', name: 'spring-integration-core', version: libs.springIntegrationVersion
     compile group: 'org.springframework.integration', name: 'spring-integration-xmpp', version: libs.springIntegrationVersion
 
+    compile group: 'org.springframework.social', name: 'spring-social-facebook', version: '2.0.3.RELEASE'
+
     compile(group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.2') {
         exclude(module: 'commons-logging')
     }

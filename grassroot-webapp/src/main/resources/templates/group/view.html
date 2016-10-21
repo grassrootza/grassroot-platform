@@ -1,6 +1,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      data-layout-decorate="layout">
+      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity4"
+      data-layout-decorate="~{layout}">
 <head>
   <title>Grassroot - View Group</title>
   <script th:src="@{/js/grassroot-methods.js}"></script>
@@ -118,10 +119,18 @@
             <li><a th:if="${canChangePermissions}" th:href="@{/group/roles/permissions(groupUid=${group.Uid})}">
               Change roles' permissions</a></li>
             <li><a th:href="@{/group/change_multiple(groupUid=${group.uid})}">Add, remove multiple members</a></li>
+            <!-- todo : take 'paid' out of path and add a check here for if it is paid -->
+            <li><a th:if="${isPaidFor}" th:href="@{/group/paid/import/start(groupUid=${group.uid})}">Import members</a></li>
             <li><a href="javascript:void(0)" data-toggle="modal" data-target="#reminderModal">Change reminder timing</a></li>
             <li><a href="javascript:void(0)" data-toggle="modal" data-target="#renameModal">Rename group</a></li>
             <li><a href="javascript:void(0)" data-toggle="modal" data-target="#languageModal">Set default language</a></li>
             <li class="divider"></li>
+            <li th:if="${canAddToAccount}" sec:authorize="hasAnyRole('ROLE_ACCOUNT_ADMIN')">
+              <a href="javascript:void(0)" data-toggle="modal" data-target="#accountModal">Add group to account</a>
+            </li>
+            <li th:if="${canRemoveFromAccount}" sec:authorize="hasAnyRole('ROLE_ACCOUNT_ADMIN')">
+              <a href="javascript:void(0)" data-toggle="modal" data-target="#accountRemoveModal">Remove group from account</a>
+            </li>
             <li th:if="${not hasParent}"><a th:href="@{/group/parent(groupUid=${group.uid})}">Link to a parent group</a></li>
             <li><a href="" th:href="@{/group/consolidate/select(groupUid=${group.uid})}">Merge with another group</a></li>
             <!-- <li th:if="${canCreateSubGroup}"><a href="" th:href="@{/group/create(parent=${group.uid})}">Create a sub-group</a></li> -->
@@ -284,6 +293,63 @@
             <div class="modal-footer">
               <button type="button" class="btn btn-default btn-lg" data-dismiss="modal">Close</button>
               <button type="submit" class="btn btn-warning btn-lg">Unsubscribe</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add group to account modal -->
+    <div class="modal fade" id="accountModal" tabindex="-1" role="dialog" aria-labelledby="accountModalLabel">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+            <h4 class="modal-title" id="accountModalLabel">Link group to account?</h4>
+          </div>
+          <form th:action="@{/group/account/add}" method="post">
+            <input type="hidden" name="groupUid" th:value="${group.uid}" />
+            <div class="modal-body">
+              <div class="form-group">
+                <label class="control-label">
+                  After you do this, you will have (X) groups left on your account. Confirm?.
+                </label>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-default btn-lg" data-dismiss="modal">Close</button>
+              <button type="submit" class="btn btn-primary btn-lg">Confirm</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Remove group from account modal -->
+    <div class="modal fade" id="accountRemoveModal" tabindex="-1" role="dialog" aria-labelledby="accRemoveModalLabel">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+            <h4 class="modal-title" id="accRemoveModalLabel">Link group to account?</h4>
+          </div>
+          <form th:action="@{/group/account/remove}" method="post">
+            <input type="hidden" name="groupUid" th:value="${group.uid}" />
+            <div class="modal-body">
+              <div class="form-group">
+                <label class="control-label">
+                  Are you sure? If you remove this group from your account, it will no longer have access
+                  to account features (which will suck, honestly).
+                </label>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-default btn-lg" data-dismiss="modal">Close</button>
+              <button type="submit" class="btn btn-primary btn-lg">Confirm</button>
             </div>
           </form>
         </div>
