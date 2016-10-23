@@ -22,8 +22,8 @@ import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.repository.UserRequestRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.PhoneNumberUtil;
-import za.org.grassroot.integration.xmpp.GcmService;
 import za.org.grassroot.integration.sms.SmsSendingService;
+import za.org.grassroot.integration.xmpp.GcmService;
 import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.exception.InvalidTokenException;
 import za.org.grassroot.services.exception.NoSuchProfileException;
@@ -96,7 +96,10 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
         User userToSave;
         String phoneNumber = PhoneNumberUtil.convertPhoneNumber(userProfile.getPhoneNumber());
+        long start = System.nanoTime();
         boolean userExists = userExist(phoneNumber);
+        long time = System.nanoTime() - start;
+        log.info("User exists check took {} nanosecs", time);
 
         if (userExists) {
 

@@ -1,8 +1,7 @@
 package za.org.grassroot.core.repository;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import za.org.grassroot.core.domain.Event;
@@ -10,12 +9,11 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.notification.EventNotification;
 
-import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
-public interface UserRepository extends JpaRepository<User, Long> {
+public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificationExecutor<User> {
 
     /*
     Since phoneNumbers are unique, replacing the prior method, which returned a list of Users, with this, for efficiency
@@ -39,12 +37,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("select u from Membership m " +
             "inner join m.user u " +
             "inner join m.group g " +
-            "where g = :group order by u.id asc")
-    Page<User> findByGroupsPartOf(@Param("group") Group group, Pageable page);
-
-    @Query("select u from Membership m " +
-            "inner join m.user u " +
-            "inner join m.group g " +
             "where g = :group and (u.displayName like concat('%', :userInput ,'%') or u.phoneNumber like concat('%', :phoneNumber ,'%'))")
     List<User> findByGroupsPartOfAndDisplayNameContainingOrPhoneNumberContaining(
             @Param("group") Group group, @Param("userInput") String userInput, @Param("phoneNumber") String phoneNumber);
@@ -64,16 +56,13 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     User findByUsername(String username);
 
-    int countByCreatedDateTimeBetween(Instant start, Instant end);
-
-    int countByHasInitiatedSession(boolean hasInitiatedSession);
-    int countByCreatedDateTimeBetweenAndHasInitiatedSession(Instant start, Instant end, boolean hasInitiatedSession);
-
-    int countByHasWebProfile(boolean webProfile);
-    int countByHasAndroidProfile(boolean androidProfile);
-
-    int countByCreatedDateTimeBetweenAndHasAndroidProfile(Instant start, Instant end, boolean androidProfile);
-    int countByCreatedDateTimeBetweenAndHasWebProfile(Instant start, Instant end, boolean webProfile);
+    /*
+    Finding other users in a user's graph, by phone number, for filtering
+     */
+    @Query("select distinct u.phoneNumber from User u where " +
+            "u in (select m.user from Membership m where " +
+            "m.group in (select m.group from Membership m2 where m2.user = :searchedUser))")
+    List<String> findPhoneNumbersInGraphOfUser(@Param("searchedUser") User searchedUser);
 
     /*
     See if the phone number exists, before adding it

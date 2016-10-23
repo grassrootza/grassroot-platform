@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +33,7 @@ import java.util.*;
 
 import static za.org.grassroot.core.util.DateTimeUtil.convertToSystemTime;
 import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
+import static za.org.grassroot.services.specifications.UserSpecifications.*;
 
 /**
  * Created by luke on 2016/02/04.
@@ -92,35 +94,37 @@ public class AdminManager implements AdminService {
     @Override
     @Transactional(readOnly = true)
     public int countUsersCreatedInInterval(LocalDateTime start, LocalDateTime end) {
-        return userRepository.countByCreatedDateTimeBetween(convertToSystemTime(start, getSAST()),
-                convertToSystemTime(end, getSAST()));
+        return (int) userRepository.count(Specifications
+                .where(createdAfter(convertToSystemTime(start, getSAST())))
+                .and(createdBefore(convertToSystemTime(end, getSAST()))));
     }
 
     @Override
     @Transactional(readOnly = true)
     public int countUsersThatHaveInitiatedSession() {
-        return userRepository.countByHasInitiatedSession(true);
+        return (int) userRepository.count(hasInitiatedSession());
     }
 
     @Override
     @Transactional(readOnly = true)
     public int countUsersCreatedAndInitiatedInPeriod(LocalDateTime start, LocalDateTime end) {
-        return userRepository.countByCreatedDateTimeBetweenAndHasInitiatedSession(convertToSystemTime(start, getSAST()),
-                        convertToSystemTime(end, getSAST()), true);
+        return (int) userRepository.count(Specifications.where(hasInitiatedSession())
+                .and(createdAfter(convertToSystemTime(start, getSAST())))
+                .and(createdBefore(convertToSystemTime(end, getSAST()))));
     }
 
     @Override
     @Transactional(readOnly = true)
     public int countUsersThatHaveWebProfile() {
-        return userRepository.countByHasWebProfile(true);
+        return (int) userRepository.count(hasAndroidProfile());
     }
 
     @Override
     @Transactional(readOnly = true)
     public int countUsersCreatedWithWebProfileInPeriod(LocalDateTime start, LocalDateTime end) {
-        return userRepository.
-                countByCreatedDateTimeBetweenAndHasWebProfile(convertToSystemTime(start, getSAST()),
-                        convertToSystemTime(end, getSAST()), true);
+        return (int) userRepository.count(Specifications.where(hasWebProfile())
+                .and(createdAfter(convertToSystemTime(start, getSAST())))
+                .and(createdBefore(convertToSystemTime(end, getSAST()))));
     }
 
     @Override
@@ -138,14 +142,15 @@ public class AdminManager implements AdminService {
     @Override
     @Transactional(readOnly = true)
     public int countUsersThatHaveAndroidProfile(){
-        return userRepository.countByHasAndroidProfile(true);
+        return (int) userRepository.count(hasAndroidProfile());
     }
 
     @Override
     @Transactional(readOnly = true)
     public int countUsersCreatedWithAndroidProfileInPeriod(LocalDateTime start, LocalDateTime end) {
-        return userRepository.countByCreatedDateTimeBetweenAndHasAndroidProfile(convertToSystemTime(start, getSAST()),
-                        convertToSystemTime(end, getSAST()), true);
+        return (int) userRepository.count(Specifications.where(hasAndroidProfile())
+                        .and(createdAfter(convertToSystemTime(start, getSAST())))
+                        .and(createdBefore(convertToSystemTime(end, getSAST()))));
     }
 
     /**

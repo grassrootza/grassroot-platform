@@ -18,6 +18,7 @@ import za.org.grassroot.core.enums.EventRSVPResponse;
 
 import javax.transaction.Transactional;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -251,6 +252,33 @@ public class UserRepositoryTest {
         assertTrue(nonCreatorMembers.contains(user2));
         assertTrue(nonCreatorMembers.contains(user3));
 
+    }
+
+    @Test
+    public void shouldReturnNumberInGraph() {
+        String phoneBase = "080555000";
+
+        List<User> testUsers = new ArrayList<>();
+
+        for (int i = 0; i < 5; i++) {
+            testUsers.add(new User(phoneBase + i));
+        }
+
+        userRepository.save(testUsers);
+        assertEquals(userRepository.count(), testUsers.size());
+
+        Group testGroup1 = new Group("tg1", testUsers.get(0));
+        testGroup1.addMember(testUsers.get(0));
+        testGroup1.addMember(testUsers.get(1));
+        groupRepository.save(testGroup1);
+
+        assertEquals(groupRepository.count(), 1);
+
+        List<String> graph = userRepository.findPhoneNumbersInGraphOfUser(testUsers.get(0));
+        assertNotNull(graph);
+
+        assertTrue(graph.contains(testUsers.get(1).getPhoneNumber()));
+        assertFalse(graph.contains(testUsers.get(2).getPhoneNumber()));
     }
 
 }
