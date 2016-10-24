@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.messaging.MessageChannel;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Group;
@@ -126,6 +127,18 @@ public class GroupChatManager implements GroupChatService {
             } catch (GroupChatSettingNotFoundException e) {
                 logger.debug("User with phoneNumber={} is not enabled to send messages to this group", phoneNumber);
             }
+        }
+    }
+
+    @Override
+    @Async
+    public void markMessagesAsRead(String groupUid, String groupName, Set<String> messageUids) {
+        for(String messageUid:messageUids) {
+            Map<String, Object> data = generateMarkMessageAsReadData(messageUid, groupName, groupName);
+            org.springframework.messaging.Message gcmMessage = GcmXmppMessageCodec.encode(TOPICS.concat(groupUid), (String) data.get("messageId"),
+                    null, null, null,
+                    AndroidClickActionType.CHAT_MESSAGE.name(), data);
+            gcmXmppOutboundChannel.send(gcmMessage);
         }
     }
 
@@ -280,6 +293,22 @@ public class GroupChatManager implements GroupChatService {
         return data;
     }
 
+
+    private Map<String, Object> generateMarkMessageAsReadData(String messageUid, String groupUid, String groupName) {
+
+        Map<String, Object> data = new HashMap<>();
+        String messageId = UIDGenerator.generateId().concat(String.valueOf(System.currentTimeMillis()));
+        data.put(Constants.GROUP_UID, groupUid);
+        data.put(Constants.GROUP_NAME, groupName);
+        data.put("messageId", messageId);
+        data.put("messageUid", messageUid);
+        data.put("type", "update_read_status");
+        data.put(Constants.ENTITY_TYPE, AndroidClickActionType.CHAT_MESSAGE.toString());
+        data.put("click_action", AndroidClickActionType.CHAT_MESSAGE.toString());
+        data.put("time", Instant.now());
+
+        return data;
+    }
     private Map<String, Object> generateCommandResponseData(GroupChatMessage input, Group group, TaskType type, String[] tokens, LocalDateTime taskDateTime) {
         final String messageId = UIDGenerator.generateId().concat(String.valueOf(System.currentTimeMillis()));
         Map<String, Object> data = MessageUtils.prePopWithGroupData(group);

@@ -257,6 +257,8 @@ public class GcmManager implements GcmService {
         }
     }
 
+
+
     private HttpHeaders getHttpHeaders() {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);

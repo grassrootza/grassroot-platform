@@ -42,83 +42,83 @@ public class GroupRestController extends GroupAbstractRestController {
 
     private static final Logger log = LoggerFactory.getLogger(GroupRestController.class);
 
-	@Autowired
-	private GroupChatService groupChatSettingsService;
+    @Autowired
+    private GroupChatService groupChatSettingsService;
 
-	@Autowired
-	private GcmService gcmService;
+    @Autowired
+    private GcmService gcmService;
 
-	@Autowired
-	@Qualifier("messageSourceAccessor")
-	protected MessageSourceAccessor messageSourceAccessor;
+    @Autowired
+    @Qualifier("messageSourceAccessor")
+    protected MessageSourceAccessor messageSourceAccessor;
 
-	private final static Set<Permission> permissionsDisplayed = Sets.newHashSet(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS,
-			Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING,
-			Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE,
-			Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY,
-			Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER,
-			Permission.GROUP_PERMISSION_DELETE_GROUP_MEMBER,
-			Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+    private final static Set<Permission> permissionsDisplayed = Sets.newHashSet(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS,
+            Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING,
+            Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE,
+            Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY,
+            Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER,
+            Permission.GROUP_PERMISSION_DELETE_GROUP_MEMBER,
+            Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
 
     @RequestMapping(value = "/create/{phoneNumber}/{code}/{groupName}/{description:.+}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> createGroupWithDescription(@PathVariable String phoneNumber, @PathVariable String code,
                                                                       @PathVariable String groupName, @PathVariable String description,
                                                                       @RequestBody Set<MembershipInfo> membersToAdd) {
-	    log.info("creating group with description ... name : {}", groupName);
-	    return createGroup(phoneNumber, groupName, description, membersToAdd);
+        log.info("creating group with description ... name : {}", groupName);
+        return createGroup(phoneNumber, groupName, description, membersToAdd);
     }
 
-	@RequestMapping(value = "/create/{phoneNumber}/{code}/{groupName:.+}", method = RequestMethod.POST)
-	public ResponseEntity<ResponseWrapper> createGroupWithoutDescription(@PathVariable String phoneNumber, @PathVariable String code,
-	                                                                     @PathVariable String groupName, @RequestBody Set<MembershipInfo> membersToAdd) {
-		log.info("creating group without description ... name : {}", groupName);
-		return createGroup(phoneNumber, groupName, null, membersToAdd);
-	}
+    @RequestMapping(value = "/create/{phoneNumber}/{code}/{groupName:.+}", method = RequestMethod.POST)
+    public ResponseEntity<ResponseWrapper> createGroupWithoutDescription(@PathVariable String phoneNumber, @PathVariable String code,
+                                                                         @PathVariable String groupName, @RequestBody Set<MembershipInfo> membersToAdd) {
+        log.info("creating group without description ... name : {}", groupName);
+        return createGroup(phoneNumber, groupName, null, membersToAdd);
+    }
 
-	private ResponseEntity<ResponseWrapper> createGroup(final String phoneNumber, final String groupName, final String description,
-	                                                    Set<MembershipInfo> membersToAdd) {
-		try {
-			User user = userManagementService.findByInputNumber(phoneNumber);
-			Group duplicate = checkForDuplicateGroup(user.getUid(), groupName);
-			RestMessage restMessage;
-			List<GroupResponseWrapper> returnData;
-			if (duplicate != null) {
-				restMessage = RestMessage.GROUP_DUPLICATE_CREATE;
-				returnData = Collections.singletonList(createGroupWrapper(duplicate, user));
-			} else {
-				log.info("check for numbers in this set : " + membersToAdd);
-				List<String> invalidNumbers = findInvalidNumbers(membersToAdd);
-				if (!membersToAdd.isEmpty() && (invalidNumbers.size() == membersToAdd.size())) {
-					throw new InvalidPhoneNumberException(String.join(",", invalidNumbers));
-				} else {
-					MembershipInfo creator = new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName());
-					membersToAdd.add(creator);
-					Group created = groupBroker.create(user.getUid(), groupName, null, membersToAdd, GroupPermissionTemplate.DEFAULT_GROUP,
-							description, null, true);
-					restMessage = RestMessage.GROUP_CREATED;
-					GroupResponseWrapper wrapper = createGroupWrapper(created, user);
-					wrapper.setInvalidNumbers(invalidNumbers);
-					returnData = Collections.singletonList(wrapper);
-				}
-			}
-			return RestUtil.okayResponseWithData(restMessage, returnData);
-		} catch (InvalidPhoneNumberException e) {
-			return RestUtil.errorResponseWithData(RestMessage.GROUP_BAD_PHONE_NUMBER, e.getMessage());
-		} catch (RuntimeException e) {
-			e.printStackTrace();
-			return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.GROUP_NOT_CREATED);
-		}
-	}
+    private ResponseEntity<ResponseWrapper> createGroup(final String phoneNumber, final String groupName, final String description,
+                                                        Set<MembershipInfo> membersToAdd) {
+        try {
+            User user = userManagementService.findByInputNumber(phoneNumber);
+            Group duplicate = checkForDuplicateGroup(user.getUid(), groupName);
+            RestMessage restMessage;
+            List<GroupResponseWrapper> returnData;
+            if (duplicate != null) {
+                restMessage = RestMessage.GROUP_DUPLICATE_CREATE;
+                returnData = Collections.singletonList(createGroupWrapper(duplicate, user));
+            } else {
+                log.info("check for numbers in this set : " + membersToAdd);
+                List<String> invalidNumbers = findInvalidNumbers(membersToAdd);
+                if (!membersToAdd.isEmpty() && (invalidNumbers.size() == membersToAdd.size())) {
+                    throw new InvalidPhoneNumberException(String.join(",", invalidNumbers));
+                } else {
+                    MembershipInfo creator = new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName());
+                    membersToAdd.add(creator);
+                    Group created = groupBroker.create(user.getUid(), groupName, null, membersToAdd, GroupPermissionTemplate.DEFAULT_GROUP,
+                            description, null, true);
+                    restMessage = RestMessage.GROUP_CREATED;
+                    GroupResponseWrapper wrapper = createGroupWrapper(created, user);
+                    wrapper.setInvalidNumbers(invalidNumbers);
+                    returnData = Collections.singletonList(wrapper);
+                }
+            }
+            return RestUtil.okayResponseWithData(restMessage, returnData);
+        } catch (InvalidPhoneNumberException e) {
+            return RestUtil.errorResponseWithData(RestMessage.GROUP_BAD_PHONE_NUMBER, e.getMessage());
+        } catch (RuntimeException e) {
+            e.printStackTrace();
+            return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.GROUP_NOT_CREATED);
+        }
+    }
 
-	private Group handleUpdatingDuplicate(Group duplicate, User creatingUser, Set<MembershipInfo> membersToAdd, String description) {
-		Objects.requireNonNull(duplicate);
-		groupBroker.addMembers(creatingUser.getUid(), duplicate.getUid(), membersToAdd, false);
-		if (description != null && !description.isEmpty()) {
-			groupBroker.updateDescription(creatingUser.getUid(), duplicate.getUid(), description);
-		}
-		duplicate = groupBroker.load(duplicate.getUid());
-		return duplicate;
-	}
+    private Group handleUpdatingDuplicate(Group duplicate, User creatingUser, Set<MembershipInfo> membersToAdd, String description) {
+        Objects.requireNonNull(duplicate);
+        groupBroker.addMembers(creatingUser.getUid(), duplicate.getUid(), membersToAdd, false);
+        if (description != null && !description.isEmpty()) {
+            groupBroker.updateDescription(creatingUser.getUid(), duplicate.getUid(), description);
+        }
+        duplicate = groupBroker.load(duplicate.getUid());
+        return duplicate;
+    }
 
     @RequestMapping(value = "/members/add/{phoneNumber}/{code}/{uid}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> addMembersToGroup(@PathVariable String phoneNumber, @PathVariable String code,
@@ -129,40 +129,40 @@ public class GroupRestController extends GroupAbstractRestController {
         Group group = groupBroker.load(groupUid);
         log.info("membersReceived = {}", membersToAdd != null ? membersToAdd.toString() : "null");
 
-	    try {
-		    RestMessage returnMessage;
-		    List<GroupResponseWrapper> groupWrapper;
-		    if (membersToAdd != null && !membersToAdd.isEmpty()) {
-			    List<String> invalidNumbers = findInvalidNumbers(membersToAdd);
-			    if (invalidNumbers.size() == membersToAdd.size()) {
-				    throw new InvalidPhoneNumberException(String.join(" ", invalidNumbers));
-			    }
-			    groupBroker.addMembers(user.getUid(), group.getUid(), membersToAdd, false);
-			    GroupResponseWrapper updatedGroup = createGroupWrapper(groupBroker.load(groupUid), user);
-			    updatedGroup.setInvalidNumbers(invalidNumbers);
-			    groupWrapper = Collections.singletonList(updatedGroup);
-			    returnMessage = (invalidNumbers.isEmpty()) ? RestMessage.MEMBERS_ADDED : RestMessage.GROUP_BAD_PHONE_NUMBER;
-	        } else {
-			    returnMessage = RestMessage.NO_MEMBERS_SENT;
-			    groupWrapper = Collections.singletonList(createGroupWrapper(group, user));
-	        }
-		    return RestUtil.okayResponseWithData(returnMessage, groupWrapper);
+        try {
+            RestMessage returnMessage;
+            List<GroupResponseWrapper> groupWrapper;
+            if (membersToAdd != null && !membersToAdd.isEmpty()) {
+                List<String> invalidNumbers = findInvalidNumbers(membersToAdd);
+                if (invalidNumbers.size() == membersToAdd.size()) {
+                    throw new InvalidPhoneNumberException(String.join(" ", invalidNumbers));
+                }
+                groupBroker.addMembers(user.getUid(), group.getUid(), membersToAdd, false);
+                GroupResponseWrapper updatedGroup = createGroupWrapper(groupBroker.load(groupUid), user);
+                updatedGroup.setInvalidNumbers(invalidNumbers);
+                groupWrapper = Collections.singletonList(updatedGroup);
+                returnMessage = (invalidNumbers.isEmpty()) ? RestMessage.MEMBERS_ADDED : RestMessage.GROUP_BAD_PHONE_NUMBER;
+            } else {
+                returnMessage = RestMessage.NO_MEMBERS_SENT;
+                groupWrapper = Collections.singletonList(createGroupWrapper(group, user));
+            }
+            return RestUtil.okayResponseWithData(returnMessage, groupWrapper);
         } catch (InvalidPhoneNumberException e) {
-		    return RestUtil.errorResponseWithData(RestMessage.GROUP_BAD_PHONE_NUMBER, e.getMessage());
+            return RestUtil.errorResponseWithData(RestMessage.GROUP_BAD_PHONE_NUMBER, e.getMessage());
         } catch (AccessDeniedException e) {
-	        return RestUtil.accessDeniedResponse();
+            return RestUtil.accessDeniedResponse();
         } catch (Exception e) {
-		    return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.INVALID_INPUT);
-	    }
+            return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.INVALID_INPUT);
+        }
 
     }
 
-	private List<String> findInvalidNumbers(Set<MembershipInfo> members) {
-		return members.stream()
-				.filter(m -> !m.hasValidPhoneNumber())
-				.map(MembershipInfo::getPhoneNumber)
-				.collect(Collectors.toList());
-	}
+    private List<String> findInvalidNumbers(Set<MembershipInfo> members) {
+        return members.stream()
+                .filter(m -> !m.hasValidPhoneNumber())
+                .map(MembershipInfo::getPhoneNumber)
+                .collect(Collectors.toList());
+    }
 
     @RequestMapping(value = "/members/remove/{phoneNumber}/{code}/{groupUid}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> removeMembers(@PathVariable String phoneNumber, @PathVariable String code,
@@ -173,50 +173,50 @@ public class GroupRestController extends GroupAbstractRestController {
             groupBroker.removeMembers(user.getUid(), groupUid, memberUids);
             Group updatedGroup = groupBroker.load(groupUid);
             return new ResponseEntity<>(new GenericResponseWrapper(HttpStatus.OK, RestMessage.MEMBERS_REMOVED,
-		            RestStatus.SUCCESS, createGroupWrapper(updatedGroup, user)), HttpStatus.OK);
+                    RestStatus.SUCCESS, createGroupWrapper(updatedGroup, user)), HttpStatus.OK);
         } catch (AccessDeniedException e) {
             return RestUtil.accessDeniedResponse();
         }
     }
 
-	@RequestMapping(value = "/members/unsubscribe/{phoneNumber}/{code}", method = RequestMethod.POST)
-	public ResponseEntity<ResponseWrapper> unsubscribe(@PathVariable String phoneNumber, @PathVariable String code,
-	                                                   @RequestParam String groupUid) {
-		User user = userManagementService.findByInputNumber(phoneNumber);
-		try {
-			groupBroker.unsubscribeMember(user.getUid(), groupUid);
-			return RestUtil.messageOkayResponse(RestMessage.MEMBER_UNSUBSCRIBED);
-		} catch (Exception e) { // means user has already been removed
-			return RestUtil.errorResponse(HttpStatus.CONFLICT, RestMessage.MEMBER_ALREADY_LEFT);
-		}
-	}
+    @RequestMapping(value = "/members/unsubscribe/{phoneNumber}/{code}", method = RequestMethod.POST)
+    public ResponseEntity<ResponseWrapper> unsubscribe(@PathVariable String phoneNumber, @PathVariable String code,
+                                                       @RequestParam String groupUid) {
+        User user = userManagementService.findByInputNumber(phoneNumber);
+        try {
+            groupBroker.unsubscribeMember(user.getUid(), groupUid);
+            return RestUtil.messageOkayResponse(RestMessage.MEMBER_UNSUBSCRIBED);
+        } catch (Exception e) { // means user has already been removed
+            return RestUtil.errorResponse(HttpStatus.CONFLICT, RestMessage.MEMBER_ALREADY_LEFT);
+        }
+    }
 
-	@RequestMapping(value = "/edit/multi/{phoneNumber}/{code}/{groupUid}", method = RequestMethod.POST)
-	public ResponseEntity<ResponseWrapper> combinedEdits(@PathVariable String phoneNumber, @PathVariable String code,
-	                                                     @PathVariable String groupUid,
-	                                                     @RequestParam(value = "name", required = false) String name,
-	                                                     @RequestParam(value = "description", required = false) String description,
-	                                                     @RequestParam(value = "resetImage", required = false) boolean resetToDefaultImage,
-	                                                     @RequestParam(value = "dfltImageName", required = false) GroupDefaultImage defaultImage,
-	                                                     @RequestParam(value = "changePublicPrivate", required = false) boolean changePublicPrivate,
-	                                                     @RequestParam(value = "isPublic", required = false) boolean isPublic,
-	                                                     @RequestParam(value = "closeJoinCode", required = false) boolean closeJoinCode,
-	                                                     @RequestParam(value = "membersToRemove", required = false) Set<String> membersToRemove,
-	                                                     @RequestParam(value = "organizersToAdd", required = false) Set<String> organizersToAdd) {
+    @RequestMapping(value = "/edit/multi/{phoneNumber}/{code}/{groupUid}", method = RequestMethod.POST)
+    public ResponseEntity<ResponseWrapper> combinedEdits(@PathVariable String phoneNumber, @PathVariable String code,
+                                                         @PathVariable String groupUid,
+                                                         @RequestParam(value = "name", required = false) String name,
+                                                         @RequestParam(value = "description", required = false) String description,
+                                                         @RequestParam(value = "resetImage", required = false) boolean resetToDefaultImage,
+                                                         @RequestParam(value = "dfltImageName", required = false) GroupDefaultImage defaultImage,
+                                                         @RequestParam(value = "changePublicPrivate", required = false) boolean changePublicPrivate,
+                                                         @RequestParam(value = "isPublic", required = false) boolean isPublic,
+                                                         @RequestParam(value = "closeJoinCode", required = false) boolean closeJoinCode,
+                                                         @RequestParam(value = "membersToRemove", required = false) Set<String> membersToRemove,
+                                                         @RequestParam(value = "organizersToAdd", required = false) Set<String> organizersToAdd) {
 
-		User user = userManagementService.findByInputNumber(phoneNumber);
-		try {
-			groupBroker.combinedEdits(user.getUid(), groupUid, name, description, resetToDefaultImage, defaultImage, isPublic,
-					closeJoinCode, membersToRemove, organizersToAdd);
-			Group updatedGroup = groupBroker.load(groupUid);
-			return RestUtil.okayResponseWithData(RestMessage.UPDATED, Collections.singletonList(createGroupWrapper(updatedGroup, user)));
-		} catch (AccessDeniedException e) {
-			return RestUtil.errorResponse(HttpStatus.FORBIDDEN, RestMessage.PERMISSION_DENIED);
-		}
-	}
+        User user = userManagementService.findByInputNumber(phoneNumber);
+        try {
+            groupBroker.combinedEdits(user.getUid(), groupUid, name, description, resetToDefaultImage, defaultImage, isPublic,
+                    closeJoinCode, membersToRemove, organizersToAdd);
+            Group updatedGroup = groupBroker.load(groupUid);
+            return RestUtil.okayResponseWithData(RestMessage.UPDATED, Collections.singletonList(createGroupWrapper(updatedGroup, user)));
+        } catch (AccessDeniedException e) {
+            return RestUtil.errorResponse(HttpStatus.FORBIDDEN, RestMessage.PERMISSION_DENIED);
+        }
+    }
 
 
-	@RequestMapping(value = "/edit/rename/{phoneNumber}/{code}", method = RequestMethod.POST)
+    @RequestMapping(value = "/edit/rename/{phoneNumber}/{code}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> renameGroup(@PathVariable String phoneNumber, @PathVariable String code,
                                                        @RequestParam String groupUid, @RequestParam String name) {
 
@@ -231,189 +231,199 @@ public class GroupRestController extends GroupAbstractRestController {
         return response;
     }
 
-	@RequestMapping(value = "/edit/description/{phoneNumber}/{code}", method = RequestMethod.POST)
-	public ResponseEntity<ResponseWrapper> changeGroupDescription(@PathVariable String phoneNumber, @PathVariable String code,
-	                                                              @RequestParam String groupUid, @RequestParam String description) {
-		User user = userManagementService.findByInputNumber(phoneNumber);
-		try {
-			groupBroker.updateDescription(user.getUid(), groupUid, description);
-			return RestUtil.messageOkayResponse(RestMessage.GROUP_DESCRIPTION_CHANGED);
-		} catch (AccessDeniedException e) {
-			return RestUtil.accessDeniedResponse();
-		}
-	}
+    @RequestMapping(value = "/edit/description/{phoneNumber}/{code}", method = RequestMethod.POST)
+    public ResponseEntity<ResponseWrapper> changeGroupDescription(@PathVariable String phoneNumber, @PathVariable String code,
+                                                                  @RequestParam String groupUid, @RequestParam String description) {
+        User user = userManagementService.findByInputNumber(phoneNumber);
+        try {
+            groupBroker.updateDescription(user.getUid(), groupUid, description);
+            return RestUtil.messageOkayResponse(RestMessage.GROUP_DESCRIPTION_CHANGED);
+        } catch (AccessDeniedException e) {
+            return RestUtil.accessDeniedResponse();
+        }
+    }
 
     @RequestMapping(value = "/edit/public_switch/{phoneNumber}/{code}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> switchGroupPublicPrivate(@PathVariable String phoneNumber, @PathVariable String code,
                                                                     @RequestParam String groupUid, @RequestParam boolean state) {
-	    User user = userManagementService.findByInputNumber(phoneNumber);
-	    ResponseEntity<ResponseWrapper> response;
-	    try {
-		    groupBroker.updateDiscoverable(user.getUid(), groupUid, state, user.getPhoneNumber());
-		    response = RestUtil.messageOkayResponse(RestMessage.GROUP_DISCOVERABLE_UPDATED);
-	    } catch (AccessDeniedException e) {
-		    response = RestUtil.accessDeniedResponse();
-	    }
-	    return response;
+        User user = userManagementService.findByInputNumber(phoneNumber);
+        ResponseEntity<ResponseWrapper> response;
+        try {
+            groupBroker.updateDiscoverable(user.getUid(), groupUid, state, user.getPhoneNumber());
+            response = RestUtil.messageOkayResponse(RestMessage.GROUP_DISCOVERABLE_UPDATED);
+        } catch (AccessDeniedException e) {
+            response = RestUtil.accessDeniedResponse();
+        }
+        return response;
     }
 
-	@RequestMapping(value = "/edit/open_join/{phoneNumber}/{code}", method = RequestMethod.POST)
-	public ResponseEntity<ResponseWrapper> openJoinCode(@PathVariable String phoneNumber, @PathVariable String code,
-	                                                    @RequestParam String groupUid) {
-		User user = userManagementService.findByInputNumber(phoneNumber);
-		ResponseEntity<ResponseWrapper> response;
-		try {
-			String token = groupBroker.openJoinToken(user.getUid(), groupUid, null);
-			response = RestUtil.okayResponseWithData(RestMessage.GROUP_JOIN_CODE_OPENED, token);
-		} catch (AccessDeniedException e) {
-			response = RestUtil.accessDeniedResponse();
-		}
-		return response;
-	}
-
-	@RequestMapping(value = "/edit/close_join/{phoneNumber}/{code}", method = RequestMethod.POST)
-	public ResponseEntity<ResponseWrapper> closeJoinCode(@PathVariable String phoneNumber, @PathVariable String code,
-	                                                     @RequestParam String groupUid) {
-		User user = userManagementService.findByInputNumber(phoneNumber);
-		ResponseEntity<ResponseWrapper> response;
-		try {
-			groupBroker.closeJoinToken(user.getUid(), groupUid);
-			response = RestUtil.messageOkayResponse(RestMessage.GROUP_JOIN_CODE_CLOSED);
-		} catch (AccessDeniedException e) {
-			response = RestUtil.accessDeniedResponse();
-		}
-		return response;
-	}
-
-	@RequestMapping(value = "/edit/fetch_permissions/{phoneNumber}/{code}", method = RequestMethod.POST)
-	public ResponseEntity<ResponseWrapper> fetchPermissions(@PathVariable String phoneNumber, @PathVariable String code,
-	                                                        @RequestParam String groupUid, @RequestParam String roleName) {
-
-		Group group = groupBroker.load(groupUid);
-		ResponseEntity<ResponseWrapper> response;
-		try {
-			Set<Permission> permissionsEnabled = group.getRole(roleName).getPermissions();
-			List<PermissionDTO> permissionsDTO = permissionsDisplayed.stream()
-					.map(permission -> new PermissionDTO(permission, group, roleName, permissionsEnabled, messageSourceAccessor))
-					.sorted()
-					.collect(Collectors.toList());
-			response = new ResponseEntity<>(new GenericResponseWrapper(HttpStatus.OK, RestMessage.PERMISSIONS_RETURNED, RestStatus.SUCCESS, permissionsDTO), HttpStatus.OK);
-		} catch (AccessDeniedException e) {
-			response = RestUtil.accessDeniedResponse();
-		}
-		return response;
-	}
-
-	@RequestMapping(value = "/edit/update_permissions/{phoneNumber}/{code}/{groupUid}/{roleName}", method = RequestMethod.POST)
-	public ResponseEntity<ResponseWrapper> updatePermissions(@PathVariable String phoneNumber, @PathVariable String code,
-	                                                         @PathVariable String groupUid, @PathVariable String roleName,
-	                                                         @RequestBody List<PermissionDTO> updatedPermissions) {
-		User user = userManagementService.findByInputNumber(phoneNumber);
-		Group group = groupBroker.load(groupUid);
-		ResponseEntity<ResponseWrapper> response;
-
-		try {
-			Map<String, Set<Permission>> analyzedPerms = processUpdatedPermissions(group, roleName, updatedPermissions);
-			groupBroker.updateGroupPermissionsForRole(user.getUid(), groupUid, roleName, analyzedPerms.get("ADDED"), analyzedPerms.get("REMOVED"));
-			response = RestUtil.messageOkayResponse(RestMessage.PERMISSIONS_UPDATED);
-		} catch (AccessDeniedException e) {
-			response = RestUtil.accessDeniedResponse();
-		}
-		return response;
-	}
-
-	@RequestMapping(value = "/edit/change_role/{phoneNumber}/{code}", method = RequestMethod.POST)
-	public ResponseEntity<ResponseWrapper> changeMemberRole(@PathVariable String phoneNumber, @PathVariable String code,
-	                                                        @RequestParam String groupUid, @RequestParam String memberUid,
-	                                                        @RequestParam String roleName) {
-
-		User user = userManagementService.findByInputNumber(phoneNumber);
-		ResponseEntity<ResponseWrapper> response;
-		try {
-			groupBroker.updateMembershipRole(user.getUid(), groupUid, memberUid, roleName);
-			response = RestUtil.messageOkayResponse(RestMessage.MEMBER_ROLE_CHANGED);
-		} catch (AccessDeniedException e) {
-			response = RestUtil.accessDeniedResponse();
-		}
-		return response;
-	}
-
-	@RequestMapping(value= "messenger/update/{phoneNumber}/{code}/{groupUid}", method =RequestMethod.POST)
-	public ResponseEntity<ResponseWrapper> updateMemberGroupChatSetting(@PathVariable String phoneNumber,
-																		@PathVariable String code,
-																		@PathVariable("groupUid") String groupUid,
-																		@RequestParam(value = "userUid",required = false) String userUid,
-																		@RequestParam("active") boolean active, @RequestParam("userInitiated") boolean userInitiated)
-			throws Exception {
-
-		User user = userManagementService.findByInputNumber(phoneNumber);
-		String userSettingTobeUpdated = (userInitiated)?user.getUid():userUid;
-        if(!userInitiated){
-            Group group = groupBroker.load(groupUid);
-            permissionBroker.isGroupPermissionAvailable(user,group,Permission.GROUP_PERMISSION_MUTE_MEMBER);
+    @RequestMapping(value = "/edit/open_join/{phoneNumber}/{code}", method = RequestMethod.POST)
+    public ResponseEntity<ResponseWrapper> openJoinCode(@PathVariable String phoneNumber, @PathVariable String code,
+                                                        @RequestParam String groupUid) {
+        User user = userManagementService.findByInputNumber(phoneNumber);
+        ResponseEntity<ResponseWrapper> response;
+        try {
+            String token = groupBroker.openJoinToken(user.getUid(), groupUid, null);
+            response = RestUtil.okayResponseWithData(RestMessage.GROUP_JOIN_CODE_OPENED, token);
+        } catch (AccessDeniedException e) {
+            response = RestUtil.accessDeniedResponse();
         }
-		groupChatSettingsService.updateActivityStatus(userSettingTobeUpdated,groupUid,active,userInitiated);
-		if (userInitiated && gcmService.hasGcmKey(user)) {
-			String registrationId = gcmService.getGcmKey(user);
-			if (active){
-				gcmService.subscribeToTopic(registrationId,groupUid);
-			} else {
-				gcmService.unsubscribeFromTopic(registrationId,groupUid);
-			}
-		}
-		return RestUtil.messageOkayResponse((!active) ? RestMessage.CHAT_DEACTIVATED : RestMessage.CHAT_ACTIVATED);
+        return response;
+    }
 
-	}
+    @RequestMapping(value = "/edit/close_join/{phoneNumber}/{code}", method = RequestMethod.POST)
+    public ResponseEntity<ResponseWrapper> closeJoinCode(@PathVariable String phoneNumber, @PathVariable String code,
+                                                         @RequestParam String groupUid) {
+        User user = userManagementService.findByInputNumber(phoneNumber);
+        ResponseEntity<ResponseWrapper> response;
+        try {
+            groupBroker.closeJoinToken(user.getUid(), groupUid);
+            response = RestUtil.messageOkayResponse(RestMessage.GROUP_JOIN_CODE_CLOSED);
+        } catch (AccessDeniedException e) {
+            response = RestUtil.accessDeniedResponse();
+        }
+        return response;
+    }
 
-	@RequestMapping(value ="messenger/ping/{phoneNumber}/{code}/{groupUid}", method = RequestMethod.GET)
-	public ResponseEntity<ResponseWrapper> ping(@PathVariable String phoneNumber,
-																			@PathVariable String code,
-																			@PathVariable("groupUid") String groupUid) throws GroupChatSettingNotFoundException {
+    @RequestMapping(value = "/edit/fetch_permissions/{phoneNumber}/{code}", method = RequestMethod.POST)
+    public ResponseEntity<ResponseWrapper> fetchPermissions(@PathVariable String phoneNumber, @PathVariable String code,
+                                                            @RequestParam String groupUid, @RequestParam String roleName) {
 
-		User user = userManagementService.findByInputNumber(phoneNumber);
-		Group group = groupBroker.load(groupUid);
-		gcmService.pingUserForGroupChat(user,group);
+        Group group = groupBroker.load(groupUid);
+        ResponseEntity<ResponseWrapper> response;
+        try {
+            Set<Permission> permissionsEnabled = group.getRole(roleName).getPermissions();
+            List<PermissionDTO> permissionsDTO = permissionsDisplayed.stream()
+                    .map(permission -> new PermissionDTO(permission, group, roleName, permissionsEnabled, messageSourceAccessor))
+                    .sorted()
+                    .collect(Collectors.toList());
+            response = new ResponseEntity<>(new GenericResponseWrapper(HttpStatus.OK, RestMessage.PERMISSIONS_RETURNED, RestStatus.SUCCESS, permissionsDTO), HttpStatus.OK);
+        } catch (AccessDeniedException e) {
+            response = RestUtil.accessDeniedResponse();
+        }
+        return response;
+    }
 
-		return RestUtil.messageOkayResponse(RestMessage.PING);
-	}
+    @RequestMapping(value = "/edit/update_permissions/{phoneNumber}/{code}/{groupUid}/{roleName}", method = RequestMethod.POST)
+    public ResponseEntity<ResponseWrapper> updatePermissions(@PathVariable String phoneNumber, @PathVariable String code,
+                                                             @PathVariable String groupUid, @PathVariable String roleName,
+                                                             @RequestBody List<PermissionDTO> updatedPermissions) {
+        User user = userManagementService.findByInputNumber(phoneNumber);
+        Group group = groupBroker.load(groupUid);
+        ResponseEntity<ResponseWrapper> response;
 
-	@RequestMapping(value ="messenger/fetch_settings/{phoneNumber}/{code}/{groupUid}", method = RequestMethod.GET)
-	public ResponseEntity<GroupChatSettingsDTO> fetchMemberGroupChatSetting(@PathVariable String phoneNumber,
-																			@PathVariable String code,
-																			@PathVariable("groupUid") String groupUid, @RequestParam(value = "userUid",required = false) String userUid) throws GroupChatSettingNotFoundException {
+        try {
+            Map<String, Set<Permission>> analyzedPerms = processUpdatedPermissions(group, roleName, updatedPermissions);
+            groupBroker.updateGroupPermissionsForRole(user.getUid(), groupUid, roleName, analyzedPerms.get("ADDED"), analyzedPerms.get("REMOVED"));
+            response = RestUtil.messageOkayResponse(RestMessage.PERMISSIONS_UPDATED);
+        } catch (AccessDeniedException e) {
+            response = RestUtil.accessDeniedResponse();
+        }
+        return response;
+    }
 
-		User user = userManagementService.findByInputNumber(phoneNumber);
-		GroupChatSettings groupChatSettings = userUid != null ? groupChatSettingsService.load(userUid, groupUid)
-				: groupChatSettingsService.load(user.getUid(), groupUid);
-		List<String> mutedUsers = groupChatSettingsService.usersMutedInGroup(groupUid);
-		return new ResponseEntity<>(new GroupChatSettingsDTO(groupChatSettings, mutedUsers),HttpStatus.OK);
+    @RequestMapping(value = "/edit/change_role/{phoneNumber}/{code}", method = RequestMethod.POST)
+    public ResponseEntity<ResponseWrapper> changeMemberRole(@PathVariable String phoneNumber, @PathVariable String code,
+                                                            @RequestParam String groupUid, @RequestParam String memberUid,
+                                                            @RequestParam String roleName) {
 
-	}
+        User user = userManagementService.findByInputNumber(phoneNumber);
+        ResponseEntity<ResponseWrapper> response;
+        try {
+            groupBroker.updateMembershipRole(user.getUid(), groupUid, memberUid, roleName);
+            response = RestUtil.messageOkayResponse(RestMessage.MEMBER_ROLE_CHANGED);
+        } catch (AccessDeniedException e) {
+            response = RestUtil.accessDeniedResponse();
+        }
+        return response;
+    }
 
-	private Group checkForDuplicateGroup(final String creatingUserUid, final String groupName) {
-		Objects.requireNonNull(creatingUserUid);
-		Objects.requireNonNull(groupName);
-		log.info("Checking for duplicate of group {}, with creating Uid {}", groupName.trim(), creatingUserUid);
-		return groupBroker.checkForDuplicate(creatingUserUid, groupName.trim());
-	}
+    @RequestMapping(value = "messenger/update/{phoneNumber}/{code}/{groupUid}", method = RequestMethod.POST)
+    public ResponseEntity<ResponseWrapper> updateMemberGroupChatSetting(@PathVariable String phoneNumber,
+                                                                        @PathVariable String code,
+                                                                        @PathVariable("groupUid") String groupUid,
+                                                                        @RequestParam(value = "userUid", required = false) String userUid,
+                                                                        @RequestParam("active") boolean active, @RequestParam("userInitiated") boolean userInitiated)
+            throws Exception {
 
-	private Map<String, Set<Permission>> processUpdatedPermissions(Group group, String roleName, List<PermissionDTO> permissionDTOs) {
-		Set<Permission> currentPermissions = group.getRole(roleName).getPermissions();
-		Set<Permission> permissionsAdded = new HashSet<>();
-		Set<Permission> permissionsRemoved = new HashSet<>();
-		for (PermissionDTO p : permissionDTOs) {
-			if (currentPermissions.contains(p.getPermission()) && !p.isPermissionEnabled()) {
-				permissionsRemoved.add(p.getPermission());
-			} else if (!currentPermissions.contains(p.getPermission()) && p.isPermissionEnabled()) {
-				permissionsAdded.add(p.getPermission());
-			}
-		}
-		return ImmutableMap.of("ADDED", permissionsAdded, "REMOVED", permissionsRemoved);
-	}
+        User user = userManagementService.findByInputNumber(phoneNumber);
+        String userSettingTobeUpdated = (userInitiated) ? user.getUid() : userUid;
+        if (!userInitiated) {
+            Group group = groupBroker.load(groupUid);
+            permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_MUTE_MEMBER);
+        }
+        groupChatSettingsService.updateActivityStatus(userSettingTobeUpdated, groupUid, active, userInitiated);
+        if (userInitiated && gcmService.hasGcmKey(user)) {
+            String registrationId = gcmService.getGcmKey(user);
+            if (active) {
+                gcmService.subscribeToTopic(registrationId, groupUid);
+            } else {
+                gcmService.unsubscribeFromTopic(registrationId, groupUid);
+            }
+        }
+        return RestUtil.messageOkayResponse((!active) ? RestMessage.CHAT_DEACTIVATED : RestMessage.CHAT_ACTIVATED);
 
-	@ExceptionHandler(GroupChatSettingNotFoundException.class)
-	public ResponseEntity<ResponseWrapper> messageSettingNotFound(){
-		return RestUtil.errorResponse(HttpStatus.NOT_FOUND, RestMessage.MESSAGE_SETTING_NOT_FOUND);
-	}
+    }
+
+    @RequestMapping(value = "messenger/ping/{phoneNumber}/{code}/{groupUid}", method = RequestMethod.GET)
+    public ResponseEntity<ResponseWrapper> ping(@PathVariable String phoneNumber,
+                                                @PathVariable String code,
+                                                @PathVariable("groupUid") String groupUid) throws GroupChatSettingNotFoundException {
+
+        User user = userManagementService.findByInputNumber(phoneNumber);
+        Group group = groupBroker.load(groupUid);
+        gcmService.pingUserForGroupChat(user, group);
+
+        return RestUtil.messageOkayResponse(RestMessage.PING);
+    }
+
+    @RequestMapping(value = "messenger/fetch_settings/{phoneNumber}/{code}/{groupUid}", method = RequestMethod.GET)
+    public ResponseEntity<GroupChatSettingsDTO> fetchMemberGroupChatSetting(@PathVariable String phoneNumber,
+                                                                            @PathVariable String code,
+                                                                            @PathVariable("groupUid") String groupUid, @RequestParam(value = "userUid", required = false) String userUid) throws GroupChatSettingNotFoundException {
+
+        User user = userManagementService.findByInputNumber(phoneNumber);
+        GroupChatSettings groupChatSettings = userUid != null ? groupChatSettingsService.load(userUid, groupUid)
+                : groupChatSettingsService.load(user.getUid(), groupUid);
+        List<String> mutedUsers = groupChatSettingsService.usersMutedInGroup(groupUid);
+        return new ResponseEntity<>(new GroupChatSettingsDTO(groupChatSettings, mutedUsers), HttpStatus.OK);
+
+    }
+
+    @RequestMapping(value = "messenger/mark_read/{phoneNumber}/{code}", method = RequestMethod.POST)
+    public ResponseEntity<ResponseWrapper> marksAsRead(@PathVariable String phoneNumber, @PathVariable String code, @PathVariable String groupUid, @RequestParam Set<String> messageUids) {
+        User user = userManagementService.findByInputNumber(phoneNumber);
+        Group group = groupBroker.load(groupUid);
+        if (groupChatSettingsService.isCanSend(user.getUid(), groupUid)) {
+            groupChatSettingsService.markMessagesAsRead(groupUid, group.getGroupName(), messageUids);
+        }
+        return RestUtil.messageOkayResponse(RestMessage.CHATS_MARKED_AS_READ);
+    }
+
+    private Group checkForDuplicateGroup(final String creatingUserUid, final String groupName) {
+        Objects.requireNonNull(creatingUserUid);
+        Objects.requireNonNull(groupName);
+        log.info("Checking for duplicate of group {}, with creating Uid {}", groupName.trim(), creatingUserUid);
+        return groupBroker.checkForDuplicate(creatingUserUid, groupName.trim());
+    }
+
+    private Map<String, Set<Permission>> processUpdatedPermissions(Group group, String roleName, List<PermissionDTO> permissionDTOs) {
+        Set<Permission> currentPermissions = group.getRole(roleName).getPermissions();
+        Set<Permission> permissionsAdded = new HashSet<>();
+        Set<Permission> permissionsRemoved = new HashSet<>();
+        for (PermissionDTO p : permissionDTOs) {
+            if (currentPermissions.contains(p.getPermission()) && !p.isPermissionEnabled()) {
+                permissionsRemoved.add(p.getPermission());
+            } else if (!currentPermissions.contains(p.getPermission()) && p.isPermissionEnabled()) {
+                permissionsAdded.add(p.getPermission());
+            }
+        }
+        return ImmutableMap.of("ADDED", permissionsAdded, "REMOVED", permissionsRemoved);
+    }
+
+    @ExceptionHandler(GroupChatSettingNotFoundException.class)
+    public ResponseEntity<ResponseWrapper> messageSettingNotFound() {
+        return RestUtil.errorResponse(HttpStatus.NOT_FOUND, RestMessage.MESSAGE_SETTING_NOT_FOUND);
+    }
 
 }
