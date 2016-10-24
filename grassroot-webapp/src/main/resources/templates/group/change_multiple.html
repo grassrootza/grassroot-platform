@@ -3,7 +3,13 @@
       layout:decorator="layout">
 <head>
   <title>Grassroot - Modify Group</title>
+
+  <link rel="stylesheet" type="text/css" th:href="@{/css/jquery-ui.min.css}" />
   <script th:src="@{/js/grassroot-methods.js}"></script>
+
+  <meta name="_csrf" th:content="${_csrf.token}"/>
+  <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+
 </head>
 <body>
 
@@ -37,17 +43,17 @@
           <tbody>
           <tr th:each="member, iterStat: *{listOfMembers}" class="member_input_row">
             <td>
-              <input type="text" th:field="*{listOfMembers[__${iterStat.index}__].displayName}" class="form-control" maxlength="25"
+              <input type="text" th:field="*{listOfMembers[__${iterStat.index}__].displayName}" class="form-control input-lg" maxlength="25"
                      th:value="${member.displayName}" th:readonly="${member.getPhoneNumberWithCCode() == currentUser.getUsername()}"/>
             </td>
             <td>
-              <input type="text" th:field="*{listOfMembers[__${iterStat.index}__].phoneNumber}" class="form-control"
+              <input type="text" th:field="*{listOfMembers[__${iterStat.index}__].phoneNumber}" class="form-control input-lg"
                      th:value="${member.phoneNumber}" th:readonly="${member.getPhoneNumberWithCCode() == currentUser.getUsername()}"/>
               <span th:if="${#fields.hasErrors('listOfMembers[__${iterStat.index}__].phoneNumber')}"
                     class="alert has-error">Error!</span>
             </td>
             <td>
-              <select th:field="*{listOfMembers[__${iterStat.index}__].roleName}" class="form-control"
+              <select th:field="*{listOfMembers[__${iterStat.index}__].roleName}" class="form-control input-lg"
                       th:disabled="${(groupModifier.canUpdateDetails == false) or (member.getPhoneNumberWithCCode() == currentUser.getUsername())}">
                 <option th:each="role : ${T(za.org.grassroot.core.domain.BaseRoles).groupRoles}"
                         th:value="${role}"
@@ -91,11 +97,20 @@
 
 <div class="header-container" layout:fragment="script-container">
 
+  <script th:src="@{/js/jquery-ui.min.js}"></script>
+
   <script th:inline="javascript">
 
     /*<![CDATA[*/
 
     $(document).ready(function () {
+
+      var token = $("meta[name='_csrf']").attr("content");
+      var header = $("meta[name='_csrf_header']").attr("content");
+
+      $.bind("ajaxSend", function(elm, xhr, s) {
+        xhr.setRequestHeader(header, token);
+      });
 
       var member_form = $('#member_entry');
 
@@ -106,7 +121,11 @@
       $('#add_member').click(function() {
         if (member_form.valid()) {
           member_table.find('tr:last').after(grassrootJS.assembleMemberRow("listOfMembers", number_members));
-          member_table.find('tr:last').find('[name$="phoneNumber"]').rules('add', grassrootJS.phoneRules);
+          var newLastRow = member_table.find('tr:last');
+          var phoneInput = newLastRow.find('[name$="phoneNumber"]');
+          var nameInput = newLastRow.find('[name$="displayName"]');
+          phoneInput.rules('add', grassrootJS.phoneRules);
+          nameInput.autocomplete(grassrootJS.memberAutoComplete(nameInput, phoneInput));
           number_members++;
         }
       });

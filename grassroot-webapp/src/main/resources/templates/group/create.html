@@ -3,7 +3,12 @@
       data-layout-decorate="layout">
 <head>
   <title>Grassroot - Create Group</title>
+  <link rel="stylesheet" type="text/css" th:href="@{/css/jquery-ui.min.css}" />
   <script th:src="@{/js/grassroot-methods.js}"></script>
+
+  <meta name="_csrf" th:content="${_csrf.token}"/>
+  <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+
 </head>
 <body>
 
@@ -114,11 +119,20 @@
 
 <div class="header-container" layout:fragment="script-container">
 
+  <script th:src="@{/js/jquery-ui.min.js}"></script>
+
   <script th:inline="javascript">
 
     /*<![CDATA[*/
 
     $(document).ready(function () {
+
+      var token = $("meta[name='_csrf']").attr("content");
+      var header = $("meta[name='_csrf_header']").attr("content");
+
+      $.bind("ajaxSend", function(elm, xhr, s) {
+        xhr.setRequestHeader(header, token);
+      });
 
       var creating_form = $('#group_creator');
 
@@ -137,12 +151,10 @@
 
         member_table.find('tr:last').after(grassrootJS.assembleMemberRow("listOfMembers", thisRowIndex));
         var newRow = member_table.find('tr:last');
-        newRow.find('[name$="phoneNumber"]').rules('add', grassrootJS.phoneRules);
-
-        // todo : consider intercepting here to add a new row
-        /*newRow.find('.form-control').keypress(function (e) {
-          handleEnter(e);
-        });*/
+        var phoneInput = newRow.find('[name$="phoneNumber"]');
+        var nameInput = newRow.find('[name$="displayName"]');
+        phoneInput.rules('add', grassrootJS.phoneRules);
+        nameInput.autocomplete(grassrootJS.memberAutoComplete(nameInput, phoneInput));
 
         newRow.find('#removeMember').click(function () {
           newRow.remove();

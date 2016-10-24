@@ -36,10 +36,8 @@ import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
-import java.util.TimeZone;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author Lesetse Kimwaga
@@ -429,6 +427,14 @@ public class UserManager implements UserManagementService, UserDetailsService {
             return lastCreatedGroup;
         else
             return null;
+    }
+
+    @Override
+    public List<String[]> findOthersInGraph(User user, String nameFragment) {
+        List<Object[]> records = userRepository.findDisplayNamesInGraph(user, "%" + nameFragment + "%");
+        return records.stream()
+                .map(o -> new String[] { String.valueOf(o[0]), String.valueOf(o[1])})
+                .collect(Collectors.toList());
     }
 
     @Override

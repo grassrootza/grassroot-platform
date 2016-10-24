@@ -4,7 +4,18 @@
       data-layout-decorate="~{layout}">
 <head>
   <title>Grassroot - View Group</title>
-  <script th:src="@{/js/grassroot-methods.js}"></script>
+
+  <link rel="stylesheet" type="text/css" th:href="@{/css/jquery-ui.min.css}" />
+  <meta name="_csrf" th:content="${_csrf.token}"/>
+  <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+
+  <style>
+    /* Fix for UL/UI autocomplete in modal */
+    .ui-autocomplete {
+      z-index: 5000;
+    }
+  </style>
+
 </head>
 <body>
 
@@ -503,8 +514,8 @@
                 <input type="hidden" name="groupUid" th:value="${group.getUid()}" />
                 <div class="modal-body">
                   <div class="form-group">
-                    <label for="new-member-name" class="control-label">Name</label>
-                    <input type="text" class="form-control input-lg" id="new-member-name" name="displayName" />
+                    <label for="newMemberName" class="control-label">Name</label>
+                    <input type="text" class="form-control input-lg" id="newMemberName" name="displayName" />
                   </div>
                   <div class="form-group">
                     <label for="newMemberPhone" class="control-label">Phone number</label>
@@ -587,6 +598,10 @@
 </div>
 
 <div class="header-container" layout:fragment="script-container">
+
+  <script th:src="@{/js/grassroot-methods.js}"></script>
+  <script th:src="@{/js/jquery-ui.min.js}"></script>
+
   <script>
 
     // putting this within document loaded causes errors (likely interplay of bootstrap and jquery), so leaving outside
@@ -604,7 +619,20 @@
       modal.find('#phoneNumber').val(phone);
     });
 
+    $('#addModal').on('show.bs.modal', function(event) {
+      var nameInput = $('#newMemberName');
+      var phoneInput = $('#newMemberPhone');
+      nameInput.autocomplete(grassrootJS.memberAutoComplete(nameInput, phoneInput));
+    });
+
     $(document).ready(function () {
+
+      var token = $("meta[name='_csrf']").attr("content");
+      var header = $("meta[name='_csrf_header']").attr("content");
+
+      $.bind("ajaxSend", function(elm, xhr, s) {
+        xhr.setRequestHeader(header, token);
+      });
 
       $('#add_member_form').validate({
         errorClass: "error-text",

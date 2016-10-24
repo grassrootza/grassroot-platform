@@ -83,4 +83,6 @@ public interface UserManagementService {
 
     Group fetchGroupUserMustRename(User user);
 
+    List<String[]> findOthersInGraph(User user, String nameFragment);
+
 }

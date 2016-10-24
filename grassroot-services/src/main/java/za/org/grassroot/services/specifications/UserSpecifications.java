@@ -30,5 +30,9 @@ public final class UserSpecifications {
     public static Specification<User> hasWebProfile() {
         return (root, query, cb) -> cb.equal(root.get(User_.hasWebProfile), true);
     }
-    
+
+    public static Specification<User> phoneContains(String phoneNumber) {
+        return (root, query, cb) -> cb.like(root.get(User_.phoneNumber), "27" + phoneNumber);
+    }
+
 }

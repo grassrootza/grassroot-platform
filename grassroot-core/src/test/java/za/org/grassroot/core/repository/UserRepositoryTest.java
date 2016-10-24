@@ -21,6 +21,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
@@ -255,13 +256,14 @@ public class UserRepositoryTest {
     }
 
     @Test
-    public void shouldReturnNumberInGraph() {
+    public void shouldReturnNamesInGraph() {
         String phoneBase = "080555000";
+        String nameBase = "tester ";
 
         List<User> testUsers = new ArrayList<>();
 
         for (int i = 0; i < 5; i++) {
-            testUsers.add(new User(phoneBase + i));
+            testUsers.add(new User(phoneBase + i, nameBase + i));
         }
 
         userRepository.save(testUsers);
@@ -274,11 +276,18 @@ public class UserRepositoryTest {
 
         assertEquals(groupRepository.count(), 1);
 
-        List<String> graph = userRepository.findPhoneNumbersInGraphOfUser(testUsers.get(0));
+        List<Object[]> graph = userRepository.findDisplayNamesInGraph(testUsers.get(0), "%test%");
         assertNotNull(graph);
+        assertEquals(2, graph.size());
 
-        assertTrue(graph.contains(testUsers.get(1).getPhoneNumber()));
-        assertFalse(graph.contains(testUsers.get(2).getPhoneNumber()));
+        List<String> phoneNumbers = graph.stream().map(o -> String.valueOf(o[1])).collect(Collectors.toList());
+        List<String> displayNames = graph.stream().map(o -> String.valueOf(o[0])).collect(Collectors.toList());
+
+        assertTrue(phoneNumbers.contains(testUsers.get(1).getPhoneNumber()));
+        assertTrue(displayNames.contains(testUsers.get(1).getDisplayName()));
+
+        assertFalse(phoneNumbers.contains(testUsers.get(2).getPhoneNumber()));
+        assertFalse(displayNames.contains(testUsers.get(2).getDisplayName()));
     }
 
 }

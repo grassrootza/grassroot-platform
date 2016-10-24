@@ -64,6 +64,13 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
             "m.group in (select m.group from Membership m2 where m2.user = :searchedUser))")
     List<String> findPhoneNumbersInGraphOfUser(@Param("searchedUser") User searchedUser);
 
+    // todo : figure out how to switch this to specifications when have time to wrap head around
+    @Query("select distinct(u.displayName), u.phoneNumber from User u where " +
+            "u in (select m.user from Membership m where " +
+            "m.group in (select m.group from Membership m2 where m2.user = :searchedUser)) " +
+            "and lower(u.displayName) like lower(:filterTerm)")
+    List<Object[]> findDisplayNamesInGraph(@Param("searchedUser") User searchedUser, @Param("filterTerm") String filterTerm);
+
     /*
     See if the phone number exists, before adding it
      */

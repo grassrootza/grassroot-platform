@@ -31,6 +31,30 @@ var grassrootJS = {
         return strVar;
     },
 
+    memberAutoComplete : function(nameInput, phoneInput) {
+        console.log("called member autocomplete");
+        return {
+            minLength: 2,
+            delay: 500,
+            source: function(request, response) {
+                console.log("triggering source call");
+                $.getJSON("/ajax/user/names", { fragment : request.term }, function(data) {
+                    console.log("got ajax data back: " + JSON.stringify(data));
+                    response(data);
+                });
+            },
+            focus: function(event, ui) {
+                event.preventDefault();
+                nameInput.val(ui.item.label);
+            },
+            select: function(event, ui) {
+                event.preventDefault();
+                phoneInput.val(ui.item.value);
+                nameInput.val(ui.item.label);
+            }
+        };
+    },
+
     phoneRules : {
         required: true,
         number: true,

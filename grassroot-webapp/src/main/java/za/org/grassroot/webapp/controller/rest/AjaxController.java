@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.core.enums.TaskType;
+import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.EventBroker;
 import za.org.grassroot.services.GroupBroker;
 import za.org.grassroot.services.TaskBroker;
@@ -22,12 +23,14 @@ import za.org.grassroot.webapp.model.rest.MemberListDTO;
 import za.org.grassroot.webapp.model.rest.wrappers.GenericResponseWrapper;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapperImpl;
+import za.org.grassroot.webapp.model.web.AutoCompleteResponse;
 import za.org.grassroot.webapp.model.web.MemberPicker;
 import za.org.grassroot.webapp.util.RestUtil;
 
 import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Created by luke on 2016/04/28.
@@ -104,6 +107,14 @@ public class AjaxController extends BaseController {
         List<double[]> listLatLongs = geoLocationBroker.fetchUserLatitudeLongitudeInAvgPeriod(userUid, LocalDate.now());
         ResponseWrapper body = new GenericResponseWrapper(HttpStatus.FOUND, RestMessage.TASK_FOUND, RestStatus.SUCCESS, listLatLongs);
         return new ResponseEntity<>(body, HttpStatus.OK);
+    }
+
+    @RequestMapping(value = "/user/names", method = RequestMethod.GET)
+    public @ResponseBody List<AutoCompleteResponse> retrieveUserGraphNames(@RequestParam String fragment) {
+        return userManagementService.findOthersInGraph(getUserProfile(), fragment)
+                .stream()
+                .map(s -> new AutoCompleteResponse(PhoneNumberUtil.invertPhoneNumber(s[1]), s[0])) // phoneNumber as value, name as label
+                .collect(Collectors.toList());
     }
 
 }
