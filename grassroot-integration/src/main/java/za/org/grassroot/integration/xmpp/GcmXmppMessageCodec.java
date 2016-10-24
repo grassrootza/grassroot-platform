@@ -66,7 +66,7 @@ public class GcmXmppMessageCodec {
 													 Instant createdDateTime, NotificationType alertType, String entityType,
 													 AndroidClickActionType clickAction, int priority) {
 		Map<String, Object> data = new HashMap<>();
-		///data.put("title", title);
+		data.put("title", title);
 
 		if (groupName != null) {
 			data.put("group", groupName);
