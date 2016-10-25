@@ -19,7 +19,7 @@ import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.PhoneNumberUtil;
-import za.org.grassroot.services.account.AccountBroker;
+import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.group.GroupQueryBroker;
 import za.org.grassroot.services.task.EventBroker;
@@ -50,9 +50,6 @@ public class GroupController extends BaseController {
     private static final Logger log = LoggerFactory.getLogger(GroupController.class);
 
     @Autowired
-    private UserManagementService userManagementService;
-
-    @Autowired
     private GroupBroker groupBroker;
 
     @Autowired
@@ -68,7 +65,7 @@ public class GroupController extends BaseController {
     private GroupQueryBroker groupQueryBroker;
 
     @Autowired
-    private AccountBroker accountBroker;
+    private AccountGroupBroker accountBroker;
 
     @Autowired
     @Qualifier("groupWrapperValidator")

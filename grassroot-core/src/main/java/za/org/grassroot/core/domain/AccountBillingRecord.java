@@ -26,6 +26,10 @@ public class AccountBillingRecord {
     @JoinColumn(name = "account_id", nullable = false, updatable = false)
     private Account account;
 
+    @OneToOne
+    @JoinColumn(name = "account_log_id", nullable = false, updatable = false)
+    private AccountLog accountLog;
+
     @Basic
     @Column(name="created_date_time", nullable = false, updatable = false)
     private Instant createdDateTime;
@@ -60,6 +64,7 @@ public class AccountBillingRecord {
 
     public static class BillingBuilder {
         private Account account;
+        private AccountLog accountLog;
         private Instant statementDateTime;
         private Instant billedPeriodStart;
         private Instant billedPeriodEnd;
@@ -68,6 +73,11 @@ public class AccountBillingRecord {
 
         public BillingBuilder(Account account) {
             this.account = account;
+        }
+
+        public BillingBuilder accountLog(AccountLog accountLog) {
+            this.accountLog = accountLog;
+            return this;
         }
 
         public BillingBuilder statementDateTime(Instant statementDateTime) {
@@ -96,13 +106,14 @@ public class AccountBillingRecord {
         }
 
         public AccountBillingRecord build() {
-            return new AccountBillingRecord(account, statementDateTime, billedPeriodStart, billedPeriodEnd, openingBalance, amountBilled);
+            return new AccountBillingRecord(account, accountLog, statementDateTime, billedPeriodStart, billedPeriodEnd, openingBalance, amountBilled);
         }
     }
 
-    private AccountBillingRecord(Account account, Instant statementDateTime, Instant billedPeriodStart, Instant billedPeriodEnd,
-                                Long openingBalance, Long amountBilled) {
+    private AccountBillingRecord(Account account, AccountLog accountLog, Instant statementDateTime, Instant billedPeriodStart,
+                                 Instant billedPeriodEnd, Long openingBalance, Long amountBilled) {
         Objects.requireNonNull(account);
+        Objects.requireNonNull(accountLog);
         Objects.requireNonNull(statementDateTime);
         Objects.requireNonNull(billedPeriodStart);
         Objects.requireNonNull(billedPeriodEnd);
@@ -113,6 +124,7 @@ public class AccountBillingRecord {
         this.createdDateTime = Instant.now();
 
         this.account = account;
+        this.accountLog = accountLog;
         this.statementDateTime = statementDateTime;
         this.billedPeriodStart = billedPeriodStart;
         this.billedPeriodEnd = billedPeriodEnd;
@@ -125,6 +137,8 @@ public class AccountBillingRecord {
     public Account getAccount() {
         return account;
     }
+
+    public AccountLog getAccountLog() { return accountLog; }
 
     public Instant getCreatedDateTime() {
         return createdDateTime;

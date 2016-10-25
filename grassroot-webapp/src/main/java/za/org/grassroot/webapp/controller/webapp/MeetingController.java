@@ -16,8 +16,8 @@ import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.MeetingImportance;
 import za.org.grassroot.core.util.DateTimeUtil;
-import za.org.grassroot.services.*;
-import za.org.grassroot.services.account.AccountBroker;
+import za.org.grassroot.services.PermissionBroker;
+import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.task.EventBroker;
@@ -46,20 +46,21 @@ public class MeetingController extends BaseController {
 
     Logger log = LoggerFactory.getLogger(MeetingController.class);
 
-    @Autowired
     private GroupBroker groupBroker;
-
-    @Autowired
     private EventBroker eventBroker;
-
-    @Autowired
     private PermissionBroker permissionBroker;
-
-    @Autowired
     private EventLogBroker eventLogBroker;
+    private AccountGroupBroker accountBroker;
 
     @Autowired
-    private AccountBroker accountBroker;
+    public MeetingController(GroupBroker groupBroker, EventBroker eventBroker, PermissionBroker permissionBroker,
+                             EventLogBroker eventLogBroker, AccountGroupBroker accountBroker) {
+        this.groupBroker = groupBroker;
+        this.eventBroker = eventBroker;
+        this.permissionBroker = permissionBroker;
+        this.eventLogBroker = eventLogBroker;
+        this.accountBroker = accountBroker;
+    }
 
     /**
      * Meeting creation

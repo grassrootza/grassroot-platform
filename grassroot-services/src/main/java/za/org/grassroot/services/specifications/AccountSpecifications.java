@@ -16,4 +16,8 @@ public final class AccountSpecifications {
                     cb.lessThan(root.get(Account_.disabledDateTime), end));
     }
 
+    public static Specification<Account> nextStatementBefore(Instant endPoint) {
+        return (root, query, cb) -> cb.lessThan(root.get(Account_.nextBillingDate), endPoint);
+    }
+
 }

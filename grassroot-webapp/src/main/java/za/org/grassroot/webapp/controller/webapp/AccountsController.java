@@ -13,8 +13,9 @@ import za.org.grassroot.core.enums.AccountType;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.account.AccountBroker;
-import za.org.grassroot.services.task.EventBroker;
+import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.services.group.GroupQueryBroker;
+import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 
 import javax.servlet.http.HttpServletRequest;
@@ -36,14 +37,18 @@ public class AccountsController extends BaseController {
     private static final Logger log = LoggerFactory.getLogger(AccountsController.class);
     private static final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd-M-yyyy");
 
-    @Autowired
     private AccountBroker accountBroker;
-
-    @Autowired
+    private AccountGroupBroker accountGroupBroker;
     private GroupQueryBroker groupQueryBroker;
+    private EventBroker eventBroker;
 
     @Autowired
-    private EventBroker eventBroker;
+    public AccountsController(AccountBroker accountBroker, AccountGroupBroker accountGroupBroker, GroupQueryBroker groupQueryBroker, EventBroker eventBroker) {
+        this.accountBroker = accountBroker;
+        this.accountGroupBroker = accountGroupBroker;
+        this.groupQueryBroker = groupQueryBroker;
+        this.eventBroker = eventBroker;
+    }
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping("/index")
@@ -131,7 +136,7 @@ public class AccountsController extends BaseController {
         }
 
         final Long timeStart = System.currentTimeMillis();
-        PaidGroup paidGroupRecord = accountBroker.loadPaidGroup(paidGroupUid);
+        PaidGroup paidGroupRecord = accountGroupBroker.loadPaidGroup(paidGroupUid);
         Group underlyingGroup = paidGroupRecord.getGroup();
 
         addRecordsToModel("meetingsInPeriod", model, underlyingGroup, EventType.MEETING, beginDate, endDate);
@@ -189,7 +194,7 @@ public class AccountsController extends BaseController {
                                 HttpServletRequest request) {
         Account account = accountBroker.loadAccount(accountUid);
         validateUserIsAdministrator(account);
-        accountBroker.addGroupToAccount(accountUid, groupUid, getUserProfile().getUid());
+        accountGroupBroker.addGroupToAccount(accountUid, groupUid, getUserProfile().getUid());
         addMessage(model, MessageType.SUCCESS, "account.addgroup.success", request);
         return viewPaidAccount(model, accountUid);
     }
@@ -201,7 +206,7 @@ public class AccountsController extends BaseController {
         Account account = accountBroker.loadAccount(accountUid);
         validateUserIsAdministrator(account);
         if (confirmed.equalsIgnoreCase("confirmed")) {
-            accountBroker.removeGroupFromAccount(accountUid, paidGroupUid, getUserProfile().getUid());
+            accountGroupBroker.removeGroupFromAccount(accountUid, paidGroupUid, getUserProfile().getUid());
             addMessage(model, MessageType.INFO, "account.remgroup.success", request);
         } else {
             addMessage(model, MessageType.ERROR, "account.remgroup.failed", request);

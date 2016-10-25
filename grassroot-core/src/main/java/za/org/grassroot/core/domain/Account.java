@@ -100,13 +100,6 @@ public class Account {
     @Column(name="additional_reminders")
     private int extraReminders;
 
-    @Basic
-    @Column(name="free_form_cost")
-    private int freeFormCost; // stored as cents
-
-    @Version
-    private Integer version;
-
     /*
     Current state of balance and last payment (amount will be stored in log)
     note : these could also be computed on the fly from logs & billing records, but this provides some redundancy at little overhead, so
@@ -117,8 +110,23 @@ public class Account {
     private Instant lastPaymentDate;
 
     @Basic
+    @Column(name="next_billing_date")
+    private Instant nextBillingDate;
+
+    @Basic
     @Column(name="outstanding_balance")
     private Long outstandingBalance;
+
+    @Basic
+    @Column(name="monthly_subscription") // stored in cents, in common with all other costs/figure
+    private int subscriptionFee;
+
+    @Basic
+    @Column(name="free_form_cost")
+    private int freeFormCost; // stored as cents
+
+    @Version
+    private Integer version;
 
     /*
     Constructors
@@ -307,6 +315,38 @@ public class Account {
 
     public boolean isEnabled() {
         return Instant.now().isBefore(disabledDateTime);
+    }
+
+    public Instant getLastPaymentDate() {
+        return lastPaymentDate;
+    }
+
+    public long getOutstandingBalance() {
+        return outstandingBalance == null ? 0 : outstandingBalance;
+    }
+
+    public void setLastPaymentDate(Instant lastPaymentDate) {
+        this.lastPaymentDate = lastPaymentDate;
+    }
+
+    public void setOutstandingBalance(Long outstandingBalance) {
+        this.outstandingBalance = outstandingBalance;
+    }
+
+    public int getSubscriptionFee() {
+        return subscriptionFee;
+    }
+
+    public void setSubscriptionFee(int subscriptionFee) {
+        this.subscriptionFee = subscriptionFee;
+    }
+
+    public Instant getNextBillingDate() {
+        return nextBillingDate;
+    }
+
+    public void setNextBillingDate(Instant nextBillingDate) {
+        this.nextBillingDate = nextBillingDate;
     }
 
     @Override

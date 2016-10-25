@@ -1,10 +1,14 @@
 package za.org.grassroot.services.account;
 
-import org.springframework.stereotype.Service;
+import java.time.Instant;
 
 /**
  * Created by luke on 2016/10/25.
  */
-@Service
 public interface AccountBillingBroker {
+
+    void calculateAccountStatements(Instant periodStart, Instant periodEnd, boolean sendEmails, boolean sendNotifications);
+
+    long calculateAccountCostsInPeriod(String accountUid, Instant periodStart, Instant periodEnd);
+
 }

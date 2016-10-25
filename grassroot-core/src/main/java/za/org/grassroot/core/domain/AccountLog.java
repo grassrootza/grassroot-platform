@@ -48,28 +48,75 @@ public class AccountLog implements ActionLog {
     @Column(name="reference_amount")
     private Long amountBilledOrPaid;
 
+    public static class Builder {
+        private Account account;
+        private String userUid;
+        private AccountLogType accountLogType;
+        private String auxiliary;
+        private String groupUid;
+        private String paidGroupUid;
+        private String description;
+        private Long amountBilledOrPaid;
+
+        public Builder(Account account) {
+            this.account = account;
+        }
+
+        public Builder userUid(String userUid) {
+            this.userUid = userUid;
+            return this;
+        }
+
+        public Builder accountLogType(AccountLogType accountLogType) {
+            this.accountLogType = accountLogType;
+            return this;
+        }
+
+        public Builder groupUid(String groupUid) {
+            this.groupUid = groupUid;
+            return this;
+        }
+
+        public Builder paidGroupUid(String paidGroupUid) {
+            this.paidGroupUid = paidGroupUid;
+            return this;
+        }
+
+        public Builder description(String description) {
+            this.description = description;
+            return this;
+        }
+
+        public Builder billedOrPaid(Long amountBilledOrPaid) {
+            this.amountBilledOrPaid = amountBilledOrPaid;
+            return this;
+        }
+
+        public AccountLog build() {
+            Objects.requireNonNull(account);
+            Objects.requireNonNull(userUid);
+            Objects.requireNonNull(accountLogType);
+
+            AccountLog accountLog = new AccountLog(account, userUid, accountLogType);
+            accountLog.description = description;
+            accountLog.groupUid = groupUid;
+            accountLog.paidGroupUid = paidGroupUid;
+            accountLog.amountBilledOrPaid = amountBilledOrPaid;
+
+            return accountLog;
+        }
+    }
+
     private AccountLog() {
         // for JPA
     }
 
-    public AccountLog(String userUid, Account account, AccountLogType accountLogType, String auxiliary) {
-        Objects.requireNonNull(userUid);
-        Objects.requireNonNull(account);
-        Objects.requireNonNull(accountLogType);
-
+    private AccountLog(Account account, String userUid, AccountLogType accountLogType) {
         this.uid = UIDGenerator.generateId();
-        this.userUid = userUid;
         this.account = account;
+        this.userUid = userUid;
         this.accountLogType = accountLogType;
-        this.description = auxiliary;
         this.creationTime = Instant.now();
-    }
-
-    public AccountLog(String userUid, Account account, AccountLogType accountLogType, String groupUid,
-                      String paidGroupUid, String description) {
-        this(userUid, account, accountLogType, description);
-        this.groupUid = groupUid;
-        this.paidGroupUid = paidGroupUid;
     }
 
     public Long getId() {
@@ -98,6 +145,10 @@ public class AccountLog implements ActionLog {
 
     public String getDescription() {
         return description;
+    }
+
+    public Long getAmountBilledOrPaid() {
+        return amountBilledOrPaid;
     }
 
     @Override

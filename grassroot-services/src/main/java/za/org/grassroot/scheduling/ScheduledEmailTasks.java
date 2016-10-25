@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.integration.email.EmailSendingBroker;
 import za.org.grassroot.integration.email.GrassrootEmail;
-import za.org.grassroot.services.account.AccountBroker;
+import za.org.grassroot.services.account.AccountBillingBroker;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -30,11 +30,11 @@ public class ScheduledEmailTasks {
     @Value("${grassroot.daily.admin.email:false}")
     private boolean sendDailyAdminMail;
 
-    private AccountBroker accountBroker;
+    private AccountBillingBroker accountBroker;
     private EmailSendingBroker emailSendingBroker;
 
     @Autowired
-    public ScheduledEmailTasks(AccountBroker accountBroker, EmailSendingBroker emailSendingBroker) {
+    public ScheduledEmailTasks(AccountBillingBroker accountBroker, EmailSendingBroker emailSendingBroker) {
         this.accountBroker = accountBroker;
         this.emailSendingBroker = emailSendingBroker;
     }
@@ -45,17 +45,6 @@ public class ScheduledEmailTasks {
             logger.info("Sending system stats email ... ");
             emailSendingBroker.sendSystemStatusMail(new GrassrootEmail.EmailBuilder("System Email")
                     .content("Hello this is a system email, it will soon have stats and so on").build());
-        }
-    }
-
-    @Scheduled(cron = "${grassroot.billing.cron.trigger}")
-    public void sendMonthlyBillingEmails() {
-        logger.info("Sending monthly billing email");
-        Instant start = LocalDateTime.now().minus(1, ChronoUnit.MONTHS).toInstant(ZoneOffset.UTC); // todo : store this instant
-        Instant end = LocalDateTime.now().toInstant(ZoneOffset.UTC);
-        Map<Account, Long> statements = accountBroker.calculateMonthlyStatements(start, end);
-        for (Map.Entry<Account, Long> entry : statements.entrySet()) {
-            logger.info("statement for account {}, amount {}", entry.getKey().getAccountName(), entry.getValue());
         }
     }
 

@@ -3,6 +3,7 @@ package za.org.grassroot.services.util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -65,7 +66,12 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 		}
 	}
 
-	private void saveLog(ActionLog actionLog) {
+    @Override
+    public long countNotifications(Specifications<Notification> specifications) {
+        return notificationRepository.count(specifications);
+    }
+
+    private void saveLog(ActionLog actionLog) {
 		if (actionLog instanceof GroupLog) {
 			groupLogRepository.save((GroupLog) actionLog);
 

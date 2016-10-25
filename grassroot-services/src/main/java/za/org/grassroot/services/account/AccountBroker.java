@@ -16,8 +16,6 @@ public interface AccountBroker {
 
     Account loadAccount(String accountUid);
 
-    PaidGroup loadPaidGroup(String paidGroupUid);
-
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     List<Account> loadAllAccounts();
 
@@ -43,24 +41,4 @@ public interface AccountBroker {
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN')")
     void updateAccountMessageSettings(String userUid, String accountUid, Boolean freeFormEnabled, Integer costPerMessage);
 
-    // Methods to designate groups as paid for by accounts (and remove the designation)
-    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
-    void addGroupToAccount(String accountUid, String groupUid, String addingUserUid);
-
-    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
-    void removeGroupFromAccount(String accountUid, String groupUid, String removingUserUid);
-
-    Account findAccountForGroup(String groupUid);
-
-    // Methods to handle additional features for accounts
-    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
-    void sendFreeFormMessage(String userUid, String groupUid, String message);
-
-    /*
-    METHODS TO HANDLE COMPUTING COSTS & BILLS (FOR SCHEDULED JOBS)
-     */
-
-    Map<Account, Long> calculateMonthlyStatements(Instant startValidity, Instant endValidity);
-
-    long calculateAccountCostsInPeriod(String accountUid, Instant periodStart, Instant periodEnd, boolean generateLog);
 }

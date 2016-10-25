@@ -18,9 +18,10 @@ import za.org.grassroot.core.enums.AccountType;
 import za.org.grassroot.core.repository.RoleRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.account.AccountBroker;
+import za.org.grassroot.services.account.AccountGroupBroker;
+import za.org.grassroot.services.exception.GroupAlreadyPaidForException;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.user.UserManagementService;
-import za.org.grassroot.services.exception.GroupAlreadyPaidForException;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -40,6 +41,9 @@ public class AccountBrokerTest {
 
     @Autowired
     private AccountBroker accountBroker;
+
+    @Autowired
+    private AccountGroupBroker accountGroupBroker;
 
     @Autowired
     private UserManagementService userManagementService;
@@ -166,10 +170,10 @@ public class AccountBrokerTest {
         // todo: add tests to check it fails if not done by admin
         // todo: add lots more asserts, to make sure group added is the actual group
         Account account = createTestAccount(null);
-        accountBroker.addGroupToAccount(account.getUid(), testGroup.getUid(), testAdmin.getUid());
+        accountGroupBroker.addGroupToAccount(account.getUid(), testGroup.getUid(), testAdmin.getUid());
         assertTrue(testGroup.isPaidFor());
-        assertNotNull(accountBroker.findAccountForGroup(testGroup.getUid()));
-        assertEquals(accountBroker.findAccountForGroup(testGroup.getUid()).getId(), account.getId());
+        assertNotNull(accountGroupBroker.findAccountForGroup(testGroup.getUid()));
+        assertEquals(accountGroupBroker.findAccountForGroup(testGroup.getUid()).getId(), account.getId());
     }
 
     @Test
@@ -188,8 +192,8 @@ public class AccountBrokerTest {
         // todo: change this to try/catch, to handle it better
         Account account = createTestAccount(null);
         String account2Uid = accountBroker.createAccount(testUser.getUid(), accountName + "2", testAdmin.getUid(), null, AccountType.STANDARD);
-        accountBroker.addGroupToAccount(account.getUid(), testGroup.getUid(), testAdmin.getUid());
-        accountBroker.addGroupToAccount(account2Uid, testGroup.getUid(), testAdmin.getUid());
+        accountGroupBroker.addGroupToAccount(account.getUid(), testGroup.getUid(), testAdmin.getUid());
+        accountGroupBroker.addGroupToAccount(account2Uid, testGroup.getUid(), testAdmin.getUid());
     }
 
 }
