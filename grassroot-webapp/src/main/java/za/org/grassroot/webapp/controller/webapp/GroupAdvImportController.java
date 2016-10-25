@@ -14,7 +14,7 @@ import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.integration.DataImportBroker;
-import za.org.grassroot.services.GroupBroker;
+import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.ExcelSheetAnalysis;
 import za.org.grassroot.webapp.model.web.GroupWrapper;

@@ -1,6 +1,7 @@
 package za.org.grassroot.core.domain;
 
 import za.org.grassroot.core.enums.AccountType;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
@@ -33,14 +34,22 @@ public class Account {
     private User createdByUser;
 
     @Basic
-    @Column(name="created_date_time", insertable = true, updatable = false)
+    @Column(name="created_date_time", nullable = false, insertable = true, updatable = false)
     private Instant createdDateTime;
 
     @ManyToOne
-    @JoinColumn(name = "disabled_by_user")
+    @JoinColumn(name = "enabled_by_user", nullable = false, updatable = false)
+    private User enabledByUser;
+
+    @Basic
+    @Column(name = "enabled_date_time", nullable = false)
+    private Instant enabledDateTime;
+
+    @ManyToOne
+    @JoinColumn(name = "disabled_by_user", nullable = false)
     private User disabledByUser;
 
-    @Column(name = "disabled_date_time")
+    @Column(name = "disabled_date_time", nullable = false)
     private Instant disabledDateTime;
 
     /*
@@ -61,10 +70,6 @@ public class Account {
     @Basic
     @Column(name = "primary_email")
     private String primaryEmail;
-
-    @Basic
-    @Column
-    private boolean enabled; // for future, in case we want to toggle a non-paying account on/off
 
     @Enumerated(EnumType.STRING)
     @Column(name = "account_type", length = 50, nullable = false)
@@ -103,16 +108,21 @@ public class Account {
     private Integer version;
 
     /*
-    Constructors
+    Current state of balance and last payment (amount will be stored in log)
+    note : these could also be computed on the fly from logs & billing records, but this provides some redundancy at little overhead, so
      */
 
-    @PreUpdate
-    @PrePersist
-    public void updateTimeStamps() {
-        if (createdDateTime == null) {
-            createdDateTime = Instant.now();
-        }
-    }
+    @Basic
+    @Column(name="last_payment_date")
+    private Instant lastPaymentDate;
+
+    @Basic
+    @Column(name="outstanding_balance")
+    private Long outstandingBalance;
+
+    /*
+    Constructors
+     */
 
     private Account() {
         // For JPA
@@ -125,10 +135,16 @@ public class Account {
         this.uid = UIDGenerator.generateId();
 
         this.accountName = accountName;
-        this.createdByUser = createdByUser;
-        this.type = accountType;
 
-        this.enabled = true;
+        this.createdDateTime = Instant.now();
+        this.enabledDateTime = Instant.now();
+
+        this.createdByUser = createdByUser;
+        this.enabledByUser = createdByUser;
+
+        this.disabledDateTime = DateTimeUtil.getVeryLongAwayInstant();
+
+        this.type = accountType;
         this.freeFormMessages = true;
     }
 
@@ -193,12 +209,20 @@ public class Account {
         this.primaryEmail = primaryEmail;
     }
 
-    public boolean isEnabled() {
-        return enabled;
+    public User getEnabledByUser() {
+        return enabledByUser;
     }
 
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
+    public Instant getEnabledDateTime() {
+        return enabledDateTime;
+    }
+
+    public void setEnabledByUser(User enabledByUser) {
+        this.enabledByUser = enabledByUser;
+    }
+
+    public void setEnabledDateTime(Instant enabledDateTime) {
+        this.enabledDateTime = enabledDateTime;
     }
 
     public AccountType getType() {
@@ -281,6 +305,10 @@ public class Account {
         this.freeFormCost = freeFormCost;
     }
 
+    public boolean isEnabled() {
+        return Instant.now().isBefore(disabledDateTime);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -307,7 +335,7 @@ public class Account {
                 ", createdDateTime=" + createdDateTime +
                 ", accountName=" + accountName +
                 ", primaryEmail=" + primaryEmail +
-                ", enabled=" + enabled +
+                ", enabledDateTime=" + enabledDateTime +
                 ", free form messages='" + freeFormMessages + '\'' +
                 '}';
     }

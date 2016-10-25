@@ -11,7 +11,7 @@ import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.integration.GroupChatService;
 import za.org.grassroot.integration.exception.GroupChatSettingNotFoundException;
 import za.org.grassroot.integration.xmpp.GcmService;
-import za.org.grassroot.services.UserManagementService;
+import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.services.exception.NoSuchProfileException;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;

@@ -7,8 +7,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.validation.Errors;
 import org.springframework.validation.ValidationUtils;
 import org.springframework.validation.Validator;
-import za.org.grassroot.services.PasswordTokenService;
-import za.org.grassroot.services.UserManagementService;
+import za.org.grassroot.services.user.PasswordTokenService;
+import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.model.web.UserAccountRecovery;
 
 /**

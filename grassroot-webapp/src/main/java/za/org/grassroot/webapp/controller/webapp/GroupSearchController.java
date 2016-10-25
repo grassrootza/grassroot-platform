@@ -12,9 +12,13 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.dto.TaskDTO;
-import za.org.grassroot.services.*;
 import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.exception.RequestorAlreadyPartOfGroupException;
+import za.org.grassroot.services.group.GroupBroker;
+import za.org.grassroot.services.group.GroupJoinRequestService;
+import za.org.grassroot.services.group.GroupLocationFilter;
+import za.org.grassroot.services.group.GroupQueryBroker;
+import za.org.grassroot.services.task.TaskBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.PublicGroupWrapper;
 

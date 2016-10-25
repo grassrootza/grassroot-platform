@@ -1,0 +1,18 @@
+package za.org.grassroot.services.user;
+
+import za.org.grassroot.core.domain.Address;
+
+/**
+ * Created by paballo on 2016/07/14.
+ */
+public interface AddressBroker {
+
+    Address getUserAddress(String userUid);
+
+    void updateUserAddress(String userUid, String houseNumber, String street, String town);
+
+    void removeAddress(String userUid);
+
+    boolean hasAddress(String userUid);
+
+}

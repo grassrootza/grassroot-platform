@@ -7,7 +7,5 @@ public interface EmailSendingBroker {
 
     void sendSystemStatusMail(GrassrootEmail systemStatsEmail);
 
-    void sendMonthlyBillingStatements();
-
     void sendMail(GrassrootEmail email);
 }

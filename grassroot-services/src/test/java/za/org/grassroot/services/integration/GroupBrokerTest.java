@@ -19,10 +19,10 @@ import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
-import za.org.grassroot.services.GroupBroker;
+import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.services.PermissionBroker;
-import za.org.grassroot.services.UserManagementService;
+import za.org.grassroot.services.user.UserManagementService;
 
 import java.util.Set;
 

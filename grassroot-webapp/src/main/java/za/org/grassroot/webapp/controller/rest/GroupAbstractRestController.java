@@ -4,6 +4,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.services.*;
+import za.org.grassroot.services.group.GroupBroker;
+import za.org.grassroot.services.group.GroupQueryBroker;
+import za.org.grassroot.services.task.EventBroker;
+import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.model.rest.wrappers.GroupResponseWrapper;
 
 /**

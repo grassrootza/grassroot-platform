@@ -11,6 +11,7 @@ import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.SafetyEventRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.integration.sms.SmsSendingService;
+import za.org.grassroot.services.user.AddressBroker;
 import za.org.grassroot.services.util.CacheUtilService;
 
 import java.time.Instant;

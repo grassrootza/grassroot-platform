@@ -11,8 +11,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.ModelAndView;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.UserInterfaceType;
-import za.org.grassroot.services.GroupJoinRequestService;
-import za.org.grassroot.services.TaskBroker;
+import za.org.grassroot.services.group.GroupJoinRequestService;
+import za.org.grassroot.services.task.TaskBroker;
 import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.webapp.controller.BaseController;
 

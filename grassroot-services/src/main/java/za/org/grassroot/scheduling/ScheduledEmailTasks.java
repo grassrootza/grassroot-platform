@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.integration.email.EmailSendingBroker;
 import za.org.grassroot.integration.email.GrassrootEmail;
-import za.org.grassroot.services.AccountBroker;
+import za.org.grassroot.services.account.AccountBroker;
 
 import java.time.Instant;
 import java.time.LocalDateTime;

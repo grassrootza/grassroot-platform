@@ -12,9 +12,9 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.AccountType;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.DateTimeUtil;
-import za.org.grassroot.services.AccountBroker;
-import za.org.grassroot.services.EventBroker;
-import za.org.grassroot.services.GroupQueryBroker;
+import za.org.grassroot.services.account.AccountBroker;
+import za.org.grassroot.services.task.EventBroker;
+import za.org.grassroot.services.group.GroupQueryBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 
 import javax.servlet.http.HttpServletRequest;

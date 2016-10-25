@@ -48,11 +48,6 @@ public class EmailSendingBrokerImpl implements EmailSendingBroker {
     }
 
     @Override
-    public void sendMonthlyBillingStatements() {
-
-    }
-
-    @Override
     public void sendMail(GrassrootEmail email) {
         logger.info("about to send");
         SimpleMailMessage mail = new SimpleMailMessage();

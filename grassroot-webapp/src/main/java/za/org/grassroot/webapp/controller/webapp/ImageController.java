@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.services.GroupImageBroker;
+import za.org.grassroot.services.group.GroupImageBroker;
 import za.org.grassroot.webapp.util.ImageUtil;
 
 import javax.servlet.http.HttpServletRequest;

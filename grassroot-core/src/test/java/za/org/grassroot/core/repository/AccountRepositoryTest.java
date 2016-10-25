@@ -18,6 +18,8 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.AccountType;
 
 import javax.transaction.Transactional;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -149,7 +151,7 @@ public class AccountRepositoryTest {
         Account account = new Account(testUser, accountName, AccountType.STANDARD);
         accountRepository.save(account);
         Account accountFromDb = accountRepository.findByAccountName(accountName).get(0);
-        accountFromDb.setEnabled(false);
+        accountFromDb.setDisabledDateTime(Instant.now());
         accountRepository.save(accountFromDb);
         Account disabledAccountFromDb = accountRepository.findByAccountName(accountName).get(0);
         assertFalse(disabledAccountFromDb.isEnabled());
@@ -163,23 +165,23 @@ public class AccountRepositoryTest {
         assertThat(accountRepository.count(), is(0L));
         Account accountEnabled = new Account(testUser, accountName, AccountType.STANDARD);
         Account accountDisabled = new Account(testUser, accountName + "_disabled", AccountType.STANDARD);
-        accountDisabled.setEnabled(false);
+        accountDisabled.setDisabledDateTime(Instant.now());
         accountRepository.save(accountEnabled);
         accountRepository.save(accountDisabled);
 
-        List<Account> enabledAccounts = accountRepository.findByEnabled(true);
+        List<Account> enabledAccounts = accountRepository.findByDisabledDateTimeAfter(Instant.now().plus(5, ChronoUnit.MINUTES));
         assertThat(enabledAccounts.size(), is(1));
         Account enabledAccountFromDb = enabledAccounts.get(0);
         assertNotNull(enabledAccountFromDb);
         assertThat(enabledAccountFromDb.getAccountName(), is(accountName));
-        assertTrue(enabledAccountFromDb.isEnabled());
+        assertTrue(enabledAccountFromDb.getDisabledDateTime().isAfter(Instant.now()));
 
-        List<Account> disabledAccounts = accountRepository.findByEnabled(false);
-        assertThat(disabledAccounts.size(), is(1));
+        List<Account> disabledAccounts = accountRepository.findByDisabledDateTimeAfter(Instant.now().minus(5, ChronoUnit.MINUTES));
+        assertThat(disabledAccounts.size(), is(2));
         Account disabledAccountFromDb = disabledAccounts.get(0);
         assertNotNull(disabledAccountFromDb);
         assertThat(disabledAccountFromDb.getAccountName(), is(accountName + "_disabled"));
-        assertFalse(disabledAccountFromDb.isEnabled());
+        // assertFalse(disabledAccountFromDb.isEnabled());
 
     }
 

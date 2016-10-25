@@ -11,13 +11,11 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.integration.GroupChatService;
 import za.org.grassroot.integration.MessageSendingService;
-import za.org.grassroot.integration.email.EmailSendingBroker;
-import za.org.grassroot.integration.email.GrassrootEmail;
 import za.org.grassroot.integration.exception.GroupChatSettingNotFoundException;
-import za.org.grassroot.services.EventBroker;
-import za.org.grassroot.services.GroupBroker;
+import za.org.grassroot.services.task.EventBroker;
+import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.SafetyEventBroker;
-import za.org.grassroot.services.TodoBroker;
+import za.org.grassroot.services.task.TodoBroker;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.specifications.TodoSpecifications;
 

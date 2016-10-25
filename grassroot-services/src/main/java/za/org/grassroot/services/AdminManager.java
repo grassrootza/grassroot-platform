@@ -22,6 +22,7 @@ import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.exception.MemberNotPartOfGroupException;
 import za.org.grassroot.services.exception.NoSuchUserException;
 import za.org.grassroot.services.geo.GeoLocationBroker;
+import za.org.grassroot.services.group.GroupBroker;
 
 import javax.persistence.EntityManager;
 import java.time.Instant;

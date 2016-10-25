@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.InitBinder;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.services.PermissionBroker;
-import za.org.grassroot.services.UserManagementService;
+import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.util.LocalDateTimePropertyEditor;
 
 import javax.servlet.http.HttpServletRequest;

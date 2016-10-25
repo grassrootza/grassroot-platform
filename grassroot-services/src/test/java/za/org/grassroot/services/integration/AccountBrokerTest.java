@@ -17,9 +17,9 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.AccountType;
 import za.org.grassroot.core.repository.RoleRepository;
 import za.org.grassroot.core.repository.UserRepository;
-import za.org.grassroot.services.AccountBroker;
-import za.org.grassroot.services.GroupBroker;
-import za.org.grassroot.services.UserManagementService;
+import za.org.grassroot.services.account.AccountBroker;
+import za.org.grassroot.services.group.GroupBroker;
+import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.services.exception.GroupAlreadyPaidForException;
 
 import java.util.HashMap;

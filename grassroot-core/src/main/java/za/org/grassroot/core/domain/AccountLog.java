@@ -45,6 +45,9 @@ public class AccountLog implements ActionLog {
     @Column(name="description", length = 255)
     private String description;
 
+    @Column(name="reference_amount")
+    private Long amountBilledOrPaid;
+
     private AccountLog() {
         // for JPA
     }

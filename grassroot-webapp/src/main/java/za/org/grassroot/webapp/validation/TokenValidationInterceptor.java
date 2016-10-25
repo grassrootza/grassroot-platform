@@ -7,7 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.servlet.HandlerMapping;
 import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
 import za.org.grassroot.core.domain.VerificationTokenCode;
-import za.org.grassroot.services.PasswordTokenService;
+import za.org.grassroot.services.user.PasswordTokenService;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;

@@ -12,10 +12,10 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.integration.sms.SmsSendingService;
-import za.org.grassroot.services.EventBroker;
-import za.org.grassroot.services.EventLogBroker;
+import za.org.grassroot.services.task.EventBroker;
+import za.org.grassroot.services.task.EventLogBroker;
 import za.org.grassroot.services.MessageAssemblingService;
-import za.org.grassroot.services.UserManagementService;
+import za.org.grassroot.services.user.UserManagementService;
 
 import java.util.List;
 import java.util.regex.Matcher;
