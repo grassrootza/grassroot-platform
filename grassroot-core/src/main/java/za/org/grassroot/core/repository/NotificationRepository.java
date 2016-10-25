@@ -30,7 +30,7 @@ public interface NotificationRepository extends JpaRepository<Notification,Long>
     int countByTargetAndViewedOnAndroidFalseAndForAndroidTimelineTrue(User target);
 
     @Transactional(readOnly = true)
-    List<Notification> findFirst50ByNextAttemptTimeBeforeOrderByNextAttemptTimeAsc(Instant time);
+    List<Notification> findFirst75ByNextAttemptTimeBeforeOrderByNextAttemptTimeAsc(Instant time);
 
     @Transactional(readOnly = true)
     List<Notification> findFirst100ByReadFalseAndAttemptCountGreaterThanAndLastAttemptTimeGreaterThan(int minAttemptCount, Instant lastAttemptTime);

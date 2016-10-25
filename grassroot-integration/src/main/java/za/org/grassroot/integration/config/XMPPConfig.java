@@ -1,4 +1,4 @@
-package za.org.grassroot.integration.xmpp;
+package za.org.grassroot.integration.config;
 
 import org.jivesoftware.smack.ConnectionConfiguration;
 import org.jivesoftware.smack.XMPPConnection;
@@ -15,7 +15,7 @@ import org.springframework.integration.annotation.ServiceActivator;
 import org.springframework.integration.xmpp.config.XmppConnectionFactoryBean;
 import org.springframework.integration.xmpp.outbound.ChatMessageSendingMessageHandler;
 import org.springframework.messaging.MessageChannel;
-import za.org.grassroot.integration.config.InfrastructureConfiguration;
+import za.org.grassroot.integration.xmpp.GcmMessageListeningEndpoint;
 
 import javax.net.ssl.SSLSocketFactory;
 

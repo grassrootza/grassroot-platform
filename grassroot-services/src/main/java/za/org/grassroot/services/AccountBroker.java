@@ -7,6 +7,7 @@ import za.org.grassroot.core.enums.AccountType;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by luke on 2015/11/12.
@@ -59,7 +60,7 @@ public interface AccountBroker {
     METHODS TO HANDLE COMPUTING COSTS & BILLS (FOR SCHEDULED JOBS)
      */
 
-    // void generateMonthlyAccountStatements();
+    Map<Account, Long> calculateMonthlyStatements(Instant startValidity, Instant endValidity);
 
     long calculateAccountCostsInPeriod(String accountUid, Instant periodStart, Instant periodEnd, boolean generateLog);
 }

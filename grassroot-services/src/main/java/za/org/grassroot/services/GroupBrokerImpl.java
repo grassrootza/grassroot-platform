@@ -21,8 +21,8 @@ import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
-import za.org.grassroot.integration.xmpp.GcmService;
 import za.org.grassroot.integration.GroupChatService;
+import za.org.grassroot.integration.xmpp.GcmService;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.services.exception.GroupDeactivationNotAvailableException;
 import za.org.grassroot.services.exception.InvalidTokenException;
@@ -138,7 +138,7 @@ public class GroupBrokerImpl implements GroupBroker {
             bundle.addLog(joinTokenOpeningResult.getGroupLog());
         }
 
-        logsAndNotificationsBroker.storeBundle(bundle);
+        logsAndNotificationsBroker.asyncStoreBundle(bundle);
 
         return group;
     }
@@ -244,7 +244,7 @@ public class GroupBrokerImpl implements GroupBroker {
         logger.info("Adding members: group={}, memberships={}, user={}", group, membershipInfos, user);
         try {
             LogsAndNotificationsBundle bundle = addMemberships(user, group, membershipInfos, false);
-            logsAndNotificationsBroker.storeBundle(bundle);
+            logsAndNotificationsBroker.asyncStoreBundle(bundle);
         } catch (InvalidPhoneNumberException e) {
             logger.info("Error! Invalid phone number : " + e.getMessage());
         }
@@ -519,7 +519,7 @@ public class GroupBrokerImpl implements GroupBroker {
             bundle.addBundle(addMembershipsBundle);
         }
 
-        logsAndNotificationsBroker.storeBundle(bundle);
+        logsAndNotificationsBroker.asyncStoreBundle(bundle);
     }
 
     @Override
@@ -571,7 +571,7 @@ public class GroupBrokerImpl implements GroupBroker {
                 deactivate(user.getUid(), groupFrom.getUid(), false);
             }
 
-            logsAndNotificationsBroker.storeBundle(bundle);
+            logsAndNotificationsBroker.asyncStoreBundle(bundle);
         }
 
         logger.info("Group from active status is now : {}", groupFrom.isActive());

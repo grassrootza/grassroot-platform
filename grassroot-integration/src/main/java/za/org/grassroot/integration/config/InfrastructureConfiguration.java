@@ -3,6 +3,7 @@ package za.org.grassroot.integration.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.integration.annotation.IntegrationComponentScan;
 import org.springframework.integration.channel.DirectChannel;
 import org.springframework.integration.channel.QueueChannel;
@@ -18,6 +19,7 @@ import org.springframework.scheduling.support.PeriodicTrigger;
 @ComponentScan
 @IntegrationComponentScan
 @EnableIntegration
+@PropertySource("file:${user.home}/grassroot/grassroot-integration.properties")
 public class InfrastructureConfiguration {
 
     @Bean(name = PollerMetadata.DEFAULT_POLLER)
@@ -49,6 +51,7 @@ public class InfrastructureConfiguration {
     @Bean
     public MessageChannel systemMessageChannel(){return new DirectChannel();}
 
-
+    @Bean
+    public MessageChannel emailOutboundChannel() { return new DirectChannel(); }
 
 }

@@ -13,6 +13,7 @@ import java.util.Set;
  * Created by luke on 2015/10/18.
  * note: For naming this entity, there could be confusion with a 'user account', but since we rarely use that terminology,
  * better that than 'institution', which seems like it would set us up for trouble (the term is loaded) down the road.
+ * major todo : separate created date time and validity start date time (so accounts can be switched on/off)
  */
 
 @Entity

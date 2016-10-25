@@ -62,3 +62,6 @@ schema-export-create.sql
 # Include the Gradle Wrapper
 !gradle-wrapper.jar
 !gradlew
+
+# Exclude integration properties file (contains various passwords)
+grassroot-integration/**/application.properties

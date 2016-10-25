@@ -17,6 +17,7 @@ import za.org.grassroot.core.repository.*;
 import za.org.grassroot.services.exception.GroupAccountMismatchException;
 import za.org.grassroot.services.exception.GroupAlreadyPaidForException;
 import za.org.grassroot.services.exception.GroupNotPaidForException;
+import za.org.grassroot.services.specifications.AccountSpecifications;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
@@ -351,6 +352,21 @@ public class AccountBrokerImpl implements AccountBroker {
 
    		logsAndNotificationsBroker.storeBundle(bundle);
    	}
+
+    @Override
+    public Map<Account, Long> calculateMonthlyStatements(Instant startValidity, Instant endValidity) {
+
+        List<Account> validAccounts = accountRepository.findAll(AccountSpecifications.isValidBetween(startValidity, endValidity));
+        log.info("Calculating monthly statements for {} accounts", validAccounts.size());
+        Map<Account, Long> returnMap = new HashMap<>();
+
+        for (Account account : validAccounts) {
+            // todo : fix this calculate method (also, we will need billing)
+            returnMap.put(account, calculateAccountCostsInPeriod(account.getUid(), startValidity, endValidity, false));
+        }
+
+        return returnMap;
+    }
 
     @Override
     @Transactional

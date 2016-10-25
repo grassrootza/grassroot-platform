@@ -1,18 +1,19 @@
-package za.org.grassroot.services.async;
+package za.org.grassroot.scheduling;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.env.Environment;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.repository.*;
-import za.org.grassroot.integration.exception.GroupChatSettingNotFoundException;
-import za.org.grassroot.integration.MessageSendingService;
 import za.org.grassroot.integration.GroupChatService;
+import za.org.grassroot.integration.MessageSendingService;
+import za.org.grassroot.integration.email.EmailSendingBroker;
+import za.org.grassroot.integration.email.GrassrootEmail;
+import za.org.grassroot.integration.exception.GroupChatSettingNotFoundException;
 import za.org.grassroot.services.EventBroker;
 import za.org.grassroot.services.GroupBroker;
 import za.org.grassroot.services.SafetyEventBroker;
@@ -33,7 +34,6 @@ import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
 /**
  * Created by aakilomar on 10/5/15.
  */
-
 @Component
 public class ScheduledTasks {
 
@@ -80,9 +80,6 @@ public class ScheduledTasks {
 
     @Autowired
     private MessageSendingService messageSendingService;
-
-    @Autowired
-    private Environment environment;
 
     @Scheduled(fixedRate = 300000) //runs every 5 minutes
     public void sendReminders() {
