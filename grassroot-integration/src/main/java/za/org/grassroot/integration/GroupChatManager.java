@@ -136,8 +136,8 @@ public class GroupChatManager implements GroupChatService {
         for(String messageUid:messageUids) {
             Map<String, Object> data = generateMarkMessageAsReadData(messageUid, groupName, groupName);
             org.springframework.messaging.Message gcmMessage = GcmXmppMessageCodec.encode(TOPICS.concat(groupUid), (String) data.get("messageId"),
-                    null, null, null,
-                    AndroidClickActionType.CHAT_MESSAGE.name(), data);
+                    null,
+                    data);
             gcmXmppOutboundChannel.send(gcmMessage);
         }
     }
@@ -145,7 +145,7 @@ public class GroupChatManager implements GroupChatService {
     public org.springframework.messaging.Message<Message> generateCannotSendMessage(GroupChatMessage input, Group group){
         Map<String, Object> data = MessageUtils.generateUserMutedResponseData(messageSourceAccessor, input, group);
         return GcmXmppMessageCodec.encode(input.getFrom(), String.valueOf(data.get("messageId")),
-                null, null, null, AndroidClickActionType.CHAT_MESSAGE.name(), data);
+                null, data);
     }
 
     public org.springframework.messaging.Message<Message> generateMessage(User user, GroupChatMessage input, Group group) {
@@ -155,7 +155,7 @@ public class GroupChatManager implements GroupChatService {
             String topic = TOPICS.concat(group.getUid());
             data = generateChatMessageData(input, user, group);
             gcmMessage = GcmXmppMessageCodec.encode(topic, String.valueOf(data.get("messageId")),
-                    null, null, null, AndroidClickActionType.CHAT_MESSAGE.name(), data);
+                    null, data);
         } else {
             final String msg = String.valueOf(input.getData().get("message"));
             final String[] tokens = MessageUtils.tokenize(msg);
@@ -177,7 +177,7 @@ public class GroupChatManager implements GroupChatService {
                 }
             }
             gcmMessage = GcmXmppMessageCodec.encode(input.getFrom(), String.valueOf(data.get("messageId")),
-                    null, null, null, AndroidClickActionType.CHAT_MESSAGE.name(), data);
+                    null, data);
         }
 
         return gcmMessage;

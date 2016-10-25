@@ -390,7 +390,7 @@ public class GroupRestController extends GroupAbstractRestController {
 
     }
 
-    @RequestMapping(value = "messenger/mark_read/{phoneNumber}/{code}", method = RequestMethod.POST)
+    @RequestMapping(value = "messenger/mark_read/{phoneNumber}/{code}/{groupUid}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> marksAsRead(@PathVariable String phoneNumber, @PathVariable String code, @PathVariable String groupUid, @RequestParam Set<String> messageUids) {
         User user = userManagementService.findByInputNumber(phoneNumber);
         Group group = groupBroker.load(groupUid);

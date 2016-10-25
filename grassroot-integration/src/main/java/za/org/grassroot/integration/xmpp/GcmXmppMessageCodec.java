@@ -41,7 +41,7 @@ public class GcmXmppMessageCodec {
 	}
 
 	public static org.springframework.messaging.Message<Message> encode(String registrationID, String messageId, String collapseKey,
-																		String title, String body, String clickAction, Map<String, Object> dataPart) {
+																		Map<String, Object> dataPart) {
 		logger.debug("Generated collapseKey " + collapseKey);
 
 		GcmEntity gcmPayload = new GcmEntity(messageId, registrationID, collapseKey, dataPart, null);
