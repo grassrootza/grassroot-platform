@@ -90,7 +90,7 @@ public class NotificationToGcmXmppTransformer {
                 throw new UnsupportedOperationException("Have to add support for notification type: " + notification.getNotificationType());
         }
 
-        return GcmXmppMessageCodec.encode(registrationID, messageId, collapseKey, title, body, null, dataPart);
+        return GcmXmppMessageCodec.encode(registrationID, messageId, collapseKey, dataPart);
     }
 
     private String generateCollapseKey(Notification notification) {
