@@ -1,5 +1,6 @@
 package za.org.grassroot.services.account;
 
+import org.jivesoftware.smack.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -206,23 +207,16 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
     }
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public void processAccountStatementEmails(Set<String> billingRecordUids) {
         Objects.requireNonNull(billingRecordUids);
-
-        log.debug("Inside send account statement emails");
-
         Set<AccountBillingRecord> records = billingRepository.findByUidIn(billingRecordUids);
-
         for (AccountBillingRecord record : records) {
             log.debug("generating account statement for {}, amount of {}", record.getAccount().getAccountName(), record.getBilledBalance());
-            emailSendingBroker.sendMail(generateStatementEmail(record));
+            if (!StringUtils.isEmpty(record.getAccount().getBillingUser().getEmailAddress())) {
+                emailSendingBroker.sendMail(generateStatementEmail(record));
+            }
         }
-    }
-
-    @Override
-    public boolean chargeAccountStatement(String accountUid, String billingRecordUid) {
-        return false;
     }
 
     private GrassrootEmail generateStatementEmail(AccountBillingRecord billingRecord) {

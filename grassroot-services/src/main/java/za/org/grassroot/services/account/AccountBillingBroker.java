@@ -11,8 +11,4 @@ public interface AccountBillingBroker {
 
     void processAccountStatementEmails(Set<String> billingRecordUids);
 
-
-
-    boolean chargeAccountStatement(String accountUid, String billingRecordUid);
-
 }

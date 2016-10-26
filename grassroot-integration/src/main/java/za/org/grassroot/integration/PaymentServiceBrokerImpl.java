@@ -3,10 +3,13 @@ package za.org.grassroot.integration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
+import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.AccountBillingRecord;
 import za.org.grassroot.core.repository.AccountBillingRecordRepository;
+import za.org.grassroot.core.repository.AccountRepository;
 
 import javax.annotation.PostConstruct;
 import java.time.Instant;
@@ -18,6 +21,7 @@ import java.util.Set;
 @Service
 public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
 
+    private AccountRepository accountRepository;
     private AccountBillingRecordRepository billingRepository;
     private RestTemplate restTemplate;
     private Environment environment;
@@ -30,8 +34,9 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
     // todo : add any other parameters
 
     @Autowired
-    public PaymentServiceBrokerImpl(AccountBillingRecordRepository billingRepository, RestTemplate restTemplate,
-                                    Environment environment) {
+    public PaymentServiceBrokerImpl(AccountRepository accountRepository, AccountBillingRecordRepository billingRepository,
+                                    RestTemplate restTemplate, Environment environment) {
+        this.accountRepository = accountRepository;
         this.billingRepository = billingRepository;
         this.restTemplate = restTemplate;
         this.environment = environment;
@@ -47,6 +52,17 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
     }
 
     @Override
+    @Transactional
+    public boolean linkPaymentMethodToAccount(String accountUid) {
+        Account account = accountRepository.findOneByUid(accountUid);
+        account.setPaymentRef("payment_ref_here");
+        account.setEnabledDateTime(Instant.now());
+        return true;
+    }
+
+    // todo : make sure to update the payment record and the account (remove amount from balance etc)
+    @Override
+    @Transactional
     public void processAccountPaymentsOutstanding() {
         Set<AccountBillingRecord> billsDue = billingRepository.findByNextPaymentDateBeforeAndPaidFalse(Instant.now());
         for (AccountBillingRecord record : billsDue) {

@@ -242,6 +242,11 @@ public class AccountBrokerImpl implements AccountBroker {
     }
 
     @Override
+    public Map<AccountType, Long> fetchAccountTypesAndFees() {
+        return null;
+    }
+
+    @Override
     @Transactional
     public void addAdministrator(String userUid, String accountUid, String administratorUid) {
         Objects.requireNonNull(userUid);

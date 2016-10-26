@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
  * Created by luke on 2016/01/13.
  */
 @Controller
-@RequestMapping("/accounts")
+@RequestMapping("/account")
 @SessionAttributes("user")
 public class AccountsController extends BaseController {
 

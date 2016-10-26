@@ -61,8 +61,12 @@
                 <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/todo/create}"><span class="gr-navbar-text">Create to-do</span></a></li>
               <li sec:authorize="hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')" class="active">
                 <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/meeting/free}"><span class="gr-navbar-text">Send Message</span></a></li>
+
+              <li sec:authorize="isAuthenticated() and !hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')" class="active">
+                <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/account/signup}"><span class="gr-navbar-text">Setup Account</span></a></li>
               <li sec:authorize="hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')" class="active">
                 <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/accounts/index}"><span class="gr-navbar-text">Manage account</span></a></li>
+
               <li sec:authorize="hasRole('ROLE_SYSTEM_ADMIN')" class="active">
                 <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/admin/home}"><span class="gr-navbar-text">System admin</span></a></li>
             </ul>

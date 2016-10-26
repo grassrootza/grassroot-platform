@@ -2,10 +2,8 @@ package za.org.grassroot.services.account;
 
 import org.springframework.security.access.prepost.PreAuthorize;
 import za.org.grassroot.core.domain.Account;
-import za.org.grassroot.core.domain.PaidGroup;
 import za.org.grassroot.core.enums.AccountType;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -40,5 +38,7 @@ public interface AccountBroker {
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN')")
     void updateAccountMessageSettings(String userUid, String accountUid, Boolean freeFormEnabled, Integer costPerMessage);
+
+    Map<AccountType, Long> fetchAccountTypesAndFees();
 
 }

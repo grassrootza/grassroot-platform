@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.dto.TaskDTO;
+import za.org.grassroot.integration.LearningService;
 import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.exception.RequestorAlreadyPartOfGroupException;
 import za.org.grassroot.services.group.GroupBroker;
@@ -23,7 +24,9 @@ import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.PublicGroupWrapper;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -41,6 +44,9 @@ public class GroupSearchController extends BaseController {
 	@Value("${grassroot.ussd.dialcode:*134*1994*}")
 	private String ussdDialCode;
 
+	@Value("${grassroot.learning.relatedterms.threshold:0.5}")
+	private Double defaultDistanceThreshold;
+
 	@Autowired
 	private GroupBroker groupBroker;
 
@@ -56,45 +62,9 @@ public class GroupSearchController extends BaseController {
 	@Autowired
 	private AsyncUserLogger userLogger;
 
+	@Autowired
+	private LearningService learningService;
 
-	@RequestMapping(value = "/search")
-	public String searchForGroup(Model model, @RequestParam String term, HttpServletRequest request) {
-
-		boolean resultFound = false;
-		if (term.isEmpty()) {
-			addMessage(model, BaseController.MessageType.ERROR, "search.error.empty", request);
-		} else {
-			boolean onlyDigits = tokenPattern.matcher(term.trim()).find();
-			if (onlyDigits && !userLogger.hasUsedJoinCodeRecently(getUserProfile().getUid())) {
-				String tokenSearch = term.contains(ussdDialCode) ? term.substring(ussdDialCode.length(), term.length() - 1) : term;
-				log.info("searching for group ... token to use ... " + tokenSearch);
-				Optional<Group> groupByToken = groupQueryBroker.findGroupFromJoinCode(tokenSearch);
-				if (groupByToken.isPresent()) {
-					model.addAttribute("group", groupByToken.get());
-					resultFound = true;
-				}
-			} else {
-				// just for testing since no UI support yet exists...
-				// GroupLocationFilter locationFilter = new GroupLocationFilter(new GeoLocation(45.567641, 18.701211), 30000, true);
-				GroupLocationFilter locationFilter = null;
-				List<PublicGroupWrapper> publicGroups = groupQueryBroker.findPublicGroups(getUserProfile().getUid(), term, locationFilter, false)
-						.stream().map(g -> new PublicGroupWrapper(g, getMessage("search.group.desc"))).collect(Collectors.toList());
-
-				model.addAttribute("groupCandidates", publicGroups);
-
-				final String userUid = getUserProfile().getUid();
-				List<Group> memberGroups = groupQueryBroker.searchUsersGroups(userUid, term);
-				List<TaskDTO> memberTasks = taskBroker.searchForTasks(userUid, term);
-				model.addAttribute("foundGroups", memberGroups);
-				model.addAttribute("foundTasks", memberTasks);
-
-				resultFound = !publicGroups.isEmpty() || !memberGroups.isEmpty() || !memberTasks.isEmpty();
-			}
-		}
-
-		model.addAttribute("resultFound", resultFound);
-		return "group/results";
-	}
 
 	@RequestMapping(value = "join/request", method = RequestMethod.POST)
 	public String requestToJoinGroup(Model model, @RequestParam(value="uid") String groupToJoinUid,
@@ -115,6 +85,63 @@ public class GroupSearchController extends BaseController {
 				return "redirect:/group/view";
 			}
 		}
+	}
+
+	@RequestMapping(value = "/search")
+	public String searchForGroup(Model model, @RequestParam String term, @RequestParam(value = "related_terms", required = false) boolean relatedTerms,
+								 HttpServletRequest request) {
+
+		boolean resultFound = false;
+		if (term.isEmpty()) {
+			addMessage(model, BaseController.MessageType.ERROR, "search.error.empty", request);
+		} else {
+			boolean onlyDigits = tokenPattern.matcher(term.trim()).find();
+			if (onlyDigits && !userLogger.hasUsedJoinCodeRecently(getUserProfile().getUid())) {
+				String tokenSearch = term.contains(ussdDialCode) ? term.substring(ussdDialCode.length(), term.length() - 1) : term;
+				log.info("searching for group ... token to use ... " + tokenSearch);
+				Optional<Group> groupByToken = groupQueryBroker.findGroupFromJoinCode(tokenSearch);
+				if (groupByToken.isPresent()) {
+					model.addAttribute("group", groupByToken.get());
+					resultFound = true;
+				}
+			} else {
+				// just for testing since no UI support yet exists...
+				// GroupLocationFilter locationFilter = new GroupLocationFilter(new GeoLocation(45.567641, 18.701211), 30000, true);
+				GroupLocationFilter locationFilter = null;
+				final String description = getMessage("search.group.desc");
+				final String userUid = getUserProfile().getUid();
+
+				List<PublicGroupWrapper> publicGroups = groupQueryBroker.findPublicGroups(userUid, term, locationFilter, false).stream()
+						.map(g -> new PublicGroupWrapper(g, description)).collect(Collectors.toList());
+
+				model.addAttribute("groupCandidates", publicGroups);
+
+				if (relatedTerms) {
+					List<PublicGroupWrapper> publicGroupsRelatedTerms = new ArrayList<>();
+					Map<String, Double> foundTerms = learningService.findRelatedTerms(term);
+					log.info("Okay, returned with these terms: {}", foundTerms);
+					// major todo : remove the double iteration by passing a list of terms into find public groups
+					foundTerms.entrySet().stream()
+							.filter(e -> e.getValue() > defaultDistanceThreshold)
+							.forEach(e -> {
+								groupQueryBroker.findPublicGroups(userUid, e.getKey(), locationFilter, true)
+										.forEach(g -> publicGroupsRelatedTerms.add(new PublicGroupWrapper(g, description)));
+							});
+					log.info("complete sweep, have found : {} total groups", publicGroupsRelatedTerms.size());
+					model.addAttribute("relatedTermGroups", publicGroupsRelatedTerms);
+				}
+
+				List<Group> memberGroups = groupQueryBroker.searchUsersGroups(userUid, term);
+				List<TaskDTO> memberTasks = taskBroker.searchForTasks(userUid, term);
+				model.addAttribute("foundGroups", memberGroups);
+				model.addAttribute("foundTasks", memberTasks);
+
+				resultFound = !publicGroups.isEmpty() || !memberGroups.isEmpty() || !memberTasks.isEmpty();
+			}
+		}
+
+		model.addAttribute("resultFound", resultFound);
+		return "group/results";
 	}
 
 	@RequestMapping(value = "join/approve")

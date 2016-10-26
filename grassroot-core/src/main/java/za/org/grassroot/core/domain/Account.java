@@ -141,6 +141,7 @@ public class Account {
 
     public Account(User createdByUser, String accountName, AccountType accountType, User billingUser) {
         Objects.requireNonNull(createdByUser);
+        Objects.requireNonNull(billingUser);
         Objects.requireNonNull(accountName);
 
         this.uid = UIDGenerator.generateId();
