@@ -1,14 +1,18 @@
 package za.org.grassroot.services.account;
 
-import java.time.Instant;
+import java.util.Set;
 
 /**
  * Created by luke on 2016/10/25.
  */
 public interface AccountBillingBroker {
 
-    void calculateAccountStatements(Instant periodStart, Instant periodEnd, boolean sendEmails, boolean sendNotifications);
+    void calculateAccountStatements(boolean sendEmails, boolean sendNotifications);
 
-    long calculateAccountCostsInPeriod(String accountUid, Instant periodStart, Instant periodEnd);
+    void processAccountStatementEmails(Set<String> billingRecordUids);
+
+
+
+    boolean chargeAccountStatement(String accountUid, String billingRecordUid);
 
 }

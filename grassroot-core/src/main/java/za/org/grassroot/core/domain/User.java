@@ -32,6 +32,9 @@ public class User implements UserDetails, Comparable<User> {
     @Column(name = "phone_number", nullable = false, length = 20, unique = true)
     private String phoneNumber;
 
+    @Column(name = "email_address")
+    private String emailAddress;
+
     @Column(name = "first_name")
     private String firstName;
 
@@ -184,6 +187,14 @@ public class User implements UserDetails, Comparable<User> {
 
     public void setLanguageCode(String languageCode) {
         this.languageCode = languageCode;
+    }
+
+    public String getEmailAddress() {
+        return emailAddress;
+    }
+
+    public void setEmailAddress(String emailAddress) {
+        this.emailAddress = firstName;
     }
 
     public Instant getCreatedDateTime() {

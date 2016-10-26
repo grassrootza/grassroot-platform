@@ -11,10 +11,9 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Created by luke on 2015/10/18.
+ * Created by luke on 2015/10/18. (and significantly overhauled / modified during 2016/10)
  * note: For naming this entity, there could be confusion with a 'user account', but since we rarely use that terminology,
  * better that than 'institution', which seems like it would set us up for trouble (the term is loaded) down the road.
- * major todo : separate created date time and validity start date time (so accounts can be switched on/off)
  */
 
 @Entity
@@ -63,13 +62,17 @@ public class Account {
     @OneToMany(mappedBy = "account", fetch = FetchType.LAZY)
     private Set<PaidGroup> paidGroups = new HashSet<>();
 
+    @ManyToOne
+    @JoinColumn(name = "billing_user", nullable = false)
+    private User billingUser;
+
     @Basic
     @Column(name = "account_name")
     private String accountName;
 
     @Basic
-    @Column(name = "primary_email")
-    private String primaryEmail;
+    @Column(name = "payment_reference")
+    private String paymentRef;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "account_type", length = 50, nullable = false)
@@ -114,8 +117,8 @@ public class Account {
     private Instant nextBillingDate;
 
     @Basic
-    @Column(name="outstanding_balance")
-    private Long outstandingBalance;
+    @Column(name="outstanding_balance", nullable = false)
+    private long outstandingBalance;
 
     @Basic
     @Column(name="monthly_subscription") // stored in cents, in common with all other costs/figure
@@ -136,7 +139,7 @@ public class Account {
         // For JPA
     }
 
-    public Account(User createdByUser, String accountName, AccountType accountType) {
+    public Account(User createdByUser, String accountName, AccountType accountType, User billingUser) {
         Objects.requireNonNull(createdByUser);
         Objects.requireNonNull(accountName);
 
@@ -154,6 +157,9 @@ public class Account {
 
         this.type = accountType;
         this.freeFormMessages = true;
+        this.billingUser = billingUser;
+
+        this.outstandingBalance = 0;
     }
 
     /*
@@ -209,12 +215,16 @@ public class Account {
         this.accountName = accountName;
     }
 
-    public String getPrimaryEmail() {
-        return primaryEmail;
-    }
+    public User getBillingUser() { return billingUser; }
 
-    public void setPrimaryEmail(String primaryEmail) {
-        this.primaryEmail = primaryEmail;
+    public void setBillingUser(User billingUser) {
+        if (administrators == null) {
+            administrators = new HashSet<>();
+            administrators.add(billingUser);
+        } else {
+            administrators.add(billingUser); // since a hashset, duplication not an issue
+        }
+        this.billingUser = billingUser;
     }
 
     public User getEnabledByUser() {
@@ -322,15 +332,23 @@ public class Account {
     }
 
     public long getOutstandingBalance() {
-        return outstandingBalance == null ? 0 : outstandingBalance;
+        return outstandingBalance;
     }
 
     public void setLastPaymentDate(Instant lastPaymentDate) {
         this.lastPaymentDate = lastPaymentDate;
     }
 
-    public void setOutstandingBalance(Long outstandingBalance) {
+    public void setOutstandingBalance(long outstandingBalance) {
         this.outstandingBalance = outstandingBalance;
+    }
+
+    public void addToBalance(long amountBilled) {
+            this.outstandingBalance += amountBilled;
+    }
+
+    public void removeFromBalance(long amountPaid) {
+            this.outstandingBalance -= amountPaid;
     }
 
     public int getSubscriptionFee() {
@@ -348,6 +366,10 @@ public class Account {
     public void setNextBillingDate(Instant nextBillingDate) {
         this.nextBillingDate = nextBillingDate;
     }
+
+    public String getPaymentRef() { return paymentRef; }
+
+    public void setPaymentRef(String paymentRef) { this.paymentRef = paymentRef; }
 
     @Override
     public boolean equals(Object o) {
@@ -374,7 +396,6 @@ public class Account {
                 "uid=" + uid +
                 ", createdDateTime=" + createdDateTime +
                 ", accountName=" + accountName +
-                ", primaryEmail=" + primaryEmail +
                 ", enabledDateTime=" + enabledDateTime +
                 ", free form messages='" + freeFormMessages + '\'' +
                 '}';

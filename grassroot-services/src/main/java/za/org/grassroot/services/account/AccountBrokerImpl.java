@@ -81,14 +81,17 @@ public class AccountBrokerImpl implements AccountBroker {
         Objects.requireNonNull(accountType);
 
         User creatingUser = userRepository.findOneByUid(userUid);
-        Account account = new Account(creatingUser, accountName, accountType);
+        Account account = new Account(creatingUser, accountName, accountType, null);
         final String accountUid = account.getUid();
 
-        if (!StringUtils.isEmpty(billingEmail)) {
-            account.setPrimaryEmail(billingEmail);
-        }
-
         accountRepository.saveAndFlush(account);
+
+        /*
+        todo : change to new design
+        if (!StringUtils.isEmpty(billingEmail)) {
+                account.setPrimaryEmail(billingEmail);
+            }
+         */
 
         if (!StringUtils.isEmpty(administratorUid)) {
             addAdministrator(userUid, accountUid, administratorUid);
@@ -145,11 +148,14 @@ public class AccountBrokerImpl implements AccountBroker {
             permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
         }
 
+        /*
+        todo : change to billing user design
         account.setPrimaryEmail(billingEmail);
         createAndStoreSingleAccountLog(new AccountLog.Builder(account)
                 .userUid(userUid)
                 .accountLogType(AccountLogType.EMAIL_CHANGED)
                 .description(billingEmail).build());
+         */
     }
 
     @Override

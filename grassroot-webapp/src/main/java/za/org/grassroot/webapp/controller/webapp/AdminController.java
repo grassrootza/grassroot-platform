@@ -318,7 +318,7 @@ public class AdminController extends BaseController {
 
     // wire this up properly
     public void changeAccountSettings(Account account) {
-        accountBroker.updateBillingEmail(getUserProfile().getUid(), account.getUid(), account.getPrimaryEmail());
+        accountBroker.updateBillingEmail(getUserProfile().getUid(), account.getUid(), account.getBillingUser().getEmailAddress());
         accountBroker.updateAccountGroupLimits(getUserProfile().getUid(), account.getUid(), account.getMaxNumberGroups(),
                 account.getMaxSizePerGroup(), account.getMaxSubGroupDepth());
         accountBroker.updateAccountMessageSettings(getUserProfile().getUid(), account.getUid(), account.isFreeFormMessages(),

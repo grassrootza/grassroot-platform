@@ -4,13 +4,20 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.AccountBillingRecord;
 
-import java.util.List;
+import java.time.Instant;
+import java.util.Set;
 
 /**
  * Created by luke on 2016/10/25.
  */
 public interface AccountBillingRecordRepository extends JpaRepository<AccountBillingRecord, Long> {
 
-    List<AccountBillingRecord> findByAccountOrderByCreatedDateTimeDesc(Account account);
+    AccountBillingRecord findOneByUid(String uid);
+
+    Set<AccountBillingRecord> findByUidIn(Set<String> uids);
+
+    AccountBillingRecord findOneByAccountOrderByCreatedDateTimeDesc(Account account);
+
+    Set<AccountBillingRecord> findByNextPaymentDateBeforeAndPaidFalse(Instant time);
 
 }

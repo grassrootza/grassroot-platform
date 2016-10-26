@@ -97,10 +97,26 @@ public class DateTimeUtil {
     public static DateTimeFormatter getPreferredDateTimeFormat() { return preferredDateTimeFormat; }
     public static DateTimeFormatter getPreferredRestFormat() { return preferredRestFormat; }
 
-    public static DateTimeFormatter getWebFormFormat() { return webFormFormat; }
-    public static LocalDateTime getVeryLongTimeAway() { return veryLongTimeAway;}
     public static Instant getVeryLongAwayInstant() { return veryLongTimeAway.toInstant(ZoneOffset.UTC); }
     public static Instant getEarliestInstant() { return earliestInstant; }
+
+    public static boolean areDatesOneMonthApart(LocalDateTime start, LocalDateTime end) {
+        final int startDay = start.getDayOfMonth();
+        final int endDay = end.getDayOfMonth();
+
+        if (startDay == endDay) {
+            return true;
+        } else {
+            // could be because one of the two is the last day of the month
+            final boolean startAtMonthEnd = (startDay == start.getMonth().length(start.toLocalDate().isLeapYear()));
+            final boolean endAtMonthEnd = (endDay == end.getMonth().length(end.toLocalDate().isLeapYear()));
+            if (startAtMonthEnd) {
+                return endAtMonthEnd || endDay > startDay; // i.e., either both are month ends, or end day is 'usual' day and start day was month-constrained
+            } else {
+                return endAtMonthEnd && endDay < startDay; // i.e., this is a short month (and since above has evaluated false, can't be both at month end
+            }
+        }
+    }
 
     /*
     SECTION : regex for handling preformatted date time (may be able to remove given introduction of Selo & SUTime)
@@ -123,7 +139,7 @@ public class DateTimeUtil {
         final String trimmedResponse = userResponse.trim().toLowerCase().replace(possibleTimeDelimiters,":");
         boolean pmEntered = Pattern.matches(meridian, trimmedResponse);
 
-        log.info("reformTimeInput... given this as input:{}, trimmed to this: {}, and found pm: {}", userResponse, trimmedResponse, pmEntered);
+        log.debug("reformTimeInput... given this as input:{}, trimmed to this: {}, and found pm: {}", userResponse, trimmedResponse, pmEntered);
 
         final Matcher tryMatchWithDelimiters = timePatternWithDelimiters.matcher(trimmedResponse);
         final Matcher tryMatchWithoutDelimiters = timePatternWithoutDelimiters.matcher(trimmedResponse);
@@ -132,7 +148,7 @@ public class DateTimeUtil {
         if (tryMatchWithDelimiters.find()) {
 
             String timeWithoutDelims = tryMatchWithDelimiters.group(0);
-            log.info("reformatTimeInput ... matched XX:YY, or variant, extracted as: {}", timeWithoutDelims);
+            log.debug("reformatTimeInput ... matched XX:YY, or variant, extracted as: {}", timeWithoutDelims);
             List<String> splitDigits = Lists.newArrayList(
                     Splitter.on(CharMatcher.anyOf(possibleTimeDelimiters)).omitEmptyStrings().split(timeWithoutDelims));
             int hours = Integer.parseInt(splitDigits.get(0)) + (pmEntered ? 12 : 0);
@@ -142,14 +158,14 @@ public class DateTimeUtil {
 
             String digitString = tryMatchWithoutDelimiters.group(0);
             int digitsForHours = digitString.length() - 2; // safest assumption is last two digits are minutes (converse is rare)
-            log.info("reformatTimeInput ... no delimiter, 3-4 digits in a row, trying for hours={}", digitString.substring(0,2));
+            log.debug("reformatTimeInput ... no delimiter, 3-4 digits in a row, trying for hours={}", digitString.substring(0,2));
             reformattedTime = timeJoiner.join(new String[]{
                     String.format("%02d", Integer.parseInt(digitString.substring(0, digitsForHours))),
                     String.format("%02d", Integer.parseInt(digitString.substring(digitString.length() - digitsForHours))) });
 
         } else if (tryMatchOnlyHavingHours.find()) {
 
-            log.info("reformatTimeInput ... no delimiter, only a couple digits, assuming hours ...");
+            log.debug("reformatTimeInput ... no delimiter, only a couple digits, assuming hours ...");
             List<String> split = Lists.newArrayList(
                     Splitter.on(CharMatcher.anyOf("[ap ]")).omitEmptyStrings().split(trimmedResponse));
             try {
@@ -161,11 +177,11 @@ public class DateTimeUtil {
             }
 
         } else {
-            log.info("reformatTimeInput ... no patterns matched, return the string just without white space");
+            log.debug("reformatTimeInput ... no patterns matched, return the string just without white space");
             return trimmedResponse;
         }
 
-        log.info("reformatTimeInput .... at conclusion, trying to return: {}", reformattedTime);
+        log.debug("reformatTimeInput .... at conclusion, trying to return: {}", reformattedTime);
         return (neededTimePattern.matcher(reformattedTime).matches()) ? reformattedTime : trimmedResponse;
 
     }

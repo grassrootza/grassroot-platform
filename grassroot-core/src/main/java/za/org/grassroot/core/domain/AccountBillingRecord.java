@@ -52,11 +52,19 @@ public class AccountBillingRecord {
 
     @Basic
     @Column(name="amount_billed", nullable = false, updatable = false)
-    private long amountBilled;
+    private long amountToPay;
 
     @Basic
     @Column(name="billed_balance", nullable = false, updatable = false)
     private long billedBalance;
+
+    @Basic
+    @Column(name="next_payment_date")
+    private Instant nextPaymentDate;
+
+    @Basic
+    @Column(name="bill_paid")
+    private boolean paid;
 
     private AccountBillingRecord() {
         // for JPA
@@ -70,6 +78,7 @@ public class AccountBillingRecord {
         private Instant billedPeriodEnd;
         private Long openingBalance;
         private Long amountBilled;
+        private Instant paymentDueDate;
 
         public BillingBuilder(Account account) {
             this.account = account;
@@ -105,8 +114,18 @@ public class AccountBillingRecord {
             return this;
         }
 
+        public BillingBuilder paymentDueDate(Instant paymentDueDate) {
+            this.paymentDueDate = paymentDueDate;
+            return this;
+        }
+
         public AccountBillingRecord build() {
-            return new AccountBillingRecord(account, accountLog, statementDateTime, billedPeriodStart, billedPeriodEnd, openingBalance, amountBilled);
+            AccountBillingRecord record = new AccountBillingRecord(account, accountLog, statementDateTime, billedPeriodStart, billedPeriodEnd,
+                    openingBalance, amountBilled);
+            if (paymentDueDate != null) {
+                record.setNextPaymentDate(paymentDueDate);
+            }
+            return record;
         }
     }
 
@@ -129,10 +148,14 @@ public class AccountBillingRecord {
         this.billedPeriodStart = billedPeriodStart;
         this.billedPeriodEnd = billedPeriodEnd;
         this.openingBalance = openingBalance;
-        this.amountBilled = amountBilled;
+        this.amountToPay = amountBilled;
 
         this.billedBalance = openingBalance + amountBilled;
+
+        this.paid = false;
     }
+
+    public String getUid() { return uid; }
 
     public Account getAccount() {
         return account;
@@ -160,11 +183,27 @@ public class AccountBillingRecord {
         return openingBalance;
     }
 
-    public long getAmountBilled() {
-        return amountBilled;
+    public long getAmountToPay() {
+        return amountToPay;
     }
 
     public long getBilledBalance() {
         return billedBalance;
+    }
+
+    public Instant getNextPaymentDate() {
+        return nextPaymentDate;
+    }
+
+    public void setNextPaymentDate(Instant nextPaymentDate) {
+        this.nextPaymentDate = nextPaymentDate;
+    }
+
+    public boolean getPaid() {
+        return paid;
+    }
+
+    public void setPaid(boolean paid) {
+        this.paid = paid;
     }
 }

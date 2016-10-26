@@ -11,11 +11,6 @@ import java.time.Instant;
  */
 public final class AccountSpecifications {
 
-    public static Specification<Account> isValidBetween(Instant start, Instant end) {
-        return (root, query, cb) -> cb.and(cb.greaterThan(root.get(Account_.createdDateTime), start),
-                    cb.lessThan(root.get(Account_.disabledDateTime), end));
-    }
-
     public static Specification<Account> nextStatementBefore(Instant endPoint) {
         return (root, query, cb) -> cb.lessThan(root.get(Account_.nextBillingDate), endPoint);
     }

@@ -116,7 +116,7 @@ public class AccountBrokerTest {
         String accountUid = accountBroker.createAccount(testUser.getUid(), accountName, testAdmin.getUid(), billingEmail, AccountType.STANDARD);
         Account account = accountBroker.loadAccount(accountUid);
         assertNotEquals(null,account.getId());
-        assertEquals(billingEmail, account.getPrimaryEmail());
+        assertEquals(billingEmail, account.getBillingUser().getEmailAddress());
     }
 
     @Test
@@ -136,7 +136,7 @@ public class AccountBrokerTest {
         Account account = createTestAccount(billingEmail);
         testUser = userManagementService.loadOrCreateUser(userNumber); // this makes full-object equal assertions fail, but without it, role tests fail
         assertNotEquals(null, account.getId());
-        assertEquals(billingEmail, account.getPrimaryEmail());
+        assertEquals(billingEmail, account.getBillingUser().getEmailAddress());
         assertTrue(account.isEnabled());
         assertEquals(testAdmin.getId(), account.getAdministrators().iterator().next().getId()); // note: equals on User as whole fails for persistence reasons
         assertEquals(testAdmin.getAccountAdministered().getId(), account.getId()); // note: as above, full equals fails ... possibly within-test persistence issues

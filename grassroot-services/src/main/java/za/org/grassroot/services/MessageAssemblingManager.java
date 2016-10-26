@@ -13,6 +13,7 @@ import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.FormatUtil;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
@@ -305,6 +306,33 @@ public class MessageAssemblingManager implements MessageAssemblingService {
     public String createAndroidLinkSms(User user) {
         return messageSourceAccessor.getMessage("sms.link.android", getUserLocale(user));
 
+    }
+
+    @Override
+    public String createAccountBillingNotification(AccountBillingRecord record) {
+        return "Hello you need to pay us money thanks";
+    }
+
+    @Override
+    public String createAccountStatementSubject(AccountBillingRecord record) {
+        return "Grassroot Account Statement";
+    }
+
+    @Override
+    public String createAccountStatementEmail(AccountBillingRecord record) {
+
+        // okay, really need to set a "billed user" field
+        final String salutation = String.format("Dear %s,\n\n", "Person Paying Us");
+
+        final String body = String.format("Your monthly subscription fee for Grassroot of R%d " +
+                "is due for payment. We will automatically charge your payment method on file on %s. " +
+                "To upgrade your account, or change any of your settings, please visit " +
+                "http://app.grassroot.org.za/account/settings. As always, we hope we were useful.\n\n",
+                record.getAmountToPay(), LocalDate.now().plusDays(1).toString());
+
+        final String closing = "Regards,\nGrassroot";
+
+        return salutation + body + closing;
     }
 
     private String[] populateTodoFields(Todo todo) {

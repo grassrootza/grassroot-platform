@@ -95,7 +95,7 @@ public class AccountsController extends BaseController {
                                           @RequestAttribute AccountType accountType, HttpServletRequest request) {
         try {
             Account account = accountBroker.loadAccount(accountUid);
-            if (!billingEmail.equals(account.getPrimaryEmail())) {
+            if (!billingEmail.equals(account.getBillingUser().getEmailAddress())) {
                 accountBroker.updateBillingEmail(getUserProfile().getUid(), accountUid, billingEmail);
             }
 

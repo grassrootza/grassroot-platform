@@ -69,4 +69,14 @@ public interface MessageAssemblingService {
     String[] populateEventFields(Event event, double yes, double no, double abstain, double noReply);
 
     String createAndroidLinkSms(User user);
+
+    /*
+    Account billing email and notification message generator
+     */
+
+    String createAccountBillingNotification(AccountBillingRecord record);
+
+    String createAccountStatementSubject(AccountBillingRecord record);
+
+    String createAccountStatementEmail(AccountBillingRecord record);
 }
