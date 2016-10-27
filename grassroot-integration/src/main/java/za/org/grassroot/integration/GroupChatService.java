@@ -16,6 +16,8 @@ public interface GroupChatService {
 
     void processAndRouteIncomingChatMessage(GroupChatMessage message);
 
+    void sendMessageOverSocket(GroupChatMessage message);
+
     void markMessagesAsRead(String groupUid, String groupName, Set<String> messageUids);
 
     GroupChatSettings load(String userUid, String groupUid) throws GroupChatSettingNotFoundException;

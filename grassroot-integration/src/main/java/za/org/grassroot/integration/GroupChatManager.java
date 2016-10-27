@@ -8,7 +8,9 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.support.MessageSourceAccessor;
+import org.springframework.core.annotation.Order;
 import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -64,6 +66,9 @@ public class GroupChatManager implements GroupChatService {
 
     @Autowired
     private MessageChannel gcmXmppOutboundChannel;
+
+    @Autowired
+    public SimpMessageSendingOperations messagingTemplate;
 
     @Autowired
     @Qualifier("integrationMessageSourceAccessor")
@@ -128,6 +133,15 @@ public class GroupChatManager implements GroupChatService {
                 logger.debug("User with phoneNumber={} is not enabled to send messages to this group", phoneNumber);
             }
         }
+    }
+
+    @Override
+    public void sendMessageOverSocket(GroupChatMessage message ) {
+        //todo get a list of recepient
+        //todo send message to recepient
+        //todo iterate ove the list and send message to their topic,
+        //
+        messagingTemplate.convertAndSend( "/topic/{userUid}", message );
     }
 
     @Override
