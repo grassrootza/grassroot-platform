@@ -84,6 +84,16 @@ public class TodoBrokerImpl implements TodoBroker {
 		return todoRepository.save(todo);
 	}
 
+	private Todo checkForDuplicate(User user, Group group, String message, Instant actionByDate) {
+		Instant intervalStart = actionByDate.minus(180, ChronoUnit.SECONDS);;
+		Instant intervalEnd = actionByDate.plus(180, ChronoUnit.SECONDS);
+
+		return todoRepository.findOne(Specifications.where(actionByDateBetween(intervalStart, intervalEnd))
+				.and(TodoSpecifications.messageIs(message))
+				.and(TodoSpecifications.hasGroupAsParent(group))
+				.and(TodoSpecifications.createdByUser(user)));
+	}
+
 	@Override
 	@Transactional
 	public Todo create(String userUid, JpaEntityType parentType, String parentUid, String message, LocalDateTime actionByDate, int reminderMinutes,
@@ -106,6 +116,14 @@ public class TodoBrokerImpl implements TodoBroker {
 
 		if (convertedActionByDate.isBefore(Instant.now())) {
 			throw new EventStartTimeNotInFutureException("Error! Attempt to create todo with due date in the past");
+		}
+
+		if (parentType.equals(JpaEntityType.GROUP)) {
+			Todo possibleDuplicate = checkForDuplicate(user, (Group) parent, message, convertedActionByDate);
+			if (possibleDuplicate != null) {
+				logger.info("Found a duplicate! Returning");
+				return possibleDuplicate;
+			}
 		}
 
 		Todo todo = new Todo(user, parent, message, convertedActionByDate, reminderMinutes, null,
