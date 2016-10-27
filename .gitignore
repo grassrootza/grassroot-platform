@@ -65,3 +65,6 @@ schema-export-create.sql
 
 # Exclude integration properties file (contains various passwords)
 grassroot-integration/**/application.properties
+
+# Exclude asset files
+**/assets/**

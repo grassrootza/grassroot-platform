@@ -1,6 +1,6 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      layout:decorator="layout">
+      data-layout-decorate="~{layout}">
 <head>
   <title>Grassroot - Manage institutional accounts</title>
 </head>
@@ -20,16 +20,20 @@
           <!-- to do: add a bunch more information -->
           <thead>
             <th>Account name</th>
-            <th>Billing email</th>
             <th>Enabled?</th>
+            <th></th>
           </thead>
           <tbody>
             <tr th:each="account : ${accounts}">
               <td>
                 <a href="" th:href="@{view(accountUid=${account.uid})}"><span th:text="${account.accountName}">Account name</span></a>
               </td>
-              <td><span th:text="${account.primaryEmail}">Email address</span></td>
               <td><span th:text="${account.enabled}">True</span></td>
+              <td>
+                <a th:href="${account.enabled} ? @{disable(accountUid=${account.uid})} : @{enabled(accountUid=${account.uid})}" class="btn btn-default">
+                  <span th:text="${account.enabled} ? 'Disable' : 'Enable'">Disable</span>
+                </a>
+              </td>
             </tr>
           </tbody>
         </table>

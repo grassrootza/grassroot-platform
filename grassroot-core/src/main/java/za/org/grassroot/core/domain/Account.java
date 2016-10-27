@@ -36,6 +36,10 @@ public class Account {
     @Column(name="created_date_time", nullable = false, insertable = true, updatable = false)
     private Instant createdDateTime;
 
+    @Basic
+    @Column(name="enabled", nullable = false)
+    private boolean enabled;
+
     @ManyToOne
     @JoinColumn(name = "enabled_by_user", nullable = false, updatable = false)
     private User enabledByUser;
@@ -149,11 +153,13 @@ public class Account {
         this.accountName = accountName;
 
         this.createdDateTime = Instant.now();
-        this.enabledDateTime = Instant.now();
 
         this.createdByUser = createdByUser;
         this.enabledByUser = createdByUser;
 
+        // until the account payment has gone through, do not set it as enabled
+        this.enabled = false;
+        this.enabledDateTime = DateTimeUtil.getVeryLongAwayInstant();
         this.disabledDateTime = DateTimeUtil.getVeryLongAwayInstant();
 
         this.type = accountType;
@@ -324,8 +330,10 @@ public class Account {
         this.freeFormCost = freeFormCost;
     }
 
+    public void setEnabled(boolean enabled) { this.enabled = enabled; }
+
     public boolean isEnabled() {
-        return Instant.now().isBefore(disabledDateTime);
+        return enabled;
     }
 
     public Instant getLastPaymentDate() {

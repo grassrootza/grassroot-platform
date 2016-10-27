@@ -24,7 +24,8 @@ import za.org.grassroot.core.enums.AccountType;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.util.PhoneNumberUtil;
-import za.org.grassroot.services.*;
+import za.org.grassroot.services.AdminService;
+import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.account.AccountBroker;
 import za.org.grassroot.services.exception.MemberNotPartOfGroupException;
 import za.org.grassroot.services.exception.NoSuchUserException;
@@ -280,6 +281,7 @@ public class AdminController extends BaseController {
 
     /**
      * Methods to create institutional accounts and designate their administrators
+     * todo : separate out into own controller (this one is becoming far too large)
      */
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping("/admin/accounts/home")
@@ -311,9 +313,17 @@ public class AdminController extends BaseController {
         // todo: all the checks & validation, e.g., whether account already exists, etc
 
         log.info("Okay, we're going to create an account ... with name: " + accountName);
-        String createdAccountUid = accountBroker.createAccount(getUserProfile().getUid(), accountName, null, billingEmail, AccountType.STANDARD);
+        String createdAccountUid = accountBroker.createAccount(getUserProfile().getUid(), accountName, null, AccountType.STANDARD);
         model.addAttribute("account", accountBroker.loadAccount(createdAccountUid));
         return "admin/accounts/view";
+    }
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    @RequestMapping(value = "/admin/accounts/disable")
+    public String disableAccount(@RequestParam("accountUid") String accountUid, RedirectAttributes attributes, HttpServletRequest request) {
+        accountBroker.disableAccount(getUserProfile().getUid(), accountUid, "disabled by admin user"); // todo : have a form to input this
+        addMessage(attributes, MessageType.INFO, "admin.accounts.disabled", request);
+        return "redirect:home";
     }
 
     // wire this up properly

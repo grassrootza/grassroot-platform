@@ -32,9 +32,9 @@ import java.util.stream.Collectors;
 @Controller
 @RequestMapping("/account")
 @SessionAttributes("user")
-public class AccountsController extends BaseController {
+public class AccountController extends BaseController {
 
-    private static final Logger log = LoggerFactory.getLogger(AccountsController.class);
+    private static final Logger log = LoggerFactory.getLogger(AccountController.class);
     private static final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd-M-yyyy");
 
     private AccountBroker accountBroker;
@@ -43,7 +43,7 @@ public class AccountsController extends BaseController {
     private EventBroker eventBroker;
 
     @Autowired
-    public AccountsController(AccountBroker accountBroker, AccountGroupBroker accountGroupBroker, GroupQueryBroker groupQueryBroker, EventBroker eventBroker) {
+    public AccountController(AccountBroker accountBroker, AccountGroupBroker accountGroupBroker, GroupQueryBroker groupQueryBroker, EventBroker eventBroker) {
         this.accountBroker = accountBroker;
         this.accountGroupBroker = accountGroupBroker;
         this.groupQueryBroker = groupQueryBroker;

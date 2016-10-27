@@ -3,21 +3,23 @@ package za.org.grassroot.services.account;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.AccountLogType;
 import za.org.grassroot.core.enums.AccountType;
 import za.org.grassroot.core.repository.AccountRepository;
 import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import javax.annotation.PostConstruct;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,15 +45,17 @@ public class AccountBrokerImpl implements AccountBroker {
     private LogsAndNotificationsBroker logsAndNotificationsBroker;
     private PermissionBroker permissionBroker;
     private Environment environment;
+    private ApplicationEventPublisher eventPublisher;
 
     @Autowired
     public AccountBrokerImpl(AccountRepository accountRepository, UserRepository userRepository, PermissionBroker permissionBroker,
-                             LogsAndNotificationsBroker logsAndNotificationsBroker, Environment environment) {
+                             LogsAndNotificationsBroker logsAndNotificationsBroker, Environment environment, ApplicationEventPublisher eventPublisher) {
         this.accountRepository = accountRepository;
         this.userRepository = userRepository;
         this.permissionBroker = permissionBroker;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
         this.environment = environment;
+        this.eventPublisher = eventPublisher;
     }
 
     @PostConstruct
@@ -75,27 +79,25 @@ public class AccountBrokerImpl implements AccountBroker {
 
     @Override
     @Transactional
-    public String createAccount(String userUid, String accountName, String administratorUid, String billingEmail, AccountType accountType) {
+    public String createAccount(String userUid, String accountName, String billedUserUid, AccountType accountType) {
         Objects.requireNonNull(userUid);
+        Objects.requireNonNull(billedUserUid);
         Objects.requireNonNull(accountName);
         Objects.requireNonNull(accountType);
 
         User creatingUser = userRepository.findOneByUid(userUid);
-        Account account = new Account(creatingUser, accountName, accountType, null);
+        User billedUser = userRepository.findOneByUid(billedUserUid);
+
+        Account account = new Account(creatingUser, accountName, accountType, billedUser);
         final String accountUid = account.getUid();
 
         accountRepository.saveAndFlush(account);
 
-        /*
-        todo : change to new design
-        if (!StringUtils.isEmpty(billingEmail)) {
-                account.setPrimaryEmail(billingEmail);
-            }
-         */
+        account.addAdministrator(billedUser);
+        billedUser.setAccountAdministered(account);
+        permissionBroker.addSystemRole(billedUser, BaseRoles.ROLE_ACCOUNT_ADMIN);
 
-        if (!StringUtils.isEmpty(administratorUid)) {
-            addAdministrator(userUid, accountUid, administratorUid);
-        }
+        addAdministrator(userUid, accountUid, billedUserUid);
 
         account.setFreeFormMessages(messagesEnabled.get(accountType));
         account.setFreeFormCost(messagesCost.get(accountType));
@@ -103,28 +105,68 @@ public class AccountBrokerImpl implements AccountBroker {
         account.setMaxSubGroupDepth(maxSubGroupDepth.get(accountType));
         account.setMaxNumberGroups(maxGroupNumber.get(accountType));
 
-        createAndStoreSingleAccountLog(new AccountLog.Builder(account)
+        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+        bundle.addLog(new AccountLog.Builder(account)
                 .userUid(userUid)
                 .accountLogType(AccountLogType.ACCOUNT_CREATED)
                 .description(accountType.name()).build());
+
+        bundle.addLog(new AccountLog.Builder(account)
+                .userUid(billedUserUid)
+                .accountLogType(AccountLogType.ADMIN_ADDED)
+                .description("billed user set as admin").build());
+
+        AfterTxCommitTask afterTxCommitTask = () -> logsAndNotificationsBroker.asyncStoreBundle(bundle);
+        eventPublisher.publishEvent(afterTxCommitTask);
 
         return account.getUid();
     }
 
     @Override
     @Transactional
+    public void enableAccount(String userUid, String accountUid, LocalDate nextStatementDate) {
+        User user = userRepository.findOneByUid(userUid);
+        Account account = accountRepository.findOneByUid(accountUid);
+
+        if (!user.getAccountAdministered().equals(account)) {
+            permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
+        }
+
+        account.setEnabled(true);
+        account.setEnabledDateTime(Instant.now());
+        account.setEnabledByUser(user);
+        account.setNextBillingDate(nextStatementDate.atTime(AccountBillingBrokerImpl.STD_BILLING_HOUR)
+                .toInstant(AccountBillingBrokerImpl.BILLING_TZ));
+
+        createAndStoreSingleAccountLog(new AccountLog.Builder(account)
+                .accountLogType(AccountLogType.ACCOUNT_ENABLED)
+                .userUid(userUid)
+                .description("account enabled")
+                .build());
+    }
+
+    @Override
+    @Transactional
     public void disableAccount(String administratorUid, String accountUid, String reasonToRecord) {
         User user = userRepository.findOneByUid(administratorUid);
-        permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
-
         Account account = accountRepository.findOneByUid(accountUid);
+
+        if (!user.getAccountAdministered().equals(account)) {
+            permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
+        }
+
+        account.setEnabled(false);
         account.setDisabledDateTime(Instant.now());
         account.setDisabledByUser(user);
-        account.setDisabledDateTime(Instant.now());
 
         for (PaidGroup paidGroup : account.getPaidGroups()) {
             paidGroup.setExpireDateTime(Instant.now());
             paidGroup.setRemovedByUser(user);
+        }
+
+        for (User admin : account.getAdministrators()) {
+            admin.setAccountAdministered(null);
+            permissionBroker.removeSystemRole(admin, BaseRoles.ROLE_ACCOUNT_ADMIN);
         }
 
         createAndStoreSingleAccountLog(new AccountLog.Builder(account)

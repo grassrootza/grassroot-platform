@@ -1,10 +1,9 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      data-layout-decorate="layout">
-
+      data-layout-decorate="~{layout}">
 <head>
   <meta charset="UTF-8">
-  <title>Grassroot - Sign up for account</title>
+  <title>Sign up for account</title>
 </head>
 
 <body>
@@ -20,7 +19,7 @@
   <div layout:fragment="content">
     <div class="row">
       <div class="col-md-4 col-md-offset-4">
-        <form th:action="@{create}" class="form-vertical">
+        <form th:action="@{create}" method="POST" class="form-vertical">
           <div class="form-group">
             <label for="account_name" class="control-label">1. Account name</label>
             <input type="text" id="account_name" name="accountName" class="form-control input-lg"
@@ -34,9 +33,9 @@
                       th:value="${type}"></option>
             </select>
           </div>
-          <div class="form-group">
+          <div class="form-group" th:if="${#strings.isEmpty(user.emailAddress)}">
             <label for="billing_email" class="control-label">3. Billing email</label>
-            <input type="text" id="billing_email" name="billingEmail" class="form-control input-lg" />
+            <input type="text" id="billing_email" name="emailAddress" class="form-control input-lg" />
           </div>
           <div class="form-group pull-right">
             <button type="submit" class="btn btn-primary btn-block btn-cta">Next</button>

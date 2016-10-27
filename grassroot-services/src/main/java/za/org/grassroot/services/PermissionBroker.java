@@ -73,4 +73,6 @@ public interface PermissionBroker {
 
     void addSystemRole(User user, String roleName);
 
+    void removeSystemRole(User user, String roleName);
+
 }

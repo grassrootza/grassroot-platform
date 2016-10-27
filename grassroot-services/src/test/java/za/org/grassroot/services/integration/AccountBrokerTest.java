@@ -106,14 +106,14 @@ public class AccountBrokerTest {
     }
 
     private Account createTestAccount(String billingEmail) {
-        String accountUid = accountBroker.createAccount(testUser.getUid(), accountName, testAdmin.getUid(), billingEmail, AccountType.STANDARD);
+        String accountUid = accountBroker.createAccount(testUser.getUid(), accountName, testAdmin.getUid(), AccountType.STANDARD);
         Account account = accountBroker.loadAccount(accountUid);
         return account;
     }
 
     @Test
     public void shouldSaveBilling() {
-        String accountUid = accountBroker.createAccount(testUser.getUid(), accountName, testAdmin.getUid(), billingEmail, AccountType.STANDARD);
+        String accountUid = accountBroker.createAccount(testUser.getUid(), accountName, testAdmin.getUid(), AccountType.STANDARD);
         Account account = accountBroker.loadAccount(accountUid);
         assertNotEquals(null,account.getId());
         assertEquals(billingEmail, account.getBillingUser().getEmailAddress());
@@ -191,7 +191,7 @@ public class AccountBrokerTest {
     public void shouldNotAllowDuplicatePaidGroups() {
         // todo: change this to try/catch, to handle it better
         Account account = createTestAccount(null);
-        String account2Uid = accountBroker.createAccount(testUser.getUid(), accountName + "2", testAdmin.getUid(), null, AccountType.STANDARD);
+        String account2Uid = accountBroker.createAccount(testUser.getUid(), accountName + "2", testAdmin.getUid(), AccountType.STANDARD);
         accountGroupBroker.addGroupToAccount(account.getUid(), testGroup.getUid(), testAdmin.getUid());
         accountGroupBroker.addGroupToAccount(account2Uid, testGroup.getUid(), testAdmin.getUid());
     }

@@ -8,7 +8,9 @@ import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.security.authentication.AuthenticationServiceException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -77,13 +79,21 @@ public class BaseController {
     }
 
     protected User getUserProfile() {
-
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        log.info("BaseController: authentication properties ... authenticated: " + authentication.isAuthenticated() + " ... and principal ... " + authentication.getPrincipal());
+        log.debug("BaseController: authentication properties ... authenticated: " + authentication.isAuthenticated() + " ... and principal ... " + authentication.getPrincipal());
         if (authentication.isAuthenticated() && authentication.getPrincipal() != null) {
             return (User) authentication.getPrincipal();
         }
         throw new AuthenticationServiceException("Invalid logged in user profile");
+    }
+
+    // for when user finishes account sign up, to force addition of account role for the user
+    protected void refreshAuthorities() {
+        final String userUid = getUserProfile().getUid();
+        User updatedUser = userManagementService.load(userUid);
+        Authentication authentication = new UsernamePasswordAuthenticationToken(updatedUser, null, updatedUser.getAuthorities());
+        SecurityContext context = SecurityContextHolder.getContext();
+        context.setAuthentication(authentication);
     }
 
     /* Helper method used in all the meeting/vote/logbook fields */

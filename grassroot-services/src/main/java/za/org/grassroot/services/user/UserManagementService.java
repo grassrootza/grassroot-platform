@@ -73,6 +73,8 @@ public interface UserManagementService {
 
     User resetUserPassword(String username, String newPassword, String token);
 
+    void updateEmailAddress(String userUid, String emailAddress);
+
     /*
     Miscellaneous methods to query various properties about a user
      */

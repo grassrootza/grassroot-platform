@@ -37,7 +37,10 @@ import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.TimeZone;
 import java.util.stream.Collectors;
 
 /**
@@ -382,6 +385,13 @@ public class UserManager implements UserManagementService, UserDetailsService {
         } else {
             throw new InvalidTokenException("Invalid OTP submitted");
         }
+    }
+
+    @Override
+    @Transactional
+    public void updateEmailAddress(String userUid, String emailAddress) {
+        User user = userRepository.findOneByUid(userUid);
+        user.setEmailAddress(emailAddress);
     }
 
     @Override

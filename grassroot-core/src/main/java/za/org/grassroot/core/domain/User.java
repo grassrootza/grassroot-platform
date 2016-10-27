@@ -194,7 +194,7 @@ public class User implements UserDetails, Comparable<User> {
     }
 
     public void setEmailAddress(String emailAddress) {
-        this.emailAddress = firstName;
+        this.emailAddress = emailAddress;
     }
 
     public Instant getCreatedDateTime() {

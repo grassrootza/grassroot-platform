@@ -235,4 +235,11 @@ public class PermissionBrokerImpl implements PermissionBroker {
         user.addStandardRole(systemRole);
     }
 
+    @Override
+    @Transactional
+    public void removeSystemRole(User user, String roleName) {
+        Role systemRole = roleRepository.findByNameAndRoleType(roleName, Role.RoleType.STANDARD).get(0);
+        user.removeStandardRole(systemRole);
+    }
+
 }

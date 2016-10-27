@@ -6,6 +6,7 @@ package za.org.grassroot.core.enums;
 public enum AccountLogType {
 
     ACCOUNT_CREATED,
+    ACCOUNT_ENABLED,
     ACCOUNT_DISABLED,
     ADMIN_ADDED,
     EMAIL_CHANGED,

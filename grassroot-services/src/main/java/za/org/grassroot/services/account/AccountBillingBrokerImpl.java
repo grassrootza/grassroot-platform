@@ -23,6 +23,7 @@ import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneOffset;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -40,8 +41,10 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
     private static final Logger log = LoggerFactory.getLogger(AccountBillingBrokerImpl.class);
 
     private static final String SYSTEM_USER = "system_user"; // fake user since user_uid is null and these batch jobs are automated
-    private static final ZoneOffset BILLING_TZ = ZoneOffset.UTC;
     private static final int DEFAULT_MONTH_LENGTH = 30;
+
+    protected static final ZoneOffset BILLING_TZ = ZoneOffset.UTC;
+    protected static final LocalTime STD_BILLING_HOUR = LocalTime.of(10, 0);
 
     private AccountRepository accountRepository;
     private AccountBillingRecordRepository billingRepository;
@@ -145,6 +148,7 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
         billingRepository.save(records);
     }
 
+    // major todo: handle case of account type / fee changing during the month
     private long calculateAccountBillSinceLastStatement(Account account, LocalDateTime billingPeriodStart, LocalDateTime billingPeriodEnd) {
         // note : be careful about not running this around midnight, or date calcs could get messy / false (and keep an eye on floating points)
         if (DateTimeUtil.areDatesOneMonthApart(billingPeriodStart, billingPeriodEnd)) {

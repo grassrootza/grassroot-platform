@@ -52,7 +52,6 @@ public class AccountLog implements ActionLog {
         private Account account;
         private String userUid;
         private AccountLogType accountLogType;
-        private String auxiliary;
         private String groupUid;
         private String paidGroupUid;
         private String description;

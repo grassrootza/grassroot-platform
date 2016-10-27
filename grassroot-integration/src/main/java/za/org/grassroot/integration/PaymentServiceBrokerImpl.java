@@ -10,6 +10,7 @@ import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.AccountBillingRecord;
 import za.org.grassroot.core.repository.AccountBillingRecordRepository;
 import za.org.grassroot.core.repository.AccountRepository;
+import za.org.grassroot.integration.domain.PaymentMethod;
 
 import javax.annotation.PostConstruct;
 import java.time.Instant;
@@ -53,10 +54,13 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
 
     @Override
     @Transactional
-    public boolean linkPaymentMethodToAccount(String accountUid) {
-        Account account = accountRepository.findOneByUid(accountUid);
-        account.setPaymentRef("payment_ref_here");
-        account.setEnabledDateTime(Instant.now());
+    public boolean linkPaymentMethodToAccount(PaymentMethod paymentMethod, String accountUid) {
+        if (environment.acceptsProfiles("localpg", "staging")) {
+            Account account = accountRepository.findOneByUid(accountUid);
+            account.setPaymentRef("payment_ref_here");
+            account.setEnabledDateTime(Instant.now());
+        }
+        // if production, call a payment method.
         return true;
     }
 

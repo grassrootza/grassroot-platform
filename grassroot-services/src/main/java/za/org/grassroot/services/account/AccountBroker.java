@@ -4,6 +4,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.enums.AccountType;
 
+import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -17,10 +19,12 @@ public interface AccountBroker {
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     List<Account> loadAllAccounts();
 
-    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    String createAccount(String userUid, String accountName, String administratorUid, String billingEmail, AccountType accountType);
+    String createAccount(String userUid, String accountName, String billedUserUid, AccountType accountType);
 
-    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    @PreAuthorize("hasAnyRole('ROLE_ACCOUNT_ADMIN, ROLE_SYSTEM_ADMIN')")
+    void enableAccount(String userUid, String accountUid, LocalDate nextStatementDate);
+
+    @PreAuthorize("hasAnyRole('ROLE_ACCOUNT_ADMIN, ROLE_SYSTEM_ADMIN')")
     void disableAccount(String administratorUid, String accountUid, String reasonToRecord);
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
