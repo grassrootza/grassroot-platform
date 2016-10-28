@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,10 +22,7 @@ import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.ZoneOffset;
+import java.time.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -42,9 +40,11 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
 
     private static final String SYSTEM_USER = "system_user"; // fake user since user_uid is null and these batch jobs are automated
     private static final int DEFAULT_MONTH_LENGTH = 30;
+    private static final Duration PAYMENT_INTERVAL = Duration.ofHours(1L);
 
     protected static final ZoneOffset BILLING_TZ = ZoneOffset.UTC;
     protected static final LocalTime STD_BILLING_HOUR = LocalTime.of(10, 0);
+
 
     private AccountRepository accountRepository;
     private AccountBillingRecordRepository billingRepository;
@@ -120,6 +120,7 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
                     .billedPeriodStart(billingStart.toInstant(BILLING_TZ))
                     .billedPeriodEnd(billingEnd.toInstant(BILLING_TZ))
                     .statementDateTime(Instant.now())
+                    .paymentDueDate(Instant.now().plus(PAYMENT_INTERVAL))
                     .build();
             records.add(record);
 
@@ -221,6 +222,13 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
                 emailSendingBroker.sendMail(generateStatementEmail(record));
             }
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<AccountBillingRecord> fetchBillingRecords(String accountUid, Sort sort) {
+        Account account = accountRepository.findOneByUid(accountUid);
+        return billingRepository.findByAccount(account, sort);
     }
 
     private GrassrootEmail generateStatementEmail(AccountBillingRecord billingRecord) {

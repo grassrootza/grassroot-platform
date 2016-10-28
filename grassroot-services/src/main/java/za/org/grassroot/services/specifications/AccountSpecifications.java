@@ -15,4 +15,12 @@ public final class AccountSpecifications {
         return (root, query, cb) -> cb.lessThan(root.get(Account_.nextBillingDate), endPoint);
     }
 
+    public static Specification<Account> isEnabled() {
+        return (root, query, cb) -> cb.isTrue(root.get(Account_.enabled));
+    }
+
+    public static Specification<Account> isVisible() {
+        return (root, query, cb) -> cb.isTrue(root.get(Account_.visible));
+    }
+
 }

@@ -23,7 +23,6 @@ import java.util.Arrays;
 
 /**
  * Created by luke on 2016/10/26.
- * major todo : harmoinize use of plural (accounts/account)
  */
 @Controller
 @RequestMapping("/account/")
@@ -44,7 +43,7 @@ public class AccountSignUpController extends BaseController {
     public String startAccountSignup(Model model) {
         model.addAttribute("user", userManagementService.load(getUserProfile().getUid())); // may be cached (and not reflect email) if use just getuserprofile
         model.addAttribute("accountTypes", Arrays.asList(AccountType.LIGHT, AccountType.STANDARD, AccountType.HEAVY));
-        return "accounts/signup";
+        return "account/signup";
     }
 
     @RequestMapping(value = "create", method = RequestMethod.POST)
@@ -63,7 +62,7 @@ public class AccountSignUpController extends BaseController {
         refreshAuthorities();
 
         logger.info("account created! here is the name: {}, and uid: {}", accountName, accountUid);
-        return "accounts/payment";
+        return "account/payment";
     }
 
     @RequestMapping(value = "payment", method = RequestMethod.POST)
@@ -83,7 +82,7 @@ public class AccountSignUpController extends BaseController {
             return "redirect:/account/view";
         } else {
             addMessage(model, MessageType.ERROR, "account.signup.payment.error", request);
-            return "accounts/payment";
+            return "account/payment";
         }
     }
 

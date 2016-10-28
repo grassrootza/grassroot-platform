@@ -286,7 +286,7 @@ public class AdminController extends BaseController {
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping("/admin/accounts/home")
     public String listAccounts(Model model) {
-        model.addAttribute("accounts", new ArrayList<>(accountBroker.loadAllAccounts()));
+        model.addAttribute("accounts", new ArrayList<>(accountBroker.loadAllAccounts(true)));
         return "admin/accounts/home";
     }
 
@@ -321,8 +321,16 @@ public class AdminController extends BaseController {
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping(value = "/admin/accounts/disable")
     public String disableAccount(@RequestParam("accountUid") String accountUid, RedirectAttributes attributes, HttpServletRequest request) {
-        accountBroker.disableAccount(getUserProfile().getUid(), accountUid, "disabled by admin user"); // todo : have a form to input this
+        accountBroker.disableAccount(getUserProfile().getUid(), accountUid, "disabled by admin user", true); // todo : have a form to input this
         addMessage(attributes, MessageType.INFO, "admin.accounts.disabled", request);
+        return "redirect:home";
+    }
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    @RequestMapping(value = "/admin/accounts/invisible")
+    public String makeAccountInvisible(@RequestParam("accountUid") String accountUid, RedirectAttributes attributes, HttpServletRequest request) {
+        accountBroker.makeAccountInvisible(getUserProfile().getUid(), accountUid);
+        addMessage(attributes, MessageType.INFO, "admin.accounts.invisible", request);
         return "redirect:home";
     }
 

@@ -28,7 +28,7 @@ public class ScheduledAccountTasks {
     @Scheduled(cron = "${grassroot.billing.cron.trigger}")
     public void calculateMonthlyBillingAndCosts() {
         logger.info("Calculating billing statements and sending emails and notifications ... ");
-        accountBillingBroker.calculateAccountStatements(true, false);
+        accountBillingBroker.calculateAccountStatements(false, false);
     }
 
     @Scheduled(cron = "${grassroot.payments.cron.trigger}")

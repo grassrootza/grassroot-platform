@@ -83,9 +83,11 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
 
     @Override
     @Transactional(readOnly = true)
-    public List<Group> searchUsersGroups(String userUid, String searchTerm) {
+    public List<Group> searchUsersGroups(String userUid, String searchTerm, boolean onlyCreatedGroups) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(searchTerm);
+
+        logger.info("Searching user groups for term: " + searchTerm);
 
         if (searchTerm.trim().isEmpty()) {
             throw new IllegalArgumentException("Error, cannot search for blank term");
@@ -93,6 +95,8 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
 
         User user = userRepository.findOneByUid(userUid);
         String tsQuery = FullTextSearchUtils.encodeAsTsQueryText(searchTerm);
+
+        logger.info("Encoded term: " + tsQuery);
         return groupRepository.findByActiveAndMembershipsUserWithNameContainsText(user.getId(), tsQuery);
     }
 

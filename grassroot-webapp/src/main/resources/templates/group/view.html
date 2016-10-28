@@ -627,12 +627,7 @@
 
     $(document).ready(function () {
 
-      var token = $("meta[name='_csrf']").attr("content");
-      var header = $("meta[name='_csrf_header']").attr("content");
-
-      $.bind("ajaxSend", function(elm, xhr, s) {
-        xhr.setRequestHeader(header, token);
-      });
+      grassrootJS.setUpAjax($("meta[name='_csrf']"), $("meta[name='_csrf_header']"));
 
       $('#add_member_form').validate({
         errorClass: "error-text",

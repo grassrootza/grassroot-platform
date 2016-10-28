@@ -54,7 +54,11 @@ public class Account {
 
     @Column(name = "disabled_date_time", nullable = false)
     private Instant disabledDateTime;
-
+    
+    @Basic
+    @Column(name = "visible", nullable = false)
+    private boolean visible;
+    
     /*
     Doing this as one-to-many from account to users, rather than the inverse, because we are (much) more likely to have
     an account with 2-3 administrators than to have a user administering two accounts. The latter is not a non-zero
@@ -153,11 +157,12 @@ public class Account {
         this.accountName = accountName;
 
         this.createdDateTime = Instant.now();
-
+        
         this.createdByUser = createdByUser;
         this.enabledByUser = createdByUser;
-
-        // until the account payment has gone through, do not set it as enabled
+        
+        // until the account payment has gone through, do not set it as enabled, but do leave it visible
+        this.visible = true;
         this.enabled = false;
         this.enabledDateTime = DateTimeUtil.getVeryLongAwayInstant();
         this.disabledDateTime = DateTimeUtil.getVeryLongAwayInstant();
@@ -334,6 +339,14 @@ public class Account {
 
     public boolean isEnabled() {
         return enabled;
+    }
+
+    public boolean isVisible() {
+        return visible;
+    }
+
+    public void setVisible(boolean visible) {
+        this.visible = visible;
     }
 
     public Instant getLastPaymentDate() {

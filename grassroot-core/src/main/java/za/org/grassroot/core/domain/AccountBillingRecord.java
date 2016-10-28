@@ -4,6 +4,8 @@ import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Objects;
 
 /**
@@ -205,5 +207,9 @@ public class AccountBillingRecord {
 
     public void setPaid(boolean paid) {
         this.paid = paid;
+    }
+
+    public LocalDateTime getStatementDate() {
+        return LocalDateTime.ofInstant(statementDateTime, ZoneId.systemDefault());
     }
 }

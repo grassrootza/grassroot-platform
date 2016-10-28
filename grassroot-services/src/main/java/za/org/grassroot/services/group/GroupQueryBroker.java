@@ -21,7 +21,8 @@ public interface GroupQueryBroker {
 
     List<Group> loadAll();
 
-    List<Group> searchUsersGroups(String userUid, String searchTerm);
+    // major todo : use 'only created group'
+    List<Group> searchUsersGroups(String userUid, String searchTerm, boolean onlyCreatedGroups);
 
     ChangedSinceData<Group> getActiveGroups(User user, Instant changedSince);
 

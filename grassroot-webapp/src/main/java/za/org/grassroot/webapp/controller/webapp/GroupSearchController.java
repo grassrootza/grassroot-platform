@@ -131,7 +131,7 @@ public class GroupSearchController extends BaseController {
 					model.addAttribute("relatedTermGroups", publicGroupsRelatedTerms);
 				}
 
-				List<Group> memberGroups = groupQueryBroker.searchUsersGroups(userUid, term);
+				List<Group> memberGroups = groupQueryBroker.searchUsersGroups(userUid, term, false);
 				List<TaskDTO> memberTasks = taskBroker.searchForTasks(userUid, term);
 				model.addAttribute("foundGroups", memberGroups);
 				model.addAttribute("foundTasks", memberTasks);

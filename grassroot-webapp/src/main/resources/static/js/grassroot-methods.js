@@ -31,8 +31,17 @@ var grassrootJS = {
         return strVar;
     },
 
+    setUpAjax : function(metaCsrfSelector, metaCsrfHeaderSelector) {
+        var token = metaCsrfSelector.attr("content");
+        var header = metaCsrfHeaderSelector.attr("content");
+
+        $.bind("ajaxSend", function(elm, xhr, s) {
+            xhr.setRequestHeader(header, token);
+        });
+    },
+
     memberAutoComplete : function(nameInput, phoneInput) {
-        console.log("called member autocomplete");
+        // console.log("called member autocomplete");
         return {
             minLength: 2,
             delay: 500,
@@ -51,6 +60,30 @@ var grassrootJS = {
                 event.preventDefault();
                 phoneInput.val(ui.item.value);
                 nameInput.val(ui.item.label);
+            }
+        };
+    },
+
+    // todo : add in field for different kinds of search (part of / owner of / etc)
+    groupNameAutoComplete : function(inputField, returnField) {
+        return {
+            minLength: 1,
+            delay: 350,
+            source: function(request, response) {
+                console.log("finding group names");
+                $.getJSON("/ajax/group/names", { fragment : request.term }, function (data) {
+                    console.log("got group ajax data back : " + JSON.stringify(data));
+                    response(data);
+                })
+            },
+            focus: function(event, ui) {
+                event.preventDefault();
+                inputField.val(ui.item.label);
+            },
+            select: function(event, ui) {
+                event.preventDefault();
+                inputField.val(ui.item.label);
+                returnField.val(ui.item.value);
             }
         };
     },

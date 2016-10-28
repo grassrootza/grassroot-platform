@@ -111,6 +111,14 @@
     border-radius: 5px !important;
 }
 
+.body-container > .grassroot-well {
+    border: 1px solid #3B944F !important;
+    border-radius: 5px !important;
+    padding: 20px;
+    padding-top: 20px;
+    padding-bottom: 20px;
+}
+
 .borderless {
     border: 0 solid transparent !important;
 }
@@ -192,6 +200,16 @@
     font-size: 16pt;
     color: white;
     font-weight: bold;
+}
+
+.grassroot-sidebar {
+    font-size: 18pt;
+    color: #3B944F;
+    font-weight: bold;
+}
+
+.grassroot-body {
+    font-size: 14pt;
 }
 
 /*

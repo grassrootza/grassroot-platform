@@ -11,11 +11,12 @@ import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.util.PhoneNumberUtil;
-import za.org.grassroot.services.task.EventBroker;
+import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.group.GroupBroker;
+import za.org.grassroot.services.group.GroupQueryBroker;
+import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.TaskBroker;
 import za.org.grassroot.services.task.TodoBroker;
-import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
@@ -43,6 +44,9 @@ public class AjaxController extends BaseController {
 
     @Autowired
     private GroupBroker groupBroker;
+
+    @Autowired
+    private GroupQueryBroker groupQueryBroker; // todo : probably want to divide up this controller
 
     @Autowired
     private EventBroker eventBroker;
@@ -114,6 +118,15 @@ public class AjaxController extends BaseController {
         return userManagementService.findOthersInGraph(getUserProfile(), fragment)
                 .stream()
                 .map(s -> new AutoCompleteResponse(PhoneNumberUtil.invertPhoneNumber(s[1]), s[0])) // phoneNumber as value, name as label
+                .collect(Collectors.toList());
+    }
+
+    @RequestMapping(value = "/group/names", method = RequestMethod.GET)
+    public @ResponseBody List<AutoCompleteResponse> retrieverUserGroupNames(@RequestParam String fragment) {
+        log.info("looking for groups with name: " + fragment);
+        return groupQueryBroker.searchUsersGroups(getUserProfile().getUid(), fragment, false)
+                .stream()
+                .map(g -> new AutoCompleteResponse(g.getUid(), g.getName()))
                 .collect(Collectors.toList());
     }
 

@@ -4,6 +4,7 @@ alter table paid_account add column last_payment_date timestamp;
 alter table paid_account add column outstanding_balance bigint not null default 0; -- as above
 alter table paid_account add column next_billing_date timestamp; -- can be null, e.g., for disabled account
 alter table paid_account add column monthly_subscription bigint not null default 0;
+alter table paid_account add column visible boolean not null default true;
 
 -- replacing primary email with billing user, and adding email field to user
 alter table paid_account add column billing_user bigint;
@@ -36,9 +37,11 @@ create table paid_account_billing (
   billed_balance bigint not null,
   billed_period_end timestamp not null,
   billed_period_start timestamp not null,
+  next_payment_date timestamp not null,
   created_date_time timestamp not null,
   opening_balance bigint not null,
   statement_date_time timestamp not null,
+  bill_paid boolean default false not null,
   uid varchar(255) not null,
   account_id bigint not null,
   account_log_id bigint not null,

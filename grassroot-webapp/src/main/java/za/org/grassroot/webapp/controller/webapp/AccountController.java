@@ -3,15 +3,18 @@ package za.org.grassroot.webapp.controller.webapp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.AccountType;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.services.account.AccountBillingBroker;
 import za.org.grassroot.services.account.AccountBroker;
 import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.services.group.GroupQueryBroker;
@@ -38,14 +41,18 @@ public class AccountController extends BaseController {
     private static final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd-M-yyyy");
 
     private AccountBroker accountBroker;
+    private AccountBillingBroker accountBillingBroker;
     private AccountGroupBroker accountGroupBroker;
+
     private GroupQueryBroker groupQueryBroker;
     private EventBroker eventBroker;
 
     @Autowired
-    public AccountController(AccountBroker accountBroker, AccountGroupBroker accountGroupBroker, GroupQueryBroker groupQueryBroker, EventBroker eventBroker) {
+    public AccountController(AccountBroker accountBroker, AccountGroupBroker accountGroupBroker, AccountBillingBroker accountBillingBroker,
+                             GroupQueryBroker groupQueryBroker, EventBroker eventBroker) {
         this.accountBroker = accountBroker;
         this.accountGroupBroker = accountGroupBroker;
+        this.accountBillingBroker = accountBillingBroker;
         this.groupQueryBroker = groupQueryBroker;
         this.eventBroker = eventBroker;
     }
@@ -54,8 +61,8 @@ public class AccountController extends BaseController {
     @RequestMapping("/index")
     public String paidAccountIndex(Model model, HttpServletRequest request) {
         if (request.isUserInRole("ROLE_SYSTEM_ADMIN")) {
-            model.addAttribute("accounts", accountBroker.loadAllAccounts());
-            return "accounts/index";
+            model.addAttribute("accounts", accountBroker.loadAllAccounts(true));
+            return "account/index";
         } else if (request.isUserInRole("ROLE_ACCOUNT_ADMIN")) {
             User user = userManagementService.load(getUserProfile().getUid());
             Account account = user.getAccountAdministered();
@@ -77,7 +84,11 @@ public class AccountController extends BaseController {
 
         model.addAttribute("account", account);
         model.addAttribute("paidGroups", currentlyPaidGroups);
-        return "accounts/view";
+        model.addAttribute("billingRecords", accountBillingBroker.fetchBillingRecords(accountUid,
+                new Sort(Sort.Direction.DESC, "statementDateTime")));
+        model.addAttribute("administrators", account.getAdministrators());
+
+        return "account/view";
     }
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
@@ -86,7 +97,7 @@ public class AccountController extends BaseController {
         Account account = accountBroker.loadAccount(accountUid);
         validateUserIsAdministrator(account);
         model.addAttribute("account", account);
-        return "accounts/settings";
+        return "account/settings";
     }
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
@@ -108,7 +119,7 @@ public class AccountController extends BaseController {
         } catch (AccessDeniedException e) {
             addMessage(model, MessageType.ERROR, "account.settings.changed.error", request);
         }
-        return "accounts/settings";
+        return "account/settings";
     }
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
@@ -153,7 +164,7 @@ public class AccountController extends BaseController {
         model.addAttribute("beginDate", beginDate.toLocalDate());
         model.addAttribute("monthsToView", groupQueryBroker.getMonthsGroupActive(underlyingGroup.getUid()));
 
-        return "accounts/view_logs";
+        return "account/view_logs";
     }
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
@@ -185,18 +196,19 @@ public class AccountController extends BaseController {
             model.addAttribute("groupCandidates", groupQueryBroker.findPublicGroups(getUserProfile().getUid(), searchTerm, null, false));
         }
 
-        return "accounts/find_group";
+        return "account/find_group";
     }
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
-    @RequestMapping(value = "/group/designate", method = RequestMethod.POST)
-    public String doDesignation(Model model, @RequestParam String accountUid, @RequestParam String groupUid,
-                                HttpServletRequest request) {
+    @RequestMapping(value = "/group/add", method = RequestMethod.POST)
+    public String doDesignation(@RequestParam String accountUid, @RequestParam String groupUid,
+                                RedirectAttributes attributes, HttpServletRequest request) {
         Account account = accountBroker.loadAccount(accountUid);
         validateUserIsAdministrator(account);
         accountGroupBroker.addGroupToAccount(accountUid, groupUid, getUserProfile().getUid());
-        addMessage(model, MessageType.SUCCESS, "account.addgroup.success", request);
-        return viewPaidAccount(model, accountUid);
+        attributes.addAttribute("accountUid", accountUid);
+        addMessage(attributes, MessageType.SUCCESS, "account.addgroup.success", request);
+        return "redirect:/account/view";
     }
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")

@@ -1,5 +1,9 @@
 package za.org.grassroot.services.account;
 
+import org.springframework.data.domain.Sort;
+import za.org.grassroot.core.domain.AccountBillingRecord;
+
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -10,5 +14,7 @@ public interface AccountBillingBroker {
     void calculateAccountStatements(boolean sendEmails, boolean sendNotifications);
 
     void processAccountStatementEmails(Set<String> billingRecordUids);
+
+    List<AccountBillingRecord> fetchBillingRecords(final String accountUid, final Sort sort);
 
 }

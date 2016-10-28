@@ -1,10 +1,12 @@
 package za.org.grassroot.core.repository;
 
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.AccountBillingRecord;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -19,5 +21,7 @@ public interface AccountBillingRecordRepository extends JpaRepository<AccountBil
     AccountBillingRecord findOneByAccountOrderByCreatedDateTimeDesc(Account account);
 
     Set<AccountBillingRecord> findByNextPaymentDateBeforeAndPaidFalse(Instant time);
+
+    List<AccountBillingRecord> findByAccount(Account account, Sort sort);
 
 }

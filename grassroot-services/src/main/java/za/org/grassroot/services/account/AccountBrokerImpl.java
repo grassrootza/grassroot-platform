@@ -14,6 +14,7 @@ import za.org.grassroot.core.repository.AccountRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.services.PermissionBroker;
+import za.org.grassroot.services.specifications.AccountSpecifications;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
@@ -147,7 +148,7 @@ public class AccountBrokerImpl implements AccountBroker {
 
     @Override
     @Transactional
-    public void disableAccount(String administratorUid, String accountUid, String reasonToRecord) {
+    public void disableAccount(String administratorUid, String accountUid, String reasonToRecord, boolean removeAdminRole) {
         User user = userRepository.findOneByUid(administratorUid);
         Account account = accountRepository.findOneByUid(accountUid);
 
@@ -164,15 +165,46 @@ public class AccountBrokerImpl implements AccountBroker {
             paidGroup.setRemovedByUser(user);
         }
 
-        for (User admin : account.getAdministrators()) {
-            admin.setAccountAdministered(null);
-            permissionBroker.removeSystemRole(admin, BaseRoles.ROLE_ACCOUNT_ADMIN);
+        if (removeAdminRole) {
+            for (User admin : account.getAdministrators()) {
+                admin.setAccountAdministered(null);
+                permissionBroker.removeSystemRole(admin, BaseRoles.ROLE_ACCOUNT_ADMIN);
+            }
         }
 
         createAndStoreSingleAccountLog(new AccountLog.Builder(account)
                 .userUid(administratorUid)
                 .accountLogType(AccountLogType.ACCOUNT_DISABLED)
                 .description(reasonToRecord).build());
+    }
+
+    @Override
+    @Transactional
+    public void makeAccountInvisible(String userUid, String accountUid) {
+        // note : this is to remove the account even from views (disabled accounts can be reenabled, so still show up)
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(accountUid);
+
+        Account account = accountRepository.findOneByUid(accountUid);
+        if (account.isEnabled()) {
+            throw new IllegalArgumentException("Error! Only disabled accounts can be made invisible");
+        }
+
+        User user = userRepository.findOneByUid(userUid);
+        if (!user.getAccountAdministered().equals(account)) {
+            permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
+        }
+
+        account.setVisible(false);
+        for (User admin : account.getAdministrators()) {
+            admin.setAccountAdministered(null);
+            permissionBroker.removeSystemRole(admin, BaseRoles.ROLE_ACCOUNT_ADMIN);
+        }
+
+        createAndStoreSingleAccountLog(new AccountLog.Builder(account)
+                .userUid(userUid)
+                .accountLogType(AccountLogType.ACCOUNT_INVISIBLE)
+                .description("account removed from view").build());
     }
 
     @Override
@@ -315,8 +347,9 @@ public class AccountBrokerImpl implements AccountBroker {
 
     @Override
     @Transactional(readOnly = true)
-    public List<Account> loadAllAccounts() {
-        return accountRepository.findAll();
+    public List<Account> loadAllAccounts(boolean visibleOnly) {
+        return visibleOnly ?
+                accountRepository.findAll(AccountSpecifications.isVisible()) : accountRepository.findAll();
     }
 
     private void createAndStoreSingleAccountLog(AccountLog accountLog) {

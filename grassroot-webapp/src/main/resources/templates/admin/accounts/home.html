@@ -22,6 +22,7 @@
             <th>Account name</th>
             <th>Enabled?</th>
             <th></th>
+            <th></th>
           </thead>
           <tbody>
             <tr th:each="account : ${accounts}">
@@ -32,6 +33,11 @@
               <td>
                 <a th:href="${account.enabled} ? @{disable(accountUid=${account.uid})} : @{enabled(accountUid=${account.uid})}" class="btn btn-default">
                   <span th:text="${account.enabled} ? 'Disable' : 'Enable'">Disable</span>
+                </a>
+              </td>
+              <td>
+                <a th:href="${account.enabled} ? @{view(accountUid=${account.uid})} : @{invisible(accountUid=${account.uid})}" class="btn btn-default">
+                  <span th:text="${account.enabled} ? 'View' : 'Remove'">Remove</span>
                 </a>
               </td>
             </tr>
