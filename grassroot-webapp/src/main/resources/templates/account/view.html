@@ -49,7 +49,7 @@
           </select>
         </div>
         <div class="col-md-3 col-sm-3 col-xs-12">
-          <button type="submit" class="btn btn-primary btn-block btn-lg">Change</button>
+          <a th:href="@{type(accountUid=${account.uid})}" class="btn btn-primary btn-block btn-lg">Change</a>
         </div>
       </div>
 
@@ -109,7 +109,7 @@
                       th:value="${record.uid}"></option>
             </select>
           </div>
-          <a class="grassroot-body" href="changepayment">Change payment method</a>
+          <a class="grassroot-body" th:href="@{payment/change}">Change payment method</a>
         </div>
         <div th:unless="${#lists.isEmpty(billingRecords)}" class="col-md-3 col-sm-3 col-xs-12">
           <a href="addpaidgroup" class="btn btn-primary btn-lg btn-block">
@@ -133,9 +133,9 @@
           </ul>
         </div>
         <div class="col-md-3 col-sm-3 col-xs-12">
-          <a href="changeAdmins" class="btn btn-primary btn-lg btn-block">
+          <button type="button" class="btn btn-primary btn-lg btn-block" data-toggle="modal" data-target="#addAdminModal">
             Modify
-          </a>
+          </button>
         </div>
       </div>
 
@@ -200,6 +200,36 @@
       </div>
     </div>
 
+      <div class="modal fade" id="addAdminModal" tabindex="-1" role="dialog" aria-labelledby="addAdminLabel">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+              <h4 class="modal-title" id="addAdminLabel">Add groups</h4>
+            </div>
+            <form th:action="@{/account/admin/add}" method="get">
+              <input type="hidden" name="accountUid" th:value="${account.uid}" />
+              <input type="hidden" id="adminMsisdn" name="newAdminMsisdn" />
+              <div class="modal-body">
+                <div class="form-group">
+                  <p class="grassroot-body">
+                    Please enter the name of the user to add below (they must be part of a group you belong to.
+                  </p>
+                  <input type="text" class="form-control" id="add_admin_name"
+                         name="addAdminName" autocomplete="off" />
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                <button type="submit" class="btn btn-primary">Add</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
 
   </div>
 </div>
@@ -224,6 +254,14 @@
       var searchField = modal.find("#group_search_field");
       searchField.autocomplete(
           grassrootJS.groupNameAutoComplete(searchField, modal.find('#group_uid_field'))
+      )
+    });
+
+    $('#addAdminModal').on('show.bs.modal', function(event) {
+      var modal = $(this);
+      var nameInput = modal.find("#add_admin_name");
+      nameInput.autocomplete(
+          grassrootJS.memberAutoComplete(nameInput, modal.find('#adminMsisdn'))
       )
     });
 

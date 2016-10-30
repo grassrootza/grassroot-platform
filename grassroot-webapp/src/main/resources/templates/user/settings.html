@@ -1,7 +1,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       xmlns:th="http://www.w3.org/1999/xhtml"
-      layout:decorator="layout">
+      data-layout-decorate="~{layout}">
 <head>
   <title>Grassroot -- User preferences</title>
 </head>
@@ -23,10 +23,14 @@
   <div class="well">
     <div class="row">
       <div class="col-md-6 col-md-offset-3">
-        <form class="form-vertical" th:action="@{settings}" method="post" th:object="${sessionUser}">
+        <form id="settingsForm" class="form-vertical" th:action="@{settings}" method="post" th:object="${sessionUser}">
           <div class="form-group">
             <label class="control-label">Your name:</label>
             <input id="display_name" type="text" class="form-control" maxlength="20" th:field="*{displayName}"/>
+          </div>
+          <div class="form-group">
+            <label class="control-label">Email address:</label>
+            <input id="email_address" type="text" class="form-control" th:field="*{emailAddress}" />
           </div>
           <div class="form-group">
             <label class="control-label">Your notification preference:</label>
@@ -45,12 +49,37 @@
             </select>
           </div>
           <div class="form-group pull-right">
-            <button type="submit" class="btn btn-primary">Update</button>
+            <button type="submit" class="btn btn-primary btn-lg">Update</button>
           </div>
         </form>
       </div>
     </div>
   </div>
+
+</div>
+
+<div layout:fragment="script-container">
+
+  <script th:src="@{/js/jquery.validate.min.js}"></script>
+
+  <script>
+
+    $(document).ready(function() {
+
+      $("#settingsForm").validate({
+        rules: {
+          displayName: {
+            required: true
+          },
+          emailAddress: {
+            required: false,
+            email: true
+          }
+        }
+      })
+    });
+
+  </script>
 
 </div>
 

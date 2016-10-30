@@ -8,25 +8,22 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.SessionAttributes;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.AccountType;
-import za.org.grassroot.core.enums.EventType;
-import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.account.AccountBillingBroker;
 import za.org.grassroot.services.account.AccountBroker;
 import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.services.group.GroupQueryBroker;
-import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 
 import javax.servlet.http.HttpServletRequest;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -43,18 +40,15 @@ public class AccountController extends BaseController {
     private AccountBroker accountBroker;
     private AccountBillingBroker accountBillingBroker;
     private AccountGroupBroker accountGroupBroker;
-
     private GroupQueryBroker groupQueryBroker;
-    private EventBroker eventBroker;
 
     @Autowired
-    public AccountController(AccountBroker accountBroker, AccountGroupBroker accountGroupBroker, AccountBillingBroker accountBillingBroker,
-                             GroupQueryBroker groupQueryBroker, EventBroker eventBroker) {
+    public AccountController(AccountBroker accountBroker, AccountGroupBroker accountGroupBroker,
+                             AccountBillingBroker accountBillingBroker, GroupQueryBroker groupQueryBroker) {
         this.accountBroker = accountBroker;
         this.accountGroupBroker = accountGroupBroker;
         this.accountBillingBroker = accountBillingBroker;
         this.groupQueryBroker = groupQueryBroker;
-        this.eventBroker = eventBroker;
     }
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
@@ -72,9 +66,11 @@ public class AccountController extends BaseController {
         }
     }
 
+    // todo : refine / fix UI on add group search (e.g., subsequent page if not found via autocomplete)
+    // todo : take out select box on account type (since using extra page for task)
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
-    @RequestMapping(value = "/view")
-    public String viewPaidAccount(Model model, @RequestParam("accountUid") String accountUid) {
+    @RequestMapping(value = "/view", method = RequestMethod.GET)
+    public String viewPaidAccount(Model model, @RequestParam String accountUid) {
         Account account = accountBroker.loadAccount(accountUid);
         validateUserIsAdministrator(account);
 
@@ -92,117 +88,32 @@ public class AccountController extends BaseController {
     }
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
-    @RequestMapping(value = "/settings/view", method = RequestMethod.GET)
-    public String changeAccountSettingsView(Model model, @RequestParam("accountUid") String accountUid) {
-        Account account = accountBroker.loadAccount(accountUid);
-        validateUserIsAdministrator(account);
-        model.addAttribute("account", account);
-        return "account/settings";
-    }
-
-    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
-    @RequestMapping(value = "/settings/change", method = RequestMethod.POST)
-    public String changeAccountSettingsDo(Model model, @RequestAttribute String accountUid, @RequestAttribute String billingEmail,
-                                          @RequestAttribute AccountType accountType, HttpServletRequest request) {
-        try {
-            Account account = accountBroker.loadAccount(accountUid);
-            if (!billingEmail.equals(account.getBillingUser().getEmailAddress())) {
-                accountBroker.updateBillingEmail(getUserProfile().getUid(), accountUid, billingEmail);
-            }
-
-            if (!accountType.equals(account.getType())) {
-                accountBroker.changeAccountType(getUserProfile().getUid(), accountUid, accountType);
-            }
-
-            addMessage(model, MessageType.SUCCESS, "account.settings.changed.success", request);
-            model.addAttribute("account", account);
-        } catch (AccessDeniedException e) {
-            addMessage(model, MessageType.ERROR, "account.settings.changed.error", request);
-        }
-        return "account/settings";
-    }
-
-    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
-    @RequestMapping(value = "/group/view")
-    public String viewPaidAccountLogs(Model model, @RequestParam String accountUid, @RequestParam String paidGroupUid,
-                                      @RequestParam(value = "monthToView", required = false) String monthToView, HttpServletRequest request) {
-
-        Account account = accountBroker.loadAccount(accountUid);
-        validateUserIsAdministrator(account);
-
-        final LocalDateTime beginDate;
-        final LocalDateTime endDate;
-        final String dateDescription;
-
-        if (monthToView == null) {
-            beginDate = LocalDateTime.now().minusMonths(1L); // todo: maybe make these coincide with prior month
-            endDate = LocalDateTime.now();
-            dateDescription = "Meetings and votes held since " + beginDate.format(DateTimeFormatter.ofPattern("dd MMM yyyy"));
-        } else {
-            beginDate = LocalDate.parse("01-" + monthToView, dtf).atStartOfDay();
-            endDate = beginDate.plusMonths(1L);
-            dateDescription = "Meetings and votes held in " + beginDate.format(DateTimeFormatter.ofPattern("MMM yyyy"));
-            log.info(String.format("Getting records between %s and a month later",
-                                   DateTimeUtil.getPreferredDateFormat().format(beginDate)));
-        }
-
-        final Long timeStart = System.currentTimeMillis();
-        PaidGroup paidGroupRecord = accountGroupBroker.loadPaidGroup(paidGroupUid);
-        Group underlyingGroup = paidGroupRecord.getGroup();
-
-        addRecordsToModel("meetingsInPeriod", model, underlyingGroup, EventType.MEETING, beginDate, endDate);
-        addRecordsToModel("votesInPeriod", model, underlyingGroup, EventType.VOTE, beginDate, endDate);
-
-        final Long timeEnd = System.currentTimeMillis();
-
-        log.info(String.format("Loaded a bunch of stuff for group ... %s, and it took %d msecs", underlyingGroup.getGroupName(), timeEnd - timeStart));
-
-        model.addAttribute("account", account);
-        model.addAttribute("group", underlyingGroup);
-        model.addAttribute("paidGroupRecord", paidGroupRecord);
-        model.addAttribute("dateDescription", dateDescription);
-        model.addAttribute("beginDate", beginDate.toLocalDate());
-        model.addAttribute("monthsToView", groupQueryBroker.getMonthsGroupActive(underlyingGroup.getUid()));
-
-        return "account/view_logs";
-    }
-
-    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
-    @RequestMapping(value = "/group/designate")
-    public String designateGroupPaidFor(Model model, @RequestParam("accountUid") String accountUid, HttpServletRequest request) {
-        Account account = accountBroker.loadAccount(accountUid);
-        validateUserIsAdministrator(account);
-        model.addAttribute("account", account);
-        model.addAttribute("candidateGroups", getCandidateGroupsToDesignate(getUserProfile()));
-        return "accounts/designate";
-    }
-
-    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
-    @RequestMapping(value = "/group/search")
-    public String searchForGroup(Model model, @RequestParam String accountUid, @RequestParam String searchTerm,
-                                 @RequestParam boolean tokenSearch) {
+    @RequestMapping(value = "/type", method = RequestMethod.GET)
+    public String changeAccountTypeOptions(Model model, @RequestParam String accountUid) {
         Account account = accountBroker.loadAccount(accountUid);
         validateUserIsAdministrator(account);
 
         model.addAttribute("account", account);
-        model.addAttribute("tokenSearch", tokenSearch);
 
-        if (tokenSearch) {
-            Optional<Group> searchResult = groupQueryBroker.findGroupFromJoinCode(searchTerm);
-            if (searchResult.isPresent()) {
-                model.addAttribute("groupFound", groupQueryBroker.findGroupFromJoinCode(searchTerm));
-            }
-        } else {
-            model.addAttribute("groupCandidates", groupQueryBroker.findPublicGroups(getUserProfile().getUid(), searchTerm, null, false));
-        }
+        return "account/type";
+    }
 
-        return "account/find_group";
+    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
+    @RequestMapping(value = "/type/change", method = RequestMethod.GET)
+    public String changeAccountTypeDo(Model model, @RequestParam String accountUid, @RequestParam AccountType newType,
+                                      RedirectAttributes attributes, HttpServletRequest request) {
+        // todo : check for need to remove groups (use an exception)
+        // todo : check for switch during account billing (don't need to bill now, just do @ next cycle)
+        accountBroker.changeAccountType(getUserProfile().getUid(), accountUid, newType);
+        addMessage(attributes, MessageType.SUCCESS, "account.changetype.success", request);
+        attributes.addAttribute("accountUid", accountUid);
+        return "redirect:/account/view";
     }
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/group/add", method = RequestMethod.POST)
-    public String doDesignation(@RequestParam String accountUid, @RequestParam String groupUid,
-                                RedirectAttributes attributes, HttpServletRequest request) {
+    public String addGroupAsPaidFor(@RequestParam String accountUid, @RequestParam String groupUid,
+                                    RedirectAttributes attributes, HttpServletRequest request) {
         Account account = accountBroker.loadAccount(accountUid);
         validateUserIsAdministrator(account);
         accountGroupBroker.addGroupToAccount(accountUid, groupUid, getUserProfile().getUid());
@@ -226,6 +137,34 @@ public class AccountController extends BaseController {
         return viewPaidAccount(model, accountUid);
     }
 
+    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
+    @RequestMapping(value = "/statement/view", method = RequestMethod.GET)
+    public String viewAccountBillingStatement(Model model, @RequestParam String accountUid, @RequestParam String recordUid) {
+        Account account = accountBroker.loadAccount(accountUid);
+        validateUserIsAdministrator(account);
+        model.addAttribute("account", account);
+        model.addAttribute("record", accountBillingBroker.fetchBillingRecord(recordUid));
+        return "/account/view_statement";
+    }
+
+    // todo : as with groups, have an intermediate step if autocomplete fails
+    // todo : switch account/admin to many-to-many
+    // todo : usual exception handling etc
+    // todo : add 'remove method'
+    // todo : check why user autocomplete is not restricting to user's graph
+    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
+    @RequestMapping(value = "/admin/add", method = RequestMethod.GET)
+    public String addAccountAdmin(@RequestParam String accountUid, @RequestParam String newAdminMsisdn,
+                                  RedirectAttributes attributes, HttpServletRequest request) {
+        Account account = accountBroker.loadAccount(accountUid);
+        validateUserIsAdministrator(account);
+        User newAdmin = userManagementService.findByInputNumber(newAdminMsisdn);
+        accountBroker.addAdministrator(getUserProfile().getUid(), accountUid, newAdmin.getUid());
+        addMessage(attributes, MessageType.SUCCESS, "account.admin.added", request);
+        attributes.addAttribute("accountUid", accountUid);
+        return "redirect:/account/view";
+    }
+
     /* quick helper method to do role & permission check */
     private void validateUserIsAdministrator(Account account) {
         User user = userManagementService.load(getUserProfile().getUid());
@@ -239,13 +178,6 @@ public class AccountController extends BaseController {
         return groupsPartOf.stream()
                 .filter(g -> !g.isPaidFor())
                 .collect(Collectors.toList());
-    }
-
-    private Model addRecordsToModel(String attr, Model model, Group group, EventType type, LocalDateTime start, LocalDateTime end) {
-        List<Event> eventsInPeriod = eventBroker.retrieveGroupEvents(group, type, DateTimeUtil.convertToSystemTime(start, DateTimeUtil.getSAST()),
-                DateTimeUtil.convertToSystemTime(end, DateTimeUtil.getSAST()));
-        model.addAttribute(attr, eventsInPeriod);
-        return model;
     }
 
 }

@@ -208,6 +208,12 @@
     font-weight: bold;
 }
 
+.grassroot-lead {
+    font-size: 15pt;
+    color: #3B944F;
+    font-weight: bold;
+}
+
 .grassroot-body {
     font-size: 14pt;
 }

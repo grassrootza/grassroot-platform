@@ -221,15 +221,21 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     @Override
     @Transactional
-    public void updateUser(String userUid, String displayName, AlertPreference alertPreference, Locale locale)
+    public void updateUser(String userUid, String displayName, String emailAddress, AlertPreference alertPreference, Locale locale)
             throws IllegalArgumentException {
         Objects.nonNull(userUid);
 
         User user = userRepository.findOneByUid(userUid);
 
+        // retain this since the client-side validation is a bit strange & unpredictable on this field
         if (!StringUtils.isEmpty(displayName)) {
             user.setDisplayName(displayName);
             user.setHasSetOwnName(true);
+        }
+
+        // note: make sure to confirm with user if deleting address (i.e., second half of if statement)
+        if (!StringUtils.isEmpty(emailAddress) || !StringUtils.isEmpty(user.getEmailAddress())) {
+            user.setEmailAddress(emailAddress);
         }
 
         user.setLanguageCode(locale.getLanguage());

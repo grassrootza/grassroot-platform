@@ -57,7 +57,7 @@ public interface UserManagementService {
     Methods to update user properties
      */
 
-    void updateUser(String userUid, String displayName, AlertPreference alertPreference, Locale locale);
+    void updateUser(String userUid, String displayName, String emailAddress, AlertPreference alertPreference, Locale locale);
 
     void updateDisplayName(String userUid, String displayName);
 

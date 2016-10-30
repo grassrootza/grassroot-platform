@@ -17,4 +17,6 @@ public interface AccountBillingBroker {
 
     List<AccountBillingRecord> fetchBillingRecords(final String accountUid, final Sort sort);
 
+    AccountBillingRecord fetchBillingRecord(String recordUid);
+
 }

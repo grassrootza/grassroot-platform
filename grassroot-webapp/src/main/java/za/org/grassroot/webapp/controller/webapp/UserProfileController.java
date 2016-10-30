@@ -13,8 +13,8 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.services.exception.InvalidTokenException;
+import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.BaseController;
 
 import javax.servlet.http.HttpServletRequest;
@@ -48,8 +48,8 @@ public class UserProfileController extends BaseController {
         log.info("retrieved this user, displayName={}, alertPref={}, language={}", sessionUser.getDisplayName(),
                 sessionUser.getAlertPreference(), sessionUser.getLanguageCode());
         try {
-            userManagementService.updateUser(getUserProfile().getUid(), sessionUser.getDisplayName(), sessionUser.getAlertPreference(),
-                    new Locale(sessionUser.getLanguageCode()));
+            userManagementService.updateUser(getUserProfile().getUid(), sessionUser.getDisplayName(), sessionUser.getEmailAddress(),
+                    sessionUser.getAlertPreference(), new Locale(sessionUser.getLanguageCode()));
             addMessage(redirectAttributes, MessageType.SUCCESS, "user.profile.change.success", request);
             return "redirect:settings"; // using redirect to avoid reposting
         } catch (IllegalArgumentException e) {

@@ -231,6 +231,12 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
         return billingRepository.findByAccount(account, sort);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public AccountBillingRecord fetchBillingRecord(String recordUid) {
+        return billingRepository.findOneByUid(recordUid);
+    }
+
     private GrassrootEmail generateStatementEmail(AccountBillingRecord billingRecord) {
         final String emailSubject = messageAssemblingService.createAccountStatementSubject(billingRecord);
         final String emailBody = messageAssemblingService.createAccountStatementEmail(billingRecord);
