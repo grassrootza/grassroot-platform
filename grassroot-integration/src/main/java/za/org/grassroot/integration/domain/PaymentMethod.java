@@ -52,6 +52,14 @@ public class PaymentMethod {
         }
     }
 
+    public static PaymentMethod makeEmpty() {
+        return new PaymentMethod();
+    }
+
+    private PaymentMethod() {
+        // for make empty (in turn for empty form bindings)
+    }
+
     private PaymentMethod(String cardHolder) {
         this.cardHolder = cardHolder;
     }
@@ -74,5 +82,25 @@ public class PaymentMethod {
 
     public int getSecurityCode() {
         return securityCode;
+    }
+
+    public void setCardHolder(String cardHolder) {
+        this.cardHolder = cardHolder;
+    }
+
+    public void setCardNumber(long cardNumber) {
+        this.cardNumber = cardNumber;
+    }
+
+    public void setExpiryMonth(int expiryMonth) {
+        this.expiryMonth = expiryMonth;
+    }
+
+    public void setExpiryYear(int expiryYear) {
+        this.expiryYear = expiryYear;
+    }
+
+    public void setSecurityCode(int securityCode) {
+        this.securityCode = securityCode;
     }
 }

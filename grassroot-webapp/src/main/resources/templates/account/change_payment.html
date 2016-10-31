@@ -1,0 +1,54 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      data-layout-decorate="~{layout}">
+<head>
+  <meta charset="UTF-8">
+  <title>Payment</title>
+</head>
+
+<body>
+
+  <div layout:fragment="header">
+    <h2 class="text-center">Payment Method</h2>
+  </div>
+
+  <div layout:fragment="overview">
+    <h4 class="text-center">Changing payment details</h4>
+  </div>
+
+  <!-- todo : design this properly ... e.g., we are about to bill ... -->
+  <div layout:fragment="content">
+    <div class="row">
+      <div class="col-md-4 col-md-offset-4">
+        <form th:action="@{change}" th:object="${method}" method="POST" class="form-vertical">
+          <input type="hidden" name="accountUid" th:value="${accountUid}" />
+          <div class="form-group">
+            <label class="control-label">1. Name</label>
+            <input type="text" th:field="*{cardHolder}" class="form-control input-lg"/>
+          </div>
+          <div class="form-group">
+            <label class="control-label">2. Credit Card Number</label>
+            <input type="text" th:field="*{cardNumber}" class="form-control input-lg"/>
+          </div>
+          <div class="form-group">
+            <label class="control-label">3. Expiry Month</label>
+            <input type="text" th:field="*{expiryMonth}" class="form-control input-lg"/>
+          </div>
+          <div class="form-group">
+            <label class="control-label">4. Expiry Year</label>
+            <input type="text" th:field="*{expiryYear}" class="form-control input-lg"/>
+          </div>
+          <div class="form-group">
+            <label class="control-label">5. Security Code</label>
+            <input type="text" th:field="*{securityCode}" class="form-control input-lg"/>
+          </div>
+          <div class="form-group pull-right">
+            <button type="submit" class="btn btn-primary btn-block btn-cta">Next</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

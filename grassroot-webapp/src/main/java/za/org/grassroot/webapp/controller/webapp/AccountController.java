@@ -16,10 +16,11 @@ import org.springframework.web.bind.annotation.SessionAttributes;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.AccountType;
+import za.org.grassroot.integration.PaymentServiceBroker;
+import za.org.grassroot.integration.domain.PaymentMethod;
 import za.org.grassroot.services.account.AccountBillingBroker;
 import za.org.grassroot.services.account.AccountBroker;
 import za.org.grassroot.services.account.AccountGroupBroker;
-import za.org.grassroot.services.group.GroupQueryBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 
 import javax.servlet.http.HttpServletRequest;
@@ -41,15 +42,15 @@ public class AccountController extends BaseController {
     private AccountBroker accountBroker;
     private AccountBillingBroker accountBillingBroker;
     private AccountGroupBroker accountGroupBroker;
-    private GroupQueryBroker groupQueryBroker;
+    private PaymentServiceBroker paymentServiceBroker;
 
     @Autowired
     public AccountController(AccountBroker accountBroker, AccountGroupBroker accountGroupBroker,
-                             AccountBillingBroker accountBillingBroker, GroupQueryBroker groupQueryBroker) {
+                             AccountBillingBroker accountBillingBroker, PaymentServiceBroker paymentServiceBroker) {
         this.accountBroker = accountBroker;
         this.accountGroupBroker = accountGroupBroker;
         this.accountBillingBroker = accountBillingBroker;
-        this.groupQueryBroker = groupQueryBroker;
+        this.paymentServiceBroker = paymentServiceBroker;
     }
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
@@ -163,6 +164,25 @@ public class AccountController extends BaseController {
         User newAdmin = userManagementService.findByInputNumber(newAdminMsisdn);
         accountBroker.addAdministrator(getUserProfile().getUid(), accountUid, newAdmin.getUid());
         addMessage(attributes, MessageType.SUCCESS, "account.admin.added", request);
+        attributes.addAttribute("accountUid", accountUid);
+        return "redirect:/account/view";
+    }
+
+    @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
+    @RequestMapping(value = "/payment/change", method = RequestMethod.GET)
+    public String changePaymentMethod(Model model, @RequestParam(required = false) String accountUid) {
+        Account account = StringUtils.isEmpty(accountUid) ? accountBroker.loadUsersAccount(getUserProfile().getUid()) :
+                accountBroker.loadAccount(accountUid);
+        model.addAttribute("account", account);
+        model.addAttribute("method", PaymentMethod.makeEmpty());
+        return "/account/change_payment";
+    }
+
+    @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
+    @RequestMapping(value = "/payment/change", method = RequestMethod.POST)
+    public String changePaymentDo(RedirectAttributes attributes, @RequestParam String accountUid,
+                                  @RequestParam PaymentMethod paymentMethod) {
+        paymentServiceBroker.linkPaymentMethodToAccount(paymentMethod, accountUid);
         attributes.addAttribute("accountUid", accountUid);
         return "redirect:/account/view";
     }
