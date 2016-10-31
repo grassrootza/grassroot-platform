@@ -82,6 +82,14 @@ public class AccountBrokerImpl implements AccountBroker {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public Account loadUsersAccount(String userUid) {
+        User user = userRepository.findOneByUid(userUid);
+        Account account = user.getAccountAdministered();
+        return (account != null && account.isEnabled()) ? account : null;
+    }
+
+    @Override
     @Transactional
     public String createAccount(String userUid, String accountName, String billedUserUid, AccountType accountType) {
         Objects.requireNonNull(userUid);

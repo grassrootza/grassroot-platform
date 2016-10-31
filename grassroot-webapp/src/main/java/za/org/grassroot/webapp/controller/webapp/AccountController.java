@@ -8,6 +8,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -89,8 +90,9 @@ public class AccountController extends BaseController {
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/type", method = RequestMethod.GET)
-    public String changeAccountTypeOptions(Model model, @RequestParam String accountUid) {
-        Account account = accountBroker.loadAccount(accountUid);
+    public String changeAccountTypeOptions(Model model, @RequestParam(required = false) String accountUid) {
+        Account account = !StringUtils.isEmpty(accountUid) ? accountBroker.loadAccount(accountUid)
+                : accountBroker.loadUsersAccount(getUserProfile().getUid());
         validateUserIsAdministrator(account);
 
         model.addAttribute("account", account);

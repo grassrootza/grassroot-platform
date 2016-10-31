@@ -438,6 +438,12 @@ Modal dialogs
     font-family: 'Roboto', sans-serif;
 }
 
+.error-text > a {
+    color: #ff2a00;
+    font-family: 'Roboto', sans-serif;
+    text-decoration: underline;
+}
+
 .navbar > .dropdown > a:hover, a:focus {
     background-color: #095C1B;
     color: white;

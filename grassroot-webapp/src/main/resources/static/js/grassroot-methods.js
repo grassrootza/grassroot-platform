@@ -87,7 +87,6 @@ var grassrootJS = {
             }
         };
     },
-
     phoneRules : {
         required: true,
         number: true,
@@ -98,6 +97,11 @@ var grassrootJS = {
             minlength: 'Please enter a valid SA cell number',
             maxlength: 'The number you entered is too long'
         }
+    },
+    groupLimitFields : {
+        paidFor : "is_paid_for",
+        canAdd: "can_add_to_account",
+        hasAcc: "user_has_account"
     }
 
 };

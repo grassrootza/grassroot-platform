@@ -14,6 +14,8 @@ public interface AccountBroker {
 
     Account loadAccount(String accountUid);
 
+    Account loadUsersAccount(String userUid);
+
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     List<Account> loadAllAccounts(boolean visibleOnly);
 
