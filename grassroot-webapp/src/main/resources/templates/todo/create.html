@@ -4,7 +4,6 @@
 <head>
   <title>Grassroot - Record an action</title>
 
-  <!-- need these for ajax, though there may be a more elegant way to do it (maybe just call the Thymeleaf in the CSRF -->
   <meta name="_csrf" th:content="${_csrf.token}"/>
   <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
 
@@ -26,7 +25,7 @@
     <div class="row">
       <div class="col-md-6 col-md-offset-3">
 
-        <form th:object="${actionTodo}" th:action="@{/todo/record}" method="post" class="form-vertical">
+        <form th:object="${actionTodo}" th:action="@{/todo/record}" id="createForm" method="post" class="form-vertical">
           <input type="hidden" th:field="*{parentEntityType}" />
 
           <div class="form-group">
@@ -44,6 +43,9 @@
               <input class="form-control input-lg" readonly="true" th:placeholder="${parent.name}" id="group" />
               <input type="hidden" th:field="*{parentUid}" th:value="${parent.uid}" />
             </div>
+            <p class="grassroot-body" id="remainingText">
+              This group has X todos left this month
+            </p>
           </div>
 
           <div class="form-group">
@@ -135,6 +137,28 @@
             </div>
           </div>
 
+          <div class="modal fade" id="limitModal" tabindex="-1" role="dialog" aria-labelledby="limitModalLabel">
+            <div class="modal-dialog" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">x</span></button>
+                  <h4 class="modal-title" id="limitModalLabel">Group has reached its todo limit</h4>
+                </div>
+                <div class="modal-body">
+                  <p class="grassroot-body">
+                    <!-- todo : alter text if, say, user has an account with space for this group -->
+                    Sorry, you have reached the maximum number of todos this group can call per month. To increase the limit,
+                    sign up for or upgrade your account (or add it to your account).
+                  </p>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-default btn-lg" data-dismiss="modal">Close</button>
+                  <a th:href="@{/account/index}" class="btn btn-default btn-lg">Go to account</a>
+                </div>
+              </div>
+            </div>
+          </div>
+
         </form>
 
       </div>
@@ -144,26 +168,47 @@
 </div>
 
 <div class="header-container" layout:fragment="script-container">
+
+  <script th:src="@{/js/grassroot-methods.js}"></script>
+
   <script th:inline="javascript">
 
     /*<![CDATA[*/
+
+    var groupSelect = $("#groupSelector");
+    var token = $("meta[name='_csrf']");
+    var header = $("meta[name='_csrf_header']");
+
+    var todosRemaining = true;
+    var remainderLabel = $("#remainingText");
+
     $(document).ready(function() {
+
+      console.log("Document loaded");
+
+      grassrootJS.setUpAjax(token, header);
 
       var defTime = new Date();
       defTime.setTime(defTime.getTime() + 5*60*1000);
 
+      var reminderSelect = $("#reminderType");
+      var assignedMemberCount = $("#pickedMemberCount");
+
       // if the group selector exists, do the ajax call to populate the member picker & bind refresh to its change function
-      if ($("#groupSelector").length > 0) {
+      if (groupSelect.length > 0) {
+        fetchTodosRemaining(groupSelect.find("option:selected").val());
+        fetchParentMemberList(true);
 
-        ajaxGetList(true);
-        $("#reminderType").changeGroupMinutes();
-
-        $('#groupSelector').change(function() {
+        reminderSelect.changeGroupMinutes();
+        groupSelect.change(function() {
+          fetchTodosRemaining(groupSelect.find("option:selected").val());
+          reminderSelect.changeGroupMinutes();
           $('#wholeGroup').prop("checked", true);
-          $("#reminderType").changeGroupMinutes();
           $('#pickedMemberCount').hide();
-          ajaxGetList(false);
+          fetchParentMemberList(false);
         });
+      } else {
+        fetchTodosRemaining($("#parentUid").val());
       }
 
       $('#datepicker').datetimepicker({
@@ -181,22 +226,21 @@
         });
       });
 
-      $('#pickedMemberCount').hide();
+      assignedMemberCount.hide();
       $('#wholeGroup').click(function() {
         $('#pickedMemberCount').hide();
-      })
+      });
 
       $('#memberModal').on('hidden.bs.modal', function() {
         var membersSelected = $('#memberModal').find('input[type="checkbox"]:checked').length;
         var countText = "You've assigned " + membersSelected + ((membersSelected == 1) ? " member" : " members") + " to this task";
-        $('#pickedMemberCount').text(countText);
-        $('#pickedMemberCount').show();
+        assignedMemberCount.text(countText);
+        assignedMemberCount.show();
       });
 
       $("#customReminder").hide();
-      $('#reminderType').change(function() {
-        var selected = $("#reminderType option:selected").val();
-        console.log("Selected option: " + selected);
+      reminderSelect.change(function() {
+        var selected = reminderSelect.find("option:selected").val();
         if (selected == "CUSTOM") {
           $("#customReminder").show();
         } else {
@@ -204,23 +248,50 @@
         }
       });
 
+      $("#createForm").submit(function(event) {
+        if (todosRemaining) {
+          return;
+        } else {
+          $("#limitModal").modal('show');
+          event.preventDefault();
+        }
+      });
+
     });
 
     jQuery.fn.extend({
       changeGroupMinutes: function() {
-        var groupSelected = $("#groupSelector option:selected").data("mins");
+        var groupSelected = groupSelect.find("option:selected").data("mins");
         var text = "Group default (" + groupSelected + ")"; // todo: i18n at some point
         $(this).find("#groupOption").text(text);
       }
     });
 
-    function ajaxGetList(selectedByDefault) {
 
-      var token = $("meta[name='_csrf']").attr("content");
-      var header = $("meta[name='_csrf_header']").attr("content");
+    function fetchTodosRemaining(groupUid) {
+      $.getJSON("/ajax/group/limit/todos", { groupUid: groupUid }, function(data) {
+        // add link to account sign up / upgrade
+        var hasTodosLeftText = "This group has " + data["todos_left"] + " todos left this month";
+        var noTodosLeftCanAddToAccount = "This group has used up its todos this month. Add this group to your account to add more";
+        var noTodosLeftCannotAdd = "This group has no todos left and your account is full. To add more, upgrade your account";
+        var noTodosLeftNoAccount = "This group has no todos left. To add more, sign up for an account";
+
+        remainderLabel.text("This group has " + data["todos_left"] + " todos left this month");
+        todosRemaining = Number(data["todos_left"]) > 0;
+        console.log("return data: " + JSON.stringify(data));
+        if (!todosRemaining) {
+          remainderLabel.addClass("error-text");
+
+        } else {
+          remainderLabel.removeClass("error-text");
+        }
+      });
+    }
+
+    function fetchParentMemberList(selectedByDefault) {
 
       var data = {};
-      data["parentEntityType"] = "GROUP"; // todo: reconsider this ...
+      data["parentEntityType"] = "GROUP";
       data["selectedByDefault"] = selectedByDefault;
       data["parentUid"] = $("#groupSelector").val();
       data["userUid"] = $("#userUid").val();
@@ -232,8 +303,8 @@
         dataType : "json",
         data : JSON.stringify(data),
         timeout : 100000,
-        beforeSend : function(xhr) {
-          xhr.setRequestHeader(header, token);
+        beforeSend : function(xhr) { // need to retain this since the set ajax method seems to only work for getJSON
+          xhr.setRequestHeader(header.attr("content"), token.attr("content"));
         },
         success : function(data) {
           addMembersToModal(data);
@@ -243,16 +314,12 @@
           console.log("Status : " + textStatus);
           console.log("xhr: " + xhr.status);
           // display(errorThrown);
-        },
-        done : function(e) {
-          console.log("DONE");
         }
       });
 
     }
 
     function addMembersToModal(returnedObject) {
-      // console.log("Returned object: " + JSON.stringify(returnedObject, null, 4));
       $("#dynamicMemberPicker").empty();
       var memberList = returnedObject.data.listOfMembers;
       for (var i = 0; i < memberList.length; i++) {
@@ -267,12 +334,11 @@
 
         var tickbox = JSON.parse(member.selected) ? "checked" : "";
 
-        var string = "<li class=\"list-group-item checkbox\">" +
+        return "<li class=\"list-group-item checkbox\">" +
                 "<label>" +
                 "<input type=\"checkbox\" class='pull-right' " + tickbox + " name='" + selectedField + "'/>" +
                 "<input type='hidden' name='" + userUidField + "' value='" + member.userUid + "'/>" +
                 member.nameToDisplay + "</label>";
-        return string;
       }
     }
 

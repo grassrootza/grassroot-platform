@@ -41,6 +41,8 @@ public class AccountBrokerImpl implements AccountBroker {
     private Map<AccountType, Integer> maxGroupNumber = new HashMap<>();
     private Map<AccountType, Integer> maxSubGroupDepth = new HashMap<>();
 
+    private Map<AccountType, Integer> todosPerMonth = new HashMap<>();
+
     private AccountRepository accountRepository;
     private UserRepository userRepository;
     private LogsAndNotificationsBroker logsAndNotificationsBroker;
@@ -68,6 +70,7 @@ public class AccountBrokerImpl implements AccountBroker {
             maxGroupSize.put(accountType, environment.getProperty("accounts.group.limit." + key, Integer.class));
             maxGroupNumber.put(accountType, environment.getProperty("accounts.group.max." + key, Integer.class));
             maxSubGroupDepth.put(accountType, environment.getProperty("accounts.group.subdepth." + key, Integer.class));
+            todosPerMonth.put(accountType, environment.getProperty("accounts.todos.monthly." + key, Integer.class));
         }
 
         log.info("Loaded account settings : messages = {}, group depth = {}", messagesEnabled, maxGroupNumber);
@@ -105,6 +108,7 @@ public class AccountBrokerImpl implements AccountBroker {
         account.setMaxSizePerGroup(maxGroupSize.get(accountType));
         account.setMaxSubGroupDepth(maxSubGroupDepth.get(accountType));
         account.setMaxNumberGroups(maxGroupNumber.get(accountType));
+        account.setTodosPerGroupPerMonth(todosPerMonth.get(accountType));
 
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
         bundle.addLog(new AccountLog.Builder(account)
@@ -313,11 +317,6 @@ public class AccountBrokerImpl implements AccountBroker {
                 .userUid(userUid)
                 .accountLogType(AccountLogType.DISCRETE_SETTING_CHANGE)
                 .description(sb.toString()).build());
-    }
-
-    @Override
-    public Map<AccountType, Long> fetchAccountTypesAndFees() {
-        return null;
     }
 
     @Override

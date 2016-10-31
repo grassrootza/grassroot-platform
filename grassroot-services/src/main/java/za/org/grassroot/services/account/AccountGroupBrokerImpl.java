@@ -1,16 +1,17 @@
 package za.org.grassroot.services.account;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.notification.FreeFormMessageNotification;
 import za.org.grassroot.core.enums.AccountLogType;
 import za.org.grassroot.core.enums.GroupLogType;
-import za.org.grassroot.core.repository.AccountRepository;
-import za.org.grassroot.core.repository.GroupRepository;
-import za.org.grassroot.core.repository.PaidGroupRepository;
-import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.repository.*;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.GroupAccountMismatchException;
 import za.org.grassroot.services.exception.GroupAlreadyPaidForException;
@@ -19,7 +20,14 @@ import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Objects;
+
+import static za.org.grassroot.services.specifications.PaidGroupSpecifications.expiresAfter;
+import static za.org.grassroot.services.specifications.PaidGroupSpecifications.isForAccount;
+import static za.org.grassroot.services.specifications.TodoSpecifications.createdDateBetween;
+import static za.org.grassroot.services.specifications.TodoSpecifications.hasGroupAsAncestor;
 
 /**
  * Created by luke on 2016/10/25.
@@ -27,18 +35,26 @@ import java.util.Objects;
 @Service
 public class AccountGroupBrokerImpl implements AccountGroupBroker {
 
+    private static final Logger logger = LoggerFactory.getLogger(AccountGroupBrokerImpl.class);
+
+    @Value("${accounts.todos.monthly.free}")
+    private int FREE_TODOS_PER_MONTH;
+
     private UserRepository userRepository;
     private GroupRepository groupRepository;
     private PermissionBroker permissionBroker;
+    private TodoRepository todoRepository;
     private AccountRepository accountRepository;
     private PaidGroupRepository paidGroupRepository;
     private LogsAndNotificationsBroker logsAndNotificationsBroker;
 
     @Autowired
-    public AccountGroupBrokerImpl(UserRepository userRepository, GroupRepository groupRepository, PermissionBroker permissionBroker,
-                                  AccountRepository accountRepository, PaidGroupRepository paidGroupRepository, LogsAndNotificationsBroker logsAndNotificationsBroker) {
+    public AccountGroupBrokerImpl(UserRepository userRepository, GroupRepository groupRepository, TodoRepository todoRepository,
+                                  PermissionBroker permissionBroker, AccountRepository accountRepository,
+                                  PaidGroupRepository paidGroupRepository, LogsAndNotificationsBroker logsAndNotificationsBroker) {
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
+        this.todoRepository = todoRepository;
         this.permissionBroker = permissionBroker;
         this.accountRepository = accountRepository;
         this.paidGroupRepository = paidGroupRepository;
@@ -141,6 +157,37 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
         }
 
         logsAndNotificationsBroker.storeBundle(bundle);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public int numberGroupsLeft(String accountUid) {
+        Account account = accountRepository.findOneByUid(accountUid);
+        return account == null ? 0 : account.getMaxNumberGroups() - (int) paidGroupRepository.count(Specifications.where(
+                expiresAfter(Instant.now())).and(isForAccount(account)));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public int numberTodosLeftForGroup(String groupUid) {
+        Group group = groupRepository.findOneByUid(groupUid);
+        int todosThisMonth = (int) todoRepository.count(Specifications.where(hasGroupAsAncestor(group))
+                .and(createdDateBetween(LocalDateTime.now().withDayOfMonth(1).withHour(0).toInstant(ZoneOffset.UTC), Instant.now())));
+
+        int monthlyLimit;
+        if (!group.isPaidFor()) {
+            monthlyLimit = FREE_TODOS_PER_MONTH;
+        } else {
+            try {
+                Account account = paidGroupRepository.findTopByGroupOrderByExpireDateTimeDesc(group).getAccount();
+                monthlyLimit = account.getTodosPerGroupPerMonth();;
+            } catch (NullPointerException e) {
+                logger.warn("Error! Group is marked as paid for but has no paid group record associated to it");
+                monthlyLimit = FREE_TODOS_PER_MONTH;
+            }
+        }
+
+        return monthlyLimit - todosThisMonth;
     }
 
     private void storeGroupAddOrRemoveLogs(AccountLogType accountLogType, Account account, Group group, String paidGroupUid, User user) {

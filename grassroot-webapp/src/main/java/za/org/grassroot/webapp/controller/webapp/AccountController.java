@@ -100,7 +100,7 @@ public class AccountController extends BaseController {
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/type/change", method = RequestMethod.GET)
-    public String changeAccountTypeDo(Model model, @RequestParam String accountUid, @RequestParam AccountType newType,
+    public String changeAccountTypeDo(@RequestParam String accountUid, @RequestParam AccountType newType,
                                       RedirectAttributes attributes, HttpServletRequest request) {
         // todo : check for need to remove groups (use an exception)
         // todo : check for switch during account billing (don't need to bill now, just do @ next cycle)

@@ -12,6 +12,8 @@ import za.org.grassroot.core.repository.TodoRequestRepository;
 import za.org.grassroot.core.repository.UidIdentifiableRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.PermissionBroker;
+import za.org.grassroot.services.account.AccountGroupBroker;
+import za.org.grassroot.services.exception.AccountLimitExceededException;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -34,6 +36,9 @@ public class TodoRequestBrokerImpl implements TodoRequestBroker {
 	@Autowired
 	private PermissionBroker permissionBroker;
 	@Autowired
+	private AccountGroupBroker accountGroupBroker;
+
+	@Autowired
 	private TodoRequestRepository todoRequestRepository;
 	@Autowired
 	UidIdentifiableRepository genericEntityRepository;
@@ -51,6 +56,9 @@ public class TodoRequestBrokerImpl implements TodoRequestBroker {
 
 		User user = userRepository.findOneByUid(userUid);
 		Group group = groupRepository.findOneByUid(groupUid);
+
+		if (accountGroupBroker.numberTodosLeftForGroup(groupUid) < 1)
+			throw new AccountLimitExceededException();
 
 		TodoRequest request = TodoRequest.makeEmpty(user, group);
 
@@ -73,6 +81,9 @@ public class TodoRequestBrokerImpl implements TodoRequestBroker {
 
 		if (parent instanceof Group)
 			permissionBroker.validateGroupPermission(user, (Group) parent, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY);
+
+		if (accountGroupBroker.numberTodosLeftForGroup(parent.getThisOrAncestorGroup().getUid()) < 1)
+			throw new AccountLimitExceededException();
 
 		TodoRequest todoRequest = TodoRequest.makeEmpty(user, parent);
 		todoRequest.setMessage(message);

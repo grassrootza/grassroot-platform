@@ -19,7 +19,8 @@ import java.util.Set;
 @Table(name = "action_todo",
         indexes = {
                 @Index(name = "idx_action_todo_group_id", columnList = "parent_group_id"),
-                @Index(name = "idx_action_todo_retries_left", columnList = "number_of_reminders_left_to_send")})
+                @Index(name = "idx_action_todo_retries_left", columnList = "number_of_reminders_left_to_send"),
+                @Index(name = "idx_action_todo_ancestor_group_id", columnList = "ancestor_group_id")})
 public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, VoteContainer, MeetingContainer {
 
     // private static final Logger logger = LoggerFactory.getLogger();

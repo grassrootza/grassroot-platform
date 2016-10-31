@@ -1,8 +1,8 @@
 package za.org.grassroot.services.account;
 
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.stereotype.Service;
 import za.org.grassroot.core.domain.Account;
+import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.PaidGroup;
 
 /**
@@ -25,4 +25,7 @@ public interface AccountGroupBroker {
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     void sendFreeFormMessage(String userUid, String groupUid, String message);
 
+    int numberGroupsLeft(String accountUid);
+
+    int numberTodosLeftForGroup(String groupUid);
 }

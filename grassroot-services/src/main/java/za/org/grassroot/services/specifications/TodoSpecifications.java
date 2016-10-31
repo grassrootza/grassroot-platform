@@ -25,6 +25,10 @@ public final class TodoSpecifications {
         return (root, query, cb) -> cb.equal(root.get(AbstractTodoEntity_.parentGroup), group);
     }
 
+    public static Specification<Todo> hasGroupAsAncestor(final Group group) {
+        return (root, query, cb) -> cb.equal(root.get(Todo_.ancestorGroup), group);
+    }
+
     public static Specification<Todo> notCancelled() {
         return (root, query, cb) -> cb.equal(root.get(Todo_.cancelled), false);
     }

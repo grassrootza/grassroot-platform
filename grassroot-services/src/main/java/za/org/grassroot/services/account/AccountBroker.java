@@ -6,7 +6,6 @@ import za.org.grassroot.core.enums.AccountType;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Created by luke on 2015/11/12.
@@ -44,7 +43,5 @@ public interface AccountBroker {
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN')")
     void updateAccountMessageSettings(String userUid, String accountUid, Boolean freeFormEnabled, Integer costPerMessage);
-
-    Map<AccountType, Long> fetchAccountTypesAndFees();
 
 }

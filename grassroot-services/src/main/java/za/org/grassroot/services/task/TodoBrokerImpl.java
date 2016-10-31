@@ -24,7 +24,9 @@ import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.PermissionBroker;
+import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.services.enums.TodoStatus;
+import za.org.grassroot.services.exception.AccountLimitExceededException;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.services.specifications.TodoSpecifications;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
@@ -67,10 +69,13 @@ public class TodoBrokerImpl implements TodoBroker {
 	private TodoRepository todoRepository;
 	@Autowired
 	private MessageAssemblingService messageAssemblingService;
+
 	@Autowired
 	private LogsAndNotificationsBroker logsAndNotificationsBroker;
 	@Autowired
 	private PermissionBroker permissionBroker;
+	@Autowired
+	private AccountGroupBroker accountGroupBroker;
 
 	@Override
 	@Transactional(readOnly = true)
@@ -107,6 +112,11 @@ public class TodoBrokerImpl implements TodoBroker {
 
 		User user = userRepository.findOneByUid(userUid);
 		TodoContainer parent = uidIdentifiableRepository.findOneByUid(TodoContainer.class, parentType, parentUid);
+
+		Group ancestorGroup = parent.getThisOrAncestorGroup();
+		if (accountGroupBroker.numberTodosLeftForGroup(ancestorGroup.getUid()) < 1) {
+			throw new AccountLimitExceededException();
+		}
 
 		boolean isInstantAction = actionByDate == null;
 		Instant convertedActionByDate = isInstantAction ? Instant.now().plus(5, ChronoUnit.MINUTES) : convertToSystemTime(actionByDate, getSAST());

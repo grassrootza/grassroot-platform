@@ -11,10 +11,11 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.TodoCompletionConfirmType;
+import za.org.grassroot.integration.LearningService;
 import za.org.grassroot.integration.exception.SeloApiCallFailure;
 import za.org.grassroot.integration.exception.SeloParseDateTimeFailure;
-import za.org.grassroot.integration.LearningService;
 import za.org.grassroot.services.PermissionBroker;
+import za.org.grassroot.services.exception.AccountLimitExceededException;
 import za.org.grassroot.services.task.TodoBroker;
 import za.org.grassroot.services.task.TodoRequestBroker;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
@@ -180,9 +181,14 @@ public class USSDTodoController extends USSDController {
 
     private USSDMenu setActionGroupAndInitiateRequest(final String passedTodoUid, final String groupUid, final String prompt,
                                                       final boolean revising, User user) {
-        final String todoUid = passedTodoUid != null ? passedTodoUid : todoRequestBroker.create(user.getUid(), groupUid).getUid();
-        cacheManager.putUssdMenuForUser(user.getPhoneNumber(), saveToDoMenu(subjectMenu, todoUid));
-        return new USSDMenu(prompt, nextOrConfirmUrl(subjectMenu, instantMenu, todoUid, revising));
+        try {
+            final String todoUid = passedTodoUid != null ? passedTodoUid : todoRequestBroker.create(user.getUid(), groupUid).getUid();
+            cacheManager.putUssdMenuForUser(user.getPhoneNumber(), saveToDoMenu(subjectMenu, todoUid));
+            return new USSDMenu(prompt, nextOrConfirmUrl(subjectMenu, instantMenu, todoUid, revising));
+        } catch (AccountLimitExceededException e) {
+            final String newPrompt = "Sorry, you're out";
+            return new USSDMenu(newPrompt, optionsHomeExit(user));
+        }
     }
 
     @RequestMapping(path + instantMenu)

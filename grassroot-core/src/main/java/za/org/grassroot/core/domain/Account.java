@@ -104,6 +104,10 @@ public class Account {
     private int maxSubGroupDepth;
 
     @Basic
+    @Column(name = "todos_per_month")
+    private int todosPerGroupPerMonth;
+
+    @Basic
     @Column(name="free_form")
     private boolean freeFormMessages;
 
@@ -392,6 +396,14 @@ public class Account {
     public String getPaymentRef() { return paymentRef; }
 
     public void setPaymentRef(String paymentRef) { this.paymentRef = paymentRef; }
+
+    public int getTodosPerGroupPerMonth() {
+        return todosPerGroupPerMonth;
+    }
+
+    public void setTodosPerGroupPerMonth(int todosPerGroupPerMonth) {
+        this.todosPerGroupPerMonth = todosPerGroupPerMonth;
+    }
 
     @Override
     public boolean equals(Object o) {
