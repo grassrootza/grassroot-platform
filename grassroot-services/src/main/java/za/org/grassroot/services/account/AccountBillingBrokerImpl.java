@@ -45,7 +45,6 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
     protected static final ZoneOffset BILLING_TZ = ZoneOffset.UTC;
     protected static final LocalTime STD_BILLING_HOUR = LocalTime.of(10, 0);
 
-
     private AccountRepository accountRepository;
     private AccountBillingRecordRepository billingRepository;
 
@@ -217,7 +216,7 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
         Objects.requireNonNull(billingRecordUids);
         Set<AccountBillingRecord> records = billingRepository.findByUidIn(billingRecordUids);
         for (AccountBillingRecord record : records) {
-            log.debug("generating account statement for {}, amount of {}", record.getAccount().getAccountName(), record.getBilledBalance());
+            log.debug("generating account statement for {}, amount of {}", record.getAccount().getAccountName(), record.getTotalAmountToPay());
             if (!StringUtils.isEmpty(record.getAccount().getBillingUser().getEmailAddress())) {
                 emailSendingBroker.sendMail(generateStatementEmail(record));
             }

@@ -54,11 +54,11 @@ public class AccountBillingRecord {
 
     @Basic
     @Column(name="amount_billed", nullable = false, updatable = false)
-    private long amountToPay;
+    private long amountBilledThisPeriod;
 
     @Basic
     @Column(name="billed_balance", nullable = false, updatable = false)
-    private long billedBalance;
+    private long totalAmountToPay;
 
     @Basic
     @Column(name="next_payment_date")
@@ -150,9 +150,9 @@ public class AccountBillingRecord {
         this.billedPeriodStart = billedPeriodStart;
         this.billedPeriodEnd = billedPeriodEnd;
         this.openingBalance = openingBalance;
-        this.amountToPay = amountBilled;
+        this.amountBilledThisPeriod = amountBilled;
 
-        this.billedBalance = openingBalance + amountBilled;
+        this.totalAmountToPay = openingBalance + amountBilled;
 
         this.paid = false;
     }
@@ -185,12 +185,12 @@ public class AccountBillingRecord {
         return openingBalance;
     }
 
-    public long getAmountToPay() {
-        return amountToPay;
+    public long getAmountBilledThisPeriod() {
+        return amountBilledThisPeriod;
     }
 
-    public long getBilledBalance() {
-        return billedBalance;
+    public long getTotalAmountToPay() {
+        return totalAmountToPay;
     }
 
     public Instant getNextPaymentDate() {

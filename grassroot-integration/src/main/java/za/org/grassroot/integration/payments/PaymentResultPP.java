@@ -45,8 +45,8 @@ public class PaymentResultPP {
     public String toString() {
         return "PaymentResultPP{" +
                 "code='" + code + '\'' +
-                ",\n description='" + description + '\'' +
-                ",\n parameterErrors=" + Arrays.toString(parameterErrors) +
+                ", description='" + description + '\'' +
+                ", parameterErrors=" + Arrays.toString(parameterErrors) +
                 '}';
     }
 }

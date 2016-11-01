@@ -75,7 +75,7 @@ public class AccountSignUpController extends BaseController {
                 .build();
 
         // todo : switch this to initially ajax, with a progress bar
-        if (paymentBroker.linkPaymentMethodToAccount(paymentMethod, accountUid)) {
+        if (paymentBroker.linkPaymentMethodToAccount(paymentMethod, accountUid, null)) {
             accountBroker.enableAccount(getUserProfile().getUid(), accountUid, LocalDate.now().plusMonths(1L));
             addMessage(attributes, MessageType.SUCCESS, "account.signup.payment.done", request);
             attributes.addAttribute("accountUid", accountUid);

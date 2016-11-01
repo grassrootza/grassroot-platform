@@ -7,6 +7,7 @@ public class PaymentMethod {
 
     private String cardHolder;
     private String cardNumber; // both for placeholder, and for flexibility in future (e.g., intelligent handling of "-" separators)
+    private String cardBrand;
     private int expiryMonth;
     private int expiryYear;
     private int securityCode;
@@ -14,6 +15,7 @@ public class PaymentMethod {
     public static class Builder {
         private String cardHolder;
         private String cardNumber;
+        private String cardBrand;
         private int expiryMonth;
         private int expiryYear;
         private int securityCode;
@@ -24,6 +26,11 @@ public class PaymentMethod {
 
         public Builder cardNumber(String cardNumber) {
             this.cardNumber = cardNumber;
+            return this;
+        }
+
+        public Builder cardBrand(String cardBrand) {
+            this.cardBrand = cardBrand;
             return this;
         }
 
@@ -77,6 +84,8 @@ public class PaymentMethod {
         return cardNumber;
     }
 
+    public String getCardBrand() { return cardBrand; }
+
     public int getExpiryMonth() {
         return expiryMonth;
     }
@@ -92,6 +101,8 @@ public class PaymentMethod {
     public void setCardHolder(String cardHolder) {
         this.cardHolder = cardHolder;
     }
+
+    public void setCardBrand(String cardBrand) { this.cardBrand = cardBrand; }
 
     public void setCardNumber(String cardNumber) {
         this.cardNumber = cardNumber;

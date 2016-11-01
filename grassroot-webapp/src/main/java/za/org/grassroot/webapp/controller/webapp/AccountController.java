@@ -179,7 +179,7 @@ public class AccountController extends BaseController {
     @RequestMapping(value = "/payment/change", method = RequestMethod.POST)
     public String changePaymentDo(RedirectAttributes attributes, @RequestParam String accountUid,
                                   @ModelAttribute("method") PaymentMethod paymentMethod) {
-        paymentServiceBroker.linkPaymentMethodToAccount(paymentMethod, accountUid);
+        paymentServiceBroker.linkPaymentMethodToAccount(paymentMethod, accountUid, null);
         attributes.addAttribute("accountUid", accountUid);
         return "redirect:/account/view";
     }

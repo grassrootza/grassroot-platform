@@ -328,7 +328,7 @@ public class MessageAssemblingManager implements MessageAssemblingService {
                 "is due for payment. We will automatically charge your payment method on file on %s. " +
                 "To upgrade your account, or change any of your settings, please visit " +
                 "http://app.grassroot.org.za/account/settings. As always, we hope we were useful.\n\n",
-                record.getAmountToPay(), LocalDate.now().plusDays(1).toString());
+                record.getAmountBilledThisPeriod(), LocalDate.now().plusDays(1).toString());
 
         final String closing = "Regards,\nGrassroot";
 

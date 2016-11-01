@@ -12,12 +12,13 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
+import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.AccountBillingRecord;
 import za.org.grassroot.core.repository.AccountBillingRecordRepository;
-import za.org.grassroot.core.repository.AccountRepository;
 
 import javax.annotation.PostConstruct;
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.time.Instant;
 import java.util.Set;
 
@@ -32,13 +33,23 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
 
     private static final String MONTH_FORMAT = "%1$02d";
     private static final String YEAR_FORMAT = "20%d";
+    private static final DecimalFormat AMOUNT_FORMAT = new DecimalFormat("#.00");
 
-    private AccountRepository accountRepository;
+    private static final String PRE_AUTH = "PA";
+    private static final String DEBIT = "DB";
+    private static final String RECURRING = "PA";
+
+    private static final String INITIAL = "INITIAL";
+    private static final String REPEAT = "REPEATED";
+
+    private static final String OKAY_CODE = "000.100.110";
+
     private AccountBillingRecordRepository billingRepository;
     private RestTemplate restTemplate;
     private ObjectMapper objectMapper;
 
     private UriComponentsBuilder baseUriBuilder;
+    private HttpHeaders stdHeaders;
 
     @Value("${grassroot.payments.host}")
     private String paymentsRestHost;
@@ -52,7 +63,7 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
     @Value("${grassroot.payments.initial.path}")
     private String initialPaymentRestPath;
     @Value("${grassroot.payments.recurring.path}")
-    private String recurringPaymentRestPath;
+    private String recurringPaymentRestPath; // make a format string so can include registration ID appropriately
 
     @Value("${grassroot.payments.params.amount}")
     private String paymentAmountParam;
@@ -75,6 +86,8 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
     private String securityCodeParam;
     @Value("${grassroot.payments.params.recurring}")
     private String recurringParam;
+    @Value("${grassroot.payments.params.regflag}")
+    private String registrationFlag;
 
     @Value("${grassroot.payments.values.user}")
     private String userId;
@@ -85,15 +98,9 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
     @Value("${grassroot.payments.values.currency}")
     private String currency;
 
-    @Value("${grassroot.payments.types.debit}")
-    private String debitPayment;
-    @Value("${grassroot.payments.types.preauth}")
-    private String preAuth;
-
     @Autowired
-    public PaymentServiceBrokerImpl(AccountRepository accountRepository, AccountBillingRecordRepository billingRepository,
+    public PaymentServiceBrokerImpl(AccountBillingRecordRepository billingRepository,
                                     RestTemplate restTemplate, ObjectMapper objectMapper) {
-        this.accountRepository = accountRepository;
         this.billingRepository = billingRepository;
         this.restTemplate = restTemplate;
         this.objectMapper = objectMapper;
@@ -108,31 +115,39 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
                 .queryParam(paymentsAuthPasswordParam, password)
                 .queryParam(paymentsAuthChannelIdParam, channelId)
                 .queryParam(paymentCurrencyParam, currency);
+
+        stdHeaders = new HttpHeaders();
+        stdHeaders.add(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE);
     }
 
     @Override
     @Transactional
-    public boolean linkPaymentMethodToAccount(PaymentMethod paymentMethod, String accountUid) {
-         UriComponentsBuilder paymentUri = baseUriBuilder.cloneBuilder()
+    public boolean linkPaymentMethodToAccount(PaymentMethod paymentMethod, String accountUid, AccountBillingRecord billingRecord) {
+        final double amountToPay = (double) billingRecord.getTotalAmountToPay() / 100;
+        UriComponentsBuilder paymentUri = baseUriBuilder.cloneBuilder()
                     .path(initialPaymentRestPath)
-                    .queryParam(paymentAmountParam, "100")
-                    .queryParam(paymentCardBrand, "VISA")
-                    .queryParam(paymentTypeParam, preAuth)
+                    .queryParam(paymentAmountParam, AMOUNT_FORMAT.format(amountToPay))
+                    .queryParam(paymentCardBrand, paymentMethod.getCardBrand())
+                    .queryParam(paymentTypeParam, DEBIT)
                     .queryParam(cardNumberParam, paymentMethod.getCardNumber())
                     .queryParam(cardHolderParam, paymentMethod.getCardHolder())
                     .queryParam(cardExpiryMonthParam, String.format(MONTH_FORMAT, paymentMethod.getExpiryMonth()))
                     .queryParam(cardExpiryYearParam, String.format(YEAR_FORMAT, paymentMethod.getExpiryYear()))
                     .queryParam(securityCodeParam, paymentMethod.getSecurityCode())
-                    .queryParam(recurringParam, "true");
+                    .queryParam(recurringParam, INITIAL)
+                    .queryParam(registrationFlag, "true");
 
         try {
-            HttpHeaders headers = new HttpHeaders();
-            headers.add(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE);
-            HttpEntity<PaymentResponsePP> request = new HttpEntity<>(headers);
-            ResponseEntity<PaymentResponsePP> response =
-                    restTemplate.exchange(paymentUri.build().toUri(), HttpMethod.POST, request, PaymentResponsePP.class);
+            HttpEntity<PaymentResponsePP> request = new HttpEntity<>(stdHeaders);
+            // logger.info("URL: " + paymentUri.toUriString());
+            ResponseEntity<PaymentResponsePP> response = restTemplate.exchange(paymentUri.build().toUri(), HttpMethod.POST, request, PaymentResponsePP.class);
             PaymentResponsePP okayResponse = response.getBody();
-            logger.info("Payment Success!: {}", okayResponse.toString());
+            // logger.info("Payment Success!: {}", okayResponse.toString());
+
+            Account account = billingRecord.getAccount();
+            account.setPaymentRef(okayResponse.getRegistrationId());
+            handleSuccessfulPayment(account, billingRecord);
+
             return true;
         } catch (HttpStatusCodeException e) {
             try {
@@ -147,16 +162,61 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
         }
     }
 
-    // todo : make sure to update the payment record and the account (remove amount from balance etc)
     @Override
     @Transactional
     public void processAccountPaymentsOutstanding() {
         Set<AccountBillingRecord> billsDue = billingRepository.findByNextPaymentDateBeforeAndPaidFalse(Instant.now());
         for (AccountBillingRecord record : billsDue) {
-            // uh, wire up a payments provider ...
-            UriComponentsBuilder paymentsUri = baseUriBuilder.cloneBuilder() // todo : use path variable in here
-                    .queryParam(paymentAmountParam, record.getAmountToPay());
-            restTemplate.getForObject(paymentsUri.build().toUri(), Object.class);
+            triggerRecurringPayment(record);
+        }
+    }
+
+    private boolean triggerRecurringPayment(AccountBillingRecord billingRecord) {
+        Account account = billingRecord.getAccount();
+        final String recurringPaymentPathVar = String.format(recurringPaymentRestPath, account.getPaymentRef());
+        final double amountToPay = (double) billingRecord.getTotalAmountToPay() / 100;
+        UriComponentsBuilder paymentUri = baseUriBuilder.cloneBuilder()
+                .path(recurringPaymentPathVar)
+                .queryParam(paymentAmountParam,  AMOUNT_FORMAT.format(amountToPay))
+                .queryParam(paymentTypeParam, RECURRING)
+                .queryParam(recurringParam, REPEAT);
+
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.add(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE);
+            HttpEntity<PaymentResponsePP> request = new HttpEntity<>(headers);
+            // logger.info("URL: " + paymentUri.toUriString());
+            ResponseEntity<PaymentResponsePP> response = restTemplate.exchange(paymentUri.build().toUri(), HttpMethod.POST, request, PaymentResponsePP.class);
+            PaymentResponsePP okayResponse = response.getBody();
+            logger.info("Payment Success!: {}", okayResponse.toString());
+
+            if (OKAY_CODE.equals(okayResponse.getResult().getCode())) {
+                handleSuccessfulPayment(account, billingRecord);
+            }
+
+            return false;
+        } catch (HttpStatusCodeException e) {
+            handlePaymentError(e);
+            return false;
+        }
+    }
+
+    @Transactional
+    private void handleSuccessfulPayment(Account account, AccountBillingRecord record) {
+        account.setLastPaymentDate(Instant.now());
+        account.decreaseBalance(record.getTotalAmountToPay());
+        record.setPaid(true);
+    }
+
+    private PaymentErrorPP handlePaymentError(HttpStatusCodeException e) {
+        try {
+            PaymentErrorPP errorResponse = objectMapper.readValue(e.getResponseBodyAsString(), PaymentErrorPP.class);
+            logger.info("Payment Error!: {}", errorResponse.toString());
+            return errorResponse;
+        } catch (IOException error) {
+            logger.info("Could not read in JSON!");
+            error.printStackTrace();
+            return null;
         }
     }
 

@@ -12,7 +12,7 @@ public class PaymentResponsePP {
     private String paymentType;
     private String paymentBrand;
 
-    private Map<String, String> result;
+    private PaymentResultPP result;
     private Map<String, String> risk;
 
     public PaymentResponsePP() {
@@ -51,11 +51,11 @@ public class PaymentResponsePP {
         this.paymentBrand = paymentBrand;
     }
 
-    public Map<String, String> getResult() {
+    public PaymentResultPP getResult() {
         return result;
     }
 
-    public void setResult(Map<String, String> result) {
+    public void setResult(PaymentResultPP result) {
         this.result = result;
     }
 
@@ -71,11 +71,11 @@ public class PaymentResponsePP {
     public String toString() {
         return "PaymentResponsePP{" +
                 "id='" + id + '\'' +
-                ",\n registrationId='" + registrationId + '\'' +
-                ",\n paymentType='" + paymentType + '\'' +
-                ",\n paymentBrand='" + paymentBrand + '\'' +
-                ",\n result=" + result +
-                ",\n risk=" + risk +
+                ", registrationId='" + registrationId + '\'' +
+                ", paymentType='" + paymentType + '\'' +
+                ", paymentBrand='" + paymentBrand + '\'' +
+                ", result=" + result +
+                ", risk=" + risk +
                 '}';
     }
 }

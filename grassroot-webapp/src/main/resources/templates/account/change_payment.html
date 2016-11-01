@@ -21,15 +21,21 @@
     <div class="row">
       <div class="col-md-4 col-md-offset-4">
         <form id="cardForm" th:action="@{change}" th:object="${method}" method="POST" class="form-vertical">
-          <input type="hidden" name="accountUid" th:value="${accountUid}" />
+          <input type="hidden" name="accountUid" th:value="${account.uid}" />
           <div class="form-group">
             <label class="control-label">1. Name</label>
             <input type="text" th:field="*{cardHolder}" id="cardHolder" class="form-control input-lg"/>
           </div>
-          <div class="form-group">
-            <label class="control-label">2. Credit Card Number</label>
-            <input type="text" th:field="*{cardNumber}" id="cardNumber" class="form-control input-lg"/>
-          </div>
+            <div class="form-group">
+              <label class="control-label">2. Credit Card Number And Type</label>
+              <input type="text" th:field="*{cardNumber}" id="cardNumber" class="form-control input-lg"/>
+            </div>
+            <div class="form-group">
+              <label class="radio-inline input-lg"><input type="radio" th:field="*{cardBrand}" id="cardBrandVisa" value="VISA">Visa</label>
+              <label class="radio-inline input-lg"><input type="radio" th:field="*{cardBrand}" id="cardBrandMaster" value="MASTER">Mastercard</label>
+              <label class="radio-inline input-lg"><input type="radio" th:field="*{cardBrand}" id="cardBrandAmex" value="AMEX">AmEx</label>
+              <label class="radio-inline input-lg"><input type="radio" th:field="*{cardBrand}" id="cardBrandDiners" value="DINERS">Diners</label>
+            </div>
           <div class="form-group">
             <label class="control-label">3. Expiry Date</label>
             <div class="row no-padding">
@@ -89,8 +95,11 @@
 
       $(document).ready(function() {
 
+        var cardNumInput = $("#cardNumber");
+        var brandSelected = false;
+
+        cardNumInput.attr("placeholder", "Credit/Debit Card Number");
         $("#cardHolder").attr("placeholder", "Cardholder's name");
-        $("#cardNumber").attr("placeholder", "Credit/Debit Card Number");
         $("#securityCode").val("");
 
         $("#cardForm").validate({
@@ -113,6 +122,44 @@
           },
           errorClass: "error-text"
         });
+
+        $("input:radio[name='cardBrand']").click(function() {
+          console.log("Brand selected!");
+          if ($(this).val() == "AMEX") {
+            console.log("Amex selected!");
+            switchToAmexRules()
+          }
+          brandSelected = true;
+        });
+
+        cardNumInput.keyup(function() {
+          var enteredNo = $(this).val();
+          if (!brandSelected || enteredNo.length < 3) { // only run algorithm when editing first couple digits (or no brand selected, in case copy & paste)
+            if (enteredNo[0] == '4') {
+              $("#cardBrandVisa").prop('checked', true);
+              brandSelected = true;
+            } else if (enteredNo[0] == '5') {
+              $("#cardBrandMaster").prop('checked', true);
+              brandSelected = true;
+            } else if (enteredNo.length >= 2) {
+              var leadingDigits = parseInt(enteredNo.substr(0, 2));
+              if (leadingDigits == 34 || leadingDigits == 37) {
+                $("#cardBrandAmex").prop('checked', true);
+                switchToAmexRules();
+                brandSelected = true;
+              } else if (leadingDigits == 30 || leadingDigits == 36 || leadingDigits == 38) {
+                $("#cardBrandDiners").prop('checked', true);
+                brandSelected = true;
+              }
+            }
+          }
+        });
+
+        function switchToAmexRules() {
+          var cvvInput = $('#securityCode');
+          cvvInput.attr('maxlength', 4);
+          cvvInput.rules('add', { maxlength: 4});
+        }
 
       });
 

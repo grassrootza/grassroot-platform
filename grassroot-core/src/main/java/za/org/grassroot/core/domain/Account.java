@@ -369,6 +369,10 @@ public class Account {
         this.outstandingBalance = outstandingBalance;
     }
 
+    public void decreaseBalance(long amountToReduce) {
+        this.outstandingBalance -= amountToReduce;
+    }
+
     public void addToBalance(long amountBilled) {
             this.outstandingBalance += amountBilled;
     }
