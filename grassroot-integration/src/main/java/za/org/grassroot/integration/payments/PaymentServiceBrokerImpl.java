@@ -1,22 +1,23 @@
-package za.org.grassroot.integration;
+package za.org.grassroot.integration.payments;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
-import org.springframework.core.env.Environment;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import za.org.grassroot.core.domain.AccountBillingRecord;
 import za.org.grassroot.core.repository.AccountBillingRecordRepository;
 import za.org.grassroot.core.repository.AccountRepository;
-import za.org.grassroot.integration.domain.PaymentMethod;
-import za.org.grassroot.integration.domain.PeachPaymentResponse;
 
 import javax.annotation.PostConstruct;
+import java.io.IOException;
 import java.time.Instant;
 import java.util.Set;
 
@@ -29,10 +30,13 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
 
     private static final Logger logger = LoggerFactory.getLogger(PaymentServiceBrokerImpl.class);
 
+    private static final String MONTH_FORMAT = "%1$02d";
+    private static final String YEAR_FORMAT = "20%d";
+
     private AccountRepository accountRepository;
     private AccountBillingRecordRepository billingRepository;
     private RestTemplate restTemplate;
-    private Environment environment;
+    private ObjectMapper objectMapper;
 
     private UriComponentsBuilder baseUriBuilder;
 
@@ -88,16 +92,17 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
 
     @Autowired
     public PaymentServiceBrokerImpl(AccountRepository accountRepository, AccountBillingRecordRepository billingRepository,
-                                    RestTemplate restTemplate, Environment environment) {
+                                    RestTemplate restTemplate, ObjectMapper objectMapper) {
         this.accountRepository = accountRepository;
         this.billingRepository = billingRepository;
         this.restTemplate = restTemplate;
-        this.environment = environment;
+        this.objectMapper = objectMapper;
     }
 
     @PostConstruct
     public void init() {
         baseUriBuilder = UriComponentsBuilder.newInstance()
+                .scheme("https")
                 .host(paymentsRestHost)
                 .queryParam(paymentsAuthUserIdParam, userId)
                 .queryParam(paymentsAuthPasswordParam, password)
@@ -108,29 +113,38 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
     @Override
     @Transactional
     public boolean linkPaymentMethodToAccount(PaymentMethod paymentMethod, String accountUid) {
-        /* if (environment.acceptsProfiles("localpg", "staging")) {
-            Account account = accountRepository.findOneByUid(accountUid);
-            account.setPaymentRef("payment_ref_here");
-            account.setEnabledDateTime(Instant.now());
-        } else {*/
-            UriComponentsBuilder paymentUri = baseUriBuilder.cloneBuilder()
+         UriComponentsBuilder paymentUri = baseUriBuilder.cloneBuilder()
                     .path(initialPaymentRestPath)
                     .queryParam(paymentAmountParam, "100")
                     .queryParam(paymentCardBrand, "VISA")
                     .queryParam(paymentTypeParam, preAuth)
                     .queryParam(cardNumberParam, paymentMethod.getCardNumber())
                     .queryParam(cardHolderParam, paymentMethod.getCardHolder())
-                    .queryParam(cardExpiryMonthParam, paymentMethod.getExpiryMonth())
-                    .queryParam(cardExpiryYearParam, paymentMethod.getExpiryYear())
+                    .queryParam(cardExpiryMonthParam, String.format(MONTH_FORMAT, paymentMethod.getExpiryMonth()))
+                    .queryParam(cardExpiryYearParam, String.format(YEAR_FORMAT, paymentMethod.getExpiryYear()))
                     .queryParam(securityCodeParam, paymentMethod.getSecurityCode())
                     .queryParam(recurringParam, "true");
 
-            PeachPaymentResponse response = restTemplate.getForObject(paymentUri.build().toUri(), PeachPaymentResponse.class);
-            logger.info("okay! got this result back: " + response.toString());
-        return true;
-        //}
-        // if production, call a payment method.
-        //return true;
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.add(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE);
+            HttpEntity<PaymentResponsePP> request = new HttpEntity<>(headers);
+            ResponseEntity<PaymentResponsePP> response =
+                    restTemplate.exchange(paymentUri.build().toUri(), HttpMethod.POST, request, PaymentResponsePP.class);
+            PaymentResponsePP okayResponse = response.getBody();
+            logger.info("Payment Success!: {}", okayResponse.toString());
+            return true;
+        } catch (HttpStatusCodeException e) {
+            try {
+                PaymentErrorPP errorResponse = objectMapper.readValue(e.getResponseBodyAsString(), PaymentErrorPP.class);
+                logger.info("Payment Error!: {}", errorResponse.toString());
+                return false;
+            } catch (IOException error) {
+                logger.info("Could not read in JSON!");
+                error.printStackTrace();
+                return false;
+            }
+        }
     }
 
     // todo : make sure to update the payment record and the account (remove amount from balance etc)

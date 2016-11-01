@@ -5,7 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import za.org.grassroot.integration.PaymentServiceBroker;
+import za.org.grassroot.integration.payments.PaymentServiceBroker;
 import za.org.grassroot.services.account.AccountBillingBroker;
 
 /**

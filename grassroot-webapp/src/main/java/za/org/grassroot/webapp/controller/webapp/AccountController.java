@@ -9,15 +9,12 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.SessionAttributes;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.AccountType;
-import za.org.grassroot.integration.PaymentServiceBroker;
-import za.org.grassroot.integration.domain.PaymentMethod;
+import za.org.grassroot.integration.payments.PaymentServiceBroker;
+import za.org.grassroot.integration.payments.PaymentMethod;
 import za.org.grassroot.services.account.AccountBillingBroker;
 import za.org.grassroot.services.account.AccountBroker;
 import za.org.grassroot.services.account.AccountGroupBroker;
@@ -181,7 +178,7 @@ public class AccountController extends BaseController {
     @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/payment/change", method = RequestMethod.POST)
     public String changePaymentDo(RedirectAttributes attributes, @RequestParam String accountUid,
-                                  @RequestParam PaymentMethod paymentMethod) {
+                                  @ModelAttribute("method") PaymentMethod paymentMethod) {
         paymentServiceBroker.linkPaymentMethodToAccount(paymentMethod, accountUid);
         attributes.addAttribute("accountUid", accountUid);
         return "redirect:/account/view";

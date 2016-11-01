@@ -1,11 +1,11 @@
-package za.org.grassroot.integration.domain;
+package za.org.grassroot.integration.payments;
 
 import java.util.Map;
 
 /**
  * Created by luke on 2016/10/31.
  */
-public class PeachPaymentResponse {
+public class PaymentResponsePP {
 
     private String id;
     private String registrationId;
@@ -15,7 +15,7 @@ public class PeachPaymentResponse {
     private Map<String, String> result;
     private Map<String, String> risk;
 
-    public PeachPaymentResponse() {
+    public PaymentResponsePP() {
         // for Spring/Jackson
     }
 
@@ -69,7 +69,7 @@ public class PeachPaymentResponse {
 
     @Override
     public String toString() {
-        return "PeachPaymentResponse{" +
+        return "PaymentResponsePP{" +
                 "id='" + id + '\'' +
                 ",\n registrationId='" + registrationId + '\'' +
                 ",\n paymentType='" + paymentType + '\'' +

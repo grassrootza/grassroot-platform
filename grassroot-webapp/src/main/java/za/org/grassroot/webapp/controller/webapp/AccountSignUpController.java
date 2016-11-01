@@ -12,8 +12,8 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.enums.AccountType;
-import za.org.grassroot.integration.PaymentServiceBroker;
-import za.org.grassroot.integration.domain.PaymentMethod;
+import za.org.grassroot.integration.payments.PaymentMethod;
+import za.org.grassroot.integration.payments.PaymentServiceBroker;
 import za.org.grassroot.services.account.AccountBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 
@@ -71,7 +71,7 @@ public class AccountSignUpController extends BaseController {
 
         // todo : client side validation, of course
         PaymentMethod paymentMethod = new PaymentMethod.Builder(holderName)
-                .cardNumber(Long.valueOf(cardNumber))
+                .cardNumber(cardNumber)
                 .build();
 
         // todo : switch this to initially ajax, with a progress bar

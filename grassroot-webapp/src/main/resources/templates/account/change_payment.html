@@ -20,34 +20,104 @@
   <div layout:fragment="content">
     <div class="row">
       <div class="col-md-4 col-md-offset-4">
-        <form th:action="@{change}" th:object="${method}" method="POST" class="form-vertical">
+        <form id="cardForm" th:action="@{change}" th:object="${method}" method="POST" class="form-vertical">
           <input type="hidden" name="accountUid" th:value="${accountUid}" />
           <div class="form-group">
             <label class="control-label">1. Name</label>
-            <input type="text" th:field="*{cardHolder}" class="form-control input-lg"/>
+            <input type="text" th:field="*{cardHolder}" id="cardHolder" class="form-control input-lg"/>
           </div>
           <div class="form-group">
             <label class="control-label">2. Credit Card Number</label>
-            <input type="text" th:field="*{cardNumber}" class="form-control input-lg"/>
+            <input type="text" th:field="*{cardNumber}" id="cardNumber" class="form-control input-lg"/>
           </div>
           <div class="form-group">
-            <label class="control-label">3. Expiry Month</label>
-            <input type="text" th:field="*{expiryMonth}" class="form-control input-lg"/>
+            <label class="control-label">3. Expiry Date</label>
+            <div class="row no-padding">
+              <div class="col-md-4 col-sm-4 col-xs-6">
+                <select th:field="*{expiryMonth}" class="form-control input-lg">
+                  <option value="0">Month</option>
+                  <option value="01">Jan (01)</option>
+                  <option value="02">Feb (02)</option>
+                  <option value="03">Mar (03)</option>
+                  <option value="04">Apr (04)</option>
+                  <option value="05">May (05)</option>
+                  <option value="06">June (06)</option>
+                  <option value="07">July (07)</option>
+                  <option value="08">Aug (08)</option>
+                  <option value="09">Sep (09)</option>
+                  <option value="10">Oct (10)</option>
+                  <option value="11">Nov (11)</option>
+                  <option value="12">Dec (12)</option>
+                </select>
+              </div>
+              <div class="col-md-4 col-sm-4 col-xs-6">
+                <select th:field="*{expiryYear}" class="form-control input-lg">
+                  <option value="16">2016</option>
+                  <option value="17">2017</option>
+                  <option value="18">2018</option>
+                  <option value="19">2019</option>
+                  <option value="20">2020</option>
+                  <option value="21">2021</option>
+                  <option value="22">2022</option>
+                  <option value="23">2023</option>
+                  <option value="24">2024</option>
+                </select>
+              </div>
+            </div>
           </div>
+
           <div class="form-group">
-            <label class="control-label">4. Expiry Year</label>
-            <input type="text" th:field="*{expiryYear}" class="form-control input-lg"/>
+            <label class="control-label">4. Card CVV (3 digits on back)</label>
+            <div class="row no-padding">
+              <div class="col-md-4 col-sm-4 col-xs-6">
+                <input maxlength="3" type="text" th:field="*{securityCode}" id="securityCode" class="form-control input-lg"/>
+              </div>
+            </div>
           </div>
+
           <div class="form-group">
-            <label class="control-label">5. Security Code</label>
-            <input type="text" th:field="*{securityCode}" class="form-control input-lg"/>
-          </div>
-          <div class="form-group pull-right">
             <button type="submit" class="btn btn-primary btn-block btn-cta">Next</button>
           </div>
         </form>
       </div>
     </div>
+  </div>
+
+  <div class="header-container" layout:fragment="script-container">
+
+    <script>
+
+      $(document).ready(function() {
+
+        $("#cardHolder").attr("placeholder", "Cardholder's name");
+        $("#cardNumber").attr("placeholder", "Credit/Debit Card Number");
+        $("#securityCode").val("");
+
+        $("#cardForm").validate({
+          rules: {
+            cardHolder: {
+              required: true,
+            },
+            cardNumber: {
+              required: true,
+              creditcard: true
+            },
+            expiryMonth: {
+              min: 1
+            },
+            securityCode: {
+              required: true,
+              minlength: 3,
+              maxlength: 3
+            }
+          },
+          errorClass: "error-text"
+        });
+
+      });
+
+    </script>
+
   </div>
 
 </body>

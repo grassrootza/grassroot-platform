@@ -1,6 +1,6 @@
-package za.org.grassroot.integration;
+package za.org.grassroot.integration.payments;
 
-import za.org.grassroot.integration.domain.PaymentMethod;
+import za.org.grassroot.integration.payments.PaymentMethod;
 
 /**
  * Created by luke on 2016/10/26.

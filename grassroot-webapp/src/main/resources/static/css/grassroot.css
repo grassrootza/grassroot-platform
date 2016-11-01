@@ -436,6 +436,7 @@ Modal dialogs
 .error-text {
     color: #ff2a00;
     font-family: 'Roboto', sans-serif;
+    padding-top: 10px;
 }
 
 .error-text > a {

@@ -1,4 +1,4 @@
-package za.org.grassroot.integration.domain;
+package za.org.grassroot.integration.payments;
 
 /**
  * Created by luke on 2016/10/27.
@@ -6,14 +6,14 @@ package za.org.grassroot.integration.domain;
 public class PaymentMethod {
 
     private String cardHolder;
-    private long cardNumber;
+    private String cardNumber; // both for placeholder, and for flexibility in future (e.g., intelligent handling of "-" separators)
     private int expiryMonth;
     private int expiryYear;
     private int securityCode;
 
     public static class Builder {
         private String cardHolder;
-        private long cardNumber;
+        private String cardNumber;
         private int expiryMonth;
         private int expiryYear;
         private int securityCode;
@@ -22,7 +22,7 @@ public class PaymentMethod {
             this.cardHolder = cardHolder;
         }
 
-        public Builder cardNumber(long cardNumber) {
+        public Builder cardNumber(String cardNumber) {
             this.cardNumber = cardNumber;
             return this;
         }
@@ -52,8 +52,12 @@ public class PaymentMethod {
         }
     }
 
+    // if can work out at some point how to make th:field work, bring back these placeholders
     public static PaymentMethod makeEmpty() {
-        return new PaymentMethod();
+        PaymentMethod method = new PaymentMethod();
+        //method.cardHolder = "Card holder's name";
+        //method.cardNumber = "Credit/Debit card number";
+        return method;
     }
 
     private PaymentMethod() {
@@ -64,11 +68,12 @@ public class PaymentMethod {
         this.cardHolder = cardHolder;
     }
 
+    // these need to be public for the template form binding
     public String getCardHolder() {
         return cardHolder;
     }
 
-    public long getCardNumber() {
+    public String getCardNumber() {
         return cardNumber;
     }
 
@@ -88,7 +93,7 @@ public class PaymentMethod {
         this.cardHolder = cardHolder;
     }
 
-    public void setCardNumber(long cardNumber) {
+    public void setCardNumber(String cardNumber) {
         this.cardNumber = cardNumber;
     }
 
