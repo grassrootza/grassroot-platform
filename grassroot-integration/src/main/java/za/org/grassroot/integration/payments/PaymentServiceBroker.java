@@ -8,7 +8,8 @@ import za.org.grassroot.core.domain.AccountBillingRecord;
 public interface PaymentServiceBroker {
 
     // return true/false depending on whether payment succeeded (though may want this to be a response)
-    boolean linkPaymentMethodToAccount(PaymentMethod method, String accountUid, AccountBillingRecord billingRecord);
+    boolean linkPaymentMethodToAccount(PaymentMethod method, String accountUid,
+                                       AccountBillingRecord billingRecord, boolean deleteBillOnFailure);
 
     void processAccountPaymentsOutstanding();
 }

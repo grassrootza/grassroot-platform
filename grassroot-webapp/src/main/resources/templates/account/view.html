@@ -61,8 +61,9 @@
         </div>
         <div th:switch="${#lists.isEmpty(paidGroups)}" class="col-md-6 col-sm-5 col-xs-12">
           <div th:case="true">
-            You have not added any groups to this account yet.
-            <!-- todo : an "add all my groups" button -->
+            <p class="grassroot-body">You have not added any groups to this account yet.
+              <a th:if="${canAddAllGroups}" id="addAllGroups" th:href="@{group/add/all}">Add all my groups to my account.</a>
+            </p>
           </div>
           <div th:case="false">
             <p class="grassroot-body">
@@ -267,9 +268,9 @@
 
     $(document).ready(function() {
       grassrootJS.setUpAjax($("meta[name='_csrf']"), $("meta[name='_csrf_header']"));
+
+
     });
-
-
 
   </script>
 </div>

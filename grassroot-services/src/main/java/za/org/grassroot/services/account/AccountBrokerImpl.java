@@ -34,6 +34,8 @@ public class AccountBrokerImpl implements AccountBroker {
 
     private static final Logger log = LoggerFactory.getLogger(AccountBroker.class);
 
+    private Map<AccountType, Integer> accountFees = new HashMap<>();
+
     private Map<AccountType, Boolean> messagesEnabled = new HashMap<>();
     private Map<AccountType, Integer> messagesCost = new HashMap<>();
 
@@ -65,6 +67,7 @@ public class AccountBrokerImpl implements AccountBroker {
     public void init() {
         for (AccountType accountType : AccountType.values()) {
             final String key = accountType.name().toLowerCase();
+            accountFees.put(accountType, environment.getProperty("accounts.subscription.cost." + key, Integer.class));
             messagesEnabled.put(accountType, environment.getProperty("accounts.messages.enabled." + key, Boolean.class));
             messagesCost.put(accountType, environment.getProperty("accounts.messages.msgcost." + key, Integer.class));
             maxGroupSize.put(accountType, environment.getProperty("accounts.group.limit." + key, Integer.class));
@@ -111,6 +114,7 @@ public class AccountBrokerImpl implements AccountBroker {
 
         addAdministrator(userUid, accountUid, billedUserUid);
 
+        account.setSubscriptionFee(accountFees.get(accountType));
         account.setFreeFormMessages(messagesEnabled.get(accountType));
         account.setFreeFormCost(messagesCost.get(accountType));
         account.setMaxSizePerGroup(maxGroupSize.get(accountType));

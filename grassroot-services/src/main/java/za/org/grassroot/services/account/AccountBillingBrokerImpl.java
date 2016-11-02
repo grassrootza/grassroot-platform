@@ -69,10 +69,74 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
 
     @Override
     @Transactional
+    public AccountBillingRecord generateSignUpBill(String accountUid) {
+        Account account = accountRepository.findOneByUid(accountUid);
+
+        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+        AccountLog billingLog = new AccountLog.Builder(account)
+                .userUid(SYSTEM_USER)
+                .accountLogType(AccountLogType.BILL_CALCULATED)
+                .billedOrPaid((long) account.getSubscriptionFee())
+                .description("Bill generated for initial account payment")
+                .build();
+        bundle.addLog(billingLog);
+
+        AccountBillingRecord record = new AccountBillingRecord.BillingBuilder(account)
+                .accountLog(billingLog)
+                .openingBalance(account.getOutstandingBalance())
+                .amountBilled((long) account.getSubscriptionFee())
+                .billedPeriodStart(Instant.now())
+                .billedPeriodEnd(Instant.now())
+                .statementDateTime(Instant.now())
+                .paymentDueDate(Instant.now())
+                .build();
+
+        account.setOutstandingBalance(account.getSubscriptionFee());
+
+        logsAndNotificationsBroker.storeBundle(bundle);
+        return billingRepository.save(record);
+    }
+
+    @Override
+    @Transactional
+    public AccountBillingRecord generatePaymentChangeBill(String accountUid, long amountToCharge) {
+        Account account = accountRepository.findOneByUid(accountUid);
+
+        log.info("Generating payment change bill, amount is : " + amountToCharge);
+
+        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+        AccountLog billingLog = new AccountLog.Builder(account)
+                .userUid(SYSTEM_USER)
+                .accountLogType(AccountLogType.BILL_CALCULATED)
+                .billedOrPaid(amountToCharge)
+                .description("Bill generated when switching payment methods")
+                .build();
+        bundle.addLog(billingLog);
+
+        // todo : if account has a non-zero balance that is more than R10, just charge that (incorporate in billing failure flow)
+        AccountBillingRecord record = new AccountBillingRecord.BillingBuilder(account)
+                .accountLog(billingLog)
+                .openingBalance(account.getOutstandingBalance())
+                .amountBilled(amountToCharge)
+                .billedPeriodStart(Instant.now())
+                .billedPeriodEnd(Instant.now())
+                .statementDateTime(Instant.now())
+                .paymentDueDate(Instant.now())
+                .build();
+
+        record.setTotalAmountToPay(amountToCharge);
+
+        // note : do not change account balance as this payment is not for sub, and hence should put account in credit
+
+        logsAndNotificationsBroker.storeBundle(bundle);
+        return billingRepository.save(record);
+    }
+
+    @Override
+    @Transactional
     public void calculateAccountStatements(boolean sendEmails, boolean sendNotifications) {
 
-        List<Account> validAccounts = accountRepository.findAll(
-                (nextStatementBefore(Instant.now())));
+        List<Account> validAccounts = accountRepository.findAll((nextStatementBefore(Instant.now())));
 
         log.info("Calculating monthly statements for {} accounts", validAccounts.size());
 

@@ -13,15 +13,15 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.AccountType;
-import za.org.grassroot.integration.payments.PaymentServiceBroker;
 import za.org.grassroot.integration.payments.PaymentMethod;
+import za.org.grassroot.integration.payments.PaymentServiceBroker;
 import za.org.grassroot.services.account.AccountBillingBroker;
 import za.org.grassroot.services.account.AccountBroker;
 import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 
 import javax.servlet.http.HttpServletRequest;
-import java.time.format.DateTimeFormatter;
+import java.text.DecimalFormat;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -34,7 +34,8 @@ import java.util.stream.Collectors;
 public class AccountController extends BaseController {
 
     private static final Logger log = LoggerFactory.getLogger(AccountController.class);
-    private static final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd-M-yyyy");
+
+    private static long PAYMENT_VERIFICATION_AMT = 1000; // todo : make proportional to account size
 
     private AccountBroker accountBroker;
     private AccountBillingBroker accountBillingBroker;
@@ -81,6 +82,8 @@ public class AccountController extends BaseController {
         model.addAttribute("paidGroups", currentlyPaidGroups);
         model.addAttribute("billingRecords", accountBillingBroker.fetchBillingRecords(accountUid,
                 new Sort(Sort.Direction.DESC, "statementDateTime")));
+        model.addAttribute("canAddAllGroups", currentlyPaidGroups.isEmpty()
+                && accountGroupBroker.canAddMultipleGroupsToOwnAccount(getUserProfile().getUid()));
         model.addAttribute("administrators", account.getAdministrators());
 
         return "account/view";
@@ -119,6 +122,20 @@ public class AccountController extends BaseController {
         accountGroupBroker.addGroupToAccount(accountUid, groupUid, getUserProfile().getUid());
         attributes.addAttribute("accountUid", accountUid);
         addMessage(attributes, MessageType.SUCCESS, "account.addgroup.success", request);
+        return "redirect:/account/view";
+    }
+
+    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
+    @RequestMapping(value = "/group/add/all", method = RequestMethod.GET)
+    public String addAllGroupsToAccount(RedirectAttributes attributes, HttpServletRequest request) {
+        Account account = accountBroker.loadUsersAccount(getUserProfile().getUid());
+        int groupsAdded = accountGroupBroker.addUserCreatedGroupsToAccount(account.getUid(), getUserProfile().getUid());
+        if (groupsAdded > 0) {
+            addMessage(attributes, MessageType.SUCCESS, "account.groups.many.added", new Object[] { groupsAdded }, request);
+        } else {
+            addMessage(attributes, MessageType.ERROR, "account.groups.many.error", request);
+        }
+        attributes.addAttribute("accountUid", account.getUid());
         return "redirect:/account/view";
     }
 
@@ -171,17 +188,22 @@ public class AccountController extends BaseController {
         Account account = StringUtils.isEmpty(accountUid) ? accountBroker.loadUsersAccount(getUserProfile().getUid()) :
                 accountBroker.loadAccount(accountUid);
         model.addAttribute("account", account);
+        model.addAttribute("newAccount", false);
+        model.addAttribute("billingAmount", "R" + (new DecimalFormat("#.##").format(PAYMENT_VERIFICATION_AMT / 100)));
         model.addAttribute("method", PaymentMethod.makeEmpty());
-        return "/account/change_payment";
+        return "/account/payment";
     }
 
     @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/payment/change", method = RequestMethod.POST)
     public String changePaymentDo(RedirectAttributes attributes, @RequestParam String accountUid,
-                                  @ModelAttribute("method") PaymentMethod paymentMethod) {
-        paymentServiceBroker.linkPaymentMethodToAccount(paymentMethod, accountUid, null);
+                                  @ModelAttribute("method") PaymentMethod paymentMethod, HttpServletRequest request) {
+        AccountBillingRecord record = accountBillingBroker.generatePaymentChangeBill(accountUid, PAYMENT_VERIFICATION_AMT);
+        boolean paymentSucceded = paymentServiceBroker.linkPaymentMethodToAccount(paymentMethod, accountUid, record, true);
         attributes.addAttribute("accountUid", accountUid);
-        return "redirect:/account/view";
+        addMessage(attributes, paymentSucceded ? MessageType.SUCCESS : MessageType.ERROR,
+                paymentSucceded ? "account.payment.changed" : "account.payment.failed", request);
+        return paymentSucceded ? "redirect:/account/view" : "redirect:change";
     }
 
     /* quick helper method to do role & permission check */

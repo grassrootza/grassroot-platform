@@ -11,6 +11,10 @@ import java.util.Set;
  */
 public interface AccountBillingBroker {
 
+    AccountBillingRecord generateSignUpBill(final String accountUid);
+
+    AccountBillingRecord generatePaymentChangeBill(final String accountUid, final long amountToCharge);
+
     void calculateAccountStatements(boolean sendEmails, boolean sendNotifications);
 
     void processAccountStatementEmails(Set<String> billingRecordUids);

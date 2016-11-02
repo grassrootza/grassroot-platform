@@ -189,6 +189,10 @@ public class AccountBillingRecord {
         return amountBilledThisPeriod;
     }
 
+    public void setTotalAmountToPay(long totalAmountToPay) {
+        this.totalAmountToPay = totalAmountToPay;
+    }
+
     public long getTotalAmountToPay() {
         return totalAmountToPay;
     }

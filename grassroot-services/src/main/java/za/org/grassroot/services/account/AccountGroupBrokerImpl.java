@@ -22,6 +22,8 @@ import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 import static za.org.grassroot.services.specifications.PaidGroupSpecifications.expiresAfter;
@@ -94,6 +96,63 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
     }
 
     @Override
+    @Transactional
+    public int addUserCreatedGroupsToAccount(String accountUid, String userUid) {
+        Objects.requireNonNull(accountUid);
+        Objects.requireNonNull(userUid);
+
+        Account account = accountRepository.findOneByUid(accountUid);
+        User user = userRepository.findOneByUid(userUid);
+
+        if (!account.getAdministrators().contains(user)) {
+            throw new IllegalArgumentException("Error! Add all groups can only be called by an admin of the account");
+        }
+
+        List<Group> groups = groupRepository.findByCreatedByUserAndActiveTrueOrderByCreatedDateTimeDesc(user);
+        int spaceOnAccount = groupsLeftOnAccount(account);
+
+        List<PaidGroup> paidGroups = new ArrayList<>();
+        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+
+        for (int i = 0; i < groups.size() && (spaceOnAccount - i) > 0; i++) {
+            Group group = groups.get(i);
+            if (group.isPaidFor()) {
+                continue;
+            }
+
+            PaidGroup paidGroup = new PaidGroup(group, account, user);
+            paidGroups.add(paidGroup);
+            account.addPaidGroup(paidGroup);
+            group.setPaidFor(true);
+
+            bundle.addLog(new AccountLog.Builder(account)
+                    .userUid(user.getUid())
+                    .accountLogType(AccountLogType.GROUP_ADDED)
+                    .groupUid(group.getUid())
+                    .paidGroupUid(paidGroup.getUid())
+                    .description(group.getName()).build());
+        }
+
+        paidGroupRepository.save(paidGroups);
+        logsAndNotificationsBroker.asyncStoreBundle(bundle);
+
+        return paidGroups.size();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean canAddMultipleGroupsToOwnAccount(String userUid) {
+        User user = userRepository.findOneByUid(userUid);
+        List<Group> userGroups = groupRepository.findByCreatedByUserAndActiveTrueOrderByCreatedDateTimeDesc(user);
+        return userGroups != null && !userGroups.isEmpty() && userGroups.stream().anyMatch(g -> !g.isPaidFor());
+    }
+
+    private int groupsLeftOnAccount(Account account) {
+        return account.getMaxNumberGroups() - (int) paidGroupRepository.count(Specifications.where(
+                expiresAfter(Instant.now())).and(isForAccount(account)));
+    }
+
+    @Override
     @Transactional(readOnly =  true)
     public Account findAccountForGroup(String groupUid) {
         Group group = groupRepository.findOneByUid(groupUid);
@@ -163,8 +222,7 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
     @Transactional(readOnly = true)
     public int numberGroupsLeft(String accountUid) {
         Account account = accountRepository.findOneByUid(accountUid);
-        return account == null ? 0 : account.getMaxNumberGroups() - (int) paidGroupRepository.count(Specifications.where(
-                expiresAfter(Instant.now())).and(isForAccount(account)));
+        return account == null ? 0 : groupsLeftOnAccount(account);
     }
 
     @Override

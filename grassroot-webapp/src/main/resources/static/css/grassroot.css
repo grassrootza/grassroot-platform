@@ -97,6 +97,11 @@
     padding-bottom: 15px !important;
 }
 
+.horizontal-padding {
+    padding-left: 15px;
+    padding-right: 15px;
+}
+
 .thin-separator {
     padding: 0px;
     margin: auto;
@@ -216,6 +221,11 @@
 
 .grassroot-body {
     font-size: 14pt;
+}
+
+.gr-plain-list {
+    font-size: 13pt;
+    color: #207A33;
 }
 
 /*

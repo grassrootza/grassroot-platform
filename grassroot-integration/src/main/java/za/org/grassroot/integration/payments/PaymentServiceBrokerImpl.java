@@ -20,6 +20,7 @@ import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -122,8 +123,15 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
 
     @Override
     @Transactional
-    public boolean linkPaymentMethodToAccount(PaymentMethod paymentMethod, String accountUid, AccountBillingRecord billingRecord) {
+    public boolean linkPaymentMethodToAccount(PaymentMethod paymentMethod, String accountUid, AccountBillingRecord billingRecord, boolean deleteBillOnFailure) {
+        Objects.requireNonNull(paymentMethod);
+        Objects.requireNonNull(accountUid);
+        Objects.requireNonNull(billingRecord);
+
         final double amountToPay = (double) billingRecord.getTotalAmountToPay() / 100;
+
+        logger.info("About to charge R{} to payment method, from billing record for {}", amountToPay, billingRecord.getTotalAmountToPay());
+
         UriComponentsBuilder paymentUri = baseUriBuilder.cloneBuilder()
                     .path(initialPaymentRestPath)
                     .queryParam(paymentAmountParam, AMOUNT_FORMAT.format(amountToPay))
@@ -142,7 +150,7 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
             // logger.info("URL: " + paymentUri.toUriString());
             ResponseEntity<PaymentResponsePP> response = restTemplate.exchange(paymentUri.build().toUri(), HttpMethod.POST, request, PaymentResponsePP.class);
             PaymentResponsePP okayResponse = response.getBody();
-            // logger.info("Payment Success!: {}", okayResponse.toString());
+            logger.info("Payment Success!: With reference : {}", okayResponse.getRegistrationId());
 
             Account account = billingRecord.getAccount();
             account.setPaymentRef(okayResponse.getRegistrationId());
@@ -153,12 +161,16 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
             try {
                 PaymentErrorPP errorResponse = objectMapper.readValue(e.getResponseBodyAsString(), PaymentErrorPP.class);
                 logger.info("Payment Error!: {}", errorResponse.toString());
-                return false;
             } catch (IOException error) {
                 logger.info("Could not read in JSON!");
                 error.printStackTrace();
-                return false;
             }
+            // use this if the billing record is closely tied to the payment (e.g., on sign up, or switching), to prevent
+            // duplication of the bill if there is failure and try again
+            if (deleteBillOnFailure) {
+                billingRepository.delete(billingRecord);
+            }
+            return false;
         }
     }
 

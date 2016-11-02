@@ -1,23 +1,25 @@
 package za.org.grassroot.webapp.controller.webapp;
 
+import org.apache.commons.validator.routines.EmailValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import za.org.grassroot.core.domain.Account;
+import za.org.grassroot.core.domain.AccountBillingRecord;
 import za.org.grassroot.core.enums.AccountType;
 import za.org.grassroot.integration.payments.PaymentMethod;
 import za.org.grassroot.integration.payments.PaymentServiceBroker;
+import za.org.grassroot.services.account.AccountBillingBroker;
 import za.org.grassroot.services.account.AccountBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 
 import javax.servlet.http.HttpServletRequest;
+import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.util.Arrays;
 
@@ -31,11 +33,13 @@ public class AccountSignUpController extends BaseController {
     private static final Logger logger = LoggerFactory.getLogger(AccountSignUpController.class);
 
     private AccountBroker accountBroker;
+    private AccountBillingBroker billingBroker;
     private PaymentServiceBroker paymentBroker;
 
     @Autowired
-    public AccountSignUpController(AccountBroker accountBroker, PaymentServiceBroker paymentBroker) {
+    public AccountSignUpController(AccountBroker accountBroker, AccountBillingBroker billingBroker, PaymentServiceBroker paymentBroker) {
         this.accountBroker = accountBroker;
+        this.billingBroker = billingBroker;
         this.paymentBroker = paymentBroker;
     }
 
@@ -47,17 +51,24 @@ public class AccountSignUpController extends BaseController {
     }
 
     @RequestMapping(value = "create", method = RequestMethod.POST)
-    public String createAccountEntity(Model model, @RequestParam String accountName, @RequestParam AccountType accountType,
+    public String createAccountEntity(Model model, @RequestParam(required = false) String accountName, @RequestParam AccountType accountType,
                                       @RequestParam(value = "emailAddress", required = false) String emailAddress) {
-        // todo : add validation to client side
-        final String accountUid = accountBroker.createAccount(getUserProfile().getUid(), accountName, getUserProfile().getUid(), accountType);
-        if (!StringUtils.isEmpty(emailAddress)) {
-            logger.info("Setting user email address");
+
+        final String nameToUse = StringUtils.isEmpty(accountName) ? getUserProfile().nameToDisplay() : accountName;
+        final String accountUid = accountBroker.createAccount(getUserProfile().getUid(), nameToUse, getUserProfile().getUid(), accountType);
+
+        if (!StringUtils.isEmpty(emailAddress) && EmailValidator.getInstance(false).isValid(emailAddress)) {
             userManagementService.updateEmailAddress(getUserProfile().getUid(), emailAddress);
         }
 
-        model.addAttribute("accountUid", accountUid);
-        model.addAttribute("accountName", accountName);
+        Account createdAccount = accountBroker.loadAccount(accountUid);
+
+        model.addAttribute("account", createdAccount);
+        model.addAttribute("newAccount", true);
+
+        model.addAttribute("method", PaymentMethod.makeEmpty());
+        model.addAttribute("billingAmount", "R" + (new DecimalFormat("#.##"))
+                .format((double) createdAccount.getSubscriptionFee() / 100));
 
         refreshAuthorities();
 
@@ -65,17 +76,16 @@ public class AccountSignUpController extends BaseController {
         return "account/payment";
     }
 
-    @RequestMapping(value = "payment", method = RequestMethod.POST)
+    @RequestMapping(value = "enable", method = RequestMethod.POST)
     public String attemptPayment(Model model, RedirectAttributes attributes, @RequestParam String accountUid,
-                                 @RequestParam String holderName, @RequestParam String cardNumber, HttpServletRequest request) {
+                                 @ModelAttribute("method") PaymentMethod paymentMethod, HttpServletRequest request) {
 
-        // todo : client side validation, of course
-        PaymentMethod paymentMethod = new PaymentMethod.Builder(holderName)
-                .cardNumber(cardNumber)
-                .build();
+        // todo : work out how to do a progress bar type thing
 
-        // todo : switch this to initially ajax, with a progress bar
-        if (paymentBroker.linkPaymentMethodToAccount(paymentMethod, accountUid, null)) {
+        AccountBillingRecord record = billingBroker.generateSignUpBill(accountUid);
+        boolean paymentResponse = paymentBroker.linkPaymentMethodToAccount(paymentMethod, accountUid, record, true);
+
+        if (paymentResponse) {
             accountBroker.enableAccount(getUserProfile().getUid(), accountUid, LocalDate.now().plusMonths(1L));
             addMessage(attributes, MessageType.SUCCESS, "account.signup.payment.done", request);
             attributes.addAttribute("accountUid", accountUid);

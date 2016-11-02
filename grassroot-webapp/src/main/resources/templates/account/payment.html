@@ -9,34 +9,151 @@
 <body>
 
   <div layout:fragment="header">
-    <h2 class="text-center">Sign up for account</h2>
+    <h2 class="text-center">
+      <span th:text="${newAccount} ? 'Payment' : 'Change Payment'">Account Payment</span>
+    </h2>
   </div>
 
   <div layout:fragment="overview">
-    <h4 class="text-center">Account created! Please enter payment details</h4>
   </div>
 
-  <!-- todo : design this properly ... e.g., we are about to bill ... -->
   <div layout:fragment="content">
     <div class="row">
       <div class="col-md-4 col-md-offset-4">
-        <form th:action="@{payment}" method="POST" class="form-vertical">
-          <input type="hidden" name="accountUid" th:value="${accountUid}" />
+        <div class="row vertical-padding horizontal-padding" th:switch="${newAccount}">
+          <p class="grassroot-body" th:case="true">
+            As a final step, please enter your credit or debit card details. You will be charged
+            <span th:text="${billingAmount}">RX</span> now, and then monthly from now on.
+          </p>
+          <p class="grassroot-body" th:case="false">
+            Please enter your new card details below. You will be charged <span th:text="${billingAmount}">RX</span> now
+            to verify the card. This amount will be deducted from your next statement.
+          </p>
+        </div>
+        <form id="cardForm" th:action="${newAccount} ? @{enable} : @{change}" th:object="${method}" method="POST" class="form-vertical">
+          <input type="hidden" name="accountUid" th:value="${account.uid}" />
           <div class="form-group">
-            <label for="account_name" class="control-label">1. Name</label>
-            <input type="text" id="account_name" name="holderName" class="form-control input-lg"/>
+            <label class="control-label">1. Name</label>
+            <input type="text" th:field="*{cardHolder}" id="cardHolder" class="form-control input-lg"/>
+          </div>
+
+          <div class="form-group">
+            <label class="control-label">2. Credit Card Number And Type</label>
+            <input type="text" th:field="*{cardNumber}" id="cardNumber" class="form-control input-lg"/>
           </div>
           <div class="form-group">
-            <label for="card_number" class="control-label">2. Credit Card Number</label>
-            <input type="text" id="card_number" name="cardNumber" class="form-control input-lg"/>
+            <label class="radio-inline input-lg"><input type="radio" th:field="*{cardBrand}" id="cardBrandVisa" value="VISA">Visa</label>
+            <label class="radio-inline input-lg"><input type="radio" th:field="*{cardBrand}" id="cardBrandMaster" value="MASTER">Mastercard</label>
           </div>
-          <!-- todo : add CVV code, expiry date -->
-          <div class="form-group pull-right">
+
+          <div class="form-group">
+            <label class="control-label">3. Expiry Date</label>
+            <div class="row no-padding">
+              <div class="col-md-4 col-sm-4 col-xs-6">
+                <select th:field="*{expiryMonth}" class="form-control input-lg">
+                  <option value="0">Month</option>
+                  <option value="01">Jan (01)</option>
+                  <option value="02">Feb (02)</option>
+                  <option value="03">Mar (03)</option>
+                  <option value="04">Apr (04)</option>
+                  <option value="05">May (05)</option>
+                  <option value="06">June (06)</option>
+                  <option value="07">July (07)</option>
+                  <option value="08">Aug (08)</option>
+                  <option value="09">Sep (09)</option>
+                  <option value="10">Oct (10)</option>
+                  <option value="11">Nov (11)</option>
+                  <option value="12">Dec (12)</option>
+                </select>
+              </div>
+              <div class="col-md-4 col-sm-4 col-xs-6">
+                <select th:field="*{expiryYear}" class="form-control input-lg">
+                  <option value="16">2016</option>
+                  <option value="17">2017</option>
+                  <option value="18">2018</option>
+                  <option value="19">2019</option>
+                  <option value="20">2020</option>
+                  <option value="21">2021</option>
+                  <option value="22">2022</option>
+                  <option value="23">2023</option>
+                  <option value="24">2024</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="control-label">4. CVV (3 digits on back)</label>
+            <div class="row no-padding">
+              <div class="col-md-4 col-sm-4 col-xs-6">
+                <input maxlength="3" type="text" th:field="*{securityCode}" id="securityCode" class="form-control input-lg"/>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
             <button type="submit" class="btn btn-primary btn-block btn-cta">Next</button>
           </div>
         </form>
       </div>
     </div>
+  </div>
+
+  <div class="header-container" layout:fragment="script-container">
+
+    <script>
+
+      $(document).ready(function() {
+
+        var cardNumInput = $("#cardNumber");
+        var brandSelected = false;
+
+        cardNumInput.attr("placeholder", "Credit/Debit Card Number");
+        $("#cardHolder").attr("placeholder", "Cardholder's name");
+        $("#securityCode").val("");
+
+        $("#cardForm").validate({
+          rules: {
+            cardHolder: {
+              required: true,
+            },
+            cardNumber: {
+              required: true,
+              creditcard: true
+            },
+            expiryMonth: {
+              min: 1
+            },
+            securityCode: {
+              required: true,
+              minlength: 3,
+              maxlength: 3
+            }
+          },
+          errorClass: "error-text"
+        });
+
+        $("input:radio[name='cardBrand']").click(function() {
+          brandSelected = true;
+        });
+
+        cardNumInput.keyup(function() {
+          var enteredNo = $(this).val();
+          if (!brandSelected || enteredNo.length < 3) { // only run algorithm when editing first couple digits (or no brand selected, in case copy & paste)
+            if (enteredNo[0] == '4') {
+              $("#cardBrandVisa").prop('checked', true);
+              brandSelected = true;
+            } else if (enteredNo[0] == '5') {
+              $("#cardBrandMaster").prop('checked', true);
+              brandSelected = true;
+            }
+          }
+        });
+
+      });
+
+    </script>
+
   </div>
 
 </body>
