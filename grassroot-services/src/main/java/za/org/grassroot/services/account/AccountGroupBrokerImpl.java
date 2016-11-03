@@ -7,15 +7,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.notification.FreeFormMessageNotification;
 import za.org.grassroot.core.enums.AccountLogType;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.services.PermissionBroker;
-import za.org.grassroot.services.exception.GroupAccountMismatchException;
-import za.org.grassroot.services.exception.GroupAlreadyPaidForException;
-import za.org.grassroot.services.exception.GroupNotPaidForException;
+import za.org.grassroot.services.exception.*;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
@@ -72,16 +71,28 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
     @Override
     @Transactional
     public void addGroupToAccount(String accountUid, String groupUid, String addingUserUid) throws GroupAlreadyPaidForException {
-        Objects.requireNonNull(accountUid);
         Objects.requireNonNull(groupUid);
         Objects.requireNonNull(addingUserUid);
 
         Group group = groupRepository.findOneByUid(groupUid);
-        Account account = accountRepository.findOneByUid(accountUid);
         User addingUser = userRepository.findOneByUid(addingUserUid);
+
+        Account account = StringUtils.isEmpty(accountUid) ? addingUser.getAccountAdministered() : accountRepository.findOneByUid(accountUid);
+
+        if (account == null) {
+            throw new IllegalArgumentException("Error! Account UID not supplied and user does not have an account");
+        }
 
         if (!account.getAdministrators().contains(addingUser)) {
             permissionBroker.validateSystemRole(addingUser, BaseRoles.ROLE_SYSTEM_ADMIN);
+        }
+
+        if (!account.isEnabled()) {
+            throw new AccountExpiredException();
+        }
+
+        if (numberGroupsLeft(account.getUid()) < 1) {
+            throw new AccountLimitExceededException();
         }
 
         if (group.isPaidFor()) {
@@ -141,10 +152,22 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
 
     @Override
     @Transactional(readOnly = true)
+    public boolean canAddGroupToAccount(String userUid) {
+        User user = userRepository.findOneByUid(userUid);
+        Account account = user.getAccountAdministered();
+        return account != null && groupsLeftOnAccount(account) > 0;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public boolean canAddMultipleGroupsToOwnAccount(String userUid) {
         User user = userRepository.findOneByUid(userUid);
-        List<Group> userGroups = groupRepository.findByCreatedByUserAndActiveTrueOrderByCreatedDateTimeDesc(user);
-        return userGroups != null && !userGroups.isEmpty() && userGroups.stream().anyMatch(g -> !g.isPaidFor());
+        if (user.getAccountAdministered() == null) {
+            return false;
+        } else {
+            List<Group> userGroups = groupRepository.findByCreatedByUserAndActiveTrueOrderByCreatedDateTimeDesc(user);
+            return userGroups != null && !userGroups.isEmpty() && userGroups.stream().anyMatch(g -> !g.isPaidFor());
+        }
     }
 
     private int groupsLeftOnAccount(Account account) {

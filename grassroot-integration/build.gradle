@@ -28,6 +28,8 @@ dependencies {
     compile group: 'org.apache.poi', name: 'poi', version: '3.15'
     compile group: 'org.apache.poi', name: 'poi-ooxml', version: '3.15'
 
+    compile group: 'com.itextpdf', name: 'itextpdf', version: '5.5.10'
+
 }
 
 test {

@@ -36,6 +36,11 @@
                    placeholder="Please keep to 35 characters or less" maxlength="20" data-toggle="tooltip"
                    title="Group name may not be longer than 35 characters and must not contain any symbols "/>
         </div>
+        <div th:if="${canAddToAccount}" class="form-group">
+          <label class="checkbox-inline horizontal-paddding">
+            <input type="checkbox" checked="true" class="big-checkbox" name="addToAccount" id="addToAccount" />Add this group to my account
+          </label>
+        </div>
 
         <div class="form-group">
             <table class="table" id="member-input">
@@ -119,7 +124,7 @@
 
 <div class="header-container" layout:fragment="script-container">
 
-  <script th:src="@{/js/jquery-ui.min.js}"></script>
+  <script th:src="@{/js/lib/jquery-ui.min.js}"></script>
 
   <script th:inline="javascript">
 

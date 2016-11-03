@@ -18,7 +18,7 @@ public interface AccountBillingRecordRepository extends JpaRepository<AccountBil
 
     Set<AccountBillingRecord> findByUidIn(Set<String> uids);
 
-    AccountBillingRecord findOneByAccountOrderByCreatedDateTimeDesc(Account account);
+    AccountBillingRecord findTopByAccountOrderByCreatedDateTimeDesc(Account account);
 
     Set<AccountBillingRecord> findByNextPaymentDateBeforeAndPaidFalse(Instant time);
 

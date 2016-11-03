@@ -17,7 +17,6 @@ import za.org.grassroot.core.repository.AccountRepository;
 import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.integration.email.EmailSendingBroker;
-import za.org.grassroot.integration.email.GrassrootEmail;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
@@ -145,7 +144,7 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
 
         for (Account account : validAccounts) {
             log.debug("Calculating bill and cost for account : {}", account.getAccountName());
-            AccountBillingRecord lastBill = billingRepository.findOneByAccountOrderByCreatedDateTimeDesc(account);
+            AccountBillingRecord lastBill = billingRepository.findTopByAccountOrderByCreatedDateTimeDesc(account);
 
             /*
             * Logic : billing starts at the last statement end date, if there is a last statement; if not, it defaults to
@@ -282,7 +281,9 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
         for (AccountBillingRecord record : records) {
             log.debug("generating account statement for {}, amount of {}", record.getAccount().getAccountName(), record.getTotalAmountToPay());
             if (!StringUtils.isEmpty(record.getAccount().getBillingUser().getEmailAddress())) {
-                emailSendingBroker.sendMail(generateStatementEmail(record));
+                final String emailSubject = messageAssemblingService.createAccountStatementSubject(record);
+                final String emailBody = messageAssemblingService.createAccountStatementEmail(record);
+                emailSendingBroker.generateAndSendBillingEmail(emailSubject, emailBody, record.getUid());
             }
         }
     }
@@ -300,13 +301,4 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
         return billingRepository.findOneByUid(recordUid);
     }
 
-    private GrassrootEmail generateStatementEmail(AccountBillingRecord billingRecord) {
-        final String emailSubject = messageAssemblingService.createAccountStatementSubject(billingRecord);
-        final String emailBody = messageAssemblingService.createAccountStatementEmail(billingRecord);
-
-        return new GrassrootEmail.EmailBuilder(emailSubject)
-                .content(emailBody)
-                .address(billingRecord.getAccount().getBillingUser().getEmailAddress())
-                .build();
-    }
 }

@@ -162,7 +162,7 @@
                 </div>
               </div>
               <div class="modal-footer">
-                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                <a th:href="@{/group/create}" class="btn btn-default">New group</a>
                 <button type="submit" class="btn btn-primary">Add</button>
               </div>
             </form>
@@ -238,7 +238,7 @@
 <div class="header-container" layout:fragment="script-container">
 
   <script th:src="@{/js/grassroot-methods.js}"></script>
-  <script th:src="@{/js/jquery-ui.min.js}"></script>
+  <script th:src="@{/js/lib/jquery-ui.min.js}"></script>
 
   <script>
 
@@ -268,8 +268,6 @@
 
     $(document).ready(function() {
       grassrootJS.setUpAjax($("meta[name='_csrf']"), $("meta[name='_csrf_header']"));
-
-
     });
 
   </script>

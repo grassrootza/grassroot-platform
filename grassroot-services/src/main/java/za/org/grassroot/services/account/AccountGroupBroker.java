@@ -18,6 +18,8 @@ public interface AccountGroupBroker {
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     int addUserCreatedGroupsToAccount(String accountUid, String userUid);
 
+    boolean canAddGroupToAccount(String userUid);
+
     boolean canAddMultipleGroupsToOwnAccount(String userUid);
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")

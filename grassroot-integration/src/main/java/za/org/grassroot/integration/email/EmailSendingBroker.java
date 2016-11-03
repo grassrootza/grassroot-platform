@@ -5,6 +5,8 @@ package za.org.grassroot.integration.email;
  */
 public interface EmailSendingBroker {
 
+    void generateAndSendBillingEmail(String emailSubject, String emailBody, String billingRecordUid);
+
     void sendSystemStatusMail(GrassrootEmail systemStatsEmail);
 
     void sendMail(GrassrootEmail email);

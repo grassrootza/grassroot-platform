@@ -74,6 +74,10 @@
     margin-top: 30px;
 }
 
+.top-padding-lg {
+    padding-top: 30px;
+}
+
 .bottom-buffer-lg {
     margin-bottom: 30px;
 }
@@ -98,8 +102,8 @@
 }
 
 .horizontal-padding {
-    padding-left: 15px;
-    padding-right: 15px;
+    padding-left: 20px;
+    padding-right: 20px;
 }
 
 .thin-separator {
@@ -221,6 +225,12 @@
 
 .grassroot-body {
     font-size: 14pt;
+}
+
+.grassroot-body > a {
+    text-decoration: underline;
+    font-weight: 500;
+    color: #207A33;
 }
 
 .gr-plain-list {
