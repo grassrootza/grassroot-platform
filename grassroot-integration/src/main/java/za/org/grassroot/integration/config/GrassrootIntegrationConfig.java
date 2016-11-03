@@ -32,4 +32,14 @@ public class GrassrootIntegrationConfig {
 
     @Bean (name = "integrationMessageSourceAccessor")
     public MessageSourceAccessor getMessageSourceAccessor() { return new MessageSourceAccessor(messageSource()); }
+
+
+
+
+
+
+
 }
+
+
+

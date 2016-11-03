@@ -1,5 +1,8 @@
 package za.org.grassroot.integration;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.jivesoftware.smack.packet.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -8,12 +11,15 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.support.MessageSourceAccessor;
-import org.springframework.core.annotation.Order;
+import org.springframework.integration.mqtt.support.MqttHeaders;
+import org.springframework.integration.support.MessageBuilder;
+import org.springframework.integration.support.json.Jackson2JsonMessageParser;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.SerializationUtils;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.GroupChatSettings;
 import za.org.grassroot.core.domain.User;
@@ -25,6 +31,7 @@ import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 import za.org.grassroot.integration.domain.AndroidClickActionType;
 import za.org.grassroot.integration.domain.GroupChatMessage;
+import za.org.grassroot.integration.domain.MQTTPayload;
 import za.org.grassroot.integration.domain.RelayedChatMessage;
 import za.org.grassroot.integration.exception.GroupChatSettingNotFoundException;
 import za.org.grassroot.integration.exception.SeloParseDateTimeFailure;
@@ -68,7 +75,9 @@ public class GroupChatManager implements GroupChatService {
     private MessageChannel gcmXmppOutboundChannel;
 
     @Autowired
-    public SimpMessageSendingOperations messagingTemplate;
+    private MessageChannel mqttOutboundChannel;
+
+
 
     @Autowired
     @Qualifier("integrationMessageSourceAccessor")
@@ -106,6 +115,7 @@ public class GroupChatManager implements GroupChatService {
             org.springframework.messaging.Message<Message> outboundMessage = settings.isCanSend() ?
                     generateMessage(user, msg, group) : generateCannotSendMessage(msg, group);
             gcmXmppOutboundChannel.send(outboundMessage);
+            sendMessageOverMQTT(user,group,msg);
         } else {
             throw new GroupChatSettingNotFoundException("User does not have chat settings, cannot be part of group");
         }
@@ -135,13 +145,19 @@ public class GroupChatManager implements GroupChatService {
         }
     }
 
-    @Override
-    public void sendMessageOverSocket(GroupChatMessage message ) {
-        //todo get a list of recepient
-        //todo send message to recepient
-        //todo iterate ove the list and send message to their topic,
-        //
-        messagingTemplate.convertAndSend( "/topic/{userUid}", message );
+
+    public void sendMessageOverMQTT(User user,Group group,GroupChatMessage incoming)  {
+        Map<String, Object> messageData = generateChatMessageData(incoming,user, group);
+        ObjectMapper objectMapper = new ObjectMapper();
+        String message;
+        try {
+            message = objectMapper.writeValueAsString(messageData);
+            mqttOutboundChannel.send(MessageBuilder.withPayload(message).
+                    setHeader(MqttHeaders.TOPIC, incoming.getTo()).build());
+        } catch (JsonProcessingException e) {
+            logger.debug("Error sending message over mqtt, got error message ={}", e.getMessage());
+        }
+
     }
 
     @Override
@@ -164,6 +180,7 @@ public class GroupChatManager implements GroupChatService {
 
     public org.springframework.messaging.Message<Message> generateMessage(User user, GroupChatMessage input, Group group) {
         org.springframework.messaging.Message<Message> gcmMessage;
+
         Map<String, Object> data;
         if (!MessageUtils.isCommand((input))) {
             String topic = TOPICS.concat(group.getUid());
@@ -196,6 +213,8 @@ public class GroupChatManager implements GroupChatService {
 
         return gcmMessage;
     }
+
+
 
     @Override
     @Transactional(readOnly = true)
@@ -384,6 +403,10 @@ public class GroupChatManager implements GroupChatService {
         data.put("type", "error");
         data.put("time", input.getData().get("time"));
         return data;
+    }
+
+    private String getUserChannel(String userUid){
+        return TOPICS.concat(userUid);
     }
 
 

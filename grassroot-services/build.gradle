@@ -34,6 +34,8 @@ test {
   systemProperty "gcm.topics.path", "/topics/"
   systemProperty "gcm.topics.backoff.initial.delay", "1000"
   systemProperty "gcm.topics.max.retries", "3"
+  systemProperty "mqtt.connection.url", "tcp://localhost:1883"
+
 
   systemProperty "gcm.sender.key", "gcm_sender_key"
 

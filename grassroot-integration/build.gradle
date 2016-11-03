@@ -8,6 +8,8 @@ dependencies {
     compile group: 'org.springframework', name: 'spring-web', version: libs.springVersion
     compile group: 'org.springframework.integration', name: 'spring-integration-core', version: libs.springIntegrationVersion
     compile group: 'org.springframework.integration', name: 'spring-integration-xmpp', version: libs.springIntegrationVersion
+    compile group: 'org.springframework', name: 'spring-jms', version: '4.3.3.RELEASE'
+    compile group: 'org.springframework.integration', name: 'spring-integration-mqtt', version:  libs.springIntegrationVersion
 
     compile(group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.2') {
         exclude(module: 'commons-logging')
@@ -21,10 +23,12 @@ dependencies {
     compile group: 'org.igniterealtime.smack', name: 'smack-tcp', version: libs.smackVersion
     compile group: 'org.igniterealtime.smack', name: 'smack-extensions', version: libs.smackVersion
     compile group: 'org.igniterealtime.smack', name: 'smack-java7', version: libs.smackVersion
+    compile group: 'org.apache.activemq', name: 'activemq-broker', version: '5.14.1'
 }
 
 test {
     systemProperty "gcm.topics.url", "iid.googleapis.com"
+    systemProperty "mqtt.connection.url", "tcp://localhost:1883"
 }
 
 

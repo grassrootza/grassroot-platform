@@ -584,4 +584,10 @@ public class GroupController extends BaseController {
         return "redirect:" + path + "view";
     }
 
+    @RequestMapping(value = "temp")
+    public String redirectToMessaging() {
+
+        return "group/temp";
+    }
+
 }

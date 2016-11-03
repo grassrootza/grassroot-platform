@@ -19,6 +19,7 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.integration.domain.GroupChatMessage;
+import za.org.grassroot.integration.domain.RelayedChatMessage;
 import za.org.grassroot.integration.exception.GroupChatSettingNotFoundException;
 import za.org.grassroot.integration.xmpp.GcmService;
 import za.org.grassroot.integration.GroupChatService;
@@ -403,6 +404,8 @@ public class GroupRestController extends GroupAbstractRestController {
         }
         return RestUtil.messageOkayResponse(RestMessage.CHATS_MARKED_AS_READ);
     }
+
+
 
 
     private Group checkForDuplicateGroup(final String creatingUserUid, final String groupName) {
