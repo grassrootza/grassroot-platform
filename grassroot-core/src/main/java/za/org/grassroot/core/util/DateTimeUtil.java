@@ -77,6 +77,10 @@ public class DateTimeUtil {
         return timeInSystem.atZone(userZoneId);
     }
 
+    public static String formatAtSAST(Instant instant, DateTimeFormatter format) {
+        return instant.atZone(zoneSAST).format(format);
+    }
+
     public static Instant restrictToDaytime(Instant instantToRestrict, Instant thresholdTime, ZoneId userZoneId) {
         ZonedDateTime zonedDateTime = instantToRestrict.atZone(userZoneId);
         if (zonedDateTime.getHour() <= earliestHourForAutomatedMessage) {
@@ -104,7 +108,7 @@ public class DateTimeUtil {
         final int startDay = start.getDayOfMonth();
         final int endDay = end.getDayOfMonth();
 
-        if (startDay == endDay) {
+        if (startDay == endDay && (start.getMonth() != start.getMonth())) {
             return true;
         } else {
             // could be because one of the two is the last day of the month

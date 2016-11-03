@@ -18,6 +18,13 @@ import javax.annotation.PostConstruct;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.text.DecimalFormat;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+
+import static za.org.grassroot.core.util.DateTimeUtil.formatAtSAST;
 
 /**
  * Created by luke on 2016/11/03.
@@ -27,6 +34,10 @@ import java.io.IOException;
 public class PdfGeneratingServiceImpl implements PdfGeneratingService {
 
     private static final Logger logger = LoggerFactory.getLogger(PdfGeneratingServiceImpl.class);
+
+    private static final DateTimeFormatter dateHeader = DateTimeFormatter.ofPattern("d MMM YYYY");
+    private static final DateTimeFormatter paymentDateTimeFormat = DateTimeFormatter.ofPattern("HH:mm, d MMM");
+    private static final DecimalFormat amountFormat = new DecimalFormat("#.00");
 
     private String invoiceTemplatePath;
 
@@ -48,19 +59,51 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
     // major todo : scheduled job to clean the temp folder
     @Override
     @Transactional(readOnly = true)
-    public File generateInvoice(String billingRecordUid) {
+    public File generateInvoice(String currentRecordUid) {
         try {
             PdfReader pdfReader = new PdfReader(invoiceTemplatePath);
             File tempStore = File.createTempFile("invoice", "pdf");
             PdfStamper pdfOutput = new PdfStamper(pdfReader, new FileOutputStream(tempStore));
             AcroFields fields = pdfOutput.getAcroFields();
 
-            AccountBillingRecord record = billingRepository.findOneByUid(billingRecordUid);
+            AccountBillingRecord record = billingRepository.findOneByUid(currentRecordUid);
 
-            fields.setField("BilledUserName", record.getAccount().getBillingUser().getDisplayName());
-            fields.setField("EmailAddress", record.getAccount().getBillingUser().getEmailAddress());
+            Instant priorPeriodStart = record.getBilledPeriodStart().minus(1, ChronoUnit.DAYS); // since the prior statement might have been a day or two earlier
+            // todo : replace this with proper logic & iterating through the bills
+            List<AccountBillingRecord> priorRecordsInBillingPeriod = billingRepository
+                    .findByAccountAndStatementDateTimeBetweenAndCreatedDateTimeBefore(record.getAccount(),
+                            priorPeriodStart, record.getBilledPeriodEnd(), record.getCreatedDateTime());
+
+            logger.info("Found these records: " + priorRecordsInBillingPeriod);
+
+            if (priorRecordsInBillingPeriod != null && !priorRecordsInBillingPeriod.isEmpty()) {
+                AccountBillingRecord priorRecord = priorRecordsInBillingPeriod.get(0);
+                fields.setField("lastBilledAmountDescription", String.format("Last invoice for R%s, dated %s",
+                        amountFormat.format((double) priorRecord.getTotalAmountToPay() / 100), formatAtSAST(priorRecord.getCreatedDateTime(), dateHeader)));
+                fields.setField("lastBilledAmount", amountFormat.format((double) priorRecord.getTotalAmountToPay() / 100)); // redundancy? with description?
+                if (priorRecord.getPaid() && priorRecord.getPaidAmount() != null) {
+                    fields.setField("lastPaymentAmountReceived", String.format("Payment received by credit card on %s, " +
+                            "thank you", formatAtSAST(priorRecord.getPaidDate(), dateHeader)));
+                    fields.setField("lastPaidAmount", amountFormat.format((double) priorRecord.getPaidAmount() / 100));
+                }
+            }
+
+            fields.setField("invoiceNumber", "INVOICE NO " + record.getId());
+            fields.setField("invoiceDate", formatAtSAST(record.getStatementDateTime(), dateHeader));
+            fields.setField("billedUserName", record.getAccount().getBillingUser().getDisplayName());
+            fields.setField("emailAddress", String.format("Email: %s", record.getAccount().getBillingUser().getEmailAddress()));
+
+            fields.setField("priorBalance", amountFormat.format((double) record.getOpeningBalance() / 100));
+            fields.setField("thisBillItems1", String.format("Monthly subscription for '%s' account",
+                    record.getAccount().getType().name().toLowerCase()));
+            fields.setField("billedAmount1", amountFormat.format((double) record.getAmountBilledThisPeriod() / 100));
+            fields.setField("totalAmountToPay", amountFormat.format((double) record.getTotalAmountToPay() / 100));
+            fields.setField("footerTextPaymentDate", String.format("The amount due will be automatically charged to " +
+                    "your card on %s", formatAtSAST(record.getNextPaymentDate(), dateHeader)));
 
             pdfOutput.setFormFlattening(true);
+            pdfOutput.setFullCompression();
+
             pdfOutput.close();
             pdfReader.close();
 

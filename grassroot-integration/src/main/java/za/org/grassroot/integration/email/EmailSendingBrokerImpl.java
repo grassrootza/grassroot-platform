@@ -53,6 +53,7 @@ public class EmailSendingBrokerImpl implements EmailSendingBroker {
     @Override
     public void generateAndSendBillingEmail(String emailSubject, String emailBody, String billingRecordUid) {
         AccountBillingRecord record = billingRepository.findOneByUid(billingRecordUid);
+
         File invoice = pdfGeneratingService.generateInvoice(billingRecordUid);
 
         GrassrootEmail email = new GrassrootEmail.EmailBuilder(emailSubject)
@@ -66,7 +67,6 @@ public class EmailSendingBrokerImpl implements EmailSendingBroker {
 
     @Override
     public void sendSystemStatusMail(GrassrootEmail systemStatsEmail) {
-        logger.info("Sending grassroot email, which will be from : " + emailFromName);
         SimpleMailMessage mail = new SimpleMailMessage();
         mail.setFrom(emailFromAddress);
         mail.setTo(systemEmailAddress);
@@ -91,10 +91,9 @@ public class EmailSendingBrokerImpl implements EmailSendingBroker {
             helper.setSubject(email.getSubject());
             helper.setText(email.getContent());
             if (email.hasAttachment()) {
-                logger.info("Email has attachment, adding it before sending, as name: {}", email.getAttachmentName());
                 helper.addAttachment(email.getAttachmentName(), email.getAttachment());
             }
-            mailSender.send(mail);
+            // mailSender.send(mail);
         } catch (MessagingException|MailException|UnsupportedEncodingException e) {
             logger.warn("Error sending user mail! Exception : " + e.toString());
         }

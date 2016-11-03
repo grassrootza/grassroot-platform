@@ -30,7 +30,6 @@ public class UnreadNotificationHandlerImpl implements UnreadNotificationHandler 
     @Transactional
     public void processUnreadNotifications() {
         logger.info("Processing unread notifications ...");
-        Instant time = Instant.now();
         Instant timeToCheck = Instant.now().minus(10, ChronoUnit.MINUTES);
 
         // need to only check for those attempt, else may send before user has chance to view

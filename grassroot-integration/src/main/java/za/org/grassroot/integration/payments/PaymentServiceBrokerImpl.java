@@ -154,7 +154,7 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
 
             Account account = billingRecord.getAccount();
             account.setPaymentRef(okayResponse.getRegistrationId());
-            handleSuccessfulPayment(account, billingRecord);
+            handleSuccessfulPayment(account, billingRecord, okayResponse);
 
             return true;
         } catch (HttpStatusCodeException e) {
@@ -203,7 +203,7 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
             logger.info("Payment Success!: {}", okayResponse.toString());
 
             if (OKAY_CODE.equals(okayResponse.getResult().getCode())) {
-                handleSuccessfulPayment(account, billingRecord);
+                handleSuccessfulPayment(account, billingRecord, okayResponse);
             }
 
             return false;
@@ -214,10 +214,14 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
     }
 
     @Transactional
-    private void handleSuccessfulPayment(Account account, AccountBillingRecord record) {
+    private void handleSuccessfulPayment(Account account, AccountBillingRecord record, PaymentResponsePP response) {
         account.setLastPaymentDate(Instant.now());
         account.decreaseBalance(record.getTotalAmountToPay());
         record.setPaid(true);
+        record.setPaidDate(Instant.now());
+        record.setPaymentId(response.getId());
+        record.setPaidAmount(response.getAmount() == null ? 0
+                : (long) (response.getAmount() * 100));
     }
 
     private PaymentErrorPP handlePaymentError(HttpStatusCodeException e) {

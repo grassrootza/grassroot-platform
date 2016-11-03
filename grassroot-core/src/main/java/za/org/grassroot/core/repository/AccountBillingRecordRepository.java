@@ -20,6 +20,8 @@ public interface AccountBillingRecordRepository extends JpaRepository<AccountBil
 
     AccountBillingRecord findTopByAccountOrderByCreatedDateTimeDesc(Account account);
 
+    List<AccountBillingRecord> findByAccountAndStatementDateTimeBetweenAndCreatedDateTimeBefore(Account account, Instant start, Instant end, Instant terminus);
+
     Set<AccountBillingRecord> findByNextPaymentDateBeforeAndPaidFalse(Instant time);
 
     List<AccountBillingRecord> findByAccount(Account account, Sort sort);

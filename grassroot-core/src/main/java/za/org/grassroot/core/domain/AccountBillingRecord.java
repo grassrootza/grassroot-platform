@@ -68,6 +68,18 @@ public class AccountBillingRecord {
     @Column(name="bill_paid")
     private boolean paid;
 
+    @Basic
+    @Column(name="paid_date")
+    private Instant paidDate;
+
+    @Basic
+    @Column(name="paid_amount")
+    private Long paidAmount;
+
+    @Basic
+    @Column(name="payment_id", length = 50)
+    private String paymentId;
+
     private AccountBillingRecord() {
         // for JPA
     }
@@ -157,6 +169,8 @@ public class AccountBillingRecord {
         this.paid = false;
     }
 
+    public Long getId() { return id; }
+
     public String getUid() { return uid; }
 
     public Account getAccount() {
@@ -213,7 +227,43 @@ public class AccountBillingRecord {
         this.paid = paid;
     }
 
+    public Instant getPaidDate() {
+        return paidDate;
+    }
+
+    public void setPaidDate(Instant paidDate) {
+        this.paidDate = paidDate;
+    }
+
+    public Long getPaidAmount() {
+        return paidAmount;
+    }
+
+    public void setPaidAmount(Long paidAmount) {
+        this.paidAmount = paidAmount;
+    }
+
+    public String getPaymentId() {
+        return paymentId;
+    }
+
+    public void setPaymentId(String paymentId) {
+        this.paymentId = paymentId;
+    }
+
+    // for Thymeleaf
     public LocalDateTime getStatementDate() {
         return LocalDateTime.ofInstant(statementDateTime, ZoneId.systemDefault());
+    }
+
+    @Override
+    public String toString() {
+        return "AccountBillingRecord{" +
+                "createdDateTime=" + createdDateTime +
+                ", statementDateTime=" + statementDateTime +
+                ", openingBalance=" + openingBalance +
+                ", amountBilledThisPeriod=" + amountBilledThisPeriod +
+                ", totalAmountToPay=" + totalAmountToPay +
+                '}';
     }
 }

@@ -8,6 +8,7 @@ import java.util.Map;
 public class PaymentResponsePP {
 
     private String id;
+    private Double amount;
     private String registrationId;
     private String paymentType;
     private String paymentBrand;
@@ -65,6 +66,14 @@ public class PaymentResponsePP {
 
     public void setRisk(Map<String, String> risk) {
         this.risk = risk;
+    }
+
+    public Double getAmount() {
+        return amount;
+    }
+
+    public void setAmount(Double amount) {
+        this.amount = amount;
     }
 
     @Override

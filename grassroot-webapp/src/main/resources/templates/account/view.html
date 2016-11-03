@@ -99,12 +99,13 @@
         <div class="col-md-3 col-sm-4 col-xs-12">
           <label class="grassroot-sidebar">Statements</label>
         </div>
+        <form th:action="@{/account/statement}" method="GET">
         <div th:switch="${#lists.isEmpty(billingRecords)}" class="col-md-6 col-sm-5 col-xs-12">
           <div th:case="true">
             <p class="grassroot-body">This account has not been billed yet</p>
           </div>
           <div th:case="false">
-            <select class="form-control input-lg">
+            <select name="statementUid" class="form-control input-lg">
               <option th:each="record: ${billingRecords}"
                       th:text="${#temporals.format(record.getStatementDate(),'d MMM yyyy')}"
                       th:value="${record.uid}"></option>
@@ -112,10 +113,11 @@
           </div>
           <a class="grassroot-body" th:href="@{payment/change}">Change payment method</a>
         </div>
-        <div th:unless="${#lists.isEmpty(billingRecords)}" class="col-md-3 col-sm-3 col-xs-12">
-          <a href="addpaidgroup" class="btn btn-primary btn-lg btn-block">
-            View</a>
-        </div>
+          <div th:unless="${#lists.isEmpty(billingRecords)}" class="col-md-3 col-sm-3 col-xs-12">
+            <button type="submit" class="btn btn-primary btn-lg btn-block">
+              View</button>
+          </div>
+        </form>
       </div>
 
       <hr>

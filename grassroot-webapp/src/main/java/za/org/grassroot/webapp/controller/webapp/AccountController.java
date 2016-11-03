@@ -3,7 +3,9 @@ package za.org.grassroot.webapp.controller.webapp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -13,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.AccountType;
+import za.org.grassroot.integration.PdfGeneratingService;
 import za.org.grassroot.integration.payments.PaymentMethod;
 import za.org.grassroot.integration.payments.PaymentServiceBroker;
 import za.org.grassroot.services.account.AccountBillingBroker;
@@ -21,6 +24,7 @@ import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.text.DecimalFormat;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -41,18 +45,20 @@ public class AccountController extends BaseController {
     private AccountBillingBroker accountBillingBroker;
     private AccountGroupBroker accountGroupBroker;
     private PaymentServiceBroker paymentServiceBroker;
+    private PdfGeneratingService pdfGeneratingService;
 
     @Autowired
-    public AccountController(AccountBroker accountBroker, AccountGroupBroker accountGroupBroker,
-                             AccountBillingBroker accountBillingBroker, PaymentServiceBroker paymentServiceBroker) {
+    public AccountController(AccountBroker accountBroker, AccountGroupBroker accountGroupBroker, AccountBillingBroker accountBillingBroker,
+                             PaymentServiceBroker paymentServiceBroker, PdfGeneratingService pdfGeneratingService) {
         this.accountBroker = accountBroker;
         this.accountGroupBroker = accountGroupBroker;
         this.accountBillingBroker = accountBillingBroker;
         this.paymentServiceBroker = paymentServiceBroker;
+        this.pdfGeneratingService = pdfGeneratingService;
     }
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
-    @RequestMapping("/index")
+    @RequestMapping(value = { "", "/" })
     public String paidAccountIndex(Model model, HttpServletRequest request) {
         if (request.isUserInRole("ROLE_SYSTEM_ADMIN")) {
             model.addAttribute("accounts", accountBroker.loadAllAccounts(true));
@@ -154,14 +160,12 @@ public class AccountController extends BaseController {
         return viewPaidAccount(model, accountUid);
     }
 
+    // todo : a bit more descriptiveness in file name, and in future maybe add "paid" stamp
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
-    @RequestMapping(value = "/statement/view", method = RequestMethod.GET)
-    public String viewAccountBillingStatement(Model model, @RequestParam String accountUid, @RequestParam String recordUid) {
-        Account account = accountBroker.loadAccount(accountUid);
-        validateUserIsAdministrator(account);
-        model.addAttribute("account", account);
-        model.addAttribute("record", accountBillingBroker.fetchBillingRecord(recordUid));
-        return "/account/view_statement";
+    @RequestMapping(value = "/statement", method = RequestMethod.GET, produces = "application/pdf")
+    @ResponseBody public FileSystemResource viewAccountBillingStatement(@RequestParam String statementUid, HttpServletResponse response) {
+        response.setHeader("Content-Disposition", "attachment; filename=statement.pdf");
+        return new FileSystemResource(pdfGeneratingService.generateInvoice(statementUid));
     }
 
     // todo : as with groups, have an intermediate step if autocomplete fails

@@ -153,6 +153,7 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
             * the other two cases should not occur, but accommodating possible corner cases
             */
 
+            log.info("Last bill was up until : {}", lastBill != null ? lastBill.getBilledPeriodEnd() : "null");
             LocalDateTime monthAgo = LocalDateTime.now().minusMonths(1L);
             LocalDateTime billingStart = (lastBill != null) ? LocalDateTime.ofInstant(lastBill.getBilledPeriodEnd(), BILLING_TZ)
                     : account.getEnabledDateTime().isBefore(monthAgo.toInstant(BILLING_TZ)) ? monthAgo
@@ -161,7 +162,7 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
             LocalDateTime billingEnd = Instant.now().isBefore(account.getDisabledDateTime()) ?
                     LocalDateTime.now() : LocalDateTime.ofInstant(account.getDisabledDateTime(), BILLING_TZ);
 
-            log.debug("Calculating bill and cost since : {}", billingStart);
+            log.debug("Calculating bill and cost between : {} and {}", billingStart, billingEnd);
 
             long billForPeriod = calculateAccountBillSinceLastStatement(account, billingStart, billingEnd);
             long costForPeriod = calculateAccountCostsInPeriod(account, billingStart, billingEnd);

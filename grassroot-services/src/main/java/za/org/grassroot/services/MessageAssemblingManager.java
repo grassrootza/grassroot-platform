@@ -6,17 +6,21 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.FormatUtil;
 
+import java.text.DecimalFormat;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+
+import static za.org.grassroot.core.util.DateTimeUtil.formatAtSAST;
 
 /**
  * Created by aakilomar on 8/24/15.
@@ -32,6 +36,7 @@ public class MessageAssemblingManager implements MessageAssemblingService {
 
     // major todo : consolidate & externalize all the date formatters
     private static final DateTimeFormatter shortDateFormatter = DateTimeFormatter.ofPattern("EEE, d/M");
+    private static final DecimalFormat billFormat = new DecimalFormat("#.##");
 
     @Override
     public String createEventInfoMessage(User user, Event event) {
@@ -255,6 +260,40 @@ public class MessageAssemblingManager implements MessageAssemblingService {
         return message;
     }
 
+    @Override
+    public String createAndroidLinkSms(User user) {
+        return messageSourceAccessor.getMessage("sms.link.android", getUserLocale(user));
+
+    }
+
+    @Override
+    public String createAccountBillingNotification(AccountBillingRecord record) {
+        return messageSourceAccessor.getMessage("sms.statement.notification", new String[] {
+                billFormat.format((double) record.getTotalAmountToPay() / 100), formatAtSAST(record.getNextPaymentDate(), shortDateFormatter)
+        }, getUserLocale(record.getAccount().getBillingUser()));
+    }
+
+    @Override
+    public String createAccountStatementSubject(AccountBillingRecord record) {
+        return messageSourceAccessor.getMessage("email.statement.subject", getUserLocale(record.getAccount().getBillingUser()));
+    }
+
+    @Override
+    public String createAccountStatementEmail(AccountBillingRecord record) {
+        final User billedUser = record.getAccount().getBillingUser();
+        final String salutation = messageSourceAccessor.getMessage("email.statement.salutation",
+                new String[] { StringUtils.isEmpty(billedUser.getFirstName()) ? billedUser.getFirstName() : billedUser.nameToDisplay() },
+                getUserLocale(billedUser));
+
+        final String body = messageSourceAccessor.getMessage("email.statement.body",
+                new String[] { billFormat.format((double) record.getTotalAmountToPay() / 100),
+                        formatAtSAST(record.getNextPaymentDate(), shortDateFormatter) }, getUserLocale(billedUser));
+
+        final String closing = messageSourceAccessor.getMessage("email.statement.closing", getUserLocale(billedUser));
+
+        return String.join("\n\n", Arrays.asList(salutation, body, closing));
+    }
+
 
     public Locale getUserLocale(User user) {
         return getUserLocale(user.getLanguageCode());
@@ -300,39 +339,6 @@ public class MessageAssemblingManager implements MessageAssemblingService {
 
         return eventVariables;
 
-    }
-
-    @Override
-    public String createAndroidLinkSms(User user) {
-        return messageSourceAccessor.getMessage("sms.link.android", getUserLocale(user));
-
-    }
-
-    @Override
-    public String createAccountBillingNotification(AccountBillingRecord record) {
-        return "Hello you need to pay us money thanks";
-    }
-
-    @Override
-    public String createAccountStatementSubject(AccountBillingRecord record) {
-        return "Grassroot Account Statement";
-    }
-
-    @Override
-    public String createAccountStatementEmail(AccountBillingRecord record) {
-
-        // okay, really need to set a "billed user" field
-        final String salutation = String.format("Dear %s,\n\n", "Person Paying Us");
-
-        final String body = String.format("Your monthly subscription fee for Grassroot of R%d " +
-                "is due for payment. We will automatically charge your payment method on file on %s. " +
-                "To upgrade your account, or change any of your settings, please visit " +
-                "http://app.grassroot.org.za/account/settings. As always, we hope we were useful.\n\n",
-                record.getAmountBilledThisPeriod(), LocalDate.now().plusDays(1).toString());
-
-        final String closing = "Regards,\nGrassroot";
-
-        return salutation + body + closing;
     }
 
     private String[] populateTodoFields(Todo todo) {
