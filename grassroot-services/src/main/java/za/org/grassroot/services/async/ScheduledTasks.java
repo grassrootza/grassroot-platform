@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.data.jpa.domain.Specifications;
+import org.springframework.integration.mqtt.inbound.MqttPahoMessageDrivenChannelAdapter;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.*;
@@ -80,6 +81,7 @@ public class ScheduledTasks {
 
     @Autowired
     private MessageSendingService messageSendingService;
+
 
     @Autowired
     private Environment environment;
@@ -208,6 +210,12 @@ public class ScheduledTasks {
             geoLocationBroker.calculateGroupLocation(group.getUid(), today);
         }
     }
+
+    @Scheduled(cron = "0 0 1 * * *") //runs at 1 am everyday
+    public void subscribeServerToGroupTopics(){
+        groupChatSettingsService.subscribeServerToAllGroupTopics();
+    }
+
 
     @Scheduled(cron = "0 0 15 * * *") // runs at 3pm (= 5pm SAST) every day
     public void sendGroupJoinNotifications() { groupBroker.notifyOrganizersOfJoinCodeUse(Instant.now().minus(1, ChronoUnit.DAYS),
