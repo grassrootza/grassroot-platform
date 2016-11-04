@@ -2,6 +2,7 @@ package za.org.grassroot.integration;
 
 import za.org.grassroot.core.domain.GroupChatSettings;
 import za.org.grassroot.integration.domain.GroupChatMessage;
+import za.org.grassroot.integration.domain.RelayedChatMessage;
 import za.org.grassroot.integration.exception.GroupChatSettingNotFoundException;
 
 import java.util.List;
