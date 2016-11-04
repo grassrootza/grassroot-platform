@@ -3,13 +3,12 @@
       data-layout-decorate="~{layout}">
 <head>
 
-  <title>Grassroot</title>
+  <title>Home</title>
 
   <meta property="og:title" content="grassroot.org.za"/>
-  <meta property="og:image" content="/img/grass.png"/>
-  <meta property="og:description" content="The Grassroot Platform."/>
+  <meta property="og:image" content="/img/horizontal-logo.png"/>
+  <meta property="og:description" content="The Grassroot Platform"/>
 
-  <!-- need these for ajax, though there may be a more elegant way to do it (maybe just call the Thymeleaf in the CSRF -->
   <meta name="_csrf" th:content="${_csrf.token}"/>
   <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
 
@@ -17,12 +16,16 @@
 
 <body>
 
-<div layout:fragment="header">
-  <div class="jumbotron narrow-vertical top-buffer-lg">
-    <h1 th:text="#{web.home.banner}" class="text-center">Meet, vote act</h1>
-    <h4 th:text="#{web.home.welcome(${currentUser.displayName})}" class="text-center">Welcome back to Grassroot, Luke</h4>
+<section layout:fragment="header" class="top-container">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
+        <h2 th:text="#{web.home.banner}" class="text-center header-content-title">Meet, vote act</h2>
+        <h4 th:text="#{web.home.welcome(${currentUser.displayName})}" class="text-center header-content-subtitle">Welcome back to Grassroot, Luke</h4>
+      </div>
+    </div>
   </div>
-</div>
+</section>
 
 <div layout:fragment="content">
 
