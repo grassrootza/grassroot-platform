@@ -359,6 +359,52 @@ span.top-lines {
     font-family: 'Roboto', sans-serif;
     font-size: 1.2em;
   }
+
+  .checkbox-lg {
+    font-size: 1.2em;
+    padding-left: 10px;
+  }
+
+  .table-header {
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 0;
+    padding-right: 0;
+    border-bottom: solid 2px #DDDDDD;
+
+    .header-cell {
+      color: $green;
+      font-size: 13pt;
+      font-weight: 700;
+      text-align: left;
+      text-transform: uppercase;
+      padding-left: 0;
+      padding-right: 0;
+    }
+  }
+
+  .table-row {
+    padding-top: 5px;
+    padding-bottom: 5px;
+    border-bottom: solid 1px #DDDDDD;
+
+    .body-cell {
+      padding-left: 0;
+      padding-right: 0;
+      margin-left: 0;
+      margin-right: 0;
+    }
+  }
+}
+
+.grassroot-form table {
+  thead > tr > th {
+    color: $green;
+    font-size: 12pt;
+    // line-height: 1.8;
+    text-align: left;
+    text-transform: uppercase;
+  }
 }
 
 .google-container {
@@ -475,6 +521,31 @@ span.top-lines {
   }
 }
 
+.join-requests {
+  margin-top: 30px;
+
+  ul {
+    border: none;
+    border-radius: 0;
+  }
+
+  li {
+    border-bottom: 1px solid $green;
+    margin-bottom: 5px;
+    border-left: 0;
+    border-right: 0;
+    border-top: 0;
+    border-radius: 0 !important;
+    padding-top: 18px;
+    padding-bottom: 18px;
+  }
+
+  .request-item {
+    display: inline-block;
+  }
+
+}
+
 .upcoming-events {
   margin-top: 30px;
   
@@ -497,8 +568,11 @@ span.top-lines {
   .event-item {
     display: inline-block;
   }
+}
 
-  .mark-complete {
+.upcoming-events,
+.join-requests {
+  .response-buttons {
     display: inline-block;
     float: right;
 
@@ -518,6 +592,29 @@ span.top-lines {
       &:active {
         background-color: $darker-green;
       }
+
+      &.negative {
+        background-color: $orange;
+      }
+    }
+
+    button {
+      background-color: $offwhite;
+      border-radius: 0;
+      // border: 1px solid #DDDDDD;
+      border: none;
+      color: $dark-text;
+      font-family: 'Helvetica', sans-serif;
+      font-weight: 400;
+      letter-spacing: 0.02em;
+      margin-top: 2px;
+      padding: 10px 18px;
+      transition: background-color, .3s;
+      &:hover,
+      &:focus,
+      &:active {
+        background-color: #DDDDDD;
+      }
     }
 
     i {
@@ -526,6 +623,7 @@ span.top-lines {
   }
 }
 
+.join-requests,
 .upcoming-events,
 .home-groups {
   .panel {
@@ -692,7 +790,7 @@ span.top-lines {
     font-size: 1.2em;
   }
 
-  .upcoming-events .mark-complete {
+  .upcoming-events .response-buttons {
     float: left;
   }
 }

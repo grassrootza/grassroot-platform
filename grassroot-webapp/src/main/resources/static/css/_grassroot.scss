@@ -30,6 +30,10 @@
 $green: #1A7C3E;
 $darker-green: #145D2F;
 $light-green: #489665;
+$orange: #FE5F55;
+$offwhite: #EEEEEE;
+$panel-title: #D1C89F;
+$dark-text: #434747;
 
 /*
 Some additions for account form : to decide if they should go in here or styles.scss
@@ -208,6 +212,13 @@ h4.header-content-subtitle {
         color: $darker-green;
         text-decoration: none;
     }
+}
+
+.list-item-no-header {
+    font-size: 14pt;
+    padding-top: 9px;
+    color: $green;
+    font-weight: 500;
 }
 
 .list-header-new {
