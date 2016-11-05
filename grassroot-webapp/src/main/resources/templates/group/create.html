@@ -51,8 +51,8 @@
 
             <div class="row table-header">
               <div class="header-cell col-md-4 col-sm-4 col-xs-4">Name</div>
-              <div class="header-cell col-md-4 col-sm-4 col-xs-4">Phone</div>
-              <div class="header-cell col-md-4 col-sm-4 col-xs-4">Role</div>
+              <div class="header-cell col-md-3 col-sm-3 col-xs-4">Phone</div>
+              <div class="header-cell col-md-3 col-sm-4 col-xs-4">Role</div>
             </div>
 
 
@@ -61,7 +61,7 @@
                 <div class="body-cell col-md-4 col-sm-4 col-xs-12">
                   <input type="text" th:field="*{listOfMembers[__${iterStat.index}__].displayName}" class="form-control input-lg" placeholder="Member's name" maxlength="35"/>
                 </div>
-                <div class="body-cell col-md-4 col-sm-4 col-xs-12">
+                <div class="body-cell col-md-3 col-sm-3 col-xs-12">
                   <div th:class="${#fields.hasErrors('listOfMembers[__${iterStat.index}__].phoneNumber')}? has-error">
                     <input type="text" th:field="*{listOfMembers[__${iterStat.index}__].phoneNumberWithoutCCode}" class="form-control input-lg" th:errorclass="error" placeholder="Phone number"/>
                     <span th:if="${#fields.hasErrors('listOfMembers[__${iterStat.index}__].phoneNumber')}" class="alert has-error">Error!</span>
@@ -76,19 +76,16 @@
                   </select>
                 </div>
                 <div class="body-cell col-md-1 col-sm-1 col-xs-12">
-                  <button type="button" name="removeMember" class="btn btn-default btn-lg" aria-label="Remove"
-                          th:value="${iterStat.index}">
-                    <i class="fa fa-times" aria-hidden="true"></i>
-                  </button>
+                  <i id="removeMember" class="fa fa-times row-icon" aria-hidden="true"></i>
                 </div>
               </div>
-            </form>
-          </div>
+            </div>
 
-            <button type="button" name="addMember" id="add_member" class="btn btn-default btn-lg">
-              <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
-              Add another member</button>
-            <a href="#advancedOptions" class="btn btn-default btn-lg" role="button" data-toggle="collapse">Advanced options</a>
+            <div class="row table-button-row">
+              <button type="button" name="addMember" id="add_member" class="btn-primary add-row">
+                <i class="fa fa-plus" aria-hidden="true"></i>Add another member</button>
+              <button href="#advancedOptions" class="btn-neutral" role="button" data-toggle="collapse">Advanced options</button>
+            </div>
 
           <div class="collapse" id="advancedOptions">
             <!-- <div class="form-group">

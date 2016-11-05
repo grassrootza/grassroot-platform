@@ -309,20 +309,51 @@ span.top-lines {
   padding: 10px;
 }
 
-.grassroot-form button {
-  background-color: $green;
+.grassroot-button {
   border: none;
   font-size: 1.2em;
   font-weight: 300;
   padding: 10px 12px;
   transition: background-color, .3s;
+}
+
+.grassroot-form button {
+  @extend .grassroot-button;
 
   i {
     margin-right: 10px;
   }
 
+  background-color: $green;
+  color: white;
+
   &:hover {
     background-color: $darker-green;
+  }
+
+}
+
+.grassroot-form button .btn-primary {
+  @extend .grassroot-button;
+
+  background-color: $green;
+  color: white;
+
+  &:hover {
+    background-color: $darker-green;
+  }
+
+}
+
+.grassroot-form button .btn-neutral {
+  background-color: $offwhite;
+  border-radius: 0;
+  color: $dark-text;
+  font-family: 'Helvetica', sans-serif;
+  &:hover,
+  &:focus,
+  &:active {
+    color: #DDDDDD;
   }
 }
 
@@ -378,32 +409,54 @@ span.top-lines {
       font-weight: 700;
       text-align: left;
       text-transform: uppercase;
-      padding-left: 0;
+      padding-left: 10px;
       padding-right: 0;
     }
   }
 
   .table-row {
-    padding-top: 5px;
-    padding-bottom: 5px;
-    border-bottom: solid 1px #DDDDDD;
+    padding: 5px 10px;
+    margin-bottom: 10px;
 
     .body-cell {
       padding-left: 0;
       padding-right: 0;
-      margin-left: 0;
-      margin-right: 0;
+      margin-left: 5px;
+      margin-right: 5px;
+    }
+
+    .row-icon {
+      font-size: 2em;
+      padding-left: 20%;
+      padding-right: 20%;
+      color: $light-green;
     }
   }
-}
 
-.grassroot-form table {
-  thead > tr > th {
-    color: $green;
-    font-size: 12pt;
-    // line-height: 1.8;
-    text-align: left;
-    text-transform: uppercase;
+  .table-button-row {
+    padding-left: 10px;
+
+    .add-row {
+      background-color: $green;
+      color: #FFF;
+      &:hover,
+      &:focus,
+      &:active {
+        color: $darker-green;
+      }
+    }
+
+    .btn-neutral button {
+      background-color: $offwhite;
+      border-radius: 0;
+      color: $dark-text;
+      font-family: 'Helvetica', sans-serif;
+      &:hover,
+      &:focus,
+      &:active {
+        color: #DDDDDD;
+      }
+    }
   }
 }
 
