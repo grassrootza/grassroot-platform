@@ -22,7 +22,6 @@ import za.org.grassroot.core.repository.GcmRegistrationRepository;
 import za.org.grassroot.core.repository.GroupChatSettingsRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
-import za.org.grassroot.integration.domain.AndroidClickActionType;
 import za.org.grassroot.integration.utils.MessageUtils;
 
 import java.io.IOException;
@@ -251,11 +250,13 @@ public class GcmManager implements GcmService {
         if(gcmRegistration != null){
             Map<String, Object> data = MessageUtils.generatePingMessageData(user,group);
             Message gcmMessage = GcmXmppMessageCodec.encode(gcmRegistration.getRegistrationId(),(String) data.get("messageId") ,
-                    null, null, null,
-                    AndroidClickActionType.CHAT_MESSAGE.name(), data);
+                    null,
+                    data);
             gcmXmppOutboundChannel.send(gcmMessage);
         }
     }
+
+
 
     private HttpHeaders getHttpHeaders() {
         HttpHeaders headers = new HttpHeaders();

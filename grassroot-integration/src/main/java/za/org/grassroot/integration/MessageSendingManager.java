@@ -3,6 +3,7 @@ package za.org.grassroot.integration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.integration.mqtt.inbound.MqttPahoMessageDrivenChannelAdapter;
 import org.springframework.integration.support.MessageBuilder;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
@@ -12,6 +13,9 @@ import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.core.repository.GcmRegistrationRepository;
+
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Created by luke on 2015/09/09.
@@ -26,6 +30,10 @@ public class MessageSendingManager implements MessageSendingService {
 
     @Autowired
     private GcmRegistrationRepository gcmRegistrationRepository;
+
+    @Autowired
+    private MqttPahoMessageDrivenChannelAdapter mqttAdapter;
+    
 
     @Override
     public void sendMessage(Notification notification) {
@@ -42,7 +50,10 @@ public class MessageSendingManager implements MessageSendingService {
     @Override
     public void sendPollingMessage(){
        requestChannel.send(MessageBuilder.withPayload("polling").setHeader("route", "ANDROID_APP").build());
-
+        List<String> topicsSubscribedTo = Arrays.asList(mqttAdapter.getTopic());
+        if(!topicsSubscribedTo.contains("Grassroot")){
+            mqttAdapter.addTopic("Grassroot",1);
+        }
     }
 
     private Message<Notification> createMessage(Notification notification, String givenRoute) {

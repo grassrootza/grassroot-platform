@@ -94,7 +94,7 @@ public class TaskDTO implements Comparable<TaskDTO> {
 
         this.reply = (eventLog != null && eventLog.hasValidResponse()) ? eventLog.getResponse().toString() :
                 String.valueOf(TodoStatus.NO_RESPONSE);
-        this.canAction = canActionOnEvent(event, hasResponded);
+        this.canAction = canActionOnEvent(event, user);
         this.location = event.getEventType().equals(EventType.MEETING) ? ((Meeting) event).getEventLocation() : "";
         this.canEdit = event.getCreatedByUser().equals(user) && instant.isAfter(Instant.now());
 
@@ -177,13 +177,15 @@ public class TaskDTO implements Comparable<TaskDTO> {
     }
 
     // for the moment, users can change their vote after casting it
-    private boolean canActionOnEvent(Event event, boolean hasResponded) {
+    // todo : remove the cumbersome membership check once integrated in JPA specifications
+    private boolean canActionOnEvent(Event event, User user) {
         boolean isOpen = event.getEventStartDateTime().isAfter(Instant.now());
         // slight redundancy here but may introduce alternate logics here in future, hence
         if (event.getEventType().equals(EventType.MEETING) && isOpen) {
             return true;
         } else if (event.getEventType().equals(EventType.VOTE) && (isOpen)) {
-            return true;
+            Membership membership = event.getAncestorGroup().getMembership(user);
+            return membership != null && membership.getJoinTime().isBefore(event.getCreatedDateTime());
         }
         return false;
     }

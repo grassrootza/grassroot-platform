@@ -41,10 +41,10 @@ public class GcmXmppMessageCodec {
 	}
 
 	public static org.springframework.messaging.Message<Message> encode(String registrationID, String messageId, String collapseKey,
-																		String title, String body, String clickAction, Map<String, Object> dataPart) {
+																		Map<String, Object> dataPart) {
 		logger.debug("Generated collapseKey " + collapseKey);
 
-		GcmEntity gcmPayload = new GcmEntity(messageId, registrationID, collapseKey, dataPart, createNotificationPart(title,body,clickAction));
+		GcmEntity gcmPayload = new GcmEntity(messageId, registrationID, collapseKey, dataPart, null);
 		return constructGcmMessage(gcmPayload);
 	}
 
@@ -52,6 +52,7 @@ public class GcmXmppMessageCodec {
 		Message xmppMessage = new Message();
 		try {
 			String gcmPayloadJson = mapper.writeValueAsString(gcmPayload);
+			logger.info("payload "+gcmPayloadJson);
 			xmppMessage.addExtension(new GcmPacketExtension(gcmPayloadJson));
 
 			return MessageBuilder.withPayload(xmppMessage).build();
@@ -76,7 +77,7 @@ public class GcmXmppMessageCodec {
 		}
 
 		data.put("notificationUid", notificationUid);
-		data.put("body", description);
+	    data.put("body", description);
 		data.put("id", id);
 		data.put("created_date_time", createdDateTime);
 		data.put("alert_type", alertType);
@@ -84,15 +85,6 @@ public class GcmXmppMessageCodec {
 		data.put("click_action", clickAction);
 		data.put("priority", priority);
 
-		return data;
-	}
-
-	private static Map<String, Object> createNotificationPart(String title, String body, String clickAction) {
-		Map<String, Object> data = new HashMap<>();
-		data.put("title", title);
-		data.put("body", body);
-		data.put("icon", notificationIcon);
-		data.put("click_action", clickAction);
 		return data;
 	}
 

@@ -28,4 +28,5 @@ public interface GcmService {
     void unsubscribeFromTopic(String registrationId, String topicId) throws Exception;
 
     void pingUserForGroupChat(User user, Group group);
+
 }

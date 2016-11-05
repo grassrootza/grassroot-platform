@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.integration.GroupChatService;
+import za.org.grassroot.integration.domain.GroupChatMessage;
+import za.org.grassroot.integration.domain.RelayedChatMessage;
 import za.org.grassroot.integration.exception.GroupChatSettingNotFoundException;
 import za.org.grassroot.integration.xmpp.GcmService;
 import za.org.grassroot.services.user.UserManagementService;
@@ -63,6 +65,7 @@ public class GcmRestController {
                                                             @RequestParam String messageText, @RequestParam String messageUid,
                                                             @RequestParam String gcmKey) {
         try {
+
             groupChatService.relayChatMessage(phoneNumber, groupUid, messageText, messageUid, gcmKey);
             return RestUtil.messageOkayResponse(RestMessage.CHAT_SENT);
         } catch (GroupChatSettingNotFoundException e) {

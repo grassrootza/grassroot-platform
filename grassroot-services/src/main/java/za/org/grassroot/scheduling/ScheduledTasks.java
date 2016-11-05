@@ -12,12 +12,12 @@ import za.org.grassroot.core.repository.*;
 import za.org.grassroot.integration.GroupChatService;
 import za.org.grassroot.integration.MessageSendingService;
 import za.org.grassroot.integration.exception.GroupChatSettingNotFoundException;
-import za.org.grassroot.services.task.EventBroker;
-import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.SafetyEventBroker;
-import za.org.grassroot.services.task.TodoBroker;
 import za.org.grassroot.services.geo.GeoLocationBroker;
+import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.specifications.TodoSpecifications;
+import za.org.grassroot.services.task.EventBroker;
+import za.org.grassroot.services.task.TodoBroker;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -203,6 +203,12 @@ public class ScheduledTasks {
             geoLocationBroker.calculateGroupLocation(group.getUid(), today);
         }
     }
+
+    @Scheduled(cron = "0 0 1 * * *") //runs at 1 am everyday
+    public void subscribeServerToGroupTopics(){
+        groupChatSettingsService.subscribeServerToAllGroupTopics();
+    }
+
 
     @Scheduled(cron = "0 0 15 * * *") // runs at 3pm (= 5pm SAST) every day
     public void sendGroupJoinNotifications() { groupBroker.notifyOrganizersOfJoinCodeUse(Instant.now().minus(1, ChronoUnit.DAYS),

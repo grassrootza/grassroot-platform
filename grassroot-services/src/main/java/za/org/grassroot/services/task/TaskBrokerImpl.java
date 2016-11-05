@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.core.enums.EventLogType;
+import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.enums.TodoLogType;
 import za.org.grassroot.core.repository.*;
@@ -123,7 +124,8 @@ public class TaskBrokerImpl implements TaskBroker {
 
         Set<TaskDTO> taskDtos = new HashSet<>();
 
-        eventBroker.retrieveGroupEvents(group, null, Instant.now(), null)
+        eventBroker.retrieveGroupEvents(group, null, Instant.now(), null).stream()
+                .filter(event -> event.getEventType().equals(EventType.MEETING) || partOfGroupBeforeVoteCalled(event, user))
                 .forEach(e -> taskDtos.add(new TaskDTO(e, user, eventLogRepository)));
 
         Instant todoStart = Instant.now().minus(DAYS_PAST_FOR_TODO_CHECKING, ChronoUnit.DAYS);
@@ -184,7 +186,15 @@ public class TaskBrokerImpl implements TaskBroker {
         User user = userRepository.findOneByUid(userUid);
         Instant now = Instant.now();
 
+        // todo : use specifications when those are wired up properly
         List<Event> events = eventRepository.findByParentGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceledFalse(user, now);
+
+        if (events != null) {
+            events = events.stream()
+                    .filter(event -> event.getEventType().equals(EventType.MEETING) || partOfGroupBeforeVoteCalled(event, user))
+                    .collect(Collectors.toList());
+        }
+
         Set<TaskDTO> taskDtos = resolveEventTaskDtos(events, user, null);
 
         Instant todoStart = Instant.now().minus(DAYS_PAST_FOR_TODO_CHECKING, ChronoUnit.DAYS);
@@ -258,6 +268,15 @@ public class TaskBrokerImpl implements TaskBroker {
             }
         }
         return taskDtos;
+    }
+
+    private boolean partOfGroupBeforeVoteCalled(Event event, User user) {
+        Membership membership = event.getAncestorGroup().getMembership(user);
+        if (membership == null) {
+            return false;
+        } else {
+            return event.getCreatedDateTime().isAfter(membership.getJoinTime());
+        }
     }
 
     private Set<TaskDTO> resolveTodoTaskDtos(List<Todo> todos, User user, Instant changedSince) {
