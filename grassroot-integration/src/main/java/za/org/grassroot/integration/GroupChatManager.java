@@ -2,7 +2,6 @@ package za.org.grassroot.integration;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.jivesoftware.smack.packet.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,18 +10,12 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.support.MessageSourceAccessor;
-import org.springframework.integration.core.MessageProducer;
-import org.springframework.integration.endpoint.MessageProducerSupport;
-import org.springframework.integration.mqtt.inbound.MqttPahoMessageDrivenChannelAdapter;
 import org.springframework.integration.mqtt.support.MqttHeaders;
 import org.springframework.integration.support.MessageBuilder;
-import org.springframework.integration.support.json.Jackson2JsonMessageParser;
 import org.springframework.messaging.MessageChannel;
-import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.SerializationUtils;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.GroupChatSettings;
 import za.org.grassroot.core.domain.User;
@@ -34,7 +27,6 @@ import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 import za.org.grassroot.integration.domain.AndroidClickActionType;
 import za.org.grassroot.integration.domain.GroupChatMessage;
-import za.org.grassroot.integration.domain.MQTTPayload;
 import za.org.grassroot.integration.domain.RelayedChatMessage;
 import za.org.grassroot.integration.exception.GroupChatSettingNotFoundException;
 import za.org.grassroot.integration.exception.SeloParseDateTimeFailure;
@@ -79,10 +71,6 @@ public class GroupChatManager implements GroupChatService {
 
     @Autowired
     private MessageChannel mqttOutboundChannel;
-
-    @Autowired
-    private MqttPahoMessageDrivenChannelAdapter mqttAdapter;
-
 
     @Autowired
     @Qualifier("integrationMessageSourceAccessor")
@@ -282,26 +270,6 @@ public class GroupChatManager implements GroupChatService {
         }
         groupChatSettingsRepository.save(groupChatSettings);
 
-    }
-
-
-    @Override @Async
-    public void subscribeServerToAllGroupTopics() {
-        List<Group> groups = groupRepository.findAll();
-        List<String> topicsSubscribedTo = Arrays.asList(mqttAdapter.getTopic());
-        for(Group group: groups){
-            if(!topicsSubscribedTo.contains(group.getUid())){
-                mqttAdapter.addTopic(group.getUid(), 1);
-            }
-        }
-    }
-
-    @Override @Async
-    public void subscribeServerToUserTopic(User user){
-        List<String> topicsSubscribeTo = Arrays.asList(mqttAdapter.getTopic());
-        if(!topicsSubscribeTo.contains(user.getPhoneNumber())){
-            mqttAdapter.addTopic(user.getPhoneNumber(), 1);
-        }
     }
 
     @Override

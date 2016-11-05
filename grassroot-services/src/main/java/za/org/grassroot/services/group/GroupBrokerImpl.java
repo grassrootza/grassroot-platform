@@ -72,6 +72,7 @@ public class GroupBrokerImpl implements GroupBroker {
 
     @Autowired
     private GroupChatService groupChatSettingsService;
+
     @Autowired
     private GcmService gcmService;
 

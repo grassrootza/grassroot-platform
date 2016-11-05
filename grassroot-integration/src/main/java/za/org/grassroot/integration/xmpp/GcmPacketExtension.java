@@ -8,8 +8,9 @@ import org.jivesoftware.smack.packet.DefaultExtensionElement;
 import org.jivesoftware.smack.util.XmlStringBuilder;
 
 public class GcmPacketExtension extends DefaultExtensionElement {
-    public static final String GCM_ELEMENT_NAME = "gcm";
-    public static final String GCM_NAMESPACE = "google:mobile:data";
+
+    protected static final String GCM_ELEMENT_NAME = "gcm";
+    protected static final String GCM_NAMESPACE = "google:mobile:data";
     private final String json;
 
     public GcmPacketExtension(String json) {

@@ -53,9 +53,6 @@ public class InboundMqttMessageHandler {
     private MessageSourceAccessor messageSourceAccessor;
 
     @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
     GroupRepository groupRepository;
 
     @Autowired

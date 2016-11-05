@@ -12,6 +12,7 @@ import za.org.grassroot.core.repository.*;
 import za.org.grassroot.integration.GroupChatService;
 import za.org.grassroot.integration.MessageSendingService;
 import za.org.grassroot.integration.exception.GroupChatSettingNotFoundException;
+import za.org.grassroot.integration.mqtt.MqttSubscriptionService;
 import za.org.grassroot.services.SafetyEventBroker;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.group.GroupBroker;
@@ -78,6 +79,9 @@ public class ScheduledTasks {
 
     @Autowired
     private MessageSendingService messageSendingService;
+
+    @Autowired(required = false)
+    private MqttSubscriptionService mqttSubscriptionService;
 
     @Scheduled(fixedRate = 300000) //runs every 5 minutes
     public void sendReminders() {
@@ -206,7 +210,9 @@ public class ScheduledTasks {
 
     @Scheduled(cron = "0 0 1 * * *") //runs at 1 am everyday
     public void subscribeServerToGroupTopics(){
-        groupChatSettingsService.subscribeServerToAllGroupTopics();
+        if (mqttSubscriptionService != null) {
+            mqttSubscriptionService.subscribeServerToAllGroupTopics();
+        }
     }
 
 

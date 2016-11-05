@@ -49,7 +49,7 @@ public class NotificationToGcmXmppTransformer {
         return gcmMessage;
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     private Message<org.jivesoftware.smack.packet.Message> constructGcmMessage(Notification notification) throws JsonProcessingException {
 
 	    GcmRegistration gcmRegistration = gcmRegistrationRepository.findTopByUserOrderByCreationTimeDesc(notification.getTarget());
@@ -60,35 +60,6 @@ public class NotificationToGcmXmppTransformer {
         String collapseKey = generateCollapseKey(notification);
         log.debug("Generated collapseKey " + collapseKey);
         Map<String, Object> dataPart = createDataPart(notification);
-
-        String title;
-        String body;
-
-        switch (notification.getNotificationType()) {
-            case EVENT:
-                title = notification.getEventLog().getEvent().getAncestorGroup().getGroupName();
-                body = notification.getMessage();
-                break;
-
-            case TODO:
-                Todo todo = notification.getTodoLog().getTodo();
-                title = todo.getAncestorGroup().getGroupName();
-                body = notification.getMessage();
-                break;
-
-            case ACCOUNT:
-                title = notification.getAccountLog().getAccount().getAccountName();
-                body = notification.getMessage();
-                break;
-
-            case USER:
-                title = getGroupNameFromUserNotification((UserNotification) notification);
-                body = notification.getMessage();
-                break;
-
-            default:
-                throw new UnsupportedOperationException("Have to add support for notification type: " + notification.getNotificationType());
-        }
 
         return GcmXmppMessageCodec.encode(registrationID, messageId, collapseKey, dataPart);
     }

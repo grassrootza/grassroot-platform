@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -34,6 +35,7 @@ import java.util.Set;
 @ComponentScan
 @IntegrationComponentScan
 @EnableIntegration
+@ConditionalOnProperty(name = "mqtt.connection.enabled", havingValue = "true",  matchIfMissing = false)
 public class MQTTConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(MQTTConfig.class);
@@ -88,16 +90,9 @@ public class MQTTConfig {
         return messageHandler;
     }
 
-
-
     @Bean
     public MessageChannel mqttInboundChannel(){
         return  new DirectChannel();
-    }
-
-    @Bean
-    public MessageChannel mqttOutboundChannel() {
-        return new DirectChannel();
     }
 
     @Bean

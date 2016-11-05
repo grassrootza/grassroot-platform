@@ -30,13 +30,6 @@ public interface GroupChatService {
 
     void updateActivityStatus(String userUid, String groupUid, boolean active, boolean userInitiated) throws Exception;
 
-    @Async
-    @Transactional
-    void subscribeServerToAllGroupTopics();
-
-    @Async
-    void subscribeServerToUserTopic(User user);
-
     boolean messengerSettingExist(String userUid, String groupUid);
 
     List<GroupChatSettings> loadUsersToBeUnmuted();

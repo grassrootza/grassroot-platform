@@ -54,4 +54,11 @@ public class InfrastructureConfiguration {
     @Bean
     public MessageChannel emailOutboundChannel() { return new DirectChannel(); }
 
+    @Bean
+    public MessageChannel mqttOutboundChannel() {
+        return new DirectChannel();
+    }
+
+
+
 }

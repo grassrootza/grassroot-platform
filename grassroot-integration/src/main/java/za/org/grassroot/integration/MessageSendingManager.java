@@ -31,9 +31,8 @@ public class MessageSendingManager implements MessageSendingService {
     @Autowired
     private GcmRegistrationRepository gcmRegistrationRepository;
 
-    @Autowired
+    @Autowired(required = false)
     private MqttPahoMessageDrivenChannelAdapter mqttAdapter;
-    
 
     @Override
     public void sendMessage(Notification notification) {
@@ -49,10 +48,12 @@ public class MessageSendingManager implements MessageSendingService {
 
     @Override
     public void sendPollingMessage(){
-       requestChannel.send(MessageBuilder.withPayload("polling").setHeader("route", "ANDROID_APP").build());
-        List<String> topicsSubscribedTo = Arrays.asList(mqttAdapter.getTopic());
-        if(!topicsSubscribedTo.contains("Grassroot")){
-            mqttAdapter.addTopic("Grassroot",1);
+        requestChannel.send(MessageBuilder.withPayload("polling").setHeader("route", "ANDROID_APP").build());
+        if (mqttAdapter != null) {
+            List<String> topicsSubscribedTo = Arrays.asList(mqttAdapter.getTopic());
+            if (!topicsSubscribedTo.contains("Grassroot")) {
+                mqttAdapter.addTopic("Grassroot", 1);
+            }
         }
     }
 
