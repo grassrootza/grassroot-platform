@@ -7,6 +7,7 @@ import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.util.UIDGenerator;
 import za.org.grassroot.integration.domain.AndroidClickActionType;
 import za.org.grassroot.integration.domain.GroupChatMessage;
+import za.org.grassroot.integration.domain.MQTTPayload;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -48,6 +49,11 @@ public class MessageUtils {
 
     public static boolean isCommand(GroupChatMessage input) {
         String text = (String)input.getData().get("message");
+        return text.startsWith("/");
+    }
+
+    public static boolean isCommand(MQTTPayload input) {
+        String text = input.getText();
         return text.startsWith("/");
     }
 
