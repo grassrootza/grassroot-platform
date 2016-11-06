@@ -21,4 +21,6 @@ public interface GroupChatSettingsRepository extends JpaRepository<GroupChatSett
 
     List<GroupChatSettings> findByGroupAndActiveAndCanSend(Group group, boolean active, boolean canSend);
 
+    Long countByGroupAndActive(Group group, boolean active);
+
  }

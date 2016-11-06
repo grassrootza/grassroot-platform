@@ -5,6 +5,7 @@ import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.GroupChatSettings;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.integration.domain.GroupChatMessage;
+import za.org.grassroot.integration.domain.MQTTPayload;
 import za.org.grassroot.integration.domain.RelayedChatMessage;
 import za.org.grassroot.integration.exception.GroupChatSettingNotFoundException;
 
@@ -20,6 +21,8 @@ public interface GroupChatService {
 
     void processAndRouteIncomingChatMessage(GroupChatMessage message);
 
+    void processCommandMessage(MQTTPayload incoming);
+
     void markMessagesAsRead(String groupUid, String groupName, Set<String> messageUids);
 
     GroupChatSettings load(String userUid, String groupUid) throws GroupChatSettingNotFoundException;
@@ -30,12 +33,11 @@ public interface GroupChatService {
 
     void updateActivityStatus(String userUid, String groupUid, boolean active, boolean userInitiated) throws Exception;
 
-    @Async
-    @Transactional
     void subscribeServerToAllGroupTopics();
 
-    @Async
     void subscribeServerToUserTopic(User user);
+
+    void createGroupChatMessageStats(MQTTPayload payload);
 
     boolean messengerSettingExist(String userUid, String groupUid);
 

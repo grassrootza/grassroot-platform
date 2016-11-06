@@ -46,6 +46,15 @@ public class MQTTPayload {
 
     public MQTTPayload(){}
 
+    public MQTTPayload(String uid, String groupUid, String groupName, String displayName,Date time, String type){
+        this.uid =uid;
+        this.groupUid =groupUid;
+        this.displayName = displayName;
+        this.groupName=groupName;
+        this.time=time;
+        this.type= type;
+    }
+
     public String getUid() {
         return uid;
     }
@@ -72,6 +81,10 @@ public class MQTTPayload {
 
     public String getGroupName() {
         return groupName;
+    }
+
+    public String getType() {
+        return type;
     }
 
     public Date getTime() {
