@@ -1,6 +1,13 @@
+CREATE SEQUENCE group_message_stats_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
 CREATE TABLE group_message_stats
 (
-  id bigint,
+  id bigint NOT NULL DEFAULT nextval('group_message_stats_id_seq'::regclass),
   created_date_time timestamp without time zone,
   intended_group bigint,
   uid character varying(50) NOT NULL,

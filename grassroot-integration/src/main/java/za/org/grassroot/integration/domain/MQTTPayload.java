@@ -91,6 +91,10 @@ public class MQTTPayload {
         return time;
     }
 
+    public List<String> getTokens() {
+        return tokens;
+    }
+
     public void setUid(String uid) {
         this.uid = uid;
     }

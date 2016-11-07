@@ -171,7 +171,7 @@ public class GroupChatManager implements GroupChatService {
         ObjectMapper objectMapper = new ObjectMapper();
         try {
             final String message = objectMapper.writeValueAsString(payload);
-            logger.debug("Outgoing mqtt payload ={]", payload);
+            logger.info("Outgoing mqtt payload ={}", message);
             mqttOutboundChannel.send(MessageBuilder.withPayload(message).
                     setHeader(MqttHeaders.TOPIC, incoming.getPhoneNumber()).build());
         } catch (JsonProcessingException e) {

@@ -32,7 +32,7 @@ public class GroupChatMessageStats {
     @Column(name = "number_times_read")
     private Long timesRead;
 
-    @Column(name="marked_as_read")
+    @Column(name="read")
     private Boolean read;
 
 
