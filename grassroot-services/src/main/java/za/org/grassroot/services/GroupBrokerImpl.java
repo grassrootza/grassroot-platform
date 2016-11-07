@@ -124,6 +124,8 @@ public class GroupBrokerImpl implements GroupBroker {
 
         permissionBroker.setRolePermissionsFromTemplate(group, groupPermissionTemplate);
         group = groupRepository.save(group);
+        groupChatSettingsService.subscribeServerToGroupTopic(group);
+
 
         logger.info("Group created under UID {}", group.getUid());
 
@@ -343,6 +345,8 @@ public class GroupBrokerImpl implements GroupBroker {
         // make sure the newly created users are stored
         userRepository.save(createdUsers);
         userRepository.flush();
+
+
 
         // adding action logs and event notifications ...
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();

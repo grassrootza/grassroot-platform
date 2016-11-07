@@ -1,6 +1,7 @@
 package za.org.grassroot.services;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.Membership;
@@ -17,6 +18,7 @@ import java.util.Set;
  * Represents all info needed to add new member.
  * Only phone number is required.
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class MembershipInfo implements Comparable<MembershipInfo> {
 
     // note: removing 'final' so Thymeleaf can populate this (can find a better way if needed)

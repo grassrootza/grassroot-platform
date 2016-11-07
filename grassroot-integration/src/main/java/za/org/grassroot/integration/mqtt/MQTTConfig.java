@@ -81,9 +81,8 @@ public class MQTTConfig {
     @ServiceActivator(inputChannel = "mqttOutboundChannel")
     public MessageHandler mqttOutbound() {
         MqttPahoMessageHandler messageHandler =
-                new MqttPahoMessageHandler("Grassroot", mqttClientFactory());
+                new MqttPahoMessageHandler("Grassroot Server", mqttClientFactory());
         messageHandler.setAsync(true);
-        messageHandler.setDefaultTopic("eb831b89-eac0-40c8-a6c4-5603c22e02ba");
         messageHandler.setConverter(new DefaultPahoMessageConverter());
         return messageHandler;
     }
