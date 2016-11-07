@@ -24,6 +24,7 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import static za.org.grassroot.services.specifications.PaidGroupSpecifications.expiresAfter;
 import static za.org.grassroot.services.specifications.PaidGroupSpecifications.isForAccount;
@@ -64,8 +65,18 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
 
     @Override
     @Transactional(readOnly = true)
-    public PaidGroup loadPaidGroup(String paidGroupUid) {
-        return paidGroupRepository.findOneByUid(paidGroupUid);
+    public List<Group> fetchGroupsSponsoredByAccount(String accountUid) {
+        Account account = accountRepository.findOneByUid(accountUid);
+        List<PaidGroup> paidGroups = paidGroupRepository.findByAccount(account);
+        List<Group> groups = new ArrayList<>();
+        // todo : just make sure this isn't doing many queries & sort by alphabetical
+        if (paidGroups != null) {
+            groups = paidGroups.stream()
+                    .map(PaidGroup::getGroup)
+                    .distinct()
+                    .collect(Collectors.toList());
+        }
+        return groups;
     }
 
     @Override
@@ -219,6 +230,11 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
         Account account = user.getAccountAdministered();
         PaidGroup paidGroup = paidGroupRepository.findTopByGroupOrderByExpireDateTimeDesc(group);
 
+        Objects.requireNonNull(user);
+        Objects.requireNonNull(group);
+        Objects.requireNonNull(account);
+        Objects.requireNonNull(paidGroup);
+
         authorizeFreeFormMessageSending(user, account, group, paidGroup);
 
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
@@ -287,6 +303,8 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
     }
 
     private void authorizeFreeFormMessageSending(User user, Account account, Group group, PaidGroup paidGroup) {
+        logger.info("Authorizing message, paid group = {}, group = {}", paidGroup, group);
+
         if (account == null || !account.getAdministrators().contains(user)) {
             permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
         }

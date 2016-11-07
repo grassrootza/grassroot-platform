@@ -5,12 +5,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.env.Environment;
+import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.AccountLogType;
 import za.org.grassroot.core.enums.AccountType;
 import za.org.grassroot.core.repository.AccountRepository;
+import za.org.grassroot.core.repository.NotificationRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.services.PermissionBroker;
@@ -21,10 +23,13 @@ import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 import javax.annotation.PostConstruct;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+
+import static za.org.grassroot.services.specifications.NotificationSpecifications.*;
 
 /**
  * Created by luke on 2015/11/12.
@@ -36,7 +41,7 @@ public class AccountBrokerImpl implements AccountBroker {
 
     private Map<AccountType, Integer> accountFees = new HashMap<>();
 
-    private Map<AccountType, Boolean> messagesEnabled = new HashMap<>();
+    private Map<AccountType, Integer> freeFormPerMonth = new HashMap<>();
     private Map<AccountType, Integer> messagesCost = new HashMap<>();
 
     private Map<AccountType, Integer> maxGroupSize = new HashMap<>();
@@ -47,16 +52,20 @@ public class AccountBrokerImpl implements AccountBroker {
 
     private AccountRepository accountRepository;
     private UserRepository userRepository;
+    private NotificationRepository notificationRepository;
+
     private LogsAndNotificationsBroker logsAndNotificationsBroker;
     private PermissionBroker permissionBroker;
     private Environment environment;
     private ApplicationEventPublisher eventPublisher;
 
     @Autowired
-    public AccountBrokerImpl(AccountRepository accountRepository, UserRepository userRepository, PermissionBroker permissionBroker,
-                             LogsAndNotificationsBroker logsAndNotificationsBroker, Environment environment, ApplicationEventPublisher eventPublisher) {
+    public AccountBrokerImpl(AccountRepository accountRepository, UserRepository userRepository, NotificationRepository notificationRepository,
+                             PermissionBroker permissionBroker, LogsAndNotificationsBroker logsAndNotificationsBroker,
+                             Environment environment, ApplicationEventPublisher eventPublisher) {
         this.accountRepository = accountRepository;
         this.userRepository = userRepository;
+        this.notificationRepository = notificationRepository;
         this.permissionBroker = permissionBroker;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
         this.environment = environment;
@@ -68,7 +77,7 @@ public class AccountBrokerImpl implements AccountBroker {
         for (AccountType accountType : AccountType.values()) {
             final String key = accountType.name().toLowerCase();
             accountFees.put(accountType, environment.getProperty("accounts.subscription.cost." + key, Integer.class));
-            messagesEnabled.put(accountType, environment.getProperty("accounts.messages.enabled." + key, Boolean.class));
+            freeFormPerMonth.put(accountType, environment.getProperty("accounts.messages.monthly." + key, Integer.class));
             messagesCost.put(accountType, environment.getProperty("accounts.messages.msgcost." + key, Integer.class));
             maxGroupSize.put(accountType, environment.getProperty("accounts.group.limit." + key, Integer.class));
             maxGroupNumber.put(accountType, environment.getProperty("accounts.group.max." + key, Integer.class));
@@ -76,7 +85,7 @@ public class AccountBrokerImpl implements AccountBroker {
             todosPerMonth.put(accountType, environment.getProperty("accounts.todos.monthly." + key, Integer.class));
         }
 
-        log.info("Loaded account settings : messages = {}, group depth = {}", messagesEnabled, maxGroupNumber);
+        log.info("Loaded account settings : messages = {}, group depth = {}", freeFormPerMonth, maxGroupNumber);
     }
 
     @Override
@@ -117,7 +126,7 @@ public class AccountBrokerImpl implements AccountBroker {
         log.info("Created account, now looks like: " + account);
 
         account.setSubscriptionFee(accountFees.get(accountType));
-        account.setFreeFormMessages(messagesEnabled.get(accountType));
+        account.setFreeFormMessages(freeFormPerMonth.get(accountType));
         account.setFreeFormCost(messagesCost.get(accountType));
         account.setMaxSizePerGroup(maxGroupSize.get(accountType));
         account.setMaxSubGroupDepth(maxSubGroupDepth.get(accountType));
@@ -306,7 +315,7 @@ public class AccountBrokerImpl implements AccountBroker {
 
     @Override
     @Transactional
-    public void updateAccountMessageSettings(String userUid, String accountUid, Boolean freeFormEnabled, Integer costPerMessage) {
+    public void updateAccountMessageSettings(String userUid, String accountUid, int freeFormPerMonth, Integer costPerMessage) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(accountUid);
 
@@ -317,10 +326,8 @@ public class AccountBrokerImpl implements AccountBroker {
 
         StringBuilder sb = new StringBuilder("Messaging settings changed: ");
 
-        if (freeFormEnabled != null) {
-            account.setFreeFormMessages(freeFormEnabled);
-            sb.append("FreeForm: ").append(freeFormEnabled).append("; ");
-        }
+        account.setFreeFormMessages(freeFormPerMonth);
+        sb.append("FreeForm: ").append(freeFormPerMonth).append("; ");
 
         if (costPerMessage != null) {
             account.setFreeFormCost(costPerMessage);
@@ -363,6 +370,21 @@ public class AccountBrokerImpl implements AccountBroker {
     public List<Account> loadAllAccounts(boolean visibleOnly) {
         return visibleOnly ?
                 accountRepository.findAll(AccountSpecifications.isVisible()) : accountRepository.findAll();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public int calculateMessagesLeftThisMonth(String accountUid) {
+        Account account = accountRepository.findOneByUid(accountUid);
+        // NotificationSpecifications.
+
+        long messagesThisMonth = notificationRepository.count(Specifications.where(
+                accountLogTypeIs(AccountLogType.MESSAGE_SENT))
+                .and(belongsToAccount(account))
+                .and(createdTimeBetween(LocalDate.now().withDayOfMonth(1).atStartOfDay().toInstant(ZoneOffset.UTC), Instant.now())
+        ));
+
+        return Math.max(0, account.getFreeFormMessages() - (int) messagesThisMonth);
     }
 
     private void createAndStoreSingleAccountLog(AccountLog accountLog) {

@@ -108,8 +108,8 @@ public class Account {
     private int todosPerGroupPerMonth;
 
     @Basic
-    @Column(name="free_form")
-    private boolean freeFormMessages;
+    @Column(name="free_form_per_month")
+    private int freeFormMessages;
 
     @Basic
     @Column(name="additional_reminders")
@@ -172,7 +172,6 @@ public class Account {
         this.disabledDateTime = DateTimeUtil.getVeryLongAwayInstant();
 
         this.type = accountType;
-        this.freeFormMessages = true;
         this.billingUser = billingUser;
 
         this.outstandingBalance = 0;
@@ -267,11 +266,11 @@ public class Account {
         this.type = type;
     }
 
-    public boolean isFreeFormMessages() {
+    public int getFreeFormMessages() {
         return freeFormMessages;
     }
 
-    public void setFreeFormMessages(boolean freeFormMessages) {
+    public void setFreeFormMessages(int freeFormMessages) {
         this.freeFormMessages = freeFormMessages;
     }
 

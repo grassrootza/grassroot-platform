@@ -2,6 +2,7 @@ package za.org.grassroot.services.specifications;
 
 import org.springframework.data.jpa.domain.Specification;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.enums.AccountLogType;
 
 import javax.persistence.criteria.Join;
 import java.time.Instant;
@@ -23,6 +24,13 @@ public final class NotificationSpecifications {
         return (root, query, cb) -> {
             Join<Notification, AccountLog> accountLogJoin = root.join(Notification_.accountLog);
             return cb.equal(accountLogJoin.get(AccountLog_.account), account);
+        };
+    }
+
+    public static Specification<Notification> accountLogTypeIs(final AccountLogType accountLogType) {
+        return (root, query, cb) -> {
+            Join<Notification, AccountLog> accountLogJoin = root.join(Notification_.accountLog);
+            return cb.equal(accountLogJoin.get(AccountLog_.accountLogType), accountLogType);
         };
     }
 

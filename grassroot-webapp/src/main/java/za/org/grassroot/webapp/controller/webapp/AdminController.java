@@ -339,7 +339,7 @@ public class AdminController extends BaseController {
         accountBroker.updateBillingEmail(getUserProfile().getUid(), account.getUid(), account.getBillingUser().getEmailAddress());
         accountBroker.updateAccountGroupLimits(getUserProfile().getUid(), account.getUid(), account.getMaxNumberGroups(),
                 account.getMaxSizePerGroup(), account.getMaxSubGroupDepth());
-        accountBroker.updateAccountMessageSettings(getUserProfile().getUid(), account.getUid(), account.isFreeFormMessages(),
+        accountBroker.updateAccountMessageSettings(getUserProfile().getUid(), account.getUid(), account.getFreeFormMessages(),
                 account.getFreeFormCost());
     }
 

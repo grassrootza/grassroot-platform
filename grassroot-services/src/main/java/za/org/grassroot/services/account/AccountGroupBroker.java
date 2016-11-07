@@ -2,14 +2,17 @@ package za.org.grassroot.services.account;
 
 import org.springframework.security.access.prepost.PreAuthorize;
 import za.org.grassroot.core.domain.Account;
+import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.PaidGroup;
+
+import java.util.List;
 
 /**
  * Created by luke on 2016/10/25.
  */
 public interface AccountGroupBroker {
 
-    PaidGroup loadPaidGroup(String paidGroupUid);
+    List<Group> fetchGroupsSponsoredByAccount(String accountUid);
 
     // Methods to designate groups as paid for by accounts (and remove the designation)
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")

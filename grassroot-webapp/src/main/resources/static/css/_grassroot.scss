@@ -190,6 +190,16 @@ h3.header-content-title {
     font-family: 'Roboto', sans-serif;
 }
 
+h3.blockquote-header {
+    color: $green;
+    font-family: 'Roboto', sans-serif;
+    font-size: 18pt;
+    border-top: 1px solid $light-green;
+    border-bottom: 1px solid $light-green;
+    padding-top: 20px;
+    padding-bottom: 20px;
+}
+
 h4.header-content-subtitle {
     font-size: 16pt;
     font-family: 'Helvetica', sans-serif;

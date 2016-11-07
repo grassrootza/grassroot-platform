@@ -44,6 +44,10 @@ public interface AccountBroker {
     void updateAccountGroupLimits(String userUid, String accountUid, Integer numberOfGroups, Integer maxSizePerGroup, Integer maxDepth);
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN')")
-    void updateAccountMessageSettings(String userUid, String accountUid, Boolean freeFormEnabled, Integer costPerMessage);
+    void updateAccountMessageSettings(String userUid, String accountUid, int freeFormPerMonth, Integer costPerMessage);
+
+    /* Methods to work out some limits left on account */
+
+    int calculateMessagesLeftThisMonth(String accountUid);
 
 }

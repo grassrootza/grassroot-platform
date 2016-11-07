@@ -216,66 +216,6 @@ public class MeetingController extends BaseController {
     }
 
     /**
-     * Free text entry, for authorized accounts
-     */
-
-    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
-    @RequestMapping(value = "free")
-    public String sendFreeForm(Model model, @RequestParam(value="groupUid", required=false) String groupUid) {
-
-        boolean groupSpecified;
-        User sessionUser = getUserProfile();
-
-        if (groupUid != null) {
-            model.addAttribute("group", groupBroker.load(groupUid));
-            groupSpecified = true;
-        } else {
-            model.addAttribute("userGroups", permissionBroker.getActiveGroupsSorted(sessionUser, null));
-            groupSpecified = false;
-        }
-        model.addAttribute("groupSpecified", groupSpecified); // slightly redundant, but use it to tell Thymeleaf what to do
-        return "meeting/free";
-    }
-
-    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
-    @RequestMapping(value = "free", method = RequestMethod.POST)
-    public String confirmFreeMsg(Model model, @RequestParam String groupUid, @RequestParam(value="message") String message) {
-
-        model.addAttribute("action", "free");
-        model.addAttribute("groupUid", groupUid);
-
-        model.addAttribute("message", message);
-        Group group = groupBroker.load(groupUid);
-
-        int recipients = group.getMembers().size();
-        model.addAttribute("recipients", recipients);
-        model.addAttribute("cost", recipients * 0.2);
-        return "meeting/remind_confirm";
-
-    }
-
-    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
-    @RequestMapping(value = "free", method = RequestMethod.POST, params = {"confirmed"})
-    public String sendFreeMsg(Model model, @RequestParam(value="groupUid") String groupUid,
-                              @RequestParam(value="message") String message,
-                              RedirectAttributes redirectAttributes, HttpServletRequest request) {
-
-        // todo: check that this group is paid for (and filter on previous page)
-        log.info("Sending free form message: {}, to this group: {}", message, groupUid);
-
-        try {
-            accountBroker.sendFreeFormMessage(getUserProfile().getUid(), groupUid, message);
-            addMessage(redirectAttributes, MessageType.SUCCESS, "sms.message.sent", request);
-            log.info("Sent message, redirecting to home");
-
-        } catch (AccessDeniedException e) {
-            addMessage(redirectAttributes, MessageType.ERROR, "sms.message.error", request);
-            e.printStackTrace();
-        }
-        return "redirect:/home";
-    }
-
-    /**
      * RSVP handling
      */
 
