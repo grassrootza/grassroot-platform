@@ -27,7 +27,7 @@ import java.util.Set;
  * Created by luke on 2016/10/26.
  */
 @Service
-@PropertySource("file:${user.home}/grassroot/grassroot-payments.properties")
+@PropertySource(value = "file:${user.home}/grassroot/grassroot-payments.properties", ignoreResourceNotFound = true)
 public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
 
     private static final Logger logger = LoggerFactory.getLogger(PaymentServiceBrokerImpl.class);
@@ -52,51 +52,51 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
     private UriComponentsBuilder baseUriBuilder;
     private HttpHeaders stdHeaders;
 
-    @Value("${grassroot.payments.host}")
+    @Value("${grassroot.payments.host:localhost}")
     private String paymentsRestHost;
-    @Value("${grassroot.payments.params.auth.user}")
+    @Value("${grassroot.payments.params.auth.user:user}")
     private String paymentsAuthUserIdParam;
-    @Value("${grassroot.payments.params.auth.password}")
+    @Value("${grassroot.payments.params.auth.password:pwd}")
     private String paymentsAuthPasswordParam;
-    @Value("${grassroot.payments.params.auth.channelId}")
+    @Value("${grassroot.payments.params.auth.channelId:channel}")
     private String paymentsAuthChannelIdParam;
 
-    @Value("${grassroot.payments.initial.path}")
+    @Value("${grassroot.payments.initial.path:/paytest}")
     private String initialPaymentRestPath;
-    @Value("${grassroot.payments.recurring.path}")
+    @Value("${grassroot.payments.recurring.path:/paytset}")
     private String recurringPaymentRestPath; // make a format string so can include registration ID appropriately
 
-    @Value("${grassroot.payments.params.amount}")
+    @Value("${grassroot.payments.params.amount:amount}")
     private String paymentAmountParam;
-    @Value("${grassroot.payments.params.currency}")
+    @Value("${grassroot.payments.params.currency:currency}")
     private String paymentCurrencyParam;
-    @Value("${grassroot.payments.params.brand}")
+    @Value("${grassroot.payments.params.brand:brand}")
     private String paymentCardBrand;
-    @Value("${grassroot.payments.params.type}")
+    @Value("${grassroot.payments.params.type:type}")
     private String paymentTypeParam;
 
-    @Value("${grassroot.payments.params.cardnumber}")
+    @Value("${grassroot.payments.params.cardnumber:card}")
     private String cardNumberParam;
-    @Value("${grassroot.payments.params.holder}")
+    @Value("${grassroot.payments.params.holder:name}")
     private String cardHolderParam;
-    @Value("${grassroot.payments.params.expiry.month}")
+    @Value("${grassroot.payments.params.expiry.month:month}")
     private String cardExpiryMonthParam;
-    @Value("${grassroot.payments.params.expiry.year}")
+    @Value("${grassroot.payments.params.expiry.year:year}")
     private String cardExpiryYearParam;
-    @Value("${grassroot.payments.params.cvv}")
+    @Value("${grassroot.payments.params.cvv:seccode}")
     private String securityCodeParam;
-    @Value("${grassroot.payments.params.recurring}")
+    @Value("${grassroot.payments.params.recurring:recurring}")
     private String recurringParam;
-    @Value("${grassroot.payments.params.regflag}")
+    @Value("${grassroot.payments.params.regflag:registered}")
     private String registrationFlag;
 
-    @Value("${grassroot.payments.values.user}")
+    @Value("${grassroot.payments.values.user:grassroot}")
     private String userId;
-    @Value("${grassroot.payments.values.password}")
+    @Value("${grassroot.payments.values.password:grasroot}")
     private String password;
-    @Value("${grassroot.payments.values.channelId}")
+    @Value("${grassroot.payments.values.channelId:testChannel}")
     private String channelId;
-    @Value("${grassroot.payments.values.currency}")
+    @Value("${grassroot.payments.values.currency:ZAR}")
     private String currency;
 
     @Autowired
