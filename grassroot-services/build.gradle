@@ -38,6 +38,12 @@ test {
   systemProperty "mqtt.connection.url", "tcp://localhost:1883"
 
   systemProperty "grassroot.email.enabled", "true"
+
+  systemProperty "spring.mail.host", "gmail.com"
+  systemProperty "spring.mail.port", "587"
+  systemProperty "spring.mail.username", "test@grassroot.org.za"
+  systemProperty "spring.mail.password", "test@grassroot.org.za"
+
   systemProperty "grassroot.mail.from.address", "test@grassroot.org"
   systemProperty "grassroot.mail.from.name", "Test"
   systemProperty "grassroot.system.mail", "test@grassroot.org"

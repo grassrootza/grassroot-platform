@@ -19,7 +19,7 @@ import org.springframework.scheduling.support.PeriodicTrigger;
 @ComponentScan
 @IntegrationComponentScan
 @EnableIntegration
-@PropertySource("file:${user.home}/grassroot/grassroot-integration.properties")
+@PropertySource(value = "file:${user.home}/grassroot/grassroot-integration.properties", ignoreResourceNotFound = true) // else testing in CI fails
 public class InfrastructureConfiguration {
 
     @Bean(name = PollerMetadata.DEFAULT_POLLER)

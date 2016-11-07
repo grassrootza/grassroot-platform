@@ -24,7 +24,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 @EnableAutoConfiguration
 @EnableJpaRepositories
 @EnableAsync
-@PropertySource("file:${user.home}/grassroot/grassroot-integration.properties")
+@PropertySource(value = "file:${user.home}/grassroot/grassroot-integration.properties", ignoreResourceNotFound = true)
 public class GrassrootIntegrationConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(GrassrootIntegrationConfig.class);
