@@ -49,7 +49,7 @@ public class Account {
     private Instant enabledDateTime;
 
     @ManyToOne
-    @JoinColumn(name = "disabled_by_user", nullable = false)
+    @JoinColumn(name = "disabled_by_user")
     private User disabledByUser;
 
     @Column(name = "disabled_date_time", nullable = false)

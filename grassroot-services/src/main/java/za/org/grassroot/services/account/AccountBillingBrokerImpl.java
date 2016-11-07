@@ -44,27 +44,14 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
     protected static final ZoneOffset BILLING_TZ = ZoneOffset.UTC;
     protected static final LocalTime STD_BILLING_HOUR = LocalTime.of(10, 0);
 
-    private AccountRepository accountRepository;
-    private AccountBillingRecordRepository billingRepository;
+    @Autowired private AccountRepository accountRepository;
+    @Autowired private AccountBillingRecordRepository billingRepository;
+    @Autowired private LogsAndNotificationsBroker logsAndNotificationsBroker;
+    @Autowired private MessageAssemblingService messageAssemblingService;
+    @Autowired private ApplicationEventPublisher eventPublisher;
 
+    @Autowired(required = false)
     private EmailSendingBroker emailSendingBroker;
-    private LogsAndNotificationsBroker logsAndNotificationsBroker;
-    private MessageAssemblingService messageAssemblingService;
-
-    private ApplicationEventPublisher eventPublisher;
-
-    @Autowired
-    public AccountBillingBrokerImpl(AccountRepository accountRepository, AccountBillingRecordRepository billingRepository,
-                                    LogsAndNotificationsBroker logsAndNotificationsBroker, EmailSendingBroker emailSendingBroker,
-                                    MessageAssemblingService messageAssemblingService, ApplicationEventPublisher eventPublisher) {
-        this.accountRepository = accountRepository;
-        this.billingRepository = billingRepository;
-        this.logsAndNotificationsBroker = logsAndNotificationsBroker;
-        this.emailSendingBroker = emailSendingBroker;
-        this.messageAssemblingService = messageAssemblingService;
-        this.eventPublisher = eventPublisher;
-    }
-
 
     @Override
     @Transactional

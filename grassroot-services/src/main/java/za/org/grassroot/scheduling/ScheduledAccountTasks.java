@@ -25,13 +25,13 @@ public class ScheduledAccountTasks {
         this.paymentServiceBroker = paymentServiceBroker;
     }
 
-    @Scheduled(cron = "${grassroot.billing.cron.trigger}")
+    @Scheduled(cron = "${grassroot.billing.cron.trigger: 0 0 9 * * ?}")
     public void calculateMonthlyBillingAndCosts() {
         logger.info("Calculating billing statements and sending emails and notifications ... ");
         accountBillingBroker.calculateAccountStatements(true, true);
     }
 
-    @Scheduled(cron = "${grassroot.payments.cron.trigger}")
+    @Scheduled(cron = "${grassroot.payments.cron.trigger: 0 0 20 * * ?}")
     public void processMonthlyBillPayments() {
         logger.info("Charging monthly billing amounts");
         paymentServiceBroker.processAccountPaymentsOutstanding();

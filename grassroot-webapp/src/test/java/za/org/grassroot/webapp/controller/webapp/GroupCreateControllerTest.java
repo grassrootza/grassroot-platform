@@ -3,9 +3,11 @@ package za.org.grassroot.webapp.controller.webapp;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.dto.MembershipInfo;
+import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.webapp.model.web.GroupWrapper;
 
@@ -24,6 +26,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class GroupCreateControllerTest extends WebAppAbstractUnitTest {
 
     // private static final Logger logger = LoggerFactory.getLogger(MeetingControllerTest.class);
+
+    @Mock
+    private AccountGroupBroker accountGroupBrokerMock;
 
     @InjectMocks
     private GroupCreateController groupCreateController;

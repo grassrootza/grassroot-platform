@@ -21,12 +21,14 @@ import javax.transaction.Transactional;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Optional;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
 
 /**
  * Created by luke on 2015/11/14.
+ * major todo : add test coverage for enabling, etc
  */
 @RunWith(SpringRunner.class)
 @ContextConfiguration(classes = TestContextConfiguration.class)
@@ -64,7 +66,7 @@ public class AccountRepositoryTest {
 
         assertThat(accountRepository.count(), is(0L));
 
-        Account account = new Account(testUser, "accountname", AccountType.STANDARD, null);
+        Account account = new Account(testUser, "accountname", AccountType.STANDARD, testUser);
         account = accountRepository.save(account);
         assertNotEquals(null, account.getId());
 
@@ -76,7 +78,7 @@ public class AccountRepositoryTest {
 
         assertThat(accountRepository.count(), is(0L));
 
-        Account account = new Account(testUser, accountName, AccountType.STANDARD, null);
+        Account account = new Account(testUser, accountName, AccountType.STANDARD, testUser);
         accountRepository.save(account);
 
         assertThat(accountRepository.count(), is(1L));
@@ -87,7 +89,7 @@ public class AccountRepositoryTest {
         assertNotNull(accountFromDb.getCreatedDateTime());
 
         assertThat(accountFromDb.getAccountName(), is(accountName));
-        assertTrue(accountFromDb.isEnabled());
+        assertFalse(accountFromDb.isEnabled()); // since need to enable after created
     }
 
     @Test
@@ -95,7 +97,7 @@ public class AccountRepositoryTest {
 
         assertThat(accountRepository.count(), is(0L));
 
-        Account account = new Account(testUser, accountName, AccountType.STANDARD, null);
+        Account account = new Account(testUser, accountName, AccountType.STANDARD, testUser);
         accountRepository.save(account);
 
         assertThat(accountRepository.count(), is(1L));
@@ -119,7 +121,7 @@ public class AccountRepositoryTest {
     public void shouldFindByAccountName() {
 
         assertThat(accountRepository.count(), is(0L));
-        Account account = new Account(testUser, accountName, AccountType.STANDARD, null);
+        Account account = new Account(testUser, accountName, AccountType.STANDARD, testUser);
         account = accountRepository.save(account);
         List<Account> accountList = accountRepository.findByAccountName(accountName);
         assertEquals(accountList.size(), 1);
@@ -129,15 +131,14 @@ public class AccountRepositoryTest {
 
     }
 
-    /*
-    todo : change to find by billing user
     @Test
     @Rollback
-    public void shouldFindByBillingMail() {
+    public void shouldFindByBillingUser() {
 
         assertThat(accountRepository.count(), is(0L));
-        Account account = new Account(testUser, accountName, AccountType.STANDARD);
-        account.setPrimaryEmail(billingEmail);
+        User billingUser = userRepository.save(new User("0601110000", "Paying the bill"));
+        billingUser.setEmailAddress(billingEmail);
+        Account account = new Account(testUser, accountName, AccountType.STANDARD, billingUser);
         accountRepository.save(account);
         List<Account> accountList = accountRepository.findByAccountName(accountName);
         assertEquals(accountList.size(), 1);
@@ -147,14 +148,13 @@ public class AccountRepositoryTest {
         assertEquals(billingEmail, accountFromDb.getBillingUser().getEmailAddress());
 
     }
-    */
 
     @Test
     @Rollback
     public void shouldDisable() {
 
         assertThat(accountRepository.count(), is(0L));
-        Account account = new Account(testUser, accountName, AccountType.STANDARD, null);
+        Account account = new Account(testUser, accountName, AccountType.STANDARD, testUser);
         accountRepository.save(account);
         Account accountFromDb = accountRepository.findByAccountName(accountName).get(0);
         accountFromDb.setDisabledDateTime(Instant.now());
@@ -169,26 +169,29 @@ public class AccountRepositoryTest {
     public void shouldFindByEnabledAndDisabled() {
 
         assertThat(accountRepository.count(), is(0L));
-        Account accountEnabled = new Account(testUser, accountName, AccountType.STANDARD, null);
-        Account accountDisabled = new Account(testUser, accountName + "_disabled", AccountType.STANDARD, null);
+
+        Account accountEnabled = new Account(testUser, accountName + "_enabled", AccountType.STANDARD, testUser);
+        Account accountDisabled = new Account(testUser, accountName + "_disabled", AccountType.STANDARD, testUser);
         accountDisabled.setDisabledDateTime(Instant.now());
+
         accountRepository.save(accountEnabled);
         accountRepository.save(accountDisabled);
+
+        assertThat(accountRepository.count(), is (2L));
 
         List<Account> enabledAccounts = accountRepository.findByDisabledDateTimeAfter(Instant.now().plus(5, ChronoUnit.MINUTES));
         assertThat(enabledAccounts.size(), is(1));
         Account enabledAccountFromDb = enabledAccounts.get(0);
         assertNotNull(enabledAccountFromDb);
-        assertThat(enabledAccountFromDb.getAccountName(), is(accountName));
+        assertThat(enabledAccountFromDb.getAccountName(), is(accountName + "_enabled"));
         assertTrue(enabledAccountFromDb.getDisabledDateTime().isAfter(Instant.now()));
 
         List<Account> disabledAccounts = accountRepository.findByDisabledDateTimeAfter(Instant.now().minus(5, ChronoUnit.MINUTES));
         assertThat(disabledAccounts.size(), is(2));
-        Account disabledAccountFromDb = disabledAccounts.get(0);
-        assertNotNull(disabledAccountFromDb);
-        assertThat(disabledAccountFromDb.getAccountName(), is(accountName + "_disabled"));
-        // assertFalse(disabledAccountFromDb.isEnabled());
-
+        Optional<Account> disabledAccountFromDb = disabledAccounts.stream()
+                .filter(a -> a.getDisabledDateTime().isBefore(Instant.now())).findFirst();
+        assertTrue(disabledAccountFromDb.isPresent());
+        assertThat(disabledAccountFromDb.get().getAccountName(), is(accountName + "_disabled"));
     }
 
     @Test
@@ -199,7 +202,7 @@ public class AccountRepositoryTest {
         User testAdmin = new User("0505550000");
         testAdmin = userRepository.save(testAdmin);
 
-        Account account = new Account(testUser, accountName, AccountType.STANDARD, null);
+        Account account = new Account(testUser, accountName, AccountType.STANDARD, testUser);
         account.addAdministrator(testAdmin);
         accountRepository.save(account);
 
@@ -227,7 +230,7 @@ public class AccountRepositoryTest {
         testUser = userRepository.save(testUser);
         Group testGroup = new Group("testGroup", testUser);
         testGroup = groupRepository.save(testGroup);
-        Account account = new Account(testUser, accountName, AccountType.STANDARD, null);
+        Account account = new Account(testUser, accountName, AccountType.STANDARD, testUser);
         account = accountRepository.save(account);
         PaidGroup testPaidGroup = new PaidGroup(testGroup, account, testUser);
         testPaidGroup = paidGroupRepository.save(testPaidGroup);
@@ -257,7 +260,7 @@ public class AccountRepositoryTest {
 
         assertThat(accountRepository.count(), is(0L));
 
-        Account account = new Account(testUser, accountName, AccountType.STANDARD, null);
+        Account account = new Account(testUser, accountName, AccountType.STANDARD, testUser);
         account.setMaxSizePerGroup(500);
         account.setMaxSubGroupDepth(3);
         account.setFreeFormMessages(true);

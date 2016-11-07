@@ -88,14 +88,14 @@
             </div>
 
           <div class="collapse" id="advancedOptions">
-            <!-- <div class="form-group">
+            <div class="form-group">
                 <label for="groupTemplate" class="control-label">Who will be able to call meetings, events, etc?</label>
                 <select name="groupTemplate" id="groupTemplate" class="form-control input-lg" th:field="*{permissionTemplate}">
                   <option th:each="template : ${T(za.org.grassroot.services.enums.GroupPermissionTemplate).values()}"
                           th:value="${template}"
                           th:text="#{web.group.permissions.__${template}__}"></option>
                 </select>
-            </div> -->
+            </div>
 
             <div class="form-group">
                 <label for="reminderMinutes" class="control-label">When will reminders be sent, by default?</label>

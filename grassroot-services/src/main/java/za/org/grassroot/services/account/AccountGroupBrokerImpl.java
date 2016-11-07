@@ -38,7 +38,7 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
 
     private static final Logger logger = LoggerFactory.getLogger(AccountGroupBrokerImpl.class);
 
-    @Value("${accounts.todos.monthly.free}")
+    @Value("${accounts.todos.monthly.free:4}")
     private int FREE_TODOS_PER_MONTH;
 
     private UserRepository userRepository;

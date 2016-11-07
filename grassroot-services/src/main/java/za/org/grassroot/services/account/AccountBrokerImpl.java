@@ -114,6 +114,8 @@ public class AccountBrokerImpl implements AccountBroker {
 
         addAdministrator(userUid, accountUid, billedUserUid);
 
+        log.info("Created account, now looks like: " + account);
+
         account.setSubscriptionFee(accountFees.get(accountType));
         account.setFreeFormMessages(messagesEnabled.get(accountType));
         account.setFreeFormCost(messagesCost.get(accountType));
