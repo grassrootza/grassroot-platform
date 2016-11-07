@@ -1,94 +1,105 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      data-layout-decorate="layout">
+      data-layout-decorate="~{layout}">
 <head>
-  <title>Grassroot - Call a meeting</title>
+  <title>Call meeting</title>
 </head>
 <body>
 
-<div layout:fragment="header">
-  <h2 class="text-center">Call a meeting</h2>
-</div>
-
-<div layout:fragment="overview">
-  <h4 class="text-center">Specify who is meeting, where, when and about what</h4>
-</div>
-
-<div layout:fragment="content">
-  <div layout:fragment="messages"></div>
-
-  <div class="well" th:with="groupSpecified=${group != null}">
-
+<section layout:fragment="header" class="top-container">
+  <div class="container">
     <div class="row">
-      <div class="col-md-6 col-md-offset-3">
-
-        <form th:object="${meeting}" th:action="@{/meeting/create}" method="post" class="form-vertical">
-
-          <div class="form-group">
-            <label for="group" class="control-label">Who is meeting? Group:</label>
-            <select th:unless="${groupSpecified}" name="selectedGroupUid" id="selectedgroup" class="form-control input-lg">
-              <option th:each="group, iterStat: ${userGroups}"
-                      th:value="${group.Uid}"
-                      th:text="${group.getName('')}"
-                      th:attr="data-mins=#{web.meeting.reminder.group.__${group.reminderMinutes}__}">Groupname</option>
-            </select>
-            <input th:if="${groupSpecified}" class="form-control input-lg" readonly="true" th:placeholder="${group.groupName}" id="group" />
-            <input th:if="${groupSpecified}" type="hidden" name="selectedGroupUid" th:value="${group.uid}" />
-          </div>
-          <div class="form-group">
-            <label for="name" class="control-label">Meeting subject</label>
-            <input th:field="*{title}" type="text" class="form-control input-lg" id="name" placeholder="The topic of the meeting" maxlength="35" data-toggle="tooltip"
-            title="Meeting subject may not be longer than 35 characters. " />
-          </div>
-          <div class="form-group">
-            <label for="location" class="control-label input-lg">Meeting location</label>
-            <input th:field="*{location}" type="text" class="form-control input-lg" id="location" placeholder="Where the meeting will happen"/>
-          </div>
-          <div class="form-group">
-            <label for="datepicker" class="control-label">Meeting date and time</label>
-            <div class="input-group date" id="datepicker">
-              <input th:field="*{eventDateTime}" type="text" class="form-control input-lg" />
-              <span class="input-group-addon">
-              <span class="glyphicon glyphicon-calendar"></span>
-              </span>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label class="control-label">Reminder:</label>
-            <select th:field="*{reminderType}" class="form-control input-lg" id="reminderType">
-              <option value="DISABLED">None</option>
-              <option th:if="${groupSpecified}" value="GROUP_CONFIGURED" selected="true">
-                Group default (<span th:text="#{web.meeting.reminder.group.__${group.reminderMinutes}__}">X</span> ahead)
-              </option>
-              <option th:unless="${groupSpecified}" value="GROUP_CONFIGURED" id="groupOption">
-                Group default (<span id="groupReminderTime">X ahead</span>)
-              </option>
-              <option value="CUSTOM">Set custom</option>
-            </select>
-            <div class="radio" id="customReminder">
-                <label class="radio-inline" th:each="option, iterStat : ${reminderOptions}">
-                  <input type="radio" th:field="*{customReminderMinutes}" th:value="${option[0]}" />
-                  <span th:text="${option[1]}" >No reminder</span>
-                </label>
-            </div>
-          </div>
-
-          <div class="form-group pull-right top-buffer">
-            <a th:if="${groupSpecified}"
-               th:href="@{/group/view(groupUid=${group.Uid})}" role="button" class="btn btn-default btn-lg">Cancel</a>
-            <a th:if="${not groupSpecified}"
-               th:href="@{/home}" role="button" class="btn btn-default btn-lg">Cancel</a>
-            <button type="submit" class="btn btn-primary btn-lg">Call meeting</button>
-          </div>
-        </form>
+      <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
+        <h2 class="text-center header-content-title">Call a meeting</h2>
+        <h4 class="text-center header-content-subtitle">Specify who, when, where and what</h4>
       </div>
     </div>
-
   </div>
-</div>
+</section>
+
+<div layout:fragment="messages"></div>
+
+<main layout:fragment="content">
+
+  <section class="grassroot-form" th:with="groupSpecified=${group != null}">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-8 col-md-offset-2 col-sm-6 col-sm-offset-3 col-xs-12">
+          <form th:object="${meeting}" th:action="@{/meeting/create}" method="post">
+
+            <div class="form-group">
+              <label for="group" class="control-label">Who is meeting? Group:</label>
+              <select th:unless="${groupSpecified}" name="selectedGroupUid" id="selectedgroup" class="form-control input-lg">
+                <option th:each="group, iterStat: ${userGroups}"
+                        th:value="${group.Uid}"
+                        th:text="${group.getName('')}"
+                        th:attr="data-mins=#{web.meeting.reminder.group.__${group.reminderMinutes}__}">Groupname</option>
+              </select>
+              <input th:if="${groupSpecified}" class="form-control input-lg" readonly="true" th:placeholder="${group.groupName}" id="group" />
+              <input th:if="${groupSpecified}" type="hidden" name="selectedGroupUid" th:value="${group.uid}" />
+            </div>
+
+            <div class="form-group">
+              <label for="name" class="control-label">Meeting subject</label>
+              <input th:field="*{title}" type="text" class="form-control input-lg" id="name" placeholder="The topic of the meeting" maxlength="35" data-toggle="tooltip"
+              title="Meeting subject may not be longer than 35 characters. " />
+            </div>
+            <div class="form-group">
+              <label for="location" class="control-label input-lg">Meeting location</label>
+              <input th:field="*{location}" type="text" class="form-control input-lg" id="location" placeholder="Where the meeting will happen"/>
+            </div>
+
+            <div class="form-group">
+              <label for="datepicker" class="control-label">Meeting date and time</label>
+              <div class="input-group date" id="datepicker">
+                <input th:field="*{eventDateTime}" type="text" class="form-control input-lg" />
+                <span class="input-group-addon">
+                <i class="fa fa-calendar" aria-hidden="true"></i>
+                </span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="control-label">Reminder:</label>
+              <select th:field="*{reminderType}" class="form-control input-lg" id="reminderType">
+                <option value="DISABLED">None</option>
+                <option th:if="${groupSpecified}" value="GROUP_CONFIGURED" selected="true">
+                  Group default (<span th:text="#{web.meeting.reminder.group.__${group.reminderMinutes}__}">X</span> ahead)
+                </option>
+                <option th:unless="${groupSpecified}" value="GROUP_CONFIGURED" id="groupOption">
+                  Group default (<span id="groupReminderTime">X ahead</span>)
+                </option>
+                <option value="CUSTOM">Set custom</option>
+              </select>
+              <div class="radio" id="customReminder">
+                  <label class="radio-inline" th:each="option, iterStat : ${reminderOptions}">
+                    <input type="radio" th:field="*{customReminderMinutes}" th:value="${option[0]}" />
+                    <span th:text="${option[1]}" >No reminder</span>
+                  </label>
+              </div>
+            </div>
+
+            <div class="form-group pull-right top-buffer">
+              <a th:if="${groupSpecified}"
+                 th:href="@{/group/view(groupUid=${group.Uid})}" role="button" class="btn btn-default btn-lg">Cancel</a>
+              <a th:if="${not groupSpecified}"
+                 th:href="@{/home}" role="button" class="btn btn-default btn-lg">Cancel</a>
+              <button type="submit" class="btn btn-primary btn-lg">Call meeting</button>
+            </div>
+
+        </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
 
 <div class="header-container" layout:fragment="script-container">
+
+  <script th:src="@{/js/lib/moment.min.js}"></script>
+  <script th:src="@{/js/lib/bootstrap-datetimepicker.min.js}"></script>
+
   <script>
 
     $(document).ready(function() {

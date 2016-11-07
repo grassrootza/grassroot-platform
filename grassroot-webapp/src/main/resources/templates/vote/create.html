@@ -1,77 +1,82 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      data-layout-decorate="layout">
+      data-layout-decorate="~{layout}">
 <head>
-  <title>Grassroot - Call a vote</title>
+  <title>Call a vote</title>
 </head>
 <body>
 
-<div layout:fragment="header">
-  <h2 class="text-center">Call a vote</h2>
-</div>
-
-<div layout:fragment="overview">
-  <h4 class="text-center">Specify who is voting, by when, and on what</h4>
-</div>
-
-<div layout:fragment="content">
-  <div layout:fragment="messages"></div>
-
-  <div class="well">
-    <div class="row">
-      <div class="col-md-6 col-md-offset-3" th:with="groupSpecified=${group != null}">
-
-        <form th:object="${vote}" th:action="@{/vote/create}" method="post" class="form-vertical">
-
-          <input th:field="*{rsvpRequired}" type="hidden" />
-
-          <div class="form-group">
-            <label for="group" class="control-label">Group which is voting</label>
-            <select th:unless="${groupSpecified}" name="selectedGroupUid" id="selectedgroup" class="form-control input-lg">
-              <option th:each="group: ${possibleGroups}"
-                      th:value="${group.uid}"
-                      th:text="${group.getName('')}">Groupname</option>
-            </select>
-            <input th:if="${groupSpecified}" class="form-control input-lg" readonly="true" th:placeholder="${group.groupName}" id="group" />
-          </div>
-          <div class="form-group">
-            <label for="name" class="control-label">Subject for the vote?</label>
-            <p>Members will only be able to answer with "yes", "no" or "abstain"</p>
-            <input th:field="*{title}" type="text" class="form-control input-lg" id="name" placeholder="The issue for the vote" maxlength="35" data-toggle="tooltip"
-                     title="Issue description may not be longer than 35 characters. "/>
-          </div>
-
-          <div class="form-group">
-            <label for="datepicker" class="control-label">Vote closing date and time</label>
-            <div class="input-group date" id="datepicker">
-              <input th:field="*{eventDateTime}" type="text" class="form-control input-lg" />
-                <span class="input-group-addon"><span class="glyphicon glyphicon-calendar"></span>
-                </span>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="name" class="control-label">Longer description of vote (optional)</label>
-            <textarea th:field="*{description}" class="form-control input-lg" rows="2" maxlength="250"
-            placeholder="Add any additional information about the vote (only Internet or Android users can view)"></textarea>
-          </div>
-
-          <div class="form-group pull-right top-buffer">
-              <a th:if="${groupSpecified}"
-                 th:href="@{/group/view(groupUid=${group.Uid})}" role="button" class="btn btn-default">Cancel</a>
-              <a th:if="${not groupSpecified}"
-                 th:href="@{/home}" role="button" class="btn btn-default btn-lg">Cancel</a>
-              <button type="submit" class="btn btn-primary btn-lg">Call vote</button>
-          </div>
-        </form>
-      </div>
+<section layout:fragment="header" class="top-container">
+  <div class="container">
+    <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
+      <h2 class="text-center header-content-title">Call a vote</h2>
+      <h4 class="text-center header-content-subtitle">Set who is voting, by when, on what</h4>
     </div>
-
-
   </div>
-</div>
+</section>
+
+<div layout:fragment="messages"></div>
+
+<main layout:fragment="content">
+
+  <section class="grassroot-form" th:with="groupSpecified=${group != null}">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-8 col-md-offset-2 col-sm-6 col-sm-offset-3 col-xs-12">
+
+          <form th:object="${vote}" th:action="@{/vote/create}" method="post">
+
+            <div class="form-group">
+              <label for="group" class="control-label">Group which is voting</label>
+              <select th:unless="${groupSpecified}" name="selectedGroupUid" id="selectedgroup" class="form-control input-lg">
+                <option th:each="group: ${possibleGroups}"
+                        th:value="${group.uid}"
+                        th:text="${group.getName('')}">Groupname</option>
+              </select>
+              <input th:if="${groupSpecified}" class="form-control input-lg" readonly="true" th:placeholder="${group.groupName}" id="group" />
+            </div>
+
+            <div class="form-group">
+              <label for="name" class="control-label">Subject for the vote?</label>
+              <p>Members will only be able to answer with "yes", "no" or "abstain"</p>
+              <input th:field="*{title}" type="text" class="form-control input-lg" id="name" placeholder="The issue for the vote" maxlength="35" data-toggle="tooltip"
+                       title="Issue description may not be longer than 35 characters. "/>
+            </div>
+
+            <div class="form-group">
+              <label for="datepicker" class="control-label">Vote closing date and time</label>
+              <div class="input-group date" id="datepicker">
+                <input th:field="*{eventDateTime}" type="text" class="form-control input-lg" />
+                  <span class="input-group-addon"><i class="fa fa-calendar"></i></span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="name" class="control-label">Longer description of vote (optional)</label>
+              <textarea th:field="*{description}" class="form-control input-lg" rows="2" maxlength="250"
+              placeholder="Add any additional information about the vote (only Internet or Android users can view)"></textarea>
+            </div>
+
+            <div class="form-group pull-right top-buffer">
+                <a th:if="${groupSpecified}"
+                   th:href="@{/group/view(groupUid=${group.Uid})}" role="button" class="btn btn-default">Cancel</a>
+                <a th:if="${not groupSpecified}"
+                   th:href="@{/home}" role="button" class="btn btn-default btn-lg">Cancel</a>
+                <button type="submit" class="btn btn-primary btn-lg">Call vote</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </section>
+</main>
 
 <div class="header-container" layout:fragment="script-container">
+
+  <script th:src="@{/js/lib/moment.min.js}"></script>
+  <script th:src="@{/js/lib/bootstrap-datetimepicker.min.js}"></script>
+
   <script>
 
     $(document).ready(function() {

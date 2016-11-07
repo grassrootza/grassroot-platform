@@ -3,7 +3,7 @@
       xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity4"
       data-layout-decorate="~{layout}">
 <head>
-  <title>Grassroot - View Group</title>
+  <title th:text="${group.name}"></title>
 
   <link rel="stylesheet" type="text/css" th:href="@{/css/jquery-ui.min.css}" />
   <meta name="_csrf" th:content="${_csrf.token}"/>
@@ -19,28 +19,33 @@
 </head>
 <body>
 
-<div layout:fragment="header">
-  <h2 class="text-center">Group: "<span th:text="${group.groupName}">Group</span>"</h2>
-</div>
+<section layout:fragment="header" class="top-container">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
+        <h2 class="text-center header-content-title">Group: "<span th:text="${group.groupName}">Group</span>"</h2>
+      </div>
+    </div>
+    <div class="row no-padding no-margins">
+      <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
+        <h4 class="text-center header-content-subtitle">
+          Created on <span th:text="${#temporals.format(group.getCreatedDateTimeAtSAST(),'d MMM yyyy')}">Some date</span>
+          (<a th:href="@{/group/history(groupUid=${group.uid})}">view history</a>)
+        </h4>
+        <h4 class="text-center header-content-subtitle" th:if="${canAlter}">
+          <span th:if="${openToken}">Join code: <a href="javascript:void(0)" data-toggle="modal" data-target="#joiningModal">
+            *134*1994*<span th:text="${group.groupTokenCode}">1234</span>#</a>
+          </span>
+          <span th:unless="${openToken}">No open join code
+          <a href="javascript:void(0)" data-toggle="modal" data-target="#joiningModal">(create one)</a></span>
+          |
+          <span th:if="${group.discoverable}">Group is public</span>
+          <span th:unless="${group.discoverable}">Group is private</span>
 
-<div layout:fragment="overview">
-  <div class="row no-padding no-margins">
-    <h4 class="text-center">
-      Created on <span th:text="${#temporals.format(group.getCreatedDateTimeAtSAST(),'d MMM yyyy')}">Some date</span>
-      (<a th:href="@{/group/history(groupUid=${group.uid})}">view history</a>)
-    </h4>
-    <h4 class="text-center" th:if="${canAlter}">
-      <span th:if="${openToken}">Join code: <a href="javascript:void(0)" data-toggle="modal" data-target="#joiningModal">
-        *134*1994*<span th:text="${group.groupTokenCode}">1234</span>#</a>
-      </span>
-      <span th:unless="${openToken}">No open join code
-      <a href="javascript:void(0)" data-toggle="modal" data-target="#joiningModal">(create one)</a></span>
-      |
-      <span th:if="${group.discoverable}">Group is public</span>
-      <span th:unless="${group.discoverable}">Group is private</span>
-
-      <a href="javascript:void(0)" data-toggle="modal" data-target="#publicModal">(change this)</a>
-    </h4>
+          <a href="javascript:void(0)" data-toggle="modal" data-target="#publicModal">(change this)</a>
+        </h4>
+      </div>
+    </div>
   </div>
 
   <!-- Joining code modal -->
@@ -93,7 +98,7 @@
                 Are you sure?
               </label>
               <p class="small">Making the group public will allow non-members to see it on search results, and request to join. To proceed,
-              please select which organizer will be responsible for approving or rejecting join requests:</p>
+                please select which organizer will be responsible for approving or rejecting join requests:</p>
               <select class="form-control input-lg" id="authorizing-member" name="approverPhoneNumber">
                 <option th:each="member : ${groupMembers}"
                         th:if="${member.roleName == 'ROLE_GROUP_ORGANIZER'}"
@@ -110,14 +115,11 @@
       </div>
     </div>
   </div>
+</section>
 
-</div>
+<div layout:fragment="messages"></div>
 
 <div layout:fragment="content">
-
-  <div>
-    <div layout:fragment="messages"></div>
-  </div>
 
   <div class="row">
     <div th:if="${canAlter}" class="row">
