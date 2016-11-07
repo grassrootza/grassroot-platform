@@ -346,6 +346,8 @@ public class GroupBrokerImpl implements GroupBroker {
         userRepository.save(createdUsers);
         userRepository.flush();
 
+
+
         // adding action logs and event notifications ...
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 

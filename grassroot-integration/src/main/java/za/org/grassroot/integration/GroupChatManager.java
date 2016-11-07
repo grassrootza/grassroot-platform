@@ -67,6 +67,9 @@ public class GroupChatManager implements GroupChatService {
     private GroupChatSettingsRepository groupChatSettingsRepository;
 
     @Autowired
+    private GcmRegistrationRepository gcmRegistrationRepository;
+
+    @Autowired
     private LearningService learningService;
 
     @Autowired
@@ -319,6 +322,12 @@ public class GroupChatManager implements GroupChatService {
         if (!topicsSubscribeTo.contains(group.getUid())) {
             mqttAdapter.addTopic(group.getUid(), 1);
         }
+        for(User user: group.getMembers()){
+            if(gcmRegistrationRepository.findTopByUserOrderByCreationTimeDesc(user) !=null){
+                //ping user so that app can sync
+                pingUsersForGroupChat(group);
+            }
+        }
     }
 
     @Override
@@ -360,7 +369,7 @@ public class GroupChatManager implements GroupChatService {
 
     @Override
     public List<String> usersMutedInGroup(String groupUid) {
-        Objects.nonNull(groupUid);
+        Objects.requireNonNull(groupUid);
         Group group = groupRepository.findOneByUid(groupUid);
         List<GroupChatSettings> groupChatSettingses = groupChatSettingsRepository.findByGroupAndActiveAndCanSend(group, true, false);
         List<String> mutedUsersUids = new ArrayList<>();
@@ -374,6 +383,14 @@ public class GroupChatManager implements GroupChatService {
     private void pingUsersForGroupChat(Group group) {
         Map<String, Object> data = MessageUtils.generatePingMessageData(group);
         org.springframework.messaging.Message<Message> gcmMessage = GcmXmppMessageCodec.encode(TOPICS.concat(group.getUid()), (String) data.get("messageId"),
+                null,
+                data);
+        gcmXmppOutboundChannel.send(gcmMessage);
+    }
+
+    private void pingUser(User user, Group group) {
+        Map<String, Object> data = MessageUtils.generatePingMessageData(user,group);
+        org.springframework.messaging.Message<Message> gcmMessage = GcmXmppMessageCodec.encode(user.getUid(), (String) data.get("messageId"),
                 null,
                 data);
         gcmXmppOutboundChannel.send(gcmMessage);
@@ -396,22 +413,6 @@ public class GroupChatManager implements GroupChatService {
         return data;
     }
 
-
-   /* private Map<String, Object> generateMarkMessageAsReadData(String messageUid, String groupUid, String groupName) {
-
-        Map<String, Object> data = new HashMap<>();
-        String messageId = UIDGenerator.generateId().concat(String.valueOf(System.currentTimeMillis()));
-        data.put(Constants.GROUP_UID, groupUid);
-        data.put(Constants.GROUP_NAME, groupName);
-        data.put("messageId", messageId);
-        data.put("messageUid", messageUid);
-        data.put("type", "update_read_status");
-        data.put(Constants.ENTITY_TYPE, AndroidClickActionType.CHAT_MESSAGE.toString());
-        data.put("click_action", AndroidClickActionType.CHAT_MESSAGE.toString());
-        data.put("time", Instant.now());
-
-        return data;
-    }*/
 
     private Map<String, Object> generateCommandResponseData(GroupChatMessage input, Group group, TaskType type, String[] tokens, LocalDateTime taskDateTime) {
         final String messageId = UIDGenerator.generateId().concat(String.valueOf(System.currentTimeMillis()));
@@ -519,7 +520,6 @@ public class GroupChatManager implements GroupChatService {
             outboundMessage.setType(TaskType.TODO.toString());
         }
         outboundMessage.setTokens(Arrays.asList(tokens));
-
         if (taskDateTime != null) {
 
             ZonedDateTime zonedDateTime = taskDateTime.atZone(DateTimeUtil.getSAST());
