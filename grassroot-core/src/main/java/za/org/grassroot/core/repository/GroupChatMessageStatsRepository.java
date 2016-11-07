@@ -12,6 +12,8 @@ public interface GroupChatMessageStatsRepository extends JpaRepository<GroupChat
 
     GroupChatMessageStats findByUid(String messageUid);
 
+    GroupChatMessageStats findByUidAndRead(String messageUid,boolean read);
+
 
 }
 

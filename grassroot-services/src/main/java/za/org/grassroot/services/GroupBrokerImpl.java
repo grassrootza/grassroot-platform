@@ -124,6 +124,8 @@ public class GroupBrokerImpl implements GroupBroker {
 
         permissionBroker.setRolePermissionsFromTemplate(group, groupPermissionTemplate);
         group = groupRepository.save(group);
+        groupChatSettingsService.subscribeServerToGroupTopic(group);
+
 
         logger.info("Group created under UID {}", group.getUid());
 

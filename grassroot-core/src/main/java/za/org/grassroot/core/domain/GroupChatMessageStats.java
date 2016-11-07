@@ -26,6 +26,10 @@ public class GroupChatMessageStats {
     @JoinColumn(name = "intended_group", nullable = false, updatable = false)
     private Group group;
 
+    @ManyToOne
+    @JoinColumn(name = "sender", nullable = false, updatable = false)
+    private User user;
+
     @Column(name="number_intended_recepients")
     private Long intendedReceipients;
 
@@ -39,9 +43,10 @@ public class GroupChatMessageStats {
     private GroupChatMessageStats(){}
 
 
-    public GroupChatMessageStats(String uid, Group group, Long intendedReceipients, Long timesRead, Boolean read){
+    public GroupChatMessageStats(String uid, Group group, User user, Long intendedReceipients, Long timesRead, Boolean read){
         this.uid = uid;
         this.group = group;
+        this.user =user;
         this.intendedReceipients = intendedReceipients;
         this.timesRead=timesRead;
         this.read=read;
@@ -74,6 +79,10 @@ public class GroupChatMessageStats {
 
     public Boolean isRead() {
         return read;
+    }
+
+    public User getUser() {
+        return user;
     }
 
     public void incrementReadCount(){

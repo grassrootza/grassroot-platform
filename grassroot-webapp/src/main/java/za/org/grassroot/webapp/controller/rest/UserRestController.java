@@ -105,7 +105,7 @@ public class UserRestController {
             User user = userManagementService.createAndroidUserProfile(userDTO);
             VerificationTokenCode token = passwordTokenService.generateLongLivedAuthCode(user.getUid());
             passwordTokenService.expireVerificationCode(user.getUid(), VerificationCodeType.SHORT_OTP);
-            groupChatService.subscribeServerToUserTopic(user);
+
 
             AuthWrapper authWrapper = AuthWrapper.create(true, token, user, false, 0); // by definition, no groups or notiifcations
             return new ResponseEntity<>(authWrapper, HttpStatus.OK);
@@ -143,7 +143,6 @@ public class UserRestController {
                 userManagementService.createAndroidUserProfile(new UserDTO(user));
             }
             userManagementService.setMessagingPreference(user.getUid(), UserMessagingPreference.ANDROID_APP); // todo : maybe move to gcm registration
-            groupChatService.subscribeServerToUserTopic(user);
             passwordTokenService.expireVerificationCode(user.getUid(), VerificationCodeType.SHORT_OTP);
             VerificationTokenCode longLivedToken = passwordTokenService.generateLongLivedAuthCode(user.getUid());
             boolean hasGroups = permissionBroker.countActiveGroupsWithPermission(user, null) != 0;

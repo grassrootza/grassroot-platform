@@ -1,0 +1,1 @@
+ALTER TABLE group_message_stats delete column sender

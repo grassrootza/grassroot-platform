@@ -47,6 +47,26 @@ public class MessageUtils {
         return data;
     }
 
+    public static Map<String, Object> generatePingMessageData(Group group) {
+
+        Map<String, Object> data = new HashMap<>();
+        String messageId = UIDGenerator.generateId().concat(String.valueOf(System.currentTimeMillis()));
+        data.put(Constants.GROUP_UID, group.getUid());
+        data.put(Constants.GROUP_NAME, group.getGroupName());
+        data.put("groupIcon", group.getImageUrl());
+        data.put("messageId", messageId);
+        data.put("messageUid", UIDGenerator.generateId());
+        data.put(Constants.TITLE, group.getGroupName());
+        data.put("type", "ping");
+        data.put("userUid", group.getUid());
+        data.put(Constants.ENTITY_TYPE, AndroidClickActionType.CHAT_MESSAGE.toString());
+        data.put("click_action", AndroidClickActionType.CHAT_MESSAGE.toString());
+        data.put("time", Instant.now());
+
+        return data;
+    }
+
+
     public static boolean isCommand(GroupChatMessage input) {
         String text = (String)input.getData().get("message");
         return text.startsWith("/");
