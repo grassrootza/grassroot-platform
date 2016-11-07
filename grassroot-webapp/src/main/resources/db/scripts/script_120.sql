@@ -11,6 +11,7 @@ CREATE TABLE group_message_stats
   created_date_time timestamp without time zone,
   intended_group bigint,
   uid character varying(50) NOT NULL,
+  sender bigint,
   number_intended_recepients bigint,
   number_times_read bigint,
   read boolean DEFAULT FALSE,
@@ -19,5 +20,8 @@ CREATE TABLE group_message_stats
   CONSTRAINT fk_intended_group FOREIGN KEY (intended_group)
       REFERENCES public.group_profile (id) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE NO ACTION,
+  CONSTRAINT fk_sender_id FOREIGN KEY(sender)
+    REFERENCES user_profile (id) MATCH SIMPLE
+    ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT uk_message_stats_uid UNIQUE (uid)
 )
