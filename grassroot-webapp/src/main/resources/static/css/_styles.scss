@@ -309,6 +309,27 @@ span.top-lines {
   padding: 10px;
 }
 
+.grassroot-alert {
+  font-size: 1.2em;
+  border-radius: 0;
+  margin-bottom: 0;
+
+  p {
+    margin-bottom: 0;
+  }
+
+  .close {
+    opacity: 0.7;
+    font-size: 1.5em;
+    line-height: 28px;
+  }
+}
+
+.grassroot-login-alert {
+  @extend .grassroot-alert;
+  margin-bottom: 15px;
+}
+
 .grassroot-button {
   border: none;
   font-size: 1.2em;
@@ -342,19 +363,6 @@ span.top-lines {
   &:hover {
     background-color: $darker-green;
   }
-
-}
-
-.grassroot-form button .btn-neutral {
-  background-color: $offwhite;
-  border-radius: 0;
-  color: $dark-text;
-  font-family: 'Helvetica', sans-serif;
-  &:hover,
-  &:focus,
-  &:active {
-    color: #DDDDDD;
-  }
 }
 
 .gr-navbar-link i {
@@ -364,6 +372,24 @@ span.top-lines {
 .grassroot-form {
   button {
     border-radius: 0 !important;
+  }
+
+  .form-group > a.btn-neutral {
+    background-color: $offwhite;
+    border-radius: 0;
+    color: $dark-text;
+    font-family: 'Helvetica', sans-serif;
+    margin-top: 10px;
+    &:hover,
+    &:focus,
+    &:active {
+      color: #DDDDDD;
+    }
+  }
+
+  .vertical-margins {
+    margin-top: 7px;
+    margin-bottom: 7px;
   }
 
   input {
@@ -394,6 +420,11 @@ span.top-lines {
   .checkbox-lg {
     font-size: 1.2em;
     padding-left: 10px;
+  }
+
+  .checkbox-standalone {
+    font-size: 14pt;
+    padding-left: 20px;
   }
 
   .table-header {
@@ -646,8 +677,34 @@ span.top-lines {
         background-color: $darker-green;
       }
 
-      &.negative {
+      &.btn-positive {
+        color: #FFFFFF;
+        background-color: $bright-green;
+        font-weight: 600;
+        &:hover,
+        &:focus,
+        &:active {
+          background-color: $green;
+        }
+      }
+
+      &.btn-negative {
         background-color: $orange;
+        &:hover,
+        &:focus,
+        &:active {
+          background-color: $dark-orange;
+        }
+      }
+
+      &.btn-neutral {
+        color: $dark-text;
+        background-color: $offwhite;
+        &:hover,
+        &:focus,
+        &:active {
+          background-color: #DDDDDD;
+        }
       }
     }
 

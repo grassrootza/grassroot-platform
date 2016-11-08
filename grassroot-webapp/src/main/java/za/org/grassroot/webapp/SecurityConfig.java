@@ -51,22 +51,15 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         web.ignoring()
                 .antMatchers("/static/**")
                 .antMatchers("/assets/**")
-                .antMatchers("/public/**")
                 .antMatchers("/i18n/**")
                 .antMatchers("/api/**")
-                .antMatchers("/web/**")
                 .antMatchers("/test/**")
-                .antMatchers("/console/**")
                 .antMatchers("/sms/**")
-                .antMatchers("/image/**")
-                .antMatchers("/404")
-                .antMatchers("/500")
-                .antMatchers("/403");
+                .antMatchers("/image/**");
     }
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-
         http
                 .authorizeRequests()
                     .antMatchers("/signup").permitAll()
@@ -81,6 +74,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                     .successHandler(savedRequestAwareAuthenticationSuccessHandler())
                     .defaultSuccessUrl("/home")
                     .loginPage("/login")
+                    .loginProcessingUrl("/login")
                     .permitAll()
                     .and()
                 .logout()

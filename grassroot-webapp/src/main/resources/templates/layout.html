@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity4"
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity4"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
 <head>
   <title layout:title-pattern="$LAYOUT_TITLE - $CONTENT_TITLE">Grassroot</title>
@@ -25,7 +26,7 @@
     }
   </script>
 
-  <!-- // Navigation -->
+  <!-- Navigation -->
   <div layout:fragment="navigation">
     <div class="navbar navbar-colour">
         <div class="navbar-header">
@@ -50,7 +51,6 @@
               <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/todo/create}">Create to-do</a></li>
             <li sec:authorize="hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')">
               <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/messaging/freeform}">Send Message</a></li>
-
             <li sec:authorize="!hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')">
               <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/account/signup}">Setup Account</a></li>
             <li sec:authorize="hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')">
@@ -86,25 +86,18 @@
   </div>
 
     <!-- Messages / Snacbkar-->
-  <div layout:fragment="messages" class="container-fluid text-center">
-    <div layout:fragment="alert">
-      <div th:if="${errorMessage}" class="alert alert-warning alert-dismissible" role="alert">
-        <button type="button" class="close close-white-lg" data-dismiss="alert" aria-label="Close"><span aria-hidden="true" class="white-text">&times;</span></button>
-        <p th:text="${errorMessage}" class="alert-lg"></p>
-      </div>
-      <div th:if="${infoMessage != null}" class="alert alert-info alert-dismissible" role="alert">
-        <button type="button" class="close close-white-lg" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-        <p th:text="${infoMessage}" class="alert-lg"></p>
-      </div>
-      <div th:if="${successMessage != null}" class="alert alert-success alert-dismissible" role="alert">
-        <button type="button" class="close close-white-lg" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-        <p th:text="${successMessage}" class="alert-lg"></p>
+  <section layout:fragment="messages" class="snackbar-container">
+    <div class="container" th:if="${snackbarMessage}">
+      <div role="alert" class="row text-center alert alert-dismissible grassroot-alert col-md-10 col-md-offset-1"
+          th:classappend="${successMessage} ? 'alert-success' : (${infoMessage} ? 'alert-info' : 'alert-warning')">
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <p th:text="${snackbarMessage}" class="alert-lg"></p>
       </div>
     </div>
-  </div>
+  </section>
 
     <!-- header fragment -->
-  <section layout:fragment="header" class="header-container" >
+  <section layout:fragment="header" class="top-container" >
     <div class="container">
       <div class="row">
         <h1 class="text-center header-content-title">Title</h1>

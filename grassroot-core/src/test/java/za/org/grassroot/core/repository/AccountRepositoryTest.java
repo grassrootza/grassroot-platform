@@ -263,22 +263,22 @@ public class AccountRepositoryTest {
         Account account = new Account(testUser, accountName, AccountType.STANDARD, testUser);
         account.setMaxSizePerGroup(500);
         account.setMaxSubGroupDepth(3);
-        account.setFreeFormMessages(true);
+        account.setFreeFormMessages(100);
         account.setMaxNumberGroups(10);
 
         accountRepository.save(account);
 
         Account accountFromDb = accountRepository.findByAccountName(accountName).get(0);
 
-        assertTrue(accountFromDb.isFreeFormMessages());
+        assertEquals(accountFromDb.getFreeFormMessages(), 100);
         assertEquals(accountFromDb.getMaxSizePerGroup(), 500);
         assertEquals(accountFromDb.getMaxSubGroupDepth(), 3);
         assertEquals(accountFromDb.getMaxNumberGroups(), 10);
         assertEquals(accountFromDb.getMaxSubGroupDepth(), 3);
 
-        accountFromDb.setFreeFormMessages(false);
+        accountFromDb.setFreeFormMessages(0);
         accountFromDb = accountRepository.save(accountFromDb);
-        assertFalse(accountFromDb.isFreeFormMessages());
+        assertEquals(accountFromDb.getFreeFormMessages(), 0);
 
     }
 

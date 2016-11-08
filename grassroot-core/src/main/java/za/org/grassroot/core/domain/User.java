@@ -216,6 +216,12 @@ public class User implements UserDetails, Comparable<User> {
         return new HashSet<>(memberships);
     }
 
+    public Set<Group> getGroups() {
+        return getMemberships().stream()
+                .map(Membership::getGroup)
+                .collect(Collectors.toSet());
+    }
+
     /**
      * This is just used to manually set inverse side of many-to-many relationship when it  is still not saved in db.
      * Afterwards Hibernate takes care to set both sides.

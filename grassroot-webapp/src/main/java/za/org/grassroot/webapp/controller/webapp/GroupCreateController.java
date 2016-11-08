@@ -85,7 +85,7 @@ public class GroupCreateController extends BaseController {
 		String parentUid = (groupCreator.getHasParent()) ? groupCreator.getParent().getUid() : null;
 
 		Group groupCreated = groupBroker.create(user.getUid(), groupCreator.getGroupName(), parentUid,
-				new HashSet<>(groupCreator.getAddedMembers()), groupCreator.getPermissionTemplate(), null,
+				new HashSet<>(groupCreator.getAddedMembers()), groupCreator.getPermissionTemplate(), groupCreator.getGroupDescription(),
 				groupCreator.getReminderMinutes(), true);
 		timeEnd = System.currentTimeMillis();
 

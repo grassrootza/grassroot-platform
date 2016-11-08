@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -42,6 +43,9 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
+
+import static za.org.grassroot.services.specifications.UserSpecifications.inGroups;
+import static za.org.grassroot.services.specifications.UserSpecifications.nameContains;
 
 /**
  * @author Lesetse Kimwaga
@@ -447,10 +451,17 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<String[]> findOthersInGraph(User user, String nameFragment) {
-        List<Object[]> records = userRepository.findDisplayNamesInGraph(user, "%" + nameFragment + "%");
+        // note : there is probably a way to avoid the getGroups and use criteria builder on a join
+        List<User> records = userRepository.findAll(Specifications.where(
+                nameContains(nameFragment)).and(
+                inGroups(user.getGroups())));
+
+        log.info("Number of users in graph : {}", records.size());
+
         return records.stream()
-                .map(o -> new String[] { String.valueOf(o[0]), String.valueOf(o[1])})
+                .map(u -> new String[] { u.getDisplayName(), u.getPhoneNumber() })
                 .collect(Collectors.toList());
     }
 

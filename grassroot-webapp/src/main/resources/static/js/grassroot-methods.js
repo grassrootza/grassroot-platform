@@ -4,30 +4,27 @@
 var grassrootJS = {
 
     assembleMemberRow : function(listName, newMemberIndex) {
-        console.log("called assemble member row ...");
         var strVar="";
-        strVar += "<tr class=\"member_input_row\">";
-        strVar += "            <td>";
+        strVar += "<div class=\"row table-row member-input-row\">";
+        strVar += "            <div class=\"body-cell col-md-4 col-sm-4 col-xs-12\">";
         strVar += "              <input type=\"text\" class=\"form-control input-lg\" value=\"\" id=\"" + listName + newMemberIndex + ".displayName\" " +
-            "name=\"" + listName + "[" + newMemberIndex + "].displayName\" maxlength='25' \/>";
-        strVar += "            <\/td>";
-        strVar += "            <td>";
-        strVar += "              <input type=\"text\" class=\"form-control input-lg\" value=\"\" id=\"" + listName + newMemberIndex + ".phoneNumber\" name=\"" + listName + "[" + newMemberIndex + "].phoneNumber\" \/>";
+            "name=\"" + listName + "[" + newMemberIndex + "].displayName\" maxlength='25' placeholder='Name' \/>";
+        strVar += "            <\/div>";
+        strVar += "            <div class=\"body-cell col-md-3 col-sm-3 col-xs-12\">";
+        strVar += "              <input type=\"text\" class=\"form-control input-lg\" placeholder='Phone' value=\"\" id=\"" + listName + newMemberIndex + ".phoneNumber\" name=\"" + listName + "[" + newMemberIndex + "].phoneNumber\" \/>";
         strVar += "              ";
-        strVar += "            <\/td>";
-        strVar += "            <td>";
+        strVar += "            <\/div>";
+        strVar += "            <div class=\"body-cell col-md-3 col-sm-3 col-xs-12\">";
         strVar += "              <select class=\"form-control input-lg\" id=\"" + listName + newMemberIndex + ".roleName\" name=\"" + listName + "[" + newMemberIndex + "].roleName\">";
         strVar += "                <option selected=\"selected\" value=\"ROLE_ORDINARY_MEMBER\">Ordinary member<\/option>";
         strVar += "                <option value=\"ROLE_COMMITTEE_MEMBER\">Committee member<\/option>";
         strVar += "                <option value=\"ROLE_GROUP_ORGANIZER\">Group organizer<\/option>";
         strVar += "              <\/select>";
-        strVar += "            <\/td>";
-        strVar += "            <td>";
-        strVar += "              <button type=\"button\" id=\"removeMember\" name=\"removeMember\" class=\"btn btn-default btn-lg\" aria-label=\"Remove\" value=\"" + newMemberIndex + "\">";
-        strVar += "                <span class=\"glyphicon glyphicon-remove\" aria-hidden=\"true\"><\/span>";
-        strVar += "              <\/button>";
-        strVar += "            <\/td>";
-        strVar += "          <\/tr>";
+        strVar += "            <\/div>";
+        strVar += "            <div class=\"body-cell col-md-1 col-sm-1 col-xs-12\">";
+        strVar += "              <i id=\"removeMember\" class=\"fa fa-times row-icon\" aria-hidden=\"true\"></i>";
+        strVar += "            <\/div>";
+        strVar += "          <\/div>";
         return strVar;
     },
 

@@ -44,7 +44,7 @@
             </div>
 
             <div th:if="${canAddToAccount}" class="form-group">
-              <label class="checkbox-inline checkbox-lg">
+              <label class="checkbox-inline checkbox-standalone">
                 <input type="checkbox" checked="true" name="addToAccount" id="addToAccount" />Add this group to my account
               </label>
             </div>
@@ -57,7 +57,7 @@
 
 
             <div id="member-input">
-              <div class="row table-row" th:each="member, iterStat: *{listOfMembers}">
+              <div class="row table-row member-input-row" th:each="member, iterStat: *{listOfMembers}">
                 <div class="body-cell col-md-4 col-sm-4 col-xs-12">
                   <input type="text" th:field="*{listOfMembers[__${iterStat.index}__].displayName}" class="form-control input-lg" placeholder="Member's name" maxlength="35"/>
                 </div>
@@ -75,16 +75,10 @@
                             th:selected="${#strings.equals(member.roleName, role)}"></option>
                   </select>
                 </div>
-                <div class="body-cell col-md-1 col-sm-1 col-xs-12">
+                <div class="body-cell col-md-1 col-sm-1 col-xs-12 text-center top-padding-sm">
                   <i id="removeMember" class="fa fa-times row-icon" aria-hidden="true"></i>
                 </div>
               </div>
-            </div>
-
-            <div class="row table-button-row">
-              <button type="button" name="addMember" id="add_member" class="btn-primary add-row">
-                <i class="fa fa-plus" aria-hidden="true"></i>Add another member</button>
-              <button href="#advancedOptions" class="btn-neutral" role="button" data-toggle="collapse">Advanced options</button>
             </div>
 
           <div class="collapse" id="advancedOptions">
@@ -114,9 +108,20 @@
             </div>
           </div>
 
-          <div class="form-group pull-right">
-              <a th:href="@{/home}" role="button" class="btn btn-default btn-lg">Cancel</a>
-              <button type="submit" class="btn btn-primary btn-lg">Create Group</button>
+          <div class="form-group">
+            <div class="col-md-4 col-sm-6 col-xs-12 vertical-margins">
+              <button type="button" name="addMember" id="add_member" class="btn-primary btn-block add-row">
+                <i class="fa fa-plus" aria-hidden="true"></i>Add another member</button>
+            </div>
+            <div class="col-md-3 col-sm-6 col-xs-12 vertical-margins">
+              <a href="#advancedOptions" class="btn btn-block btn-neutral" data-toggle="collapse">Advanced options</a>
+            </div>
+            <div class="col-md-2 col-sm-6 col-xs-12 vertical-margins">
+              <a th:href="@{/home}" class="btn btn-block btn-neutral">Cancel</a>
+            </div>
+            <div class="col-md-3 col-sm-6 col-xs-12 vertical-margins">
+              <button type="submit" class="btn btn-primary btn-block btn-lg">Create Group</button>
+            </div>
           </div>
 
         </form>
@@ -129,6 +134,7 @@
 <div layout:fragment="script-container">
 
   <script th:src="@{/js/lib/jquery-ui.min.js}"></script>
+  <script th:src="@{/js/lib/jquery.validate.min.js}"></script>
   <script th:src="@{/js/grassroot-methods.js}"></script>
 
   <script th:inline="javascript">
@@ -147,7 +153,7 @@
       var creating_form = $('#group_creator');
 
       var member_table = $('#member-input');
-      var member_rows = creating_form.find('.member_input_row');
+      var member_rows = creating_form.find('.member-input-row');
       var number_members = member_rows.length;
 
       $('#add_member').click(function() {
@@ -158,9 +164,10 @@
 
       function addRowToTable() {
         var thisRowIndex = number_members;
+        console.log("adding a row at this index: " + number_members);
 
-        member_table.find('tr:last').after(grassrootJS.assembleMemberRow("listOfMembers", thisRowIndex));
-        var newRow = member_table.find('tr:last');
+        member_table.find('.row:last').after(grassrootJS.assembleMemberRow("listOfMembers", thisRowIndex));
+        var newRow = member_table.find('.row:last');
         var phoneInput = newRow.find('[name$="phoneNumber"]');
         var nameInput = newRow.find('[name$="displayName"]');
         phoneInput.rules('add', grassrootJS.phoneRules);

@@ -33,6 +33,8 @@ public class BaseController {
 
     private static final Logger log = LoggerFactory.getLogger(BaseController.class);
 
+    private static final String SNACKBAR_MESSAGE = "snackbarMessage";
+
     public enum MessageType {
         INFO("infoMessage"),
         SUCCESS("successMessage"),
@@ -126,18 +128,22 @@ public class BaseController {
 
     public void addMessage(Model model, MessageType messageType, String messageKey, HttpServletRequest request) {
         model.addAttribute(messageType.getMessageKey(), getText(messageKey, request.getLocale()));
+        model.addAttribute(SNACKBAR_MESSAGE, getText(messageKey, request.getLocale()));
     }
 
     public void addMessage(Model model, MessageType messageType, String messageKey, Object[] arguments, HttpServletRequest request) {
         model.addAttribute(messageType.getMessageKey(), getText(messageKey, arguments, request.getLocale()));
+        model.addAttribute(SNACKBAR_MESSAGE, getText(messageKey, arguments, request.getLocale()));
     }
 
     public void addMessage(RedirectAttributes redirectAttributes, MessageType messageType, String messageKey, HttpServletRequest request) {
         redirectAttributes.addFlashAttribute(messageType.getMessageKey(), getText(messageKey, request.getLocale()));
+        redirectAttributes.addFlashAttribute(SNACKBAR_MESSAGE, getText(messageKey, request.getLocale()));
     }
 
     public void addMessage(RedirectAttributes redirectAttributes, MessageType messageType, String messageKey,Object [] arguments, HttpServletRequest request) {
         redirectAttributes.addFlashAttribute(messageType.getMessageKey(), getText(messageKey, arguments, request.getLocale()));
+        redirectAttributes.addFlashAttribute(SNACKBAR_MESSAGE, getText(messageKey, arguments, request.getLocale()));
     }
 
     /**

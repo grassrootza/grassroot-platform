@@ -8,6 +8,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.servlet.ModelAndView;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.UserInterfaceType;
@@ -26,18 +27,25 @@ public class HomeController extends BaseController {
 
     private static final Logger log = LoggerFactory.getLogger(HomeController.class);
 
-    @Autowired
     private TaskBroker taskBroker;
-
-    @Autowired
     private GroupJoinRequestService groupJoinRequestService;
-
-    @Autowired
     private AsyncUserLogger userLogger;
 
+    @Autowired
+    public HomeController(TaskBroker taskBroker, GroupJoinRequestService groupJoinRequestService,
+                          AsyncUserLogger userLogger) {
+        this.taskBroker = taskBroker;
+        this.groupJoinRequestService = groupJoinRequestService;
+        this.userLogger = userLogger;
+    }
+
+    @RequestMapping(value = "/login", method = RequestMethod.GET)
+    public String getLoginPage() {
+        return "/login";
+    }
+
     @RequestMapping(value={"/", "/home"})
-    public ModelAndView getRootPage(Model model, @ModelAttribute("currentUser") UserDetails userDetails,
-                                    HttpServletRequest request) {
+    public ModelAndView getRootPage(Model model, @ModelAttribute("currentUser") UserDetails userDetails) {
 
         log.info("getRootPage ... attempting to authenticate user ...");
 

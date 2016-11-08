@@ -90,8 +90,8 @@ public class AccountBrokerTest {
     private void setAccountFields() {
         Map<AccountType, Integer> accountFees = new HashMap<>();
         accountFees.put(AccountType.STANDARD, 10000);
-        Map<AccountType, Boolean> messagesEnabled = new HashMap<>();
-        messagesEnabled.put(AccountType.STANDARD, true);
+        Map<AccountType, Integer> freeFormPerMonth = new HashMap<>();
+        freeFormPerMonth.put(AccountType.STANDARD, 100);
         Map<AccountType, Integer> messagesCost = new HashMap<>();
         messagesCost.put(AccountType.STANDARD, 30);
         Map<AccountType, Integer> maxGroupSize = new HashMap<>();
@@ -104,7 +104,7 @@ public class AccountBrokerTest {
         todosPerMonth.put(AccountType.STANDARD, 16);
 
         ReflectionTestUtils.setField(accountBroker, "accountFees", accountFees);
-        ReflectionTestUtils.setField(accountBroker, "messagesEnabled", messagesEnabled);
+        ReflectionTestUtils.setField(accountBroker, "freeFormPerMonth", freeFormPerMonth);
         ReflectionTestUtils.setField(accountBroker, "messagesCost", messagesCost);
         ReflectionTestUtils.setField(accountBroker, "maxGroupSize", maxGroupSize);
         ReflectionTestUtils.setField(accountBroker, "maxGroupNumber", maxGroupNumber);

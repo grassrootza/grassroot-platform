@@ -29,15 +29,24 @@
 
   <main layout:fragment="content">
 
+    <div th:class="${(param.error != null)}? 'snackbar-container' : 'hide'">
+      <div class="container">
+        <div class="row">
+          <div class="col-md-4 col-md-offset-4 col-sm-6 col-sm-offset-3 col-xs-12">
+            <div class="alert alert-danger alert-dismissable grassroot-alert-login">
+              <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+              <span th:if="${(param.error != null)}">Sorry, wrong number or password</span>
+          </div>
+        </div>
+      </div>
+      </div>
+    </div>
+
     <section class="grassroot-form">
       <div class="container">
         <div class="row">
           <div class="col-md-4 col-md-offset-4 col-sm-6 col-sm-offset-3 col-xs-12">
             <form id="signin-form" th:action="@{/login}" method="post" autocomplete="off">
-
-              <div th:class="${(param.error != null)}? 'alert alert-danger alert-dismissable' : 'hide'">
-                <span class="alert-lg" th:if="${(param.error != null)}">Sorry, invalid phone number or password.<span th:text="${error}"></span></span>
-              </div>
 
               <div class="form-group">
                 <label for="mobile-number" class="control-label" th:text="#{web.signin.username}">Phone number</label>

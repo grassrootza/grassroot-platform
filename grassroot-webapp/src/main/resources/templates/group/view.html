@@ -3,7 +3,7 @@
       xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity4"
       data-layout-decorate="~{layout}">
 <head>
-  <title th:text="${group.name}"></title>
+  <title th:text="${group.name}">Group name</title>
 
   <link rel="stylesheet" type="text/css" th:href="@{/css/jquery-ui.min.css}" />
   <meta name="_csrf" th:content="${_csrf.token}"/>
@@ -116,8 +116,6 @@
     </div>
   </div>
 </section>
-
-<div layout:fragment="messages"></div>
 
 <div layout:fragment="content">
 

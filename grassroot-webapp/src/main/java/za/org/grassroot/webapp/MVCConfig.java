@@ -1,38 +1,23 @@
 package za.org.grassroot.webapp;
 
 import com.github.mxab.thymeleaf.extras.dataattribute.dialect.DataAttributeDialect;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.embedded.ConfigurableEmbeddedServletContainer;
-import org.springframework.boot.context.embedded.EmbeddedServletContainerCustomizer;
-import org.springframework.boot.web.servlet.ErrorPage;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.web.bind.annotation.ControllerAdvice;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.filter.CharacterEncodingFilter;
-import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.LocaleResolver;
-import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
-import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
-import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
 import org.springframework.web.servlet.i18n.LocaleChangeInterceptor;
 import org.springframework.web.servlet.i18n.SessionLocaleResolver;
 import org.thymeleaf.extras.java8time.dialect.Java8TimeDialect;
 import za.org.grassroot.webapp.validation.TokenValidationInterceptor;
 
 import javax.servlet.Filter;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
 import java.util.Locale;
-
-import static org.springframework.http.HttpStatus.*;
 
 /**
  *
@@ -44,9 +29,6 @@ import static org.springframework.http.HttpStatus.*;
 @ControllerAdvice
 public class MVCConfig extends WebMvcConfigurerAdapter {
 
-    @Autowired
-    private StaticPagePathFinder staticPagePathFinder;
-
     @Bean
     public DataAttributeDialect dataAttributeDialect() {
         return new DataAttributeDialect();
@@ -54,11 +36,6 @@ public class MVCConfig extends WebMvcConfigurerAdapter {
 
     @Bean
     public Java8TimeDialect java8TimeDialect() { return new Java8TimeDialect(); }
-
-    @ExceptionHandler
-    @ResponseStatus(NOT_FOUND)
-    public void handleException(ResourceNotFoundException ex) {
-    }
 
     @Bean
     public Filter characterEncodingFilter() {
@@ -79,17 +56,6 @@ public class MVCConfig extends WebMvcConfigurerAdapter {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
 
-        registry.addInterceptor(new HandlerInterceptorAdapter() {
-            @Override
-            public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler,
-                                   ModelAndView modelAndView) throws Exception {
-
-                if (handler instanceof HandlerMethod) {
-                    HandlerMethod handlerMethod = (HandlerMethod) handler;
-                }
-            }
-        });
-
         registry.addInterceptor(localeChangeInterceptor());
         registry.addInterceptor(loggingInterceptor());
         registry.addInterceptor(tokenValidationInterceptor())
@@ -104,38 +70,12 @@ public class MVCConfig extends WebMvcConfigurerAdapter {
     }
 
     @Override
-    public void addViewControllers(ViewControllerRegistry registry) {
-        try {
-            registry.addViewController("/login");
-            for (StaticPagePathFinder.PagePaths paths : staticPagePathFinder.findPaths()) {
-                String urlPath = paths.getUrlPath();
-                registry.addViewController(urlPath).setViewName("pages" + paths.getFilePath());
-                if (!urlPath.isEmpty()) {
-                    registry.addViewController(urlPath + "/").setViewName("pages" + paths.getFilePath());
-                }
-            }
-        } catch (IOException e) {
-            throw new UnsupportedOperationException("Unable to locate static pages: " + e.getMessage(), e);
-        }
-    }
-
-    @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         // Resources controlled by Spring Security, which
         // adds "Cache-Control: must-revalidate".
         registry.addResourceHandler("/static/**")
                 .addResourceLocations("classpath:/static/")
                 .setCachePeriod(0); // 3600 * 24
-    }
-
-    @Configuration
-    public static class ErrorConfig implements EmbeddedServletContainerCustomizer {
-        @Override
-        public void customize(ConfigurableEmbeddedServletContainer factory) {
-            factory.addErrorPages(new ErrorPage(NOT_FOUND, "/404"));
-            factory.addErrorPages(new ErrorPage(INTERNAL_SERVER_ERROR, "/500"));
-            factory.addErrorPages(new ErrorPage(FORBIDDEN, "/403"));
-        }
     }
 
     @Bean (name = "messageSource")

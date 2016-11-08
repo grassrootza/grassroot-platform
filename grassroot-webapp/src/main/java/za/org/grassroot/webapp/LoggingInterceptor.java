@@ -1,6 +1,7 @@
 package za.org.grassroot.webapp;
 
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
 
@@ -12,7 +13,7 @@ import javax.servlet.http.HttpServletResponse;
  */
 public class LoggingInterceptor extends HandlerInterceptorAdapter {
 
-    private static final Logger logger = Logger.getLogger(LoggingInterceptor.class);
+    private static final Logger logger = LoggerFactory.getLogger(LoggingInterceptor.class);
 
     @Override
     public boolean preHandle(HttpServletRequest request,
@@ -37,7 +38,7 @@ public class LoggingInterceptor extends HandlerInterceptorAdapter {
 
         long executeTime = endTime - startTime;
 
-        logger.info("[" + handler + "] took : " + executeTime + "ms");
+        logger.info("{} ms : [{}]", executeTime, handler);
 
     }
 }
