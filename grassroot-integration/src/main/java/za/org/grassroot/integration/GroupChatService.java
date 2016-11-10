@@ -16,10 +16,6 @@ import java.util.Set;
  */
 public interface GroupChatService {
 
-    void relayChatMessage(String userPhoneNumber, String groupUid, String message, String clientMsgUid, String userGcmKey);
-
-    void processAndRouteIncomingChatMessage(GroupChatMessage message);
-
     void processCommandMessage(MQTTPayload incoming);
 
     void markMessagesAsRead(String groupUid, String groupName, Set<String> messageUids);
@@ -32,10 +28,6 @@ public interface GroupChatService {
 
     void updateActivityStatus(String userUid, String groupUid, boolean active, boolean userInitiated) throws Exception;
 
-    void subscribeServerToAllGroupTopics();
-
-    void subscribeServerToGroupTopic(Group group);
-
     void createGroupChatMessageStats(MQTTPayload payload);
 
     boolean messengerSettingExist(String userUid, String groupUid);
@@ -43,6 +35,8 @@ public interface GroupChatService {
     List<GroupChatSettings> loadUsersToBeUnmuted();
 
     List<String> usersMutedInGroup(String groupUid);
+
+    void pingToSync(User addingUser, User addedUser, Group group);
 }
 
 

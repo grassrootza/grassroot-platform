@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.context.support.ResourceBundleMessageSource;
+import org.springframework.integration.mqtt.inbound.MqttPahoMessageDrivenChannelAdapter;
 import org.springframework.integration.xmpp.config.XmppConnectionFactoryBean;
 import org.springframework.messaging.MessageChannel;
 import za.org.grassroot.core.repository.GcmRegistrationRepository;
@@ -15,6 +16,8 @@ import za.org.grassroot.integration.LearningService;
 import za.org.grassroot.integration.MessageSendingService;
 import za.org.grassroot.integration.NotificationService;
 import za.org.grassroot.integration.GroupChatService;
+import za.org.grassroot.integration.mqtt.MQTTConfig;
+import za.org.grassroot.integration.mqtt.MqttSubscriptionService;
 import za.org.grassroot.integration.sms.SmsSendingService;
 import za.org.grassroot.integration.xmpp.GcmService;
 
@@ -57,9 +60,15 @@ public class TestContextConfig {
         return new MockitoFactoryBean<>(GcmRegistrationRepository.class);
     }
 
+
     @Bean
-    public FactoryBean<MessageChannel> messageChannel() {
-        return new MockitoFactoryBean<>(MessageChannel.class);
+    public FactoryBean<MqttSubscriptionService> mqttSubscriptionService() {
+        return new MockitoFactoryBean<>(MqttSubscriptionService.class);
+    }
+
+   @Bean(name="mqttAdapter")
+    public FactoryBean<MqttPahoMessageDrivenChannelAdapter> mqttAdapter(){
+        return new MockitoFactoryBean<>(MqttPahoMessageDrivenChannelAdapter.class);
     }
 
     @Bean
@@ -77,6 +86,7 @@ public class TestContextConfig {
     public FactoryBean<GroupChatService> messengerSettingsService() {
         return new MockitoFactoryBean<>(GroupChatService.class);
     }
+
 
     @Bean()
     public FactoryBean<LearningService> learningService(){

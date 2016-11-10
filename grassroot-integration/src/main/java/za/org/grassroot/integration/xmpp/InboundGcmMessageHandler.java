@@ -12,7 +12,6 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.PhoneNumberUtil;
-import za.org.grassroot.integration.GroupChatService;
 import za.org.grassroot.integration.MessageSendingService;
 import za.org.grassroot.integration.NotificationService;
 import za.org.grassroot.integration.domain.GcmUpstreamMessage;
@@ -41,8 +40,6 @@ public class InboundGcmMessageHandler {
     @Autowired
     private UserRepository userRepository;
 
-    @Autowired
-    private GroupChatService groupChatService;
 
     private static final String ORIGINAL_MESSAGE_ID = "original_message_id";
 
@@ -93,9 +90,6 @@ public class InboundGcmMessageHandler {
                 case "UPDATE_READ":
                     String notificationId = (String) input.getData().get("notificationId");
                     updateReadStatus(notificationId);
-                    break;
-                case "CHAT":
-                    groupChatService.processAndRouteIncomingChatMessage(input);
                     break;
                 default: //action unknown ignore
                     break;

@@ -20,32 +20,8 @@ import java.util.Map;
  */
 public class MessageUtils {
 
-    public static Map<String, Object> prePopWithGroupData(Group group) {
-        Map<String, Object> data = new HashMap<>();
-        data.put(Constants.GROUP_UID, group.getUid());
-        data.put(Constants.GROUP_NAME, group.getName());
-        data.put("groupIcon", group.getImageUrl());
-        return data;
-    }
 
-    public static Map<String, Object> generatePingMessageData(User user, Group group) {
 
-        Map<String, Object> data = new HashMap<>();
-        String messageId = UIDGenerator.generateId().concat(String.valueOf(System.currentTimeMillis()));
-        data.put(Constants.GROUP_UID, group.getUid());
-        data.put(Constants.GROUP_NAME, group.getGroupName());
-        data.put("groupIcon", group.getImageUrl());
-        data.put("messageId", messageId);
-        data.put("messageUid", UIDGenerator.generateId());
-        data.put(Constants.TITLE, user.nameToDisplay());
-        data.put("type", "ping");
-        data.put("userUid", user.getUid());
-        data.put(Constants.ENTITY_TYPE, AndroidClickActionType.CHAT_MESSAGE.toString());
-        data.put("click_action", AndroidClickActionType.CHAT_MESSAGE.toString());
-        data.put("time", Instant.now());
-
-        return data;
-    }
 
     public static Map<String, Object> generatePingMessageData(Group group) {
 
@@ -66,16 +42,6 @@ public class MessageUtils {
         return data;
     }
 
-
-    public static boolean isCommand(GroupChatMessage input) {
-        String text = (String)input.getData().get("message");
-        return text.startsWith("/");
-    }
-
-    public static boolean isCommand(MQTTPayload input) {
-        String text = input.getText();
-        return text.startsWith("/");
-    }
 
     public static String[] tokenize(String message) {
         if (message.contains("/meeting")) {
