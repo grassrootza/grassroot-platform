@@ -20,7 +20,7 @@ import za.org.grassroot.integration.xmpp.InboundGcmMessageHandler;
  */
 
 @RunWith(SpringRunner.class) // todo : clean up config in the next
-@ContextConfiguration(classes = {TestContextConfig.class, InboundGcmMessageHandler.class})
+@ContextConfiguration(classes = {TestContextConfig.class, InboundGcmMessageHandler.class, })
 @ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
 public class IncomingGcmHandlerTest {
 

@@ -20,6 +20,7 @@ import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
+import za.org.grassroot.integration.mqtt.MqttSubscriptionService;
 import za.org.grassroot.integration.xmpp.GcmService;
 import za.org.grassroot.integration.GroupChatService;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
@@ -71,6 +72,9 @@ public class GroupBrokerImpl implements GroupBroker {
     private GroupChatService groupChatSettingsService;
     @Autowired
     private GcmService gcmService;
+
+    @Autowired
+    private MqttSubscriptionService mqttSubscriptionService;
 
     @Override
     @Transactional(readOnly = true)
@@ -124,12 +128,12 @@ public class GroupBrokerImpl implements GroupBroker {
 
         permissionBroker.setRolePermissionsFromTemplate(group, groupPermissionTemplate);
         group = groupRepository.save(group);
-        groupChatSettingsService.subscribeServerToGroupTopic(group);
+        mqttSubscriptionService.subscribeServerToGroupTopic(group);
 
 
         logger.info("Group created under UID {}", group.getUid());
 
-        addMembersToGroupChat(group);
+        addMembersToGroupChat(group,user );
 
 
         logger.info("Group created under UID {}", group.getUid());
@@ -360,7 +364,7 @@ public class GroupBrokerImpl implements GroupBroker {
 
         final GroupLogType logType = duringGroupCreation ? GroupLogType.GROUP_MEMBER_ADDED_AT_CREATION : GroupLogType.GROUP_MEMBER_ADDED;
 
-        if (!duringGroupCreation) addMembersToGroupChat(group);
+        if (!duringGroupCreation) addMembersToGroupChat(group,initiator);
 
         for (Membership membership : memberships) {
             User member = membership.getUser();
@@ -918,7 +922,7 @@ public class GroupBrokerImpl implements GroupBroker {
         logActionLogsAfterCommit(actionLogs);
     }
 
-    private void addMembersToGroupChat(Group group) {
+    private void addMembersToGroupChat(Group group, User initiator) {
 
         String groupUid = group.getUid();
         Set<Membership> memberships = group.getMemberships();
@@ -929,6 +933,8 @@ public class GroupBrokerImpl implements GroupBroker {
                 String registrationId = gcmService.getGcmKey(user);
                 try {
                     gcmService.subscribeToTopic(registrationId, groupUid);
+                    groupChatSettingsService.pingToSync(initiator,user,group);
+
                 } catch (IOException e) {
                     logger.info("Could not subscribe user to group topic {}", groupUid);
                 }
