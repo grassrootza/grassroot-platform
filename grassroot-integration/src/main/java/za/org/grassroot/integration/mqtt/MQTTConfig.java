@@ -1,13 +1,16 @@
 package za.org.grassroot.integration.mqtt;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.integration.annotation.IntegrationComponentScan;
 import org.springframework.integration.annotation.ServiceActivator;
 import org.springframework.integration.channel.DirectChannel;
@@ -35,10 +38,9 @@ import java.util.Set;
 @ComponentScan
 @IntegrationComponentScan
 @EnableIntegration
-@ConditionalOnProperty(name = "mqtt.connection.enabled", havingValue = "true",  matchIfMissing = false)
+@ConditionalOnProperty(name = "mqtt.connection.enabled", havingValue = "true")
 public class MQTTConfig {
 
-    private static final Logger logger = LoggerFactory.getLogger(MQTTConfig.class);
 
     @Value("${mqtt.connection.url}")
     private String host;
@@ -57,25 +59,26 @@ public class MQTTConfig {
         factory.setCleanSession(false);
       //  factory.setUserName();
       //  factory.setPassword();
-
         return factory;
     }
 
 
+
     @Bean
+
     public MessageProducerSupport messageProducerSupport(){
         return mqttAdapter();
     }
 
     @Bean
     public MqttPahoMessageDrivenChannelAdapter mqttAdapter(){
-        MqttPahoMessageDrivenChannelAdapter adapter = new MqttPahoMessageDrivenChannelAdapter("Grassroot",
+        MqttPahoMessageDrivenChannelAdapter adapter
+                = new MqttPahoMessageDrivenChannelAdapter("Grassroot",
                 mqttClientFactory());
         adapter.setCompletionTimeout(5000);
         adapter.setConverter(new DefaultPahoMessageConverter());
         adapter.setOutputChannel(mqttInboundChannel());
         adapter.setQos(1);
-
         return adapter;
     }
 
@@ -89,8 +92,6 @@ public class MQTTConfig {
         return messageHandler;
     }
 
-
-
     @Bean
     public MessageChannel mqttInboundChannel(){
         return  new DirectChannel();
@@ -101,12 +102,15 @@ public class MQTTConfig {
         return new DirectChannel();
     }
 
-    @Bean
-    public ObjectMapper objectMapper(){
+    @Bean()
+    public ObjectMapper payloadMapper(){
         ObjectMapper mapper = new ObjectMapper();
         mapper.setDateFormat(new SimpleDateFormat("MMM dd, yyyy hh:mm:ss a", Locale.UK));
         return mapper;
     }
+
+
+
 
 }
 

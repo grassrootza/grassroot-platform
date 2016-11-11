@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -25,7 +26,7 @@ import java.io.IOException;
 public class InboundMqttMessageHandler {
 
     @Autowired
-    ObjectMapper objectMapper;
+    ObjectMapper payloadMapper;
 
     @Autowired
     GroupChatService groupChatService;
@@ -37,7 +38,7 @@ public class InboundMqttMessageHandler {
     public MessageHandler mqttInboundMessageHandler() {
         return message -> {
             try {
-                MQTTPayload payload = objectMapper.readValue(message.getPayload().toString(), MQTTPayload.class);
+                MQTTPayload payload = payloadMapper.readValue(message.getPayload().toString(), MQTTPayload.class);
                 String topic = String.valueOf(message.getHeaders().get(MqttHeaders.TOPIC));
                 logger.debug("incoming payload " + payload.toString());
                 if (topic.equals("Grassroot")) {

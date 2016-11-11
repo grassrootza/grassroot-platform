@@ -10,8 +10,6 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.repository.GcmRegistrationRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.integration.utils.MessageUtils;
 import za.org.grassroot.integration.xmpp.GcmXmppMessageCodec;
@@ -32,17 +30,15 @@ public class MqttSubscriptionServiceImpl implements MqttSubscriptionService {
     private String TOPICS;
 
     private GroupRepository groupRepository;
-    private GcmRegistrationRepository gcmRegistrationRepository;
     private MqttPahoMessageDrivenChannelAdapter mqttAdapter;
     private MessageChannel gcmXmppOutboundChannel;
 
 
 
     @Autowired
-    public MqttSubscriptionServiceImpl(GroupRepository groupRepository, MqttPahoMessageDrivenChannelAdapter mqttAdapter, GcmRegistrationRepository gcmRegistrationRepository, MessageChannel gcmXmppOutboundChannel) {
+    public MqttSubscriptionServiceImpl(GroupRepository groupRepository, MqttPahoMessageDrivenChannelAdapter mqttAdapter, MessageChannel gcmXmppOutboundChannel) {
         this.groupRepository = groupRepository;
         this.mqttAdapter = mqttAdapter;
-        this.gcmRegistrationRepository=gcmRegistrationRepository;
         this.gcmXmppOutboundChannel = gcmXmppOutboundChannel;
     }
 
@@ -66,12 +62,6 @@ public class MqttSubscriptionServiceImpl implements MqttSubscriptionService {
         List<String> topicsSubscribeTo = Arrays.asList(mqttAdapter.getTopic());
         if (!topicsSubscribeTo.contains(group.getUid())) {
             mqttAdapter.addTopic(group.getUid(), 1);
-        }
-        for(User user: group.getMembers()){
-            if(gcmRegistrationRepository.findTopByUserOrderByCreationTimeDesc(user) !=null){
-                //ping user so that app can sync
-                pingUsersForGroupChat(group);
-            }
         }
     }
 
