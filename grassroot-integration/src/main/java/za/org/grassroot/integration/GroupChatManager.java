@@ -2,7 +2,6 @@ package za.org.grassroot.integration;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationConfig;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.jivesoftware.smack.packet.Message;
 import org.slf4j.Logger;
@@ -23,11 +22,9 @@ import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.UIDGenerator;
-import za.org.grassroot.integration.domain.GroupChatMessage;
 import za.org.grassroot.integration.domain.MQTTPayload;
 import za.org.grassroot.integration.exception.GroupChatSettingNotFoundException;
 import za.org.grassroot.integration.exception.SeloParseDateTimeFailure;
-import za.org.grassroot.integration.utils.Constants;
 import za.org.grassroot.integration.utils.MessageUtils;
 import za.org.grassroot.integration.xmpp.GcmXmppMessageCodec;
 
@@ -79,7 +76,8 @@ public class GroupChatManager implements GroupChatService {
     @Autowired
     private GcmRegistrationRepository gcmRegistrationRepository;
 
-    private ObjectMapper objectMapper = new ObjectMapper();
+    @Autowired
+    private ObjectMapper payloadMapper;
 
 
     @Autowired
@@ -126,7 +124,7 @@ public class GroupChatManager implements GroupChatService {
         Group group = groupRepository.findOneByUid(groupUid);
         MQTTPayload payload = generateMessage(incoming, group);
         try {
-            final String message = objectMapper.writeValueAsString(payload);
+            final String message = payloadMapper.writeValueAsString(payload);
             logger.info("Outgoing mqtt payload ={}", message);
             mqttOutboundChannel.send(MessageBuilder.withPayload(message).
                     setHeader(MqttHeaders.TOPIC, incoming.getPhoneNumber()).build());
@@ -150,8 +148,8 @@ public class GroupChatManager implements GroupChatService {
                 if (groupChatMessageStats.getTimesRead() / groupChatMessageStats.getIntendedReceipients() > readStatusThreshold) {
                     groupChatMessageStats.setRead(true);
                     try {
-                        ObjectMapper mapper = new ObjectMapper();
-                        mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS,true);
+                        final ObjectMapper mapper = new ObjectMapper();
+                        mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, true);
                         final String message = mapper.writeValueAsString(payload);
                         mqttOutboundChannel.send(MessageBuilder.withPayload(message).
                                 setHeader(MqttHeaders.TOPIC, user.getPhoneNumber()).build());
@@ -164,8 +162,6 @@ public class GroupChatManager implements GroupChatService {
             }
         }
     }
-
-
 
 
     @Override
@@ -231,19 +227,19 @@ public class GroupChatManager implements GroupChatService {
         Objects.requireNonNull(payload);
         Group group = groupRepository.findOneByUid(payload.getGroupUid());
         User user = userRepository.findByPhoneNumber(payload.getPhoneNumber());
-        Long numberOfIntendedRecepients =
-                groupChatSettingsRepository.countByGroupAndActive(group, true);
+        if(group !=null && user !=null) {
+            Long numberOfIntendedRecepients =
+                    groupChatSettingsRepository.countByGroupAndActive(group, true);
 
-        GroupChatMessageStats groupChatMessageStats = new GroupChatMessageStats(payload.getUid(), group, user, numberOfIntendedRecepients, 1L, false);
-        groupChatMessageStatsRepository.save(groupChatMessageStats);
-        pingUsersForGroupChat(group);
-
+            GroupChatMessageStats groupChatMessageStats = new GroupChatMessageStats(payload.getUid(), group, user, numberOfIntendedRecepients, 1L, false);
+            groupChatMessageStatsRepository.save(groupChatMessageStats);
+            pingUsersForGroupChat(group);
+        }
     }
 
     @Override
     @Transactional(readOnly = true)
     public boolean messengerSettingExist(String userUid, String groupUid) {
-
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(groupUid);
 
@@ -288,7 +284,9 @@ public class GroupChatManager implements GroupChatService {
         MQTTPayload payload = generateSyncData(initiator, group);
         Map<String, Object> data = MessageUtils.generatePingMessageData(group);
         try {
-            final String message = objectMapper.writeValueAsString(payload);
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS,true);
+            final String message = mapper.writeValueAsString(payload);
             mqttOutboundChannel.send(MessageBuilder.withPayload(message).
                     setHeader(MqttHeaders.TOPIC, addedUser.getPhoneNumber()).build());
             GcmRegistration gcmRegistration = gcmRegistrationRepository
@@ -323,7 +321,7 @@ public class GroupChatManager implements GroupChatService {
 
 
         String responseMessage = messageSourceAccessor.getMessage("mqtt.member.added",
-                new String[]{addingUser.getDisplayName(), group.getGroupName()});
+                new String[]{group.getGroupName(),addingUser.getDisplayName()});
         MQTTPayload outboundMessage = new MQTTPayload(UIDGenerator.generateId(), group.getUid(),
                 group.getGroupName(),
                 "Grassroot", Date.from(Instant.now()), "sync");
