@@ -5,7 +5,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.data.domain.Sort;
-import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -17,6 +16,7 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.AccountType;
 import za.org.grassroot.integration.PdfGeneratingService;
 import za.org.grassroot.integration.payments.PaymentMethod;
+import za.org.grassroot.integration.payments.PaymentRedirectPP;
 import za.org.grassroot.integration.payments.PaymentServiceBroker;
 import za.org.grassroot.services.account.AccountBillingBroker;
 import za.org.grassroot.services.account.AccountBroker;
@@ -203,12 +203,14 @@ public class AccountController extends BaseController {
     public String changePaymentDo(RedirectAttributes attributes, @RequestParam String accountUid,
                                   @ModelAttribute("method") PaymentMethod paymentMethod, HttpServletRequest request) {
         AccountBillingRecord record = accountBillingBroker.generatePaymentChangeBill(accountUid, PAYMENT_VERIFICATION_AMT);
-        boolean paymentSucceded = paymentServiceBroker.linkPaymentMethodToAccount(paymentMethod, accountUid, record, true);
-        attributes.addAttribute("accountUid", accountUid);
-        addMessage(attributes, paymentSucceded ? MessageType.SUCCESS : MessageType.ERROR,
-                paymentSucceded ? "account.payment.changed" : "account.payment.failed", request);
-        return paymentSucceded ? "redirect:/account/view" : "redirect:change";
+        final String returnUrl = "https://" + request.getServerName() + ":" + request.getServerPort()
+                + "/cardauth/3dsecure/response";
+        PaymentRedirectPP redirectPP = paymentServiceBroker.asyncPaymentInitiate(paymentMethod, PAYMENT_VERIFICATION_AMT,
+                returnUrl);
+        return "redirect:" + redirectPP.getUrl();
     }
+
+    @RequestMapping(value = "/payment/change/3dsecure")
 
     /* quick helper method to do role & permission check */
     private void validateUserIsAdministrator(Account account) {
@@ -224,5 +226,11 @@ public class AccountController extends BaseController {
                 .filter(g -> !g.isPaidFor())
                 .collect(Collectors.toList());
     }
+
+    /*boolean paymentSucceded = paymentServiceBroker.linkPaymentMethodToAccount(paymentMethod, accountUid, record, true);
+        attributes.addAttribute("accountUid", accountUid);
+        addMessage(attributes, paymentSucceded ? MessageType.SUCCESS : MessageType.ERROR,
+                paymentSucceded ? "account.payment.changed" : "account.payment.failed", request);
+        return paymentSucceded ? "redirect:/account/view" : "redirect:change";*/
 
 }

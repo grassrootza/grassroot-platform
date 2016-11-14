@@ -11,5 +11,7 @@ public interface PaymentServiceBroker {
     boolean linkPaymentMethodToAccount(PaymentMethod method, String accountUid,
                                        AccountBillingRecord billingRecord, boolean deleteBillOnFailure);
 
+    PaymentRedirectPP asyncPaymentInitiate(PaymentMethod method, double amountToPay, String returnToUrl);
+
     void processAccountPaymentsOutstanding();
 }

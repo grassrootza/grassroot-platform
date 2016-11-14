@@ -14,6 +14,7 @@ public class PaymentResponsePP {
     private String paymentBrand;
 
     private PaymentResultPP result;
+    private PaymentRedirectPP redirect;
     private Map<String, String> risk;
 
     public PaymentResponsePP() {
@@ -76,6 +77,10 @@ public class PaymentResponsePP {
         this.amount = amount;
     }
 
+    public void setRedirect(PaymentRedirectPP redirect) { this.redirect = redirect; }
+
+    public PaymentRedirectPP getRedirect() { return redirect; }
+
     @Override
     public String toString() {
         return "PaymentResponsePP{" +
@@ -83,6 +88,7 @@ public class PaymentResponsePP {
                 ", registrationId='" + registrationId + '\'' +
                 ", paymentType='" + paymentType + '\'' +
                 ", paymentBrand='" + paymentBrand + '\'' +
+                ", redirect=" + redirect +
                 ", result=" + result +
                 ", risk=" + risk +
                 '}';

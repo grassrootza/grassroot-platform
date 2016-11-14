@@ -1,4 +1,4 @@
-package za.org.grassroot.webapp;
+package za.org.grassroot.webapp.interceptor;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,18 +11,16 @@ import javax.servlet.http.HttpServletResponse;
 /**
  * Created by paballo on 2016/03/17.
  */
-public class LoggingInterceptor extends HandlerInterceptorAdapter {
+public class SimpleLoggingInterceptor extends HandlerInterceptorAdapter {
 
-    private static final Logger logger = LoggerFactory.getLogger(LoggingInterceptor.class);
+    private static final Logger logger = LoggerFactory.getLogger(SimpleLoggingInterceptor.class);
 
     @Override
-    public boolean preHandle(HttpServletRequest request,
-                             HttpServletResponse response, Object handler)
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
             throws Exception {
 
         long startTime = System.currentTimeMillis();
         request.setAttribute("startTime", startTime);
-
         return true;
     }
 
@@ -33,12 +31,9 @@ public class LoggingInterceptor extends HandlerInterceptorAdapter {
             throws Exception {
 
         long startTime = (Long) request.getAttribute("startTime");
-
         long endTime = System.currentTimeMillis();
-
         long executeTime = endTime - startTime;
 
         logger.info("{} ms : [{}]", executeTime, handler);
-
     }
 }

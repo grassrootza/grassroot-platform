@@ -15,6 +15,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.AccountBillingRecord;
 import za.org.grassroot.core.repository.AccountBillingRecordRepository;
+import za.org.grassroot.integration.exception.PaymentMethodFailedException;
+import za.org.grassroot.integration.exception.PaymentMethodNot3dSecureException;
 
 import javax.annotation.PostConstruct;
 import java.io.IOException;
@@ -96,6 +98,8 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
     private String password;
     @Value("${grassroot.payments.values.channelId:testChannel}")
     private String channelId;
+    @Value("${grassroot.payments.values.channelId3d:testChannel2}")
+    private String channelId3d;
     @Value("${grassroot.payments.values.currency:ZAR}")
     private String currency;
 
@@ -114,11 +118,11 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
                 .host(paymentsRestHost)
                 .queryParam(paymentsAuthUserIdParam, userId)
                 .queryParam(paymentsAuthPasswordParam, password)
-                .queryParam(paymentsAuthChannelIdParam, channelId)
                 .queryParam(paymentCurrencyParam, currency);
 
         stdHeaders = new HttpHeaders();
         stdHeaders.add(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE);
+        stdHeaders.add(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded;charset=UTF-8");
     }
 
     @Override
@@ -132,18 +136,7 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
 
         logger.info("About to charge R{} to payment method, from billing record for {}", amountToPay, billingRecord.getTotalAmountToPay());
 
-        UriComponentsBuilder paymentUri = baseUriBuilder.cloneBuilder()
-                    .path(initialPaymentRestPath)
-                    .queryParam(paymentAmountParam, AMOUNT_FORMAT.format(amountToPay))
-                    .queryParam(paymentCardBrand, paymentMethod.getCardBrand())
-                    .queryParam(paymentTypeParam, DEBIT)
-                    .queryParam(cardNumberParam, paymentMethod.getCardNumber())
-                    .queryParam(cardHolderParam, paymentMethod.getCardHolder())
-                    .queryParam(cardExpiryMonthParam, String.format(MONTH_FORMAT, paymentMethod.getExpiryMonth()))
-                    .queryParam(cardExpiryYearParam, String.format(YEAR_FORMAT, paymentMethod.getExpiryYear()))
-                    .queryParam(securityCodeParam, paymentMethod.getSecurityCode())
-                    .queryParam(recurringParam, INITIAL)
-                    .queryParam(registrationFlag, "true");
+        UriComponentsBuilder paymentUri = generateInitialPaymentUri(paymentMethod, amountToPay);
 
         try {
             HttpEntity<PaymentResponsePP> request = new HttpEntity<>(stdHeaders);
@@ -171,6 +164,51 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
                 billingRepository.delete(billingRecord);
             }
             return false;
+        }
+    }
+
+    private UriComponentsBuilder generateInitialPaymentUri(PaymentMethod paymentMethod, double amountToPay) {
+        return baseUriBuilder.cloneBuilder()
+                .path(initialPaymentRestPath)
+                .queryParam(paymentAmountParam, AMOUNT_FORMAT.format(amountToPay))
+                .queryParam(paymentCardBrand, paymentMethod.getCardBrand())
+                .queryParam(paymentTypeParam, DEBIT)
+                .queryParam(cardNumberParam, paymentMethod.getCardNumber())
+                .queryParam(cardHolderParam, paymentMethod.getCardHolder())
+                .queryParam(cardExpiryMonthParam, String.format(MONTH_FORMAT, paymentMethod.getExpiryMonth()))
+                .queryParam(cardExpiryYearParam, String.format(YEAR_FORMAT, paymentMethod.getExpiryYear()))
+                .queryParam(securityCodeParam, paymentMethod.getSecurityCode())
+                .queryParam(recurringParam, INITIAL)
+                .queryParam(registrationFlag, "true");
+    }
+
+    @Override
+    public PaymentRedirectPP asyncPaymentInitiate(PaymentMethod method, double amountToPay, String returnToUrl) {
+        try {
+            UriComponentsBuilder uriToCall = generateInitialPaymentUri(method, amountToPay)
+                    .queryParam(paymentsAuthChannelIdParam, channelId3d)
+                    .queryParam("shopperResultUrl", returnToUrl);
+            HttpEntity<PaymentResponsePP> request = new HttpEntity<>(stdHeaders);
+            logger.info("URL: " + uriToCall.toUriString());
+            ResponseEntity<PaymentResponsePP> response = restTemplate.exchange(uriToCall.build().toUri(), HttpMethod.POST,
+                    request, PaymentResponsePP.class);
+            logger.info("RESPONSE: {}", response.toString());
+            PaymentRedirectPP redirectPP = response.getBody().getRedirect();
+            if (redirectPP != null) {
+                return redirectPP;
+            } else {
+                throw new PaymentMethodNot3dSecureException();
+            }
+        } catch (HttpStatusCodeException e) {
+            e.printStackTrace();
+            try {
+                PaymentErrorPP errorResponse = objectMapper.readValue(e.getResponseBodyAsString(), PaymentErrorPP.class);
+                logger.info("Payment Error!: {}", errorResponse.toString());
+                throw new PaymentMethodFailedException(errorResponse);
+            } catch (IOException error) {
+                error.printStackTrace();
+                throw new PaymentMethodFailedException(null);
+            }
         }
     }
 

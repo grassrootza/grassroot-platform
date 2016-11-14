@@ -14,7 +14,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter
 import org.springframework.web.servlet.i18n.LocaleChangeInterceptor;
 import org.springframework.web.servlet.i18n.SessionLocaleResolver;
 import org.thymeleaf.extras.java8time.dialect.Java8TimeDialect;
-import za.org.grassroot.webapp.validation.TokenValidationInterceptor;
+import za.org.grassroot.webapp.interceptor.SimpleLoggingInterceptor;
+import za.org.grassroot.webapp.interceptor.TokenValidationInterceptor;
 
 import javax.servlet.Filter;
 import java.util.Locale;
@@ -51,7 +52,7 @@ public class MVCConfig extends WebMvcConfigurerAdapter {
     }
 
     @Bean
-    public LoggingInterceptor loggingInterceptor(){return  new LoggingInterceptor();}
+    public SimpleLoggingInterceptor loggingInterceptor(){return  new SimpleLoggingInterceptor();}
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {

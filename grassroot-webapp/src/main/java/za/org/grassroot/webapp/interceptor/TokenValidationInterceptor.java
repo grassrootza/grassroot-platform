@@ -1,4 +1,4 @@
-package za.org.grassroot.webapp.validation;
+package za.org.grassroot.webapp.interceptor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;

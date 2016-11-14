@@ -115,7 +115,7 @@
                         th:value="${record.uid}"></option>
               </select>
             </div>
-            <a class="grassroot-body" th:href="@{payment/change}">Change payment method</a>
+            <a class="grassroot-body" th:href="@{/account/payment/change}">Change payment method</a>
           </div>
             <div th:unless="${#lists.isEmpty(billingRecords)}" class="col-md-3 col-sm-3 col-xs-12">
               <button type="submit" class="btn btn-primary btn-lg btn-block">

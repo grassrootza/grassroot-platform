@@ -112,7 +112,7 @@ public class AccountBrokerTest {
         ReflectionTestUtils.setField(accountBroker, "todosPerMonth", todosPerMonth);
     }
 
-    private Account createTestAccount(String billingEmail) {
+    private Account createTestAccount() {
         String accountUid = accountBroker.createAccount(testUser.getUid(), accountName, testAdmin.getUid(), AccountType.STANDARD);
         Account account = accountBroker.loadAccount(accountUid);
         return account;
@@ -129,7 +129,7 @@ public class AccountBrokerTest {
     @Test
     public void shouldCreateWithAdmin() {
 
-        Account account = createTestAccount("billing@somewhere.com");
+        Account account = createTestAccount();
         assertNotEquals(null, account.getId());
         assertNotNull(account.getAdministrators());
         assertEquals(1, account.getAdministrators().size());
@@ -140,7 +140,7 @@ public class AccountBrokerTest {
 
     @Test
     public void shouldCreateDetailedAccount() {
-        Account account = createTestAccount(billingEmail);
+        Account account = createTestAccount();
         assertNotEquals(null, account.getId());
         assertEquals(billingEmail, account.getBillingUser().getEmailAddress());
         accountBroker.enableAccount(testAdmin.getUid(), account.getUid(), LocalDate.now().plus(1, ChronoUnit.MONTHS));
@@ -152,7 +152,7 @@ public class AccountBrokerTest {
 
     @Test
     public void shouldAddAdmin() {
-        Account account = createTestAccount(billingEmail);
+        Account account = createTestAccount();
         User admin2 = userRepository.save(new User("0605550022"));
         assertEquals(account.getAdministrators().size(), 1);
         accountBroker.addAdministrator(testUser.getUid(), account.getUid(), admin2.getUid());
@@ -166,7 +166,7 @@ public class AccountBrokerTest {
 
     @Test
     public void shouldRemoveAdmin() {
-        Account account = createTestAccount(null);
+        Account account = createTestAccount();
         assertEquals(account.getAdministrators().size(), 1);
         // assertTrue(testUser.getStandardRoles().contains(roleRepository.findOneByNameAndRoleType(accountAdminRole, Role.RoleType.STANDARD)));
         // accountBroker.removeAdministrator(account, testUser); // note: need to fix this */
@@ -176,7 +176,7 @@ public class AccountBrokerTest {
     public void shouldAddGroupToAccount() {
         // todo: add tests to check it fails if not done by admin
         // todo: add lots more asserts, to make sure group added is the actual group
-        Account account = createTestAccount(null);
+        Account account = createTestAccount();
         accountBroker.enableAccount(testAdmin.getUid(), account.getUid(), LocalDate.now().plus(1, ChronoUnit.MONTHS));
         accountGroupBroker.addGroupToAccount(account.getUid(), testGroup.getUid(), testAdmin.getUid());
         assertTrue(testGroup.isPaidFor());
@@ -198,7 +198,7 @@ public class AccountBrokerTest {
     @Test(expected = GroupAlreadyPaidForException.class)
     public void shouldNotAllowDuplicatePaidGroups() {
         // todo: change this to try/catch, to handle it better
-        Account account = createTestAccount(null);
+        Account account = createTestAccount();
         accountBroker.enableAccount(testAdmin.getUid(), account.getUid(), LocalDate.now().plus(1, ChronoUnit.MONTHS));
         String account2Uid = accountBroker.createAccount(testUser.getUid(), accountName + "2", testAdmin.getUid(), AccountType.STANDARD);
         accountBroker.enableAccount(testAdmin.getUid(), account2Uid, LocalDate.now().plus(1, ChronoUnit.MONTHS));
