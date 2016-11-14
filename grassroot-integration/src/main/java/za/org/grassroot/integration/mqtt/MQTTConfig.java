@@ -65,7 +65,6 @@ public class MQTTConfig {
 
 
     @Bean
-
     public MessageProducerSupport messageProducerSupport(){
         return mqttAdapter();
     }
@@ -84,7 +83,7 @@ public class MQTTConfig {
 
     @Bean
     @ServiceActivator(inputChannel = "mqttOutboundChannel")
-    public MessageHandler mqttOutbound() {
+    public MqttPahoMessageHandler mqttOutbound() {
         MqttPahoMessageHandler messageHandler =
                 new MqttPahoMessageHandler("Grassroot Server", mqttClientFactory());
         messageHandler.setAsync(true);
