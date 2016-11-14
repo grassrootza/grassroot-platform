@@ -102,7 +102,7 @@ public class MQTTConfig {
         return new DirectChannel();
     }
 
-    @Bean()
+    @Bean("payloadMapper")
     public ObjectMapper payloadMapper(){
         ObjectMapper mapper = new ObjectMapper();
         mapper.setDateFormat(new SimpleDateFormat("MMM dd, yyyy hh:mm:ss a", Locale.UK));
