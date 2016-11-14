@@ -26,6 +26,7 @@ import java.io.IOException;
 public class InboundMqttMessageHandler {
 
     @Autowired
+    @Qualifier("payloadMapper")
     ObjectMapper payloadMapper;
 
     @Autowired
