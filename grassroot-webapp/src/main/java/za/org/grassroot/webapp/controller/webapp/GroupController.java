@@ -133,7 +133,6 @@ public class GroupController extends BaseController {
         model.addAttribute("canCallVote", userPermissions.contains(Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE));
         model.addAttribute("canRecordAction", userPermissions.contains(Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY));
 
-
         boolean isGroupPaidFor = groupQueryBroker.isGroupPaidFor(groupUid);
         model.addAttribute("isPaidFor", isGroupPaidFor);
         model.addAttribute("canCreateSubGroup", isGroupPaidFor && userPermissions.contains(Permission.GROUP_PERMISSION_CREATE_SUBGROUP));

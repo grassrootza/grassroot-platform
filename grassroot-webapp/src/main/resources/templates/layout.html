@@ -51,7 +51,7 @@
               <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/todo/create}">Create to-do</a></li>
             <li sec:authorize="hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')">
               <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/messaging/freeform}">Send Message</a></li>
-            <li sec:authorize="!hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')">
+            <li th:if="${@environment.getProperty('grassroot.accounts.active')}" sec:authorize="!hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')">
               <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/account/signup}">Setup Account</a></li>
             <li sec:authorize="hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')">
               <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/account}">Manage account</a></li>

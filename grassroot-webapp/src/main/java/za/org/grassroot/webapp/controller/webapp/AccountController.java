@@ -27,6 +27,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.text.DecimalFormat;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -172,7 +173,6 @@ public class AccountController extends BaseController {
     // todo : switch account/admin to many-to-many
     // todo : usual exception handling etc
     // todo : add 'remove method'
-    // todo : check why user autocomplete is not restricting to user's graph
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/admin/add", method = RequestMethod.GET)
     public String addAccountAdmin(@RequestParam String accountUid, @RequestParam String newAdminMsisdn,
@@ -204,13 +204,26 @@ public class AccountController extends BaseController {
                                   @ModelAttribute("method") PaymentMethod paymentMethod, HttpServletRequest request) {
         AccountBillingRecord record = accountBillingBroker.generatePaymentChangeBill(accountUid, PAYMENT_VERIFICATION_AMT);
         final String returnUrl = "https://" + request.getServerName() + ":" + request.getServerPort()
-                + "/cardauth/3dsecure/response";
+                + "/cardauth/3dsecure/response/change";
         PaymentRedirectPP redirectPP = paymentServiceBroker.asyncPaymentInitiate(paymentMethod, PAYMENT_VERIFICATION_AMT,
                 returnUrl);
+
+        for (Map<String, String> parameter: redirectPP.getParameters()) {
+            attributes.addAttribute(parameter.get("name"), parameter.get("value"));
+        }
+
         return "redirect:" + redirectPP.getUrl();
     }
 
-    @RequestMapping(value = "/payment/change/3dsecure")
+    @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
+    @RequestMapping(value = "payment/change/done", method = RequestMethod.GET)
+    public String finishPaymentChange(@RequestParam String paymentId, @RequestParam boolean succeeded,
+                                      RedirectAttributes attributes, HttpServletRequest request) {
+        // todo : check the paymentId against the account
+        addMessage(attributes, succeeded ? MessageType.SUCCESS : MessageType.ERROR,
+                succeeded ? "account.payment.changed" : "account.payment.failed", request);
+        return succeeded ? "redirect:/account/view" : "redirect:change";
+    }
 
     /* quick helper method to do role & permission check */
     private void validateUserIsAdministrator(Account account) {
@@ -226,11 +239,5 @@ public class AccountController extends BaseController {
                 .filter(g -> !g.isPaidFor())
                 .collect(Collectors.toList());
     }
-
-    /*boolean paymentSucceded = paymentServiceBroker.linkPaymentMethodToAccount(paymentMethod, accountUid, record, true);
-        attributes.addAttribute("accountUid", accountUid);
-        addMessage(attributes, paymentSucceded ? MessageType.SUCCESS : MessageType.ERROR,
-                paymentSucceded ? "account.payment.changed" : "account.payment.failed", request);
-        return paymentSucceded ? "redirect:/account/view" : "redirect:change";*/
 
 }

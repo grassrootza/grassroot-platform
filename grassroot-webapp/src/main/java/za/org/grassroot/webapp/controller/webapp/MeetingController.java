@@ -8,6 +8,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.util.StringUtils;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
@@ -66,26 +67,31 @@ public class MeetingController extends BaseController {
      * Meeting creation
      */
 
-    @RequestMapping("create")
-    public String createMeetingIndex(Model model, @RequestParam(value="groupUid", required=false) String groupUid) {
+    @RequestMapping(value = "create", method = RequestMethod.GET)
+    public String createMeetingIndex(Model model, @RequestParam(value="groupUid", required=false) String groupUid,
+                                     RedirectAttributes attributes, HttpServletRequest request) {
 
         MeetingWrapper meeting = MeetingWrapper.makeEmpty(EventReminderType.GROUP_CONFIGURED, 24*60, true);
 
-        if (groupUid != null) {
-            Group group = groupBroker.load(groupUid);
-            model.addAttribute("group", group);
-            meeting.setParentUid(groupUid);
+        if (permissionBroker.countActiveGroupsWithPermission(getUserProfile(), Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING) == 0) {
+            addMessage(attributes, MessageType.INFO, "meeting.create.group", request);
+            return "redirect:/group/create";
         } else {
-            User user = userManagementService.load(getUserProfile().getUid()); // refresh user entity, in case permissions changed
-            model.addAttribute("userGroups", permissionBroker.getActiveGroupsSorted(user, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING));
+            if (groupUid != null) {
+                Group group = groupBroker.load(groupUid);
+                model.addAttribute("group", group);
+                meeting.setParentUid(groupUid);
+            } else {
+                User user = userManagementService.load(getUserProfile().getUid()); // refresh user entity, in case permissions changed
+                model.addAttribute("userGroups", permissionBroker.getActiveGroupsSorted(user, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING));
+            }
+
+            model.addAttribute("meeting", meeting);
+            model.addAttribute("reminderOptions", reminderMinuteOptions(false));
+
+            log.info("Wrapper we are passing: " + meeting.toString());
+            return "meeting/create";
         }
-
-        model.addAttribute("meeting", meeting);
-        model.addAttribute("reminderOptions", reminderMinuteOptions(false));
-
-        log.info("Wrapper we are passing: " + meeting.toString());
-        return "meeting/create";
-
     }
 
     @RequestMapping(value = "create", method = RequestMethod.POST)

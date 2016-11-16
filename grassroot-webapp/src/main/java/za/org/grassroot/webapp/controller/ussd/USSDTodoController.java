@@ -186,7 +186,8 @@ public class USSDTodoController extends USSDController {
             cacheManager.putUssdMenuForUser(user.getPhoneNumber(), saveToDoMenu(subjectMenu, todoUid));
             return new USSDMenu(prompt, nextOrConfirmUrl(subjectMenu, instantMenu, todoUid, revising));
         } catch (AccountLimitExceededException e) {
-            final String newPrompt = "Sorry, you're out";
+            final String newPrompt = getMessage(thisSection, "new", promptKey + ".exceeded", user);
+            cacheManager.clearUssdMenuForUser(user.getPhoneNumber());
             return new USSDMenu(newPrompt, optionsHomeExit(user));
         }
     }

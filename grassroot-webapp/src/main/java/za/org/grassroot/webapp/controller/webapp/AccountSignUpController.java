@@ -13,6 +13,7 @@ import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.AccountBillingRecord;
 import za.org.grassroot.core.enums.AccountType;
 import za.org.grassroot.integration.payments.PaymentMethod;
+import za.org.grassroot.integration.payments.PaymentRedirectPP;
 import za.org.grassroot.integration.payments.PaymentServiceBroker;
 import za.org.grassroot.services.account.AccountBillingBroker;
 import za.org.grassroot.services.account.AccountBroker;
@@ -22,6 +23,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.util.Arrays;
+import java.util.Map;
 
 /**
  * Created by luke on 2016/10/26.
@@ -81,19 +83,35 @@ public class AccountSignUpController extends BaseController {
                                  @ModelAttribute("method") PaymentMethod paymentMethod, HttpServletRequest request) {
 
         // todo : work out how to do a progress bar type thing
+        // todo : better description of error if no 3d secure
 
         AccountBillingRecord record = billingBroker.generateSignUpBill(accountUid);
-        boolean paymentResponse = paymentBroker.linkPaymentMethodToAccount(paymentMethod, accountUid, record, true);
+        final String returnUrl = "https://" + request.getServerName() + ":" + request.getServerPort()
+                + "/cardauth/3dsecure/response/new";
 
-        if (paymentResponse) {
-            accountBroker.enableAccount(getUserProfile().getUid(), accountUid, LocalDate.now().plusMonths(1L));
-            addMessage(attributes, MessageType.SUCCESS, "account.signup.payment.done", request);
-            attributes.addAttribute("accountUid", accountUid);
-            return "redirect:/account/view";
+        PaymentRedirectPP paymentResponse = paymentBroker.asyncPaymentInitiate(paymentMethod, record.getTotalAmountToPay(),
+                returnUrl);
+
+        if (paymentResponse != null) {
+            for (Map<String, String> parameter: paymentResponse.getParameters()) {
+                attributes.addAttribute(parameter.get("name"), parameter.get("value"));
+            }
+            return "redirect:" + paymentResponse.getUrl();
         } else {
             addMessage(model, MessageType.ERROR, "account.signup.payment.error", request);
             return "account/payment";
         }
+    }
+
+    @RequestMapping(value = "payment_done", method = RequestMethod.GET)
+    public String paymentDone(@RequestParam String paymentId, @RequestParam boolean succeeded,
+                              RedirectAttributes attributes, HttpServletRequest request) {
+        // todo : use the payment Id?
+        accountBroker.enableAccount(getUserProfile().getUid(), null, LocalDate.now().plusMonths(1L));
+        addMessage(attributes, MessageType.SUCCESS, "account.signup.payment.done", request);
+        attributes.addAttribute("accountUid", accountBroker.loadUsersAccount(getUserProfile().getUid()));
+        return "redirect:/account/view";
+
     }
 
 }

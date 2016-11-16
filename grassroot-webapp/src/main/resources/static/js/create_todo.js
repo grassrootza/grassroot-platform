@@ -103,8 +103,8 @@ function fetchTodosRemaining(groupUid) {
             "<a href=\"javascript:void(0)\" id='addGroupAccount'>Add this group</a> to your account to add more";
         var noTodosLeftAccountFull = "This group has used up its todos and you cannot add more groups to your account. " +
             "<a href=\"/account/type\">Upgrade</a> to add more";
-        var noTodosLeftNoAccount = "This group has no todos left. To add more, " +
-            "<a href=\"/account/signup\">create</a> an account";
+        var noTodosLeftNoAccount = "Sorry, this group has no todos left this month.";
+            // + "To add more, <a href=\"/account/signup\">create</a> an account";
 
         todosRemaining = Number(data["todos_left"]) > 0;
 

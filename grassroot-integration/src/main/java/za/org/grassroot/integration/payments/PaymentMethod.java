@@ -1,5 +1,7 @@
 package za.org.grassroot.integration.payments;
 
+import org.springframework.util.StringUtils;
+
 /**
  * Created by luke on 2016/10/27.
  */
@@ -61,10 +63,7 @@ public class PaymentMethod {
 
     // if can work out at some point how to make th:field work, bring back these placeholders
     public static PaymentMethod makeEmpty() {
-        PaymentMethod method = new PaymentMethod();
-        //method.cardHolder = "Card holder's name";
-        //method.cardNumber = "Credit/Debit card number";
-        return method;
+        return new PaymentMethod();
     }
 
     private PaymentMethod() {
@@ -82,6 +81,10 @@ public class PaymentMethod {
 
     public String getCardNumber() {
         return cardNumber;
+    }
+
+    public String normalizedCardNumber() {
+        return !StringUtils.isEmpty(cardNumber) ? cardNumber.replaceAll("\\s+", "") : "";
     }
 
     public String getCardBrand() { return cardBrand; }

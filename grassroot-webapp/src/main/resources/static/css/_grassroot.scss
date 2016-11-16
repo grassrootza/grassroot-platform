@@ -27,16 +27,19 @@
 
 /* As Variables */
 
-$green: #1A7C3E;
-$darker-green: #145D2F;
-$light-green: #489665;
+$blue: #2771BB;
 $bright-green: #20af4a;
-
-$orange: #FE5F55;
 $dark-orange: #cb564c;
-$offwhite: #EEEEEE;
-$panel-title: #D1C89F;
 $dark-text: #434747;
+$darker-green: #145D2F;
+$green: #1A7C3E;
+$light-gray: #F2F2F2;
+$light-green: #489665;
+$offwhite: #EEEEEE;
+$orange: #FE5F55;
+$panel-title: #D1C89F;
+$red: #B4292D;
+$white: #fff;
 
 /*
 Some additions for account form : to decide if they should go in here or styles.scss
@@ -102,7 +105,8 @@ a.gr-body-btn-lg {
 }
 
 .user-profile-container{
-    width: 400px;padding: 100px 10px 100px 10px;
+    padding: 100px 10px 100px 10px;
+    width: 400px;
  }
 
 .cover {
@@ -114,8 +118,8 @@ a.gr-body-btn-lg {
 }
 
 .cover .btn-lg {
-    padding: 10px 20px;
     font-weight: bold;
+    padding: 10px 20px;
 }
 
 .jumbotron {
@@ -204,32 +208,41 @@ a.gr-body-btn-lg {
  */
 
 h2.header-content-title {
-    color: $green;
-    font-size: 30pt;
     font-family: 'Roboto', sans-serif;
+    font-size: 3.3em;
     text-transform: uppercase;
+
+    .bold-title {
+        color: $green;
+        font-weight: bolder;
+    }
+
+    .light-title {
+        color: $dark-text;
+        font-weight: lighter;
+    }
 }
 
 h3.header-content-title {
     color: $green;
-    font-size: 32pt;
     font-family: 'Roboto', sans-serif;
+    font-size: 30pt;
 }
 
 h3.blockquote-header {
+    border-top: 1px solid $light-green;
+    border-bottom: 1px solid $light-green;
     color: $green;
     font-family: 'Roboto', sans-serif;
     font-size: 18pt;
-    border-top: 1px solid $light-green;
-    border-bottom: 1px solid $light-green;
     padding-top: 20px;
     padding-bottom: 20px;
 }
 
 h4.header-content-subtitle {
-    font-size: 16pt;
-    font-family: 'Helvetica', sans-serif;
     color: #333333;
+    font-family: 'Helvetica', sans-serif;
+    font-size: 16pt;
     text-transform: uppercase;
 }
 
@@ -238,12 +251,12 @@ h4.header-content-subtitle {
 }
 
 .list-header {
-    font-size: 16px !important;
-    margin-top: 10px;
-    margin-bottom: 2px;
     color: $green;
-    text-transform: uppercase;
+    font-size: 16px !important;
     font-weight: 400;
+    margin-bottom: 2px;
+    margin-top: 10px;
+    text-transform: uppercase;
     &:hover {
         color: $darker-green;
         text-decoration: none;
@@ -251,17 +264,17 @@ h4.header-content-subtitle {
 }
 
 .list-item-no-header {
-    font-size: 14pt;
-    padding-top: 9px;
     color: $green;
+    font-size: 14pt;
     font-weight: 500;
+    padding-top: 9px;
 }
 
 .list-header-new {
-    font-size: 15pt;
     color: #207A33;
-    line-height: 1.5;
     font-family: 'Roboto', sans-serif;
+    font-size: 15pt;
+    line-height: 1.5;
 }
 
 .list-item-lg {
@@ -278,16 +291,16 @@ h4.header-content-subtitle {
 }
 
 .table-header {
-    font-size: 15pt;
     color: #207A33;
+    font-size: 15pt;
+    font-family: 'Roboto', sans-serif;
     line-height: 1.5;
     padding-left: 20px;
-    font-family: 'Roboto', sans-serif;
 }
 
 .btn-text-lg {
+    color: $white;
     font-size: 16pt;
-    color: white;
     font-weight: bold;
 }
 
@@ -312,8 +325,8 @@ h4.header-content-subtitle {
 }
 
 .form-group > table > thead > tr > th {
-    font-size: 15pt;
     color: #207A33;
+    font-size: 15pt;
 }
 
 .form-group > .btn-lg {
@@ -326,23 +339,9 @@ h4.header-content-subtitle {
 }
 
 .big-checkbox {
-    width: 16px;
     height: 16px;
     margin-top: 2px !important;
-}
-
-/*
-Modal dialogs
-*/
-
-.modal-title {
-    font-size: 16pt;
-    color: #207A33;
-    font-weight: bold;
-}
-
-.modal-body {
-    font-size: 15pt;
+    width: 16px;
 }
 
 /*
@@ -393,18 +392,18 @@ Modal dialogs
  */
 
 .grass-icon-md-48 {
-    font-size: 48px;
     color: #207A33;
+    font-size: 48px;
 }
 
 .btn-cta {
-    font-family: 'Roboto', sans-serif;
     border-radius: 5px;
-    padding: 10px;
+    color: $white;
+    font-family: 'Roboto', sans-serif;
     font-size: 14pt;
-    color: white;
     font-weight: lighter;
     margin-top: 25px;
+    padding: 10px;
 }
 
 .label-light {
@@ -433,8 +432,8 @@ Modal dialogs
 
 .alert-success {
     background-color: #207A33;
-    color: #FFFFFF;
     border-radius: 2px;
+    color: #FFFFFF;
 }
 
 .alert-info {
@@ -454,8 +453,8 @@ $navbar-height: 60px;
 
 .navbar-colour {
     background-color: $green;
-    border: 0 none;
     border-radius: 0;
+    border: 0 none;
 }
 
 .navbar .navbar-colour .navbar-header {
@@ -552,11 +551,11 @@ $navbar-height: 60px;
 
 .wizard > li > a,
 .wizard > li > a:hover {
-    font-size: 16pt;
-
-    -webkit-border-radius: 5px;
     -moz-border-radius: 5px;
+    -webkit-border-radius: 5px;
     border-radius: 5px;
+
+    font-size: 16pt;
 }
 
 .wizard > .steps .number {
@@ -564,8 +563,8 @@ $navbar-height: 60px;
 }
 
 .wizard > .steps .current a {
-    font-size: 14pt;
     background-color: #3B944F;;
+    font-size: 14pt;
     padding-left: 0;
     padding-right: 0;
 }
@@ -577,10 +576,10 @@ $navbar-height: 60px;
 }
 
 .wizard > .steps .done a {
+    background-color: #68B579;
     font-size: 14pt;
     padding-left: 0;
     padding-right: 0;
-    background-color: #68B579;
 }
 
 .wizard > .steps .current a:hover {
@@ -589,10 +588,10 @@ $navbar-height: 60px;
 }
 
 .wizard > .content {
-    width: 100%;
     height: 300px;
     padding-left: 20px;
     position: relative;
+    width: 100%;
 }
 
 .wizard > .actions > ul {
@@ -601,8 +600,8 @@ $navbar-height: 60px;
 
 .wizard > .actions a,
 .wizard > .actions a:hover {
-    font-size: 14pt;
     border-radius: 5px;
+    font-size: 14pt;
 }
 
 /*

@@ -20,7 +20,9 @@
   <div class="container">
     <div class="row">
       <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
-        <h2 th:text="#{web.home.banner}" class="text-center header-content-title">Meet, vote act</h2>
+        <h2 class="text-center header-content-title">
+          <span class="bold-title">Meet, </span><span class="light-title">vote, </span><span class="bold-title">act</span>
+        </h2>
         <h4 th:text="#{web.home.welcome(${currentUser.displayName})}" class="text-center header-content-subtitle">Welcome back to Grassroot, Luke</h4>
       </div>
     </div>
@@ -109,9 +111,9 @@
         </div>
         <div class="modal-footer">
           <a th:href="@{/group/join/approve}" id="approveLink">
-            <button class="btn btn-default btn-lg" type="submit">Approve</button></a>
+            <button class="btn btn-primary btn-lg default-button btn-positive" type="submit">Approve</button></a>
           <a th:href="@{/group/join/decline}" id="declineLink">
-            <button class="btn btn-default btn-lg" type="submit">Reject</button></a>
+            <button class="btn btn-default btn-lg default-button btn-negative" type="submit">Reject</button></a>
         </div>
       </div>
     </div>
@@ -148,7 +150,6 @@
 
                     <!-- RHS: Actions on task -->
                     <div class="col-md-4 button-md-align response-buttons">
-
                       <div th:unless="${task.hasResponded}">
                         <div th:switch="${task.type}">
                           <div th:case="MEETING">
@@ -261,10 +262,10 @@
         <div class="modal-footer">
           <form id="taskModalNotRespondedForm" action="" method="get">
             <input type="hidden" name="eventUid" id="taskUid" />
-            <button type="close" data-dismiss="modal" class="btn btn-default btn-lg">Close</button>
-            <a href="#" id="taskModalViewDetails" class="btn btn-default btn-lg">View details</a>
-            <button id="taskModalNoButton" type="submit" class="btn btn-danger btn-lg" name="answer" value="no">No</button>
-            <button id="taskModalYesButton" type="submit" class="btn btn-primary btn-lg" name="answer" value="yes">Yes</button>
+            <button type="close" data-dismiss="modal" class="btn btn-default btn-lg default-button btn-neutral">Close</button>
+            <a href="#" id="taskModalViewDetails" class="btn btn-default btn-lg default-button btn-neutral">View details</a>
+            <button id="taskModalNoButton" type="submit" class="btn btn-warning btn-lg default-button btn-negative" name="answer" value="no">No</button>
+            <button id="taskModalYesButton" type="submit" class="btn btn-primary btn-lg default-button btn-positive" name="answer" value="yes">Yes</button>
           </form>
         </div>
       </div>

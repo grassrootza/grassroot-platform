@@ -16,10 +16,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.TodoCompletionConfirmType;
-import za.org.grassroot.services.task.EventBroker;
-import za.org.grassroot.services.group.GroupBroker;
-import za.org.grassroot.services.task.TodoBroker;
 import za.org.grassroot.services.enums.TodoStatus;
+import za.org.grassroot.services.group.GroupBroker;
+import za.org.grassroot.services.task.EventBroker;
+import za.org.grassroot.services.task.TodoBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.MemberPicker;
 import za.org.grassroot.webapp.model.web.TodoWrapper;
@@ -28,6 +28,8 @@ import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Set;
+
+import static za.org.grassroot.core.domain.Permission.*;
 
 /**
  * Created by luke on 2016/01/02.
@@ -41,14 +43,16 @@ public class TodoController extends BaseController {
     @Value("${grassroot.todos.completion.threshold:20}") // defaults to 20 percent
     private double COMPLETION_PERCENTAGE_BOUNDARY;
 
-    @Autowired
     private GroupBroker groupBroker;
-
-    @Autowired
     private TodoBroker todoBroker;
+    private EventBroker eventBroker;
 
     @Autowired
-    private EventBroker eventBroker;
+    public TodoController(GroupBroker groupBroker, TodoBroker todoBroker, EventBroker eventBroker) {
+        this.groupBroker = groupBroker;
+        this.todoBroker = todoBroker;
+        this.eventBroker = eventBroker;
+    }
 
     /**
      * SECTION: Views and methods for creating action/to-do entries
@@ -56,7 +60,8 @@ public class TodoController extends BaseController {
 
     @RequestMapping("create")
     public String createTodo(Model model, @RequestParam(value="parentUid", required=false) String parentUid,
-                             @RequestParam(value="parentType", required=false) JpaEntityType passedParentType) {
+                             @RequestParam(value="parentType", required=false) JpaEntityType passedParentType,
+                             RedirectAttributes attributes, HttpServletRequest request) {
 
         TodoWrapper wrapper;
 
@@ -75,12 +80,20 @@ public class TodoController extends BaseController {
             wrapper.setReminderMinutes(parent.getTodoReminderMinutes() == null ? AbstractTodoEntity.DEFAULT_REMINDER_MINUTES
                     : parent.getTodoReminderMinutes());
             model.addAttribute("actionTodo", wrapper);
+
+            return "todo/create";
         } else {
             // reload user entity in case things have changed during session (else bug w/ list of possible groups)
             User userFromDb = userManagementService.load(getUserProfile().getUid());
+
+            if (permissionBroker.countActiveGroupsWithPermission(userFromDb, GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY) == 0) {
+                addMessage(attributes, MessageType.INFO, "todo.create.group", request);
+                return "redirect:/group/create";
+            }
+
             model.addAttribute("parentSpecified", false);
             model.addAttribute("userUid", userFromDb.getUid());
-            model.addAttribute("possibleGroups", permissionBroker.getActiveGroupsSorted(userFromDb, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY));
+            model.addAttribute("possibleGroups", permissionBroker.getActiveGroupsSorted(userFromDb, GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY));
 
             wrapper = new TodoWrapper(JpaEntityType.GROUP);
 
@@ -88,10 +101,9 @@ public class TodoController extends BaseController {
             wrapper.setReminderType(EventReminderType.GROUP_CONFIGURED);
             wrapper.setReminderMinutes(AbstractTodoEntity.DEFAULT_REMINDER_MINUTES);
 
+            model.addAttribute("actionTodo", wrapper);
+            return "todo/create";
         }
-
-        model.addAttribute("actionTodo", wrapper);
-        return "todo/create";
 
     }
 
@@ -159,9 +171,9 @@ public class TodoController extends BaseController {
 
         model.addAttribute("user", user);
         model.addAttribute("group", group);
-        model.addAttribute("canCallMeeting", permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING));
-        model.addAttribute("canCallVote", permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE));
-        model.addAttribute("canRecordAction", permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY));
+        model.addAttribute("canCallMeeting", permissionBroker.isGroupPermissionAvailable(user, group, GROUP_PERMISSION_CREATE_GROUP_MEETING));
+        model.addAttribute("canCallVote", permissionBroker.isGroupPermissionAvailable(user, group, GROUP_PERMISSION_CREATE_GROUP_VOTE));
+        model.addAttribute("canRecordAction", permissionBroker.isGroupPermissionAvailable(user, group, GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY));
 
         model.addAttribute("incompleteEntries", todoBroker.fetchTodosForGroupByStatus(group.getUid(), false, TodoStatus.INCOMPLETE));
         model.addAttribute("completedEntries", todoBroker.fetchTodosForGroupByStatus(group.getUid(), false, TodoStatus.COMPLETE));
@@ -183,7 +195,7 @@ public class TodoController extends BaseController {
         model.addAttribute("creatingUser", todoEntry.getCreatedByUser());
         model.addAttribute("isComplete", todoEntry.isCompleted(COMPLETION_PERCENTAGE_BOUNDARY));
         model.addAttribute("canModify", todoEntry.getCreatedByUser().equals(user) ||
-                permissionBroker.isGroupPermissionAvailable(user, todoEntry.getAncestorGroup(), Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS));
+                permissionBroker.isGroupPermissionAvailable(user, todoEntry.getAncestorGroup(), GROUP_PERMISSION_UPDATE_GROUP_DETAILS));
 
         return "todo/details";
     }
@@ -219,7 +231,7 @@ public class TodoController extends BaseController {
         Group group = todo.getAncestorGroup();
 
         if (!todo.getCreatedByUser().equals(user)) {
-            permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+            permissionBroker.validateGroupPermission(user, group, GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
         }
 
         model.addAttribute("todo", todo);
@@ -250,7 +262,7 @@ public class TodoController extends BaseController {
         Group group = savedTodo.getAncestorGroup();
 
         if (!todo.getCreatedByUser().equals(user)) {
-            permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+            permissionBroker.validateGroupPermission(user, group, GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
         }
 
         if (!todo.getMessage().equals(savedTodo.getMessage()))

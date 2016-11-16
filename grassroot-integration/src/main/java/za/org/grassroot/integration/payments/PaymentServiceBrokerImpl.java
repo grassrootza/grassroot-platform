@@ -128,16 +128,9 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
     @Override
     @Transactional
     public boolean linkPaymentMethodToAccount(PaymentMethod paymentMethod, String accountUid, AccountBillingRecord billingRecord, boolean deleteBillOnFailure) {
-        Objects.requireNonNull(paymentMethod);
-        Objects.requireNonNull(accountUid);
-        Objects.requireNonNull(billingRecord);
-
         final double amountToPay = (double) billingRecord.getTotalAmountToPay() / 100;
-
         logger.info("About to charge R{} to payment method, from billing record for {}", amountToPay, billingRecord.getTotalAmountToPay());
-
         UriComponentsBuilder paymentUri = generateInitialPaymentUri(paymentMethod, amountToPay);
-
         try {
             HttpEntity<PaymentResponsePP> request = new HttpEntity<>(stdHeaders);
             // logger.info("URL: " + paymentUri.toUriString());
@@ -148,7 +141,6 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
             Account account = billingRecord.getAccount();
             account.setPaymentRef(okayResponse.getRegistrationId());
             handleSuccessfulPayment(account, billingRecord, okayResponse);
-
             return true;
         } catch (HttpStatusCodeException e) {
             try {
@@ -158,32 +150,15 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
                 logger.info("Could not read in JSON!");
                 error.printStackTrace();
             }
-            // use this if the billing record is closely tied to the payment (e.g., on sign up, or switching), to prevent
-            // duplication of the bill if there is failure and try again
-            if (deleteBillOnFailure) {
-                billingRepository.delete(billingRecord);
-            }
             return false;
         }
     }
 
-    private UriComponentsBuilder generateInitialPaymentUri(PaymentMethod paymentMethod, double amountToPay) {
-        return baseUriBuilder.cloneBuilder()
-                .path(initialPaymentRestPath)
-                .queryParam(paymentAmountParam, AMOUNT_FORMAT.format(amountToPay))
-                .queryParam(paymentCardBrand, paymentMethod.getCardBrand())
-                .queryParam(paymentTypeParam, DEBIT)
-                .queryParam(cardNumberParam, paymentMethod.getCardNumber())
-                .queryParam(cardHolderParam, paymentMethod.getCardHolder())
-                .queryParam(cardExpiryMonthParam, String.format(MONTH_FORMAT, paymentMethod.getExpiryMonth()))
-                .queryParam(cardExpiryYearParam, String.format(YEAR_FORMAT, paymentMethod.getExpiryYear()))
-                .queryParam(securityCodeParam, paymentMethod.getSecurityCode())
-                .queryParam(recurringParam, INITIAL)
-                .queryParam(registrationFlag, "true");
-    }
-
     @Override
     public PaymentRedirectPP asyncPaymentInitiate(PaymentMethod method, double amountToPay, String returnToUrl) {
+        Objects.requireNonNull(method);
+        Objects.requireNonNull(returnToUrl);
+
         try {
             UriComponentsBuilder uriToCall = generateInitialPaymentUri(method, amountToPay)
                     .queryParam(paymentsAuthChannelIdParam, channelId3d)
@@ -210,7 +185,39 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
                 throw new PaymentMethodFailedException(null);
             }
         }
+
+        /* todo : decide whether to use in this flow
+        // use this if the billing record is closely tied to the payment (e.g., on sign up, or switching), to prevent
+            // duplication of the bill if there is failure and try again
+            if (deleteBillOnFailure) {
+                billingRepository.delete(billingRecord);
+            }
+         */
     }
+
+    public void recordPaymentAsSuccessful(String paymentId, PaymentResponsePP responsePP) {
+        AccountBillingRecord record = null; // todo : going to have to fish this out from paymentId
+        Account account = record.getAccount();
+        account.setPaymentRef(responsePP.getRegistrationId());
+        handleSuccessfulPayment(account, record, responsePP);
+    }
+
+    private UriComponentsBuilder generateInitialPaymentUri(PaymentMethod paymentMethod, double amountToPay) {
+        return baseUriBuilder.cloneBuilder()
+                .path(initialPaymentRestPath)
+                .queryParam(paymentAmountParam, AMOUNT_FORMAT.format(amountToPay))
+                .queryParam(paymentCardBrand, paymentMethod.getCardBrand())
+                .queryParam(paymentTypeParam, DEBIT)
+                .queryParam(cardNumberParam, paymentMethod.normalizedCardNumber())
+                .queryParam(cardHolderParam, paymentMethod.getCardHolder())
+                .queryParam(cardExpiryMonthParam, String.format(MONTH_FORMAT, paymentMethod.getExpiryMonth()))
+                .queryParam(cardExpiryYearParam, String.format(YEAR_FORMAT, paymentMethod.getExpiryYear()))
+                .queryParam(securityCodeParam, paymentMethod.getSecurityCode())
+                .queryParam(recurringParam, INITIAL)
+                .queryParam(registrationFlag, "true");
+    }
+
+
 
     @Override
     @Transactional

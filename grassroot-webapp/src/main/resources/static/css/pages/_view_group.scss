@@ -1,0 +1,142 @@
+/* View Group Page */
+th,
+td.sub {
+  background-color: $white;
+}
+
+th {
+  text-align: left; padding-right: 1em
+}
+
+th, td.sub {
+  background-color: #eee;
+}
+
+.table {
+  border: 1px solid black;
+}
+
+.table .st-key {
+  font-weight: bold;
+}
+
+.group-buttons {
+  margin-bottom: 50px;
+}
+
+.group-description {
+  h4 {
+    @extend .green-title;
+    margin-top: 30px;
+  }
+
+  p {
+    color: $dark-text;
+    font-family: 'Helvetica', sans-serif;
+    font-size: 1em;
+  }
+}
+
+.group-info {
+  font-family: 'Helvetica', sans-serif;
+  font-size: 1.2em;
+  margin: 21px 0;
+  span {
+    font-weight: lighter;
+  }
+
+  a {
+    color: $green;
+    font-weight: lighter;
+  }
+}
+
+.group-members {
+  .panel {
+    box-shadow: none;
+  }
+
+  .panel-default > .panel-heading {
+    background-color: $green;
+    border-radius: 0;
+    color: $white;
+  }
+
+  .panel-group .panel {
+    border-radius: 0 !important;
+  }
+
+  .panel-title a i {
+    position: absolute;
+    right: 6px;
+  }
+  
+  .panel-title > a,
+  .panel-title > small,
+  .panel-title > .small,
+  .panel-title > small > a,
+  .panel-title > .small > a {
+    font-weight: 400;
+    
+    &:active,
+    &:focus,
+    &:hover {
+      text-decoration: none;
+    }
+  }
+}
+
+.group-members-list {
+  margin-top: 15px;
+}
+
+.group-members-table {
+  thead {
+    border: none;
+  }
+
+  th,
+  td {
+    border: none !important;
+    padding: 10px 15px !important;
+  }
+
+  th {
+    color: $green;
+    font-weight: 400;
+  }
+
+  tbody {
+    tr:nth-child(odd) {
+      background-color: $light-gray;
+    }
+
+    tr td:last-child {
+      padding: 0 !important;
+    }
+  }
+}
+
+.group-name {
+  color: $dark-text;
+  font-family: 'Roboto', sans-serif;
+  font-size: 1.3em;
+  font-weight: 300;
+  text-transform: uppercase;
+}
+
+.group-title {
+  color: $green;
+  font-family: 'Roboto', sans-serif;
+  font-size: 1.3em;
+  font-weight: bolder;
+  text-transform: uppercase;
+}
+
+.table {
+  border: none !important;
+}
+
+.manage-container .dropdown-menu {
+  width: 100%;
+}

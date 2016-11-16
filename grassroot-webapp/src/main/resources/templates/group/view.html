@@ -1,4 +1,5 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity4"
       data-layout-decorate="~{layout}">
@@ -9,7 +10,7 @@
   <meta name="_csrf" th:content="${_csrf.token}"/>
   <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
 
-  <style>
+  <style type="text/css">
     /* Fix for UL/UI autocomplete in modal */
     .ui-autocomplete {
       z-index: 5000;
@@ -19,554 +20,234 @@
 </head>
 <body>
 
+<!-- Group information -->
 <section layout:fragment="header" class="top-container">
   <div class="container">
+
     <div class="row">
       <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
-        <h2 class="text-center header-content-title">Group: "<span th:text="${group.groupName}">Group</span>"</h2>
+        <h2 class="text-center"><span class="group-title">Group: </span><span class="group-name" th:text="${group.groupName}">Group</span></h2>
       </div>
     </div>
-    <div class="row no-padding no-margins">
-      <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
-        <h4 class="text-center header-content-subtitle">
-          Created on <span th:text="${#temporals.format(group.getCreatedDateTimeAtSAST(),'d MMM yyyy')}">Some date</span>
-          (<a th:href="@{/group/history(groupUid=${group.uid})}">view history</a>)
+
+    <div class="row">
+      <div class="col-md-4 col-md-offset-4 col-xs-12">
+        <h4 class="text-center group-info">
+          Created on <span th:text="${#temporals.format(group.getCreatedDateTimeAtSAST(),'d MMM yyyy')}">Some date</span>.
+          <a th:href="@{/group/history(groupUid=${group.uid})}">View history.</a>
         </h4>
-        <h4 class="text-center header-content-subtitle" th:if="${canAlter}">
+        <h4 class="text-center group-info" th:if="${canAlter}">
           <span th:if="${openToken}">Join code: <a href="javascript:void(0)" data-toggle="modal" data-target="#joiningModal">
             *134*1994*<span th:text="${group.groupTokenCode}">1234</span>#</a>
           </span>
           <span th:unless="${openToken}">No open join code
           <a href="javascript:void(0)" data-toggle="modal" data-target="#joiningModal">(create one)</a></span>
-          |
-          <span th:if="${group.discoverable}">Group is public</span>
-          <span th:unless="${group.discoverable}">Group is private</span>
-
-          <a href="javascript:void(0)" data-toggle="modal" data-target="#publicModal">(change this)</a>
         </h4>
+        <h4 class="text-center group-info">
+          <span th:if="${group.discoverable}">Group is public. </span>
+          <span th:unless="${group.discoverable}">Group is private. </span>
+          <a href="javascript:void(0)" th:text="${group.discoverable ? 'Make private.' : 'Make public.'}" data-toggle="modal" data-target="#publicModal">Change this</a>
+        </h4>
+
+        <div th:if="${canAlter}" class="dropdown manage-container">
+          <button class="dropdown-toggle white-button center-button" type="button" data-toggle="dropdown">Manage and modify group<i class="fa fa-caret-down" aria-hidden="true"></i></button>
+          <ul class="dropdown-menu">
+              <li><a th:href="@{/group/roles/members(groupUid=${group.uid})}">Change members' roles</a></li>
+              <li><a th:if="${canChangePermissions}" th:href="@{/group/roles/permissions(groupUid=${group.Uid})}">
+                Change roles' permissions</a></li>
+              <li><a th:href="@{/group/change_multiple(groupUid=${group.uid})}">Add, remove multiple members</a></li>
+              <!-- todo : take 'paid' out of path and add a check here for if it is paid -->
+              <li><a th:if="${isPaidFor}" th:href="@{/group/paid/import/start(groupUid=${group.uid})}">Import members</a></li>
+              <li><a href="javascript:void(0)" data-toggle="modal" data-target="#reminderModal">Change reminder timing</a></li>
+              <li><a href="javascript:void(0)" data-toggle="modal" data-target="#renameModal">Rename group</a></li>
+              <li><a href="javascript:void(0)" data-toggle="modal" data-target="#languageModal">Set default language</a></li>
+              <li class="divider"></li>
+              <li th:if="${canAddToAccount}" sec:authorize="hasAnyRole('ROLE_ACCOUNT_ADMIN')">
+                <a href="javascript:void(0)" data-toggle="modal" data-target="#accountModal">Add group to account</a>
+              </li>
+              <li th:if="${canRemoveFromAccount}" sec:authorize="hasAnyRole('ROLE_ACCOUNT_ADMIN')">
+                <a href="javascript:void(0)" data-toggle="modal" data-target="#accountRemoveModal">Remove group from account</a>
+              </li>
+              <li th:if="${not hasParent}"><a th:href="@{/group/parent(groupUid=${group.uid})}">Link to a parent group</a></li>
+              <li><a href="" th:href="@{/group/consolidate/select(groupUid=${group.uid})}">Merge with another group</a></li>
+              <!-- <li th:if="${canCreateSubGroup}"><a href="" th:href="@{/group/create(parent=${group.uid})}">Create a sub-group</a></li> -->
+              <li th:if="${canDeleteGroup}"><a href="javascript:void(0)" data-toggle="modal" data-target="#delModal">Delete group</a></li>
+              <li th:unless="${canChangePermissions}"><a href="javascript:void(0)" data-toggle="modal" data-target="#unsubModal">Unsubscribe</a></li>
+            </ul>
+        </div>
+
+        <div th:unless="${canAlter}" class="dropdown manage-container">
+          <button type="button" class="dropdown-toggle white-button center-button" data-toggle="modal" data-target="#unsubModal">Unsubscribe</button>
+        </div>
+
+        <div th:unless="${#strings.isEmpty(group.description)}" class="row group-description">
+          <div class="col-md-4 col-md-offset-4 col-xs-12">
+            <h4 class="text-center">Description</h4>
+            <p class="text-center" th:text="${group.description}">Lorem ipsum dolor sit amet, consectetur adispicing elit. Duis ac nulla tincidunt, dictum magna sed, mattis elit.</p>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
 
-  <!-- Joining code modal -->
-  <div th:if="${canAlter}" class="modal fade" id="joiningModal" tabindex="-1" role="dialog" aria-labelledby="joiningModalLabel">
-    <div class="modal-dialog" role="document">
-      <div class="modal-content">
-        <div class="modal-header">
-          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-          <h4 class="modal-title" id="joiningModalLabel">Manage joining code</h4>
-        </div>
-        <form th:action="@{/group/token}" method="post">
-          <input type="hidden" name="groupUid" th:value="${group.getUid()}" />
-          <div class="modal-body">
-            <div class="form-group" th:if="${openToken}">
-              Close joining code? If you confirm, then anyone using the code from now on will not be added to the group.
-            </div>
-            <div class="form-group" th:unless="${openToken}">
-              A joining code allows anyone to join your group just by typing it into their phone. You can close it anytime. Continue?
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-default btn-lg" data-dismiss="modal">Cancel</button>
-            <button type="submit" class="btn btn-primary btn-lg">Confirm</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  <!-- Public / private modal -->
-  <div th:if="${canAlter}" class="modal fade" id="publicModal" tabindex="-1" role="dialog" aria-labelledby="publicModalLabel">
-    <div class="modal-dialog" role="document">
-      <div class="modal-content">
-        <div class="modal-header">
-          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-          <h4 class="modal-title" id="publicModalLabel">
-            <span th:if="${group.discoverable}">Take group private</span>
-            <span th:unless="${group.discoverable}">Make group public</span>
-          </h4>
-        </div>
-        <form th:action="@{/group/discoverable}" method="get">
-          <input type="hidden" name="groupUid" th:value="${group.getUid()}" />
-          <div class="modal-body">
-            <div class="form-group" th:if="${group.discoverable}">
-              Make group private? If you confirm, non-members will no longer be able to find your group by searching for it.
-              <p class="small">Join requests are currently approved by <span th:text="${group.joinApprover.displayName}">name</span></p>
-            </div>
-            <div class="form-group" th:unless="${group.discoverable}">
-              <label for="authorizing-member" class="control-label">
-                Are you sure?
-              </label>
-              <p class="small">Making the group public will allow non-members to see it on search results, and request to join. To proceed,
-                please select which organizer will be responsible for approving or rejecting join requests:</p>
-              <select class="form-control input-lg" id="authorizing-member" name="approverPhoneNumber">
-                <option th:each="member : ${groupMembers}"
-                        th:if="${member.roleName == 'ROLE_GROUP_ORGANIZER'}"
-                        th:value="${member.getPhoneNumberWithCCode()}"
-                        th:text="${member.displayName}"></option>
-              </select>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-default btn-lg" data-dismiss="modal">Cancel</button>
-            <button type="submit" class="btn btn-primary btn-lg">Confirm</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
 </section>
 
-<div layout:fragment="content">
+<main layout:fragment="content">
 
-  <div class="row">
-    <div th:if="${canAlter}" class="row">
-      <div class="col-md-2 col-md-offset-5 text-center">
-        <div class="dropdown">
-          <a href="javascript:void(0)" data-target="#" class="dropdown-toggle dropdown-menu-lg" data-toggle="dropdown" aria-expanded="false">
-            Manage and modify group<b class="caret"></b><div class="ripple-wrapper"></div></a>
-          <ul class="dropdown-menu dropdown-menu-lg">
-            <li><a th:href="@{/group/roles/members(groupUid=${group.uid})}">Change members' roles</a></li>
-            <li><a th:if="${canChangePermissions}" th:href="@{/group/roles/permissions(groupUid=${group.Uid})}">
-              Change roles' permissions</a></li>
-            <li><a th:href="@{/group/change_multiple(groupUid=${group.uid})}">Add, remove multiple members</a></li>
-            <!-- todo : take 'paid' out of path and add a check here for if it is paid -->
-            <li><a th:if="${isPaidFor}" th:href="@{/group/paid/import/start(groupUid=${group.uid})}">Import members</a></li>
-            <li><a href="javascript:void(0)" data-toggle="modal" data-target="#reminderModal">Change reminder timing</a></li>
-            <li><a href="javascript:void(0)" data-toggle="modal" data-target="#renameModal">Rename group</a></li>
-            <li><a href="javascript:void(0)" data-toggle="modal" data-target="#languageModal">Set default language</a></li>
-            <li class="divider"></li>
-            <li th:if="${canAddToAccount}" sec:authorize="hasAnyRole('ROLE_ACCOUNT_ADMIN')">
-              <a href="javascript:void(0)" data-toggle="modal" data-target="#accountModal">Add group to account</a>
-            </li>
-            <li th:if="${canRemoveFromAccount}" sec:authorize="hasAnyRole('ROLE_ACCOUNT_ADMIN')">
-              <a href="javascript:void(0)" data-toggle="modal" data-target="#accountRemoveModal">Remove group from account</a>
-            </li>
-            <li th:if="${not hasParent}"><a th:href="@{/group/parent(groupUid=${group.uid})}">Link to a parent group</a></li>
-            <li><a href="" th:href="@{/group/consolidate/select(groupUid=${group.uid})}">Merge with another group</a></li>
-            <!-- <li th:if="${canCreateSubGroup}"><a href="" th:href="@{/group/create(parent=${group.uid})}">Create a sub-group</a></li> -->
-            <li th:if="${canDeleteGroup}"><a href="javascript:void(0)" data-toggle="modal" data-target="#delModal">Delete group</a></li>
-            <li th:unless="${canChangePermissions}"><a href="javascript:void(0)" data-toggle="modal" data-target="#unsubModal">Unsubscribe</a></li>
-          </ul>
+  <!-- Common action buttons -->
+  <section class="group-buttons">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-2 col-md-offset-1 text-center">
+          <a th:if="${canCallMeeting}" href="" th:href="@{/meeting/create(groupUid=${group.uid})}">
+            <button class="white-button group-button"><i class="fa fa-comments-o" aria-hidden="true"></i>Call a meeting</button></a>
         </div>
-      </div>
-
-      <!-- Rename group modal -->
-      <div th:if="${canAlter}" class="modal fade" id="renameModal" tabindex="-1" role="dialog" aria-labelledby="renameModalLabel">
-        <div class="modal-dialog" role="document">
-          <div class="modal-content">
-            <div class="modal-header">
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-              <h4 class="modal-title" id="renameModalLabel">Rename group</h4>
-            </div>
-            <form th:action="@{/group/rename}" method="post">
-              <input type="hidden" name="groupUid" th:value="${group.getUid()}" />
-              <div class="modal-body">
-                <div class="form-group">
-                  <label for="new-group-name" class="control-label">New group name:</label>
-                  <input type="text" class="form-control input-lg" id="new-group-name"
-                         name="groupName" th:placeholder="${group.groupName}"/>
-                </div>
-              </div>
-              <div class="modal-footer">
-                <button type="button" class="btn btn-default btn-lg" data-dismiss="modal">Cancel</button>
-                <button type="submit" class="btn btn-primary btn-lg">Rename</button>
-              </div>
-            </form>
-          </div>
+        <div class="col-md-3">
+          <a th:if="${canCallVote}" href="" th:href="@{/vote/create(groupUid=${group.uid})}">
+            <button class="white-button group-button"><i class="fa fa-hand-pointer-o" aria-hidden="true"></i>Take a vote</button></a>
         </div>
-      </div>
-
-      <!-- Change group language modal -->
-      <div th:if="${canAlter}" class="modal fade" id="languageModal" tabindex="-1" role="dialog" aria-labelledby="languageModalLabel">
-        <div class="modal-dialog" role="document">
-          <div class="modal-content">
-            <div class="modal-header">
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-              <h4 class="modal-title" id="languageModalLabel">Change group language</h4>
-            </div>
-            <form th:action="@{/group/language}" method="get">
-              <input type="hidden" name="groupUid" th:value="${group.getUid()}" />
-              <div class="modal-body">
-                <div class="form-group">
-                  <label for="group-locale" class="control-label">Select language:</label>
-                  <select name="locale" id="group-locale" class="form-control input-lg">
-                    <option th:each="language: ${T(za.org.grassroot.webapp.controller.BaseController).getImplementedLanguages()}"
-                            th:value="${language.key}"
-                            th:text="${language.value}"></option>
-                  </select>
-                </div>
-                <div class="checkbox" th:if="${not #lists.isEmpty(subGroups)}">
-                  <label>
-                    <input type="checkbox" name="includeSubGroups" /> Set for subgroups too?
-                  </label>
-                </div>
-              </div>
-              <div class="modal-footer">
-                <button type="button" class="btn btn-default input-lg" data-dismiss="modal">Cancel</button>
-                <button type="submit" class="btn btn-primary input-lg">Set</button>
-              </div>
-            </form>
-          </div>
+        <div class="col-md-3">
+          <a th:if="${canRecordAction}" href="" th:href="@{/todo/create(parentUid=${group.uid})}">
+            <button class="white-button group-button"><i class="fa fa-users" aria-hidden="true"></i>Record action</button></a>
         </div>
-      </div>
-
-      <!-- Change default reminder setting modal -->
-      <div th:if="${canAlter}" class="modal fade" id="reminderModal" tabindex="-1" role="dialog" aria-labelledby="reminderModalLabel">
-        <div class="modal-dialog" role="document">
-          <div class="modal-content">
-            <div class="modal-header">
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-              <h4 class="modal-title" id="reminderModalLabel">When will reminders be sent?</h4>
-            </div>
-            <form th:action="@{/group/reminder}" method="get">
-              <input type="hidden" name="groupUid" th:value="${group.getUid()}" />
-              <div class="modal-body">
-                <div class="form-group">
-                  <label for="reminderMinutes" class="control-label control-label-sm">This will set when reminders for
-                    meetings and to-dos will be sent out automatically, unless a custom time is set when the meeting is
-                    called or to-do is recorded</label>
-                  <select name="reminderMinutes" id="reminderMinutes" class="form-control input-lg">
-                    <option th:each="option : ${reminderOptions}"
-                            th:value="${option[0]}"
-                            th:text="${option[1]}"
-                            th:selected="${#strings.equals(group.getReminderMinutes(), option[0])}"></option>
-                  </select>
-                </div>
-              </div>
-              <div class="modal-footer">
-                <button type="button" class="btn btn-default btn-lg" data-dismiss="modal">Cancel</button>
-                <button type="submit" class="btn btn-primary btn-lg">Update</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-
-      <!-- Make group inactive modal -->
-      <div th:if="${canDeleteGroup}" class="modal fade" id="delModal" tabindex="-1" role="dialog" aria-labelledby="delModalLabel">
-        <div class="modal-dialog" role="document">
-          <div class="modal-content">
-            <div class="modal-header">
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-              <h4 class="modal-title" id="delModalLabel">Are you sure?</h4>
-            </div>
-            <form th:action="@{/group/inactive}" method="post">
-              <input type="hidden" name="groupUid" th:value="${group.getUid()}" />
-              <div class="modal-body">
-                <div class="form-group">
-                  <label for="confirm_field" class="control-label">
-                    You are about to remove this group. This cannot be undone. To confirm, please type "delete" below".
-                  </label>
-                  <input type="text" class="form-control input-lg" id="confirm_field"
-                         name="confirm_field" autocomplete="off" />
-                </div>
-              </div>
-              <div class="modal-footer">
-                <button type="button" class="btn btn-default btn-lg" data-dismiss="modal">Cancel</button>
-                <button type="submit" class="btn btn-danger btn-lg">Confirmed, remove</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-
-    </div>
-
-    <div th:unless="${canAlter}" class="row">
-      <div class="col-md-2 col-md-offset-5 text-center dropdown-menu-lg">
-        <a href="javascript:void(0)" data-toggle="modal" data-target="#unsubModal">Unsubscribe</a>
-      </div>
-    </div>
-
-    <!-- Unsubscribe modal -->
-    <div class="modal fade" id="unsubModal" tabindex="-1" role="dialog" aria-labelledby="unsubModalLabel">
-      <div class="modal-dialog" role="document">
-        <div class="modal-content">
-          <div class="modal-header">
-            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-              <span aria-hidden="true">&times;</span>
-            </button>
-            <h4 class="modal-title" id="unsubModalLabel">Are you sure?</h4>
-          </div>
-          <form th:action="@{/group/unsubscribe}" method="post">
-            <input type="hidden" name="groupUid" id="groupUid" th:value="${group.uid}" />
-            <div class="modal-body">
-              <div class="form-group">
-                <label for="confirm_unsub_field" class="control-label">
-                  You are about to unsubscribe from this group.
-                </label>
-                <p class="small">You will only be able to rejoin if someone adds you back. Are you sure you want to leave? Please type
-                  'unsubscribe' below to confirm.</p>
-                <input type="text" class="form-control input-lg" id="confirm_unsub_field" name="confirm_field" autocomplete="off" />
-              </div>
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-default btn-lg" data-dismiss="modal">Close</button>
-              <button type="submit" class="btn btn-warning btn-lg">Unsubscribe</button>
-            </div>
-          </form>
+        <div class="col-md-2">
+          <a href="" th:href="@{/todo/view(groupUid=${group.uid})}">
+            <button class="white-button group-button"><i class="fa fa-list-ol" aria-hidden="true"></i>View to-dos</button></a>
         </div>
       </div>
     </div>
-
-    <!-- Add group to account modal -->
-    <div class="modal fade" id="accountModal" tabindex="-1" role="dialog" aria-labelledby="accountModalLabel">
-      <div class="modal-dialog" role="document">
-        <div class="modal-content">
-          <div class="modal-header">
-            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-              <span aria-hidden="true">&times;</span>
-            </button>
-            <h4 class="modal-title" id="accountModalLabel">Link group to account?</h4>
-          </div>
-          <form th:action="@{/group/account/add}" method="post">
-            <input type="hidden" name="groupUid" th:value="${group.uid}" />
-            <div class="modal-body">
-              <div class="form-group">
-                <label class="control-label">
-                  After you do this, you will have (X) groups left on your account. Confirm?.
-                </label>
-              </div>
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-default btn-lg" data-dismiss="modal">Close</button>
-              <button type="submit" class="btn btn-primary btn-lg">Confirm</button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-
-    <!-- Remove group from account modal -->
-    <div class="modal fade" id="accountRemoveModal" tabindex="-1" role="dialog" aria-labelledby="accRemoveModalLabel">
-      <div class="modal-dialog" role="document">
-        <div class="modal-content">
-          <div class="modal-header">
-            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-              <span aria-hidden="true">&times;</span>
-            </button>
-            <h4 class="modal-title" id="accRemoveModalLabel">Link group to account?</h4>
-          </div>
-          <form th:action="@{/group/account/remove}" method="post">
-            <input type="hidden" name="groupUid" th:value="${group.uid}" />
-            <div class="modal-body">
-              <div class="form-group">
-                <label class="control-label">
-                  Are you sure? If you remove this group from your account, it will no longer have access
-                  to account features (which will suck, honestly).
-                </label>
-              </div>
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-default btn-lg" data-dismiss="modal">Close</button>
-              <button type="submit" class="btn btn-primary btn-lg">Confirm</button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-
-    <!-- Common action buttons -->
-    <div class="row top-buffer">
-      <div class="col-md-12 text-center">
-        <a th:if="${canCallMeeting}" href="" th:href="@{/meeting/create(groupUid=${group.uid})}">
-          <button class="btn btn-primary btn-lg">Call a meeting</button></a>
-        <a th:if="${canCallVote}" href="" th:href="@{/vote/create(groupUid=${group.uid})}">
-          <button class="btn btn-primary btn-lg">Take a vote</button></a>
-        <a th:if="${canRecordAction}" href="" th:href="@{/todo/create(parentUid=${group.uid})}">
-          <button class="btn btn-primary btn-lg">Record action</button></a>
-        <a href="" th:href="@{/todo/view(groupUid=${group.uid})}">
-          <button class="btn btn-primary btn-lg">View to-dos</button></a>
-      </div>
-    </div>
-
-  </div>
+  </section>
 
   <!-- List upcoming group tasks -->
-  <div class="row top-buffer-lg">
-    <div class="col-md-6 col-md-offset-3">
-      <ul class="list-group" th:if="${not #lists.isEmpty(groupTasks)}">
-        <li class="list-group-item clearfix">
-          <span class="list-header-new" th:switch="${groupTasks.size()}">
-            <span th:case="0" th:text="#{web.group.view.tasks.zero}">This group has no events coming up</span>
-            <span th:case="1" th:text="#{web.group.view.tasks.one(${groupTasks.get(0).type})}">This group has one thing coming up</span>
-            <span th:case="*" th:text="#{web.group.view.tasks.many(${groupTasks.size()})}">This group has many things happening</span>
-          </span>
-        </li>
-        <li class="list-group-item clearfix" th:each="task, iterStat : ${groupTasks}">
-          <div th:switch="${task.type}" th:with="uid=${task.taskUid}">
+  <section class="upcoming-events" th:if="${not #lists.isEmpty(groupTasks)}">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-10 col-md-offset-1 col-xs-12">
+          <div class="panel-group">
+            <div class="panel panel-default">
+              <div class="panel-heading">
+                <h4 class="panel-title" th:switch="${groupTasks.size()}">
+                  <a data-toggle="collapse" href="#collapse1" class="panel-title-text">
+                    <span th:case="0" th:text="#{web.group.view.tasks.zero}">This group has no events coming up</span>
+                    <span th:case="1" th:text="#{web.group.view.tasks.one(${groupTasks.get(0).type})}">This group has one thing coming up</span>
+                    <span th:case="*" th:text="#{web.group.view.tasks.many(${groupTasks.size()})}">This group has many things happening</span>
+                    <i class="fa fa-caret-down" aria-hidden="true"></i>
+                  </a>
+                </h4>
+              </div>
 
-            <div th:case="MEETING"  th:with="deadline=${#temporals.format(task.deadlineDateTime,'dd MMM, HH:mm')}">
-              <a class="list-item-lg" href="" th:href="@{/meeting/view(eventUid=${uid})}">
-                <b>MEETING:</b> <span th:text="${task.title}"></span>
-              </a>
-              <span th:if="${task.hasResponded}" class="badge pull-right badge-list-bold">Happens at <span th:text="${deadline}">11 September 2015</span></span>
-              <div th:unless="${task.hasResponded}" class="pull-right">
-                <a th:href="@{/meeting/rsvp(eventUid=${uid},answer=yes)}" class="btn btn-primary btn-sm">I'll attend</a>
-                <a th:href="@{/meeting/rsvp(eventUid=${uid},answer=no)}" class="btn btn-default btn-sm">I can't attend</a>
+              <div id="collapse1" class="panel-collapse collapse in">
+                <ul class="list-group" >
+                  <li class="list-group-item" th:each="task, iterStat : ${groupTasks}">
+                    <div class="row" th:switch="${task.type}" th:with="uid=${task.taskUid}">
+
+                      <div th:case="MEETING"  th:with="deadline=${#temporals.format(task.deadlineDateTime,'dd MMM, HH:mm')}">
+                        <div class="event-item col-md-8">
+                          <a class="list-item-lg" href="" th:href="@{/meeting/view(eventUid=${uid})}">
+                            <b>MEETING:</b> <span th:text="${task.title}"></span>
+                          </a>
+                        </div>
+                        <div class="col-md-4 button-md-align response-buttons">
+                          <span th:if="${task.hasResponded}" class="badge">Happens at <span th:text="${deadline}">11 September 2015</span></span>
+                          <a th:unless="${task.hasResponded}" th:href="@{/meeting/rsvp(eventUid=${uid},answer=yes)}" class="btn btn-positive">I'll attend</a>
+                          <a th:unless="${task.hasResponded}" th:href="@{/meeting/rsvp(eventUid=${uid},answer=no)}" class="btn btn-negative">I can't attend</a>
+                        </div>
+                      </div>
+
+                      <div th:case="VOTE" th:with="deadline=${#temporals.format(task.deadlineDateTime, 'dd MMM, HH:mm')}">
+                        <a class="list-item-lg" href="" th:href="@{/vote/view(eventUid=${task.taskUid})}"><b>VOTE:</b> <span th:text="${task.title}"></span></a>
+                        <span th:if="${task.hasResponded}" class="badge pull-right badge-list-bold">
+                          Closes <span th:text="${deadline}">11 September 2015</span>
+                        </span>
+                        <div th:unless="${task.hasResponded}" class="pull-right">
+                          <a th:href="@{/vote/answer(eventUid=${uid},answer=yes)}" class="btn btn-positive">Vote yes</a>
+                          <a th:href="@{/vote/answer(eventUid=${uid},answer=no)}" class="btn btn-negative">Vote no</a>
+                          <a th:href="@{/vote/answer(eventUid=${uid},answer=maybe)}" class="btn btn-neutral">Abstain</a>
+                        </div>
+                      </div>
+
+                      <div th:case="TODO" th:with="deadline=${#temporals.format(task.deadlineDateTime,'EEE d MMM')}">
+                        <a class="list-item-lg" href="" th:href="@{/todo/details(todoUid=${task.taskUid})}"><b>TODO:</b>
+                          <span th:text="${task.title}"></span> (due <span th:text="${#temporals.format(task.deadlineDateTime, 'd MMM')}">11 Sep 2015</span>)</a>
+                        <div th:unless="${task.hasResponded}" class="pull-right">
+                          <a th:href="@{/todo/complete(todoUid=${task.taskUid})}" class="btn btn-neutral">Mark as completed</a>
+                        </div>
+                      </div>
+
+                    </div>
+                  </li>
+                </ul>
               </div>
             </div>
-
-            <div th:case="VOTE" th:with="deadline=${#temporals.format(task.deadlineDateTime, 'dd MMM, HH:mm')}">
-              <a class="list-item-lg" href="" th:href="@{/vote/view(eventUid=${task.taskUid})}"><b>VOTE:</b> <span th:text="${task.title}"></span></a>
-              <span th:if="${task.hasResponded}" class="badge pull-right badge-list-bold">
-                Closes <span th:text="${deadline}">11 September 2015</span>
-              </span>
-              <div th:unless="${task.hasResponded}" class="pull-right">
-                <a th:href="@{/vote/answer(eventUid=${uid},answer=yes)}" class="btn btn-primary btn-sm">Vote yes</a>
-                <a th:href="@{/vote/answer(eventUid=${uid},answer=no)}" class="btn btn-danger btn-sm">Vote no</a>
-                <a th:href="@{/vote/answer(eventUid=${uid},answer=maybe)}" class="btn btn-default btn-sm">Abstain</a>
-              </div>
-            </div>
-
-            <div th:case="TODO" th:with="deadline=${#temporals.format(task.deadlineDateTime,'EEE d MMM')}">
-              <a class="list-item-lg" href="" th:href="@{/todo/details(todoUid=${task.taskUid})}"><b>TODO:</b>
-                <span th:text="${task.title}"></span> (due <span th:text="${#temporals.format(task.deadlineDateTime, 'd MMM')}">11 Sep 2015</span>)</a>
-              <div th:unless="${task.hasResponded}" class="pull-right">
-                <a th:href="@{/todo/complete(todoUid=${task.taskUid})}" class="btn btn-default btn-xs">Mark as completed</a>
-              </div>
-            </div>
-
           </div>
-        </li>
-      </ul>
+        </div>
+      </div>
     </div>
-  </div>
+  </section>
 
   <!-- List group members -->
-  <div class="well col-md-6 col-md-offset-3 border-green" th:unless="${#lists.isEmpty(groupMembers)}">
-    <div class="row">
-      <div class="col-md-6 table-header">
-        Group members
+  <section class="group-members" th:unless="${#lists.isEmpty(groupMembers)}">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-8 col-md-offset-1 col-xs-12">
+          <h4 class="green-title">Group members</h4>
+        </div>
+        <div th:if="${canAddMembers}" class="col-md-2 col-xs-12 text-right">
+          <button type="button" class="main-button" data-toggle="modal" data-target="#addModal">
+            <i class="fa fa-plus" aria-hidden="true"></i>Add member</button>
+        </div>
       </div>
-      <div th:if="${canAddMembers}" class="form-group col-md-2 pull-right">
-        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addModal">
-          <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
-          Add member
-        </button>
-      </div>
-    </div>
-    <div class="row">
-      <div class="col-md-12">
-        <table class="table table-responsive table-hover">
-          <thead>
-          <th>Name</th>
-          <th>Phone number</th>
-          <th>Role in group</th>
-          <th th:if="${canDeleteMembers}"></th>
-          </thead>
-          <tbody>
-          <tr th:each="member : ${groupMembers}">
-            <td>
-              <span th:unless="${#strings.isEmpty(member.displayName)}" th:text="${member.displayName}">User name</span>
-              <span th:if="${#strings.isEmpty(member.displayName)}">Unnamed</span>
-              <span th:unless="${member.userSetName or not canAlter}">
-                <a href="javascript:void(0)" data-toggle="modal" data-target="#editNameModal" th:attr="data-phone=${member.phoneNumber}">(edit)</a>
-              </span>
-            </td>
-            <td><span th:text="${member.getNationalFormattedNumber()}">Phone number</span></td>
-            <td><span th:text="#{web.group.role.__${member.roleName}__}">Role name</span></td>
 
-            <td th:if="${canDeleteMembers}">
-                <button type="button" class="btn btn-default btn-xs" data-toggle="modal" data-target="#rmModal"
-                        th:attr="data-phone=${member.getPhoneNumberWithCCode()}" th:unless="${member.getPhoneNumberWithCCode() == currentUser.getUsername()}">
-                  Remove
-                </button>
-            </td>
-          </tr>
-
-          </tbody>
-        </table>
-
-        <div th:if="${canDeleteMembers}" class="modal fade" id="rmModal" tabindex="-1" role="dialog" aria-labelledby="rmModalLabel">
-          <div class="modal-dialog" role="document">
-            <div class="modal-content">
-              <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                <h4 class="modal-title" id="removeModalLabel">Are you sure?</h4>
+      <div class="row group-members-list">
+        <div class="col-md-10 col-md-offset-1">
+          <div class="panel-group">
+            <div class="panel panel-default">
+              <div class="panel-heading">
+                <h4 class="panel-title">
+                  <a data-toggle="collapse" href="#collapse2">
+                    List of group members
+                    <i class="fa fa-caret-up" aria-hidden="true"></i>
+                  </a>
+                </h4>
               </div>
-              <form th:action="@{/group/remove}" method="post">
-                <input type="hidden" name="groupUid" th:value="${group.getUid()}" />
-                <input type="hidden" name="msisdn" id="msisdn" value="ABC" />
-                <div class="modal-body">
-                    <div class="form-group">
-                      You are about to remove a member from the group. Proceed?
-                    </div>
-                </div>
-                <div class="modal-footer">
-                  <button type="button" class="btn btn-default btn-lg" data-dismiss="modal">Close</button>
-                  <button type="submit" class="btn btn-warning btn-lg">Remove</button>
-                </div>
-              </form>
+              <div id="collapse2" class="panel-collapse collapse in">
+                <table id="card-table" class="table group-members-table">
+                  <thead>
+                    <tr>
+                      <th class="col-md-3">Name</th>
+                      <th class="col-md-3">Phone number</th>
+                      <th class="col-md-3">Role in group</th>
+                      <th class="col-md-2"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr th:each="member : ${groupMembers}">
+                      <td class="col-md-3">
+                        <span th:unless="${#strings.isEmpty(member.displayName)}" th:text="${member.displayName}">User name</span>
+                        <span th:if="${#strings.isEmpty(member.displayName)}">Unnamed</span>
+                        <span th:unless="${member.userSetName or not canAlter}">
+                          <a href="javascript:void(0)" data-toggle="modal" data-target="#editNameModal" th:attr="data-phone=${member.phoneNumber}">(edit)</a>
+                        </span>
+                      </td>
+                      <td class="col-md-3"><span th:text="${member.getNationalFormattedNumber()}">Phone number</span></td>
+                      <td class="col-md-3"><span th:text="#{web.group.role.__${member.roleName}__}">Role name</span></td>
+                      <td class="col-md-2 text-center remove-button">
+                          <button th:if="${canDeleteMembers}" data-toggle="modal" data-target="#rmModal" th:attr="data-phone=${member.getPhoneNumberWithCCode()}"
+                                  th:unless="${member.getPhoneNumberWithCCode() == currentUser.getUsername()}">
+                            <i class="fa fa-times" aria-hidden="true"></i>Remove
+                          </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
-
-        <div th:if="${canAddMembers}" class="modal fade" id="addModal" tabindex="-1" role="dialog" aria-labelledby="addModalLabel">
-          <div class="modal-dialog" role="document">
-            <div class="modal-content">
-              <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                <h4 class="modal-title" id="addModalLabel">Add member to group</h4>
-              </div>
-              <form th:action="@{/group/addmember}" id="add_member_form" method="post">
-                <input type="hidden" name="groupUid" th:value="${group.getUid()}" />
-                <div class="modal-body">
-                  <div class="form-group">
-                    <label for="newMemberName" class="control-label">Name</label>
-                    <input type="text" class="form-control input-lg" id="newMemberName" name="displayName" />
-                  </div>
-                  <div class="form-group">
-                    <label for="newMemberPhone" class="control-label">Phone number</label>
-                    <input type="text" class="form-control input-lg" id="newMemberPhone" name="phoneNumber" />
-                  </div>
-                  <div class="form-group">
-                    <label for="new-member-role" class="control-label">Role</label>
-                    <select class="form-control input-lg" id="new-member-role" name="roleName">
-                    <option th:each="role : ${T(za.org.grassroot.core.domain.BaseRoles).groupRoles}"
-                            th:value="${role}"
-                            th:text="#{web.group.role.__${role}__}"></option>
-                    </select>
-                  </div>
-                </div>
-                <div class="modal-footer">
-                  <button type="button" class="btn btn-default btn-lg" data-dismiss="modal">Close</button>
-                  <button type="submit" class="btn btn-primary btn-lg">Add</button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-
-        <div class="modal fade" id="editNameModal" tabindex="-1" role="dialog" aria-labelledby="editNameModalLabel">
-          <div class="modal-dialog" role="document">
-            <div class="modal-content">
-              <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                <h4 class="modal-title" id="editNameModal">Edit name</h4>
-              </div>
-              <form th:action="@{/group/rename_member}" method="post">
-                <input type="hidden" name="groupUid" th:value="${group.getUid()}" />
-                <input type="hidden" name="phoneNumber" id="phoneNumber" value="ABC" />
-                <div class="modal-body">
-                  <div class="form-group">
-                    <label for="new-name" class="control-label">Please enter a new name:</label>
-                    <input type="text" class="form-control" id="new-name" name="displayName" />
-                  </div>
-                </div>
-                <div class="modal-footer">
-                  <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                  <button type="submit" class="btn btn-warning">Change</button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-
       </div>
     </div>
-  </div>
+  </section>
 
   <!-- list subgroups -->
   <div th:if="${not #lists.isEmpty(subGroups)}">
@@ -595,19 +276,378 @@
       </div>
     </div>
   </div>
-</div>
 
-<div class="header-container" layout:fragment="script-container">
+  <!-- MODALS -->
+
+  <!-- Joining code modal -->
+  <div th:if="${canAlter}" class="modal fade" id="joiningModal" tabindex="-1" role="dialog" aria-labelledby="joiningModalLabel">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title" id="joiningModalLabel">Manage joining code</h4>
+        </div>
+        <form th:action="@{/group/token}" method="post">
+          <input type="hidden" name="groupUid" th:value="${group.getUid()}" />
+          <div class="modal-body">
+            <div class="form-group" th:if="${openToken}">
+              Close joining code? If you confirm, then anyone using the code from now on will not be added to the group.
+            </div>
+            <div class="form-group" th:unless="${openToken}">
+              A joining code allows anyone to join your group just by typing it into their phone. You can close it anytime. Continue?
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default btn-lg default-button btn-neutral" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary btn-lg default-button">Confirm</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+    <!-- Public / private modal -->
+  <div th:if="${canAlter}" class="modal fade" id="publicModal" tabindex="-1" role="dialog" aria-labelledby="publicModalLabel">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title" id="publicModalLabel">
+            <span th:if="${group.discoverable}">Take group private</span>
+            <span th:unless="${group.discoverable}">Make group public</span>
+          </h4>
+        </div>
+        <form th:action="@{/group/discoverable}" method="get">
+          <input type="hidden" name="groupUid" th:value="${group.getUid()}" />
+          <div class="modal-body">
+            <div class="form-group" th:if="${group.discoverable}">
+              Make group private? If you confirm, non-members will no longer be able to find your group by searching for it.
+              <p class="small">Join requests are currently approved by <span th:text="${group.joinApprover.displayName}">name</span></p>
+            </div>
+            <div class="form-group" th:unless="${group.discoverable}">
+              Making the group public will allow non-members to see it on search results, and request to join. To proceed,
+                please select which organizer will be responsible for approving or rejecting join requests:
+            </div>
+            <div class="form-group" th:unless="${group.discoverable}">
+              <select class="form-control input-lg" id="authorizing-member" name="approverPhoneNumber">
+                <option th:each="member : ${groupMembers}"
+                        th:if="${member.roleName == 'ROLE_GROUP_ORGANIZER'}"
+                        th:value="${member.getPhoneNumberWithCCode()}"
+                        th:text="${member.displayName}"></option>
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default btn-lg default-button btn-neutral" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary btn-lg default-button">Confirm</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Unsubscribe modal -->
+  <div th:unless="${canAlter}" class="modal fade" id="unsubModal" tabindex="-1" role="dialog" aria-labelledby="unsubModalLabel">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+          <h4 class="modal-title" id="unsubModalLabel">Are you sure?</h4>
+        </div>
+        <form th:action="@{/group/unsubscribe}" method="post">
+          <input type="hidden" name="groupUid" id="groupUid" th:value="${group.uid}" />
+          <div class="modal-body">
+            <div class="form-group">
+              You are about to unsubscribe from this group.
+              <small>You will only be able to rejoin if someone adds you back. Are you sure you want to leave? Please type
+                'unsubscribe' below to confirm.</small>
+              <input type="text" class="form-control input-lg" id="confirm_unsub_field" name="confirm_field" autocomplete="off" />
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default btn-lg default-button btn-neutral" data-dismiss="modal">Close</button>
+            <button type="submit" class="btn btn-warning btn-lg default-button">Unsubscribe</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add group to account modal -->
+  <div th:if="${canAddToAccount}" class="modal fade" id="accountModal" tabindex="-1" role="dialog" aria-labelledby="accountModalLabel">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+          <h4 class="modal-title" id="accountModalLabel">Link group to account?</h4>
+        </div>
+        <form th:action="@{/group/account/add}" method="post">
+          <input type="hidden" name="groupUid" th:value="${group.uid}" />
+          <div class="modal-body">
+            <div class="form-group">
+              After you do this, you will have (X) groups left on your account. Confirm?.
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default btn-lg default-button btn-neutral" data-dismiss="modal">Close</button>
+            <button type="submit" class="btn btn-primary btn-lg default-button">Confirm</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Remove group from account modal -->
+  <div th:if="${canRemoveFromAccount}" class="modal fade" id="accountRemoveModal" tabindex="-1" role="dialog" aria-labelledby="accRemoveModalLabel">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+          <h4 class="modal-title" id="accRemoveModalLabel">Link group to account?</h4>
+        </div>
+        <form th:action="@{/group/account/remove}" method="post">
+          <input type="hidden" name="groupUid" th:value="${group.uid}" />
+          <div class="modal-body">
+            <div class="form-group">
+              Are you sure? If you remove this group from your account, it will no longer have access
+              to account features (which will suck, honestly).
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default btn-lg default-button btn-neutral" data-dismiss="modal">Close</button>
+            <button type="submit" class="btn btn-primary btn-lg default-button">Confirm</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rename group modal -->
+  <div th:if="${canAlter}" class="modal fade" id="renameModal" tabindex="-1" role="dialog" aria-labelledby="renameModalLabel">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title" id="renameModalLabel">Rename group</h4>
+        </div>
+        <form th:action="@{/group/rename}" method="post">
+          <input type="hidden" name="groupUid" th:value="${group.getUid()}" />
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="new-group-name" class="control-label">New group name:</label>
+              <input type="text" class="form-control input-lg" id="new-group-name"
+                     name="groupName" th:placeholder="${group.groupName}"/>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default btn-lg default-button btn-neutral" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary btn-lg default-button">Rename</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Change group language modal -->
+  <div th:if="${canAlter}" class="modal fade" id="languageModal" tabindex="-1" role="dialog" aria-labelledby="languageModalLabel">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title" id="languageModalLabel">Change group language</h4>
+        </div>
+        <form th:action="@{/group/language}" method="get">
+          <input type="hidden" name="groupUid" th:value="${group.getUid()}" />
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="group-locale" class="control-label">Select language:</label>
+              <select name="locale" id="group-locale" class="form-control input-lg">
+                <option th:each="language: ${T(za.org.grassroot.webapp.controller.BaseController).getImplementedLanguages()}"
+                        th:value="${language.key}"
+                        th:text="${language.value}"></option>
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default btn-lg default-button btn-neutral" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary btn-lg default-button">Set</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Change default reminder setting modal -->
+  <div th:if="${canAlter}" class="modal fade" id="reminderModal" tabindex="-1" role="dialog" aria-labelledby="reminderModalLabel">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title" id="reminderModalLabel">When will reminders be sent?</h4>
+        </div>
+        <form th:action="@{/group/reminder}" method="get">
+          <input type="hidden" name="groupUid" th:value="${group.getUid()}" />
+          <div class="modal-body">
+            <div class="form-group">
+              This will set when reminders for meetings and to-dos will be sent out automatically, unless a custom time
+              is set when the meeting is called or to-do is recorded
+            </div>
+            <div class="form-group">
+              <select name="reminderMinutes" id="reminderMinutes" class="form-control input-lg">
+                <option th:each="option : ${reminderOptions}"
+                        th:value="${option[0]}"
+                        th:text="${option[1]}"
+                        th:selected="${#strings.equals(group.getReminderMinutes(), option[0])}"></option>
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default btn-lg default-button btn-neutral" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary btn-lg default-button">Update</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Make group inactive modal -->
+  <div th:if="${canDeleteGroup}" class="modal fade" id="delModal" tabindex="-1" role="dialog" aria-labelledby="delModalLabel">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title" id="delModalLabel">Are you sure?</h4>
+        </div>
+        <form th:action="@{/group/inactive}" method="post">
+          <input type="hidden" name="groupUid" th:value="${group.getUid()}" />
+          <div class="modal-body">
+            <div class="form-group">
+              You are about to remove this group. This cannot be undone. To confirm, please type "delete" below".
+            </div>
+            <div class="form-group">
+              <input type="text" class="form-control input-lg" id="confirm_field"
+                     name="confirm_field" autocomplete="off" />
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default btn-lg default-button" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-danger btn-lg default-button btn-neutral">Confirmed, remove</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Remove member modal -->
+  <div th:if="${canDeleteMembers}" class="modal fade" id="rmModal" tabindex="-1" role="dialog" aria-labelledby="rmModalLabel">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title" id="removeModalLabel">Are you sure?</h4>
+          </div>
+          <form th:action="@{/group/remove}" method="post">
+            <input type="hidden" name="groupUid" th:value="${group.getUid()}" />
+            <input type="hidden" name="msisdn" id="msisdn" value="ABC" />
+            <div class="modal-body">
+                <div class="form-group">
+                  You are about to remove a member from the group. Proceed?
+                </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-default btn-lg default-button btn-neutral" data-dismiss="modal">Close</button>
+              <button type="submit" class="btn btn-warning btn-lg default-button btn-negative">Remove</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+  <!-- Add member modal -->
+  <div th:if="${canAddMembers}" class="modal fade" id="addModal" tabindex="-1" role="dialog" aria-labelledby="addModalLabel">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title" id="addModalLabel">Add member to group</h4>
+          </div>
+          <form th:action="@{/group/addmember}" id="add_member_form" method="post">
+            <input type="hidden" name="groupUid" th:value="${group.getUid()}" />
+            <div class="modal-body">
+              <div class="form-group">
+                <label for="newMemberName" class="control-label">Name</label>
+                <input type="text" class="form-control input-lg" id="newMemberName" name="displayName" />
+              </div>
+              <div class="form-group">
+                <label for="newMemberPhone" class="control-label">Phone number</label>
+                <input type="text" class="form-control input-lg" id="newMemberPhone" name="phoneNumber" />
+              </div>
+              <div class="form-group">
+                <label for="new-member-role" class="control-label">Role</label>
+                <select class="form-control input-lg" id="new-member-role" name="roleName">
+                <option th:each="role : ${T(za.org.grassroot.core.domain.BaseRoles).groupRoles}"
+                        th:value="${role}"
+                        th:text="#{web.group.role.__${role}__}"></option>
+                </select>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-default btn-lg default-button btn-neutral" data-dismiss="modal">Close</button>
+              <button type="submit" class="btn btn-primary btn-lg default-button">Add</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+  <!-- Edit group name modal -->
+  <div th:if="${canAlter}" class="modal fade" id="editNameModal" tabindex="-1" role="dialog" aria-labelledby="editNameModalLabel">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title" id="editNameModal">Edit name</h4>
+        </div>
+        <form th:action="@{/group/rename_member}" method="post">
+          <input type="hidden" name="groupUid" th:value="${group.getUid()}" />
+          <input type="hidden" name="phoneNumber" id="phoneNumber" value="ABC" />
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="new-name" class="control-label">Please enter a new name:</label>
+              <input type="text" class="form-control" id="new-name" name="displayName" />
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default btn-lg default-button btn-neutral" data-dismiss="modal">Close</button>
+            <button type="submit" class="btn btn-warning btn-lg default-button">Change</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<div layout:fragment="script-container">
+
+  <script th:src="@{/js/lib/stacktable.min.js}"></script>
+
+  <script th:src="@{/js/lib/jquery-ui.min.js}"></script>
+  <script th:src="@{/js/lib/jquery.validate.min.js}"></script>
 
   <script th:src="@{/js/grassroot-methods.js}"></script>
-  <script th:src="@{/js/lib/jquery-ui.min.js}"></script>
 
   <script>
 
-    // putting this within document loaded causes errors (likely interplay of bootstrap and jquery), so leaving outside
     $('#rmModal').on('show.bs.modal', function (event) {
-      var button = $(event.relatedTarget); // Button that triggered the modal
-      var phone = button.data('phone'); // Extract info from data-* attributes
+      var button = $(event.relatedTarget);
+      var phone = button.data('phone');
       var modal = $(this);
       modal.find('#msisdn').val(phone);
     });
@@ -629,11 +669,19 @@
 
       grassrootJS.setUpAjax($("meta[name='_csrf']"), $("meta[name='_csrf_header']"));
 
+      $('#card-table').cardtable();
+
       $('#add_member_form').validate({
         errorClass: "error-text",
         rules: {
           phoneNumber: grassrootJS.phoneRules
         }
+      });
+
+      // $('#card-table').cardtable();
+
+      $( ".group-members .panel-title a" ).click(function() {
+        $( ".group-members .panel-title a i" ).toggleClass( "flip-icon" );
       });
 
     });
