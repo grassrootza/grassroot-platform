@@ -26,3 +26,41 @@
   }
 
 }
+
+.task-member-list {
+
+  font-size: 1.2em;
+
+  .panel {
+    box-shadow: none;
+  }
+
+  .panel-group .panel {
+    border-radius: 0 !important;
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .panel-title a i {
+    position: absolute;
+    right: 6px;
+  }
+
+  .panel-title > a,
+  .panel-title > small,
+  .panel-title > .small,
+  .panel-title > small > a,
+  .panel-title > .small > a {
+    font-size: 1.5em;
+    font-weight: 400;
+    color: $green;
+
+    &:hover,
+    &:active,
+    &:focus {
+      text-decoration: none;
+    }
+  }
+}

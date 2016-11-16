@@ -71,9 +71,9 @@
                         </p>
                       </div>
                       <div class="col-md-4 button-md-align response-buttons">
-                        <a th:href="@{/group/join/approve(requestUid=${request.uid})}" class="btn btn-positive">Approve</a>
-                        <a th:href="@{/group/join/decline(requestUid=${request.uid})}" class="btn btn-negative">Reject</a>
-                        <button type="button" class="btn btn-default" data-toggle="modal" data-target="#joinReqDetailsModal" data:name="${request.requestor.getName('')}"
+                        <a th:href="@{/group/join/approve(requestUid=${request.uid})}" class="btn default-button btn-positive">Approve</a>
+                        <a th:href="@{/group/join/decline(requestUid=${request.uid})}" class="btn default-button btn-negative">Reject</a>
+                        <button type="button" class="btn default-button btn-neutral" data-toggle="modal" data-target="#joinReqDetailsModal" data:name="${request.requestor.getName('')}"
                            data:description="${request.description}" data:uid="${request.uid}" data:phone="${request.requestor.phoneNumber}" >
                           Details</button>
                       </div>
@@ -153,20 +153,20 @@
                       <div th:unless="${task.hasResponded}">
                         <div th:switch="${task.type}">
                           <div th:case="MEETING">
-                            <a class="btn btn-positive" th:href="@{meeting/rsvp(eventUid=${task.taskUid},answer=yes)}">
+                            <a class="btn default-button btn-positive" th:href="@{meeting/rsvp(eventUid=${task.taskUid},answer=yes)}">
                               I'll attend
                             </a>
-                            <a class="btn btn-negative" th:href="@{meeting/rsvp(eventUid=${task.taskUid},answer=no)}">
+                            <a class="btn default-button btn-negative" th:href="@{meeting/rsvp(eventUid=${task.taskUid},answer=no)}">
                               I can't make it
                             </a>
                           </div>
                           <div th:case="VOTE">
-                            <a th:href="@{vote/answer(eventUid=${task.taskUid},answer=yes)}" class="btn btn-positive">Vote yes</a>
-                            <a th:href="@{vote/answer(eventUid=${task.taskUid},answer=no)}" class="btn btn-negative">Vote no</a>
-                            <a th:href="@{vote/answer(eventUid=${task.taskUid},answer=maybe)}" class="btn btn-neutral">Abstain</a>
+                            <a th:href="@{vote/answer(eventUid=${task.taskUid},answer=yes)}" class="btn default-button btn-positive">Vote yes</a>
+                            <a th:href="@{vote/answer(eventUid=${task.taskUid},answer=no)}" class="btn default-button btn-negative">Vote no</a>
+                            <a th:href="@{vote/answer(eventUid=${task.taskUid},answer=maybe)}" class="btn default-button btn-neutral">Abstain</a>
                           </div>
                           <div th:case="TODO">
-                            <a th:href="@{todo/complete(todoUid=${task.taskUid})}" class="btn btn-positive">Mark complete</a>
+                            <a th:href="@{todo/complete(todoUid=${task.taskUid})}" class="btn default-button btn-positive">Mark complete</a>
                           </div>
                         </div>
                       </div>
@@ -175,18 +175,18 @@
                         <div th:switch="${task.type}">
                             <div th:case="MEETING">
                               <a href="#" th:href="'javascript:fetchTaskDescription(\'' + ${task.taskUid} + '\', \'' + ${task.type} + '\')'">
-                                <span class="badge" th:if="${#strings.equalsIgnoreCase(task.reply, 'Yes')}">You're attending</span>
-                                <span class="badge" th:if="${#strings.equalsIgnoreCase(task.reply, 'No')}">You're not attending</span>
+                                <span th:if="${#strings.equalsIgnoreCase(task.reply, 'Yes')}">You're attending</span>
+                                <span th:if="${#strings.equalsIgnoreCase(task.reply, 'No')}">You're not attending</span>
                               </a>
                             </div>
                             <div th:case="VOTE">
                               <a href="#" th:href="'javascript:fetchTaskDescription(\'' + ${task.taskUid} + '\', \'' + ${task.type} + '\')'">
-                                <span class="badge" th:text="#{web.home.vote.answer(${#strings.toLowerCase(task.reply)})}">ABC</span>
+                                <span th:text="#{web.home.vote.answer(${#strings.toLowerCase(task.reply)})}">ABC</span>
                               </a>
                             </div>
                             <div th:case="TODO">
                               <a href="#" th:href="'javascript:fetchTaskDescription(\'' + ${task.taskUid} + '\', \'' + ${task.type} + '\')'">
-                                <span class="badge">You marked it complete</span>
+                                You marked it complete
                               </a>
                             </div>
                         </div>
