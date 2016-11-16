@@ -4,6 +4,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import za.org.grassroot.core.enums.AlertPreference;
 import za.org.grassroot.core.enums.UserMessagingPreference;
+import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
@@ -168,6 +169,8 @@ public class User implements UserDetails, Comparable<User> {
     public void setPhoneNumber(String phoneNumber) {
         this.phoneNumber = phoneNumber;
     }
+
+    public String getNationalNumber() { return PhoneNumberUtil.formattedNumber(phoneNumber); }
 
     public String getDisplayName() {
         return displayName;

@@ -140,7 +140,7 @@ public class MeetingController extends BaseController {
         boolean canAlterDetails = meeting.getCreatedByUser().equals(user) ||
                 permissionBroker.isGroupPermissionAvailable(user, meeting.getAncestorGroup(), Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
 
-        model.addAttribute("meeting", new MeetingWrapper(meeting));
+        model.addAttribute("meeting", meeting);
         model.addAttribute("responseTotals", meetingResponses);
         model.addAttribute("canViewRsvps", canViewRsvps);
 

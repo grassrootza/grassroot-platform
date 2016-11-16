@@ -2,76 +2,142 @@
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorator="layout">
 <head>
-  <title>Grassroot - View Meeting</title>
+  <title>Meeting</title>
 </head>
 <body>
 
-<div layout:fragment="header">
-  <h2 class="text-center">Meeting: <span  th:text="${meeting.title}">Meeting</span></h2>
-</div>
-<div layout:fragment="overview">
-  <h4 class="text-center">Meeting of "<span th:text="${meeting.parentName}">group</span>"
-    on <span th:text="${#temporals.format(meeting.eventDateTime,'dd MMM, HH:mm')}">date and time</span>
-    at <span th:text="${meeting.location}">place</span></h4>
-</div>
-
-<div layout:fragment="content">
-  <div layout:fragment="messages"></div>
-
-  <div class="well">
+<section layout:fragment="header" class="top-container">
+  <div class="container">
     <div class="row">
-      <div class="col-md-6 col-md-offset-3">
-        <p class="text-center"><span th:text="${responseTotals.numberOfUsers}">3</span> people invited.
-        <span th:if="${meeting.rsvpRequired}"><span th:text="${responseTotals.yes}">X</span> confirmed as attending</span></p>
+      <div class="col-md-8 col-md-offset-2 col-sm-8 col-sm-offset-2 col-xs-12">
+        <h2 class="text-center header-content-title">
+          <span class="group-title">Meeting: </span><span class="group-name" th:text="${meeting.name}">Meeting</span>
+        </h2>
       </div>
     </div>
-
-    <div th:if="${canAlterDetails}" class="row">
-      <div class="col-md-6 col-md-offset-3">
-        <div class="button-group text-center">
-          <button type="button" class="btn btn-default" data-toggle="modal" data-target="#changeReminder">Change reminder time</button>
-          <button type="button" class="btn btn-default" data-toggle="modal" data-target="#dateTimeChange">Change date, time or location</button>
-          <button type="button" class="btn btn-default" data-toggle="modal" data-target="#cancelMeeting">Cancel meeting</button>
-          <!-- put this back when do implementation of event/logbook chaining -->
-          <!-- <a th:href="@{/to-do/create/meeting(meetingUid=${meeting.uid})}"><button type="button" class="btn btn-default">Create meeting to-do</button></a> -->
-        </div>
-      </div>
-    </div>
-
-    <div th:unless="${#lists.isEmpty(todos)}">
-      <div class="row">
-        <div class="col-md-6 col-md-offset-3">
-          <ul class="list-group">
-            <li class="list-group-item" th:each="todo : ${todos}">
-              <a th:href="@{/todo/details(logBookUid=${todo.uid})}"><span th:text="${todo.message}">Text</span></a>
-            </li>
-          </ul>
-        </div>
-      </div>
-    </div>
-
-    <div th:if="${meeting.rsvpRequired and canViewRsvps}">
-      <div class="row">
-        <div class="col-md-6 col-md-offset-3">
-          <table class="table table-striped">
-            <thead>
-            <th>Member name</th>
-            <th>Phone number</th>
-            <th>Response</th>
-            </thead>
-            <tbody>
-            <tr th:each="status : ${rsvpResponses}">
-              <td><span th:text="${status.key.nameToDisplay()}">Member name</span></td>
-              <td><span th:text="${status.key.phoneNumber}">Phone number</span></td>
-              <td><span th:text="${status.value.getReadableString()}">Response</span></td>
-            </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
   </div>
+</section>
+
+<main layout:fragment="content">
+
+  <section th:if="${canAlterDetails}" class="task-buttons">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-8 col-md-offset-2 col-sm-8 col-sm-offset-2 col-xs-12">
+          <div class="button-group text-center">
+            <button type="button" class="btn default-button btn-neutral" data-toggle="modal" data-target="#changeReminder">Change reminder time</button>
+            <button type="button" class="btn default-button btn-neutral" data-toggle="modal" data-target="#dateTimeChange">Change date, time or location</button>
+            <button type="button" class="btn default-button btn-neutral" data-toggle="modal" data-target="#cancelMeeting">Cancel meeting</button>
+            <!-- todo : put this back when do implementation of event/logbook chaining -->
+            <!-- <a th:href="@{/to-do/create/meeting(meetingUid=${meeting.uid})}"><button type="button" class="btn btn-default">Create meeting to-do</button></a> -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <section class="grassroot-form">
+    <div class="container task-details">
+
+      <div class="row">
+        <div class="col-md-8 col-md-offset-2 col-sm-10 col-sm-offset-1 col-xs-12">
+          <div class="row detail-row">
+            <div class="col-md-3 col-sm-4 col-xs-12">
+              <label class="grassroot-sidebar">Subject</label>
+            </div>
+            <div class="col-md-9 col-sm-8 col-xs-12">
+              <p class="description" th:text="${meeting.name}"></p>
+            </div>
+          </div>
+          <div class="detail-row" th:if="${not #strings.isEmpty(meeting.description)}">
+            <div class="col-md-3 col-sm-4 col-xs-12">
+              <label class="grassroot-sidebar">Notes</label>
+            </div>
+            <div class="col-md-9 col-sm-8 col-xs-12">
+              <p class="description" th:text="${meeting.description}">Description</p>
+            </div>
+          </div>
+          <div class="row detail-row">
+            <div class="col-md-3 col-sm-4 col-xs-12">
+              <label class="grassroot-sidebar">Date and time</label>
+            </div>
+            <div class="col-md-9 col-sm-8 col-xs-12">
+              <p class="description">
+                <!-- todo : link to Google / Outlook calendar & change reminder date/time syntax -->
+                Meeting will be held on <span th:text="${#temporals.format(meeting.eventDateTimeAtSAST, 'h:mm a, dd MMMM')}">Date</span>.
+                Reminders will be sent on <span th:text="${#temporals.format(meeting.scheduledReminderTimeAtSAST, 'h:mm a, dd MMMM')}">date 2</span>.
+              </p>
+            </div>
+          </div>
+          <div class="row detail-row">
+            <div class="col-md-3 col-sm-4 col-xs-12">
+              <label class="grassroot-sidebar">Location</label>
+            </div>
+            <div class="col-md-9 col-sm-8 col-xs-12">
+              <!-- todo : link to Google Maps -->
+              <p class="description" th:text="${meeting.eventLocation}"></p>
+            </div>
+          </div>
+          <div class="row detail-row">
+            <div class="col-md-3 col-sm-4 col-xs-12">
+              <label class="grassroot-sidebar">Invites</label>
+            </div>
+            <div class="col-md-9 col-sm-8 col-xs-12">
+              <p class="description"><span th:text="${responseTotals.numberOfUsers}">3</span> people invited.
+                <span th:text="${responseTotals.yes}">X</span> have confirmed as attending</span></p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row top-buffer upcoming-events" th:if="${meeting.rsvpRequired and canViewRsvps}">
+        <div class="col-md-8 col-md-offset-2 col-sm-10 col-sm-offset-1 col-xs-12">
+          <div class="panel-group">
+            <div class="panel panel-default">
+              <div class="panel-heading">
+                <h4 class="panel-title">
+                  <a data-toggle="collapse" href="#collapse2">
+                    List of group members
+                    <i class="fa fa-caret-up" aria-hidden="true"></i>
+                  </a>
+                </h4>
+              </div>
+              <div id="collapse2" class="panel-collapse collapse in">
+                <table class="table table-striped">
+                  <thead>
+                  <tr>
+                    <th>Member name</th>
+                    <th>Phone number</th>
+                    <th>Response</th>
+                  </tr>
+                  </thead>
+                  <tbody>
+                  <tr th:each="status : ${rsvpResponses}">
+                    <td><span th:text="${status.key.nameToDisplay()}">Member name</span></td>
+                    <td><span th:text="${status.key.nationalNumber}">Phone number</span></td>
+                    <td><span th:text="${status.value.getReadableString()}">Response</span></td>
+                  </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+    <div class="row" th:unless="${#lists.isEmpty(todos)}">
+      <div class="col-md-6 col-md-offset-3">
+        <ul class="list-group">
+          <li class="list-group-item" th:each="todo : ${todos}">
+            <a th:href="@{/todo/details(logBookUid=${todo.uid})}"><span th:text="${todo.message}">Text</span></a>
+          </li>
+        </ul>
+      </div>
+    </div>
 
   <div th:if="${canAlterDetails}" class="modal fade" id="dateTimeChange" tabindex="-1" role="dialog" aria-labelledby="changeDetailsLabel">
     <div class="modal-dialog" role="document">
@@ -177,7 +243,7 @@
     </div>
   </div>
 
-</div>
+</main>
 
 <div class="header-container" layout:fragment="script-container">
   <script th:inline="javascript">

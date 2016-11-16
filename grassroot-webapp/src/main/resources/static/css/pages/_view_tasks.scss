@@ -1,0 +1,28 @@
+/* For various forms of viewing todos, tasks, etc */
+
+.task-buttons {
+  margin-bottom: 20px;
+}
+
+.task-details {
+
+  .detail-row {
+    margin-top: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid $light-green;
+  }
+
+  .description {
+    font-size: 1.5em;
+    font-family: 'Roboto', sans-serif;
+
+    &.complete {
+      color: $dark-text;
+    }
+
+    &.incomplete {
+      color: $orange;
+    }
+  }
+
+}

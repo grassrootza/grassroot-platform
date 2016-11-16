@@ -192,7 +192,6 @@ public class TodoController extends BaseController {
 
         model.addAttribute("entry", todoEntry);
         model.addAttribute("parent", todoEntry.getParent());
-        model.addAttribute("creatingUser", todoEntry.getCreatedByUser());
         model.addAttribute("isComplete", todoEntry.isCompleted(COMPLETION_PERCENTAGE_BOUNDARY));
         model.addAttribute("canModify", todoEntry.getCreatedByUser().equals(user) ||
                 permissionBroker.isGroupPermissionAvailable(user, todoEntry.getAncestorGroup(), GROUP_PERMISSION_UPDATE_GROUP_DETAILS));

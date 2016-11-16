@@ -11,6 +11,7 @@ import za.org.grassroot.core.util.DateTimeUtil;
 import javax.persistence.*;
 import java.io.Serializable;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.Set;
@@ -107,6 +108,11 @@ public abstract class Event<P extends UidIdentifiable> extends AbstractEventEnti
 
 	public Instant getScheduledReminderTime() {
 		return scheduledReminderTime;
+	}
+
+	public LocalDateTime getScheduledReminderTimeAtSAST() {
+		// todo : handle nulls here (if reminder not set
+		return scheduledReminderTime.atZone(DateTimeUtil.getSAST()).toLocalDateTime();
 	}
 
 	public boolean isScheduledReminderActive() {
