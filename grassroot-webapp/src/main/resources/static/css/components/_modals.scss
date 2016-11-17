@@ -42,10 +42,21 @@
 }
 
 .modal {
-  select,
-  input {
-    border-radius: 0;
-    font-size: 1em;
-    margin: 0 !important;
-  }
+	select,
+	input {
+		border-radius: 0;
+		font-size: 1em;
+		margin: 0 !important;
+	}
+
+	p {
+		margin-bottom: 22px;
+	}
+
+	select + p,
+	input + p,
+	label + p {
+		margin-top: 15px;
+	}
+
 }

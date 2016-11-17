@@ -50,7 +50,7 @@
         </h4>
 
         <div th:if="${canAlter}" class="dropdown manage-container">
-          <button class="dropdown-toggle white-button center-button" type="button" data-toggle="dropdown">Manage and modify group<i class="fa fa-caret-down" aria-hidden="true"></i></button>
+          <button class="dropdown-toggle white-button group-center-button" type="button" data-toggle="dropdown">Manage and modify group<i class="fa fa-caret-down" aria-hidden="true"></i></button>
           <ul class="dropdown-menu">
               <li><a th:href="@{/group/roles/members(groupUid=${group.uid})}">Change members' roles</a></li>
               <li><a th:if="${canChangePermissions}" th:href="@{/group/roles/permissions(groupUid=${group.Uid})}">
@@ -77,7 +77,7 @@
         </div>
 
         <div th:unless="${canAlter}" class="dropdown manage-container">
-          <button type="button" class="dropdown-toggle white-button center-button" data-toggle="modal" data-target="#unsubModal">Unsubscribe</button>
+          <button type="button" class="dropdown-toggle white-button group-center-button" data-toggle="modal" data-target="#unsubModal">Unsubscribe</button>
         </div>
 
         <div th:unless="${#strings.isEmpty(group.description)}" class="row group-description">
@@ -99,11 +99,11 @@
   <section class="group-buttons">
     <div class="container">
       <div class="row">
-        <div class="col-md-2 col-md-offset-1 text-center">
+        <div class="col-md-3 col-md-offset-1 text-center">
           <a th:if="${canCallMeeting}" href="" th:href="@{/meeting/create(groupUid=${group.uid})}">
             <button class="white-button group-button"><i class="fa fa-comments-o" aria-hidden="true"></i>Call a meeting</button></a>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-2">
           <a th:if="${canCallVote}" href="" th:href="@{/vote/create(groupUid=${group.uid})}">
             <button class="white-button group-button"><i class="fa fa-hand-pointer-o" aria-hidden="true"></i>Take a vote</button></a>
         </div>
@@ -143,35 +143,40 @@
                     <div class="row" th:switch="${task.type}" th:with="uid=${task.taskUid}">
 
                       <div th:case="MEETING"  th:with="deadline=${#temporals.format(task.deadlineDateTime,'dd MMM, HH:mm')}">
-                        <div class="event-item col-md-8">
-                          <a class="list-item-lg" href="" th:href="@{/meeting/view(eventUid=${uid})}">
+                        <div class="col-md-8 event-item">
+                          <a class="list-header" href="" th:href="@{/meeting/view(eventUid=${uid})}">
                             <b>MEETING:</b> <span th:text="${task.title}"></span>
+                            <p class="list-group-text">Location, time</p>
                           </a>
                         </div>
-                        <div class="col-md-4 button-md-align response-buttons">
+                        <div class="col-md-4 button-md-align">
                           <span th:if="${task.hasResponded}" class="badge">Happens at <span th:text="${deadline}">11 September 2015</span></span>
-                          <a th:unless="${task.hasResponded}" th:href="@{/meeting/rsvp(eventUid=${uid},answer=yes)}" class="btn btn-positive">I'll attend</a>
-                          <a th:unless="${task.hasResponded}" th:href="@{/meeting/rsvp(eventUid=${uid},answer=no)}" class="btn btn-negative">I can't attend</a>
+                          <a th:unless="${task.hasResponded}" th:href="@{/meeting/rsvp(eventUid=${uid},answer=yes)}" class="btn default-button btn-positive">I'll attend</a>
+                          <a th:unless="${task.hasResponded}" th:href="@{/meeting/rsvp(eventUid=${uid},answer=no)}" class="btn default-button btn-negative">I can't attend</a>
                         </div>
                       </div>
 
                       <div th:case="VOTE" th:with="deadline=${#temporals.format(task.deadlineDateTime, 'dd MMM, HH:mm')}">
-                        <a class="list-item-lg" href="" th:href="@{/vote/view(eventUid=${task.taskUid})}"><b>VOTE:</b> <span th:text="${task.title}"></span></a>
-                        <span th:if="${task.hasResponded}" class="badge pull-right badge-list-bold">
-                          Closes <span th:text="${deadline}">11 September 2015</span>
-                        </span>
-                        <div th:unless="${task.hasResponded}" class="pull-right">
-                          <a th:href="@{/vote/answer(eventUid=${uid},answer=yes)}" class="btn btn-positive">Vote yes</a>
-                          <a th:href="@{/vote/answer(eventUid=${uid},answer=no)}" class="btn btn-negative">Vote no</a>
-                          <a th:href="@{/vote/answer(eventUid=${uid},answer=maybe)}" class="btn btn-neutral">Abstain</a>
+                        <div class="col-md-8 event-item">
+                          <a class="list-header" href="" th:href="@{/vote/view(eventUid=${task.taskUid})}">
+                            <b>VOTE:</b> <span th:text="${task.title}"></span>
+                          </a>
+                        </div>
+                        <div class="col-md-4" th:classappend="${task.hasResponded} ? 'badge' : 'button-md-align'">
+                          <span th:if="${task.hasResponded}">Closes <span th:text="${deadline}">11 September 2015</span></span>
+                          <div th:unless="${task.hasResponded}">
+                            <a th:href="@{/vote/answer(eventUid=${uid},answer=yes)}" class="btn default-button btn-positive">Vote yes</a>
+                            <a th:href="@{/vote/answer(eventUid=${uid},answer=no)}" class="btn default-button btn-negative">Vote no</a>
+                            <a th:href="@{/vote/answer(eventUid=${uid},answer=maybe)}" class="btn default-button btn-neutral">Abstain</a>
+                          </div>
                         </div>
                       </div>
 
                       <div th:case="TODO" th:with="deadline=${#temporals.format(task.deadlineDateTime,'EEE d MMM')}">
-                        <a class="list-item-lg" href="" th:href="@{/todo/details(todoUid=${task.taskUid})}"><b>TODO:</b>
+                        <a class="list-header" href="" th:href="@{/todo/details(todoUid=${task.taskUid})}"><b>TODO:</b>
                           <span th:text="${task.title}"></span> (due <span th:text="${#temporals.format(task.deadlineDateTime, 'd MMM')}">11 Sep 2015</span>)</a>
                         <div th:unless="${task.hasResponded}" class="pull-right">
-                          <a th:href="@{/todo/complete(todoUid=${task.taskUid})}" class="btn btn-neutral">Mark as completed</a>
+                          <a th:href="@{/todo/complete(todoUid=${task.taskUid})}" class="btn default-button btn-neutral">Mark as completed</a>
                         </div>
                       </div>
 

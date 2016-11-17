@@ -208,12 +208,12 @@ a.gr-body-btn-lg {
  */
 
 h2.header-content-title {
+    color: $green;
     font-family: 'Roboto', sans-serif;
     font-size: 3.3em;
     text-transform: uppercase;
 
     .bold-title {
-        color: $green;
         font-weight: bolder;
     }
 
@@ -420,28 +420,24 @@ h4.header-content-subtitle {
     color: #ffffff;
 }
 
-.alert-lg {
+.snackbar-container {
+    margin-bottom: 30px;
     font-family: 'Roboto', sans-serif;
-    font-size: 15pt;
-}
+    font-size: 1.2em;
 
-.alert-md {
-    font-family: 'Roboto', sans-serif;
-    font-size: 13pt;
-}
+    .alert-success {
+        background-color: #207A33;
+        border-radius: 2px;
+        color: #FFFFFF;
+    }
 
-.alert-success {
-    background-color: #207A33;
-    border-radius: 2px;
-    color: #FFFFFF;
-}
+    .alert-info {
+        border-radius: 0;
+    }
 
-.alert-info {
-    border-radius: 2px;
-}
-
-.alert-danger {
-    border-radius: 2px;
+    .alert-danger {
+        border-radius: 0;
+    }
 }
 
 /*

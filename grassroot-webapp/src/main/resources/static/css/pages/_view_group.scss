@@ -21,6 +21,7 @@ th, td.sub {
 }
 
 .group-buttons {
+  font-size: 1.2em;
   margin-bottom: 50px;
 }
 
@@ -139,4 +140,14 @@ th, td.sub {
 
 .manage-container .dropdown-menu {
   width: 100%;
+}
+
+.history-task-list {
+  @extend .group-members;
+  font-size: 1.2em;
+  margin-bottom: 30px;
+
+  .panel-title {
+    font-size: 1.2em;
+  }
 }

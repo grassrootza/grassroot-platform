@@ -53,6 +53,7 @@
   border: none;
   border-radius: 0;
   color: white;
+  display: inline-block;
   font-size: 1.2em;
   font-weight: 300;
   padding: 10px 16px;
@@ -87,6 +88,7 @@
     &:focus,
     &:active {
       background-color: #DDDDDD;
+      color: $dark-text;
     }
   }
 
@@ -202,8 +204,9 @@
   }
 }
 
-.center-button {
+.group-center-button {
   width: 100%;
+  font-size: 1.2em;
 
   i {
     color: $green;

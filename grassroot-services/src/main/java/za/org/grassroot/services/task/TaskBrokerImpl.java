@@ -146,6 +146,31 @@ public class TaskBrokerImpl implements TaskBroker {
 
     @Override
     @Transactional(readOnly = true)
+    public List<TaskDTO> fetchGroupTasksInPeriod(String userUid, String groupUid, Instant start, Instant end) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(groupUid);
+
+        User user = userRepository.findOneByUid(userUid);
+        Group group = groupBroker.load(groupUid);
+
+        permissionBroker.validateGroupPermission(user, group, null);
+
+        Set<TaskDTO> taskDtos = new HashSet<>();
+
+        eventBroker.retrieveGroupEvents(group, null, start, end)
+                .forEach(e -> taskDtos.add(new TaskDTO(e, user, eventLogRepository)));
+
+        todoRepository.findAll(Specifications.where(hasGroupAsParent(group))
+                .and(actionByDateBetween(start, end)))
+                .forEach(t -> taskDtos.add(new TaskDTO(t, user)));
+
+        List<TaskDTO> tasks = new ArrayList<>(taskDtos);
+        Collections.sort(tasks);
+        return tasks;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public ChangedSinceData<TaskDTO> fetchGroupTasks(String userUid, String groupUid, Instant changedSince) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(groupUid);

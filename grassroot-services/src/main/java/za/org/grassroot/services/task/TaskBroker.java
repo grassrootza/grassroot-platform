@@ -20,6 +20,8 @@ public interface TaskBroker {
 
     List<TaskDTO> fetchUpcomingIncompleteGroupTasks(String userUid, String groupUid);
 
+    List<TaskDTO> fetchGroupTasksInPeriod(String userUid, String groupUid, Instant start, Instant end);
+
     ChangedSinceData<TaskDTO> fetchGroupTasks(String userUid, String groupUid, Instant changedSince);
 
     List<TaskDTO> fetchUpcomingUserTasks(String userUid);

@@ -25,7 +25,6 @@ import za.org.grassroot.services.group.GroupQueryBroker;
 import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.TaskBroker;
 import za.org.grassroot.services.task.TodoBroker;
-import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.GroupWrapper;
 import za.org.grassroot.webapp.util.BulkUserImportUtil;
@@ -34,10 +33,11 @@ import javax.servlet.http.HttpServletRequest;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static za.org.grassroot.core.util.DateTimeUtil.*;
 
 /**
  * @author Lesetse Kimwaga
@@ -576,7 +576,7 @@ public class GroupController extends BaseController {
 
     @RequestMapping(value = "history")
     public String viewGroupHistory(Model model, @RequestParam String groupUid,
-                                   @RequestParam(value = "monthToView", required = false) String monthToView) {
+                                   @RequestParam(value = "month", required = false) String monthToView) {
 
         Group group = groupBroker.load(groupUid);
         User user = userManagementService.load(getUserProfile().getUid());
@@ -586,25 +586,26 @@ public class GroupController extends BaseController {
         final LocalDateTime startDateTime;
         final LocalDateTime endDateTime;
 
-        if (monthToView == null) {
+        if (StringUtils.isEmpty(monthToView)) {
             startDateTime = LocalDate.now().withDayOfMonth(1).atStartOfDay();
             endDateTime = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES); // leaving seconds out on causes spurious test failures
         } else {
-            startDateTime = LocalDate.parse("01-" + monthToView, DateTimeFormatter.ofPattern("dd-M-yyyy")).atStartOfDay();
+            startDateTime = LocalDate.parse(monthToView).atStartOfDay();
             endDateTime = startDateTime.plusMonths(1L);
         }
 
-        Instant start = DateTimeUtil.convertToSystemTime(startDateTime, DateTimeUtil.getSAST());
-        Instant end = DateTimeUtil.convertToSystemTime(endDateTime, DateTimeUtil.getSAST());
-        List<Event> eventsInPeriod = eventBroker.retrieveGroupEvents(group, null, start, end);
-        List<Todo> todosInPeriod = todoBroker.fetchTodosForGroupCreatedDuring(group.getUid(), startDateTime, endDateTime);
+        List<TaskDTO> tasksInPeriod = taskBroker.fetchGroupTasksInPeriod(user.getUid(), groupUid,
+                convertToSystemTime(startDateTime, getSAST()), convertToSystemTime(endDateTime, getSAST()));
+
         List<GroupLog> groupLogsInPeriod = groupQueryBroker.getLogsForGroup(group, startDateTime, endDateTime);
         List<LocalDate> monthsActive = groupQueryBroker.getMonthsGroupActive(groupUid);
 
         model.addAttribute("group", group);
-        model.addAttribute("eventsInPeriod", eventsInPeriod);
-        model.addAttribute("todosInPeriod", todosInPeriod);
+
+        model.addAttribute("tasksInPeriod", tasksInPeriod);
         model.addAttribute("groupLogsInPeriod", groupLogsInPeriod);
+
+        model.addAttribute("month", StringUtils.isEmpty(monthToView) ? null : LocalDate.parse(monthToView));
         model.addAttribute("monthsToView", monthsActive);
 
         return "group/history";
