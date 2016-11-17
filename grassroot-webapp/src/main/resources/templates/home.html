@@ -71,8 +71,8 @@
                         </p>
                       </div>
                       <div class="col-md-4 button-md-align">
-                        <a th:href="@{/group/join/approve(requestUid=${request.uid})}" class="btn default-button btn-positive">Approve</a>
-                        <a th:href="@{/group/join/decline(requestUid=${request.uid})}" class="btn default-button btn-negative">Reject</a>
+                        <a th:href="@{/group/join/approve(requestUid=${request.uid},source='home')}" class="btn default-button btn-positive">Approve</a>
+                        <a th:href="@{/group/join/decline(requestUid=${request.uid},source='home')}" class="btn default-button btn-negative">Reject</a>
                         <button type="button" class="btn default-button btn-neutral" data-toggle="modal" data-target="#joinReqDetailsModal" data:name="${request.requestor.getName('')}"
                            data:description="${request.description}" data:uid="${request.uid}" data:phone="${request.requestor.phoneNumber}" >
                           Details</button>
@@ -166,7 +166,7 @@
                             <a th:href="@{vote/answer(eventUid=${task.taskUid},answer=maybe)}" class="btn default-button btn-neutral">Abstain</a>
                           </div>
                           <div th:case="TODO">
-                            <a th:href="@{todo/complete(todoUid=${task.taskUid})}" class="btn default-button btn-positive">Mark complete</a>
+                            <a th:href="@{todo/complete(todoUid=${task.taskUid}, source='home')}" class="btn default-button btn-positive">Mark complete</a>
                           </div>
                         </div>
                       </div>

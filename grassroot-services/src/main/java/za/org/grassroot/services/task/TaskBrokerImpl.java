@@ -133,7 +133,7 @@ public class TaskBrokerImpl implements TaskBroker {
         List<Todo> todos = todoRepository.findAll(Specifications.where(notCancelled())
                 .and(hasGroupAsParent(group))
                 .and(actionByDateBetween(todoStart, todoEnd))
-                .and(completionConfirmsBelow(COMPLETION_PERCENTAGE_BOUNDARY)));
+                .and(completionConfirmsBelow(COMPLETION_PERCENTAGE_BOUNDARY, false)));
 
         for (Todo todo : todos) {
             taskDtos.add(new TaskDTO(todo, user));
@@ -226,7 +226,7 @@ public class TaskBrokerImpl implements TaskBroker {
         Instant todoEnd = DateTimeUtil.getVeryLongAwayInstant();
         List<Todo> todos = todoRepository.findAll(Specifications.where(notCancelled())
                 .and(actionByDateBetween(todoStart, todoEnd))
-                .and(completionConfirmsBelow(COMPLETION_PERCENTAGE_BOUNDARY))
+                .and(completionConfirmsBelow(COMPLETION_PERCENTAGE_BOUNDARY, false))
                 .and(userPartOfGroup(user)));
 
         Set<TaskDTO> todoTaskDtos = resolveTodoTaskDtos(todos, user, null);

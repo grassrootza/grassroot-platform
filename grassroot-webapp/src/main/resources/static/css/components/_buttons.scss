@@ -22,6 +22,7 @@
     &:focus,
     &:hover {
       background-color: $darker-green;
+      color: white;
     }
   }
   
@@ -45,6 +46,7 @@
   &:focus,
   &:hover {
     background-color: $darker-green;
+    color: $white;
   }
 }
 
@@ -92,6 +94,11 @@
     }
   }
 
+  &.btn-sm,
+  &.btn-xs {
+    font-size: .813em !important;
+  }
+
   i {
     margin-right: 10px;
   }
@@ -100,6 +107,7 @@
   &:focus,
   &:hover {
     background-color: $darker-green;
+    color: $white;
   }
 
   &.full-width-button {

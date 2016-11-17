@@ -310,7 +310,7 @@ public class TodoBrokerImpl implements TodoBroker {
 		Specifications<Todo> specifications = Specifications
 				.where(notCancelled())
 				.and(hasGroupAsParent(group))
-				.and(completionConfirmsAbove(COMPLETION_PERCENTAGE_BOUNDARY));
+				.and(completionConfirmsAbove(COMPLETION_PERCENTAGE_BOUNDARY, false));
 		return todoRepository.findAll(specifications, pageRequest);
 	}
 
@@ -342,15 +342,16 @@ public class TodoBrokerImpl implements TodoBroker {
 		Group group = groupRepository.findOneByUid(groupUid);
 		Instant start = futureTodosOnly ? Instant.now() : DateTimeUtil.getEarliestInstant();
 
-		logger.info("okay, about to use the specifications ... again 3");
 		Specifications<Todo> specifications = Specifications.where(TodoSpecifications.notCancelled())
 				.and(TodoSpecifications.actionByDateAfter(start))
 				.and(hasGroupAsParent(group));
 
+		logger.info("Looking with status {}, and boundary {}", status, COMPLETION_PERCENTAGE_BOUNDARY);
+
 		if (TodoStatus.COMPLETE.equals(status)) {
-			specifications = specifications.and(TodoSpecifications.completionConfirmsAbove(COMPLETION_PERCENTAGE_BOUNDARY));
+			specifications = specifications.and(TodoSpecifications.completionConfirmsAbove(COMPLETION_PERCENTAGE_BOUNDARY, true));
 		} else if (TodoStatus.INCOMPLETE.equals(status)) {
-			specifications = specifications.and(TodoSpecifications.completionConfirmsBelow(COMPLETION_PERCENTAGE_BOUNDARY));
+			specifications = specifications.and(TodoSpecifications.completionConfirmsBelow(COMPLETION_PERCENTAGE_BOUNDARY, false));
 		}
 
 		return todoRepository.findAll(specifications);
@@ -401,7 +402,7 @@ public class TodoBrokerImpl implements TodoBroker {
 				.and(userPartOfGroup(user))
 				.and(actionByDateBetween(Instant.now().minus(daysPastToCheck, ChronoUnit.DAYS),
 						dueInFutureToo ? DateTimeUtil.getVeryLongAwayInstant() : Instant.now()))
-				.and(completionConfirmsBelow(COMPLETION_PERCENTAGE_BOUNDARY))
+				.and(completionConfirmsBelow(COMPLETION_PERCENTAGE_BOUNDARY, false))
 				.and(todoNotConfirmedByCreator());
 	}
 

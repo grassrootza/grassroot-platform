@@ -13,61 +13,62 @@
 </head>
 <body>
 
-  <div layout:fragment="header">
-    <h1 class="text-center">Upload Members</h1>
-  </div>
+  <section layout:fragment="header" class="top-container">
+    <h2 class="text-center header-content-title">Upload Members</h2>
+    <h4 class="text-center header-content-subtitle">Import a list of members from Excel</h4>
+  </section>
 
-  <div layout:fragment="overview">
-    <h4 class="text-center">Import a list of members from Excel</h4>
-  </div>
+  <main layout:fragment="content">
 
-  <div layout:fragment="content">
+    <section class="grassroot-form">
+      <div class="container">
+        <div class="row">
+          <div class="col-md-6 col-md-offset-3">
+            <div id="add_file">
+              <div class="form-group">
+                <span class="btn default-button full-width-button fileinput-button">
+                  <i class="fa fa-plus" aria-hidden="true"></i>
+                  <span id="file_btn_text">Add file</span>
+                  <input id="fileupload" type="file" name="file" />
+                </span>
+              </div>
+            </div>
 
-    <div class="row">
-      <div class="col-md-4 col-md-offset-4">
-        <div class="form-vertical" id="add_file">
-          <div class="form-group">
-            <span class="btn btn-primary btn-block btn-cta fileinput-button">
-              <i class="glyphicon glyphicon-plus"></i>
-              <span id="file_btn_text">Add file</span>
-              <input id="fileupload" type="file" name="file" />
-            </span>
+            <!-- form populated by response from controller with columns, etc -->
+            <div id="step_2">
+              <form th:action="@{confirm}" method="post" id="file_options">
+                <input type="hidden" id="tmpFilePath" name="tempPath" />
+                <input type="hidden" name="groupUid" th:value="${groupUid}" />
+                <div class="form-group">
+                  <label class="radio-inline"><input type="radio" name="header" value="yes" th:checked="true">Sheet has a header row</label>
+                  <label class="radio-inline"><input type="radio" name="header" value="no">No header row</label>
+                </div>
+                <div class="form-group">
+                  <label for="nameColumn" class="control-label">Column with member names:</label>
+                  <select name="nameColumn" id="nameColumn" class="form-control input-lg column-selector">
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="phoneColumn" class="control-label">Column with phone numbers:</label>
+                  <select name="phoneColumn" id="phoneColumn" class="form-control input-lg column-selector">
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="roleColumn" class="control-label">Column with roles: (optional)</label>
+                  <select name="roleColumn" id="roleColumn" class="form-control input-lg column-selector">
+                    <option value="-1">None</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <button type="submit" class="btn btn-primary btn-block btn-cta">Next</button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
-
-        <!-- form populated by response from controller with columns, etc -->
-        <div id="step_2">
-          <form th:action="@{confirm}" method="post" id="file_options" class="form-vertical">
-            <input type="hidden" id="tmpFilePath" name="tempPath" />
-            <input type="hidden" name="groupUid" th:value="${groupUid}" />
-            <div class="form-group">
-              <label class="radio-inline"><input type="radio" name="header" value="yes" th:checked="true">Sheet has a header row</label>
-              <label class="radio-inline"><input type="radio" name="header" value="no">No header row</label>
-            </div>
-            <div class="form-group">
-              <label class="control-label">Column with member names:</label>
-              <select name="nameColumn" id="nameColumn" class="form-control input-lg column-selector">
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="control-label">Column with phone numbers:</label>
-              <select name="phoneColumn" id="phoneColumn" class="form-control input-lg column-selector">
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="control-label">Column with roles: (optional)</label>
-              <select name="roleColumn" id="roleColumn" class="form-control input-lg column-selector">
-                <option value="-1">None</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <button type="submit" class="btn btn-primary btn-block btn-cta">Next</button>
-            </div>
-          </form>
-        </div>
       </div>
-    </div>
-  </div>
+    </section>
+  </main>
 
   <div layout:fragment="script-container">
 

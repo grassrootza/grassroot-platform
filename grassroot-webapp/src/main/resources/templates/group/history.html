@@ -14,24 +14,22 @@
         <h4 class="text-center header-content-subtitle">History of meetings, votes, actions and changes</h4>
       </div>
     </div>
-    <div class="container">
-      <div class="row">
-        <div class="col-md-4 col-md-offset-4 col-xs-12">
-          <h4 class="text-center group-info"><a th:href="@{/group/view(groupUid=${group.uid})}">Back to group</a></h4>
-          <div class="dropdown manage-container">
-            <button class="dropdown-toggle white-button group-center-button" type="button" data-toggle="dropdown">
-              <span th:text="${month != null} ? ${#strings.capitalize(month.getMonth().toString().toLowerCase() + ' ' + month.getYear())}
-              : 'This month'">This month</span>
-              <i class="fa fa-caret-down" aria-hidden="true"></i>
-            </button>
-            <ul class="dropdown-menu" id="monthSelection">
-              <li th:if="${month != null}"><a th:href="@{history(groupUid=${group.uid})}">Back to current month</a></li>
-              <li th:each="date : ${monthsToView}">
-                <a th:href="@{history(groupUid=${group.uid},month=${date})}"
-                   th:text="${#strings.capitalize(date.getMonth().toString().toLowerCase() + ' ' + date.getYear())}"></a>
-              </li>
-            </ul>
-          </div>
+    <div class="row">
+      <div class="col-md-4 col-md-offset-4 col-xs-12">
+        <h4 class="text-center group-info"><a th:href="@{/group/view(groupUid=${group.uid})}">Back to group</a></h4>
+        <div class="dropdown manage-container">
+          <button class="dropdown-toggle white-button group-center-button" type="button" data-toggle="dropdown">
+            <span th:text="${month != null} ? ${#strings.capitalize(month.getMonth().toString().toLowerCase() + ' ' + month.getYear())}
+            : 'This month'">This month</span>
+            <i class="fa fa-caret-down" aria-hidden="true"></i>
+          </button>
+          <ul class="dropdown-menu" id="monthSelection">
+            <li th:if="${month != null}"><a th:href="@{history(groupUid=${group.uid})}">Back to current month</a></li>
+            <li th:each="date : ${monthsToView}">
+              <a th:href="@{history(groupUid=${group.uid},month=${date})}"
+                 th:text="${#strings.capitalize(date.getMonth().toString().toLowerCase() + ' ' + date.getYear())}"></a>
+            </li>
+          </ul>
         </div>
       </div>
     </div>

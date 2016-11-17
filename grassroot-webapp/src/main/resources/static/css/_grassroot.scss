@@ -427,16 +427,28 @@ h4.header-content-subtitle {
 
     .alert-success {
         background-color: #207A33;
-        border-radius: 2px;
-        color: #FFFFFF;
+        color: $white;
+
+        a {
+            color: inherit;
+            text-decoration: underline;
+        }
     }
 
     .alert-info {
         border-radius: 0;
+        a {
+            color: inherit;
+            text-decoration: underline;
+        }
     }
 
     .alert-danger {
         border-radius: 0;
+        a {
+            color: inherit;
+            text-decoration: underline;
+        }
     }
 }
 

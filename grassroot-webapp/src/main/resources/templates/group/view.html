@@ -46,7 +46,7 @@
         <h4 class="text-center group-info">
           <span th:if="${group.discoverable}">Group is public. </span>
           <span th:unless="${group.discoverable}">Group is private. </span>
-          <a href="javascript:void(0)" th:text="${group.discoverable ? 'Make private.' : 'Make public.'}" data-toggle="modal" data-target="#publicModal">Change this</a>
+          <a th:if="${canAlter}" href="javascript:void(0)" th:text="${group.discoverable ? 'Make private.' : 'Make public.'}" data-toggle="modal" data-target="#publicModal">Change this</a>
         </h4>
 
         <div th:if="${canAlter}" class="dropdown manage-container">
@@ -173,10 +173,12 @@
                       </div>
 
                       <div th:case="TODO" th:with="deadline=${#temporals.format(task.deadlineDateTime,'EEE d MMM')}">
-                        <a class="list-header" href="" th:href="@{/todo/details(todoUid=${task.taskUid})}"><b>TODO:</b>
+                        <div class="col-md-8 event-item">
+                          <a class="list-header" href="" th:href="@{/todo/details(todoUid=${task.taskUid})}"><b>TODO:</b>
                           <span th:text="${task.title}"></span> (due <span th:text="${#temporals.format(task.deadlineDateTime, 'd MMM')}">11 Sep 2015</span>)</a>
-                        <div th:unless="${task.hasResponded}" class="pull-right">
-                          <a th:href="@{/todo/complete(todoUid=${task.taskUid})}" class="btn default-button btn-neutral">Mark as completed</a>
+                        </div>
+                        <div th:unless="${task.hasResponded}" class="col-md-4 button-md-align">
+                          <a th:href="@{/todo/complete(todoUid=${task.taskUid})}" class="btn default-button btn-positive">Mark as completed</a>
                         </div>
                       </div>
 
@@ -296,10 +298,10 @@
           <input type="hidden" name="groupUid" th:value="${group.getUid()}" />
           <div class="modal-body">
             <div class="form-group" th:if="${openToken}">
-              Close joining code? If you confirm, then anyone using the code from now on will not be added to the group.
+              <p>Close joining code? If you confirm, then anyone using the code from now on will not be added to the group.</p>
             </div>
             <div class="form-group" th:unless="${openToken}">
-              A joining code allows anyone to join your group just by typing it into their phone. You can close it anytime. Continue?
+              <p>A joining code allows anyone to join your group just by typing it into their phone. You can close it anytime. Continue?</p>
             </div>
           </div>
           <div class="modal-footer">
@@ -326,12 +328,12 @@
           <input type="hidden" name="groupUid" th:value="${group.getUid()}" />
           <div class="modal-body">
             <div class="form-group" th:if="${group.discoverable}">
-              Make group private? If you confirm, non-members will no longer be able to find your group by searching for it.
-              <p class="small">Join requests are currently approved by <span th:text="${group.joinApprover.displayName}">name</span></p>
+              <p>Make group private? If you confirm, non-members will no longer be able to find your group by searching for it.
+              Note: join requests are currently approved by <span th:text="${group.joinApprover.displayName}">name</span></p>
             </div>
             <div class="form-group" th:unless="${group.discoverable}">
-              Making the group public will allow non-members to see it on search results, and request to join. To proceed,
-                please select which organizer will be responsible for approving or rejecting join requests:
+              <p>Making the group public will allow non-members to see it on search results, and request to join. To proceed,
+                please select which organizer will be responsible for approving or rejecting join requests:</p>
             </div>
             <div class="form-group" th:unless="${group.discoverable}">
               <select class="form-control input-lg" id="authorizing-member" name="approverPhoneNumber">
@@ -365,9 +367,8 @@
           <input type="hidden" name="groupUid" id="groupUid" th:value="${group.uid}" />
           <div class="modal-body">
             <div class="form-group">
-              You are about to unsubscribe from this group.
-              <small>You will only be able to rejoin if someone adds you back. Are you sure you want to leave? Please type
-                'unsubscribe' below to confirm.</small>
+              <p>You are about to unsubscribe from this group. You will only be able to rejoin if someone adds you back. Are you sure you want to leave? Please type
+                'unsubscribe' below to confirm.</p>
               <input type="text" class="form-control input-lg" id="confirm_unsub_field" name="confirm_field" autocomplete="off" />
             </div>
           </div>
@@ -394,7 +395,7 @@
           <input type="hidden" name="groupUid" th:value="${group.uid}" />
           <div class="modal-body">
             <div class="form-group">
-              After you do this, you will have (X) groups left on your account. Confirm?.
+              <p>You have <span th:text="${accountGroupsLeft}">X</span> groups left you can add to your account. Add this one?.</p>
             </div>
           </div>
           <div class="modal-footer">
@@ -420,8 +421,8 @@
           <input type="hidden" name="groupUid" th:value="${group.uid}" />
           <div class="modal-body">
             <div class="form-group">
-              Are you sure? If you remove this group from your account, it will no longer have access
-              to account features (which will suck, honestly).
+              <p>Are you sure? If you remove this group from your account, it will no longer have access
+              to account features (which will suck, honestly).</p>
             </div>
           </div>
           <div class="modal-footer">
@@ -446,6 +447,8 @@
           <div class="modal-body">
             <div class="form-group">
               <label for="new-group-name" class="control-label">New group name:</label>
+            </div>
+            <div class="form-group">
               <input type="text" class="form-control input-lg" id="new-group-name"
                      name="groupName" th:placeholder="${group.groupName}"/>
             </div>
@@ -500,8 +503,8 @@
           <input type="hidden" name="groupUid" th:value="${group.getUid()}" />
           <div class="modal-body">
             <div class="form-group">
-              This will set when reminders for meetings and to-dos will be sent out automatically, unless a custom time
-              is set when the meeting is called or to-do is recorded
+              <p>This will set when reminders for meetings and to-dos will be sent out automatically, unless a custom time
+              is set when the meeting is called or to-do is recorded</p>
             </div>
             <div class="form-group">
               <select name="reminderMinutes" id="reminderMinutes" class="form-control input-lg">

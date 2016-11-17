@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -17,27 +18,24 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.core.enums.EventType;
-import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.group.GroupQueryBroker;
-import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.TaskBroker;
-import za.org.grassroot.services.task.TodoBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.GroupWrapper;
 import za.org.grassroot.webapp.util.BulkUserImportUtil;
 
 import javax.servlet.http.HttpServletRequest;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static za.org.grassroot.core.util.DateTimeUtil.*;
+import static za.org.grassroot.core.util.DateTimeUtil.convertToSystemTime;
+import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
 
 /**
  * @author Lesetse Kimwaga
@@ -49,17 +47,14 @@ public class GroupController extends BaseController {
 
     private static final Logger log = LoggerFactory.getLogger(GroupController.class);
 
+    @Value("${grassroot.accounts.active:false}")
+    private boolean accountsActive;
+
     @Autowired
     private GroupBroker groupBroker;
 
     @Autowired
     private TaskBroker taskBroker;
-
-    @Autowired
-    private EventBroker eventBroker;
-
-    @Autowired
-    private TodoBroker todoBroker;
 
     @Autowired
     private GroupQueryBroker groupQueryBroker;
@@ -136,7 +131,13 @@ public class GroupController extends BaseController {
         boolean isGroupPaidFor = groupQueryBroker.isGroupPaidFor(groupUid);
         model.addAttribute("isPaidFor", isGroupPaidFor);
         model.addAttribute("canCreateSubGroup", isGroupPaidFor && userPermissions.contains(Permission.GROUP_PERMISSION_CREATE_SUBGROUP));
-        model.addAttribute("canAddToAccount", !isGroupPaidFor && (user.getAccountAdministered() != null)); // todo : check account has space
+
+        if (accountsActive && !isGroupPaidFor && user.getAccountAdministered() != null) {
+            int groupsLeft = accountBroker.numberGroupsLeft(user.getAccountAdministered().getUid());
+            model.addAttribute("canAddToAccount", groupsLeft > 0);
+            model.addAttribute("accountGroupsLeft", groupsLeft);
+        }
+
 
         model.addAttribute("canRemoveFromAccount", isGroupPaidFor && user.getAccountAdministered() != null &&
                 user.getAccountAdministered().equals(accountBroker.findAccountForGroup(groupUid)));

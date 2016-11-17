@@ -85,6 +85,18 @@ th, td.sub {
       text-decoration: none;
     }
   }
+
+  .link-green {
+    font-size: 1.4em;
+    color: $green;
+    text-decoration: none;
+
+    &:active,
+    &:focus,
+    &:hover {
+      text-decoration: underline;
+    }
+  }
 }
 
 .group-members-list {
@@ -148,6 +160,19 @@ th, td.sub {
   margin-bottom: 30px;
 
   .panel-title {
+    font-size: 1.2em;
+  }
+}
+
+.group-role-table {
+
+  // note : this has no effect, not even when placed in a direct style attribute on the element (CSS ...)
+  tr {
+    margin-top: 10px;
+    margin-bottom: 10px;
+  }
+
+  td {
     font-size: 1.2em;
   }
 }

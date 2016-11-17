@@ -28,7 +28,6 @@
 }
 
 .task-member-list {
-
   font-size: 1.2em;
 
   .panel {
@@ -63,4 +62,9 @@
       text-decoration: none;
     }
   }
+}
+
+.todo-list {
+  @extend .history-task-list;
+
 }

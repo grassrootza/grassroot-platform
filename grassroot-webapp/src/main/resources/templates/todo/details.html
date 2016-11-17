@@ -49,7 +49,7 @@
               <label class="grassroot-sidebar">Status</label>
             </div>
             <div class="col-md-9 col-sm-8 col-xs-12" th:if="${isComplete}">
-              <p class="description complete">Complete</p> <!-- todo : how many people ... -->
+              <p class="description complete">Complete (confirmed by <span th:text="${entry.countCompletions()}">X</span> members)</p>
             </div>
             <div class="col-md-9 col-sm-8 col-xs-12" th:if="${not isComplete}">
               <p class="description incomplete">Not done yet, due date <span th:text="${#dates.format(entry.actionByDate, 'dd MMM yyyy')}">Date</span></p>
@@ -84,7 +84,7 @@
             <div class="btn-group button-md-align pull-right" th:unless="${isComplete}">
               <a th:href="@{view(groupUid=${entry.parent.uid})}"><button class="btn default-button btn-neutral">Back to group</button></a>
               <a th:if="${canModify}" th:href="@{modify(todoUid=${entry.uid})}"><button class="btn default-button btn-neutral">Modify to-do</button></a>
-              <a th:href="@{complete(todoUid=${entry.uid})}"><button class="btn default-button btn-positive">Mark as complete</button></a>
+              <a th:href="@{complete(todoUid=${entry.uid}, source='todoview')}"><button class="btn default-button btn-positive">Mark as complete</button></a>
             </div>
             <div class="button-md-align pull-right" th:if="${isComplete}">
               <a th:href="@{view(groupUid=${entry.parent.uid})}"><button class="btn default-button btn-neutral">Back to group</button></a>

@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -145,19 +146,36 @@ public class GroupSearchController extends BaseController {
 	}
 
 	@RequestMapping(value = "join/approve")
-	public String approveJoinRequest(RedirectAttributes attributes, @RequestParam String requestUid, HttpServletRequest request) {
+	public String approveJoinRequest(@RequestParam String requestUid, @RequestParam(required = false) String source,
+									 RedirectAttributes attributes, HttpServletRequest request) {
 		// note: join request service will do the permission checking etc and throw an error before proceeding
 		groupJoinRequestService.approve(getUserProfile().getUid(), requestUid);
-		addMessage(attributes, MessageType.INFO, "group.join.request.approved", request);
-		attributes.addAttribute("groupUid", groupJoinRequestService.loadRequest(requestUid).getGroup().getUid());
-		return "redirect:/group/view";
+		final String groupUid = groupJoinRequestService.loadRequest(requestUid).getGroup().getUid();
+
+		if (!StringUtils.isEmpty(source) && "home".equals(source)) {
+			addMessage(attributes, MessageType.SUCCESS, "home.join.request.approved", new String[] { groupUid }, request);
+			return "redirect:/home";
+		} else {
+			addMessage(attributes, MessageType.INFO, "group.join.request.approved", request);
+			attributes.addAttribute("groupUid", groupUid);
+			return "redirect:/group/view";
+		}
 	}
 
 	@RequestMapping(value = "join/decline")
-	public String declineJoinRequest(@RequestParam String requestUid, HttpServletRequest request, RedirectAttributes attributes) {
+	public String declineJoinRequest(@RequestParam String requestUid, @RequestParam(required = false) String source,
+									 HttpServletRequest request, RedirectAttributes attributes) {
 		groupJoinRequestService.decline(getUserProfile().getUid(), requestUid);
-		addMessage(attributes, MessageType.INFO, "group.join.request.declined", request);
-		return "redirect:/home"; // no point showing group if decline request, want to get on with life
+		final String groupUid = groupJoinRequestService.loadRequest(requestUid).getGroup().getUid();
+
+		if (!StringUtils.isEmpty(source) && "home".equals(source)) {
+			addMessage(attributes, MessageType.INFO, "home.join.request.declined", new String[] { groupUid }, request);
+			return "redirect:/home";
+		} else {
+			addMessage(attributes, MessageType.INFO, "group.join.request.declined", request);
+			attributes.addAttribute("groupUid", groupUid);
+			return "redirect:/group/view";
+		}
 	}
 
 	@RequestMapping(value = "join/token", method = RequestMethod.POST)

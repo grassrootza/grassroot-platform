@@ -91,7 +91,7 @@
       <div role="alert" class="row text-center alert alert-dismissible grassroot-alert col-md-10 col-md-offset-1"
           th:classappend="${successMessage} ? 'alert-success' : (${infoMessage} ? 'alert-info' : 'alert-warning')">
         <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-        <p th:text="${snackbarMessage}" class="alert-lg"></p>
+        <p th:utext="${snackbarMessage}" class="alert-lg"></p>
       </div>
     </div>
   </section>

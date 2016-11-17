@@ -41,12 +41,14 @@ public final class TodoSpecifications {
         return (root, query, cb) -> cb.between(root.get(Todo_.actionByDate), start, end);
     }
 
-    public static Specification<Todo> completionConfirmsAbove(double threshold) {
-        return (root, query, cb) -> cb.greaterThan(root.get(Todo_.completionPercentage), threshold);
+    public static Specification<Todo> completionConfirmsAbove(double threshold, boolean equalTo) {
+        return (root, query, cb) -> equalTo ? cb.greaterThanOrEqualTo(root.get(Todo_.completionPercentage), threshold) :
+                cb.greaterThan(root.get(Todo_.completionPercentage), threshold);
     }
 
-    public static Specification<Todo> completionConfirmsBelow(double threshold) {
-        return (root, query, cb) -> cb.lessThan(root.get(Todo_.completionPercentage), threshold);
+    public static Specification<Todo> completionConfirmsBelow(double threshold, boolean equalTo) {
+        return (root, query, cb) -> equalTo ? cb.lessThanOrEqualTo(root.get(Todo_.completionPercentage), threshold) :
+                cb.lessThan(root.get(Todo_.completionPercentage), threshold);
     }
 
     public static Specification<Todo> createdDateBetween(Instant start, Instant end) {

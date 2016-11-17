@@ -154,7 +154,6 @@ public class TodoController extends BaseController {
         attributes.addAttribute("todoUid", created.getUid());
 
         return "redirect:/todo/details";
-
     }
 
     /**
@@ -171,6 +170,7 @@ public class TodoController extends BaseController {
 
         model.addAttribute("user", user);
         model.addAttribute("group", group);
+
         model.addAttribute("canCallMeeting", permissionBroker.isGroupPermissionAvailable(user, group, GROUP_PERMISSION_CREATE_GROUP_MEETING));
         model.addAttribute("canCallVote", permissionBroker.isGroupPermissionAvailable(user, group, GROUP_PERMISSION_CREATE_GROUP_VOTE));
         model.addAttribute("canRecordAction", permissionBroker.isGroupPermissionAvailable(user, group, GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY));
@@ -200,21 +200,21 @@ public class TodoController extends BaseController {
     }
 
     @RequestMapping(value = "complete", method = RequestMethod.GET)
-    public String confirmTodoComplete(@RequestParam String todoUid, RedirectAttributes attributes, HttpServletRequest request) {
-
-        log.info("Marking action as completed ... ");
+    public String confirmTodoComplete(@RequestParam String todoUid, @RequestParam(required = false) String source,
+                                      RedirectAttributes attributes, HttpServletRequest request) {
 
         Todo todo = todoBroker.load(todoUid);
         todoBroker.confirmCompletion(getUserProfile().getUid(), todo.getUid(), TodoCompletionConfirmType.COMPLETED, LocalDateTime.now());
 
-        String priorUrl = request.getHeader(HttpHeaders.REFERER);
-
         addMessage(attributes, MessageType.SUCCESS, "todo.completed.done", request);
-        if (priorUrl.contains("group")) {
+        if (StringUtils.isEmpty(source) || "group".equalsIgnoreCase(source)) {
             attributes.addAttribute("groupUid", todo.getAncestorGroup().getUid());
             return "redirect:/group/view";
-        } else if (priorUrl.contains("todo")) {
-            attributes.addAttribute("todoUid", todoUid);
+        } else if ("todolist".equalsIgnoreCase(source)) {
+            attributes.addAttribute("groupUid", todo.getAncestorGroup().getUid());
+            return "redirect:/todo/view";
+        } else if ("todoview".equalsIgnoreCase(source)) {
+            attributes.addAttribute("todoUid", todo.getUid());
             return "redirect:/todo/details";
         } else {
             return "redirect:/home";

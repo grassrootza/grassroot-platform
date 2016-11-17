@@ -164,7 +164,7 @@ public class ScheduledTasks {
         List<Todo> todos = todoRepository.findAll(Specifications.where(TodoSpecifications.notCancelled())
                 .and(TodoSpecifications.remindersLeftToSend())
                 .and(TodoSpecifications.reminderTimeBefore(Instant.now()))
-                .and(TodoSpecifications.completionConfirmsBelow(COMPLETION_PERCENTAGE_BOUNDARY))
+                .and(TodoSpecifications.completionConfirmsBelow(COMPLETION_PERCENTAGE_BOUNDARY, false))
                 .and(TodoSpecifications.todoNotConfirmedByCreator()));
 
         logger.info("Sending scheduled reminders for {} todos, after using threshold of {}", todos.size(), COMPLETION_PERCENTAGE_BOUNDARY);
