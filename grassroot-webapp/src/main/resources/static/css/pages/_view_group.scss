@@ -99,6 +99,39 @@ th, td.sub {
   }
 }
 
+// not using extend from events-list because it would create a mess in processed output
+.group-tasks-list {
+  margin-top: 30px;
+
+  ul {
+    border: none;
+    border-radius: 0;
+  }
+
+  li {
+    border-bottom: 1px solid $light-green;
+    border-left: 0;
+    border-radius: 0 !important;
+    border-right: 0;
+    border-top: 0;
+    margin-bottom: 5px;
+    padding-bottom: 9px;
+    padding-top: 18px;
+  }
+
+  .event-item {
+    display: inline-block;
+  }
+
+  .badge {
+    text-align: right;
+    color: $dark-text;
+    font-weight: 500;
+    padding-top: 0;
+    margin-top: 0;
+  }
+}
+
 .group-members-list {
   margin-top: 15px;
 }

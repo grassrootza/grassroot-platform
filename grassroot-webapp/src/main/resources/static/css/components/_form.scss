@@ -3,7 +3,9 @@
     border-radius: 0 !important;
   }
 
-  input {
+  input,
+  select,
+  textarea {
     border-radius: 0 !important;
     border: 1px solid transparentize($green, .6);    
   }

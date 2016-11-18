@@ -5,27 +5,56 @@ var grassrootJS = {
 
     assembleMemberRow : function(listName, newMemberIndex) {
         var strVar="";
-        strVar += "<div class=\"row table-row member-input-row\">";
-        strVar += "            <div class=\"body-cell col-md-4 col-sm-4 col-xs-12\">";
+        strVar += "<div class=\"form-group member-row inline-field\">";
+        strVar += "            <div class=\"col-md-4 col-sm-4 col-xs-12\">";
         strVar += "              <input type=\"text\" class=\"form-control input-lg\" value=\"\" id=\"" + listName + newMemberIndex + ".displayName\" " +
             "name=\"" + listName + "[" + newMemberIndex + "].displayName\" maxlength='25' placeholder='Name' \/>";
         strVar += "            <\/div>";
-        strVar += "            <div class=\"body-cell col-md-3 col-sm-3 col-xs-12\">";
+        strVar += "            <div class=\"col-md-3 col-sm-3 col-xs-12\">";
         strVar += "              <input type=\"text\" class=\"form-control input-lg\" placeholder='Phone' value=\"\" id=\"" + listName + newMemberIndex + ".phoneNumber\" name=\"" + listName + "[" + newMemberIndex + "].phoneNumber\" \/>";
         strVar += "              ";
         strVar += "            <\/div>";
-        strVar += "            <div class=\"body-cell col-md-3 col-sm-3 col-xs-12\">";
+        strVar += "            <div class=\"col-md-4 col-sm-3 col-xs-12\">";
         strVar += "              <select class=\"form-control input-lg\" id=\"" + listName + newMemberIndex + ".roleName\" name=\"" + listName + "[" + newMemberIndex + "].roleName\">";
         strVar += "                <option selected=\"selected\" value=\"ROLE_ORDINARY_MEMBER\">Ordinary member<\/option>";
         strVar += "                <option value=\"ROLE_COMMITTEE_MEMBER\">Committee member<\/option>";
         strVar += "                <option value=\"ROLE_GROUP_ORGANIZER\">Group organizer<\/option>";
         strVar += "              <\/select>";
         strVar += "            <\/div>";
-        strVar += "            <div class=\"body-cell col-md-1 col-sm-1 col-xs-12\">";
-        strVar += "              <i id=\"removeMember\" class=\"fa fa-times row-icon\" aria-hidden=\"true\"></i>";
+        strVar += "            <div class=\"col-md-1 col-sm-1 col-xs-12\">";
+        strVar += "              <i id=\"removeMember" + newMemberIndex + "\" data-index=\"" + newMemberIndex + "\" class=\"fa fa-times row-icon\" aria-hidden=\"true\"></i>";
         strVar += "            <\/div>";
         strVar += "          <\/div>";
         return strVar;
+    },
+
+    reduceIndices : function(removedRowIndex, member_table, number_members, includeCCodeSuffix) {
+        console.log("reducing indices, from row = " + removedRowIndex);
+
+        var displayName = "\\.displayName";
+        var phoneNumber = "\\.phoneNumber";
+        var roleName = "\\.roleName";
+
+        for (i = removedRowIndex; i < (number_members - 1); i++) {
+
+            var selectorPrefix = "#listOfMembers" + (i + 1);
+            var newPrefix = "listOfMembers[" + i;
+
+            member_table.find(selectorPrefix + displayName).attr('name', newPrefix + "].displayName");
+            member_table.find(selectorPrefix + displayName).attr('id', "listOfMembers" + i + ".displayName");
+
+            var phoneSelector = '[id^=\"listOfMembers' + (i+1) + phoneNumber + '\"]';
+
+            member_table.find(phoneSelector).attr('name', "listOfMembers[" + i + "].phoneNumber");
+            member_table.find(phoneSelector).attr('id', "listOfMembers" + i + ".phoneNumber");
+
+            member_table.find(selectorPrefix + roleName).attr('name', "listOfMembers[" + i + "].roleName");
+            member_table.find(selectorPrefix + roleName).attr('id', "listOfMembers" + i + ".roleName");
+
+            member_table.find("removeMember" + (i + 1)).attr("id", "removeMember" + i);
+        }
+
+        number_members--;
     },
 
     setUpAjax : function(metaCsrfSelector, metaCsrfHeaderSelector) {

@@ -411,15 +411,6 @@ h4.header-content-subtitle {
     font-weight: 300;
 }
 
-.close-white-lg {
-    color: #ffffff;
-    font-size: 20pt;
-}
-
-.close-white-lg:hover {
-    color: #ffffff;
-}
-
 .snackbar-container {
     margin-bottom: 30px;
     font-family: 'Roboto', sans-serif;
@@ -428,11 +419,19 @@ h4.header-content-subtitle {
     .alert-success {
         background-color: #207A33;
         color: $white;
-
         a {
             color: inherit;
             text-decoration: underline;
         }
+
+        button {
+            &:hover,
+            &:active,
+            &:focus {
+                color: $white;
+            }
+        }
+
     }
 
     .alert-info {

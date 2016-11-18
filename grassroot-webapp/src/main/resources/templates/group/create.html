@@ -27,45 +27,45 @@
   <section class="grassroot-form">
     <div class="container">
       <div class="row">
-        <div class="col-md-8 col-md-offset-2 col-sm-6 col-sm-offset-3 col-xs-12">
+        <div class="col-md-10 col-md-offset-1">
           <form th:object="${groupCreator}" th:action="@{/group/create}" method="post" autocomplete="on" id="group_creator">
             <div th:if="*{hasParent}">
               <input th:field="*{parentId}" type="hidden" th:value="*{parentId}"/>
               <input th:field="*{hasParent}" type="hidden" th:value="*{hasParent}"/>
             </div>
 
-            <div class="form-group">
+            <div class="form-group col-md-12 input-block">
                 <label for="groupName" class="control-label">What's the group's name?</label>
                 <input th:field="*{groupName}" type="text" class="form-control input-lg" id="groupName"
                        placeholder="Please keep to 35 characters or less" maxlength="20" data-toggle="tooltip"
                        title="Group name may not be longer than 35 characters and must not contain any symbols "/>
             </div>
 
-            <div th:if="${canAddToAccount}" class="form-group">
-              <label class="checkbox-inline checkbox-standalone">
-                <input type="checkbox" checked="true" name="addToAccount" id="addToAccount" />Add this group to my account
+            <div th:if="${canAddToAccount}" class="form-group col-md-12 checkbox-block">
+              <label class="checkbox-inline">
+                <input type="checkbox" checked="true" name="addToAccount" id="addToAccount" /><span>Add this group to my account</span>
               </label>
             </div>
 
-            <div class="row table-header">
-              <div class="header-cell col-md-4 col-sm-4 col-xs-4">Name</div>
-              <div class="header-cell col-md-3 col-sm-3 col-xs-4">Phone</div>
-              <div class="header-cell col-md-3 col-sm-4 col-xs-4">Role</div>
+            <div class="form-group inline-field">
+              <div class="col-md-4 col-sm-4 col-xs-4"><label>Name</label></div>
+              <div class="col-md-3 col-sm-3 col-xs-4"><label>Phone</label></div>
+              <div class="col-md-4 col-sm-4 col-xs-4"><label>Role</label></div>
             </div>
 
 
             <div id="member-input">
-              <div class="row table-row member-input-row" th:each="member, iterStat: *{listOfMembers}">
-                <div class="body-cell col-md-4 col-sm-4 col-xs-12">
+              <div class="form-group member-row inline-field" th:each="member, iterStat: *{listOfMembers}">
+                <div class="col-md-4 col-xs-12">
                   <input type="text" th:field="*{listOfMembers[__${iterStat.index}__].displayName}" class="form-control input-lg" placeholder="Member's name" maxlength="35"/>
                 </div>
-                <div class="body-cell col-md-3 col-sm-3 col-xs-12">
+                <div class="col-md-3 col-xs-12">
                   <div th:class="${#fields.hasErrors('listOfMembers[__${iterStat.index}__].phoneNumber')}? has-error">
                     <input type="text" th:field="*{listOfMembers[__${iterStat.index}__].phoneNumberWithoutCCode}" class="form-control input-lg" th:errorclass="error" placeholder="Phone number"/>
                     <span th:if="${#fields.hasErrors('listOfMembers[__${iterStat.index}__].phoneNumber')}" class="alert has-error">Error!</span>
                   </div>
                 </div>
-                <div class="body-cell col-md-3 col-sm-3 col-xs-12">
+                <div class="col-md-4 col-xs-12">
                   <select th:field="*{listOfMembers[__${iterStat.index}__].roleName}" class="form-control input-lg">
                     <option th:each="role : ${T(za.org.grassroot.core.domain.BaseRoles).groupRoles}"
                             th:value="${role}"
@@ -73,8 +73,8 @@
                             th:selected="${#strings.equals(member.roleName, role)}"></option>
                   </select>
                 </div>
-                <div class="body-cell col-md-1 col-sm-1 col-xs-12 text-center top-padding-sm">
-                  <i id="removeMember" class="fa fa-times row-icon" aria-hidden="true"></i>
+                <div class="col-md-1 col-xs-12 text-center">
+                  <a href="#"><i id="removeMember" class="fa fa-times" aria-hidden="true"></i></a>
                 </div>
               </div>
             </div>
@@ -107,18 +107,18 @@
           </div>
 
           <div class="form-group">
-            <div class="col-md-4 col-sm-6 col-xs-12 vertical-margins">
-              <button type="button" name="addMember" id="add_member" class="btn-primary btn-block add-row">
-                <i class="fa fa-plus" aria-hidden="true"></i>Add another member</button>
+            <div class="col-md-3 col-sm-6 col-xs-12">
+              <button type="button" name="addMember" id="add_member" class="btn-primary btn-block add-row default-button">
+                <i class="fa fa-plus" aria-hidden="true"></i>Add member</button>
             </div>
-            <div class="col-md-3 col-sm-6 col-xs-12 vertical-margins">
+            <div class="col-md-3 col-sm-6 col-xs-12">
               <a href="#advancedOptions" class="btn default-button btn-neutral full-width-button" data-toggle="collapse">Advanced options</a>
             </div>
-            <div class="col-md-2 col-sm-6 col-xs-12 vertical-margins">
+            <div class="col-md-3 col-sm-6 col-xs-12">
               <a th:href="@{/home}" class="btn default-button btn-neutral full-width-button">Cancel</a>
             </div>
-            <div class="col-md-3 col-sm-6 col-xs-12 vertical-margins">
-              <button type="submit" class="btn btn-primary btn-block btn-lg">Create Group</button>
+            <div class="col-md-3 col-sm-6 col-xs-12">
+              <button type="submit" class="btn btn-primary btn-block btn-lg default-button">Create Group</button>
             </div>
           </div>
 
@@ -151,7 +151,7 @@
       var creating_form = $('#group_creator');
 
       var member_table = $('#member-input');
-      var member_rows = creating_form.find('.member-input-row');
+      var member_rows = creating_form.find('.member-row');
       var number_members = member_rows.length;
 
       $('#add_member').click(function() {
@@ -164,8 +164,8 @@
         var thisRowIndex = number_members;
         console.log("adding a row at this index: " + number_members);
 
-        member_table.find('.row:last').after(grassrootJS.assembleMemberRow("listOfMembers", thisRowIndex));
-        var newRow = member_table.find('.row:last');
+        member_table.find('.member-row:last').after(grassrootJS.assembleMemberRow("listOfMembers", thisRowIndex));
+        var newRow = member_table.find('.member-row:last');
         var phoneInput = newRow.find('[name$="phoneNumber"]');
         var nameInput = newRow.find('[name$="displayName"]');
         phoneInput.rules('add', grassrootJS.phoneRules);

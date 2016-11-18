@@ -62,6 +62,12 @@
   .event-item {
     display: inline-block;
   }
+
+  .badge {
+    text-align: right;
+    color: $dark-text;
+    font-weight: 600;
+  }
 }
 
 .join-requests,

@@ -433,6 +433,12 @@ span.top-lines {
   .green-title, .group-description h4 {
     text-align: center;
   }
+
+  .grassroot-form button,
+  .grassroot-form a {
+    margin: 3px 0;
+  }
+
 }
 
 @media (min-width: 768px) and (max-width: 991px) {

@@ -118,7 +118,7 @@ public class MembershipInfo implements Comparable<MembershipInfo> {
 
     @Override
     public int hashCode() {
-        return phoneNumber.hashCode();
+        return phoneNumber == null ? 0 : phoneNumber.hashCode();
     }
 
     @Override

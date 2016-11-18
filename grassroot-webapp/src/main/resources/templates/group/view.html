@@ -120,7 +120,7 @@
   </section>
 
   <!-- List upcoming group tasks -->
-  <section class="upcoming-events" th:if="${not #lists.isEmpty(groupTasks)}">
+  <section class="group-tasks-list" th:if="${not #lists.isEmpty(groupTasks)}">
     <div class="container">
       <div class="row">
         <div class="col-md-10 col-md-offset-1 col-xs-12">
@@ -146,7 +146,6 @@
                         <div class="col-md-8 event-item">
                           <a class="list-header" href="" th:href="@{/meeting/view(eventUid=${uid})}">
                             <b>MEETING:</b> <span th:text="${task.title}"></span>
-                            <p class="list-group-text">Location, time</p>
                           </a>
                         </div>
                         <div class="col-md-4 button-md-align">
@@ -179,6 +178,9 @@
                         </div>
                         <div th:unless="${task.hasResponded}" class="col-md-4 button-md-align">
                           <a th:href="@{/todo/complete(todoUid=${task.taskUid})}" class="btn default-button btn-positive">Mark as completed</a>
+                        </div>
+                        <div th:if="${task.hasResponded}" class="col-md-4 badge">
+                          You've marked the action done
                         </div>
                       </div>
 
