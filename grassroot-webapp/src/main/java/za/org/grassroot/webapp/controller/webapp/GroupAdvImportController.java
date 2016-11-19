@@ -29,7 +29,7 @@ import java.util.List;
  * Created by luke on 2016/10/19.
  */
 @Controller
-@RequestMapping("/group/paid/import/")
+@RequestMapping("/group/import/")
 @SessionAttributes({ "groupWrapper" })
 public class GroupAdvImportController extends BaseController {
 

@@ -24,7 +24,8 @@ import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.group.GroupQueryBroker;
 import za.org.grassroot.services.task.TaskBroker;
 import za.org.grassroot.webapp.controller.BaseController;
-import za.org.grassroot.webapp.model.web.GroupWrapper;
+import za.org.grassroot.webapp.model.web.MemberWrapper;
+import za.org.grassroot.webapp.model.web.MemberWrapperList;
 import za.org.grassroot.webapp.util.BulkUserImportUtil;
 
 import javax.servlet.http.HttpServletRequest;
@@ -86,7 +87,6 @@ public class GroupController extends BaseController {
     public String viewGroupIndex(Model model, @RequestParam String groupUid) {
 
         // note, coming here after group creation throws permission checking errors, so need to reload user from DB
-        Long startTime = System.currentTimeMillis();
         User user = userManagementService.load(getUserProfile().getUid());
         Group group = groupBroker.load(groupUid);
 
@@ -95,8 +95,6 @@ public class GroupController extends BaseController {
         }
 
         Set<Permission> userPermissions = group.getMembership(user).getRole().getPermissions();
-        Long endTime = System.currentTimeMillis();
-        log.info("Checking group membership & loading permissions took {} msec, for group {}", endTime - startTime, group);
 
         model.addAttribute("group", group);
         model.addAttribute("reminderOptions", reminderMinuteOptions(true));
@@ -269,52 +267,54 @@ public class GroupController extends BaseController {
 
         permissionBroker.validateGroupPermission(user, group, null);
 
-        log.info("Okay, modifying this group: " + group.toString());
+        model.addAttribute("listOfMembers", new MemberWrapperList(group, user));
 
-        GroupWrapper groupModifier = new GroupWrapper();
-        groupModifier.populate(group);
+        model.addAttribute("canDeleteMembers", permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_DELETE_GROUP_MEMBER));
+        model.addAttribute("canAddMembers", permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER));
+        model.addAttribute("canUpdateDetails", permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS));
 
-        groupModifier.setCanRemoveMembers(permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_DELETE_GROUP_MEMBER));
-        groupModifier.setCanAddMembers(permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER));
-        groupModifier.setCanUpdateDetails(permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS));
-
-        log.info("The GroupWrapper now contains: " + groupModifier.getGroup().toString());
-
-        model.addAttribute("groupModifier", groupModifier);
-        return "group/change_multiple";
-    }
-
-    @RequestMapping(value = "change_multiple", params = {"removeMember"})
-    public String addMemberModify(Model model, @ModelAttribute("groupModifier") GroupWrapper groupModifier,
-                                   @RequestParam("removeMember") int memberIndex) {
-        try {
-            groupModifier.getListOfMembers().remove(memberIndex);
-        } catch (IndexOutOfBoundsException e) {
-            log.info("Need to fix indexing on newly created group wrapper ...");
-        }
+        model.addAttribute("group", group);
         return "group/change_multiple";
     }
 
     @RequestMapping(value = "change_multiple", method = RequestMethod.POST)
-    public String multipleMemberModify(Model model, @ModelAttribute("groupModifier") GroupWrapper groupModifier,
+    public String multipleMemberModify(Model model, @ModelAttribute("MemberWrapperList") MemberWrapperList memberWrapperList,
                                        HttpServletRequest request, RedirectAttributes attributes) {
 
-        log.info("multipleMemberModify ... got these members back : " + groupModifier.getListOfMembers());
-        String groupUid = groupModifier.getGroup().getUid();
+        log.info("received {} members, in full : {}", memberWrapperList.getMemberList().size(), memberWrapperList.getMemberList());
+        final String groupUid = memberWrapperList.getGroupUid();
 
-        Set<MembershipInfo> validNumberMembers = groupModifier.getAddedMembers().stream()
+        Set<MembershipInfo> nonNullMemberInfo = memberWrapperList.getMemberList().stream()
+                .filter(MemberWrapper::isNonNull)
+                .map(MemberWrapper::convertToMemberInfo)
+                .collect(Collectors.toSet());
+
+        Set<String> deletedMembers = memberWrapperList.getMemberList().stream()
+                .filter(MemberWrapper::isDeleted)
+                .map(MemberWrapper::getMemberUid)
+                .collect(Collectors.toSet());
+
+        Set<MembershipInfo> validNumberMembers = nonNullMemberInfo.stream()
                 .filter(m -> BulkUserImportUtil.isNumberValid(m.getPhoneNumber()))
                 .collect(Collectors.toSet());
 
+        log.info("Filtered, we have {} non-null members, of which {} are to be deleted, and {} have valid numbers",
+                nonNullMemberInfo.size(), deletedMembers.size(), validNumberMembers.size());
+
         try {
             groupBroker.updateMembers(getUserProfile().getUid(), groupUid, validNumberMembers);
+
+            if (!deletedMembers.isEmpty()) {
+                groupBroker.removeMembers(getUserProfile().getUid(), groupUid, deletedMembers);
+            }
+
             Group updatedGroup = groupBroker.load(groupUid);
             attributes.addAttribute("groupUid", updatedGroup.getUid());
 
-            if (validNumberMembers.size() == groupModifier.getAddedMembers().size()) {
+            if (validNumberMembers.size() == nonNullMemberInfo.size()) {
                 addMessage(attributes, MessageType.SUCCESS, "group.update.success", new Object[]{updatedGroup.getGroupName()}, request);
             } else {
-                List<MembershipInfo> invalidMembers = new ArrayList<>(groupModifier.getAddedMembers());
+                List<MembershipInfo> invalidMembers = new ArrayList<>(nonNullMemberInfo);
                 invalidMembers.removeAll(validNumberMembers);
                 if (invalidMembers.size() == 1) {
                     MembershipInfo invalidMember = invalidMembers.get(0);
@@ -332,9 +332,8 @@ public class GroupController extends BaseController {
         }
     }
 
-    // todo : move this to new controller
     @RequestMapping(value = "add_bulk")
-    public String addMembersBulk(Model model, @RequestParam String groupUid, HttpServletRequest request) {
+    public String addMembersBulk(Model model, @RequestParam String groupUid) {
 
         Group group = groupBroker.load(groupUid);
         model.addAttribute("group", group);
@@ -349,7 +348,7 @@ public class GroupController extends BaseController {
         boolean closedGroup = !(canCallMeetings || canCallVotes || canRecordToDo || canViewMembers);
 
         if (closedGroup) {
-            model.addAttribute("closedGroup", closedGroup);
+            model.addAttribute("closedGroup", true);
         } else {
             model.addAttribute("canCallMeetings", canCallMeetings);
             model.addAttribute("canCallVotes", canCallVotes);

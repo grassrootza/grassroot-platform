@@ -28,8 +28,8 @@ var grassrootJS = {
         return strVar;
     },
 
-    reduceIndices : function(removedRowIndex, member_table, number_members, includeCCodeSuffix) {
-        console.log("reducing indices, from row = " + removedRowIndex);
+    reduceIndices : function(removedRowIndex, member_table, number_members) {
+        console.log("reducing indices, from row = " + removedRowIndex + " with number members = " + number_members);
 
         var displayName = "\\.displayName";
         var phoneNumber = "\\.phoneNumber";
@@ -44,17 +44,26 @@ var grassrootJS = {
             member_table.find(selectorPrefix + displayName).attr('id', "listOfMembers" + i + ".displayName");
 
             var phoneSelector = '[id^=\"listOfMembers' + (i+1) + phoneNumber + '\"]';
+            var phoneInput = member_table.find(phoneSelector);
 
-            member_table.find(phoneSelector).attr('name', "listOfMembers[" + i + "].phoneNumber");
-            member_table.find(phoneSelector).attr('id', "listOfMembers" + i + ".phoneNumber");
+            console.log("modifying phone with input : " + phoneInput.val());
+            var phoneId = phoneInput.attr('id');
+            var phoneSuffix = phoneId.substring(phoneId.indexOf("."));
+
+            console.log("here is the phone suffix: " + phoneSuffix);
+
+            phoneInput.attr('name', "listOfMembers[" + i + "]" + phoneSuffix);
+            phoneInput.attr('id', "listOfMembers" + i + phoneSuffix);
 
             member_table.find(selectorPrefix + roleName).attr('name', "listOfMembers[" + i + "].roleName");
             member_table.find(selectorPrefix + roleName).attr('id', "listOfMembers" + i + ".roleName");
 
-            member_table.find("removeMember" + (i + 1)).attr("id", "removeMember" + i);
+            member_table.find("#removeMember" + (i + 1)).attr("id", "removeMember" + i);
+
+            // console.log("adjusted all indices");
         }
 
-        number_members--;
+        return (number_members - 1);
     },
 
     setUpAjax : function(metaCsrfSelector, metaCsrfHeaderSelector) {

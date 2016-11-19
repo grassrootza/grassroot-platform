@@ -16,10 +16,10 @@
   <div class="container">
     <div class="row">
       <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
-        <h2 class="text-center header-content-title" th:text="${groupModifier.groupName}">Group name</h2>
+        <h2 class="text-center header-content-title" th:text="${group.name}">Group name</h2>
         <h4 class="text-center header-content-subtitle">Add and modify multiple members in a group</h4>
         <h4 class="text-center group-info">
-          <a th:href="@{/group/view(groupUid=${groupModifier.group.uid})}">Back to group</a>
+          <a th:href="@{/group/view(groupUid=${group.uid})}">Back to group</a>
         </h4>
         <h4 class="text-center group-info">
           Note: you cannot change your own role in the group
@@ -36,34 +36,32 @@
     <div class="container">
       <div class="row">
         <div class="col-md-10 col-md-offset-1 col-sm-6 col-sm-offset-3 col-xs-12">
-          <form id="member_entry" th:object="${groupModifier}" th:action="@{/group/change_multiple}" method="post" autocomplete="on">
-            <input type="hidden" th:field="*{group.Uid}" th:value="${groupModifier.group.Uid}" />
+          <form id="member_entry" th:object="${listOfMembers}" th:action="@{/group/change_multiple}" method="post" autocomplete="on">
+            <input type="hidden" name="groupUid" th:value="${group.Uid}" />
 
 
             <div class="form-group inline-field">
               <div class="col-md-4 col-sm-4 col-xs-4"><label>Name</label></div>
               <div class="col-md-3 col-sm-3 col-xs-4"><label>Phone</label></div>
               <div class="col-md-4 col-sm-4 col-xs-4"><label>Role</label></div>
-              <!--       <th th:if="${groupModifier.canRemoveMembers}"></th> -->
             </div>
 
             <div id="member-input">
-              <div class="form-group member-row inline-field" th:each="member, iterStat: *{listOfMembers}"
-                   th:with="thisUser = ${member.getPhoneNumberWithCCode() == currentUser.getUsername()}">
+              <div class="form-group member-row inline-field" th:each="member, iterStat: *{memberList}">
+                <input type="hidden" th:field="*{memberList[__${iterStat.index}__].changed}" />
+                <input type="hidden" th:field="*{memberList[__${iterStat.index}__].deleted}" />
+                <input type="hidden" th:field="*{memberList[__${iterStat.index}__].memberUid}" />
                 <div class="col-md-4 col-xs-12">
-                  <input type="text" th:field="*{listOfMembers[__${iterStat.index}__].displayName}" class="form-control input-lg"
-                         th:readonly="${thisUser}" placeholder="Member's name" maxlength="35"/>
+                  <input type="text" th:field="*{memberList[__${iterStat.index}__].displayName}" class="form-control input-lg"
+                         th:readonly="${member.currentUser}" placeholder="Member's name" maxlength="35"/>
                 </div>
                 <div class="col-md-3 col-xs-12">
-                  <div th:class="${#fields.hasErrors('listOfMembers[__${iterStat.index}__].phoneNumber')}? has-error">
-                    <input type="text" th:field="*{listOfMembers[__${iterStat.index}__].phoneNumberWithoutCCode}" class="form-control input-lg"
-                           th:errorclass="error" th:readonly="${thisUser}" placeholder="Phone number"/>
-                    <span th:if="${#fields.hasErrors('listOfMembers[__${iterStat.index}__].phoneNumber')}" class="alert has-error">Error!</span>
-                  </div>
+                  <input type="text" th:field="*{memberList[__${iterStat.index}__].phoneNumber}" class="form-control input-lg"
+                         th:readonly="${member.currentUser}" placeholder="Phone number"/>
                 </div>
                 <div class="col-md-4 col-xs-12">
-                  <select th:field="*{listOfMembers[__${iterStat.index}__].roleName}" class="form-control input-lg"
-                          th:disabled="${(groupModifier.canUpdateDetails == false) or (thisUser)}">
+                  <select th:field="*{memberList[__${iterStat.index}__].roleName}" class="form-control input-lg"
+                          th:disabled="${(canUpdateDetails == false) or (member.currentUser)}">
                     <option th:each="role : ${T(za.org.grassroot.core.domain.BaseRoles).groupRoles}"
                             th:value="${role}"
                             th:text="#{web.group.role.__${role}__}"
@@ -71,23 +69,23 @@
                   </select>
                 </div>
                 <div class="col-md-1 col-xs-12 text-center">
-                  <i data:index="${iterStat.index}" th:id="'removeMember' + ${iterStat.index}" class="fa fa-times" aria-hidden="true"></i>
+                  <i th:unless="${member.currentUser}" data:index="${iterStat.index}" th:id="'removeMember' + ${iterStat.index}" class="fa fa-times" aria-hidden="true"></i>
                 </div>
               </div>
             </div>
 
             <div class="form-group">
               <div class="col-md-3 col-sm-6 col-xs-12">
-                <button th:if="${groupModifier.canAddMembers}" type="button" name="addMember" id="add_member" class="btn-primary btn-block add-row default-button">
+                <button th:if="${canAddMembers}" type="button" name="addMember" id="add_member" class="btn-primary btn-block add-row default-button">
                   <i class="fa fa-plus" aria-hidden="true"></i>Add member</button>
               </div>
               <div class="col-md-3 col-sm-6 col-xs-12">
-                <a th:if="${groupModifier.canAddMembers}" th:href="@{add_bulk(groupUid=${groupModifier.group.Uid})}" role="button"
+                <a th:if="${canAddMembers}" th:href="@{add_bulk(groupUid=${group.uid})}" role="button"
                    class="btn default-button btn-neutral full-width-button"><i class="fa fa-plus" aria-hidden="true"></i>Bulk Add Members
                 </a>
               </div>
               <div class="col-md-3 col-sm-6 col-xs-12">
-                <a th:href="@{view(groupUid=${groupModifier.group.Uid})}" class="btn default-button btn-neutral full-width-button">Cancel</a>
+                <a th:href="@{view(groupUid=${group.uid})}" class="btn default-button btn-neutral full-width-button">Cancel</a>
               </div>
               <div class="col-md-3 col-sm-6 col-xs-12">
                 <button type="submit" class="btn btn-primary btn-block btn-lg default-button">Submit Changes</button>
@@ -129,14 +127,15 @@
       var number_members = member_rows.length;
 
       $('[id^=removeMember]').click(function() {
-        $(this).parent().parent().remove();
-        grassrootJS.reduceIndices($(this).data('index'), member_table, number_members, true);
+        var row = $(this).parent().parent();
+        row.hide();
+        row.find('[id$=deleted]').val('true');
       });
 
       $('#add_member').click(function() {
 
         if (member_form.valid()) {
-          member_table.find('.member-row:last').after(grassrootJS.assembleMemberRow("listOfMembers", number_members));
+          member_table.find('.member-row:last').after(grassrootJS.assembleMemberRow("memberList", number_members));
           var newLastRow = member_table.find('.member-row:last');
           var phoneInput = newLastRow.find('[name$="phoneNumber"]');
           var nameInput = newLastRow.find('[name$="displayName"]');
@@ -145,21 +144,20 @@
 
           newLastRow.find('#removeMember' + number_members).click(function () {
             newLastRow.remove();
-            grassrootJS.reduceIndices($(this).data('index'), member_table, number_members, false);
           });
 
           number_members++;
         }
       });
 
-      function removeRow(index) {
-        var rowToRemove = member_form.find('.member-row')[index];
-        rowToRemove.remove();
-        grassrootJS.reduceIndices(index, member_table, number_members);
-      }
-
       member_form.validate({
-        errorClass: 'error-text'
+        errorClass: 'error-text',
+        debug: true,
+        submitHandler: function(form) {
+          $(form).find(':input').prop('disabled', false);
+          console.log(JSON.stringify($(form).serializeArray()));
+          form.submit();
+        }
       });
 
       $('[name$="phoneNumber"]').each(function () {

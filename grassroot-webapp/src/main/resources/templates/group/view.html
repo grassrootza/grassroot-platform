@@ -52,28 +52,27 @@
         <div th:if="${canAlter}" class="dropdown manage-container">
           <button class="dropdown-toggle white-button group-center-button" type="button" data-toggle="dropdown">Manage and modify group<i class="fa fa-caret-down" aria-hidden="true"></i></button>
           <ul class="dropdown-menu">
-              <li><a th:href="@{/group/roles/members(groupUid=${group.uid})}">Change members' roles</a></li>
-              <li><a th:if="${canChangePermissions}" th:href="@{/group/roles/permissions(groupUid=${group.Uid})}">
-                Change roles' permissions</a></li>
-              <li><a th:href="@{/group/change_multiple(groupUid=${group.uid})}">Add, remove multiple members</a></li>
-              <!-- todo : take 'paid' out of path and add a check here for if it is paid -->
-              <li><a th:if="${isPaidFor}" th:href="@{/group/paid/import/start(groupUid=${group.uid})}">Import members</a></li>
-              <li><a href="javascript:void(0)" data-toggle="modal" data-target="#reminderModal">Change reminder timing</a></li>
-              <li><a href="javascript:void(0)" data-toggle="modal" data-target="#renameModal">Rename group</a></li>
-              <li><a href="javascript:void(0)" data-toggle="modal" data-target="#languageModal">Set default language</a></li>
-              <li class="divider"></li>
-              <li th:if="${canAddToAccount}" sec:authorize="hasAnyRole('ROLE_ACCOUNT_ADMIN')">
-                <a href="javascript:void(0)" data-toggle="modal" data-target="#accountModal">Add group to account</a>
-              </li>
-              <li th:if="${canRemoveFromAccount}" sec:authorize="hasAnyRole('ROLE_ACCOUNT_ADMIN')">
-                <a href="javascript:void(0)" data-toggle="modal" data-target="#accountRemoveModal">Remove group from account</a>
-              </li>
-              <li th:if="${not hasParent}"><a th:href="@{/group/parent(groupUid=${group.uid})}">Link to a parent group</a></li>
-              <li><a href="" th:href="@{/group/consolidate/select(groupUid=${group.uid})}">Merge with another group</a></li>
-              <!-- <li th:if="${canCreateSubGroup}"><a href="" th:href="@{/group/create(parent=${group.uid})}">Create a sub-group</a></li> -->
-              <li th:if="${canDeleteGroup}"><a href="javascript:void(0)" data-toggle="modal" data-target="#delModal">Delete group</a></li>
-              <li th:unless="${canChangePermissions}"><a href="javascript:void(0)" data-toggle="modal" data-target="#unsubModal">Unsubscribe</a></li>
-            </ul>
+            <li><a th:href="@{/group/roles/members(groupUid=${group.uid})}">Change members' roles</a></li>
+            <li><a th:if="${canChangePermissions}" th:href="@{/group/roles/permissions(groupUid=${group.Uid})}">
+              Change roles' permissions</a></li>
+            <li><a th:href="@{/group/change_multiple(groupUid=${group.uid})}">Add, remove multiple members</a></li>
+            <li><a th:if="${isPaidFor}" th:href="@{/group/import/start(groupUid=${group.uid})}">Import members</a></li>
+            <li><a href="javascript:void(0)" data-toggle="modal" data-target="#reminderModal">Change reminder timing</a></li>
+            <li><a href="javascript:void(0)" data-toggle="modal" data-target="#renameModal">Rename group</a></li>
+            <li><a href="javascript:void(0)" data-toggle="modal" data-target="#languageModal">Set default language</a></li>
+            <li><a href="" th:href="@{/group/consolidate/select(groupUid=${group.uid})}">Merge with another group</a></li>
+            <li class="divider"></li>
+            <li th:if="${canAddToAccount}" sec:authorize="hasAnyRole('ROLE_ACCOUNT_ADMIN')">
+              <a href="javascript:void(0)" data-toggle="modal" data-target="#accountModal">Add group to account</a>
+            </li>
+            <li th:if="${canRemoveFromAccount}" sec:authorize="hasAnyRole('ROLE_ACCOUNT_ADMIN')">
+              <a href="javascript:void(0)" data-toggle="modal" data-target="#accountRemoveModal">Remove group from account</a>
+            </li>
+            <li th:if="${not hasParent and (canAddToAccount or isPaidFor)}"><a th:href="@{/group/parent(groupUid=${group.uid})}">Link to a parent group</a></li>
+            <li th:if="${canCreateSubGroup}"><a th:href="@{/group/create(parent=${group.uid})}">Create a sub-group</a></li>
+            <li th:if="${canDeleteGroup}"><a href="javascript:void(0)" data-toggle="modal" data-target="#delModal">Delete group</a></li>
+            <li th:unless="${canChangePermissions}"><a href="javascript:void(0)" data-toggle="modal" data-target="#unsubModal">Unsubscribe</a></li>
+          </ul>
         </div>
 
         <div th:unless="${canAlter}" class="dropdown manage-container">

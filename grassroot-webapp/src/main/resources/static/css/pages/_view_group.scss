@@ -139,6 +139,10 @@ th, td.sub {
 .group-members-table {
   thead {
     border: none;
+
+    tr {
+      background-color: $light-gray;
+    }
   }
 
   th,
@@ -153,7 +157,7 @@ th, td.sub {
   }
 
   tbody {
-    tr:nth-child(odd) {
+    tr:nth-child(even) {
       background-color: $light-gray;
     }
 

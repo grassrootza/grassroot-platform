@@ -1,37 +1,35 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      data-layout-decorate="layout">
+      data-layout-decorate="~{layout}">
 <head>
-    <title>Grassroot - Bulk Add Members</title>
+    <title>Add Many Members</title>
 </head>
 <body>
 
-<div layout:fragment="header">
-    <h2 class="text-center">Add members to group: "<span th:text="${group.groupName}">group</span>"</h2>
+<div layout:fragment="header" class="top-container">
+  <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
+    <h2 class="text-center header-content-title" th:text="${group.name}">Group name</h2>
+    <h4 class="text-center header-content-subtitle">Add many members to the group at once</h4>
+    <h4 class="text-center group-info">
+      <a th:href="@{/group/view(groupUid=${group.uid})}">Back to group</a>
+    </h4>
+  </div>
 </div>
 
-<div layout:fragment="content">
-  <div layout:fragment="messages"></div>
-  <div class="well">
-    <div class="row">
-      <form th:action="@{/group/add_bulk}" method="post"  class="form-horizontal">
-        <input type="hidden" name="groupUid" th:value="${group.Uid}"/>
-        <div class="row">
-          <div class="col-md-8 col-md-offset-2">
+<main layout:fragment="content">
+
+  <section class="grassroot-form">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-10 col-md-offset-1 col-sm-6 col-sm-offset-3 col-xs-12">
+          <form th:action="@{/group/add_bulk}" method="post">
+            <input type="hidden" name="groupUid" th:value="${group.uid}"/>
             <div class="form-group">
-              <label for="number-list">
-                This form allows you to add many members at once.
-              </label>
-              <p>
-                Please paste a list of phone numbers in the box below and they will be added to your group as ordinary
-                members.
+              <p class="form-text-lg">
+                This form allows you to add many members at once. Please paste a list of phone numbers in the box below
+                and they will be added to your group as ordinary members.
               </p>
-              <textarea name="list" id="number-list" rows="20" cols ="110"></textarea>
             </div>
-          </div>
-        </div>
-        <div class="row">
-          <div class="col-md-8 col-md-offset-2">
             <div class="form-group">
               <span th:if="${closedGroup}">
                 These members will not be able to call meetings or votes or see other members' details.
@@ -44,22 +42,21 @@
                 <span th:if="${canViewMembers}">see other members</span>.
               </span>
             </div>
-          </div>
-        </div>
-
-        <div class="row">
-          <div class="col-md-8 col-md-offset-2">
             <div class="form-group">
-              <div class="col-md-8">
-                <a th:href="@{view(groupUid=${group.Uid})}" role="button" class="btn btn-default">Cancel</a>
-                <button type="submit" class="btn btn-primary">Add Members</button>
-              </div>
+              <textarea name="list" class="full-width" id="number-list" rows="20"></textarea>
             </div>
-          </div>
+            <div class="form-group pull-right">
+                <a th:href="@{view(groupUid=${group.Uid})}" role="button" class="btn default-button btn-neutral">Cancel</a>
+                <button type="submit" class="btn default-button">Add Members</button>
+            </div>
+          </form>
         </div>
-      </form>
+      </div>
     </div>
-  </div>
-</div>
+
+  </section>
+
+</main>
+
 </body>
 </html>
