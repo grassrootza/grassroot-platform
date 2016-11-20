@@ -30,7 +30,6 @@ import static za.org.grassroot.core.util.DateTimeUtil.formatAtSAST;
  * Created by luke on 2016/11/03.
  */
 @Service
-@ConditionalOnProperty(name = "grassroot.email.enabled", havingValue = "true",  matchIfMissing = false)
 public class PdfGeneratingServiceImpl implements PdfGeneratingService {
 
     private static final Logger logger = LoggerFactory.getLogger(PdfGeneratingServiceImpl.class);
