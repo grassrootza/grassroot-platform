@@ -245,17 +245,13 @@ public class GcmManager implements GcmService {
     }
 
     @Override
-    public void pingUserForGroupChat(User user, Group group) {
-        GcmRegistration gcmRegistration = gcmRegistrationRepository.findTopByUserOrderByCreationTimeDesc(user);
-        if(gcmRegistration != null){
-            Map<String, Object> data = MessageUtils.generatePingMessageData(user,group);
-            Message gcmMessage = GcmXmppMessageCodec.encode(gcmRegistration.getRegistrationId(),(String) data.get("messageId") ,
+    public void pingUsersForGroupChat(Group group) {
+            Map<String, Object> data = MessageUtils.generatePingMessageData(group);
+            Message gcmMessage = GcmXmppMessageCodec.encode(TOPICS.concat(group.getUid()),(String) data.get("messageId") ,
                     null,
                     data);
             gcmXmppOutboundChannel.send(gcmMessage);
         }
-    }
-
 
 
     private HttpHeaders getHttpHeaders() {

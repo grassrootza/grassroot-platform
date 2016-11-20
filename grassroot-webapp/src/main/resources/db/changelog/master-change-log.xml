@@ -123,8 +123,9 @@
     <include file="change_117.xml" relativeToChangelogFile="true" />
     <include file="change_118.xml" relativeToChangelogFile="true" />
     <include file="change_119.xml" relativeToChangelogFile="true" />
-    <include file="change_150.xml" relativeToChangelogFile="true" />
-    <include file="change_151.xml" relativeToChangelogFile="true" />
-    <include file="change_152.xml" relativeToChangelogFile="true" />
+    <include file="change_120.xml" relativeToChangelogFile="true" />
+    <include file="change_121.xml" relativeToChangelogFile="true" />
+    <include file="change_122.xml" relativeToChangelogFile="true" />
+    <include file="change_123.xml" relativeToChangelogFile="true" />
 
 </databaseChangeLog>

@@ -33,8 +33,6 @@ public class GcmRestController {
     @Autowired
     private GcmService gcmService;
 
-    @Autowired
-    private GroupChatService groupChatService;
 
     @RequestMapping(value = "/register/{phoneNumber}/{code}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> registerForGcm(@PathVariable("phoneNumber") String phoneNumber,
@@ -58,18 +56,7 @@ public class GcmRestController {
         return RestUtil.messageOkayResponse(RestMessage.DEREGISTERED_FOR_PUSH);
     }
 
-    @RequestMapping(value = "/chat/send/{phoneNumber}/{code}/{groupUid}", method = RequestMethod.GET)
-    public ResponseEntity<ResponseWrapper> relayChatMessage(@PathVariable String phoneNumber, @PathVariable String groupUid,
-                                                            @RequestParam String messageText, @RequestParam String messageUid,
-                                                            @RequestParam String gcmKey) {
-        try {
 
-            groupChatService.relayChatMessage(phoneNumber, groupUid, messageText, messageUid, gcmKey);
-            return RestUtil.messageOkayResponse(RestMessage.CHAT_SENT);
-        } catch (GroupChatSettingNotFoundException e) {
-            return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.MESSAGE_SETTING_NOT_FOUND);
-        }
-    }
 
     @ExceptionHandler(NoSuchProfileException.class)
     public ResponseEntity<ResponseWrapper>handleException(){

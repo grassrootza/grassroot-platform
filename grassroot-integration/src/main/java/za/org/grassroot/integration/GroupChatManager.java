@@ -2,6 +2,7 @@ package za.org.grassroot.integration;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import org.jivesoftware.smack.packet.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,26 +17,20 @@ import org.springframework.messaging.MessageChannel;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.GroupChatSettings;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.TaskType;
-import za.org.grassroot.core.repository.GroupChatSettingsRepository;
-import za.org.grassroot.core.repository.GroupRepository;
-import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.UIDGenerator;
-import za.org.grassroot.integration.domain.AndroidClickActionType;
-import za.org.grassroot.integration.domain.GroupChatMessage;
-import za.org.grassroot.integration.domain.RelayedChatMessage;
+import za.org.grassroot.integration.domain.MQTTPayload;
 import za.org.grassroot.integration.exception.GroupChatSettingNotFoundException;
 import za.org.grassroot.integration.exception.SeloParseDateTimeFailure;
-import za.org.grassroot.integration.utils.Constants;
 import za.org.grassroot.integration.utils.MessageUtils;
 import za.org.grassroot.integration.xmpp.GcmXmppMessageCodec;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
@@ -49,10 +44,13 @@ public class GroupChatManager implements GroupChatService {
 
     // todo : externalize property, of course
     private static final DateTimeFormatter cmdMessageFormat = DateTimeFormatter.ofPattern("HH:mm, EEE d MMM");
-    private static final DateTimeFormatter cmdMessageSystemFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
 
     @Value("${gcm.topics.path}")
     private String TOPICS;
+
+    @Value("${mqtt.status.read.threshold:0.5}")
+    private Double readStatusThreshold;
+
 
     @Autowired
     private UserRepository userRepository;
@@ -73,6 +71,16 @@ public class GroupChatManager implements GroupChatService {
     private MessageChannel mqttOutboundChannel;
 
     @Autowired
+    private GroupChatMessageStatsRepository groupChatMessageStatsRepository;
+
+    @Autowired
+    private GcmRegistrationRepository gcmRegistrationRepository;
+
+    @Autowired
+    private ObjectMapper payloadMapper;
+
+
+    @Autowired
     @Qualifier("integrationMessageSourceAccessor")
     MessageSourceAccessor messageSourceAccessor;
 
@@ -85,140 +93,16 @@ public class GroupChatManager implements GroupChatService {
         User user = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
 
-
         GroupChatSettings groupChatSettings = new GroupChatSettings(user, group, active, true, true, true);
         groupChatSettingsRepository.save(groupChatSettings);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public void relayChatMessage(String userPhoneNumber, String groupUid, String message, String localMsgUid, String userGcmKey) {
-        User user = userRepository.findByPhoneNumber(userPhoneNumber);
-        GroupChatSettings settings = load(user.getUid(), groupUid);
-
-        GroupChatMessage msg = new RelayedChatMessage.ChatMessageBuilder("org.grassroot.android")
-                .from(userGcmKey)
-                .to(groupUid)
-                .text(message)
-                .messageUid(localMsgUid)
-                .senderPhone(userPhoneNumber)
-                .build();
-
-        if (settings != null) {
-            Group group = settings.getGroup();
-            org.springframework.messaging.Message<Message> outboundMessage = settings.isCanSend() ?
-                    generateMessage(user, msg, group) : generateCannotSendMessage(msg, group);
-            gcmXmppOutboundChannel.send(outboundMessage);
-
-        } else {
-            throw new GroupChatSettingNotFoundException("User does not have chat settings, cannot be part of group");
-        }
-    }
-
-    @Override
-    public void processAndRouteIncomingChatMessage(GroupChatMessage incoming) {
-        String phoneNumber = (String) incoming.getData().get("phoneNumber");
-        String groupUid = (String) incoming.getData().get("groupUid");
-        User user = userRepository.findByPhoneNumber(phoneNumber);
-        GroupChatSettings groupChatSettings = load(user.getUid(), groupUid);
-        if (groupChatSettings != null) {
-            Group group = groupChatSettings.getGroup();
-            org.springframework.messaging.Message<Message> message;
-            logger.debug("Posting to topic with id={}", groupUid);
-            try {
-                if (isCanSend(user.getUid(), groupUid)) {
-                    logger.debug("Posting to topic with id={}", groupUid);
-                    message = generateMessage(user, incoming, group);
-                } else {
-                    message = generateCannotSendMessage(incoming, group);
-                }
-                gcmXmppOutboundChannel.send(message);
-            } catch (GroupChatSettingNotFoundException e) {
-                logger.debug("User with phoneNumber={} is not enabled to send messages to this group", phoneNumber);
-            }
-        }
-    }
-
-
-
-
-    public void sendMessageOverMQTT(User user, Group group, GroupChatMessage incoming) {
-        Map<String, Object> messageData = generateChatMessageData(incoming, user, group);
-        ObjectMapper objectMapper = new ObjectMapper();
-        String message;
-        try {
-            message = objectMapper.writeValueAsString(messageData);
-            mqttOutboundChannel.send(MessageBuilder.withPayload(message).
-                    setHeader(MqttHeaders.TOPIC, incoming.getTo()).build());
-        } catch (JsonProcessingException e) {
-            logger.debug("Error sending message over mqtt, got error message ={}", e.getMessage());
-        }
-
-    }
-
-    @Override
-    @Async
-    public void markMessagesAsRead(String groupUid, String groupName, Set<String> messageUids) {
-        for (String messageUid : messageUids) {
-            Map<String, Object> data = generateMarkMessageAsReadData(messageUid, groupName, groupName);
-            org.springframework.messaging.Message gcmMessage = GcmXmppMessageCodec.encode(TOPICS.concat(groupUid), (String) data.get("messageId"),
-                    null,
-                    data);
-            gcmXmppOutboundChannel.send(gcmMessage);
-        }
-    }
-
-    public org.springframework.messaging.Message<Message> generateCannotSendMessage(GroupChatMessage input, Group group) {
-        Map<String, Object> data = MessageUtils.generateUserMutedResponseData(messageSourceAccessor, input, group);
-        return GcmXmppMessageCodec.encode(input.getFrom(), String.valueOf(data.get("messageId")),
-                null, data);
-    }
-
-    public org.springframework.messaging.Message<Message> generateMessage(User user, GroupChatMessage input, Group group) {
-        org.springframework.messaging.Message<Message> gcmMessage;
-
-        Map<String, Object> data;
-        if (!MessageUtils.isCommand((input))) {
-            String topic = TOPICS.concat(group.getUid());
-            data = generateChatMessageData(input, user, group);
-            gcmMessage = GcmXmppMessageCodec.encode(topic, String.valueOf(data.get("messageId")),
-                    null, data);
-        } else {
-            final String msg = String.valueOf(input.getData().get("message"));
-            final String[] tokens = MessageUtils.tokenize(msg);
-            final TaskType cmdType = msg.contains("/meeting") ? TaskType.MEETING : msg.contains("/vote") ? TaskType.VOTE : TaskType.TODO;
-
-            if (tokens.length < (TaskType.MEETING.equals(cmdType) ? 3 : 2)) {
-                data = generateInvalidCommandResponseData(input, group);
-            } else {
-                try {
-                    final LocalDateTime parsedDateTime = learningService.parse(tokens[1]);
-                    if (DateTimeUtil.convertToSystemTime(parsedDateTime, DateTimeUtil.getSAST()).isBefore(Instant.now())) {
-                        data = generateDateInPastData(input, group);
-                    } else {
-                        tokens[1] = parsedDateTime.format(cmdMessageFormat);
-                        data = generateCommandResponseData(input, group, cmdType, tokens, parsedDateTime);
-                    }
-                } catch (SeloParseDateTimeFailure e) {
-                    data = generateInvalidCommandResponseData(input, group);
-                }
-            }
-            gcmMessage = GcmXmppMessageCodec.encode(input.getFrom(), String.valueOf(data.get("messageId")),
-                    null, data);
-        }
-
-        return gcmMessage;
-    }
-
-
-
-
-    @Override
-    @Transactional(readOnly = true)
     @Cacheable(value = "groupChatSettings", key = "userUid + '_'+ groupUid")
     public GroupChatSettings load(String userUid, String groupUid) throws GroupChatSettingNotFoundException {
-        Objects.nonNull(userUid);
-        Objects.nonNull(groupUid);
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(groupUid);
 
         User user = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
@@ -232,11 +116,59 @@ public class GroupChatManager implements GroupChatService {
         return groupChatSettings;
     }
 
+
+    @Override
+    @Async
+    public void processCommandMessage(MQTTPayload incoming) {
+        String groupUid = incoming.getGroupUid();
+        Group group = groupRepository.findOneByUid(groupUid);
+        MQTTPayload payload = generateMessage(incoming, group);
+        try {
+            final String message = payloadMapper.writeValueAsString(payload);
+            logger.info("Outgoing mqtt payload ={}", message);
+            mqttOutboundChannel.send(MessageBuilder.withPayload(message).
+                    setHeader(MqttHeaders.TOPIC, incoming.getPhoneNumber()).build());
+        } catch (JsonProcessingException e) {
+            logger.debug("Message conversion failed with error ={}", e.getMessage());
+        }
+
+    }
+
+
+    @Override
+    @Async
+    @Transactional
+    public void markMessagesAsRead(String groupUid, String groupName, Set<String> messageUids) {
+        for (String messageUid : messageUids) {
+            MQTTPayload payload = generateMarkMessageAsReadData(messageUid, groupName, groupName);
+            GroupChatMessageStats groupChatMessageStats = groupChatMessageStatsRepository.findByUidAndRead(messageUid, false);
+            if (groupChatMessageStats != null) {
+                groupChatMessageStats.incrementReadCount();
+                User user = groupChatMessageStats.getUser();
+                if (groupChatMessageStats.getTimesRead() / groupChatMessageStats.getIntendedReceipients() > readStatusThreshold) {
+                    groupChatMessageStats.setRead(true);
+                    try {
+                        final ObjectMapper mapper = new ObjectMapper();
+                        mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, true);
+                        final String message = mapper.writeValueAsString(payload);
+                        mqttOutboundChannel.send(MessageBuilder.withPayload(message).
+                                setHeader(MqttHeaders.TOPIC, user.getPhoneNumber()).build());
+                    } catch (JsonProcessingException e) {
+                        e.printStackTrace();
+                    }
+
+                }
+
+            }
+        }
+    }
+
+
     @Override
     @Transactional(readOnly = true)
     public boolean isCanSend(String userUid, String groupUid) throws GroupChatSettingNotFoundException {
-        Objects.nonNull(userUid);
-        Objects.nonNull(groupUid);
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(groupUid);
 
         User user = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
@@ -252,8 +184,8 @@ public class GroupChatManager implements GroupChatService {
     @Override
     @Transactional
     public void updateActivityStatus(String userUid, String groupUid, boolean active, boolean userInitiated) throws GroupChatSettingNotFoundException {
-        Objects.nonNull(userUid);
-        Objects.nonNull(groupUid);
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(groupUid);
 
         User user = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
@@ -265,6 +197,21 @@ public class GroupChatManager implements GroupChatService {
         groupChatSettings.setActive(active);
         groupChatSettings.setUserInitiated(userInitiated);
         groupChatSettings.setCanSend(active);
+        if (userInitiated) groupChatSettings.setCanReceive(active);
+        if(!userInitiated && !active){
+            final MQTTPayload payload = generateUserMutedResponseData(group);
+            final String message;
+            try {
+                ObjectMapper mapper = new ObjectMapper();
+                mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS,true);
+                message = mapper.writeValueAsString(payload);
+                mqttOutboundChannel.send(MessageBuilder.withPayload(message).
+                        setHeader(MqttHeaders.TOPIC, user.getPhoneNumber()).build());
+            } catch (JsonProcessingException e) {
+                logger.debug("Error parsing message");
+            }
+
+        }
         if (userInitiated) {
             groupChatSettings.setCanReceive(active);
         }
@@ -273,11 +220,27 @@ public class GroupChatManager implements GroupChatService {
     }
 
     @Override
+    @Transactional
+    @Async
+    public void createGroupChatMessageStats(MQTTPayload payload) {
+        Objects.requireNonNull(payload);
+        Group group = groupRepository.findOneByUid(payload.getGroupUid());
+        User user = userRepository.findByPhoneNumber(payload.getPhoneNumber());
+        if(group !=null && user !=null) {
+            Long numberOfIntendedRecepients =
+                    groupChatSettingsRepository.countByGroupAndActive(group, true);
+
+            GroupChatMessageStats groupChatMessageStats = new GroupChatMessageStats(payload.getUid(), group, user, numberOfIntendedRecepients, 1L, false);
+            groupChatMessageStatsRepository.save(groupChatMessageStats);
+            pingUsersForGroupChat(group);
+        }
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public boolean messengerSettingExist(String userUid, String groupUid) {
-
-        Objects.nonNull(userUid);
-        Objects.nonNull(groupUid);
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(groupUid);
 
         User user = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
@@ -295,7 +258,7 @@ public class GroupChatManager implements GroupChatService {
 
     @Override
     public List<String> usersMutedInGroup(String groupUid) {
-        Objects.nonNull(groupUid);
+        Objects.requireNonNull(groupUid);
         Group group = groupRepository.findOneByUid(groupUid);
         List<GroupChatSettings> groupChatSettingses = groupChatSettingsRepository.findByGroupAndActiveAndCanSend(group, true, false);
         List<String> mutedUsersUids = new ArrayList<>();
@@ -306,101 +269,149 @@ public class GroupChatManager implements GroupChatService {
         return mutedUsersUids;
     }
 
-    private Map<String, Object> generateChatMessageData(GroupChatMessage input, User user, Group group) {
-        String message = (String) input.getData().get("message");
-        Map<String, Object> data = MessageUtils.prePopWithGroupData(group);
-        String messageId = UIDGenerator.generateId().concat(String.valueOf(System.currentTimeMillis()));
-        data.put(Constants.BODY, message);
-        data.put("messageId", messageId);
-        data.put("messageUid", input.getMessageUid());
-        data.put(Constants.TITLE, user.nameToDisplay());
-        data.put("type", "normal");
-        data.put("phone_number", user.getPhoneNumber());
-        data.put("userUid", user.getUid());
-        data.put(Constants.ENTITY_TYPE, AndroidClickActionType.CHAT_MESSAGE.toString());
-        data.put("click_action", AndroidClickActionType.CHAT_MESSAGE.toString());
-        data.put("time", input.getData().get("time"));
-        return data;
+    private void pingUsersForGroupChat(Group group) {
+        Map<String, Object> data = MessageUtils.generatePingMessageData(group);
+        org.springframework.messaging.Message<Message> gcmMessage = GcmXmppMessageCodec.encode(TOPICS.concat(group.getUid()), (String) data.get("messageId"),
+                null,
+                data);
+        gcmXmppOutboundChannel.send(gcmMessage);
+    }
+
+    @Override
+    @Async
+    public void pingToSync(User initiator, User addedUser, Group group){
+        MQTTPayload payload = generateSyncData(initiator, group);
+        Map<String, Object> data = MessageUtils.generatePingMessageData(group);
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS,true);
+            final String message = mapper.writeValueAsString(payload);
+            mqttOutboundChannel.send(MessageBuilder.withPayload(message).
+                    setHeader(MqttHeaders.TOPIC, addedUser.getPhoneNumber()).build());
+            GcmRegistration gcmRegistration = gcmRegistrationRepository
+                    .findTopByUserOrderByCreationTimeDesc(addedUser);
+            if(gcmRegistration !=null) {
+                final String gcmKey = gcmRegistration.getRegistrationId();
+                org.springframework.messaging.Message<Message> gcmMessage = GcmXmppMessageCodec.encode(gcmKey,
+                        (String) data.get("messageId"),
+                        null,
+                        data);
+                gcmXmppOutboundChannel.send(gcmMessage);
+
+            }
+        } catch (JsonProcessingException e) {
+            logger.debug("Error sending sync request to user with number ={}", addedUser.getPhoneNumber());
+        }
+
     }
 
 
-    private Map<String, Object> generateMarkMessageAsReadData(String messageUid, String groupUid, String groupName) {
+    private MQTTPayload generateInvalidCommandResponseData(MQTTPayload input, Group group) {
 
-        Map<String, Object> data = new HashMap<>();
-        String messageId = UIDGenerator.generateId().concat(String.valueOf(System.currentTimeMillis()));
-        data.put(Constants.GROUP_UID, groupUid);
-        data.put(Constants.GROUP_NAME, groupName);
-        data.put("messageId", messageId);
-        data.put("messageUid", messageUid);
-        data.put("type", "update_read_status");
-        data.put(Constants.ENTITY_TYPE, AndroidClickActionType.CHAT_MESSAGE.toString());
-        data.put("click_action", AndroidClickActionType.CHAT_MESSAGE.toString());
-        data.put("time", Instant.now());
-
-        return data;
+        String responseMessage = messageSourceAccessor.getMessage("gcm.xmpp.command.invalid");
+        MQTTPayload outboundMessage = new MQTTPayload(input.getUid(), input.getGroupUid(),
+                group.getGroupName(),
+                "Grassroot", input.getTime(), "error");
+        outboundMessage.setText(responseMessage);
+        return outboundMessage;
     }
 
-    private Map<String, Object> generateCommandResponseData(GroupChatMessage input, Group group, TaskType type, String[] tokens, LocalDateTime taskDateTime) {
-        final String messageId = UIDGenerator.generateId().concat(String.valueOf(System.currentTimeMillis()));
-        Map<String, Object> data = MessageUtils.prePopWithGroupData(group);
+    private MQTTPayload generateSyncData(User addingUser, Group group) {
 
-        data.put("messageId", messageId);
-        data.put("messageUid", input.getMessageUid());
-        data.put(Constants.TITLE, "Grassroot");
+
+        String responseMessage = messageSourceAccessor.getMessage("mqtt.member.added",
+                new String[]{group.getGroupName(),addingUser.getDisplayName()});
+        MQTTPayload outboundMessage = new MQTTPayload(UIDGenerator.generateId(), group.getUid(),
+                group.getGroupName(),
+                "Grassroot", Date.from(Instant.now()), "sync");
+        outboundMessage.setText(responseMessage);
+
+        return outboundMessage;
+    }
+
+
+    private MQTTPayload generateDateInPastData(MQTTPayload input, Group group) {
+
+        String responseMessage = messageSourceAccessor.getMessage("gcm.xmpp.command.timepast");
+        MQTTPayload outboundMessage = new MQTTPayload(input.getUid(), input.getGroupUid(),
+                group.getGroupName(),
+                "Grassroot", input.getTime(), "error");
+        outboundMessage.setText(responseMessage);
+        return outboundMessage;
+    }
+
+    private MQTTPayload generateCommandResponseData(MQTTPayload input, Group group, TaskType type, String[] tokens, LocalDateTime taskDateTime) {
+
+        MQTTPayload outboundMessage = new MQTTPayload(input.getUid(), input.getGroupUid(),
+                group.getGroupName(),
+                "Grassroot", input.getTime(), null);
 
         if (TaskType.MEETING.equals(type)) {
             final String text = messageSourceAccessor.getMessage("gcm.xmpp.command.meeting", tokens);
-            data.put("type", TaskType.MEETING.toString());
-            data.put(Constants.BODY, text);
+            outboundMessage.setText(text);
+            outboundMessage.setType(TaskType.MEETING.toString());
+
         } else if (TaskType.VOTE.equals(type)) {
             final String text = messageSourceAccessor.getMessage("gcm.xmpp.command.vote", tokens);
-            data.put("type", TaskType.VOTE.toString());
-            data.put(Constants.BODY, text);
+            outboundMessage.setText(text);
+            outboundMessage.setType(TaskType.VOTE.toString());
         } else {
             final String text = messageSourceAccessor.getMessage("gcm.xmpp.command.todo", tokens);
-            data.put("type", TaskType.TODO.toString());
-            data.put(Constants.BODY, text);
+            outboundMessage.setText(text);
+            outboundMessage.setType(TaskType.TODO.toString());
         }
-
-        data.put("tokens", Arrays.asList(tokens));
-        data.put(Constants.ENTITY_TYPE, AndroidClickActionType.CHAT_MESSAGE.toString());
-        data.put("click_action", AndroidClickActionType.CHAT_MESSAGE.toString());
-        data.put("time", input.getData().get("time"));
-
+        outboundMessage.setTokens(Arrays.asList(tokens));
         if (taskDateTime != null) {
-            data.put("task_date_time", taskDateTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+
+            ZonedDateTime zonedDateTime = taskDateTime.atZone(DateTimeUtil.getSAST());
+            outboundMessage.setActionDateTime(Date.from(zonedDateTime.toInstant()));
+        }
+
+        return outboundMessage;
+    }
+
+
+    private MQTTPayload generateMessage(MQTTPayload input, Group group) {
+        MQTTPayload data;
+        final String msg = input.getText();
+        final String[] tokens = MessageUtils.tokenize(msg);
+        final TaskType cmdType = msg.contains("/meeting") ?
+                TaskType.MEETING : msg.contains("/vote") ? TaskType.VOTE : TaskType.TODO;
+        if (tokens.length < (TaskType.MEETING.equals(cmdType) ? 3 : 2)) {
+            data = generateInvalidCommandResponseData(input, group);
+        } else {
+            try {
+                final LocalDateTime parsedDateTime = learningService.parse(tokens[1]);
+                if (DateTimeUtil.convertToSystemTime(parsedDateTime, DateTimeUtil.getSAST()).isBefore(Instant.now())) {
+                    data = generateDateInPastData(input, group);
+                } else {
+                    tokens[1] = parsedDateTime.format(cmdMessageFormat);
+                    data = generateCommandResponseData(input, group, cmdType, tokens, parsedDateTime);
+                }
+            } catch (SeloParseDateTimeFailure e) {
+                data = generateInvalidCommandResponseData(input, group);
+            }
         }
 
         return data;
     }
 
-    // todo : switch a lot of these field names to constants / enums
-    private Map<String, Object> generateInvalidCommandResponseData(GroupChatMessage input, Group group) {
-        String messageId = UIDGenerator.generateId().concat(String.valueOf(System.currentTimeMillis()));
-        String responseMessage = messageSourceAccessor.getMessage("gcm.xmpp.command.invalid");
-        Map<String, Object> data = MessageUtils.prePopWithGroupData(group);
-        data.put("messageId", messageId);
-        data.put("messageUid", input.getMessageUid());
-        data.put(Constants.TITLE, "Grassroot");
-        data.put(Constants.BODY, responseMessage);
-        data.put(Constants.ENTITY_TYPE, AndroidClickActionType.CHAT_MESSAGE.toString());
-        data.put("click_action", AndroidClickActionType.CHAT_MESSAGE.toString());
-        data.put("type", "error");
-        data.put("time", input.getData().get("time"));
-        return data;
+
+    private MQTTPayload generateMarkMessageAsReadData(String messageUid, String groupUid, String groupName) {
+        return new MQTTPayload(messageUid, groupUid,
+                groupName,
+                "Grassroot", Date.from(Instant.now()), "update_read_status");
+
     }
 
-    private Map<String, Object> generateDateInPastData(GroupChatMessage input, Group group) {
-        Map<String, Object> data = MessageUtils.prePopWithGroupData(group);
-        data.put("messageId", UIDGenerator.generateId());
-        data.put("messageUid", input.getMessageUid());
-        data.put(Constants.TITLE, "Grassroot");
-        data.put(Constants.BODY, messageSourceAccessor.getMessage("gcm.xmpp.command.timepast"));
-        data.put(Constants.ENTITY_TYPE, AndroidClickActionType.CHAT_MESSAGE);
-        data.put("click_action", AndroidClickActionType.CHAT_MESSAGE);
-        data.put("type", "error");
-        data.put("time", input.getData().get("time"));
-        return data;
+    private MQTTPayload generateUserMutedResponseData(Group group) {
+        String groupUid = group.getUid();
+        String messageId = UIDGenerator.generateId();
+        String responseMessage = messageSourceAccessor.getMessage("gcm.xmpp.chat.muted");
+        MQTTPayload payload =  new MQTTPayload(messageId, groupUid,group.getGroupName(),group.getGroupName(),Date.from(Instant.now()),"normal");
+        payload.setText(responseMessage);
+
+        return payload;
     }
 
 

@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -82,6 +83,10 @@ public class ScheduledTasks {
 
     @Autowired(required = false)
     private MqttSubscriptionService mqttSubscriptionService;
+
+
+    @Autowired
+    private Environment environment;
 
     @Scheduled(fixedRate = 300000) //runs every 5 minutes
     public void sendReminders() {

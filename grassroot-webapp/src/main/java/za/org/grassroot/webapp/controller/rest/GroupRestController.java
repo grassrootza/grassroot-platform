@@ -10,17 +10,12 @@ import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.messaging.handler.annotation.DestinationVariable;
-import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
-import za.org.grassroot.integration.domain.GroupChatMessage;
-import za.org.grassroot.integration.domain.RelayedChatMessage;
 import za.org.grassroot.integration.exception.GroupChatSettingNotFoundException;
 import za.org.grassroot.integration.xmpp.GcmService;
 import za.org.grassroot.integration.GroupChatService;
@@ -377,7 +372,7 @@ public class GroupRestController extends GroupAbstractRestController {
 
         User user = userManagementService.findByInputNumber(phoneNumber);
         Group group = groupBroker.load(groupUid);
-        gcmService.pingUserForGroupChat(user, group);
+//        gcmService.pingUsersForGroupChat(group);
 
         return RestUtil.messageOkayResponse(RestMessage.PING);
     }
