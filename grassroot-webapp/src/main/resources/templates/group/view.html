@@ -258,32 +258,32 @@
   </section>
 
   <!-- list subgroups -->
-  <div th:if="${not #lists.isEmpty(subGroups)}">
-    <div class="well">
-      <div class="row">
-        <div class="col-md-12">
-          <h2>Subgroups</h2>
-        </div>
-      </div>
-      <div class="row">
-        <div class="col-md-12">
-          <div th:each="subgroup, iterStat : ${subGroups}" class="bs-component">
-            <div class="list-group">
-              <div class="list-group-item">
-                <div class="row-content">
-                  <h4  class="list-group-item-heading">
-                    <a th:href="@{/group/view(groupUid=${subgroup.Uid})}"><span th:text="${subgroup.groupName}"></span></a>
-                  </h4>
-                  <div class="least-content"><span th:text="${subgroup.getMembers().size()}"></span> Members</div>
-                  <p class="list-group-item-text">Est. <span th:text="${#temporals.format(subgroup.getCreatedDateTimeAtSAST(),'dd MMMM yyyy')}">13 May 2011</span></p>
+  <section th:if="${not #lists.isEmpty(subGroups)}" class="group-member">
+      <div class="container">
+        <div class="row">
+          <div class="col-md-10 col-md-offset-1">
+            <div class="row">
+              <h4 class="green-title">Subgroups</h4>
+            </div>
+            <div class="row">
+              <div th:each="subgroup, iterStat : ${subGroups}" class="bs-component">
+                <div class="list-group">
+                  <div class="list-group-item">
+                    <div class="row-content">
+                      <h4  class="list-group-item-heading">
+                        <a th:href="@{/group/view(groupUid=${subgroup.Uid})}"><span th:text="${subgroup.groupName}"></span></a>
+                      </h4>
+                      <div class="least-content"><span th:text="${subgroup.getMembers().size()}"></span> Members</div>
+                      <p class="list-group-item-text">Est. <span th:text="${#temporals.format(subgroup.getCreatedDateTimeAtSAST(),'dd MMMM yyyy')}">13 May 2011</span></p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  </div>
+  </section>
 
   <!-- MODALS -->
 

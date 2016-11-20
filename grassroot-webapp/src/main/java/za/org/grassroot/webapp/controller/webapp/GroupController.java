@@ -134,8 +134,9 @@ public class GroupController extends BaseController {
             int groupsLeft = accountBroker.numberGroupsLeft(user.getAccountAdministered().getUid());
             model.addAttribute("canAddToAccount", groupsLeft > 0);
             model.addAttribute("accountGroupsLeft", groupsLeft);
+        } else {
+            model.addAttribute("canAddToAccount", false);
         }
-
 
         model.addAttribute("canRemoveFromAccount", isGroupPaidFor && user.getAccountAdministered() != null &&
                 user.getAccountAdministered().equals(accountBroker.findAccountForGroup(groupUid)));
