@@ -17,7 +17,7 @@ update paid_account set created_by_user = 1 where created_by_user is null;
 update paid_account set enabled_by_user = created_by_user;
 update paid_account set billing_user = created_by_user;
 update paid_account set enabled_date_time = created_date_time;
-update paid_account set disabled_date_time = '2099-12-31 23:59' where disabled_date_time != null; -- in postgresql is not null doesn't work well here
+update paid_account set disabled_date_time = '2099-12-31 23:59' where disabled_date_time is null; -- in postgresql is not null doesn't work well here
 update paid_account set next_billing_date = current_timestamp + interval '1 month';
 update paid_account set monthly_subscription = 0;
 
