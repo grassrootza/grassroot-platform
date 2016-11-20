@@ -32,6 +32,7 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
 
     // Find all the groups that a user is part of, with pagination
     List<Group> findByMembershipsUserAndActiveTrue(User user);
+    List<Group> findByCreatedByUserAndActiveTrueOrderByCreatedDateTimeDesc(User user);
     Page<Group> findByCreatedByUserAndActiveTrueOrderByCreatedDateTimeDesc(User user, Pageable pageable);
 
     int countByMembershipsUserAndActiveTrue(User user);

@@ -10,6 +10,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.integration.utils.MessageUtils;
 import za.org.grassroot.integration.xmpp.GcmXmppMessageCodec;
@@ -33,8 +34,6 @@ public class MqttSubscriptionServiceImpl implements MqttSubscriptionService {
     private MqttPahoMessageDrivenChannelAdapter mqttAdapter;
     private MessageChannel gcmXmppOutboundChannel;
 
-
-
     @Autowired
     public MqttSubscriptionServiceImpl(GroupRepository groupRepository, MqttPahoMessageDrivenChannelAdapter mqttAdapter, MessageChannel gcmXmppOutboundChannel) {
         this.groupRepository = groupRepository;
@@ -54,11 +53,11 @@ public class MqttSubscriptionServiceImpl implements MqttSubscriptionService {
         }
     }
 
-
     @Async
     @Override
     public void subscribeServerToGroupTopic(Group group) {
         Objects.requireNonNull(group);
+
         List<String> topicsSubscribeTo = Arrays.asList(mqttAdapter.getTopic());
         if (!topicsSubscribeTo.contains(group.getUid())) {
             mqttAdapter.addTopic(group.getUid(), 1);

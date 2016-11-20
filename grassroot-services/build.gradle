@@ -34,8 +34,22 @@ test {
   systemProperty "gcm.topics.path", "/topics/"
   systemProperty "gcm.topics.backoff.initial.delay", "1000"
   systemProperty "gcm.topics.max.retries", "3"
+
   systemProperty "mqtt.connection.url", "tcp://localhost:1883"
 
+  systemProperty "grassroot.email.enabled", "true"
+
+  systemProperty "spring.mail.host", "gmail.com"
+  systemProperty "spring.mail.port", "587"
+  systemProperty "spring.mail.username", "test@grassroot.org.za"
+  systemProperty "spring.mail.password", "test@grassroot.org.za"
+
+  systemProperty "grassroot.mail.from.address", "test@grassroot.org"
+  systemProperty "grassroot.mail.from.name", "Test"
+  systemProperty "grassroot.system.mail", "test@grassroot.org"
+
+  systemProperty "grassroot.billing.cron.trigger", "0 0 9 * * ?"
+  systemProperty "grassroot.payments.cron.trigger", "0 0 9 * * ?"
 
   systemProperty "gcm.sender.key", "gcm_sender_key"
 

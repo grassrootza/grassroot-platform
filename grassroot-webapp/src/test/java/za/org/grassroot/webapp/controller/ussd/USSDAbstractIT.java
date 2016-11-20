@@ -17,9 +17,9 @@ import org.springframework.web.util.UriComponentsBuilder;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.PhoneNumberUtil;
-import za.org.grassroot.services.EventBroker;
-import za.org.grassroot.services.EventLogBroker;
-import za.org.grassroot.services.UserManagementService;
+import za.org.grassroot.services.task.EventBroker;
+import za.org.grassroot.services.task.EventLogBroker;
+import za.org.grassroot.services.user.UserManagementService;
 
 import javax.annotation.PostConstruct;
 import javax.net.ssl.*;

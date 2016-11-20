@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -14,23 +15,28 @@ import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.core.enums.EventType;
-import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.PhoneNumberUtil;
-import za.org.grassroot.services.*;
+import za.org.grassroot.services.account.AccountGroupBroker;
+import za.org.grassroot.services.group.GroupBroker;
+import za.org.grassroot.services.group.GroupQueryBroker;
+import za.org.grassroot.services.task.TaskBroker;
 import za.org.grassroot.webapp.controller.BaseController;
-import za.org.grassroot.webapp.model.web.GroupWrapper;
+import za.org.grassroot.webapp.model.web.MemberWrapper;
+import za.org.grassroot.webapp.model.web.MemberWrapperList;
 import za.org.grassroot.webapp.util.BulkUserImportUtil;
 
 import javax.servlet.http.HttpServletRequest;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static za.org.grassroot.core.util.DateTimeUtil.convertToSystemTime;
+import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
 
 /**
  * @author Lesetse Kimwaga
@@ -42,8 +48,8 @@ public class GroupController extends BaseController {
 
     private static final Logger log = LoggerFactory.getLogger(GroupController.class);
 
-    @Autowired
-    private UserManagementService userManagementService;
+    @Value("${grassroot.accounts.active:false}")
+    private boolean accountsActive;
 
     @Autowired
     private GroupBroker groupBroker;
@@ -52,13 +58,10 @@ public class GroupController extends BaseController {
     private TaskBroker taskBroker;
 
     @Autowired
-    private EventBroker eventBroker;
-
-    @Autowired
-    private TodoBroker todoBroker;
-
-    @Autowired
     private GroupQueryBroker groupQueryBroker;
+
+    @Autowired
+    private AccountGroupBroker accountBroker;
 
     @Autowired
     @Qualifier("groupWrapperValidator")
@@ -84,7 +87,6 @@ public class GroupController extends BaseController {
     public String viewGroupIndex(Model model, @RequestParam String groupUid) {
 
         // note, coming here after group creation throws permission checking errors, so need to reload user from DB
-        Long startTime = System.currentTimeMillis();
         User user = userManagementService.load(getUserProfile().getUid());
         Group group = groupBroker.load(groupUid);
 
@@ -93,8 +95,6 @@ public class GroupController extends BaseController {
         }
 
         Set<Permission> userPermissions = group.getMembership(user).getRole().getPermissions();
-        Long endTime = System.currentTimeMillis();
-        log.info("Checking group membership & loading permissions took {} msec, for group {}", endTime - startTime, group);
 
         model.addAttribute("group", group);
         model.addAttribute("reminderOptions", reminderMinuteOptions(true));
@@ -126,7 +126,20 @@ public class GroupController extends BaseController {
         model.addAttribute("canCallVote", userPermissions.contains(Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE));
         model.addAttribute("canRecordAction", userPermissions.contains(Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY));
 
-        model.addAttribute("canCreateSubGroup", userPermissions.contains(Permission.GROUP_PERMISSION_CREATE_SUBGROUP));
+        boolean isGroupPaidFor = groupQueryBroker.isGroupPaidFor(groupUid);
+        model.addAttribute("isPaidFor", isGroupPaidFor);
+        model.addAttribute("canCreateSubGroup", isGroupPaidFor && userPermissions.contains(Permission.GROUP_PERMISSION_CREATE_SUBGROUP));
+
+        if (accountsActive && !isGroupPaidFor && user.getAccountAdministered() != null) {
+            int groupsLeft = accountBroker.numberGroupsLeft(user.getAccountAdministered().getUid());
+            model.addAttribute("canAddToAccount", groupsLeft > 0);
+            model.addAttribute("accountGroupsLeft", groupsLeft);
+        } else {
+            model.addAttribute("canAddToAccount", false);
+        }
+
+        model.addAttribute("canRemoveFromAccount", isGroupPaidFor && user.getAccountAdministered() != null &&
+                user.getAccountAdministered().equals(accountBroker.findAccountForGroup(groupUid)));
 
         return "group/view";
     }
@@ -221,6 +234,27 @@ public class GroupController extends BaseController {
         return viewGroupIndex(model, groupUid);
     }
 
+    /*
+    Add and remove group from an account
+     */
+
+    @RequestMapping(value = "account/add")
+    public String addGroupToAccount(Model model, @RequestParam String groupUid, RedirectAttributes attributes, HttpServletRequest request) {
+        // todo : exception handling etc
+        accountBroker.addGroupToAccount(getUserProfile().getAccountAdministered().getUid(), groupUid, getUserProfile().getUid());
+        addMessage(attributes, MessageType.SUCCESS, "group.account.added", request);
+        attributes.addAttribute("groupUid", groupUid);
+        return "redirect:/group/view";
+    }
+
+    @RequestMapping(value = "account/remove")
+    public String removeGroupFromAccount(Model model, @RequestParam String groupUid, RedirectAttributes attributes, HttpServletRequest request) {
+        accountBroker.removeGroupFromAccount(getUserProfile().getAccountAdministered().getUid(), groupUid, getUserProfile().getUid());
+        addMessage(attributes, MessageType.INFO, "group.account.removed", request);
+        attributes.addAttribute("groupUid", groupUid);
+        return "redirect:/group/view";
+    }
+
 
     /*
     Methods and views for adding a few members at a time
@@ -234,52 +268,56 @@ public class GroupController extends BaseController {
 
         permissionBroker.validateGroupPermission(user, group, null);
 
-        log.info("Okay, modifying this group: " + group.toString());
+        model.addAttribute("listOfMembers", new MemberWrapperList(group, user));
 
-        GroupWrapper groupModifier = new GroupWrapper();
-        groupModifier.populate(group);
+        model.addAttribute("canDeleteMembers", permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_DELETE_GROUP_MEMBER));
+        model.addAttribute("canAddMembers", permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER));
+        model.addAttribute("canUpdateDetails", permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS));
 
-        groupModifier.setCanRemoveMembers(permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_DELETE_GROUP_MEMBER));
-        groupModifier.setCanAddMembers(permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER));
-        groupModifier.setCanUpdateDetails(permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS));
-
-        log.info("The GroupWrapper now contains: " + groupModifier.getGroup().toString());
-
-        model.addAttribute("groupModifier", groupModifier);
-        return "group/change_multiple";
-    }
-
-    @RequestMapping(value = "change_multiple", params = {"removeMember"})
-    public String addMemberModify(Model model, @ModelAttribute("groupModifier") GroupWrapper groupModifier,
-                                   @RequestParam("removeMember") int memberIndex) {
-        try {
-            groupModifier.getListOfMembers().remove(memberIndex);
-        } catch (IndexOutOfBoundsException e) {
-            log.info("Need to fix indexing on newly created group wrapper ...");
-        }
+        model.addAttribute("group", group);
         return "group/change_multiple";
     }
 
     @RequestMapping(value = "change_multiple", method = RequestMethod.POST)
-    public String multipleMemberModify(Model model, @ModelAttribute("groupModifier") GroupWrapper groupModifier,
+    public String multipleMemberModify(Model model, @ModelAttribute("memberWrapperList") MemberWrapperList memberWrapperList,
                                        HttpServletRequest request, RedirectAttributes attributes) {
 
-        log.info("multipleMemberModify ... got these members back : " + groupModifier.getListOfMembers());
-        String groupUid = groupModifier.getGroup().getUid();
+        final String groupUid = memberWrapperList.getGroupUid();
 
-        Set<MembershipInfo> validNumberMembers = groupModifier.getAddedMembers().stream()
+        log.info("received {} members, in full : {}", memberWrapperList.getMemberList().size(), memberWrapperList.getMemberList());
+        log.info("groupUid = " + groupUid);
+
+        Set<MembershipInfo> nonNullMemberInfo = memberWrapperList.getMemberList().stream()
+                .filter(MemberWrapper::isNonNull)
+                .map(MemberWrapper::convertToMemberInfo)
+                .collect(Collectors.toSet());
+
+        Set<String> deletedMembers = memberWrapperList.getMemberList().stream()
+                .filter(MemberWrapper::isDeleted)
+                .map(MemberWrapper::getMemberUid)
+                .collect(Collectors.toSet());
+
+        Set<MembershipInfo> validNumberMembers = nonNullMemberInfo.stream()
                 .filter(m -> BulkUserImportUtil.isNumberValid(m.getPhoneNumber()))
                 .collect(Collectors.toSet());
 
+        log.info("Filtered, we have {} non-null members, of which {} are to be deleted, and {} have valid numbers",
+                nonNullMemberInfo.size(), deletedMembers.size(), validNumberMembers.size());
+
         try {
             groupBroker.updateMembers(getUserProfile().getUid(), groupUid, validNumberMembers);
+
+            if (!deletedMembers.isEmpty()) {
+                groupBroker.removeMembers(getUserProfile().getUid(), groupUid, deletedMembers);
+            }
+
             Group updatedGroup = groupBroker.load(groupUid);
             attributes.addAttribute("groupUid", updatedGroup.getUid());
 
-            if (validNumberMembers.size() == groupModifier.getAddedMembers().size()) {
+            if (validNumberMembers.size() == nonNullMemberInfo.size()) {
                 addMessage(attributes, MessageType.SUCCESS, "group.update.success", new Object[]{updatedGroup.getGroupName()}, request);
             } else {
-                List<MembershipInfo> invalidMembers = new ArrayList<>(groupModifier.getAddedMembers());
+                List<MembershipInfo> invalidMembers = new ArrayList<>(nonNullMemberInfo);
                 invalidMembers.removeAll(validNumberMembers);
                 if (invalidMembers.size() == 1) {
                     MembershipInfo invalidMember = invalidMembers.get(0);
@@ -298,7 +336,7 @@ public class GroupController extends BaseController {
     }
 
     @RequestMapping(value = "add_bulk")
-    public String addMembersBulk(Model model, @RequestParam String groupUid, HttpServletRequest request) {
+    public String addMembersBulk(Model model, @RequestParam String groupUid) {
 
         Group group = groupBroker.load(groupUid);
         model.addAttribute("group", group);
@@ -313,7 +351,7 @@ public class GroupController extends BaseController {
         boolean closedGroup = !(canCallMeetings || canCallVotes || canRecordToDo || canViewMembers);
 
         if (closedGroup) {
-            model.addAttribute("closedGroup", closedGroup);
+            model.addAttribute("closedGroup", true);
         } else {
             model.addAttribute("canCallMeetings", canCallMeetings);
             model.addAttribute("canCallVotes", canCallVotes);
@@ -541,7 +579,7 @@ public class GroupController extends BaseController {
 
     @RequestMapping(value = "history")
     public String viewGroupHistory(Model model, @RequestParam String groupUid,
-                                   @RequestParam(value = "monthToView", required = false) String monthToView) {
+                                   @RequestParam(value = "month", required = false) String monthToView) {
 
         Group group = groupBroker.load(groupUid);
         User user = userManagementService.load(getUserProfile().getUid());
@@ -551,25 +589,28 @@ public class GroupController extends BaseController {
         final LocalDateTime startDateTime;
         final LocalDateTime endDateTime;
 
-        if (monthToView == null) {
+        if (StringUtils.isEmpty(monthToView)) {
             startDateTime = LocalDate.now().withDayOfMonth(1).atStartOfDay();
             endDateTime = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES); // leaving seconds out on causes spurious test failures
         } else {
-            startDateTime = LocalDate.parse("01-" + monthToView, DateTimeFormatter.ofPattern("dd-M-yyyy")).atStartOfDay();
+            startDateTime = LocalDate.parse(monthToView).atStartOfDay();
             endDateTime = startDateTime.plusMonths(1L);
         }
 
-        Instant start = DateTimeUtil.convertToSystemTime(startDateTime, DateTimeUtil.getSAST());
-        Instant end = DateTimeUtil.convertToSystemTime(endDateTime, DateTimeUtil.getSAST());
-        List<Event> eventsInPeriod = eventBroker.retrieveGroupEvents(group, null, start, end);
-        List<Todo> todosInPeriod = todoBroker.fetchTodosForGroupCreatedDuring(group.getUid(), startDateTime, endDateTime);
+        List<TaskDTO> tasksInPeriod = taskBroker.fetchGroupTasksInPeriod(user.getUid(), groupUid,
+                convertToSystemTime(startDateTime, getSAST()), convertToSystemTime(endDateTime, getSAST()));
+
         List<GroupLog> groupLogsInPeriod = groupQueryBroker.getLogsForGroup(group, startDateTime, endDateTime);
         List<LocalDate> monthsActive = groupQueryBroker.getMonthsGroupActive(groupUid);
 
         model.addAttribute("group", group);
-        model.addAttribute("eventsInPeriod", eventsInPeriod);
-        model.addAttribute("todosInPeriod", todosInPeriod);
+
+        log.info("tasksInPeriod: " + tasksInPeriod);
+
+        model.addAttribute("tasksInPeriod", tasksInPeriod);
         model.addAttribute("groupLogsInPeriod", groupLogsInPeriod);
+
+        model.addAttribute("month", StringUtils.isEmpty(monthToView) ? null : LocalDate.parse(monthToView));
         model.addAttribute("monthsToView", monthsActive);
 
         return "group/history";

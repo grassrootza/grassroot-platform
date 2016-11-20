@@ -1,22 +1,17 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity4"
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity4"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
 <head>
-  <title>Layout</title>
+  <title layout:title-pattern="$LAYOUT_TITLE - $CONTENT_TITLE">Grassroot</title>
+
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
   <meta id="Viewport" name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, minimum-scale=1, user-scalable=no"/>
 
   <!--<meta name="_csrf" value="dummy" th:value="${_csrf.token}"/>-->
 
   <link th:href="@{/images/favicon.ico}" rel="shortcut icon" />
-  <link rel="stylesheet" type="text/css" th:href="@{/css/snackbar.min.css}" />
-  <link rel="stylesheet" type="text/css" th:href="@{/css/bootstrap.min.css}" />
-  <link rel="stylesheet" type="text/css" th:href="@{/css/jquery.steps.css}" />
-  <link rel="stylesheet" type="text/css" th:href="@{/css/bootstrap-datetimepicker.min.css}" />
-  <link href='https://fonts.googleapis.com/css?family=Roboto:300,400' rel='stylesheet' type='text/css' />
-  <link rel="stylesheet" type="text/css" th:href="@{/css/grassroot.css}" />
-
-  <script th:src="@{/js/jquery-1.12.4.min.js}"></script>
-  <script th:src="@{/js/bootstrap.min.js}"></script>
+  <link rel="stylesheet" type="text/css" th:href="@{/css/app.css}" />
 
   <script th:inline="javascript">
         var baseUrl = /*[[@{/}]]*/ '../static/';
@@ -29,123 +24,103 @@
     if (navigator.userAgent.indexOf("NT 6.1") != -1) {
       document.body.style.WebkitTextStroke = "0.5px";
     }
-    $(document).ready(function(){
-        $('[data-toggle="tooltip"]').tooltip();
-    });
   </script>
-  <div>
 
-     <!-- // Navigation -->
-
-      <div layout:fragment="navigation">
-        <div class="navbar navbar-colour">
-          <div class="navbar-header">
-            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-responsive-collapse">
-              <span class="icon-bar"></span>
-              <span class="icon-bar"></span>
-              <span class="icon-bar"></span>
-            </button>
-            <a class="navbar-left" href="javascript:void(0)" th:href="@{/home}">
-              <img th:src="@{/images/grassroot-logo-navbar.png}">
-            </a>
-          </div>
-          <div class="collapse navbar-collapse navbar-responsive-collapse">
-            <ul class="nav navbar-nav">
-              <li sec:authorize="isAuthenticated()" class="active">
-                <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/group/create}"><span class="gr-navbar-text">Start Group</span></a></li>
-              <li sec:authorize="isAuthenticated()" class="active">
-                <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/meeting/create}"><span class="gr-navbar-text">Call Meeting</span></a></li>
-              <li sec:authorize="isAuthenticated()" class="active">
-                <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/vote/create}"><span class="gr-navbar-text">Take Vote</span></a></li>
-              <li sec:authorize="isAuthenticated()" class="active">
-                <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/todo/create}"><span class="gr-navbar-text">Create to-do</span></a></li>
-              <li sec:authorize="hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')" class="active">
-                <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/meeting/free}"><span class="gr-navbar-text">Send Message</span></a></li>
-              <li sec:authorize="hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')" class="active">
-                <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/accounts/index}"><span class="gr-navbar-text">Manage account</span></a></li>
-              <li sec:authorize="hasRole('ROLE_SYSTEM_ADMIN')" class="active">
-                <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/admin/home}"><span class="gr-navbar-text">System admin</span></a></li>
-            </ul>
-
-            <ul sec:authorize="isAnonymous()" class="nav navbar-nav navbar-right">
-              <li sec:authorize="isAnonymous()" class="active">
-                <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/home}"><span class="gr-navbar-text">Login</span></a></li>
-              <li sec:authorize="isAnonymous()" class="active">
-                <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/signup}"><span class="gr-navbar-text">Register</span></a></li>
-            </ul>
-
-            <ul sec:authorize="isAuthenticated()" class="nav navbar-nav navbar-right">
-              <li class="dropdown">
-                <a href="javascript:void(0)" data-target="#" class="dropdown-toggle gr-navbar-link" data-toggle="dropdown" aria-expanded="false">
-                  <span class="gr-navbar-text">My Profile <b class="caret"></b></span></a>
-                <ul class="dropdown-menu">
-                  <li><a href="javascript:void(0)" th:href="@{/user/settings}">Settings</a></li>
-                  <li><a href="javascript:void(0)" th:href="@{/user/password}">Change password</a></li>
-                  <li class="divider"></li>
-                  <li><a href="javascript:void(0)"  class="user-logout" id="user-logout" th:href="@{/logout}">Logout</a></li>
-                </ul>
-              </li>
-            </ul>
-          </div>
+  <!-- Navigation -->
+  <div layout:fragment="navigation">
+    <div class="navbar navbar-colour">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-responsive-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="javascript:void(0)" th:href="@{/home}">
+            <img th:src="@{/images/grassroot-logo-navbar.png}" alt="Grassroot">
+          </a>
         </div>
-      </div>
-      <!-- // Navigation -->
+        <div class="collapse navbar-collapse navbar-responsive-collapse">
+          <ul sec:authorize="isAuthenticated()" class="nav navbar-nav navbar-left menu">
+            <li>
+              <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/group/create}">Start Group</a></li>
+            <li>
+              <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/meeting/create}">Call Meeting</a></li>
+            <li>
+              <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/vote/create}">Take Vote</a></li>
+            <li>
+              <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/todo/create}">Create to-do</a></li>
+            <li sec:authorize="hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')">
+              <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/messaging/freeform}">Send Message</a></li>
+            <li th:if="${@environment.getProperty('grassroot.accounts.active')}" sec:authorize="!hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')">
+              <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/account/signup}">Setup Account</a></li>
+            <li sec:authorize="hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')">
+              <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/account}">Manage account</a></li>
 
-    <!-- snackbar -->
-    <div layout:fragment="messages" class="container-fluid text-center">
-      <div layout:fragment="alert">
-        <div th:if="${errorMessage}" class="alert alert-warning alert-dismissible" role="alert">
-          <button type="button" class="close close-white-lg" data-dismiss="alert" aria-label="Close"><span aria-hidden="true" class="white-text">&times;</span></button>
-          <p th:text="${errorMessage}" class="alert-lg"></p>
+            <li sec:authorize="hasRole('ROLE_SYSTEM_ADMIN')">
+              <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/admin/home}">System admin</a></li>
+          </ul>
+
+          <ul sec:authorize="isAnonymous()" class="nav navbar-nav navbar-right menu">
+            <li>
+              <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/login}">
+                <i class="fa fa-user" aria-hidden="true"></i>Login</a></li>
+            <li>
+              <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/signup}">
+                <i class="fa fa-sign-in" aria-hidden="true"></i>Sign up</a></li>
+          </ul>
+
+          <ul sec:authorize="isAuthenticated()" class="nav navbar-nav navbar-right menu">
+            <li class="dropdown">
+              <a href="javascript:void(0)" data-target="#" class="dropdown-toggle gr-navbar-link" data-toggle="dropdown" aria-expanded="false">
+                My Profile <b class="caret"></b></a>
+              <ul class="dropdown-menu">
+                <li><a href="javascript:void(0)" th:href="@{/user/settings}">Settings</a></li>
+                <li><a href="javascript:void(0)" th:href="@{/user/password}">Change password</a></li>
+                <li class="divider"></li>
+                <li><a href="javascript:void(0)"  class="user-logout" id="user-logout" th:href="@{/logout}">Logout</a></li>
+              </ul>
+            </li>
+          </ul>
         </div>
-
-        <div th:if="${infoMessage != null}" class="alert alert-info alert-dismissible" role="alert">
-          <button type="button" class="close close-white-lg" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-          <p th:text="${infoMessage}" class="alert-lg"></p>
-        </div>
-
-        <div th:if="${successMessage != null}" class="alert alert-success alert-dismissible" role="alert">
-          <button type="button" class="close close-white-lg" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-          <p th:text="${successMessage}" class="alert-lg"></p>
-        </div>
-
-      </div>
     </div>
-
-    <!-- header fragment -->
-    <div layout:fragment="header-container" class="header-container" >
-      <div class="header--content" layout:fragment="header-content">
-        <div class="row-fluid container-fluid">
-          <div class="span8">
-
-            <h1 class="header-content-title" layout:fragment="header">
-              First Last
-            </h1>
-
-            <p class="header-content-subtitle" layout:fragment="overview">
-            </p>
-          </div>
-
-        </div>
-      </div>
-    </div>
-
-    <main layout:fragment="content" class="body-container container-fluid ">
-      <div id="footer-push-down"></div>
-    </main>
-
-    <footer class="footer">
-      <div class="container-fluid">
-        <div class="row-fluid">
-          <div class="span8">
-            <!-- // might use for copyright or terms of use in future -->
-          </div>
-        </div>
-      </div>
-    </footer>
-    <div id="scrim"></div>
   </div>
 
+    <!-- Messages / Snackbar -->
+  <section layout:fragment="messages" class="snackbar-container">
+    <div class="container" th:if="${snackbarMessage}">
+      <div role="alert" class="row text-center alert alert-dismissible grassroot-alert col-md-10 col-md-offset-1"
+          th:classappend="${successMessage} ? 'alert-success' : (${infoMessage} ? 'alert-info' : 'alert-warning')">
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <p th:utext="${snackbarMessage}" class="alert-lg"></p>
+      </div>
+    </div>
+  </section>
+
+    <!-- header fragment -->
+  <section layout:fragment="header" class="top-container" >
+    <div class="container">
+      <div class="row">
+        <h1 class="text-center header-content-title">Title</h1>
+        <h4 class="text-center header-content-subtitle"></h4>
+      </div>
+    </div>
+  </section>
+
+  <main layout:fragment="content" class="body-container container-fluid ">
+    <div id="footer-push-down"></div>
+  </main>
+
+  <footer class="footer">
+    <div class="container-fluid">
+      <div class="row-fluid">
+        <div class="span8">
+          <!-- // might use for copyright or terms of use in future -->
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <div id="scrim"></div>
 
   <div sec:authorize="isAuthenticated()" >
     <form id="logoutForm"  th:action="@{/logout}" method="post">
@@ -155,13 +130,12 @@
     </form>
   </div>
 
-  <script th:src="@{/js/snackbar.min.js}"></script>
-  <script th:src="@{/js/moment.min.js}"></script>
-  <script th:src="@{/js/jquery.validate.min.js}"></script>
-  <script th:src="@{/js/additional-methods.min.js}"></script>
-  <script th:src="@{/js/jquery.steps.min.js}"></script>
-  <script th:src="@{/js/jquery.SimpleMask.js}"></script>
-  <script th:src="@{/js/bootstrap-datetimepicker.min.js}"></script>
+  <script th:src="@{/js/lib/jquery-2.2.4.min.js}"></script>
+  <script th:src="@{/js/lib/bootstrap.min.js}"></script>
+
+  <div layout:fragment="script-container">
+
+  </div>
 
 <script>
   $(document).ready(function(){
@@ -170,10 +144,6 @@
     });
   });
 </script>
-
-  <div class="header-container" layout:fragment="script-container">
-  </div>
-
 
 </body>
 </html>

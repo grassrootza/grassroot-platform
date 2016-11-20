@@ -101,7 +101,7 @@ public class NotificationRepositoryTest {
         notification1.setNextAttemptTime(Instant.now().minus(60, ChronoUnit.SECONDS));
         notificationRepository.save(notification1);
 
-        List<Notification> notifications = notificationRepository.findFirst50ByNextAttemptTimeBeforeOrderByNextAttemptTimeAsc(Instant.now());
+        List<Notification> notifications = notificationRepository.findFirst75ByNextAttemptTimeBeforeOrderByNextAttemptTimeAsc(Instant.now());
         assertNotNull(notifications);
         assertEquals(1, notifications.size());
         assertFalse(notifications.contains(notification));
@@ -141,7 +141,7 @@ public class NotificationRepositoryTest {
         notificationRepository.save(notification1);
         notificationRepository.save(notification2);
 
-        List<Notification> notifications1 = notificationRepository.findFirst50ByNextAttemptTimeBeforeOrderByNextAttemptTimeAsc(Instant.now());
+        List<Notification> notifications1 = notificationRepository.findFirst75ByNextAttemptTimeBeforeOrderByNextAttemptTimeAsc(Instant.now());
         List<Notification> notifications2 = notificationRepository
                 .findFirst100ByReadFalseAndAttemptCountGreaterThanAndLastAttemptTimeGreaterThan(0, Instant.now().minus(10, ChronoUnit.MINUTES));
 

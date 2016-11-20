@@ -3,18 +3,20 @@ package za.org.grassroot.webapp.controller.rest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GroupLocation;
 import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
-import za.org.grassroot.services.GroupBroker;
-import za.org.grassroot.services.GroupQueryBroker;
+import za.org.grassroot.services.group.GroupBroker;
+import za.org.grassroot.services.group.GroupQueryBroker;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 
@@ -26,18 +28,26 @@ import java.util.*;
  */
 @Controller
 @RequestMapping("/emulator/test")
+@ConditionalOnProperty(name = "grassroot.test.controller.enabled", havingValue = "true",  matchIfMissing = false)
 public class TestEmulatorController extends BaseController {
 
     private static final Logger log = LoggerFactory.getLogger(TestEmulatorController.class);
 
-    @Autowired
     private GroupBroker groupBroker;
-
-    @Autowired
     private GroupQueryBroker groupQueryBroker;
-
-    @Autowired
     private GeoLocationBroker geoLocationBroker;
+
+    public TestEmulatorController(GroupBroker groupBroker, GroupQueryBroker groupQueryBroker, GeoLocationBroker geoLocationBroker) {
+        this.groupBroker = groupBroker;
+        this.groupQueryBroker = groupQueryBroker;
+        this.geoLocationBroker = geoLocationBroker;
+    }
+
+    @RequestMapping(value = "/account/payment/test", method = RequestMethod.GET)
+    public boolean testPaymentMethod() {
+        // replace with simulation of payment processor response once wired up
+        return true;
+    }
 
     @RequestMapping(value = "/ajax/list", method = RequestMethod.GET)
     public String ajaxListMembersView(Model model) {

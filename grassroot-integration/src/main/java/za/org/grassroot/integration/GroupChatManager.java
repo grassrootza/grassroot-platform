@@ -219,7 +219,6 @@ public class GroupChatManager implements GroupChatService {
 
     }
 
-
     @Override
     @Transactional
     @Async

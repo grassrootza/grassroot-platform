@@ -35,8 +35,6 @@ public class OutboundRouterTest {
     @Autowired
     protected MessageChannel gcmOutboundChannel;
 
-
-
     @Autowired
     protected OutboundMessageRouter outboundMessageRouter;
 

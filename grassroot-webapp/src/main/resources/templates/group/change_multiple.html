@@ -1,95 +1,111 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
-      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      layout:decorator="layout">
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" xmlns:data="http://www.w3.org/1999/xhtml"
+      data-layout-decorate="~{layout}">
 <head>
-  <title>Grassroot - Modify Group</title>
-  <script th:src="@{/js/grassroot-methods.js}"></script>
+  <title>Modify Group</title>
+
+  <link rel="stylesheet" type="text/css" th:href="@{/css/jquery-ui.min.css}" />
+
+  <meta name="_csrf" th:content="${_csrf.token}"/>
+  <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+
 </head>
 <body>
 
-<div layout:fragment="header">
-  <h2 class="text-center">Group: "<span th:text="${groupModifier.groupName}">group</span>"</h2>
-</div>
-
-<div layout:fragment="overview">
-  <h4 class="text-center">Add and modify multiple members for a group</h4>
-  <h5 class="text-center">Note: You cannot change your own role in the group</h5>
-</div>
-
-<div layout:fragment="content">
-
-  <div layout:fragment="messages"></div>
-  <div class="well">
-
-    <div class="col-md-8 col-md-offset-2">
-    <form id="member_entry" th:object="${groupModifier}" th:action="@{/group/change_multiple}" method="post" autocomplete="on" class="form-horizontal">
-      <input type="hidden" th:field="*{group.Uid}" th:value="${groupModifier.group.Uid}" />
-      <div class="form-group">
-        <table class="table col-md-8" id="member-input">
-          <thead>
-          <tr>
-            <th>Name</th>
-            <th>Phone</th>
-            <th>Role</th>
-            <th th:if="${groupModifier.canRemoveMembers}"></th>
-          </tr>
-          </thead>
-          <tbody>
-          <tr th:each="member, iterStat: *{listOfMembers}" class="member_input_row">
-            <td>
-              <input type="text" th:field="*{listOfMembers[__${iterStat.index}__].displayName}" class="form-control" maxlength="25"
-                     th:value="${member.displayName}" th:readonly="${member.getPhoneNumberWithCCode() == currentUser.getUsername()}"/>
-            </td>
-            <td>
-              <input type="text" th:field="*{listOfMembers[__${iterStat.index}__].phoneNumber}" class="form-control"
-                     th:value="${member.phoneNumber}" th:readonly="${member.getPhoneNumberWithCCode() == currentUser.getUsername()}"/>
-              <span th:if="${#fields.hasErrors('listOfMembers[__${iterStat.index}__].phoneNumber')}"
-                    class="alert has-error">Error!</span>
-            </td>
-            <td>
-              <select th:field="*{listOfMembers[__${iterStat.index}__].roleName}" class="form-control"
-                      th:disabled="${(groupModifier.canUpdateDetails == false) or (member.getPhoneNumberWithCCode() == currentUser.getUsername())}">
-                <option th:each="role : ${T(za.org.grassroot.core.domain.BaseRoles).groupRoles}"
-                        th:value="${role}"
-                        th:text="#{web.group.role.__${role}__}"
-                        th:selected="${#strings.equals(member.roleName, role)}"></option>
-              </select>
-            </td>
-            <td>
-              <button th:if="${groupModifier.canRemoveMembers}" type="button" name="removeMember" class="btn btn-default" aria-label="Remove"
-                      th:value="${iterStat.index}" th:id="${'remove' + iterStat.index}"
-                      th:unless="${member.getPhoneNumberWithCCode() == currentUser.getUsername()}">
-                <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
-              </button>
-            </td>
-          </tr>
-          </tbody>
-        </table>
+<section layout:fragment="header">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
+        <h2 class="text-center header-content-title" th:text="${group.name}">Group name</h2>
+        <h4 class="text-center header-content-subtitle">Add and modify multiple members in a group</h4>
+        <h4 class="text-center group-info">
+          <a th:href="@{/group/view(groupUid=${group.uid})}">Back to group</a>
+        </h4>
+        <h4 class="text-center group-info">
+          Note: you cannot change your own role in the group
+        </h4>
       </div>
-      <div class="form-group" th:if="${groupModifier.canAddMembers}">
-        <div class="col-md-6 pull-right">
-          <button type="button" name="addMember" id="add_member" class="btn btn-default">
-            <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
-            Add another member
-          </button>
-          <a th:href="@{add_bulk(groupUid=${groupModifier.group.Uid})}" role="button" class="btn btn-default">
-            <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>Bulk Add Members
-          </a>
-        </div>
-      </div>
-      <div class="form-group">
-        <div class="col-md-4 pull-right">
-          <a th:href="@{view(groupUid=${groupModifier.group.Uid})}" role="button" class="btn btn-default">Cancel</a>
-          <button type="submit" class="btn btn-primary">Submit Group</button>
-        </div>
-      </div>
-    </form>
     </div>
-
   </div>
-</div>
+
+</section>
+
+<main layout:fragment="content">
+
+  <section class="grassroot-form">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-10 col-md-offset-1 col-sm-6 col-sm-offset-3 col-xs-12">
+          <form id="member_entry" th:object="${listOfMembers}" th:action="@{/group/change_multiple}" method="post" autocomplete="on">
+            <input type="hidden" name="groupUid" th:value="${group.Uid}" />
+
+
+            <div class="form-group inline-field">
+              <div class="col-md-4 col-sm-4 col-xs-4"><label>Name</label></div>
+              <div class="col-md-3 col-sm-3 col-xs-4"><label>Phone</label></div>
+              <div class="col-md-4 col-sm-4 col-xs-4"><label>Role</label></div>
+            </div>
+
+            <div id="member-input">
+              <div class="form-group member-row inline-field" th:each="member, iterStat: *{memberList}">
+                <input type="hidden" th:field="*{memberList[__${iterStat.index}__].changed}" />
+                <input type="hidden" th:field="*{memberList[__${iterStat.index}__].deleted}" />
+                <input type="hidden" th:field="*{memberList[__${iterStat.index}__].memberUid}" />
+                <div class="col-md-4 col-xs-12">
+                  <input type="text" th:field="*{memberList[__${iterStat.index}__].displayName}" class="form-control input-lg"
+                         th:readonly="${member.currentUser}" placeholder="Member's name" maxlength="35"/>
+                </div>
+                <div class="col-md-3 col-xs-12">
+                  <input type="text" th:field="*{memberList[__${iterStat.index}__].phoneNumber}" class="form-control input-lg"
+                         th:readonly="${member.currentUser}" placeholder="Phone number"/>
+                </div>
+                <div class="col-md-4 col-xs-12">
+                  <select th:field="*{memberList[__${iterStat.index}__].roleName}" class="form-control input-lg"
+                          th:disabled="${(canUpdateDetails == false) or (member.currentUser)}">
+                    <option th:each="role : ${T(za.org.grassroot.core.domain.BaseRoles).groupRoles}"
+                            th:value="${role}"
+                            th:text="#{web.group.role.__${role}__}"
+                            th:selected="${#strings.equals(member.roleName, role)}"></option>
+                  </select>
+                </div>
+                <div class="col-md-1 col-xs-12 text-center">
+                  <i th:unless="${member.currentUser}" data:index="${iterStat.index}" th:id="'removeMember' + ${iterStat.index}" class="fa fa-times" aria-hidden="true"></i>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <div class="col-md-3 col-sm-6 col-xs-12">
+                <button th:if="${canAddMembers}" type="button" name="addMember" id="add_member" class="btn-primary btn-block add-row default-button">
+                  <i class="fa fa-plus" aria-hidden="true"></i>Add member</button>
+              </div>
+              <div class="col-md-3 col-sm-6 col-xs-12">
+                <a th:if="${canAddMembers}" th:href="@{add_bulk(groupUid=${group.uid})}" role="button"
+                   class="btn default-button btn-neutral full-width-button"><i class="fa fa-plus" aria-hidden="true"></i>Bulk Add Members
+                </a>
+              </div>
+              <div class="col-md-3 col-sm-6 col-xs-12">
+                <a th:href="@{view(groupUid=${group.uid})}" class="btn default-button btn-neutral full-width-button">Cancel</a>
+              </div>
+              <div class="col-md-3 col-sm-6 col-xs-12">
+                <button type="submit" class="btn btn-primary btn-block btn-lg default-button">Submit Changes</button>
+              </div>
+            </div>
+
+          </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
 
 <div class="header-container" layout:fragment="script-container">
+
+  <script th:src="@{/js/lib/jquery-ui.min.js}"></script>
+  <script th:src="@{/js/lib/jquery.validate.min.js}"></script>
+  <script th:src="@{/js/grassroot-methods.js}"></script>
 
   <script th:inline="javascript">
 
@@ -97,22 +113,51 @@
 
     $(document).ready(function () {
 
+      var token = $("meta[name='_csrf']").attr("content");
+      var header = $("meta[name='_csrf_header']").attr("content");
+
+      $.bind("ajaxSend", function(elm, xhr, s) {
+        xhr.setRequestHeader(header, token);
+      });
+
       var member_form = $('#member_entry');
 
       var member_table = $('#member-input');
-      var member_rows = member_form.find('.member_input_row');
+      var member_rows = member_form.find('.member-row');
       var number_members = member_rows.length;
 
+      $('[id^=removeMember]').click(function() {
+        var row = $(this).parent().parent();
+        row.hide();
+        row.find('[id$=deleted]').val('true');
+      });
+
       $('#add_member').click(function() {
+
         if (member_form.valid()) {
-          member_table.find('tr:last').after(grassrootJS.assembleMemberRow("listOfMembers", number_members));
-          member_table.find('tr:last').find('[name$="phoneNumber"]').rules('add', grassrootJS.phoneRules);
+          member_table.find('.member-row:last').after(grassrootJS.assembleMemberRow("memberList", number_members));
+          var newLastRow = member_table.find('.member-row:last');
+          var phoneInput = newLastRow.find('[name$="phoneNumber"]');
+          var nameInput = newLastRow.find('[name$="displayName"]');
+          phoneInput.rules('add', grassrootJS.phoneRules);
+          nameInput.autocomplete(grassrootJS.memberAutoComplete(nameInput, phoneInput));
+
+          newLastRow.find('#removeMember' + number_members).click(function () {
+            newLastRow.remove();
+          });
+
           number_members++;
         }
       });
 
       member_form.validate({
-        errorClass: 'error-text'
+        errorClass: 'error-text',
+        debug: true,
+        submitHandler: function(form) {
+          $(form).find(':input').prop('disabled', false);
+          console.log(JSON.stringify($(form).serializeArray()));
+          form.submit();
+        }
       });
 
       $('[name$="phoneNumber"]').each(function () {

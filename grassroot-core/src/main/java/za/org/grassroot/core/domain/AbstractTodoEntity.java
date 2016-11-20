@@ -61,6 +61,9 @@ public abstract class AbstractTodoEntity {
 	@Column(name = "message")
 	protected String message;
 
+	@Column(name = "description", length = 512)
+	protected String description;
+
 	/*
 	Minus value will send a reminder before actionByDate, Plus value will send a reminder x minutes before
 	actionByDate. Note ... now that it's fixed, this shares a lot with event, so consider abstracting to task
@@ -135,6 +138,14 @@ public abstract class AbstractTodoEntity {
 
 	public void setMessage(String message) {
 		this.message = message;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public void setDescription(String description) {
+		this.description = description;
 	}
 
 	public int getReminderMinutes() {

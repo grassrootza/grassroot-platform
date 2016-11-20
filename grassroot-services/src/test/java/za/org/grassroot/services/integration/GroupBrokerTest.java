@@ -10,10 +10,8 @@ import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.AbstractTransactionalJUnit4SpringContextTests;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.GrassrootServicesConfig;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Group;
@@ -21,10 +19,10 @@ import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
-import za.org.grassroot.services.GroupBroker;
-import za.org.grassroot.services.MembershipInfo;
+import za.org.grassroot.services.group.GroupBroker;
+import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.services.PermissionBroker;
-import za.org.grassroot.services.UserManagementService;
+import za.org.grassroot.services.user.UserManagementService;
 
 import java.util.Set;
 

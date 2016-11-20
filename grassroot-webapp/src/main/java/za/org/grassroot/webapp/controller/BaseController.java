@@ -8,7 +8,9 @@ import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.security.authentication.AuthenticationServiceException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -17,7 +19,7 @@ import org.springframework.web.bind.annotation.InitBinder;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.services.PermissionBroker;
-import za.org.grassroot.services.UserManagementService;
+import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.util.LocalDateTimePropertyEditor;
 
 import javax.servlet.http.HttpServletRequest;
@@ -30,6 +32,8 @@ import java.util.*;
 public class BaseController {
 
     private static final Logger log = LoggerFactory.getLogger(BaseController.class);
+
+    private static final String SNACKBAR_MESSAGE = "snackbarMessage";
 
     public enum MessageType {
         INFO("infoMessage"),
@@ -77,13 +81,21 @@ public class BaseController {
     }
 
     protected User getUserProfile() {
-
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        log.info("BaseController: authentication properties ... authenticated: " + authentication.isAuthenticated() + " ... and principal ... " + authentication.getPrincipal());
+        log.debug("BaseController: authentication properties ... authenticated: " + authentication.isAuthenticated() + " ... and principal ... " + authentication.getPrincipal());
         if (authentication.isAuthenticated() && authentication.getPrincipal() != null) {
             return (User) authentication.getPrincipal();
         }
         throw new AuthenticationServiceException("Invalid logged in user profile");
+    }
+
+    // for when user finishes account sign up, to force addition of account role for the user
+    protected void refreshAuthorities() {
+        final String userUid = getUserProfile().getUid();
+        User updatedUser = userManagementService.load(userUid);
+        Authentication authentication = new UsernamePasswordAuthenticationToken(updatedUser, null, updatedUser.getAuthorities());
+        SecurityContext context = SecurityContextHolder.getContext();
+        context.setAuthentication(authentication);
     }
 
     /* Helper method used in all the meeting/vote/logbook fields */
@@ -116,18 +128,22 @@ public class BaseController {
 
     public void addMessage(Model model, MessageType messageType, String messageKey, HttpServletRequest request) {
         model.addAttribute(messageType.getMessageKey(), getText(messageKey, request.getLocale()));
+        model.addAttribute(SNACKBAR_MESSAGE, getText(messageKey, request.getLocale()));
     }
 
     public void addMessage(Model model, MessageType messageType, String messageKey, Object[] arguments, HttpServletRequest request) {
         model.addAttribute(messageType.getMessageKey(), getText(messageKey, arguments, request.getLocale()));
+        model.addAttribute(SNACKBAR_MESSAGE, getText(messageKey, arguments, request.getLocale()));
     }
 
     public void addMessage(RedirectAttributes redirectAttributes, MessageType messageType, String messageKey, HttpServletRequest request) {
         redirectAttributes.addFlashAttribute(messageType.getMessageKey(), getText(messageKey, request.getLocale()));
+        redirectAttributes.addFlashAttribute(SNACKBAR_MESSAGE, getText(messageKey, request.getLocale()));
     }
 
     public void addMessage(RedirectAttributes redirectAttributes, MessageType messageType, String messageKey,Object [] arguments, HttpServletRequest request) {
         redirectAttributes.addFlashAttribute(messageType.getMessageKey(), getText(messageKey, arguments, request.getLocale()));
+        redirectAttributes.addFlashAttribute(SNACKBAR_MESSAGE, getText(messageKey, arguments, request.getLocale()));
     }
 
     /**

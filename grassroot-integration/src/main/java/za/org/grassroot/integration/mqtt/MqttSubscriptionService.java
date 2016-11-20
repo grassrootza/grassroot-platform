@@ -2,7 +2,6 @@ package za.org.grassroot.integration.mqtt;
 
 import org.springframework.scheduling.annotation.Async;
 import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.User;
 
 /**
  * Created by luke on 2016/11/05.

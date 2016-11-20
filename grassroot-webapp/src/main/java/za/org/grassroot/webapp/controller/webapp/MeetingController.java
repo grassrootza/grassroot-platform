@@ -8,6 +8,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.util.StringUtils;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
@@ -16,8 +17,12 @@ import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.MeetingImportance;
 import za.org.grassroot.core.util.DateTimeUtil;
-import za.org.grassroot.services.*;
+import za.org.grassroot.services.PermissionBroker;
+import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
+import za.org.grassroot.services.group.GroupBroker;
+import za.org.grassroot.services.task.EventBroker;
+import za.org.grassroot.services.task.EventLogBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.MeetingWrapper;
 
@@ -42,45 +47,51 @@ public class MeetingController extends BaseController {
 
     Logger log = LoggerFactory.getLogger(MeetingController.class);
 
-    @Autowired
     private GroupBroker groupBroker;
-
-    @Autowired
     private EventBroker eventBroker;
-
-    @Autowired
     private PermissionBroker permissionBroker;
-
-    @Autowired
     private EventLogBroker eventLogBroker;
+    private AccountGroupBroker accountBroker;
 
     @Autowired
-    private AccountBroker accountBroker;
+    public MeetingController(GroupBroker groupBroker, EventBroker eventBroker, PermissionBroker permissionBroker,
+                             EventLogBroker eventLogBroker, AccountGroupBroker accountBroker) {
+        this.groupBroker = groupBroker;
+        this.eventBroker = eventBroker;
+        this.permissionBroker = permissionBroker;
+        this.eventLogBroker = eventLogBroker;
+        this.accountBroker = accountBroker;
+    }
 
     /**
      * Meeting creation
      */
 
-    @RequestMapping("create")
-    public String createMeetingIndex(Model model, @RequestParam(value="groupUid", required=false) String groupUid) {
+    @RequestMapping(value = "create", method = RequestMethod.GET)
+    public String createMeetingIndex(Model model, @RequestParam(value="groupUid", required=false) String groupUid,
+                                     RedirectAttributes attributes, HttpServletRequest request) {
 
         MeetingWrapper meeting = MeetingWrapper.makeEmpty(EventReminderType.GROUP_CONFIGURED, 24*60, true);
 
-        if (groupUid != null) {
-            Group group = groupBroker.load(groupUid);
-            model.addAttribute("group", group);
-            meeting.setParentUid(groupUid);
+        if (permissionBroker.countActiveGroupsWithPermission(getUserProfile(), Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING) == 0) {
+            addMessage(attributes, MessageType.INFO, "meeting.create.group", request);
+            return "redirect:/group/create";
         } else {
-            User user = userManagementService.load(getUserProfile().getUid()); // refresh user entity, in case permissions changed
-            model.addAttribute("userGroups", permissionBroker.getActiveGroupsSorted(user, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING));
+            if (groupUid != null) {
+                Group group = groupBroker.load(groupUid);
+                model.addAttribute("group", group);
+                meeting.setParentUid(groupUid);
+            } else {
+                User user = userManagementService.load(getUserProfile().getUid()); // refresh user entity, in case permissions changed
+                model.addAttribute("userGroups", permissionBroker.getActiveGroupsSorted(user, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING));
+            }
+
+            model.addAttribute("meeting", meeting);
+            model.addAttribute("reminderOptions", reminderMinuteOptions(false));
+
+            log.info("Wrapper we are passing: " + meeting.toString());
+            return "meeting/create";
         }
-
-        model.addAttribute("meeting", meeting);
-        model.addAttribute("reminderOptions", reminderMinuteOptions(false));
-
-        log.info("Wrapper we are passing: " + meeting.toString());
-        return "meeting/create";
-
     }
 
     @RequestMapping(value = "create", method = RequestMethod.POST)
@@ -129,7 +140,7 @@ public class MeetingController extends BaseController {
         boolean canAlterDetails = meeting.getCreatedByUser().equals(user) ||
                 permissionBroker.isGroupPermissionAvailable(user, meeting.getAncestorGroup(), Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
 
-        model.addAttribute("meeting", new MeetingWrapper(meeting));
+        model.addAttribute("meeting", meeting);
         model.addAttribute("responseTotals", meetingResponses);
         model.addAttribute("canViewRsvps", canViewRsvps);
 
@@ -208,66 +219,6 @@ public class MeetingController extends BaseController {
         addMessage(redirectAttributes, MessageType.SUCCESS, "meeting.reminder.success", request);
         return "redirect:/home";
 
-    }
-
-    /**
-     * Free text entry, for authorized accounts
-     */
-
-    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
-    @RequestMapping(value = "free")
-    public String sendFreeForm(Model model, @RequestParam(value="groupUid", required=false) String groupUid) {
-
-        boolean groupSpecified;
-        User sessionUser = getUserProfile();
-
-        if (groupUid != null) {
-            model.addAttribute("group", groupBroker.load(groupUid));
-            groupSpecified = true;
-        } else {
-            model.addAttribute("userGroups", permissionBroker.getActiveGroupsSorted(sessionUser, null));
-            groupSpecified = false;
-        }
-        model.addAttribute("groupSpecified", groupSpecified); // slightly redundant, but use it to tell Thymeleaf what to do
-        return "meeting/free";
-    }
-
-    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
-    @RequestMapping(value = "free", method = RequestMethod.POST)
-    public String confirmFreeMsg(Model model, @RequestParam String groupUid, @RequestParam(value="message") String message) {
-
-        model.addAttribute("action", "free");
-        model.addAttribute("groupUid", groupUid);
-
-        model.addAttribute("message", message);
-        Group group = groupBroker.load(groupUid);
-
-        int recipients = group.getMembers().size();
-        model.addAttribute("recipients", recipients);
-        model.addAttribute("cost", recipients * 0.2);
-        return "meeting/remind_confirm";
-
-    }
-
-    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
-    @RequestMapping(value = "free", method = RequestMethod.POST, params = {"confirmed"})
-    public String sendFreeMsg(Model model, @RequestParam(value="groupUid") String groupUid,
-                              @RequestParam(value="message") String message,
-                              RedirectAttributes redirectAttributes, HttpServletRequest request) {
-
-        // todo: check that this group is paid for (and filter on previous page)
-        log.info("Sending free form message: {}, to this group: {}", message, groupUid);
-
-        try {
-            accountBroker.sendFreeFormMessage(getUserProfile().getUid(), groupUid, message);
-            addMessage(redirectAttributes, MessageType.SUCCESS, "sms.message.sent", request);
-            log.info("Sent message, redirecting to home");
-
-        } catch (AccessDeniedException e) {
-            addMessage(redirectAttributes, MessageType.ERROR, "sms.message.error", request);
-            e.printStackTrace();
-        }
-        return "redirect:/home";
     }
 
     /**

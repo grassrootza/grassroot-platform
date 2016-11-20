@@ -9,7 +9,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.services.UserManagementService;
+import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.GrassrootWebApplicationConfig;
 import za.org.grassroot.webapp.IntegrationTest;
 

@@ -1,6 +1,6 @@
 (function( factory ) {
 	if ( typeof define === "function" && define.amd ) {
-		define( ["jquery", "../jquery.validate.min"], factory );
+		define( ["jquery", "../lib/jquery.validate.min"], factory );
 	} else {
 		factory( jQuery );
 	}

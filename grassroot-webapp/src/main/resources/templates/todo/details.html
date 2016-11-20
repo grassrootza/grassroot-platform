@@ -1,59 +1,102 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      data-layout-decorate="layout">
+      data-layout-decorate="~{layout}">
 <head>
-  <title>Grassroot: View Action</title>
+  <title>View Action</title>
 </head>
 <body>
 
-<div layout:fragment="header">
-  <h2 class="text-center"><span th:text="${entry.message}">Todo title</span></h2>
-</div>
-<div layout:fragment="overview"></div>
-
-<div layout:fragment="content">
-  <div layout:fragment="messages"></div>
-
-  <div class="container-fluid">
-    <div class="col-md-6 col-md-offset-3">
-      <div class="row">
-        <ul class="list-group border-green">
-          <li class="list-group-item" th:classappend="${isComplete} ? list-group-item-success : list-group-item-warning">
-            <h4>Action: "<span th:text="${entry.message}"></span>".</h4>
-          </li>
-          <li class="list-group-item" th:if="${not isComplete}">
-            <h4>Action not done yet, due date is <span th:text="${#dates.format(entry.actionByDate, 'dd MMM yyyy')}">Date</span></h4>
-          </li>
-          <li class="list-group-item">
-            <h4>Recorded on date: <span th:text="${#dates.format(entry.createdDateTime, 'dd MMM yyyy, HH:mm')}"></span></h4>
-          </li>
-          <li class="list-group-item">
-            <h4>Recorded by: <span th:text="${creatingUser.nameToDisplay()}"></span></h4>
-          </li>
-          <li class="list-group-item" th:if="${isComplete}">
-            <h4>Original deadline was <span th:text="${#dates.format(entry.actionByDate, 'dd MMM yyyy')}">Date</span></h4>
-          </li>
-          <li class="list-group-item" th:if="${assignedToUser != null}">
-            <h4>Action was assigned to member <mark class="text-primary" th:text="${assignedToUser.nameToDisplay()}">Name</mark></h4>
-          </li>
-        </ul>
+<section layout:fragment="header">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
+        <h2 class="text-center header-content-title">
+          <span class="group-title">Todo: </span><span class="group-name" th:text="${entry.message}">Todo title</span>
+        </h2>
+        <h4 class="text-center header-content-subtitle">Details of action todo</h4>
       </div>
-
-      <div class="row vertical-padding">
-        <div class="btn-group button-md-align pull-right" th:unless="${isComplete}"> <!-- redundancy here but putting unless clase in <a> or <button> not working -->
-          <a th:href="@{complete(todoUid=${entry.uid})}"><button class="btn btn-lg btn-primary">Mark as complete</button></a>
-          <a th:if="${canModify}" th:href="@{modify(todoUid=${entry.uid})}"><button class="btn btn-lg btn-default">Modify to-do</button></a>
-          <a th:href="@{view(groupUid=${entry.parent.uid})}"><button class="btn btn-lg btn-info">Back to group</button></a>
-        </div>
-        <div class="button-md-align pull-right" th:if="${isComplete}">
-          <a th:href="@{view(groupUid=${entry.parent.uid})}"><button class="btn btn-lg btn-default">Back to group</button></a>
-        </div>
-      </div>
-
     </div>
   </div>
+</section>
 
-</div>
+<main layout:fragment="content">
+
+  <section class="grassroot-form">
+    <div class="container task-details">
+      <div class="row">
+
+        <div class="col-md-6 col-md-offset-3 col-sm-6 col-sm-offset-3 col-xs-12">
+          <div class="row detail-row">
+            <div class="col-md-3 col-sm-4 col-xs-12">
+              <label class="grassroot-sidebar">Action</label>
+            </div>
+            <div class="col-md-9 col-sm-8 col-xs-12">
+              <p class="description" th:text="${entry.message}" th:classappend="${isComplete} ? complete : incomplete"></p>
+            </div>
+          </div>
+
+          <div class="detail-row" th:if="${not #strings.isEmpty(entry.description)}">
+            <div class="col-md-3 col-sm-4 col-xs-12">
+              <label class="grassroot-sidebar">Notes</label>
+            </div>
+            <div class="col-md-9 col-sm-8 col-xs-12">
+              <p class="description" th:text="${entry.description}"></p>
+            </div>
+          </div>
+
+          <div class="row detail-row">
+            <div class="col-md-3 col-sm-4 col-xs-12">
+              <label class="grassroot-sidebar">Status</label>
+            </div>
+            <div class="col-md-9 col-sm-8 col-xs-12" th:if="${isComplete}">
+              <p class="description complete">Complete (confirmed by <span th:text="${entry.countCompletions()}">X</span> members)</p>
+            </div>
+            <div class="col-md-9 col-sm-8 col-xs-12" th:if="${not isComplete}">
+              <p class="description incomplete">Not done yet, due date <span th:text="${#dates.format(entry.actionByDate, 'dd MMM yyyy')}">Date</span></p>
+            </div>
+          </div>
+
+          <div class="row detail-row">
+            <div class="col-md-3 col-sm-4 col-xs-12">
+              <label class="grassroot-sidebar">Recorded</label>
+            </div>
+            <div class="col-md-9 col-sm-8 col-xs-12">
+              <p class="description">
+                Recorded on <span th:text="${#dates.format(entry.createdDateTime, 'dd MMM yyyy, HH:mm')}"></span>,
+                by <span th:text="${entry.createdByUser.nameToDisplay()}"></span>
+              </p>
+            </div>
+          </div>
+
+          <div class="row detail-row">
+            <div class="col-md-3 col-sm-4 col-xs-12">
+              <label class="grassroot-sidebar">Assigned</label>
+            </div>
+            <div class="col-md-9 col-sm-8 col-xs-12">
+              <p class="description" th:switch="${entry.isAllGroupMembersAssigned()}">
+                <span th:case="true">All group members are assigned to this action</span>
+                <span th:case="false">X group members are assigned to this action</span>
+              </p>
+            </div>
+          </div>
+
+          <div class="row vertical-padding">
+            <div class="btn-group button-md-align pull-right" th:unless="${isComplete}">
+              <a th:href="@{view(groupUid=${entry.parent.uid})}"><button class="btn default-button btn-neutral">Back to group</button></a>
+              <a th:if="${canModify}" th:href="@{modify(todoUid=${entry.uid})}"><button class="btn default-button btn-neutral">Modify to-do</button></a>
+              <a th:href="@{complete(todoUid=${entry.uid}, source='todoview')}"><button class="btn default-button btn-positive">Mark as complete</button></a>
+            </div>
+            <div class="button-md-align pull-right" th:if="${isComplete}">
+              <a th:href="@{view(groupUid=${entry.parent.uid})}"><button class="btn default-button btn-neutral">Back to group</button></a>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </section>
+</main>
 
 </body>
 </html>

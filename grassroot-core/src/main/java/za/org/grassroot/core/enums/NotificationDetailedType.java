@@ -5,7 +5,6 @@ package za.org.grassroot.core.enums;
  */
 public enum NotificationDetailedType {
 
-	FREE_FORM_MESSAGE,
 	WELCOME,
 
 	EVENT_INFO,
@@ -20,5 +19,8 @@ public enum NotificationDetailedType {
 	TODO_INFO,
 	TODO_REMINDER,
 
-	JOINREQUEST
+	JOINREQUEST,
+
+	FREE_FORM_MESSAGE,
+	ACCOUNT_BILLING_NOTIFICATION
 }

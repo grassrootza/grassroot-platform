@@ -18,8 +18,10 @@ import za.org.grassroot.core.enums.EventRSVPResponse;
 
 import javax.transaction.Transactional;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
@@ -252,5 +254,42 @@ public class UserRepositoryTest {
         assertTrue(nonCreatorMembers.contains(user3));
 
     }
+
+    // major todo : move this test to services, as now uses specifications
+
+    /* @Test
+    public void shouldReturnNamesInGraph() {
+        String phoneBase = "080555000";
+        String nameBase = "tester ";
+
+        List<User> testUsers = new ArrayList<>();
+
+        for (int i = 0; i < 5; i++) {
+            testUsers.add(new User(phoneBase + i, nameBase + i));
+        }
+
+        userRepository.save(testUsers);
+        assertEquals(userRepository.count(), testUsers.size());
+
+        Group testGroup1 = new Group("tg1", testUsers.get(0));
+        testGroup1.addMember(testUsers.get(0));
+        testGroup1.addMember(testUsers.get(1));
+        groupRepository.save(testGroup1);
+
+        assertEquals(groupRepository.count(), 1);
+
+        List<Object[]> graph = userRepository.findDisplayNamesInGraph(testUsers.get(0), "%test%");
+        assertNotNull(graph);
+        assertEquals(2, graph.size());
+
+        List<String> phoneNumbers = graph.stream().map(o -> String.valueOf(o[1])).collect(Collectors.toList());
+        List<String> displayNames = graph.stream().map(o -> String.valueOf(o[0])).collect(Collectors.toList());
+
+        assertTrue(phoneNumbers.contains(testUsers.get(1).getPhoneNumber()));
+        assertTrue(displayNames.contains(testUsers.get(1).getDisplayName()));
+
+        assertFalse(phoneNumbers.contains(testUsers.get(2).getPhoneNumber()));
+        assertFalse(displayNames.contains(testUsers.get(2).getDisplayName()));
+    }*/
 
 }

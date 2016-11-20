@@ -13,8 +13,20 @@ import java.time.Instant;
  */
 public final class TodoSpecifications {
 
+    public static Specification<Todo> createdByUser(final User user) {
+        return (root, query, cb) -> cb.equal(root.get(AbstractTodoEntity_.createdByUser), user);
+    }
+
+    public static Specification<Todo> messageIs(final String message) {
+        return (root, query, cb) -> cb.equal(root.get(AbstractTodoEntity_.message), message);
+    }
+
     public static Specification<Todo> hasGroupAsParent(final Group group) {
         return (root, query, cb) -> cb.equal(root.get(AbstractTodoEntity_.parentGroup), group);
+    }
+
+    public static Specification<Todo> hasGroupAsAncestor(final Group group) {
+        return (root, query, cb) -> cb.equal(root.get(Todo_.ancestorGroup), group);
     }
 
     public static Specification<Todo> notCancelled() {
@@ -29,12 +41,14 @@ public final class TodoSpecifications {
         return (root, query, cb) -> cb.between(root.get(Todo_.actionByDate), start, end);
     }
 
-    public static Specification<Todo> completionConfirmsAbove(double threshold) {
-        return (root, query, cb) -> cb.greaterThan(root.get(Todo_.completionPercentage), threshold);
+    public static Specification<Todo> completionConfirmsAbove(double threshold, boolean equalTo) {
+        return (root, query, cb) -> equalTo ? cb.greaterThanOrEqualTo(root.get(Todo_.completionPercentage), threshold) :
+                cb.greaterThan(root.get(Todo_.completionPercentage), threshold);
     }
 
-    public static Specification<Todo> completionConfirmsBelow(double threshold) {
-        return (root, query, cb) -> cb.lessThan(root.get(Todo_.completionPercentage), threshold);
+    public static Specification<Todo> completionConfirmsBelow(double threshold, boolean equalTo) {
+        return (root, query, cb) -> equalTo ? cb.lessThanOrEqualTo(root.get(Todo_.completionPercentage), threshold) :
+                cb.lessThan(root.get(Todo_.completionPercentage), threshold);
     }
 
     public static Specification<Todo> createdDateBetween(Instant start, Instant end) {

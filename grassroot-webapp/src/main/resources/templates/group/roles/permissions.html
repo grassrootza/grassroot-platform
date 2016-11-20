@@ -1,27 +1,31 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      layout:decorator="layout">
+      data-layout-decorate="~{layout}">
 <head>
-    <title>Grassroot -- Change role permissions</title>
+    <title>Permissions</title>
 </head>
+
 <body>
+<section layout:fragment="header" class="top-container">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
+        <h2 class="text-center header-content-title" th:text="${group.groupName}">Group name</h2>
+        <h4 class="text-center header-content-subtitle">Adjust permissions assigned to roles</h4>
+        <h4 class="text-center group-info">
+          <a th:href="@{/group/view(groupUid=${group.Uid})}">Back to group</a>
+        </h4>
+      </div>
+    </div>
+  </div>
+</section>
 
-<div layout:fragment="header">
-  <h2 class="text-center"><span th:text="${group.groupName}">Group name</span></h2>
-</div>
+<main layout:fragment="content">
 
-<div layout:fragment="overview">
-  <h4 class="text-center">Adjust permissions assigned to roles
-    (<a th:href="@{/group/view(groupUid=${group.Uid})}">back to group</a>)</h4>
-</div>
-
-<div layout:fragment="content">
-  <div layout:fragment="messages"></div>
-
-  <div id="permissionsTable">
-    <div class="well">
+  <div id="permissionsTable" class="grassroot-form">
+    <div class="container">
       <div class="row">
-        <div class="col-md-6 col-md-offset-3">
+        <div class="col-md-8 col-md-offset-2 col-sm-6 col-sm-offset-3 col-xs-12">
           <form th:action="@{permissions}" method="post">
             <input type="hidden" name="groupUid" th:value="${group.uid}" />
             <table class="table table-striped">
@@ -68,8 +72,8 @@
                    th:if="${#lists.contains(organizerPermissions, permission)}" value="on" type="hidden" />
             <div class="form-group">
               <div class="pull-right">
-                <a th:href="@{/group/view(groupUid=${group.Uid})}" role="button" class="btn btn-default">Back to group</a>
-                <a th:href="@{members(groupUid=${group.Uid})}" role="button" class="btn btn-default">Back to roles</a>
+                <a th:href="@{/group/view(groupUid=${group.Uid})}" role="button" class="btn default-button btn-neutral">Back to group</a>
+                <a th:href="@{members(groupUid=${group.Uid})}" role="button" class="btn default-button btn-neutral">Back to roles</a>
                 <!-- todo: do a modal button with the templates, and allow resetting to them -->
                 <!-- <button type="reset" class="btn btn-warning">Reset</button> -->
                 <button type="submit" class="btn btn-primary">Submit</button>
@@ -82,7 +86,7 @@
     </div>
   </div>
 
-</div>
+</main>
 
 </body>
 </html>

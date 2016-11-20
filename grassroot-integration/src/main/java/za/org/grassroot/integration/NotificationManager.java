@@ -65,6 +65,7 @@ public class NotificationManager implements NotificationService{
     @Override
     @Transactional
     public void updateNotificationReadStatus(String notificationUid, boolean read) {
+        logger.info("Setting notification as read ...");
         Notification notification = notificationRepository.findByUid(notificationUid);
         notification.setRead(read);
     }

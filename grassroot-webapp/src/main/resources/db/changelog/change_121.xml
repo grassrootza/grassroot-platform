@@ -4,8 +4,8 @@
         xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
          http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.0.xsd">
-    <changeSet id="change_120" author="Paballo Ditshego">
-        <comment>Altered table group_message_stats added colum sender</comment>
+    <changeSet id="change_121" author="luke">
+        <comment>Extensive additions to account model to prepare for billing and payments</comment>
         <sqlFile path="db/scripts/script_121.sql" splitStatements="false"/>
         <rollback>
             <sqlFile path="db/scripts/script_121_rollback.sql"/>

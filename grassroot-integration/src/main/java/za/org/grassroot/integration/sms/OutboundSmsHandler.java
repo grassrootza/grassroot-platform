@@ -28,12 +28,12 @@ public class OutboundSmsHandler {
     public void handleMessage(Message<Notification> message) throws Exception {
         log.info("SMS outbound channel received message={}", message.getPayload().getMessage());
         Notification notification = message.getPayload();
-        String destination =notification.getTarget().getPhoneNumber();
+        String destination = notification.getTarget().getPhoneNumber();
         String msg = notification.getMessage();
-        log.info("Sms outbound channel sending forwarding message to = {}", destination);
         SmsGatewayResponse response = smsSendingService.sendSMS(msg,destination);
+        // since even if the gateway didn't respond, we have delivered it there, and not marking it here can lead to a lot of duplicate calls
+        notificationService.markNotificationAsDelivered(notification.getUid());
         if (response.isSuccessful()) {
-            notificationService.markNotificationAsDelivered(notification.getUid());
             notificationService.updateNotificationReadStatus(notification.getUid(), true);
         } else {
             log.error("error delivering SMS, response from gateway: {}", response.toString());

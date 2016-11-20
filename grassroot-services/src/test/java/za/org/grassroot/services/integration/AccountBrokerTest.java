@@ -15,19 +15,19 @@ import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.AccountType;
+import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.RoleRepository;
 import za.org.grassroot.core.repository.UserRepository;
-import za.org.grassroot.services.AccountBroker;
-import za.org.grassroot.services.GroupBroker;
-import za.org.grassroot.services.UserManagementService;
+import za.org.grassroot.services.account.AccountBroker;
+import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.services.exception.GroupAlreadyPaidForException;
 
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 
 import static org.junit.Assert.*;
-import static za.org.grassroot.services.enums.GroupPermissionTemplate.DEFAULT_GROUP;
 
 @RunWith(SpringRunner.class)
 @ContextConfiguration(classes = TestContextConfig.class)
@@ -42,10 +42,10 @@ public class AccountBrokerTest {
     private AccountBroker accountBroker;
 
     @Autowired
-    private UserManagementService userManagementService;
+    private AccountGroupBroker accountGroupBroker;
 
     @Autowired
-    private GroupBroker groupBroker;
+    private GroupRepository groupRepository;
 
     @Autowired
     private RoleRepository roleRepository;
@@ -65,9 +65,16 @@ public class AccountBrokerTest {
 
     @Before
     public void setUp() {
-        testUser = userManagementService.loadOrCreateUser(userNumber);
-        testAdmin = userManagementService.loadOrCreateUser(accountAdminNumber);
-        testGroup = groupBroker.create(testUser.getUid(), groupName, null, new HashSet<>(), DEFAULT_GROUP, null, null, false);
+        setAccountFields();
+
+        testUser = new User(userNumber, "test user");
+        userRepository.save(testUser);
+
+        testAdmin = new User(accountAdminNumber);
+        testAdmin.setEmailAddress(billingEmail);
+        userRepository.save(testAdmin);
+
+        testGroup = groupRepository.save(new Group(groupName, testUser));
 
         Role systemAdmin = new Role(BaseRoles.ROLE_SYSTEM_ADMIN, null);
         log.info("systemAdmin role: " + systemAdmin.describe());
@@ -77,14 +84,14 @@ public class AccountBrokerTest {
 
         Role accountAdmin = new Role(BaseRoles.ROLE_ACCOUNT_ADMIN, null);
         roleRepository.save(accountAdmin);
-
-        setAccountFields();
     }
 
     // this is cumbersome, but test isn't picking up the rest of the properties, or running init, so ...
     private void setAccountFields() {
-        Map<AccountType, Boolean> messagesEnabled = new HashMap<>();
-        messagesEnabled.put(AccountType.STANDARD, true);
+        Map<AccountType, Integer> accountFees = new HashMap<>();
+        accountFees.put(AccountType.STANDARD, 10000);
+        Map<AccountType, Integer> freeFormPerMonth = new HashMap<>();
+        freeFormPerMonth.put(AccountType.STANDARD, 100);
         Map<AccountType, Integer> messagesCost = new HashMap<>();
         messagesCost.put(AccountType.STANDARD, 30);
         Map<AccountType, Integer> maxGroupSize = new HashMap<>();
@@ -93,32 +100,36 @@ public class AccountBrokerTest {
         maxGroupNumber.put(AccountType.STANDARD, 20);
         Map<AccountType, Integer> maxSubGroupDepth = new HashMap<>();
         maxSubGroupDepth.put(AccountType.STANDARD, 3);
+        Map<AccountType, Integer> todosPerMonth = new HashMap<>();
+        todosPerMonth.put(AccountType.STANDARD, 16);
 
-        ReflectionTestUtils.setField(accountBroker, "messagesEnabled", messagesEnabled);
+        ReflectionTestUtils.setField(accountBroker, "accountFees", accountFees);
+        ReflectionTestUtils.setField(accountBroker, "freeFormPerMonth", freeFormPerMonth);
         ReflectionTestUtils.setField(accountBroker, "messagesCost", messagesCost);
         ReflectionTestUtils.setField(accountBroker, "maxGroupSize", maxGroupSize);
         ReflectionTestUtils.setField(accountBroker, "maxGroupNumber", maxGroupNumber);
         ReflectionTestUtils.setField(accountBroker, "maxSubGroupDepth", maxSubGroupDepth);
+        ReflectionTestUtils.setField(accountBroker, "todosPerMonth", todosPerMonth);
     }
 
-    private Account createTestAccount(String billingEmail) {
-        String accountUid = accountBroker.createAccount(testUser.getUid(), accountName, testAdmin.getUid(), billingEmail, AccountType.STANDARD);
+    private Account createTestAccount() {
+        String accountUid = accountBroker.createAccount(testUser.getUid(), accountName, testAdmin.getUid(), AccountType.STANDARD);
         Account account = accountBroker.loadAccount(accountUid);
         return account;
     }
 
     @Test
     public void shouldSaveBilling() {
-        String accountUid = accountBroker.createAccount(testUser.getUid(), accountName, testAdmin.getUid(), billingEmail, AccountType.STANDARD);
+        String accountUid = accountBroker.createAccount(testUser.getUid(), accountName, testAdmin.getUid(), AccountType.STANDARD);
         Account account = accountBroker.loadAccount(accountUid);
         assertNotEquals(null,account.getId());
-        assertEquals(billingEmail, account.getPrimaryEmail());
+        assertEquals(billingEmail, account.getBillingUser().getEmailAddress());
     }
 
     @Test
     public void shouldCreateWithAdmin() {
 
-        Account account = createTestAccount(null);
+        Account account = createTestAccount();
         assertNotEquals(null, account.getId());
         assertNotNull(account.getAdministrators());
         assertEquals(1, account.getAdministrators().size());
@@ -129,10 +140,10 @@ public class AccountBrokerTest {
 
     @Test
     public void shouldCreateDetailedAccount() {
-        Account account = createTestAccount(billingEmail);
-        testUser = userManagementService.loadOrCreateUser(userNumber); // this makes full-object equal assertions fail, but without it, role tests fail
+        Account account = createTestAccount();
         assertNotEquals(null, account.getId());
-        assertEquals(billingEmail, account.getPrimaryEmail());
+        assertEquals(billingEmail, account.getBillingUser().getEmailAddress());
+        accountBroker.enableAccount(testAdmin.getUid(), account.getUid(), LocalDate.now().plus(1, ChronoUnit.MONTHS));
         assertTrue(account.isEnabled());
         assertEquals(testAdmin.getId(), account.getAdministrators().iterator().next().getId()); // note: equals on User as whole fails for persistence reasons
         assertEquals(testAdmin.getAccountAdministered().getId(), account.getId()); // note: as above, full equals fails ... possibly within-test persistence issues
@@ -141,8 +152,8 @@ public class AccountBrokerTest {
 
     @Test
     public void shouldAddAdmin() {
-        Account account = createTestAccount(null);
-        User admin2 = userManagementService.loadOrCreateUser("0605550022");
+        Account account = createTestAccount();
+        User admin2 = userRepository.save(new User("0605550022"));
         assertEquals(account.getAdministrators().size(), 1);
         accountBroker.addAdministrator(testUser.getUid(), account.getUid(), admin2.getUid());
         assertEquals(account.getAdministrators().size(), 2);
@@ -155,7 +166,7 @@ public class AccountBrokerTest {
 
     @Test
     public void shouldRemoveAdmin() {
-        Account account = createTestAccount(null);
+        Account account = createTestAccount();
         assertEquals(account.getAdministrators().size(), 1);
         // assertTrue(testUser.getStandardRoles().contains(roleRepository.findOneByNameAndRoleType(accountAdminRole, Role.RoleType.STANDARD)));
         // accountBroker.removeAdministrator(account, testUser); // note: need to fix this */
@@ -165,11 +176,12 @@ public class AccountBrokerTest {
     public void shouldAddGroupToAccount() {
         // todo: add tests to check it fails if not done by admin
         // todo: add lots more asserts, to make sure group added is the actual group
-        Account account = createTestAccount(null);
-        accountBroker.addGroupToAccount(account.getUid(), testGroup.getUid(), testAdmin.getUid());
+        Account account = createTestAccount();
+        accountBroker.enableAccount(testAdmin.getUid(), account.getUid(), LocalDate.now().plus(1, ChronoUnit.MONTHS));
+        accountGroupBroker.addGroupToAccount(account.getUid(), testGroup.getUid(), testAdmin.getUid());
         assertTrue(testGroup.isPaidFor());
-        assertNotNull(accountBroker.findAccountForGroup(testGroup.getUid()));
-        assertEquals(accountBroker.findAccountForGroup(testGroup.getUid()).getId(), account.getId());
+        assertNotNull(accountGroupBroker.findAccountForGroup(testGroup.getUid()));
+        assertEquals(accountGroupBroker.findAccountForGroup(testGroup.getUid()).getId(), account.getId());
     }
 
     @Test
@@ -186,10 +198,12 @@ public class AccountBrokerTest {
     @Test(expected = GroupAlreadyPaidForException.class)
     public void shouldNotAllowDuplicatePaidGroups() {
         // todo: change this to try/catch, to handle it better
-        Account account = createTestAccount(null);
-        String account2Uid = accountBroker.createAccount(testUser.getUid(), accountName + "2", testAdmin.getUid(), null, AccountType.STANDARD);
-        accountBroker.addGroupToAccount(account.getUid(), testGroup.getUid(), testAdmin.getUid());
-        accountBroker.addGroupToAccount(account2Uid, testGroup.getUid(), testAdmin.getUid());
+        Account account = createTestAccount();
+        accountBroker.enableAccount(testAdmin.getUid(), account.getUid(), LocalDate.now().plus(1, ChronoUnit.MONTHS));
+        String account2Uid = accountBroker.createAccount(testUser.getUid(), accountName + "2", testAdmin.getUid(), AccountType.STANDARD);
+        accountBroker.enableAccount(testAdmin.getUid(), account2Uid, LocalDate.now().plus(1, ChronoUnit.MONTHS));
+        accountGroupBroker.addGroupToAccount(account.getUid(), testGroup.getUid(), testAdmin.getUid());
+        accountGroupBroker.addGroupToAccount(account2Uid, testGroup.getUid(), testAdmin.getUid());
     }
 
 }

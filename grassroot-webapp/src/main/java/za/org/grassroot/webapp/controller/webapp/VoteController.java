@@ -6,15 +6,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.util.StringUtils;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
-import za.org.grassroot.services.EventBroker;
-import za.org.grassroot.services.EventLogBroker;
-import za.org.grassroot.services.GroupBroker;
+import za.org.grassroot.services.task.EventBroker;
+import za.org.grassroot.services.task.EventLogBroker;
+import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.webapp.controller.BaseController;
@@ -51,14 +52,18 @@ public class VoteController extends BaseController {
     private EventLogBroker eventLogBroker;
 
     @RequestMapping("create")
-    public String createVote(Model model, @RequestParam(value="groupUid", required = false) String groupUid) {
+    public String createVote(Model model, @RequestParam(value="groupUid", required = false) String groupUid,
+                             RedirectAttributes attributes, HttpServletRequest request) {
 
-        boolean groupSpecified = (groupUid != null);
+        boolean groupSpecified = !StringUtils.isEmpty(groupUid);
         User user = userManagementService.load(getUserProfile().getUid()); // in case permissions changed, call entity from DB
 
-        // todo: not sre if we even need this ...
-        EventWrapper voteWrapper = EventWrapper.makeEmpty(true);
+        if (permissionBroker.countActiveGroupsWithPermission(getUserProfile(), GROUP_PERMISSION_CREATE_GROUP_VOTE) == 0) {
+            addMessage(attributes, MessageType.INFO, "vote.create.group", request);
+            return "redirect:/group/create";
+        }
 
+        EventWrapper voteWrapper = EventWrapper.makeEmpty(true);
         if (groupSpecified) {
             Group group = groupBroker.load(groupUid);
             permissionBroker.validateGroupPermission(user, group, GROUP_PERMISSION_CREATE_GROUP_VOTE); // double check, given sensitivity

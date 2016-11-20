@@ -3,6 +3,7 @@ package za.org.grassroot.services;
 import org.springframework.security.access.prepost.PreAuthorize;
 import za.org.grassroot.core.dto.KeywordDTO;
 import za.org.grassroot.core.dto.MaskedUserDTO;
+import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.enums.EventType;
 
 import java.time.Instant;

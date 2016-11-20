@@ -4,6 +4,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import za.org.grassroot.core.enums.AlertPreference;
 import za.org.grassroot.core.enums.UserMessagingPreference;
+import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
@@ -31,6 +32,9 @@ public class User implements UserDetails, Comparable<User> {
 
     @Column(name = "phone_number", nullable = false, length = 20, unique = true)
     private String phoneNumber;
+
+    @Column(name = "email_address")
+    private String emailAddress;
 
     @Column(name = "first_name")
     private String firstName;
@@ -166,6 +170,8 @@ public class User implements UserDetails, Comparable<User> {
         this.phoneNumber = phoneNumber;
     }
 
+    public String getNationalNumber() { return PhoneNumberUtil.formattedNumber(phoneNumber); }
+
     public String getDisplayName() {
         return displayName;
     }
@@ -186,6 +192,14 @@ public class User implements UserDetails, Comparable<User> {
         this.languageCode = languageCode;
     }
 
+    public String getEmailAddress() {
+        return emailAddress;
+    }
+
+    public void setEmailAddress(String emailAddress) {
+        this.emailAddress = emailAddress;
+    }
+
     public Instant getCreatedDateTime() {
         return createdDateTime;
     }
@@ -203,6 +217,12 @@ public class User implements UserDetails, Comparable<User> {
             memberships = new HashSet<>();
         }
         return new HashSet<>(memberships);
+    }
+
+    public Set<Group> getGroups() {
+        return getMemberships().stream()
+                .map(Membership::getGroup)
+                .collect(Collectors.toSet());
     }
 
     /**

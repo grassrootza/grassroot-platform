@@ -1,6 +1,7 @@
 package za.org.grassroot.core.domain;
 
 import za.org.grassroot.core.enums.AccountType;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
@@ -10,7 +11,7 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Created by luke on 2015/10/18.
+ * Created by luke on 2015/10/18. (and significantly overhauled / modified during 2016/10)
  * note: For naming this entity, there could be confusion with a 'user account', but since we rarely use that terminology,
  * better that than 'institution', which seems like it would set us up for trouble (the term is loaded) down the road.
  */
@@ -32,16 +33,32 @@ public class Account {
     private User createdByUser;
 
     @Basic
-    @Column(name="created_date_time", insertable = true, updatable = false)
+    @Column(name="created_date_time", nullable = false, insertable = true, updatable = false)
     private Instant createdDateTime;
+
+    @Basic
+    @Column(name="enabled", nullable = false)
+    private boolean enabled;
+
+    @ManyToOne
+    @JoinColumn(name = "enabled_by_user", nullable = false, updatable = false)
+    private User enabledByUser;
+
+    @Basic
+    @Column(name = "enabled_date_time", nullable = false)
+    private Instant enabledDateTime;
 
     @ManyToOne
     @JoinColumn(name = "disabled_by_user")
     private User disabledByUser;
 
-    @Column(name = "disabled_date_time")
+    @Column(name = "disabled_date_time", nullable = false)
     private Instant disabledDateTime;
-
+    
+    @Basic
+    @Column(name = "visible", nullable = false)
+    private boolean visible;
+    
     /*
     Doing this as one-to-many from account to users, rather than the inverse, because we are (much) more likely to have
     an account with 2-3 administrators than to have a user administering two accounts. The latter is not a non-zero
@@ -53,17 +70,17 @@ public class Account {
     @OneToMany(mappedBy = "account", fetch = FetchType.LAZY)
     private Set<PaidGroup> paidGroups = new HashSet<>();
 
+    @ManyToOne
+    @JoinColumn(name = "billing_user", nullable = false)
+    private User billingUser;
+
     @Basic
     @Column(name = "account_name")
     private String accountName;
 
     @Basic
-    @Column(name = "primary_email")
-    private String primaryEmail;
-
-    @Basic
-    @Column
-    private boolean enabled; // for future, in case we want to toggle a non-paying account on/off
+    @Column(name = "payment_reference")
+    private String paymentRef;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "account_type", length = 50, nullable = false)
@@ -87,12 +104,37 @@ public class Account {
     private int maxSubGroupDepth;
 
     @Basic
-    @Column(name="free_form")
-    private boolean freeFormMessages;
+    @Column(name = "todos_per_month")
+    private int todosPerGroupPerMonth;
+
+    @Basic
+    @Column(name="free_form_per_month")
+    private int freeFormMessages;
 
     @Basic
     @Column(name="additional_reminders")
     private int extraReminders;
+
+    /*
+    Current state of balance and last payment (amount will be stored in log)
+    note : these could also be computed on the fly from logs & billing records, but this provides some redundancy at little overhead, so
+     */
+
+    @Basic
+    @Column(name="last_payment_date")
+    private Instant lastPaymentDate;
+
+    @Basic
+    @Column(name="next_billing_date")
+    private Instant nextBillingDate;
+
+    @Basic
+    @Column(name="outstanding_balance", nullable = false)
+    private long outstandingBalance;
+
+    @Basic
+    @Column(name="monthly_subscription") // stored in cents, in common with all other costs/figure
+    private int subscriptionFee;
 
     @Basic
     @Column(name="free_form_cost")
@@ -105,30 +147,34 @@ public class Account {
     Constructors
      */
 
-    @PreUpdate
-    @PrePersist
-    public void updateTimeStamps() {
-        if (createdDateTime == null) {
-            createdDateTime = Instant.now();
-        }
-    }
-
     private Account() {
         // For JPA
     }
 
-    public Account(User createdByUser, String accountName, AccountType accountType) {
+    public Account(User createdByUser, String accountName, AccountType accountType, User billingUser) {
         Objects.requireNonNull(createdByUser);
+        Objects.requireNonNull(billingUser);
         Objects.requireNonNull(accountName);
 
         this.uid = UIDGenerator.generateId();
 
         this.accountName = accountName;
-        this.createdByUser = createdByUser;
-        this.type = accountType;
 
-        this.enabled = true;
-        this.freeFormMessages = true;
+        this.createdDateTime = Instant.now();
+        
+        this.createdByUser = createdByUser;
+        this.enabledByUser = createdByUser;
+        
+        // until the account payment has gone through, do not set it as enabled, but do leave it visible
+        this.visible = true;
+        this.enabled = false;
+        this.enabledDateTime = DateTimeUtil.getVeryLongAwayInstant();
+        this.disabledDateTime = DateTimeUtil.getVeryLongAwayInstant();
+
+        this.type = accountType;
+        this.billingUser = billingUser;
+
+        this.outstandingBalance = 0;
     }
 
     /*
@@ -184,20 +230,32 @@ public class Account {
         this.accountName = accountName;
     }
 
-    public String getPrimaryEmail() {
-        return primaryEmail;
+    public User getBillingUser() { return billingUser; }
+
+    public void setBillingUser(User billingUser) {
+        if (administrators == null) {
+            administrators = new HashSet<>();
+            administrators.add(billingUser);
+        } else {
+            administrators.add(billingUser); // since a hashset, duplication not an issue
+        }
+        this.billingUser = billingUser;
     }
 
-    public void setPrimaryEmail(String primaryEmail) {
-        this.primaryEmail = primaryEmail;
+    public User getEnabledByUser() {
+        return enabledByUser;
     }
 
-    public boolean isEnabled() {
-        return enabled;
+    public Instant getEnabledDateTime() {
+        return enabledDateTime;
     }
 
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
+    public void setEnabledByUser(User enabledByUser) {
+        this.enabledByUser = enabledByUser;
+    }
+
+    public void setEnabledDateTime(Instant enabledDateTime) {
+        this.enabledDateTime = enabledDateTime;
     }
 
     public AccountType getType() {
@@ -208,11 +266,11 @@ public class Account {
         this.type = type;
     }
 
-    public boolean isFreeFormMessages() {
+    public int getFreeFormMessages() {
         return freeFormMessages;
     }
 
-    public void setFreeFormMessages(boolean freeFormMessages) {
+    public void setFreeFormMessages(int freeFormMessages) {
         this.freeFormMessages = freeFormMessages;
     }
 
@@ -280,6 +338,76 @@ public class Account {
         this.freeFormCost = freeFormCost;
     }
 
+    public void setEnabled(boolean enabled) { this.enabled = enabled; }
+
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public boolean isVisible() {
+        return visible;
+    }
+
+    public void setVisible(boolean visible) {
+        this.visible = visible;
+    }
+
+    public Instant getLastPaymentDate() {
+        return lastPaymentDate;
+    }
+
+    public long getOutstandingBalance() {
+        return outstandingBalance;
+    }
+
+    public void setLastPaymentDate(Instant lastPaymentDate) {
+        this.lastPaymentDate = lastPaymentDate;
+    }
+
+    public void setOutstandingBalance(long outstandingBalance) {
+        this.outstandingBalance = outstandingBalance;
+    }
+
+    public void decreaseBalance(long amountToReduce) {
+        this.outstandingBalance -= amountToReduce;
+    }
+
+    public void addToBalance(long amountBilled) {
+            this.outstandingBalance += amountBilled;
+    }
+
+    public void removeFromBalance(long amountPaid) {
+            this.outstandingBalance -= amountPaid;
+    }
+
+    public int getSubscriptionFee() {
+        return subscriptionFee;
+    }
+
+    public void setSubscriptionFee(int subscriptionFee) {
+        this.subscriptionFee = subscriptionFee;
+    }
+
+    public Instant getNextBillingDate() {
+        return nextBillingDate;
+    }
+
+    public void setNextBillingDate(Instant nextBillingDate) {
+        this.nextBillingDate = nextBillingDate;
+    }
+
+    public String getPaymentRef() { return paymentRef; }
+
+    public void setPaymentRef(String paymentRef) { this.paymentRef = paymentRef; }
+
+    public int getTodosPerGroupPerMonth() {
+        return todosPerGroupPerMonth;
+    }
+
+    public void setTodosPerGroupPerMonth(int todosPerGroupPerMonth) {
+        this.todosPerGroupPerMonth = todosPerGroupPerMonth;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -305,8 +433,7 @@ public class Account {
                 "uid=" + uid +
                 ", createdDateTime=" + createdDateTime +
                 ", accountName=" + accountName +
-                ", primaryEmail=" + primaryEmail +
-                ", enabled=" + enabled +
+                ", enabledDateTime=" + enabledDateTime +
                 ", free form messages='" + freeFormMessages + '\'' +
                 '}';
     }

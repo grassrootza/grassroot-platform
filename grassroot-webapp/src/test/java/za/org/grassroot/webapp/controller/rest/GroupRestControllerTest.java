@@ -14,7 +14,7 @@ import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.GroupLog;
 import za.org.grassroot.core.enums.GroupLogType;
-import za.org.grassroot.services.MembershipInfo;
+import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 
 import java.util.ArrayList;

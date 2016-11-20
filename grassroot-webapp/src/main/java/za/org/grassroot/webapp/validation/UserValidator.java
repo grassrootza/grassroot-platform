@@ -9,7 +9,7 @@ import org.springframework.validation.ValidationUtils;
 import org.springframework.validation.Validator;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.PhoneNumberUtil;
-import za.org.grassroot.services.MembershipInfo;
+import za.org.grassroot.core.dto.MembershipInfo;
 
 /**
  * Created by luke on 2015/09/18.

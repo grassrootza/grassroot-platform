@@ -1,0 +1,133 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      data-layout-decorate="~{layout}">
+<head>
+  <meta charset="UTF-8">
+  <title>Sign up for account</title>
+  <link rel="stylesheet" th:href="@{/static/assets/font-awesome/css/font-awesome.min.css}" />
+</head>
+
+<body>
+
+  <div layout:fragment="header">
+    <h2 class="text-center">Sign up for account</h2>
+  </div>
+
+  <div layout:fragment="overview">
+    <h4 class="text-center">Set up a paid account to unlock additional features</h4>
+  </div>
+
+  <div layout:fragment="content">
+    <div class="row">
+      <div class="col-md-4 col-md-offset-4">
+        <form id="signupForm" th:action="@{create}" method="POST" class="form-vertical">
+          <div class="form-group">
+            <label for="account_name" class="control-label">1. Account name</label>
+            <input type="text" id="account_name" name="accountName" class="form-control input-lg"
+              th:placeholder="#{web.account.signup.default(${user.displayName})}" />
+          </div>
+          <div class="form-group">
+            <label for="account_type" class="control-label">2. Account type</label>
+            <select id="account_type" name="accountType" class="form-control input-lg">
+              <option th:each="type: ${accountTypes}"
+                      th:text="#{web.account.signup.__${type}__}"
+                      th:value="${type}"
+                      th:selected="${#strings.equals(type, 'STANDARD')}"></option>
+            </select>
+          </div>
+          <div class="form-group">
+            <ul class="fa-ul">
+              <li class="gr-plain-list"><i class="fa-li fa fa-check-square"></i><span id="groupSize">Up to 1,000 members in a group</span></li>
+              <li class="gr-plain-list"><i class="fa-li fa fa-check-square"></i><span id="numberGroups">Up to 10 groups attached to the account</span></li>
+              <li class="gr-plain-list"><i class="fa-li fa fa-check-square"></i><span id="todosPerMonth">Up to 16 actions and todos per month</span></li>
+              <li class="gr-plain-list"><i class="fa-li fa fa-check-square"></i><span id="fileImport">Advanced member import (e.g., from Excel)</span></li>
+              <li class="gr-plain-list"><i class="fa-li fa fa-check-square"></i><span id="freeFormPerMonth">Up to 800 fully customizable SMSs per month</span></li>
+              <li class="gr-plain-list"><i class="fa-li fa fa-check-square"></i><span id="subgroupTiers">Up to two tiers of subgroups</span></li>
+            </ul>
+          </div>
+          <div class="form-group" th:if="${#strings.isEmpty(user.emailAddress)}">
+            <label for="billing_email" class="control-label">3. Billing email</label>
+            <input type="text" id="billing_email" name="emailAddress" class="form-control input-lg" />
+          </div>
+          <div class="form-group top-buffer">
+            <button type="submit" class="btn btn-primary btn-block btn-cta">Next</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="header-container" layout:fragment="script-container">
+
+    <script>
+
+      $(document).ready(function() {
+
+        var groupSize = $("#groupSize");
+        var numGroups = $("#numberGroups");
+        var todosLimit = $("#todosPerMonth");
+        var freeForm = $("#freeFormPerMonth");
+        var subgroupDepth = $("#subgroupTiers");
+
+        // note : file import feature is available across all, so not part of below (add in if that changes)
+
+        var groupSizeText = {
+          LIGHT: "Up to 500 members in a group",
+          STANDARD: "Up to 1,000 members in a group",
+          HEAVY: "Up to 5,000 members in a group"
+        };
+
+        var numGroupsText = {
+          LIGHT: "Up to 5 groups attached to the account",
+          STANDARD: "Up to 10 groups attached to the account",
+          HEAVY: "Up to 50 groups attached to the account"
+        };
+
+        var todoLimitText = {
+          LIGHT: "Up to 8 actions and todos per attached group per month",
+          STANDARD: "Up to 16 actions and todos per attached group per month",
+          HEAVY: "Up to 50 actions and todos per attached group per month"
+        };
+
+        var freeFormLimitText = {
+          LIGHT: "Up to 400 customizable SMSs per month",
+          STANDARD: "Up to 800 customizable SMSs per month",
+          HEAVY: "Up to 1600 customizable SMSs per month"
+        };
+
+        // todo : tool tips?
+        var subGroupLimits = {
+          LIGHT: "Up to one level of subgroup depth",
+          STANDARD: "Up to two levels of subgroups",
+          HEAVY: "Up to five levels of subgroups"
+        };
+
+        $("#account_type").change(function() {
+          var type = $(this).val();
+          groupSize.text(groupSizeText[type]);
+          numGroups.text(numGroupsText[type]);
+          todosLimit.text(todoLimitText[type]);
+          freeForm.text(freeFormLimitText[type]);
+          subgroupDepth.text(subGroupLimits[type]);
+        });
+
+        $("#signupForm").validate({
+          rules: {
+            emailAddress: {
+              email: true,
+            },
+            accountName: {
+              minlength: 3,
+              maxlength: 50
+            }
+          }
+        })
+
+      });
+
+    </script>
+
+  </div>
+
+</body>
+</html>

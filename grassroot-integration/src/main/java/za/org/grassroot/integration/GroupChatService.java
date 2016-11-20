@@ -1,10 +1,8 @@
 package za.org.grassroot.integration;
 
-import org.springframework.scheduling.annotation.Async;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.GroupChatSettings;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.integration.domain.GroupChatMessage;
 import za.org.grassroot.integration.domain.MQTTPayload;
 import za.org.grassroot.integration.exception.GroupChatSettingNotFoundException;
 

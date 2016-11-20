@@ -50,22 +50,16 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     public void configure(WebSecurity web) throws Exception {
         web.ignoring()
                 .antMatchers("/static/**")
-                .antMatchers("/public/**")
+                .antMatchers("/assets/**")
                 .antMatchers("/i18n/**")
                 .antMatchers("/api/**")
-                .antMatchers("/web/**")
                 .antMatchers("/test/**")
-                .antMatchers("/console/**")
                 .antMatchers("/sms/**")
-                .antMatchers("/image/**")
-                .antMatchers("/404")
-                .antMatchers("/500")
-                .antMatchers("/403");
+                .antMatchers("/image/**");
     }
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-
         http
                 .authorizeRequests()
                     .antMatchers("/signup").permitAll()
@@ -74,12 +68,14 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                     .antMatchers("/user/recovery/success").permitAll()
                     .antMatchers("/grass-root-verification/*").permitAll()
                     .antMatchers("/ussd/**").hasIpAddress(environment.getProperty("grassroot.ussd.gateway", "127.0.0.1"))
+                    .antMatchers("/cardauth/**").hasIpAddress(environment.getProperty("grassroot.payments.authserver", "127.0.0.1"))
                     .anyRequest().authenticated()
                     .and()
                 .formLogin()
                     .successHandler(savedRequestAwareAuthenticationSuccessHandler())
                     .defaultSuccessUrl("/home")
                     .loginPage("/login")
+                    .loginProcessingUrl("/login")
                     .permitAll()
                     .and()
                 .logout()

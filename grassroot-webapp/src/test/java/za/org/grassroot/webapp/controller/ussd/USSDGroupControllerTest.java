@@ -3,14 +3,12 @@ package za.org.grassroot.webapp.controller.ussd;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.services.MembershipInfo;
+import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.services.enums.GroupPermissionTemplate;
 
 import java.time.Instant;

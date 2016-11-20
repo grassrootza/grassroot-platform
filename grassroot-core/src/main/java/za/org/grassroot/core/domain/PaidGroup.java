@@ -12,7 +12,9 @@ import java.util.Objects;
  * Created by luke on 2015/10/20.
  */
 @Entity
-@Table(name="paid_group")
+@Table(name="paid_group", indexes = {
+        @Index(name = "idx_paid_group_origin_group", columnList = "group_id"),
+        @Index(name = "idx_paid_group_account", columnList = "account_id")})
 public class PaidGroup {
 
     @Id

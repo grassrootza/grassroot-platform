@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.integration.NotificationService;
-import za.org.grassroot.services.UserManagementService;
+import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.services.exception.NotificationAlreadyUpdatedException;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;

@@ -18,8 +18,8 @@ import org.springframework.web.servlet.view.RedirectView;
 import za.org.grassroot.core.domain.VerificationTokenCode;
 import za.org.grassroot.integration.sms.SmsGatewayResponse;
 import za.org.grassroot.integration.sms.SmsSendingService;
-import za.org.grassroot.services.PasswordTokenService;
-import za.org.grassroot.services.UserManagementService;
+import za.org.grassroot.services.user.PasswordTokenService;
+import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.UserAccountRecovery;
 
