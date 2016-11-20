@@ -32,28 +32,16 @@ import java.util.Locale;
 @ConditionalOnProperty(name = "mqtt.connection.enabled", havingValue = "true")
 public class MQTTConfig {
 
-
     @Value("${mqtt.connection.url}")
     private String host;
-
-  /*  @Value("$mqtt.connection.username")
-    private String userName;
-
-    @Value("$mqtt.conection.password")
-    private String password;
-*/
 
     @Bean
     public MqttPahoClientFactory mqttClientFactory() {
         DefaultMqttPahoClientFactory factory = new DefaultMqttPahoClientFactory();
         factory.setServerURIs(host);
         factory.setCleanSession(false);
-      //  factory.setUserName();
-      //  factory.setPassword();
         return factory;
     }
-
-
 
     @Bean
     public MessageProducerSupport messageProducerSupport(){
@@ -90,13 +78,6 @@ public class MQTTConfig {
     @Bean
     public MessageChannel mqttOutboundChannel() {
         return new DirectChannel();
-    }
-
-    @Bean("payloadMapper")
-    public ObjectMapper payloadMapper(){
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.setDateFormat(new SimpleDateFormat("MMM dd, yyyy hh:mm:ss a", Locale.UK));
-        return mapper;
     }
 
 }

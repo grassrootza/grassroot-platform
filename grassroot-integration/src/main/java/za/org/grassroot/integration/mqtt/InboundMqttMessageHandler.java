@@ -13,9 +13,12 @@ import org.springframework.integration.mqtt.support.MqttHeaders;
 import org.springframework.messaging.MessageHandler;
 import za.org.grassroot.integration.GroupChatService;
 import za.org.grassroot.integration.config.GrassrootIntegrationConfig;
+import za.org.grassroot.integration.domain.GroupChatMessage;
 import za.org.grassroot.integration.domain.MQTTPayload;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Locale;
 
 /**
  * Created by paballo on 2016/11/04.
@@ -25,12 +28,15 @@ import java.io.IOException;
 @Import({MQTTConfig.class, GrassrootIntegrationConfig.class})
 public class InboundMqttMessageHandler {
 
-    @Autowired
-    @Qualifier("payloadMapper")
     ObjectMapper payloadMapper;
+    GroupChatService groupChatService;
 
     @Autowired
-    GroupChatService groupChatService;
+    public InboundMqttMessageHandler(GroupChatService groupChatService) {
+        this.groupChatService = groupChatService;
+        payloadMapper = new ObjectMapper();
+        payloadMapper.setDateFormat(new SimpleDateFormat("MMM dd, yyyy hh:mm:ss a", Locale.UK));
+    }
 
     private static final Logger logger = LoggerFactory.getLogger(InboundMqttMessageHandler.class);
 
@@ -54,6 +60,5 @@ public class InboundMqttMessageHandler {
 
         };
     }
-
 
 }

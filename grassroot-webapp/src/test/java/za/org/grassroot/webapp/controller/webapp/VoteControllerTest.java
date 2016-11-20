@@ -38,8 +38,6 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
     @Before
     public void setUp() {
         setUp(voteController);
-
-
     }
 
     @Test
@@ -50,12 +48,15 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
         when(userManagementServiceMock.load(sessionTestUser.getUid())).thenReturn(sessionTestUser);
 
+        when(permissionBrokerMock.countActiveGroupsWithPermission(sessionTestUser, Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE)).thenReturn(1);
+
         mockMvc.perform(get("/vote/create").param("groupUid", testGroup.getUid()))
                 .andExpect(status().isOk())
                 .andExpect(view().name("vote/create"))
                 .andExpect(model().attribute("group", hasProperty("uid", is(testGroup.getUid()))));
 
         verify(groupBrokerMock, times(1)).load(testGroup.getUid());
+        verify(permissionBrokerMock, times(1)).countActiveGroupsWithPermission(sessionTestUser, Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE);
         verify(permissionBrokerMock, times(1)).validateGroupPermission(sessionTestUser, testGroup, Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE);
         verifyNoMoreInteractions(groupBrokerMock);
         verifyNoMoreInteractions(permissionBrokerMock);
@@ -68,6 +69,7 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
         List<Group> testPossibleGroups = Collections.singletonList(testGroup);
 
         when(userManagementServiceMock.load(sessionTestUser.getUid())).thenReturn(sessionTestUser);
+        when(permissionBrokerMock.countActiveGroupsWithPermission(sessionTestUser, Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE)).thenReturn(1);
         when(permissionBrokerMock.getActiveGroupsSorted(sessionTestUser, Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE)).thenReturn(testPossibleGroups);
 
         mockMvc.perform(get("/vote/create"))
@@ -75,6 +77,7 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
                 .andExpect(view().name("vote/create"))
                 .andExpect(model().attribute("possibleGroups", hasItem(testGroup)));
 
+        verify(permissionBrokerMock, times(1)).countActiveGroupsWithPermission(sessionTestUser, Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE);
         verify(permissionBrokerMock, times(1)).getActiveGroupsSorted(sessionTestUser, Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE);
         verifyNoMoreInteractions(permissionBrokerMock);
         verifyNoMoreInteractions(groupBrokerMock);

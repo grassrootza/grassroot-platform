@@ -3,6 +3,7 @@ package za.org.grassroot.webapp.model.web;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -24,7 +25,7 @@ public class MemberWrapperList {
     }
 
     public List<MemberWrapper> getMemberList() {
-        return memberList;
+        return memberList == null ? new ArrayList<>() : memberList;
     }
 
     public void setMemberList(List<MemberWrapper> memberList) {

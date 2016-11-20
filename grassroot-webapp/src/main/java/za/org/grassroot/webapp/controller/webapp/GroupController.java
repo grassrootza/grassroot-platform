@@ -279,11 +279,13 @@ public class GroupController extends BaseController {
     }
 
     @RequestMapping(value = "change_multiple", method = RequestMethod.POST)
-    public String multipleMemberModify(Model model, @ModelAttribute("MemberWrapperList") MemberWrapperList memberWrapperList,
+    public String multipleMemberModify(Model model, @ModelAttribute("memberWrapperList") MemberWrapperList memberWrapperList,
                                        HttpServletRequest request, RedirectAttributes attributes) {
 
-        log.info("received {} members, in full : {}", memberWrapperList.getMemberList().size(), memberWrapperList.getMemberList());
         final String groupUid = memberWrapperList.getGroupUid();
+
+        log.info("received {} members, in full : {}", memberWrapperList.getMemberList().size(), memberWrapperList.getMemberList());
+        log.info("groupUid = " + groupUid);
 
         Set<MembershipInfo> nonNullMemberInfo = memberWrapperList.getMemberList().stream()
                 .filter(MemberWrapper::isNonNull)
@@ -602,6 +604,8 @@ public class GroupController extends BaseController {
         List<LocalDate> monthsActive = groupQueryBroker.getMonthsGroupActive(groupUid);
 
         model.addAttribute("group", group);
+
+        log.info("tasksInPeriod: " + tasksInPeriod);
 
         model.addAttribute("tasksInPeriod", tasksInPeriod);
         model.addAttribute("groupLogsInPeriod", groupLogsInPeriod);

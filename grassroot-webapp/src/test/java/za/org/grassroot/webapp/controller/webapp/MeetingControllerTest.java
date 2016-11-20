@@ -14,7 +14,6 @@ import za.org.grassroot.core.util.DateTimeUtil;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -62,7 +61,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         mockMvc.perform(get("/meeting/view").param("eventUid", dummyMeeting.getUid()))
                 .andExpect(status().isOk())
                 .andExpect(view().name("meeting/view"))
-                .andExpect(model().attribute("meeting", hasProperty("entityUid", is(dummyMeeting.getUid()))))
+                .andExpect(model().attribute("meeting", hasProperty("uid", is(dummyMeeting.getUid()))))
                 .andExpect(model().attribute("responseTotals", hasProperty("yes", is(1))))
                 .andExpect(model().attribute("rsvpResponses", hasItems(dummyResponsesMap.entrySet().toArray())));
 
@@ -107,19 +106,19 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
     public void createMeetingIndexWorksWithGroupSpecified() throws Exception {
 
         Group testGroup = new Group("", sessionTestUser);
-        List<String[]> minuteOptions = new ArrayList<>();
-        String[] oneDay = new String[]{"" + 24 * 60, "One day ahead"};
-        minuteOptions.add(oneDay);
-
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
 
-        mockMvc.perform(get("/meeting/create").param("groupUid", testGroup.getUid()))
-                .andExpect((view().name("meeting/create"))).andExpect(status().isOk())
+        when(permissionBrokerMock.countActiveGroupsWithPermission(sessionTestUser, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING)).thenReturn(1);
+
+        mockMvc.perform(get("/meeting/create")
+                .param("groupUid", testGroup.getUid()))
+                .andExpect((view().name("meeting/create")))
+                .andExpect(status().isOk())
                 .andExpect(model().attribute("group", hasProperty("uid", is(testGroup.getUid()))));
-              //  .andExpect(model().attribute("reminderOptions", hasItem(oneDay)));
 
         verify(groupBrokerMock, times(1)).load(testGroup.getUid());
-        verifyNoMoreInteractions(eventBrokerMock);
+        verify(permissionBrokerMock, times(1)).countActiveGroupsWithPermission(sessionTestUser, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING);
+        verifyNoMoreInteractions(permissionBrokerMock);
         verifyNoMoreInteractions(groupBrokerMock);
     }
 
@@ -129,11 +128,8 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         Group dummyGroup = new Group("", sessionTestUser);
         List<Group> dummyGroups = Collections.singletonList(dummyGroup);
 
-        List<String[]> minuteOptions = new ArrayList<>();
-        String[] oneDay = new String[]{"" + 24 * 60, "One day ahead"};
-        minuteOptions.add(oneDay);
-
         when(userManagementServiceMock.load(sessionTestUser.getUid())).thenReturn(sessionTestUser);
+        when(permissionBrokerMock.countActiveGroupsWithPermission(sessionTestUser, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING)).thenReturn(1);
         when(permissionBrokerMock.getActiveGroupsSorted(sessionTestUser, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING)).thenReturn(dummyGroups);
 
         mockMvc.perform(get("/meeting/create")).andExpect(status().isOk())
@@ -142,6 +138,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
 
         verify(userManagementServiceMock, times(1)).load(sessionTestUser.getUid());
         verify(permissionBrokerMock, times(1)).getActiveGroupsSorted(sessionTestUser, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING);
+        verify(permissionBrokerMock, times(1)).countActiveGroupsWithPermission(sessionTestUser, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING);
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(groupBrokerMock);
         verifyNoMoreInteractions(eventBrokerMock);
@@ -161,7 +158,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
 
         mockMvc.perform(post("/meeting/modify").sessionAttr("meeting", dummyMeeting).contentType(MediaType.APPLICATION_FORM_URLENCODED))
                 .andExpect(status().isOk())
-                .andExpect(model().attribute("meeting", hasProperty("entityUid", is(dummyMeeting.getUid()))))
+                .andExpect(model().attribute("meeting", hasProperty("uid", is(dummyMeeting.getUid()))))
                 .andExpect(model().attribute("responseTotals", hasProperty("yes", is(1))))
                 .andExpect(view().name("meeting/view"));
 
@@ -246,7 +243,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
                                 .param("reminderType", EventReminderType.CUSTOM.name())
                                 .param("custom_minutes", String.valueOf(60*24)))
                 .andExpect(view().name("meeting/view"))
-                .andExpect(model().attribute("meeting", hasProperty("entityUid", is(dummyMeeting.getUid()))));
+                .andExpect(model().attribute("meeting", hasProperty("uid", is(dummyMeeting.getUid()))));
 
         verify(eventBrokerMock, times(2)).loadMeeting(dummyMeeting.getUid());
         verify(eventBrokerMock, times(1)).updateReminderSettings(sessionTestUser.getUid(), dummyMeeting.getUid(),
@@ -257,130 +254,6 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
 
     }
 
-    /**
-     * Todo once fixed the manual reminder logic is fixed
-     */
-
-    /*@Test
-    public void sendReminderWorks() throws Exception {
-        Event dummyMeeting = Meeting.makeEmpty(sessionTestUser);
-        dummyMeeting.setId(dummyId);
-        when(eventManagementServiceMock.loadEvent(dummyId)).thenReturn(dummyMeeting);
-        when(eventManagementServiceMock.sendManualReminder(dummyMeeting, "")).thenReturn(true);
-        mockMvc.perform(post("/meeting/remind").param("entityId", String.valueOf(dummyId))).andExpect(view()
-                .name("redirect:/home")).andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/home"));
-        verify(eventManagementServiceMock, times(1)).loadEvent(dummyMeeting.getId());
-        verify(eventManagementServiceMock, times(1)).sendManualReminder(dummyMeeting, "");
-        verifyZeroInteractions(groupManagementServiceMock);
-        verifyZeroInteractions(userManagementServiceMock);
-        verifyZeroInteractions(eventLogBrokerMock);
-        verifyNoMoreInteractions(eventManagementServiceMock);
-    }*/
-
-    /**
-     * Commenting out the next two tests until free form is back working again
-     */
-
-    /*@Test
-    public void testSendFreeFormWorksWithGroupSpecified() throws Exception {
-        Group testGroup = new Group("", sessionTestUser);
-        testGroup.setId(dummyId);
-        when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
-        mockMvc.perform(get("/meeting/free").param("groupUid", testGroup.getUid()))
-                .andExpect(status().isOk())
-                .andExpect(view().name("meeting/free"))
-                .andExpect(model().attribute("testGroup", hasProperty("id", is(dummyId))))
-                .andExpect(model().attribute("groupSpecified", is(true)));
-        verify(groupBrokerMock, times(1)).load(testGroup.getUid());
-        verifyNoMoreInteractions(groupManagementServiceMock);
-        verifyNoMoreInteractions(userManagementServiceMock);
-        verifyZeroInteractions(eventManagementServiceMock);
-    }
-
-
-    @Test
-    public void sendFreeFormWorksWithGroupNotSpecified() throws Exception {
-        Set<Group> dummyGroups = new HashSet<>();
-        Group dummyGroup = new Group("", sessionTestUser);
-        dummyGroup.setId(dummyId);
-        dummyGroups.add(dummyGroup);
-        when(permissionBrokerMock.getActiveGroupsWithPermission(sessionTestUser, null)).thenReturn(dummyGroups);
-        mockMvc.perform(get("/meeting/free"))
-                .andExpect(status().isOk())
-                .andExpect((view().name("meeting/free")))
-                .andExpect(model().attribute("userGroups", hasItem(dummyGroup)))
-                .andExpect(model().attribute("groupSpecified", is(false)));
-        verify(permissionBrokerMock, times(2)).getActiveGroupsWithPermission(sessionTestUser, null);
-        verifyZeroInteractions(eventManagementServiceMock);
-        verifyZeroInteractions(eventLogBrokerMock);
-        verifyNoMoreInteractions(userManagementServiceMock);
-        verifyNoMoreInteractions(groupManagementServiceMock);
-        verifyNoMoreInteractions(eventManagementServiceMock);
-    }
-
-    @Test
-    public void sendFreeMsgWorks() throws Exception {
-        Group dummyGroup = new Group("Dummy Group3", new User("234345345"));
-        dummyGroup.setId(dummyId);
-        Event testEvent = Meeting.makeEmpty(sessionTestUser);
-        testEvent.setId(dummyId);
-        boolean includeSubGroups = true;
-        String message = "message";
-        when(groupBrokerMock.load(dummyGroup.getUid())).thenReturn(dummyGroup);
-        when(eventManagementServiceMock.sendManualReminder(testEvent, message)).thenReturn(true);
-        mockMvc.perform(post("/meeting/free").param("confirmed", "").param("entityId", String.valueOf(dummyId))
-                .param("message", message).param("includeSubGroups", String.valueOf(includeSubGroups)))
-                .andExpect(view().name("redirect:/testGroup/view"))
-                .andExpect(model().attribute("groupUid", dummyGroup.getUid()))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/testGroup/view?groupUid=" + dummyGroup.getUid()));//Not happy with this solution
-        verify(groupBrokerMock, times(1)).load(dummyGroup.getUid());
-        verify(eventManagementServiceMock, times(1)).sendManualReminder(testEvent, message);
-        verifyZeroInteractions(eventLogBrokerMock);
-        verifyNoMoreInteractions(userManagementServiceMock);
-        verifyNoMoreInteractions(groupManagementServiceMock);
-        verifyNoMoreInteractions(eventManagementServiceMock);
-    }
-
-
-
-    @Test
-    public void sendFreeFormWorksWithGroupId() throws Exception {
-        User testUser = new User("", "testUser");
-        testUser.setId(dummyId);
-        Group testGroup = new Group("", testUser);
-        testGroup.setId(dummyId);
-        testUser.setId(dummyId);
-        when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
-        mockMvc.perform(get("/meeting/free").param("groupId", String.valueOf(dummyId)))
-                .andExpect(status().isOk()).andExpect(view().name("meeting/free"))
-                .andExpect(model().attribute("testGroup", hasProperty("id", is(dummyId))))
-                .andExpect(model().attribute("groupSpecified", is(true)));
-        verify(groupBrokerMock, times(1)).load(testGroup.getUid());
-        verifyZeroInteractions(eventManagementServiceMock);
-        verifyZeroInteractions(eventLogBrokerMock);
-        verifyNoMoreInteractions(userManagementServiceMock);
-        verifyNoMoreInteractions(groupManagementServiceMock);
-    }
-
-    @Test
-    public void sendFreeFormWorksWithoutGroupId() throws Exception{
-        Group testGroup = new Group("",sessionTestUser);
-        Set<Group> dummyGroups = Collections.singleton(testGroup);
-        when(permissionBrokerMock.getActiveGroupsWithPermission(sessionTestUser, null)).thenReturn(dummyGroups);
-
-        testGroup.addMember(sessionTestUser);
-
-        mockMvc.perform(get("/meeting/free")).andExpect(status().isOk())
-                .andExpect(view().name("meeting/free")).andExpect(model()
-                .attribute("userGroups", hasItem(testGroup)))
-                .andExpect(model().attribute("groupSpecified", is(false)));
-        verify(permissionBrokerMock, times(1)).getActiveGroupsWithPermission(sessionTestUser, null);
-        verifyZeroInteractions(eventManagementServiceMock);
-        verifyZeroInteractions(eventLogBrokerMock);
-        verifyNoMoreInteractions(userManagementServiceMock);
-        verifyNoMoreInteractions(groupManagementServiceMock);
-    }*/
 }
 
 

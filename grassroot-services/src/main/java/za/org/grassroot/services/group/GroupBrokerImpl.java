@@ -77,7 +77,7 @@ public class GroupBrokerImpl implements GroupBroker {
     @Autowired
     private GcmService gcmService;
 
-    @Autowired
+    @Autowired(required = false)
     private MqttSubscriptionService mqttSubscriptionService;
 
     @Override
@@ -132,8 +132,10 @@ public class GroupBrokerImpl implements GroupBroker {
 
         permissionBroker.setRolePermissionsFromTemplate(group, groupPermissionTemplate);
         group = groupRepository.save(group);
-        mqttSubscriptionService.subscribeServerToGroupTopic(group);
 
+        if (mqttSubscriptionService != null) {
+            mqttSubscriptionService.subscribeServerToGroupTopic(group);
+        }
 
         logger.info("Group created under UID {}", group.getUid());
 
