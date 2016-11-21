@@ -65,6 +65,7 @@ public class LearningManager implements LearningService {
             // note : the rest template is autowired to use a default character encoding (UTF 8), so putting encode
             // here will double encode and throw errors, hence leave it out
             String url = UriComponentsBuilder.newInstance()
+                    .scheme("http")
                     .host(learningHost)
                     .port(learningPort)
                     .path(dateTimePath)
