@@ -30,7 +30,6 @@ import za.org.grassroot.integration.xmpp.GcmXmppMessageCodec;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
@@ -42,15 +41,17 @@ public class GroupChatManager implements GroupChatService {
 
     private static final Logger logger = LoggerFactory.getLogger(GroupChatManager.class);
 
-    // todo : externalize property, of course
     private static final DateTimeFormatter cmdMessageFormat = DateTimeFormatter.ofPattern("HH:mm, EEE d MMM");
+    private static final String GRASSROOT_SYSTEM = "Grassroot";
+    private static final String ERROR = "error";
+    private static final String SYNC = "sync";
+    private static final String PROMPT = "prompt";
 
     @Value("${gcm.topics.path}")
     private String TOPICS;
 
     @Value("${mqtt.status.read.threshold:0.5}")
     private Double readStatusThreshold;
-
 
     @Autowired
     private UserRepository userRepository;
@@ -78,7 +79,6 @@ public class GroupChatManager implements GroupChatService {
 
     @Autowired
     private ObjectMapper payloadMapper;
-
 
     @Autowired
     @Qualifier("integrationMessageSourceAccessor")
@@ -120,15 +120,19 @@ public class GroupChatManager implements GroupChatService {
     @Override
     @Async
     public void processCommandMessage(MQTTPayload incoming) {
+        logger.info("incoming command message ...");
         String groupUid = incoming.getGroupUid();
         Group group = groupRepository.findOneByUid(groupUid);
-        MQTTPayload payload = generateMessage(incoming, group);
+        MQTTPayload payload = generateCommandResponseMessage(incoming, group);
+
         try {
+            logger.info("inside payload, time is : {}", payload.getTime().toString());
             final String message = payloadMapper.writeValueAsString(payload);
-            logger.info("Outgoing mqtt payload ={}", message);
+            logger.info("Outgoing mqtt message to {}, with payload ={}", incoming.getPhoneNumber(), message);
             mqttOutboundChannel.send(MessageBuilder.withPayload(message).
                     setHeader(MqttHeaders.TOPIC, incoming.getPhoneNumber()).build());
         } catch (JsonProcessingException e) {
+            // todo : send back a "sorry we couldn't handle it" message
             logger.debug("Message conversion failed with error ={}", e.getMessage());
         }
 
@@ -305,46 +309,52 @@ public class GroupChatManager implements GroupChatService {
 
     }
 
-
     private MQTTPayload generateInvalidCommandResponseData(MQTTPayload input, Group group) {
-
         String responseMessage = messageSourceAccessor.getMessage("gcm.xmpp.command.invalid");
-        MQTTPayload outboundMessage = new MQTTPayload(input.getUid(), input.getGroupUid(),
+        MQTTPayload outboundMessage = new MQTTPayload(input.getUid(),
+                input.getGroupUid(),
                 group.getGroupName(),
-                "Grassroot", input.getTime(), "error");
+                GRASSROOT_SYSTEM,
+                ERROR);
         outboundMessage.setText(responseMessage);
         return outboundMessage;
     }
 
     private MQTTPayload generateSyncData(User addingUser, Group group) {
-
-
         String responseMessage = messageSourceAccessor.getMessage("mqtt.member.added",
                 new String[]{group.getGroupName(),addingUser.getDisplayName()});
-        MQTTPayload outboundMessage = new MQTTPayload(UIDGenerator.generateId(), group.getUid(),
+        MQTTPayload outboundMessage = new MQTTPayload(UIDGenerator.generateId(),
+                group.getUid(),
                 group.getGroupName(),
-                "Grassroot", Date.from(Instant.now()), "sync");
+                GRASSROOT_SYSTEM,
+                SYNC);
         outboundMessage.setText(responseMessage);
 
         return outboundMessage;
     }
 
 
-    private MQTTPayload generateDateInPastData(MQTTPayload input, Group group) {
-
+    private MQTTPayload generateDateInPastResponse(MQTTPayload input, Group group) {
         String responseMessage = messageSourceAccessor.getMessage("gcm.xmpp.command.timepast");
-        MQTTPayload outboundMessage = new MQTTPayload(input.getUid(), input.getGroupUid(),
+        MQTTPayload outboundMessage = new MQTTPayload(input.getUid(),
+                input.getGroupUid(),
                 group.getGroupName(),
-                "Grassroot", input.getTime(), "error");
+                GRASSROOT_SYSTEM,
+                ERROR);
         outboundMessage.setText(responseMessage);
         return outboundMessage;
     }
 
-    private MQTTPayload generateCommandResponseData(MQTTPayload input, Group group, TaskType type, String[] tokens, LocalDateTime taskDateTime) {
+    private MQTTPayload generateCommandResponseData(MQTTPayload input, Group group, TaskType type, String[] tokens,
+                                                    LocalDateTime taskDateTime) {
 
-        MQTTPayload outboundMessage = new MQTTPayload(input.getUid(), input.getGroupUid(),
+        MQTTPayload outboundMessage = new MQTTPayload(input.getUid(),
+                input.getGroupUid(),
                 group.getGroupName(),
-                "Grassroot", input.getTime(), null);
+                GRASSROOT_SYSTEM,
+                LocalDateTime.now(),
+                taskDateTime,
+                PROMPT);
 
         if (TaskType.MEETING.equals(type)) {
             final String text = messageSourceAccessor.getMessage("gcm.xmpp.command.meeting", tokens);
@@ -361,29 +371,30 @@ public class GroupChatManager implements GroupChatService {
             outboundMessage.setType(TaskType.TODO.toString());
         }
         outboundMessage.setTokens(Arrays.asList(tokens));
-        if (taskDateTime != null) {
-
+        /*if (taskDateTime != null) {
             ZonedDateTime zonedDateTime = taskDateTime.atZone(DateTimeUtil.getSAST());
             outboundMessage.setActionDateTime(Date.from(zonedDateTime.toInstant()));
-        }
+        }*/
 
         return outboundMessage;
     }
 
 
-    private MQTTPayload generateMessage(MQTTPayload input, Group group) {
+    private MQTTPayload generateCommandResponseMessage(MQTTPayload input, Group group) {
         MQTTPayload data;
         final String msg = input.getText();
         final String[] tokens = MessageUtils.tokenize(msg);
-        final TaskType cmdType = msg.contains("/meeting") ?
-                TaskType.MEETING : msg.contains("/vote") ? TaskType.VOTE : TaskType.TODO;
+        final TaskType cmdType = msg.contains("/meeting") ? TaskType.MEETING :
+                msg.contains("/vote") ? TaskType.VOTE : TaskType.TODO;
+
         if (tokens.length < (TaskType.MEETING.equals(cmdType) ? 3 : 2)) {
             data = generateInvalidCommandResponseData(input, group);
         } else {
             try {
                 final LocalDateTime parsedDateTime = learningService.parse(tokens[1]);
                 if (DateTimeUtil.convertToSystemTime(parsedDateTime, DateTimeUtil.getSAST()).isBefore(Instant.now())) {
-                    data = generateDateInPastData(input, group);
+                    logger.info("time is in the past");
+                    data = generateDateInPastResponse(input, group);
                 } else {
                     tokens[1] = parsedDateTime.format(cmdMessageFormat);
                     data = generateCommandResponseData(input, group, cmdType, tokens, parsedDateTime);
@@ -396,19 +407,22 @@ public class GroupChatManager implements GroupChatService {
         return data;
     }
 
-
     private MQTTPayload generateMarkMessageAsReadData(String messageUid, String groupUid, String groupName) {
         return new MQTTPayload(messageUid, groupUid,
                 groupName,
-                "Grassroot", Date.from(Instant.now()), "update_read_status");
-
+                GRASSROOT_SYSTEM,
+                "update_read_status");
     }
 
     private MQTTPayload generateUserMutedResponseData(Group group) {
         String groupUid = group.getUid();
         String messageId = UIDGenerator.generateId();
         String responseMessage = messageSourceAccessor.getMessage("gcm.xmpp.chat.muted");
-        MQTTPayload payload =  new MQTTPayload(messageId, groupUid,group.getGroupName(),group.getGroupName(),Date.from(Instant.now()),"normal");
+        MQTTPayload payload =  new MQTTPayload(messageId,
+                groupUid,
+                group.getGroupName(),
+                group.getGroupName(),
+                "normal");
         payload.setText(responseMessage);
 
         return payload;

@@ -80,7 +80,7 @@ public class LearningManager implements LearningService {
                 throw new SeloParseDateTimeFailure();
             } else {
                 parsedDateTime = LocalDateTime.parse(s, dateTimeFormatter); // might do via an incoming binder, but would just perform same operation
-                log.info("Time to process: {} msecs, returning : ", System.currentTimeMillis() - start, parsedDateTime.toString());
+                log.info("Time to process: {} msecs, returning : {}", System.currentTimeMillis() - start, parsedDateTime.toString());
                 return parsedDateTime;
             }
         } catch (SeloParseDateTimeFailure e) {

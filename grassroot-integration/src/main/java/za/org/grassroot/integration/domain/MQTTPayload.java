@@ -1,10 +1,9 @@
 package za.org.grassroot.integration.domain;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -22,36 +21,28 @@ public class MQTTPayload {
     private String displayName;
     private String groupName;
     private String type;
-    private Date time;
+    private LocalDateTime time;
     private List<String> tokens;
-    private Date actionDateTime;
 
-    @JsonIgnore
-    private boolean sending;
-    @JsonIgnore
-    private boolean sent;
-    @JsonIgnore
-    private boolean delivered;
-    @JsonIgnore
-    private int noAttempts;
-    @JsonIgnore
-    private boolean seen;
-    @JsonIgnore
-    private boolean read;
-    @JsonIgnore
-    private boolean server;
-    @JsonIgnore
-    private boolean toKeep;
+    private LocalDateTime actionDateTime;
+
+    public MQTTPayload(){
+        // for serializing / deserializing
+    }
 
 
-    public MQTTPayload(){}
+    public MQTTPayload(String uid, String groupUid, String groupName, String displayName, String type) {
+        this(uid, groupUid, groupName, displayName, LocalDateTime.now(), null, type);
+    }
 
-    public MQTTPayload(String uid, String groupUid, String groupName, String displayName,Date time, String type){
+    public MQTTPayload(String uid, String groupUid, String groupName, String displayName,
+                       LocalDateTime messageTime, LocalDateTime actionDateTime, String type) {
         this.uid =uid;
         this.groupUid =groupUid;
         this.displayName = displayName;
         this.groupName=groupName;
-        this.time=time;
+        this.time=messageTime;
+        this.actionDateTime = actionDateTime;
         this.type= type;
     }
 
@@ -87,8 +78,12 @@ public class MQTTPayload {
         return type;
     }
 
-    public Date getTime() {
+    public LocalDateTime getTime() {
         return time;
+    }
+
+    public LocalDateTime getActionDateTime() {
+        return actionDateTime;
     }
 
     public List<String> getTokens() {
@@ -127,16 +122,12 @@ public class MQTTPayload {
         this.type = type;
     }
 
-    public void setTime(Date time) {
+    public void setTime(LocalDateTime time) {
         this.time = time;
     }
 
     public void setTokens(List<String> tokens) {
         this.tokens = tokens;
-    }
-
-    public void setActionDateTime(Date actionDateTime) {
-        this.actionDateTime = actionDateTime;
     }
 
     @Override

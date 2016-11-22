@@ -6,6 +6,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.integration.annotation.IntegrationComponentScan;
 import org.springframework.integration.annotation.ServiceActivator;
 import org.springframework.integration.channel.DirectChannel;
@@ -19,7 +20,6 @@ import org.springframework.integration.mqtt.support.DefaultPahoMessageConverter;
 import org.springframework.messaging.MessageChannel;
 
 import java.text.SimpleDateFormat;
-import java.util.Locale;
 
 /**
  * Created by paballo on 2016/10/28.
@@ -78,6 +78,16 @@ public class MQTTConfig {
     @Bean
     public MessageChannel mqttOutboundChannel() {
         return new DirectChannel();
+    }
+
+    @Bean
+    @Primary
+    public ObjectMapper payloadMapper() {
+        ObjectMapper payloadMapper = new ObjectMapper();
+        // payloadMapper.setDateFormat(new SimpleDateFormat("MMM dd, yyyy hh:mm:ss a", Locale.UK));
+        payloadMapper.setDateFormat(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss"));
+        payloadMapper.findAndRegisterModules();
+        return payloadMapper;
     }
 
 }
