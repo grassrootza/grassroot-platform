@@ -1,8 +1,5 @@
 package za.org.grassroot.integration.mqtt;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,11 +23,11 @@ import java.io.IOException;
 @Import({MQTTConfig.class, GrassrootIntegrationConfig.class})
 public class InboundMqttMessageHandler {
 
-    private ObjectMapper payloadMapper;
+    private MqttObjectMapper payloadMapper;
     private GroupChatService groupChatService;
 
     @Autowired
-    public InboundMqttMessageHandler(GroupChatService groupChatService, ObjectMapper payloadMapper) {
+    public InboundMqttMessageHandler(GroupChatService groupChatService, MqttObjectMapper payloadMapper) {
         this.groupChatService = groupChatService;
         this.payloadMapper = payloadMapper;
     }

@@ -25,6 +25,7 @@ import za.org.grassroot.core.util.UIDGenerator;
 import za.org.grassroot.integration.domain.MQTTPayload;
 import za.org.grassroot.integration.exception.GroupChatSettingNotFoundException;
 import za.org.grassroot.integration.exception.SeloParseDateTimeFailure;
+import za.org.grassroot.integration.mqtt.MqttObjectMapper;
 import za.org.grassroot.integration.utils.MessageUtils;
 import za.org.grassroot.integration.xmpp.GcmXmppMessageCodec;
 
@@ -78,7 +79,7 @@ public class GroupChatManager implements GroupChatService {
     private GcmRegistrationRepository gcmRegistrationRepository;
 
     @Autowired
-    private ObjectMapper payloadMapper;
+    private MqttObjectMapper payloadMapper;
 
     @Autowired
     @Qualifier("integrationMessageSourceAccessor")

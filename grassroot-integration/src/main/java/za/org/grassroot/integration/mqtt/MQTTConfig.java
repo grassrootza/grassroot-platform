@@ -84,9 +84,11 @@ public class MQTTConfig {
     @Primary
     public ObjectMapper payloadMapper() {
         ObjectMapper payloadMapper = new ObjectMapper();
-        // payloadMapper.setDateFormat(new SimpleDateFormat("MMM dd, yyyy hh:mm:ss a", Locale.UK));
         payloadMapper.setDateFormat(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss"));
-        payloadMapper.findAndRegisterModules();
+        /*SimpleModule ldtModule = new SimpleModule();
+        ldtModule.addSerializer(LocalDateTime.class, new LDTSerializer());
+        ldtModule.addDeserializer(LocalDateTime.class, new LDTDeserializer());
+        payloadMapper.registerModule(ldtModule);*/
         return payloadMapper;
     }
 

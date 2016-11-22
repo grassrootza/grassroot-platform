@@ -8,8 +8,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.UserMessagingPreference;
-import za.org.grassroot.integration.GroupChatService;
-import za.org.grassroot.integration.exception.GroupChatSettingNotFoundException;
 import za.org.grassroot.integration.xmpp.GcmService;
 import za.org.grassroot.services.exception.NoSuchProfileException;
 import za.org.grassroot.services.user.UserManagementService;
@@ -42,10 +40,9 @@ public class GcmRestController {
         logger.info("Inside GCM registration ... for ID: {}", registrationId);
         User user = userManagementService.findByInputNumber(phoneNumber);
         gcmService.registerUser(user, registrationId);
-        //gcmService.refreshAllGroupTopicSubscriptions(user.getUid(), registrationId); // separate this call from above as can be _very_ long so needs to be async
+        gcmService.refreshAllGroupTopicSubscriptions(user.getUid(), registrationId); // separate this call from above as can be _very_ long so needs to be async
         userManagementService.setMessagingPreference(user.getUid(), UserMessagingPreference.ANDROID_APP);
         return RestUtil.messageOkayResponse(RestMessage.REGISTERED_FOR_PUSH);
-
     }
 
     @RequestMapping(value = "/deregister/{phoneNumber}/{code}", method = RequestMethod.GET)

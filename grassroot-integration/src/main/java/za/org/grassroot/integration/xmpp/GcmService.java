@@ -1,7 +1,6 @@
 package za.org.grassroot.integration.xmpp;
 
 import za.org.grassroot.core.domain.GcmRegistration;
-import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 
 import java.io.IOException;
@@ -26,7 +25,5 @@ public interface GcmService {
     void refreshAllGroupTopicSubscriptions(String userUid, String registrationId);
 
     void unsubscribeFromTopic(String registrationId, String topicId) throws Exception;
-
-    void pingUsersForGroupChat(Group group);
 
 }

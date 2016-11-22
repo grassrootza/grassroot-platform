@@ -20,9 +20,6 @@ import java.util.Map;
  */
 public class MessageUtils {
 
-
-
-
     public static Map<String, Object> generatePingMessageData(Group group) {
 
         Map<String, Object> data = new HashMap<>();

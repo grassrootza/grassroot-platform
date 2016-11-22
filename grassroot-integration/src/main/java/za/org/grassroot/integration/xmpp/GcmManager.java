@@ -6,8 +6,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
-import org.springframework.messaging.Message;
-import org.springframework.messaging.MessageChannel;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,8 +20,8 @@ import za.org.grassroot.core.repository.GcmRegistrationRepository;
 import za.org.grassroot.core.repository.GroupChatSettingsRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
-import za.org.grassroot.integration.utils.MessageUtils;
 
+import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.util.*;
 
@@ -52,9 +50,6 @@ public class GcmManager implements GcmService {
     @Autowired
     private GroupChatSettingsRepository groupChatSettingsRepository;
 
-    @Autowired
-    private MessageChannel gcmXmppOutboundChannel;
-
     private final static String INSTANCE_ID_FIXED_PATH = "/iid/v1/";
 
     @Value("${gcm.topics.url}")
@@ -82,6 +77,11 @@ public class GcmManager implements GcmService {
 
     private static final ObjectMapper mapper = new ObjectMapper();
     private final static Random random = new Random();
+
+    @PostConstruct
+    public void init() {
+        log.info("GCM key: {}", AUTH_KEY);
+    }
 
     @Override
     @Transactional(readOnly = true)
@@ -185,9 +185,12 @@ public class GcmManager implements GcmService {
             try {
                 response = restTemplate.exchange(gatewayURI.build().toUri(), POST, new HttpEntity<String>(getHttpHeaders()), String.class);
             } catch (HttpClientErrorException e) {
-                log.error("Error calling group subscribe, with path: {}, and stacktrace: {}", gatewayURI.build().toString(), e.toString());
+                log.error("Error calling group subscribe, with message: {}, and path: {}", e.toString(), gatewayURI.build().toString());
                 if (e.getStatusCode().equals(HttpStatus.NOT_FOUND)) {
                     removeStaleRegistration(registrationId);
+                    break;
+                }
+                if (e.getStatusCode().equals(HttpStatus.FORBIDDEN)) {
                     break;
                 }
             }
@@ -198,7 +201,7 @@ public class GcmManager implements GcmService {
         } while (retry);
 
         if (response == null || !response.getStatusCode().is2xxSuccessful()) {
-            log.error("Could not send subscibe user after " + noAttempts + " attempts");
+            log.error("Could not send subscribe user after " + noAttempts + " attempts");
         }
     }
 
@@ -243,16 +246,6 @@ public class GcmManager implements GcmService {
             throw new IOException("Could not unsubscribe user after " + noAttempts + " attempts");
         }
     }
-
-    @Override
-    public void pingUsersForGroupChat(Group group) {
-            Map<String, Object> data = MessageUtils.generatePingMessageData(group);
-            Message gcmMessage = GcmXmppMessageCodec.encode(TOPICS.concat(group.getUid()),(String) data.get("messageId") ,
-                    null,
-                    data);
-            gcmXmppOutboundChannel.send(gcmMessage);
-        }
-
 
     private HttpHeaders getHttpHeaders() {
         HttpHeaders headers = new HttpHeaders();

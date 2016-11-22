@@ -21,9 +21,9 @@ public class MQTTPayload {
     private String displayName;
     private String groupName;
     private String type;
-    private LocalDateTime time;
     private List<String> tokens;
 
+    private LocalDateTime time;
     private LocalDateTime actionDateTime;
 
     public MQTTPayload(){
