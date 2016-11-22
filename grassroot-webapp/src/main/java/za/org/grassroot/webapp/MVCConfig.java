@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.core.Ordered;
+import org.springframework.http.CacheControl;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.filter.CharacterEncodingFilter;
 import org.springframework.web.servlet.LocaleResolver;
@@ -21,6 +22,7 @@ import za.org.grassroot.webapp.interceptor.TokenValidationInterceptor;
 
 import javax.servlet.Filter;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 
 /**
  *
@@ -58,7 +60,6 @@ public class MVCConfig extends WebMvcConfigurerAdapter {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-
         registry.addInterceptor(localeChangeInterceptor());
         registry.addInterceptor(loggingInterceptor());
         registry.addInterceptor(tokenValidationInterceptor())
@@ -70,15 +71,23 @@ public class MVCConfig extends WebMvcConfigurerAdapter {
                 .addPathPatterns("/api/notification")
                 .excludePathPatterns("/api/group/search")
                 .excludePathPatterns("/api/language/test/**");
+
     }
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // Resources controlled by Spring Security, which
-        // adds "Cache-Control: must-revalidate".
-        registry.addResourceHandler("/static/**")
-                .addResourceLocations("classpath:/static/")
-                .setCachePeriod(0); // 3600 * 24
+        CacheControl staticCache = CacheControl.maxAge(60, TimeUnit.DAYS);
+
+        registry.addResourceHandler("/css/**").addResourceLocations("classpath:/static/css/")
+                .setCacheControl(staticCache);
+        registry.addResourceHandler("/assets/**").addResourceLocations("classpath:/static/assets/")
+                .setCacheControl(staticCache);
+        registry.addResourceHandler("/images/**").addResourceLocations("classpath:/static/images/")
+                .setCacheControl(staticCache);
+        registry.addResourceHandler("/fonts/**").addResourceLocations("classpath:/static/fonts/")
+                .setCacheControl(staticCache);
+        registry.addResourceHandler("/js/**").addResourceLocations("classpath:/static/js/")
+                .setCacheControl(staticCache);
     }
 
     @Override

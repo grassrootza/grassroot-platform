@@ -18,7 +18,6 @@ public class SimpleLoggingInterceptor extends HandlerInterceptorAdapter {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
             throws Exception {
-
         long startTime = System.currentTimeMillis();
         request.setAttribute("startTime", startTime);
         return true;
@@ -29,6 +28,8 @@ public class SimpleLoggingInterceptor extends HandlerInterceptorAdapter {
             HttpServletRequest request, HttpServletResponse response,
             Object handler, ModelAndView modelAndView)
             throws Exception {
+
+        response.addHeader("X-Grassroot-Logged", "true");
 
         long startTime = (Long) request.getAttribute("startTime");
         long endTime = System.currentTimeMillis();
