@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Common type for Vote, Meeting and To-do.
@@ -87,15 +88,14 @@ public interface Task<P extends UidIdentifiable> extends UidIdentifiable {
 		Set<User> existingMembers = fetchAssignedMembersCollection();
 
 		Set<User> membersToAssign = memberUids.stream()
-				.map(uid -> {
+				.flatMap(uid -> {
 					User member = membersByUid.get(uid);
-					if (member == null) {
-						throw new IllegalArgumentException("There is no member with UID " + uid + " to be assigned to "
-								+ this + " which belongs to in group " + group);
+					if (member != null && !existingMembers.contains(member)) {
+						return Stream.of(member);
+					} else {
+						return Stream.empty();
 					}
-					return member;
 				})
-				.filter(member -> !existingMembers.contains(member))
 				.collect(Collectors.toSet());
 
 		existingMembers.addAll(membersToAssign);

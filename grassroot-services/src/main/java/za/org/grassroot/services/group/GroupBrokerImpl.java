@@ -322,11 +322,12 @@ public class GroupBrokerImpl implements GroupBroker {
         // note: User objects should only ever store phone numbers in the msisdn format (i.e, with country code at front, no '+')
 
         Comparator<MembershipInfo> byPhoneNumber =
-                (MembershipInfo m1, MembershipInfo m2) -> (m1.getPhoneNumber().compareTo(m2.getPhoneNumber()));
+                (MembershipInfo m1, MembershipInfo m2) -> (m1.getPhoneNumberWithCCode().compareTo(m2.getPhoneNumberWithCCode()));
 
         Set<MembershipInfo> validNumberMembers = membershipInfos.stream()
                 .filter(MembershipInfo::hasValidPhoneNumber)
                 .collect(collectingAndThen(toCollection(() -> new TreeSet<>(byPhoneNumber)), HashSet::new));
+        logger.info("number of members: {}", validNumberMembers.size());
 
         Set<String> memberPhoneNumbers = validNumberMembers.stream()
                 .map(MembershipInfo::getPhoneNumberWithCCode)
