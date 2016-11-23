@@ -10,6 +10,7 @@ import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.notification.*;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
@@ -29,6 +30,7 @@ import za.org.grassroot.services.util.CacheUtilService;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -181,15 +183,14 @@ public class EventBrokerImpl implements EventBroker {
 
 	@Override
     @Transactional
-	public void updateMeeting(String userUid, String meetingUid, String name, LocalDateTime eventStartDateTime, String eventLocation) {
+	public boolean updateMeeting(String userUid, String meetingUid, String name, LocalDateTime eventStartDateTime, String eventLocation) {
 		Objects.requireNonNull(userUid);
         Objects.requireNonNull(meetingUid);
-        Objects.requireNonNull(name);
-        Objects.requireNonNull(eventStartDateTime);
-        Objects.requireNonNull(eventLocation);
 
 		User user = userRepository.findOneByUid(userUid);
         Meeting meeting = (Meeting) eventRepository.findOneByUid(meetingUid);
+
+        boolean meetingChanged = false;
 
         if (meeting.isCanceled()) {
             throw new IllegalStateException("Meeting is canceled: " + meeting);
@@ -200,30 +201,52 @@ public class EventBrokerImpl implements EventBroker {
 			throw new AccessDeniedException("Error! Only meeting caller can change meeting");
 		}
 
-		if (name.length() > 40) {
+		if (!StringUtils.isEmpty(name) && name.length() > 40) {
 			throw new TaskNameTooLongException();
 		}
 
-        Instant convertedStartDateTime = convertToSystemTime(eventStartDateTime, getSAST());
-        boolean startTimeChanged = !convertedStartDateTime.equals(meeting.getEventStartDateTime());
-        if (startTimeChanged) {
-            validateEventStartTime(convertedStartDateTime);
-            meeting.setEventStartDateTime(convertedStartDateTime);
-			meeting.updateScheduledReminderTime();
-        }
+		boolean startTimeChanged;
+        if (eventStartDateTime != null) {
+			Instant convertedStartDateTime = convertToSystemTime(eventStartDateTime, getSAST());
+			Duration timeBetween = Duration.between(convertedStartDateTime, meeting.getEventStartDateTime());
+			logger.info("duration between old and new dates and times: {} seconds", timeBetween.getSeconds());
+			startTimeChanged = Math.abs(timeBetween.getSeconds()) > 90; // since otherwise pick up spurious non-equals because of small instant changes
+			if (startTimeChanged) {
+				logger.info("start time changed! to : " + convertedStartDateTime);
+				validateEventStartTime(convertedStartDateTime);
+				meeting.setEventStartDateTime(convertedStartDateTime);
+				meeting.updateScheduledReminderTime();
+				meetingChanged = true;
+			}
+		} else {
+        	startTimeChanged = false;
+		}
 
-        meeting.setName(name);
-        meeting.setEventLocation(eventLocation);
+        if (!StringUtils.isEmpty(name) && !meeting.getName().equals(name)) {
+        	logger.info("Meeting title changed!");
+        	meeting.setName(name);
+        	meetingChanged = true;
+		}
 
-		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+        if (!StringUtils.isEmpty(eventLocation) && !meeting.getEventLocation().equals(eventLocation)) {
+			logger.info("Meeting location changed!");
+        	meeting.setEventLocation(eventLocation);
+			meetingChanged = true;
+		}
 
-		EventLog eventLog = new EventLog(user, meeting, EventLogType.CHANGE, null, startTimeChanged);
-		bundle.addLog(eventLog);
+		if (meetingChanged) {
+			LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
-		Set<Notification> notifications = constructEventChangedNotifications(meeting, eventLog, startTimeChanged);
-		bundle.addNotifications(notifications);
+			EventLog eventLog = new EventLog(user, meeting, EventLogType.CHANGE, null, startTimeChanged);
+			bundle.addLog(eventLog);
 
-		logsAndNotificationsBroker.storeBundle(bundle);
+			Set<Notification> notifications = constructEventChangedNotifications(meeting, eventLog, startTimeChanged);
+			bundle.addNotifications(notifications);
+
+			logsAndNotificationsBroker.storeBundle(bundle);
+		}
+
+		return meetingChanged;
 	}
 
 	@Override
@@ -794,10 +817,8 @@ public class EventBrokerImpl implements EventBroker {
 
 		@SuppressWarnings("unchecked") // someting stange with getAllMembers and <user> creates an unchecked warning here (hence suppressing)
 				Set<User> users = new HashSet<>(event.getAllMembers());
-		users.stream().forEach(u -> rsvpResponses.put(u, usersAnsweredYes.contains(u) ? EventRSVPResponse.YES :
+		users.forEach(u -> rsvpResponses.put(u, usersAnsweredYes.contains(u) ? EventRSVPResponse.YES :
 						usersAnsweredNo.contains(u) ? EventRSVPResponse.NO : EventRSVPResponse.NO_RESPONSE));
-
-		logger.info("worked through stream of {} users, got back a map of size {}", users.size(), rsvpResponses.size());
 
 		return rsvpResponses;
 	}

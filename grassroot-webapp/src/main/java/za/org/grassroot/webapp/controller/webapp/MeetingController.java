@@ -4,11 +4,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.util.StringUtils;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
@@ -28,6 +26,7 @@ import za.org.grassroot.webapp.model.web.MeetingWrapper;
 
 import javax.servlet.http.HttpServletRequest;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
@@ -167,15 +166,20 @@ public class MeetingController extends BaseController {
 
 
     @RequestMapping(value = "modify", method=RequestMethod.POST)
-    public String changeMeeting(Model model, @ModelAttribute("meeting") MeetingWrapper changedMeeting, HttpServletRequest request) {
-
-        log.info("Okay, here is the meeting passed back ... " + changedMeeting);
-
-        eventBroker.updateMeeting(getUserProfile().getUid(), changedMeeting.getEntityUid(), changedMeeting.getTitle(),
-                                  changedMeeting.getEventDateTime(), changedMeeting.getLocation());
-
-        addMessage(model, MessageType.SUCCESS, "meeting.update.success", request);
-        return viewMeetingDetails(model, changedMeeting.getEntityUid());
+    public String changeMeeting(Model model, @RequestParam String eventUid, @RequestParam String location,
+                                @RequestParam(required = false) LocalDateTime eventDateTime, HttpServletRequest request) {
+        log.info("Changing meeting, location: {}, datetime: {}", location,eventDateTime);
+        if (eventDateTime == null || eventDateTime.isAfter(LocalDateTime.now())) {
+            boolean change = eventBroker.updateMeeting(getUserProfile().getUid(), eventUid, null, eventDateTime, location);
+            if (change) {
+                addMessage(model, MessageType.SUCCESS, "meeting.update.success", request);
+            } else {
+                addMessage(model, MessageType.INFO, "meeting.update.unchanged", request);
+            }
+        } else {
+            addMessage(model, MessageType.ERROR, "meeting.update.error.time", request);
+        }
+        return viewMeetingDetails(model, eventUid);
     }
 
     @RequestMapping(value = "cancel", method=RequestMethod.POST)

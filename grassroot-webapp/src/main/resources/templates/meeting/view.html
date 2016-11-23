@@ -1,6 +1,6 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      layout:decorator="~{layout}">
+      data-layout-decorate="~{layout}">
 <head>
   <title>Meeting</title>
 </head>
@@ -42,18 +42,17 @@
             <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             <h4 class="modal-title" id="changeDetailsLabel">Change meeting details</h4>
           </div>
-          <form th:action="@{/meeting/modify}" th:object="${meeting}" method="post">
-            <input type="hidden" th:field="*{uid}" />
+          <form th:action="@{/meeting/modify}" method="post">
+            <input type="hidden" name="eventUid" th:value="${meeting.uid}" />
             <div class="modal-body">
               <div class="form-group">
                 <label for="meeting-location" class="control-label">Location:</label>
-                <input type="text" class="form-control" id="meeting-location"
-                       name="location" th:field="*{eventLocation}"/>
+                <input type="text" class="form-control" id="meeting-location" name="location" th:value="${meeting.eventLocation}"/>
               </div>
               <div class="form-group top-buffer">
-                <label for="datepicker" class="control-label">New date and time:</label>
+                <label for="datepicker" class="control-label">Revised date and time:</label>
                 <div class="input-group date" id="datepicker">
-                  <input th:field="*{eventStartDateTime}" type="text" class="form-control" />
+                  <input name="eventDateTime" type="text" class="form-control" />
                   <span class="input-group-addon">
                   <span class="glyphicon glyphicon-calendar"></span>
                   </span>
@@ -63,9 +62,9 @@
             <div class="modal-footer">
               <p class="mark" id="confirm-footer-text">Are you sure? Clicking 'yes' will send a message to
                 <span th:text="${responseTotals.numberOfUsers}">X</span> members.</p>
-              <button type="button" class="btn btn-default" data-dismiss="modal" id="cancel-change">Cancel</button>
-              <button type="button" class="btn btn-primary" id="change-meeting">Change</button>
-              <button type="submit" class="btn btn-primary" id="confirm-change">Confirm</button>
+              <button type="button" class="btn default-button btn-neutral" data-dismiss="modal" id="cancel-change">Cancel</button>
+              <button type="button" class="btn default-button" id="change-meeting">Change</button>
+              <button type="submit" class="btn default-button" id="confirm-change">Confirm</button>
             </div>
           </form>
         </div>
@@ -265,6 +264,7 @@
       $('#datepicker').datetimepicker({
         format: 'DD/MM/YYYY h:mm A',
         defaultDate: /*[[${#temporals.formatISO(meeting.eventDateTimeAtSAST)}]]*/,
+        // minDate: new Date(),
         widgetPositioning: {
           horizontal: 'right'
         },

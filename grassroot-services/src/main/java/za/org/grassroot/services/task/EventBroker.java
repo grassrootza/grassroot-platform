@@ -41,8 +41,8 @@ public interface EventBroker {
 						  boolean includeSubGroups, boolean rsvpRequired, boolean relayable, EventReminderType reminderType,
 						  int customReminderMinutes, String description, Set<String> assignMemberUids, MeetingImportance importance);
 
-	// for commonly updated fields (in particular, the only fields that can be changed via USSD)
-	void updateMeeting(String userUid, String meetingUid, String name, LocalDateTime eventStartDateTime, String eventLocation);
+	// for commonly updated fields (in particular, the only fields that can be changed via USSD) -- returns true if field actually changed ...
+	boolean updateMeeting(String userUid, String meetingUid, String name, LocalDateTime eventStartDateTime, String eventLocation);
 
 	// for changing all or most fields
 	void updateMeeting(String userUid, String meetingUid, String name, String description, LocalDateTime eventStartDateTime, String eventLocation,
