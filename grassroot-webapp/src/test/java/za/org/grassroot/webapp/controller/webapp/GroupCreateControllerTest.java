@@ -8,7 +8,7 @@ import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.services.account.AccountGroupBroker;
-import za.org.grassroot.services.enums.GroupPermissionTemplate;
+import za.org.grassroot.services.group.GroupPermissionTemplate;
 import za.org.grassroot.webapp.model.web.GroupWrapper;
 
 import java.util.HashSet;

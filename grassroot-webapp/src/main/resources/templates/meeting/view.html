@@ -170,6 +170,8 @@
               <p class="description">
                 <!-- todo : link to Google / Outlook calendar & change reminder date/time syntax -->
                 Meeting will be held on <span th:text="${#temporals.format(meeting.eventDateTimeAtSAST, 'h:mm a, dd MMMM')}">Date</span>.
+              </p>
+              <p class="description" th:unless="${#strings.equals(meeting.getReminderType(), 'DISABLED')}">
                 Reminders will be sent on <span th:text="${#temporals.format(meeting.scheduledReminderTimeAtSAST, 'h:mm a, dd MMMM')}">date 2</span>.
               </p>
             </div>

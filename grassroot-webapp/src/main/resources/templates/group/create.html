@@ -83,7 +83,7 @@
             <div class="form-group">
                 <label for="groupTemplate" class="control-label">Who will be able to call meetings, events, etc?</label>
                 <select name="groupTemplate" id="groupTemplate" class="form-control input-lg" th:field="*{permissionTemplate}">
-                  <option th:each="template : ${T(za.org.grassroot.services.enums.GroupPermissionTemplate).values()}"
+                  <option th:each="template : ${T(za.org.grassroot.services.group.GroupPermissionTemplate).values()}"
                           th:value="${template}"
                           th:text="#{web.group.permissions.__${template}__}"></option>
                 </select>

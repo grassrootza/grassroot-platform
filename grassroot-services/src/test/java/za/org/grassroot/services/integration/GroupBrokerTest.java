@@ -28,7 +28,7 @@ import java.util.Set;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
-import static za.org.grassroot.services.enums.GroupPermissionTemplate.DEFAULT_GROUP;
+import static za.org.grassroot.services.group.GroupPermissionTemplate.DEFAULT_GROUP;
 
 
 @RunWith(SpringRunner.class)

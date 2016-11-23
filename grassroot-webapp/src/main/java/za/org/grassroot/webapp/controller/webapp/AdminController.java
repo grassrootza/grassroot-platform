@@ -215,7 +215,7 @@ public class AdminController extends BaseController {
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping(value = "/admin/groups/search", method = RequestMethod.POST)
     public String findGroup(Model model, @RequestParam(value = "search_term") String searchTerm) {
-        String tsQuery = FullTextSearchUtils.encodeAsTsQueryText(searchTerm);
+        String tsQuery = FullTextSearchUtils.encodeAsTsQueryText(searchTerm, true);
         List<Group> possibleGroups = groupRepository.findByGroupNameContainingIgnoreCase(tsQuery);
         model.addAttribute("possibleGroups", possibleGroups);
         model.addAttribute("roles", BaseRoles.groupRoles);

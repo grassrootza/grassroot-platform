@@ -26,7 +26,6 @@ import za.org.grassroot.integration.mqtt.MqttSubscriptionService;
 import za.org.grassroot.integration.xmpp.GcmService;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.PermissionBroker;
-import za.org.grassroot.services.enums.GroupPermissionTemplate;
 import za.org.grassroot.services.exception.GroupDeactivationNotAvailableException;
 import za.org.grassroot.services.exception.InvalidTokenException;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;

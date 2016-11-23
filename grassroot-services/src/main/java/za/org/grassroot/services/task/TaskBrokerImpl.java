@@ -268,7 +268,7 @@ public class TaskBrokerImpl implements TaskBroker {
 
 		Long startTime = System.currentTimeMillis();
 		User user = userRepository.findOneByUid(userUid);
-        String tsQuery = FullTextSearchUtils.encodeAsTsQueryText(searchTerm);
+        String tsQuery = FullTextSearchUtils.encodeAsTsQueryText(searchTerm, true);
 
 		List<Event> events = eventRepository.findByParentGroupMembershipsUserAndNameSearchTerm(user.getId(), tsQuery);
 		Set<TaskDTO> taskDTOs = resolveEventTaskDtos(events, user, null);

@@ -11,18 +11,20 @@ import za.org.grassroot.integration.NotificationService;
 
 /**
  * Created by paballo on 2016/04/06.
- * major todo: decide how to handle non-delivered SMSs, e.g., decide if should update the next delivery time? also, keep an eye out on possible loops
  */
 @MessageEndpoint
 public class OutboundSmsHandler {
 
     private static final Logger log = LoggerFactory.getLogger(OutboundSmsHandler.class);
 
-    @Autowired
     private SmsSendingService smsSendingService;
+    private NotificationService notificationService;
 
     @Autowired
-    private NotificationService notificationService;
+    public OutboundSmsHandler(SmsSendingService smsSendingService, NotificationService notificationService) {
+        this.smsSendingService = smsSendingService;
+        this.notificationService = notificationService;
+    }
 
     @ServiceActivator(inputChannel = "smsOutboundChannel")
     public void handleMessage(Message<Notification> message) throws Exception {
@@ -36,7 +38,19 @@ public class OutboundSmsHandler {
         if (response.isSuccessful()) {
             notificationService.updateNotificationReadStatus(notification.getUid(), true);
         } else {
-            log.error("error delivering SMS, response from gateway: {}", response.toString());
+            switch (response.getResponseType()) {
+                // todo : add notifications back to group, maybe
+                case MSISDN_INVALID:
+                    log.error("invalid number for SMS, marking it as read to prevent looping redelivery");
+                    notificationService.updateNotificationReadStatus(notification.getUid(), true);
+                    break;
+                case DUPLICATE_MESSAGE:
+                    log.error("trying to resend message, just set it as read");
+                    notificationService.updateNotificationReadStatus(notification.getUid(), true);
+                    break;
+                default:
+                    log.error("error delivering SMS, response from gateway: {}", response.toString());
+            }
         }
     }
 }

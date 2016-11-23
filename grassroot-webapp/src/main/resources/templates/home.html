@@ -2,8 +2,8 @@
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" xmlns:data="http://www.w3.org/1999/xhtml"
       data-layout-decorate="~{layout}">
 <head>
-
   <title>Home</title>
+  <link rel="stylesheet" type="text/css" th:href="@{/css/jquery-ui.min.css}" />
 
   <meta property="og:title" content="grassroot.org.za"/>
   <meta property="og:image" content="/img/horizontal-logo.png"/>
@@ -274,9 +274,17 @@
 
 </div>
 
-<div class="header-container" layout:fragment="script-container">
+<div layout:fragment="script-container">
+
+  <script th:src="@{/js/lib/jquery-ui.min.js}"></script>
+  <script th:src="@{/js/grassroot-methods.js}"></script>
 
   <script th:inline="javascript">
+
+    $(document).ready(function() {
+        var searchBar = $("#searchTerm"); // todo : allow just a quick jump to group
+        searchBar.autocomplete(grassrootJS.groupNameAutoComplete(searchBar, searchBar));
+    });
 
     function fetchTaskDescription(taskUid, taskType) {
 

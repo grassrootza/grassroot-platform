@@ -19,7 +19,7 @@ import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.integration.exception.GroupChatSettingNotFoundException;
 import za.org.grassroot.integration.xmpp.GcmService;
 import za.org.grassroot.integration.GroupChatService;
-import za.org.grassroot.services.enums.GroupPermissionTemplate;
+import za.org.grassroot.services.group.GroupPermissionTemplate;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
 import za.org.grassroot.webapp.model.GroupChatSettingsDTO;

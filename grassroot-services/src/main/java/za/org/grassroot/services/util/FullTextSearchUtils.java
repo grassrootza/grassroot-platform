@@ -12,7 +12,7 @@ public class FullTextSearchUtils {
 		// utilities
 	}
 
-	public static final String encodeAsTsQueryText(String text) {
+	public static final String encodeAsTsQueryText(String text, boolean searchAndOnly) {
 		Objects.requireNonNull(text);
 		
 		String[] parts = text.split("\\s+");
@@ -21,9 +21,9 @@ public class FullTextSearchUtils {
 		boolean lastPartIsWord = false;
 		for (String part : parts) {
 			boolean partIsWord = !BOOLEAN_OPEARTORS.contains(part);
-			// in case 2 words appeared in succession, we add logical OR between
+			// in case 2 words appeared in succession, we add logical AND / OR between them (depending on parameter)
 			if (partIsWord && lastPartIsWord) {
-				sb.append("| ");
+				sb.append(searchAndOnly ? "& " : "| ");
 			}
 			sb.append(part).append(" ");
 			lastPartIsWord = partIsWord;

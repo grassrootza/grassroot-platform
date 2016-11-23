@@ -21,7 +21,7 @@ import za.org.grassroot.services.task.EventLogBroker;
 import za.org.grassroot.services.task.EventRequestBroker;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.services.enums.EventListTimeType;
-import za.org.grassroot.services.enums.GroupPermissionTemplate;
+import za.org.grassroot.services.group.GroupPermissionTemplate;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;

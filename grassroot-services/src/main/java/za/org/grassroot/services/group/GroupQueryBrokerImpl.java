@@ -75,10 +75,25 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
     private PermissionBroker permissionBroker;
 
     @Override
+    @Transactional(readOnly = true)
+    public Group load(String groupUid) {
+        return groupRepository.findOneByUid(groupUid);
+    }
+
+    @Override
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @Transactional(readOnly = true)
     public List<Group> loadAll() {
         return groupRepository.findAll();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<GroupSearchResultDTO> groupSearch(String userUid, String searchTerm) {
+        List<GroupSearchResultDTO> results = new ArrayList<>();
+        searchUsersGroups(userUid, searchTerm, true)
+                .forEach(g -> results.add(new GroupSearchResultDTO(g, GroupResultType.USER_MEMBER)));
+        return results;
     }
 
     @Override
@@ -94,7 +109,7 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
         }
 
         User user = userRepository.findOneByUid(userUid);
-        String tsQuery = FullTextSearchUtils.encodeAsTsQueryText(searchTerm);
+        String tsQuery = FullTextSearchUtils.encodeAsTsQueryText(searchTerm, true);
 
         logger.info("Encoded term: " + tsQuery);
         return groupRepository.findByActiveAndMembershipsUserWithNameContainsText(user.getId(), tsQuery);
@@ -108,7 +123,7 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
         logger.info("Finding public groups: userUid={}, searchTerm={}, locationFilter={}", userUid, searchTerm, locationFilter);
 
         User user = userRepository.findOneByUid(userUid);
-        String tsQuery = FullTextSearchUtils.encodeAsTsQueryText(searchTerm);
+        String tsQuery = FullTextSearchUtils.encodeAsTsQueryText(searchTerm, true);
         List<Group> groups = restrictToGroupName ? groupRepository.findDiscoverableGroupsWithNameWithoutMember(user.getId(), tsQuery) :
                 groupRepository.findDiscoverableGroupsWithNameOrTaskTextWithoutMember(user.getId(), tsQuery);
 

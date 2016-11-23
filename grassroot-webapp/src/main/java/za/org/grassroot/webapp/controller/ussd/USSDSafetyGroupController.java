@@ -19,7 +19,7 @@ import za.org.grassroot.services.user.AddressBroker;
 import za.org.grassroot.services.group.GroupQueryBroker;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.services.SafetyEventBroker;
-import za.org.grassroot.services.enums.GroupPermissionTemplate;
+import za.org.grassroot.services.group.GroupPermissionTemplate;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;

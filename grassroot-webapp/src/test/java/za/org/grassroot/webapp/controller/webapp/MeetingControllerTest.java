@@ -13,6 +13,8 @@ import za.org.grassroot.core.enums.MeetingImportance;
 import za.org.grassroot.core.util.DateTimeUtil;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.HashMap;
@@ -150,25 +152,31 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
         Group testGroup = new Group("Dummy Group3", new User("234345345"));
         Meeting dummyMeeting = new Meeting("test meeting", oneDayAway, sessionTestUser, testGroup, "some place");
 
+        LocalDateTime dateTime = LocalDateTime.now().plus(1, ChronoUnit.DAYS).truncatedTo(ChronoUnit.MINUTES);
+
         ResponseTotalsDTO testCount = ResponseTotalsDTO.makeForTest(1, 0, 0, 0, 1);
         when(eventBrokerMock.loadMeeting(dummyMeeting.getUid())).thenReturn(dummyMeeting);
         when(permissionBrokerMock.isGroupPermissionAvailable(sessionTestUser, testGroup,
                                                              Permission.GROUP_PERMISSION_VIEW_MEETING_RSVPS)).thenReturn(true);
+
         when(eventLogBrokerMock.getResponseCountForEvent(dummyMeeting)).thenReturn(testCount);
 
-        mockMvc.perform(post("/meeting/modify").sessionAttr("meeting", dummyMeeting).contentType(MediaType.APPLICATION_FORM_URLENCODED))
+        mockMvc.perform(post("/meeting/modify")
+                .param("eventUid", dummyMeeting.getUid())
+                .param("location", "some place")
+                .param("eventDateTime", DateTimeFormatter.ofPattern("dd/MM/yyyy h:mm a").format(dateTime))
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED))
                 .andExpect(status().isOk())
                 .andExpect(model().attribute("meeting", hasProperty("uid", is(dummyMeeting.getUid()))))
                 .andExpect(model().attribute("responseTotals", hasProperty("yes", is(1))))
                 .andExpect(view().name("meeting/view"));
 
+        verify(eventBrokerMock, times(1)).updateMeeting(sessionTestUser.getUid(), dummyMeeting.getUid(), null,
+                                                        dateTime, "some place");
+
         verify(eventBrokerMock, times(1)).loadMeeting(dummyMeeting.getUid());
-        verify(eventBrokerMock, times(1)).updateMeeting(sessionTestUser.getUid(), dummyMeeting.getUid(), dummyMeeting.getName(),
-                                                        dummyMeeting.getEventStartDateTime().atZone(DateTimeUtil.getSAST()).toLocalDateTime(),
-                                                        dummyMeeting.getEventLocation());
         verify(eventBrokerMock, times(1)).getRSVPResponses(dummyMeeting);
         verifyNoMoreInteractions(eventBrokerMock);
-        verify(eventBrokerMock, times(1)).getRSVPResponses(dummyMeeting);
         verify(eventLogBrokerMock, times(1)).getResponseCountForEvent(dummyMeeting);
         verifyNoMoreInteractions(eventBrokerMock);
         verifyZeroInteractions(userManagementServiceMock);

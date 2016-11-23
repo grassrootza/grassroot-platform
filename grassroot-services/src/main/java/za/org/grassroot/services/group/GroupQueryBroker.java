@@ -19,9 +19,12 @@ import java.util.Set;
  */
 public interface GroupQueryBroker {
 
+    Group load(String groupUid);
+
     List<Group> loadAll();
 
-    // major todo : use 'only created group'
+    List<GroupSearchResultDTO> groupSearch(String userUid, String searchTerm);
+
     List<Group> searchUsersGroups(String userUid, String searchTerm, boolean onlyCreatedGroups);
 
     ChangedSinceData<Group> getActiveGroups(User user, Instant changedSince);

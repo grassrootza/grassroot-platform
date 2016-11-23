@@ -12,7 +12,6 @@ import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.geo.GeoLocationBroker;
-import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.group.GroupQueryBroker;
 import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.TaskBroker;
@@ -42,23 +41,21 @@ public class AjaxController extends BaseController {
 
     private static final Logger log = LoggerFactory.getLogger(AjaxController.class);
 
-    @Autowired
-    private GroupBroker groupBroker;
-
-    @Autowired
-    private GroupQueryBroker groupQueryBroker; // todo : probably want to divide up this controller
-
-    @Autowired
+    private GroupQueryBroker groupQueryBroker;
     private EventBroker eventBroker;
-
-    @Autowired
     private TodoBroker todoBroker;
-
-    @Autowired
     private TaskBroker taskBroker;
+    private GeoLocationBroker geoLocationBroker;
 
     @Autowired
-    private GeoLocationBroker geoLocationBroker;
+    public AjaxController(GroupQueryBroker groupQueryBroker, EventBroker eventBroker, TodoBroker todoBroker,
+                          TaskBroker taskBroker, GeoLocationBroker geoLocationBroker) {
+        this.groupQueryBroker = groupQueryBroker;
+        this.eventBroker = eventBroker;
+        this.todoBroker = todoBroker;
+        this.taskBroker = taskBroker;
+        this.geoLocationBroker = geoLocationBroker;
+    }
 
     @RequestMapping(value = "/members/list", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> retrieveParentMembers(@RequestBody MemberListDTO listRequest) {
@@ -69,7 +66,7 @@ public class AjaxController extends BaseController {
         final boolean selected = listRequest.isSelectedByDefault();
 
         if (JpaEntityType.GROUP.equals(type)) {
-            memberPicker = new MemberPicker(groupBroker.load(parentUid), selected);
+            memberPicker = new MemberPicker(groupQueryBroker.load(parentUid), selected);
         } else if (JpaEntityType.MEETING.equals(type) || JpaEntityType.VOTE.equals(type)) {
             memberPicker = new MemberPicker(eventBroker.load(parentUid), selected);
         } else if (JpaEntityType.TODO.equals(type)) {
@@ -123,10 +120,9 @@ public class AjaxController extends BaseController {
 
     @RequestMapping(value = "/group/names", method = RequestMethod.GET)
     public @ResponseBody List<AutoCompleteResponse> retrieverUserGroupNames(@RequestParam String fragment) {
-        log.info("looking for groups with name: " + fragment);
-        return groupQueryBroker.searchUsersGroups(getUserProfile().getUid(), fragment, false)
+        return groupQueryBroker.groupSearch(getUserProfile().getUid(), fragment)
                 .stream()
-                .map(g -> new AutoCompleteResponse(g.getUid(), g.getName()))
+                .map(g -> new AutoCompleteResponse(g.getName(), g.getName()))
                 .collect(Collectors.toList());
     }
 
