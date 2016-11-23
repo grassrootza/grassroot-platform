@@ -41,6 +41,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.collectingAndThen;
+import static java.util.stream.Collectors.toCollection;
 import static za.org.grassroot.core.enums.UserInterfaceType.UNKNOWN;
 import static za.org.grassroot.core.util.DateTimeUtil.*;
 
@@ -319,9 +321,12 @@ public class GroupBrokerImpl implements GroupBroker {
     private LogsAndNotificationsBundle addMemberships(User initiator, Group group, Set<MembershipInfo> membershipInfos, boolean duringGroupCreation) {
         // note: User objects should only ever store phone numbers in the msisdn format (i.e, with country code at front, no '+')
 
+        Comparator<MembershipInfo> byPhoneNumber =
+                (MembershipInfo m1, MembershipInfo m2) -> (m1.getPhoneNumber().compareTo(m2.getPhoneNumber()));
+
         Set<MembershipInfo> validNumberMembers = membershipInfos.stream()
                 .filter(MembershipInfo::hasValidPhoneNumber)
-                .collect(Collectors.toSet());
+                .collect(collectingAndThen(toCollection(() -> new TreeSet<>(byPhoneNumber)), HashSet::new));
 
         Set<String> memberPhoneNumbers = validNumberMembers.stream()
                 .map(MembershipInfo::getPhoneNumberWithCCode)
@@ -354,8 +359,6 @@ public class GroupBrokerImpl implements GroupBroker {
         // make sure the newly created users are stored
         userRepository.save(createdUsers);
         userRepository.flush();
-
-
 
         // adding action logs and event notifications ...
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
