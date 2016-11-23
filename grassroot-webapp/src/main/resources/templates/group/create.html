@@ -74,7 +74,7 @@
                   </select>
                 </div>
                 <div class="col-md-1 col-xs-12 text-center">
-                  <a href="#"><i id="removeMember" class="fa fa-times" aria-hidden="true"></i></a>
+                  <a href="#"><i id="removeMember0" class="fa fa-times" aria-hidden="true"></i></a>
                 </div>
               </div>
             </div>
@@ -162,7 +162,6 @@
 
       function addRowToTable() {
         var thisRowIndex = number_members;
-        console.log("adding a row at this index: " + number_members);
 
         member_table.find('.member-row:last').after(grassrootJS.assembleMemberRow("listOfMembers", thisRowIndex));
         var newRow = member_table.find('.member-row:last');
@@ -171,7 +170,7 @@
         phoneInput.rules('add', grassrootJS.phoneRules);
         nameInput.autocomplete(grassrootJS.memberAutoComplete(nameInput, phoneInput));
 
-        newRow.find('#removeMember').click(function () {
+        newRow.find('#removeMember' + number_members).click(function () {
           newRow.remove();
           reduceIndices(thisRowIndex);
         });

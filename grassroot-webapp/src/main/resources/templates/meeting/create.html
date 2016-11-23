@@ -23,7 +23,7 @@
     <div class="container">
       <div class="row">
         <div class="col-md-8 col-md-offset-2 col-sm-6 col-sm-offset-3 col-xs-12">
-          <form th:object="${meeting}" th:action="@{/meeting/create}" method="post">
+          <form id="meetingForm" th:object="${meeting}" th:action="@{/meeting/create}" method="post">
 
             <div class="form-group">
               <label for="group" class="control-label">Who is meeting? Group:</label>
@@ -93,10 +93,11 @@
 
 </main>
 
-<div class="header-container" layout:fragment="script-container">
+<div layout:fragment="script-container">
 
   <script th:src="@{/js/lib/moment.min.js}"></script>
   <script th:src="@{/js/lib/bootstrap-datetimepicker.min.js}"></script>
+  <script th:src="@{/js/lib/jquery.validate.min.js}"></script>
 
   <script>
 
@@ -104,6 +105,10 @@
 
       var defTime = new Date();
       defTime.setTime(defTime.getTime() + 5*60*1000);
+
+      var mainForm = $("#meetingForm");
+      var reminderSelector = $("#reminderType");
+      var customReminder = $("#customReminder");
 
       $('#datepicker').datetimepicker({
         format: 'DD/MM/YYYY h:mm A',
@@ -114,20 +119,37 @@
         minDate: defTime
       });
 
-      $("#reminderType").changeGroupMinutes();
+      reminderSelector.changeGroupMinutes();
       $('#selectedgroup').change(function() {
         $("#reminderType").changeGroupMinutes();
       });
 
-      $("#customReminder").hide();
-      $('#reminderType').change(function() {
+      customReminder.hide();
+      reminderSelector.change(function() {
         var selected = $("#reminderType option:selected").val();
         console.log("Selected option: " + selected);
         if (selected == "CUSTOM") {
-          $("#customReminder").show();
+          customReminder.show();
         } else {
-          $("#customReminder").hide();
+          customReminder.hide();
         }
+      });
+
+      mainForm.validate({
+          errorClass: 'error-text',
+          rules: {
+              title: {
+                  required: true,
+                  minlength: 2,
+                  maxlength: 35
+              },
+              location: {
+                  required: true
+              }
+          }, messages: {
+              title: 'Please enter a meeting subject (less than 35 characters)',
+              location: 'Please enter where the meeting will be held'
+          }
       });
 
     });

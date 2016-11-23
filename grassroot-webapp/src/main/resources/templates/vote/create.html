@@ -24,7 +24,7 @@
       <div class="row">
         <div class="col-md-8 col-md-offset-2 col-sm-6 col-sm-offset-3 col-xs-12">
 
-          <form th:object="${vote}" th:action="@{/vote/create}" method="post">
+          <form id="voteForm" th:object="${vote}" th:action="@{/vote/create}" method="post">
 
             <div class="form-group">
               <label for="group" class="control-label">Group which is voting</label>
@@ -76,10 +76,24 @@
 
   <script th:src="@{/js/lib/moment.min.js}"></script>
   <script th:src="@{/js/lib/bootstrap-datetimepicker.min.js}"></script>
+  <script th:src="@{/js/lib/jquery.validate.min.js}"></script>
 
   <script>
 
     $(document).ready(function() {
+
+      $("#voteForm").validate({
+          errorClass: 'error-text',
+          rules: {
+              title: {
+                  required: true,
+                  minlength: 2,
+                  maxlength: 35
+              }
+          }, messages: {
+              title: 'Please enter a vote subject (less than 35 characters)',
+          }
+      });
 
       $("#customReminder").hide();
 
