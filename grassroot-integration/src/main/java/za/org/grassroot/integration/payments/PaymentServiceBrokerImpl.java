@@ -29,7 +29,7 @@ import java.util.Set;
  * Created by luke on 2016/10/26.
  */
 @Service
-@PropertySource(value = "${grassroot.integration.properties}", ignoreResourceNotFound = true)
+@PropertySource(value = "${grassroot.payments.properties}", ignoreResourceNotFound = true)
 public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
 
     private static final Logger logger = LoggerFactory.getLogger(PaymentServiceBrokerImpl.class);

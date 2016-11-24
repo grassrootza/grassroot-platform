@@ -36,122 +36,120 @@
 <div layout:fragment="messages"></div>
 
 <main layout:fragment="content">
-  <div class="container">
-    <div class="row">
+  <section class="grassroot-form">
+    <div class="container">
+      <div class="row">
 
-      <div class="col-md-6 col-md-offset-3 col-sm-6 col-sm-offset-3 col-xs-12">
-        <div class="row no-padding">
-          <div class="col-md-3 col-sm-4 col-xs-12">
-            <label class="grassroot-sidebar" for="account_type">Type</label>
-          </div>
-          <div class="col-md-6 col-sm-5 col-xs-12">
-            <select id="account_type" class="form-control input-lg">
-              <option th:each="type: ${T(za.org.grassroot.core.enums.AccountType).values()}"
-                      th:text="#{web.account.signup.__${type}__}"
-                      th:value="${type}"
-                      th:selected="${account.type == type}"></option>
-            </select>
-          </div>
-          <div class="col-md-3 col-sm-3 col-xs-12">
-            <a th:href="@{type(accountUid=${account.uid})}" class="btn btn-primary btn-block btn-lg">Change</a>
-          </div>
-        </div>
-
-        <hr>
-
-        <div class="row no-padding">
-          <div class="col-md-3 col-sm-4 col-xs-12">
-            <label class="grassroot-sidebar">Groups</label>
-          </div>
-          <div th:switch="${#lists.isEmpty(paidGroups)}" class="col-md-6 col-sm-5 col-xs-12">
-            <div th:case="true">
-              <p class="grassroot-body">You have not added any groups to this account yet.
-                <a th:if="${canAddAllGroups}" id="addAllGroups" th:href="@{group/add/all}">Add all my groups to my account.</a>
-              </p>
+        <div class="col-md-10 col-md-offset-1 col-sm-6 col-sm-offset-3 col-xs-12">
+          <div class="row no-padding">
+            <div class="col-md-2 col-sm-4 col-xs-12">
+              <label class="grassroot-sidebar" for="account_type">Type</label>
             </div>
-            <div th:case="false">
-              <p class="grassroot-body">
-                <span th:text="${paidGroups.size()}">X</span> groups are paid for by this account.
-              </p>
-            </div>
-          </div>
-          <div class="col-md-3 col-sm-3 col-xs-12">
-            <button class="btn btn-primary btn-block btn-lg" data-toggle="modal" data-target="#addGroupModal">
-              <span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Add</button>
-          </div>
-        </div>
-
-        <div th:unless="${#lists.isEmpty(paidGroups)}" class="row narrow-vertical">
-          <div class="col-md-6 col-md-offset-3 col-sm-5 col-sm-offset-4 col-xs-12">
-            <ul class="list-group">
-              <li th:each="paidGroup: ${paidGroups}" class="list-group-item clearfix">
-                <a th:href="@{/group/view(groupUid=paidGroup.group.uid)}">
-                  <span class="grassroot-body" th:text="${paidGroup.group.name}">Group name</span>
-                </a>
-                <span class="pull-right">
-                    <button class="btn btn-default" data-toggle="modal" data-target="#remGroupModal"
-                            th:attr="data-groupuid=${paidGroup.uid}">Remove</button>
-                </span>
-              </li>
-            </ul>
-          </div>
-        </div>
-
-        <hr>
-
-        <div class="row no-padding">
-          <div class="col-md-3 col-sm-4 col-xs-12">
-            <label class="grassroot-sidebar">Statements</label>
-          </div>
-          <form th:action="@{/account/statement}" method="GET">
-          <div th:switch="${#lists.isEmpty(billingRecords)}" class="col-md-6 col-sm-5 col-xs-12">
-            <div th:case="true">
-              <p class="grassroot-body">This account has not been billed yet</p>
-            </div>
-            <div th:case="false">
-              <select name="statementUid" class="form-control input-lg">
-                <option th:each="record: ${billingRecords}"
-                        th:text="${#temporals.format(record.getStatementDate(),'d MMM yyyy')}"
-                        th:value="${record.uid}"></option>
+            <div class="col-md-7 col-sm-5 col-xs-12">
+              <select id="account_type" class="form-control input-lg">
+                <option th:each="type: ${T(za.org.grassroot.core.enums.AccountType).values()}"
+                        th:text="#{web.account.signup.__${type}__}"
+                        th:value="${type}"
+                        th:selected="${account.type == type}"></option>
               </select>
             </div>
-            <a class="grassroot-body" th:href="@{/account/payment/change}">Change payment method</a>
-          </div>
-            <div th:unless="${#lists.isEmpty(billingRecords)}" class="col-md-3 col-sm-3 col-xs-12">
-              <button type="submit" class="btn btn-primary btn-lg btn-block">
-                View</button>
+            <div class="col-md-3 col-sm-3 col-xs-12">
+              <a th:href="@{type(accountUid=${account.uid})}" class="btn default-button full-width-button">Change</a>
             </div>
-          </form>
+          </div>
+
+          <hr>
+
+          <div class="row no-padding">
+            <div class="col-md-2 col-sm-4 col-xs-12">
+              <label class="grassroot-sidebar">Groups</label>
+            </div>
+            <div th:switch="${#lists.isEmpty(paidGroups)}" class="col-md-7 col-sm-5 col-xs-12">
+              <div th:case="true">
+                <p class="grassroot-body">You have not added any groups to this account yet.
+                  <a th:if="${canAddAllGroups}" id="addAllGroups" th:href="@{group/add/all}">Add all my groups to my account.</a>
+                </p>
+              </div>
+              <div th:case="false">
+                <p class="grassroot-body">
+                  <span th:text="${paidGroups.size()}">X</span> groups are paid for by this account.
+                </p>
+              </div>
+            </div>
+            <div class="col-md-3 col-sm-3 col-xs-12">
+              <button class="btn default-button full-width-button" data-toggle="modal" data-target="#addGroupModal">
+                <i class="fa fa-plus" aria-hidden="true"></i> Add</button>
+            </div>
+          </div>
+
+          <div th:unless="${#lists.isEmpty(paidGroups)}" class="row narrow-vertical">
+            <div class="col-md-7 col-md-offset-2 col-sm-5 col-sm-offset-4 col-xs-12">
+              <ul class="list-group">
+                <li th:each="paidGroup: ${paidGroups}" class="list-group-item clearfix">
+                  <a th:href="@{/group/view(groupUid=paidGroup.group.uid)}">
+                    <span class="grassroot-body" th:text="${paidGroup.group.name}">Group name</span>
+                  </a>
+                  <span class="pull-right">
+                      <button class="btn default-button btn-neutral" data-toggle="modal" data-target="#remGroupModal"
+                              th:attr="data-groupuid=${paidGroup.uid}">Remove</button>
+                  </span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <hr>
+
+          <div class="row no-padding">
+            <div class="col-md-2 col-sm-4 col-xs-12">
+              <label class="grassroot-sidebar">Statements</label>
+            </div>
+            <form th:action="@{/account/statement}" method="GET">
+            <div th:switch="${#lists.isEmpty(billingRecords)}" class="col-md-7 col-sm-5 col-xs-12">
+              <div th:case="true">
+                <p class="grassroot-body">This account has not been billed yet</p>
+              </div>
+              <div th:case="false">
+                <select name="statementUid" class="form-control input-lg">
+                  <option th:each="record: ${billingRecords}"
+                          th:text="${#temporals.format(record.getStatementDate(),'d MMM yyyy')}"
+                          th:value="${record.uid}"></option>
+                </select>
+              </div>
+              <a class="grassroot-body" th:href="@{/account/payment/change}">Change payment method</a>
+            </div>
+              <div th:unless="${#lists.isEmpty(billingRecords)}" class="col-md-3 col-sm-3 col-xs-12">
+                <button type="submit" class="btn default-button full-width-button">
+                  View</button>
+              </div>
+            </form>
+          </div>
+
+          <hr>
+
+          <div class="row no-padding">
+            <div class="col-md-2 col-sm-4 col-xs-12">
+              <label class="grassroot-sidebar">Admins</label>
+            </div>
+            <div class="col-md-7 col-sm-5 col-xs-12">
+              <ul class="list-group">
+                <li th:each="admin: ${administrators}" class="list-group-item borderless no-padding clearfix">
+                  <a th:href="@{/group/view(groupUid=paidGroup.group.uid)}">
+                    <span class="grassroot-body" th:text="${admin.displayName}">Admin name</span>
+                  </a>
+                </li>
+              </ul>
+            </div>
+            <div class="col-md-3 col-sm-3 col-xs-12">
+              <button type="button" class="btn default-button full-width-button" data-toggle="modal" data-target="#addAdminModal">
+                Modify
+              </button>
+            </div>
+          </div>
         </div>
-
-        <hr>
-
-        <div class="row no-padding">
-          <div class="col-md-3 col-sm-4 col-xs-12">
-            <label class="grassroot-sidebar">Admins</label>
-          </div>
-          <div class="col-md-6 col-sm-5 col-xs-12">
-            <ul class="list-group">
-              <li th:each="admin: ${administrators}" class="list-group-item borderless no-padding clearfix">
-                <a th:href="@{/group/view(groupUid=paidGroup.group.uid)}">
-                  <span class="grassroot-body" th:text="${admin.displayName}">Admin name</span>
-                </a>
-              </li>
-            </ul>
-          </div>
-          <div class="col-md-3 col-sm-3 col-xs-12">
-            <button type="button" class="btn btn-primary btn-lg btn-block" data-toggle="modal" data-target="#addAdminModal">
-              Modify
-            </button>
-          </div>
-        </div>
-
-
-
-  </div>
-
+      </div>
     </div>
-  </div>
+  </section>
 
   <!-- Add group modal -->
   <div class="modal fade" id="addGroupModal" tabindex="-1" role="dialog" aria-labelledby="addGroupModalTitle">
@@ -167,17 +165,17 @@
           <input type="hidden" name="accountUid" th:value="${account.uid}" />
           <div class="modal-body">
             <div class="form-group">
-              <label for="group_search_field" class="control-label">
+              <p>
                 Your account has X groups left. Enter the name of a group to add to it, or click new group to start a new one.
-              </label>
+              </p>
               <input type="text" class="form-control" id="group_search_field"
                      name="confirm_field" autocomplete="off" />
               <input type="hidden" name="groupUid" id="group_uid_field" />
             </div>
           </div>
           <div class="modal-footer">
-            <a th:href="@{/group/create}" class="btn btn-default">New group</a>
-            <button type="submit" class="btn btn-primary">Add</button>
+            <a th:href="@{/group/create}" class="btn default-button btn-neutral">New group</a>
+            <button type="submit" class="btn default-button">Add</button>
           </div>
         </form>
       </div>

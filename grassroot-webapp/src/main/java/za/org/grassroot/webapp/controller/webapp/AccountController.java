@@ -205,6 +205,7 @@ public class AccountController extends BaseController {
         AccountBillingRecord record = accountBillingBroker.generatePaymentChangeBill(accountUid, PAYMENT_VERIFICATION_AMT);
         final String returnUrl = "https://" + request.getServerName() + ":" + request.getServerPort()
                 + "/cardauth/3dsecure/response/change";
+        log.info("sending payment request with this URL: {}", returnUrl);
         PaymentRedirectPP redirectPP = paymentServiceBroker.asyncPaymentInitiate(paymentMethod, PAYMENT_VERIFICATION_AMT,
                 returnUrl);
 
