@@ -195,6 +195,29 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
          */
     }
 
+    @Override
+    public void asyncPaymentCheckResult(String paymentId, String resourcePath) {
+        UriComponentsBuilder builder = UriComponentsBuilder.newInstance()
+                .scheme("https")
+                .host(paymentsRestHost)
+                .path(resourcePath)
+                .queryParam(paymentsAuthUserIdParam, userId)
+                .queryParam(paymentsAuthPasswordParam, password)
+                .queryParam(paymentsAuthChannelIdParam, channelId3d);
+
+        stdHeaders = new HttpHeaders();
+        stdHeaders.add(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE);
+        stdHeaders.add(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded;charset=UTF-8");
+
+        logger.info("Calling URI: " + builder.toUriString());
+
+        HttpEntity<String> request = new HttpEntity<>(stdHeaders);
+        ResponseEntity<String> response = restTemplate.exchange(builder.build().toUri(), HttpMethod.GET,
+                request, String.class);
+
+        logger.info("Response: {}", response.toString());
+    }
+
     public void recordPaymentAsSuccessful(String paymentId, PaymentResponsePP responsePP) {
         AccountBillingRecord record = null; // todo : going to have to fish this out from paymentId
         Account account = record.getAccount();
