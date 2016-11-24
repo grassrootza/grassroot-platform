@@ -13,7 +13,7 @@ public interface PaymentServiceBroker {
 
     PaymentRedirectPP asyncPaymentInitiate(PaymentMethod method, double amountToPay, String returnToUrl);
 
-    void asyncPaymentCheckResult(String paymentId, String resourcePath);
+    PaymentResultType asyncPaymentCheckResult(String paymentId, String resourcePath);
 
     void recordPaymentAsSuccessful(String paymentId, PaymentResponsePP responsePP);
 

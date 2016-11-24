@@ -113,15 +113,8 @@ public class AccountBrokerImpl implements AccountBroker {
         User billedUser = userRepository.findOneByUid(billedUserUid);
 
         Account account = new Account(creatingUser, accountName, accountType, billedUser);
-        final String accountUid = account.getUid();
 
         accountRepository.saveAndFlush(account);
-
-        account.addAdministrator(billedUser);
-        billedUser.setAccountAdministered(account);
-        permissionBroker.addSystemRole(billedUser, BaseRoles.ROLE_ACCOUNT_ADMIN);
-
-        addAdministrator(userUid, accountUid, billedUserUid);
 
         log.info("Created account, now looks like: " + account);
 
@@ -155,6 +148,10 @@ public class AccountBrokerImpl implements AccountBroker {
     public void enableAccount(String userUid, String accountUid, LocalDate nextStatementDate) {
         User user = userRepository.findOneByUid(userUid);
         Account account = accountRepository.findOneByUid(accountUid);
+
+        account.addAdministrator(user);
+        user.setAccountAdministered(account);
+        permissionBroker.addSystemRole(user, BaseRoles.ROLE_ACCOUNT_ADMIN);
 
         if (!user.getAccountAdministered().equals(account)) {
             permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);

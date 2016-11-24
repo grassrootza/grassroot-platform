@@ -195,8 +195,9 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
          */
     }
 
+    // todo : create interfaces to return the result set
     @Override
-    public void asyncPaymentCheckResult(String paymentId, String resourcePath) {
+    public PaymentResultType asyncPaymentCheckResult(String paymentId, String resourcePath) {
         UriComponentsBuilder builder = UriComponentsBuilder.newInstance()
                 .scheme("https")
                 .host(paymentsRestHost)
@@ -211,11 +212,19 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
 
         logger.info("Calling URI: " + builder.toUriString());
 
-        HttpEntity<String> request = new HttpEntity<>(stdHeaders);
-        ResponseEntity<String> response = restTemplate.exchange(builder.build().toUri(), HttpMethod.GET,
-                request, String.class);
+        HttpEntity<PaymentResponsePP> request = new HttpEntity<>(stdHeaders);
+        ResponseEntity<PaymentResponsePP> response = restTemplate.exchange(builder.build().toUri(), HttpMethod.GET,
+                request, PaymentResponsePP.class);
 
-        logger.info("Response: {}", response.toString());
+        if (response.getStatusCode().is2xxSuccessful() && response.getBody().getResult() != null) {
+            PaymentResponsePP responsePP = response.getBody();
+            logger.info("Success: {}, Code: {}, Description: {}", responsePP.getResult().isSuccessful(),
+                    responsePP.getResult().getCode(), responsePP.getResult().getDescription());
+            return responsePP.getResult().getType();
+        } else {
+            logger.info("Error in response! {}", response.toString());
+            return PaymentResultType.FAILED_OTHER;
+        }
     }
 
     public void recordPaymentAsSuccessful(String paymentId, PaymentResponsePP responsePP) {
@@ -239,8 +248,6 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
                 .queryParam(recurringParam, INITIAL)
                 .queryParam(registrationFlag, "true");
     }
-
-
 
     @Override
     @Transactional
