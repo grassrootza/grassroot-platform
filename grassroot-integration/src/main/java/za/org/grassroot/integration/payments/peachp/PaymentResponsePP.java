@@ -1,6 +1,8 @@
-package za.org.grassroot.integration.payments;
+package za.org.grassroot.integration.payments.peachp;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import za.org.grassroot.integration.payments.PaymentResponse;
+import za.org.grassroot.integration.payments.PaymentResultType;
 
 import java.util.Map;
 
@@ -8,7 +10,7 @@ import java.util.Map;
  * Created by luke on 2016/10/31.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class PaymentResponsePP {
+public class PaymentResponsePP extends PaymentResponse {
 
     private String id;
     private Double amount;
@@ -120,6 +122,26 @@ public class PaymentResponsePP {
 
     public void setCustomParameters(Map<String, String> customParameters) {
         this.customParameters = customParameters;
+    }
+
+    @Override
+    public String getReference() {
+        return registrationId;
+    }
+
+    @Override
+    public String getThisPaymentId() {
+        return id;
+    }
+
+    @Override
+    public PaymentResultType getType() {
+        return result == null ? PaymentResultType.FAILED_OTHER : result.getType();
+    }
+
+    @Override
+    public String getDescription() {
+        return result == null ? "" : result.getDescription();
     }
 
     @Override

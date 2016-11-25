@@ -15,8 +15,12 @@ import org.springframework.web.util.UriComponentsBuilder;
 import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.AccountBillingRecord;
 import za.org.grassroot.core.repository.AccountBillingRecordRepository;
+import za.org.grassroot.core.repository.AccountRepository;
 import za.org.grassroot.integration.exception.PaymentMethodFailedException;
 import za.org.grassroot.integration.exception.PaymentMethodNot3dSecureException;
+import za.org.grassroot.integration.payments.peachp.PaymentErrorPP;
+import za.org.grassroot.integration.payments.peachp.PaymentRedirectPP;
+import za.org.grassroot.integration.payments.peachp.PaymentResponsePP;
 
 import javax.annotation.PostConstruct;
 import java.io.IOException;
@@ -47,6 +51,7 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
 
     private static final String OKAY_CODE = "000.100.110";
 
+    private AccountRepository accountRepository;
     private AccountBillingRecordRepository billingRepository;
     private RestTemplate restTemplate;
     private ObjectMapper objectMapper;
@@ -104,8 +109,9 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
     private String currency;
 
     @Autowired
-    public PaymentServiceBrokerImpl(AccountBillingRecordRepository billingRepository,
+    public PaymentServiceBrokerImpl(AccountRepository accountRepository, AccountBillingRecordRepository billingRepository,
                                     RestTemplate restTemplate, ObjectMapper objectMapper) {
+        this.accountRepository = accountRepository;
         this.billingRepository = billingRepository;
         this.restTemplate = restTemplate;
         this.objectMapper = objectMapper;
@@ -155,7 +161,9 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
     }
 
     @Override
-    public PaymentRedirectPP asyncPaymentInitiate(PaymentMethod method, double amountToPay, String returnToUrl) {
+    @Transactional
+    public PaymentRedirectPP asyncPaymentInitiate(String accountUid, PaymentMethod method, double amountToPay, String returnToUrl) {
+        Objects.requireNonNull(accountUid);
         Objects.requireNonNull(method);
         Objects.requireNonNull(returnToUrl);
 
@@ -170,6 +178,8 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
             logger.info("RESPONSE: {}", response.toString());
             PaymentRedirectPP redirectPP = response.getBody().getRedirect();
             if (redirectPP != null) {
+                Account account = accountRepository.findOneByUid(accountUid);
+                account.setPaymentRef(response.getBody().getId()); // do not yet reference ID yet (later)
                 return redirectPP;
             } else {
                 throw new PaymentMethodNot3dSecureException();
@@ -185,19 +195,11 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
                 throw new PaymentMethodFailedException(null);
             }
         }
-
-        /* todo : decide whether to use in this flow
-        // use this if the billing record is closely tied to the payment (e.g., on sign up, or switching), to prevent
-            // duplication of the bill if there is failure and try again
-            if (deleteBillOnFailure) {
-                billingRepository.delete(billingRecord);
-            }
-         */
     }
 
-    // todo : create interfaces to return the result set
+    // todo : create interfaces to return the result set (and generally abstract all of this)
     @Override
-    public PaymentResultType asyncPaymentCheckResult(String paymentId, String resourcePath) {
+    public PaymentResponse asyncPaymentCheckResult(String paymentId, String resourcePath) {
         UriComponentsBuilder builder = UriComponentsBuilder.newInstance()
                 .scheme("https")
                 .host(paymentsRestHost)
@@ -218,20 +220,13 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody().getResult() != null) {
             PaymentResponsePP responsePP = response.getBody();
-            logger.info("Success: {}, Code: {}, Description: {}", responsePP.getResult().isSuccessful(),
-                    responsePP.getResult().getCode(), responsePP.getResult().getDescription());
-            return responsePP.getResult().getType();
+            logger.info("Success: {}, Code: {}, Reference: {}, Description: {}", responsePP.getResult().isSuccessful(),
+                    responsePP.getResult().getCode(), responsePP.getReference(), responsePP.getResult().getDescription());
+            return responsePP;
         } else {
             logger.info("Error in response! {}", response.toString());
-            return PaymentResultType.FAILED_OTHER;
+            return new PaymentResponse(PaymentResultType.FAILED_OTHER, paymentId); // todo : probably need to respond
         }
-    }
-
-    public void recordPaymentAsSuccessful(String paymentId, PaymentResponsePP responsePP) {
-        AccountBillingRecord record = null; // todo : going to have to fish this out from paymentId
-        Account account = record.getAccount();
-        account.setPaymentRef(responsePP.getRegistrationId());
-        handleSuccessfulPayment(account, record, responsePP);
     }
 
     private UriComponentsBuilder generateInitialPaymentUri(PaymentMethod paymentMethod, double amountToPay) {

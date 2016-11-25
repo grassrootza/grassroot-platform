@@ -13,8 +13,8 @@ import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.AccountBillingRecord;
 import za.org.grassroot.core.enums.AccountType;
 import za.org.grassroot.integration.payments.PaymentMethod;
-import za.org.grassroot.integration.payments.PaymentRedirectPP;
 import za.org.grassroot.integration.payments.PaymentServiceBroker;
+import za.org.grassroot.integration.payments.peachp.PaymentRedirectPP;
 import za.org.grassroot.services.account.AccountBillingBroker;
 import za.org.grassroot.services.account.AccountBroker;
 import za.org.grassroot.webapp.controller.BaseController;
@@ -89,8 +89,8 @@ public class AccountSignUpController extends BaseController {
         final String returnUrl = "https://" + request.getServerName() + ":" + request.getServerPort()
                 + "/cardauth/3dsecure/response/new";
 
-        PaymentRedirectPP paymentResponse = paymentBroker.asyncPaymentInitiate(paymentMethod, record.getTotalAmountToPay(),
-                returnUrl);
+        PaymentRedirectPP paymentResponse = paymentBroker.asyncPaymentInitiate(accountUid, paymentMethod,
+                record.getTotalAmountToPay(), returnUrl);
 
         if (paymentResponse != null) {
             for (Map<String, String> parameter: paymentResponse.getParameters()) {
@@ -103,14 +103,20 @@ public class AccountSignUpController extends BaseController {
         }
     }
 
-    @RequestMapping(value = "payment_done", method = RequestMethod.GET)
-    public String paymentDone(@RequestParam String paymentId, @RequestParam boolean succeeded,
+    @RequestMapping(value = "payment/done", method = RequestMethod.GET)
+    public String paymentDone(@RequestParam String paymentId, @RequestParam String paymentRef, @RequestParam boolean succeeded,
                               RedirectAttributes attributes, HttpServletRequest request) {
-        // todo : use the payment Id?
-        accountBroker.enableAccount(getUserProfile().getUid(), null, LocalDate.now().plusMonths(1L));
-        addMessage(attributes, MessageType.SUCCESS, "account.signup.payment.done", request);
-        attributes.addAttribute("accountUid", accountBroker.loadUsersAccount(getUserProfile().getUid()));
-        return "redirect:/account/view";
+
+        if (succeeded) {
+            Account account = accountBroker.loadByPaymentRef(paymentId);
+            logger.info("Found account: {}", account);
+            accountBroker.enableAccount(getUserProfile().getUid(), account.getUid(), LocalDate.now().plusMonths(1L), paymentRef);
+            addMessage(attributes, MessageType.SUCCESS, "account.signup.payment.done", request);
+            attributes.addAttribute("accountUid", accountBroker.loadUsersAccount(getUserProfile().getUid()));
+            return "redirect:/account/view";
+        } else {
+            return "account/payment/error";
+        }
 
     }
 

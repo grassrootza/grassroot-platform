@@ -17,6 +17,8 @@ public interface AccountRepository extends JpaRepository<Account, Long>, JpaSpec
 
     Account findOneByUid(String accountUid);
 
+    Account findOneByPaymentRef(String paymentRef);
+
     List<Account> findByAccountName(String accountName);
 
     List<Account> findByDisabledDateTimeAfter(Instant time);

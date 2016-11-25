@@ -1,4 +1,4 @@
-package za.org.grassroot.integration.payments;
+package za.org.grassroot.integration.payments.peachp;
 
 import java.util.List;
 import java.util.Map;

@@ -16,7 +16,7 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.AccountType;
 import za.org.grassroot.integration.PdfGeneratingService;
 import za.org.grassroot.integration.payments.PaymentMethod;
-import za.org.grassroot.integration.payments.PaymentRedirectPP;
+import za.org.grassroot.integration.payments.peachp.PaymentRedirectPP;
 import za.org.grassroot.integration.payments.PaymentServiceBroker;
 import za.org.grassroot.services.account.AccountBillingBroker;
 import za.org.grassroot.services.account.AccountBroker;
@@ -206,8 +206,8 @@ public class AccountController extends BaseController {
         final String returnUrl = "https://" + request.getServerName() + ":" + request.getServerPort()
                 + "/cardauth/3dsecure/response/change";
         log.info("sending payment request with this URL: {}", returnUrl);
-        PaymentRedirectPP redirectPP = paymentServiceBroker.asyncPaymentInitiate(paymentMethod, PAYMENT_VERIFICATION_AMT,
-                returnUrl);
+        PaymentRedirectPP redirectPP = paymentServiceBroker.asyncPaymentInitiate(accountUid, paymentMethod,
+                PAYMENT_VERIFICATION_AMT, returnUrl);
 
         for (Map<String, String> parameter: redirectPP.getParameters()) {
             attributes.addAttribute(parameter.get("name"), parameter.get("value"));

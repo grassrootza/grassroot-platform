@@ -1,6 +1,6 @@
 package za.org.grassroot.integration.exception;
 
-import za.org.grassroot.integration.payments.PaymentErrorPP;
+import za.org.grassroot.integration.payments.peachp.PaymentErrorPP;
 
 /**
  * Created by luke on 2016/11/14.

@@ -14,6 +14,8 @@ public interface AccountBroker {
 
     Account loadAccount(String accountUid);
 
+    Account loadByPaymentRef(String paymentRef);
+
     Account loadUsersAccount(String userUid);
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
@@ -22,7 +24,7 @@ public interface AccountBroker {
     String createAccount(String userUid, String accountName, String billedUserUid, AccountType accountType);
 
     @PreAuthorize("hasAnyRole('ROLE_ACCOUNT_ADMIN, ROLE_SYSTEM_ADMIN')")
-    void enableAccount(String userUid, String accountUid, LocalDate nextStatementDate);
+    void enableAccount(String userUid, String accountUid, LocalDate nextStatementDate, String ongoingPaymentRef);
 
     @PreAuthorize("hasAnyRole('ROLE_ACCOUNT_ADMIN, ROLE_SYSTEM_ADMIN')")
     void disableAccount(String administratorUid, String accountUid, String reasonToRecord, boolean removeAdminRole);

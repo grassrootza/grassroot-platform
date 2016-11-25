@@ -1,4 +1,4 @@
-package za.org.grassroot.integration.payments;
+package za.org.grassroot.integration.payments.peachp;
 
 /**
  * Created by luke on 2016/11/01.

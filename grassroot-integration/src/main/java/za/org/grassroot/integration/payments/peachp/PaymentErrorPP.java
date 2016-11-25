@@ -1,4 +1,6 @@
-package za.org.grassroot.integration.payments;
+package za.org.grassroot.integration.payments.peachp;
+
+import za.org.grassroot.integration.payments.peachp.PaymentResultPP;
 
 import java.util.HashMap;
 import java.util.Map;

@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import za.org.grassroot.integration.payments.PaymentResponse;
 import za.org.grassroot.integration.payments.PaymentResultType;
 import za.org.grassroot.integration.payments.PaymentServiceBroker;
 
@@ -33,15 +34,17 @@ public class IncomingCardAuthController {
                                                              @RequestParam String resourcePath, RedirectAttributes attributes) {
 
         logger.info("paymentId: {}, resourcePath: {}", id, resourcePath);
-        PaymentResultType resultType = paymentBroker.asyncPaymentCheckResult(id, resourcePath);
+        // todo : add in a progress bar? in case this might take long
 
-        if (resultType.equals(PaymentResultType.SUCCESS)) {
+        PaymentResponse response = paymentBroker.asyncPaymentCheckResult(id, resourcePath);
+        if (response.getType().equals(PaymentResultType.SUCCESS)) {
             attributes.addAttribute("paymentId", id);
+            attributes.addAttribute("paymentRef", response.getReference());
             attributes.addAttribute("succeeded", true);
             return "redirect:/account/payment/done";
         } else {
             attributes.addAttribute("paymentId", id);
-            attributes.addAttribute("failureType", resultType); // todo : pass the code
+            attributes.addAttribute("failureType", response.getType()); // todo : pass the code
             return "redirecT:/account/payment/error";
         }
     }

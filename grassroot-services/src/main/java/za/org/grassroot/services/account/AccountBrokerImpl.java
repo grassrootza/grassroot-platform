@@ -8,6 +8,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.AccountLogType;
 import za.org.grassroot.core.enums.AccountType;
@@ -95,6 +96,12 @@ public class AccountBrokerImpl implements AccountBroker {
 
     @Override
     @Transactional(readOnly = true)
+    public Account loadByPaymentRef(String paymentRef) {
+        return accountRepository.findOneByPaymentRef(paymentRef);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Account loadUsersAccount(String userUid) {
         User user = userRepository.findOneByUid(userUid);
         Account account = user.getAccountAdministered();
@@ -145,7 +152,7 @@ public class AccountBrokerImpl implements AccountBroker {
 
     @Override
     @Transactional
-    public void enableAccount(String userUid, String accountUid, LocalDate nextStatementDate) {
+    public void enableAccount(String userUid, String accountUid, LocalDate nextStatementDate, String ongoingPaymentRef) {
         User user = userRepository.findOneByUid(userUid);
         Account account = accountRepository.findOneByUid(accountUid);
 
@@ -162,6 +169,10 @@ public class AccountBrokerImpl implements AccountBroker {
         account.setEnabledByUser(user);
         account.setNextBillingDate(nextStatementDate.atTime(AccountBillingBrokerImpl.STD_BILLING_HOUR)
                 .toInstant(AccountBillingBrokerImpl.BILLING_TZ));
+
+        if (!StringUtils.isEmpty(ongoingPaymentRef)) {
+            account.setPaymentRef(ongoingPaymentRef);
+        }
 
         createAndStoreSingleAccountLog(new AccountLog.Builder(account)
                 .accountLogType(AccountLogType.ACCOUNT_ENABLED)

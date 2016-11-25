@@ -1,4 +1,6 @@
-package za.org.grassroot.integration.payments;
+package za.org.grassroot.integration.payments.peachp;
+
+import za.org.grassroot.integration.payments.PaymentResultType;
 
 import java.util.Arrays;
 import java.util.regex.Pattern;
