@@ -4,26 +4,27 @@ import org.apache.commons.validator.routines.EmailValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.Account;
-import za.org.grassroot.core.domain.AccountBillingRecord;
+import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.AccountType;
 import za.org.grassroot.integration.payments.PaymentMethod;
-import za.org.grassroot.integration.payments.PaymentServiceBroker;
-import za.org.grassroot.integration.payments.peachp.PaymentRedirectPP;
 import za.org.grassroot.services.account.AccountBillingBroker;
 import za.org.grassroot.services.account.AccountBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 
 import javax.servlet.http.HttpServletRequest;
 import java.text.DecimalFormat;
-import java.time.LocalDate;
 import java.util.Arrays;
-import java.util.Map;
 
 /**
  * Created by luke on 2016/10/26.
@@ -36,13 +37,11 @@ public class AccountSignUpController extends BaseController {
 
     private AccountBroker accountBroker;
     private AccountBillingBroker billingBroker;
-    private PaymentServiceBroker paymentBroker;
 
     @Autowired
-    public AccountSignUpController(AccountBroker accountBroker, AccountBillingBroker billingBroker, PaymentServiceBroker paymentBroker) {
+    public AccountSignUpController(AccountBroker accountBroker, AccountBillingBroker billingBroker) {
         this.accountBroker = accountBroker;
         this.billingBroker = billingBroker;
-        this.paymentBroker = paymentBroker;
     }
 
     @GetMapping("signup")
@@ -78,46 +77,32 @@ public class AccountSignUpController extends BaseController {
         return "account/payment";
     }
 
-    @RequestMapping(value = "enable", method = RequestMethod.POST)
-    public String attemptPayment(Model model, RedirectAttributes attributes, @RequestParam String accountUid,
-                                 @ModelAttribute("method") PaymentMethod paymentMethod, HttpServletRequest request) {
+    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
+    @RequestMapping(value = "close", method = RequestMethod.POST)
+    public String closeAccount(@RequestParam String accountUid, @RequestParam String confirmText,
+                               RedirectAttributes attributes, HttpServletRequest request) {
+        Account account = accountBroker.loadAccount(accountUid);
+        User loadedUser = userManagementService.load(getUserProfile().getUid());
 
-        // todo : work out how to do a progress bar type thing
-        // todo : better description of error if no 3d secure
+        if (!account.getAdministrators().contains(loadedUser)) {
+            permissionBroker.validateSystemRole(loadedUser, BaseRoles.ROLE_SYSTEM_ADMIN);
+        }
 
-        AccountBillingRecord record = billingBroker.generateSignUpBill(accountUid);
-        final String returnUrl = "https://" + request.getServerName() + ":" + request.getServerPort()
-                + "/cardauth/3dsecure/response/new";
-
-        PaymentRedirectPP paymentResponse = paymentBroker.asyncPaymentInitiate(accountUid, paymentMethod,
-                record.getTotalAmountToPay(), returnUrl);
-
-        if (paymentResponse != null) {
-            for (Map<String, String> parameter: paymentResponse.getParameters()) {
-                attributes.addAttribute(parameter.get("name"), parameter.get("value"));
+        if ("confirmed".equalsIgnoreCase(confirmText.trim())) {
+            billingBroker.generateClosingBill(getUserProfile().getUid(), accountUid);
+            accountBroker.closeAccount(getUserProfile().getUid(), accountUid);
+            addMessage(attributes, MessageType.INFO, "account.closed.done", request);
+            refreshAuthorities();
+            return "redirect:/home";
+        } else {
+            addMessage(attributes, MessageType.ERROR, "account.closed.error", request);
+            attributes.addAttribute("accountUid", account.getUid());
+            if (account.isEnabled()) {
+                return "redirect:/account/view";
+            } else {
+                return "redirect:/account/disabled";
             }
-            return "redirect:" + paymentResponse.getUrl();
-        } else {
-            addMessage(model, MessageType.ERROR, "account.signup.payment.error", request);
-            return "account/payment";
         }
-    }
-
-    @RequestMapping(value = "payment/done", method = RequestMethod.GET)
-    public String paymentDone(@RequestParam String paymentId, @RequestParam String paymentRef, @RequestParam boolean succeeded,
-                              RedirectAttributes attributes, HttpServletRequest request) {
-
-        if (succeeded) {
-            Account account = accountBroker.loadByPaymentRef(paymentId);
-            logger.info("Found account: {}", account);
-            accountBroker.enableAccount(getUserProfile().getUid(), account.getUid(), LocalDate.now().plusMonths(1L), paymentRef);
-            addMessage(attributes, MessageType.SUCCESS, "account.signup.payment.done", request);
-            attributes.addAttribute("accountUid", accountBroker.loadUsersAccount(getUserProfile().getUid()));
-            return "redirect:/account/view";
-        } else {
-            return "account/payment/error";
-        }
-
     }
 
 }

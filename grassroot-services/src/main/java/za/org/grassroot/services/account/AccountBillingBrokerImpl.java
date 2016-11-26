@@ -58,29 +58,35 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
     public AccountBillingRecord generateSignUpBill(String accountUid) {
         Account account = accountRepository.findOneByUid(accountUid);
 
-        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
-        AccountLog billingLog = new AccountLog.Builder(account)
-                .userUid(SYSTEM_USER)
-                .accountLogType(AccountLogType.BILL_CALCULATED)
-                .billedOrPaid((long) account.getSubscriptionFee())
-                .description("Bill generated for initial account payment")
-                .build();
-        bundle.addLog(billingLog);
+        AccountBillingRecord lastRecord = billingRepository.findTopByAccountOrderByCreatedDateTimeDesc(account);
 
-        AccountBillingRecord record = new AccountBillingRecord.BillingBuilder(account)
-                .accountLog(billingLog)
-                .openingBalance(account.getOutstandingBalance())
-                .amountBilled((long) account.getSubscriptionFee())
-                .billedPeriodStart(Instant.now())
-                .billedPeriodEnd(Instant.now())
-                .statementDateTime(Instant.now())
-                .paymentDueDate(Instant.now())
-                .build();
+        if (lastRecord == null || lastRecord.getPaid()) {
+            LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+            AccountLog billingLog = new AccountLog.Builder(account)
+                    .userUid(SYSTEM_USER)
+                    .accountLogType(AccountLogType.BILL_CALCULATED)
+                    .billedOrPaid((long) account.getSubscriptionFee())
+                    .description("Bill generated for initial account payment")
+                    .build();
+            bundle.addLog(billingLog);
 
-        account.setOutstandingBalance(account.getSubscriptionFee());
+            AccountBillingRecord record = new AccountBillingRecord.BillingBuilder(account)
+                    .accountLog(billingLog)
+                    .openingBalance(account.getOutstandingBalance())
+                    .amountBilled((long) account.getSubscriptionFee())
+                    .billedPeriodStart(Instant.now())
+                    .billedPeriodEnd(Instant.now())
+                    .statementDateTime(Instant.now())
+                    .paymentDueDate(Instant.now())
+                    .build();
 
-        logsAndNotificationsBroker.storeBundle(bundle);
-        return billingRepository.save(record);
+            account.setOutstandingBalance(account.getSubscriptionFee());
+
+            logsAndNotificationsBroker.storeBundle(bundle);
+            return billingRepository.save(record);
+        } else {
+            return lastRecord;
+        }
     }
 
     @Override
@@ -116,6 +122,43 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
 
         logsAndNotificationsBroker.storeBundle(bundle);
         return billingRepository.save(record);
+    }
+
+    @Override
+    @Transactional
+    public void generateClosingBill(String userUid, String accountUid) {
+        Account account = accountRepository.findOneByUid(accountUid);
+
+        boolean hasPaidPrior = billingRepository.countByAccountAndPaidTrue(account) > 0;
+        if (hasPaidPrior) {
+            Instant lastBilledDate = billingRepository.findTopByAccountOrderByCreatedDateTimeDesc(account).getBilledPeriodEnd();
+            long amountToPay = calculateBillSinceLastDate(account);
+
+            log.info("Creating bill for period from {} till now, for {}", lastBilledDate, amountToPay);
+
+            LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+            AccountLog billingLog = new AccountLog.Builder(account)
+                    .userUid(userUid)
+                    .accountLogType(AccountLogType.BILL_CALCULATED)
+                    .billedOrPaid(amountToPay)
+                    .description("Bill generated during account closing")
+                    .build();
+            bundle.addLog(billingLog);
+
+            logsAndNotificationsBroker.storeBundle(new LogsAndNotificationsBundle());
+
+            AccountBillingRecord record = new AccountBillingRecord.BillingBuilder(account)
+                    .accountLog(billingLog)
+                    .openingBalance(account.getOutstandingBalance())
+                    .amountBilled(amountToPay)
+                    .billedPeriodStart(lastBilledDate)
+                    .billedPeriodEnd(Instant.now())
+                    .statementDateTime(Instant.now())
+                    .paymentDueDate(Instant.now())
+                    .build();
+
+            logsAndNotificationsBroker.storeBundle(bundle);
+        }
     }
 
     @Override
@@ -211,6 +254,12 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
         }
     }
 
+    private long calculateBillSinceLastDate(Account account) {
+        Instant lastBilledDate = billingRepository.findTopByAccountOrderByCreatedDateTimeDesc(account).getBilledPeriodEnd();
+        double proportionOfMonth = ((double) Duration.between(lastBilledDate, Instant.now()).toDays()) / (double) DEFAULT_MONTH_LENGTH;
+        return (long) Math.ceil(proportionOfMonth * (double) account.getSubscriptionFee());
+    }
+
     private long calculateAccountCostsInPeriod(Account account, LocalDateTime billingPeriodStart, LocalDateTime billingPeriodEnd) {
         Instant periodStart = billingPeriodStart.toInstant(BILLING_TZ);
         Instant periodEnd = billingPeriodEnd.toInstant(BILLING_TZ);
@@ -284,9 +333,8 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public AccountBillingRecord fetchBillingRecord(String recordUid) {
-        return billingRepository.findOneByUid(recordUid);
+    public AccountBillingRecord fetchRecordByPayment(String paymentId) {
+        return billingRepository.findOneByPaymentId(paymentId);
     }
 
 }

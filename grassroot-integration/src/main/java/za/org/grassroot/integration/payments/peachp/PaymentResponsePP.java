@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import za.org.grassroot.integration.payments.PaymentResponse;
 import za.org.grassroot.integration.payments.PaymentResultType;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -125,6 +127,9 @@ public class PaymentResponsePP extends PaymentResponse {
     }
 
     @Override
+    public boolean isSuccessful() { return result != null && result.isSuccessful(); }
+
+    @Override
     public String getReference() {
         return registrationId;
     }
@@ -142,6 +147,16 @@ public class PaymentResponsePP extends PaymentResponse {
     @Override
     public String getDescription() {
         return result == null ? "" : result.getDescription();
+    }
+
+    @Override
+    public String getRedirectUrl() {
+        return redirect == null ? "" : redirect.getUrl();
+    }
+
+    @Override
+    public List<Map<String, String>> getRedirectParams() {
+        return redirect == null ? new ArrayList<>() : redirect.getParameters();
     }
 
     @Override

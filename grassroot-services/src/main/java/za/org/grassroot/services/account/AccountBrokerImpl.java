@@ -123,6 +123,10 @@ public class AccountBrokerImpl implements AccountBroker {
 
         accountRepository.saveAndFlush(account);
 
+        account.addAdministrator(billedUser);
+        billedUser.setAccountAdministered(account);
+        permissionBroker.addSystemRole(billedUser, BaseRoles.ROLE_ACCOUNT_ADMIN);
+
         log.info("Created account, now looks like: " + account);
 
         account.setSubscriptionFee(accountFees.get(accountType));
@@ -155,10 +159,6 @@ public class AccountBrokerImpl implements AccountBroker {
     public void enableAccount(String userUid, String accountUid, LocalDate nextStatementDate, String ongoingPaymentRef) {
         User user = userRepository.findOneByUid(userUid);
         Account account = accountRepository.findOneByUid(accountUid);
-
-        account.addAdministrator(user);
-        user.setAccountAdministered(account);
-        permissionBroker.addSystemRole(user, BaseRoles.ROLE_ACCOUNT_ADMIN);
 
         if (!user.getAccountAdministered().equals(account)) {
             permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
@@ -215,14 +215,14 @@ public class AccountBrokerImpl implements AccountBroker {
 
     @Override
     @Transactional
-    public void makeAccountInvisible(String userUid, String accountUid) {
+    public void closeAccount(String userUid, String accountUid) {
         // note : this is to remove the account even from views (disabled accounts can be reenabled, so still show up)
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(accountUid);
 
         Account account = accountRepository.findOneByUid(accountUid);
         if (account.isEnabled()) {
-            throw new IllegalArgumentException("Error! Only disabled accounts can be made invisible");
+            account.setEnabled(false);
         }
 
         User user = userRepository.findOneByUid(userUid);
@@ -239,7 +239,7 @@ public class AccountBrokerImpl implements AccountBroker {
         createAndStoreSingleAccountLog(new AccountLog.Builder(account)
                 .userUid(userUid)
                 .accountLogType(AccountLogType.ACCOUNT_INVISIBLE)
-                .description("account removed from view").build());
+                .description("account closed and removed from view").build());
     }
 
     @Override
@@ -330,7 +330,9 @@ public class AccountBrokerImpl implements AccountBroker {
         Account account = accountRepository.findOneByUid(accountUid);
         User user = userRepository.findOneByUid(userUid);
 
-        permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
+        if (!user.getAccountAdministered().equals(account)) {
+            permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
+        }
 
         StringBuilder sb = new StringBuilder("Messaging settings changed: ");
 
@@ -346,6 +348,28 @@ public class AccountBrokerImpl implements AccountBroker {
                 .userUid(userUid)
                 .accountLogType(AccountLogType.DISCRETE_SETTING_CHANGE)
                 .description(sb.toString()).build());
+    }
+
+    @Override
+    @Transactional
+    public void updateAccountPaymentReference(String userUid, String accountUid, String paymentRef) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(accountUid);
+        Objects.requireNonNull(paymentRef);
+
+        Account account = accountRepository.findOneByUid(accountUid);
+        User user = userRepository.findOneByUid(userUid);
+
+        if (!account.getAdministrators().contains(user)) {
+            permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
+        }
+
+        account.setPaymentRef(paymentRef);
+
+        createAndStoreSingleAccountLog(new AccountLog.Builder(account)
+                .userUid(userUid)
+                .accountLogType(AccountLogType.PAYMENT_METHOD_CHANGED)
+                .description(paymentRef).build());
     }
 
     @Override

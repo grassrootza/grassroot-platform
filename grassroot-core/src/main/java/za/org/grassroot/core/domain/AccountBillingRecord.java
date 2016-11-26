@@ -145,6 +145,7 @@ public class AccountBillingRecord {
 
     private AccountBillingRecord(Account account, AccountLog accountLog, Instant statementDateTime, Instant billedPeriodStart,
                                  Instant billedPeriodEnd, Long openingBalance, Long amountBilled) {
+
         Objects.requireNonNull(account);
         Objects.requireNonNull(accountLog);
         Objects.requireNonNull(statementDateTime);

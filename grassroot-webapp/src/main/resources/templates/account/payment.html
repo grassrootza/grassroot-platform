@@ -25,6 +25,9 @@
       <div class="row">
         <div class="col-md-6 col-md-offset-3 col-sm-10 col-sm-offset-1 col-xs-12">
           <div class="form-group" th:switch="${newAccount}">
+            <p class="grassroot-body error-text" th:if="${errorDescription}">
+              Payment error description: <span th:text="${errorDescription}">Error goes here</span>
+            </p>
             <p class="grassroot-body" th:case="true">
               As a final step, please enter your credit or debit card details. You will be charged
               <span th:text="${billingAmount}">RX</span> now, and then monthly from now on.
@@ -34,7 +37,7 @@
               to verify the card. This amount will be deducted from your next statement.
             </p>
           </div>
-          <form id="cardForm" th:action="${newAccount} ? @{enable} : @{change}" th:object="${method}" method="POST" class="form-vertical">
+          <form id="cardForm" th:action="${newAccount} ? @{/account/payment/signup} : @{change}" th:object="${method}" method="POST" class="form-vertical">
             <input type="hidden" name="accountUid" th:value="${account.uid}" />
             <div class="form-group">
               <label class="control-label">1. Name</label>

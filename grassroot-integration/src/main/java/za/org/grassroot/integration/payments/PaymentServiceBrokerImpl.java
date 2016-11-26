@@ -9,17 +9,15 @@ import org.springframework.context.annotation.PropertySource;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.AccountBillingRecord;
 import za.org.grassroot.core.repository.AccountBillingRecordRepository;
-import za.org.grassroot.core.repository.AccountRepository;
 import za.org.grassroot.integration.exception.PaymentMethodFailedException;
-import za.org.grassroot.integration.exception.PaymentMethodNot3dSecureException;
 import za.org.grassroot.integration.payments.peachp.PaymentErrorPP;
-import za.org.grassroot.integration.payments.peachp.PaymentRedirectPP;
 import za.org.grassroot.integration.payments.peachp.PaymentResponsePP;
 
 import javax.annotation.PostConstruct;
@@ -50,8 +48,8 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
     private static final String REPEAT = "REPEATED";
 
     private static final String OKAY_CODE = "000.100.110";
+    private static final String NO_3D_CODE = "100.390.109";
 
-    private AccountRepository accountRepository;
     private AccountBillingRecordRepository billingRepository;
     private RestTemplate restTemplate;
     private ObjectMapper objectMapper;
@@ -109,9 +107,8 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
     private String currency;
 
     @Autowired
-    public PaymentServiceBrokerImpl(AccountRepository accountRepository, AccountBillingRecordRepository billingRepository,
+    public PaymentServiceBrokerImpl(AccountBillingRecordRepository billingRepository,
                                     RestTemplate restTemplate, ObjectMapper objectMapper) {
-        this.accountRepository = accountRepository;
         this.billingRepository = billingRepository;
         this.restTemplate = restTemplate;
         this.objectMapper = objectMapper;
@@ -146,7 +143,7 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
 
             Account account = billingRecord.getAccount();
             account.setPaymentRef(okayResponse.getRegistrationId());
-            handleSuccessfulPayment(account, billingRecord, okayResponse);
+            handleSuccessfulPayment(billingRecord, okayResponse);
             return true;
         } catch (HttpStatusCodeException e) {
             try {
@@ -162,13 +159,13 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
 
     @Override
     @Transactional
-    public PaymentRedirectPP asyncPaymentInitiate(String accountUid, PaymentMethod method, double amountToPay, String returnToUrl) {
+    public PaymentResponse asyncPaymentInitiate(String accountUid, PaymentMethod method, AccountBillingRecord amountToPay, String returnToUrl) {
         Objects.requireNonNull(accountUid);
         Objects.requireNonNull(method);
         Objects.requireNonNull(returnToUrl);
 
         try {
-            UriComponentsBuilder uriToCall = generateInitialPaymentUri(method, amountToPay)
+            UriComponentsBuilder uriToCall = generateInitialPaymentUri(method, amountToPay.getTotalAmountToPay())
                     .queryParam(paymentsAuthChannelIdParam, channelId3d)
                     .queryParam("shopperResultUrl", returnToUrl);
             HttpEntity<PaymentResponsePP> request = new HttpEntity<>(stdHeaders);
@@ -176,16 +173,13 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
             ResponseEntity<PaymentResponsePP> response = restTemplate.exchange(uriToCall.build().toUri(), HttpMethod.POST,
                     request, PaymentResponsePP.class);
             logger.info("RESPONSE: {}", response.toString());
-            PaymentRedirectPP redirectPP = response.getBody().getRedirect();
-            if (redirectPP != null) {
-                Account account = accountRepository.findOneByUid(accountUid);
-                account.setPaymentRef(response.getBody().getId()); // do not yet reference ID yet (later)
-                return redirectPP;
-            } else {
-                throw new PaymentMethodNot3dSecureException();
+            PaymentResponsePP paymentResponse = response.getBody();
+            amountToPay.setPaymentId(paymentResponse.getThisPaymentId());
+            if (StringUtils.isEmpty(paymentResponse.getRedirectUrl())) {
+                handleSuccessfulPayment(amountToPay, paymentResponse);
             }
+            return paymentResponse;
         } catch (HttpStatusCodeException e) {
-            e.printStackTrace();
             try {
                 PaymentErrorPP errorResponse = objectMapper.readValue(e.getResponseBodyAsString(), PaymentErrorPP.class);
                 logger.info("Payment Error!: {}", errorResponse.toString());
@@ -197,7 +191,6 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
         }
     }
 
-    // todo : create interfaces to return the result set (and generally abstract all of this)
     @Override
     public PaymentResponse asyncPaymentCheckResult(String paymentId, String resourcePath) {
         UriComponentsBuilder builder = UriComponentsBuilder.newInstance()
@@ -217,11 +210,14 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
         HttpEntity<PaymentResponsePP> request = new HttpEntity<>(stdHeaders);
         ResponseEntity<PaymentResponsePP> response = restTemplate.exchange(builder.build().toUri(), HttpMethod.GET,
                 request, PaymentResponsePP.class);
+        logger.info("Async response: {}", response.toString());
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody().getResult() != null) {
             PaymentResponsePP responsePP = response.getBody();
-            logger.info("Success: {}, Code: {}, Reference: {}, Description: {}", responsePP.getResult().isSuccessful(),
-                    responsePP.getResult().getCode(), responsePP.getReference(), responsePP.getResult().getDescription());
+            AccountBillingRecord record = billingRepository.findOneByPaymentId(paymentId);
+            if (responsePP.getResult().isSuccessful()) {
+                handleSuccessfulPayment(record, responsePP);
+            }
             return responsePP;
         } else {
             logger.info("Error in response! {}", response.toString());
@@ -232,7 +228,7 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
     private UriComponentsBuilder generateInitialPaymentUri(PaymentMethod paymentMethod, double amountToPay) {
         return baseUriBuilder.cloneBuilder()
                 .path(initialPaymentRestPath)
-                .queryParam(paymentAmountParam, AMOUNT_FORMAT.format(amountToPay))
+                .queryParam(paymentAmountParam, AMOUNT_FORMAT.format(amountToPay / 100.00))
                 .queryParam(paymentCardBrand, paymentMethod.getCardBrand())
                 .queryParam(paymentTypeParam, DEBIT)
                 .queryParam(cardNumberParam, paymentMethod.normalizedCardNumber())
@@ -273,7 +269,7 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
             logger.info("Payment Success!: {}", okayResponse.toString());
 
             if (OKAY_CODE.equals(okayResponse.getResult().getCode())) {
-                handleSuccessfulPayment(account, billingRecord, okayResponse);
+                handleSuccessfulPayment(billingRecord, okayResponse);
             }
 
             return false;
@@ -284,7 +280,8 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
     }
 
     @Transactional
-    private void handleSuccessfulPayment(Account account, AccountBillingRecord record, PaymentResponsePP response) {
+    private void handleSuccessfulPayment(AccountBillingRecord record, PaymentResponsePP response) {
+        Account account = record.getAccount();
         account.setLastPaymentDate(Instant.now());
         account.decreaseBalance(record.getTotalAmountToPay());
         record.setPaid(true);

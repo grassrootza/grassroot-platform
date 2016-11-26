@@ -30,7 +30,7 @@ public interface AccountBroker {
     void disableAccount(String administratorUid, String accountUid, String reasonToRecord, boolean removeAdminRole);
 
     @PreAuthorize("hasAnyRole('ROLE_ACCOUNT_ADMIN, ROLE_SYSTEM_ADMIN')")
-    void makeAccountInvisible(String userUid, String accountUid);
+    void closeAccount(String userUid, String accountUid);
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     void addAdministrator(String userUid, String accountUid, String administratorUid);
@@ -47,6 +47,9 @@ public interface AccountBroker {
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN')")
     void updateAccountMessageSettings(String userUid, String accountUid, int freeFormPerMonth, Integer costPerMessage);
+
+    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
+    void updateAccountPaymentReference(String userUid, String accountUid, String paymentRef);
 
     /* Methods to work out some limits left on account */
 

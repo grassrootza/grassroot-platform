@@ -15,12 +15,14 @@ public interface AccountBillingBroker {
 
     AccountBillingRecord generatePaymentChangeBill(final String accountUid, final long amountToCharge);
 
+    void generateClosingBill(String userUid, final String accountUid);
+
     void calculateAccountStatements(boolean sendEmails, boolean sendNotifications);
 
     void processAccountStatementEmails(Set<String> billingRecordUids);
 
     List<AccountBillingRecord> fetchBillingRecords(final String accountUid, final Sort sort);
 
-    AccountBillingRecord fetchBillingRecord(String recordUid);
+    AccountBillingRecord fetchRecordByPayment(String paymentId);
 
 }

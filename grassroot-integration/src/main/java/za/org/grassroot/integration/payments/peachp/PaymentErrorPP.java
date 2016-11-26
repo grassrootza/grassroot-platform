@@ -1,6 +1,6 @@
 package za.org.grassroot.integration.payments.peachp;
 
-import za.org.grassroot.integration.payments.peachp.PaymentResultPP;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -8,9 +8,12 @@ import java.util.Map;
 /**
  * Created by luke on 2016/11/01.
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class PaymentErrorPP {
 
+    private String id;
     private PaymentResultPP result;
+
     private Map<String, String> card = new HashMap<>();
     private Map<String, String> risk = new HashMap<>();
 
@@ -20,6 +23,14 @@ public class PaymentErrorPP {
 
     public PaymentErrorPP() {
         // for jackson mapping
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 
     public PaymentResultPP getResult() {

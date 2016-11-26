@@ -329,7 +329,7 @@ public class AdminController extends BaseController {
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping(value = "/admin/accounts/invisible")
     public String makeAccountInvisible(@RequestParam("accountUid") String accountUid, RedirectAttributes attributes, HttpServletRequest request) {
-        accountBroker.makeAccountInvisible(getUserProfile().getUid(), accountUid);
+        accountBroker.closeAccount(getUserProfile().getUid(), accountUid);
         addMessage(attributes, MessageType.INFO, "admin.accounts.invisible", request);
         return "redirect:home";
     }

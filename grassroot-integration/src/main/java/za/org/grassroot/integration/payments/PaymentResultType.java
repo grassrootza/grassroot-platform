@@ -10,6 +10,8 @@ public enum PaymentResultType {
     REVIEW,
     PENDING,
 
+    NOT_IN_3D,
+
     FAILED_3D,
     FAILED_BANK,
     FAILED_COMMS,

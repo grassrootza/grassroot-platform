@@ -132,10 +132,9 @@ public class AccountBrokerTest {
         assertNotEquals(null, account.getId());
         assertNotNull(account.getAdministrators());
 
-        // todo : move these to testing enable account
-        // assertEquals(1, account.getAdministrators().size());
-        // assertEquals(testAdmin.getId(), account.getAdministrators().iterator().next().getId());
-        // assertEquals(testAdmin.getAccountAdministered().getId(), account.getId());
+        assertEquals(1, account.getAdministrators().size());
+        assertEquals(testAdmin.getId(), account.getAdministrators().iterator().next().getId());
+        assertEquals(testAdmin.getAccountAdministered().getId(), account.getId());
         // note : role checking fails, appears to be for persistence reasons
     }
 
@@ -155,23 +154,23 @@ public class AccountBrokerTest {
     public void shouldAddAdmin() {
         Account account = createTestAccount();
         User admin2 = userRepository.save(new User("0605550022"));
-        assertEquals(account.getAdministrators().size(), 0);
-        accountBroker.addAdministrator(testUser.getUid(), account.getUid(), admin2.getUid());
         assertEquals(account.getAdministrators().size(), 1);
-        // assertTrue(account.getAdministrators().contains(testAdmin));
+        accountBroker.addAdministrator(testUser.getUid(), account.getUid(), admin2.getUid());
+        assertEquals(account.getAdministrators().size(), 2);
+        assertTrue(account.getAdministrators().contains(testAdmin));
         assertTrue(account.getAdministrators().contains(admin2));
-        // assertEquals(account, testAdmin.getAccountAdministered());
+        assertEquals(account, testAdmin.getAccountAdministered());
         assertEquals(account, admin2.getAccountAdministered());
         // assertTrue(testUser.getStandardRoles().contains(roleRepository.findOneByNameAndRoleType(accountAdminRole, Role.RoleType.STANDARD)));
     }
 
-    /*@Test
+    @Test
     public void shouldRemoveAdmin() {
         Account account = createTestAccount();
         assertEquals(account.getAdministrators().size(), 1);
         // assertTrue(testUser.getStandardRoles().contains(roleRepository.findOneByNameAndRoleType(accountAdminRole, Role.RoleType.STANDARD)));
         // accountBroker.removeAdministrator(account, testUser); // note: need to fix this
-    }*/
+    }
 
     @Test
     public void shouldAddGroupToAccount() {

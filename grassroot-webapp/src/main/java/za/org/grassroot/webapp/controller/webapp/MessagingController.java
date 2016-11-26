@@ -45,6 +45,7 @@ public class MessagingController extends BaseController {
 
     /**
      * Free text entry, for authorized accounts
+     * todo : throw an error if account not enabled or no messages left
      */
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")

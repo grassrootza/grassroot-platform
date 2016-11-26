@@ -7,7 +7,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.integration.payments.PaymentResponse;
 import za.org.grassroot.integration.payments.PaymentResultType;
@@ -30,8 +29,8 @@ public class IncomingCardAuthController {
     }
 
     @RequestMapping("/3dsecure/response/{type}")
-    public @ResponseBody String receiveAuthorizationResponse(@PathVariable String type, @RequestParam String id,
-                                                             @RequestParam String resourcePath, RedirectAttributes attributes) {
+    public String receiveAuthorizationResponse(@PathVariable String type, @RequestParam String id,
+                                               @RequestParam String resourcePath, RedirectAttributes attributes) {
 
         logger.info("paymentId: {}, resourcePath: {}", id, resourcePath);
         // todo : add in a progress bar? in case this might take long

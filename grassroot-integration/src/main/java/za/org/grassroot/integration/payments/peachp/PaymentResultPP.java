@@ -17,6 +17,8 @@ public class PaymentResultPP {
     private static final Pattern okayButReview = Pattern.compile("000\\.400\\.(0\\d{2}|100)");
     private static final Pattern pendingTrans = Pattern.compile("000\\.200\\.[01]\\d{2}");
 
+    private static final Pattern notIn3D = Pattern.compile("100.390.10[79]");
+
     private static final Pattern rejected3d = Pattern.compile("000\\.400\\.(1[0-9][1-9]|2\\d{2})");
     private static final Pattern rejectedBank = Pattern.compile("800\\.[178]00\\.[1245][05679]\\d");
     private static final Pattern rejectedComms = Pattern.compile("900\\.[1-4]00\\.[1-6]\\d{2}");
@@ -85,6 +87,7 @@ public class PaymentResultPP {
 
     public PaymentResultType getType() {
         return successPattern.matcher(code).matches() ? SUCCESS :
+                notIn3D.matcher(code).matches() ? NOT_IN_3D :
                pendingTrans.matcher(code).matches() ? PENDING :
                okayButReview.matcher(code).matches() ? REVIEW :
                (rejected3d.matcher(code).matches() || rejected3dOther.matcher(code).matches()) ? FAILED_3D :
