@@ -66,6 +66,20 @@ public class AccountPaymentController extends BaseController {
         return handleInitiatingPayment(accountUid, paymentMethod, record, ENABLE, attributes, request);
     }
 
+    @RequestMapping(value = "done")
+    public String asyncPaymentDone(@RequestParam String paymentId, @RequestParam(required = false) String paymentRef,
+                                   @RequestParam boolean succeeded, @RequestParam(required = false) String failureDescription,
+                                   RedirectAttributes attributes, HttpServletRequest request) {
+        AccountBillingRecord record = accountBillingBroker.fetchRecordByPayment(paymentId);
+        Account account = record.getAccount();
+        int typeOfCall = account.isEnabled() ? UPDATE : ENABLE;
+        if (succeeded) {
+            return handleSuccess(paymentId, paymentRef, typeOfCall, attributes, request);
+        } else {
+            return handleError(typeOfCall, attributes, request, failureDescription);
+        }
+    }
+
     @RequestMapping(value = "signup/done", method = RequestMethod.GET)
     public String paymentDone(@RequestParam String paymentId, @RequestParam String paymentRef, @RequestParam boolean succeeded,
                               @RequestParam(required = false) String description, RedirectAttributes attributes, HttpServletRequest request) {
@@ -73,7 +87,7 @@ public class AccountPaymentController extends BaseController {
             AccountBillingRecord billingRecord = accountBillingBroker.fetchRecordByPayment(paymentId);
             Account account = billingRecord.getAccount();
             accountBroker.enableAccount(getUserProfile().getUid(), account.getUid(), LocalDate.now().plusMonths(1L), paymentRef);
-            addMessage(attributes, BaseController.MessageType.SUCCESS, "account.signup.payment.done", request);
+
             attributes.addAttribute("accountUid", accountBroker.loadUsersAccount(getUserProfile().getUid()));
             return "redirect:/account/view";
         } else {
@@ -124,18 +138,6 @@ public class AccountPaymentController extends BaseController {
         return handleInitiatingPayment(accountUid, paymentMethod, record, UPDATE, attributes, request);
     }
 
-    @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
-    @RequestMapping(value = "change/done", method = RequestMethod.GET)
-    public String finishPaymentChangeAfter3d(@RequestParam String paymentId, @RequestParam(required = false) String paymentRef,
-                                             @RequestParam boolean succeeded, @RequestParam(required = false) String failureDescription,
-                                             RedirectAttributes attributes, HttpServletRequest request) {
-        if (succeeded) {
-            return handleSuccess(paymentId, paymentRef, UPDATE, attributes, request);
-        } else {
-            return handleError(UPDATE, attributes, request, failureDescription);
-        }
-    }
-
     private String handleInitiatingPayment(String accountUid, PaymentMethod method, AccountBillingRecord record,
                                            int enableOrUpdate, RedirectAttributes attributes, HttpServletRequest request) {
         final String returnUrl = "https://" + request.getServerName() + ":" + request.getServerPort() + authorizationPath;
@@ -174,10 +176,12 @@ public class AccountPaymentController extends BaseController {
         Account account = record.getAccount();
         if (enableOrUpdateAccount == ENABLE) {
             accountBroker.enableAccount(getUserProfile().getUid(), account.getUid(), LocalDate.now().plusMonths(1L), paymentRef);
+            addMessage(attributes, MessageType.SUCCESS, "account.signup.payment.done", request);
         } else if (enableOrUpdateAccount == UPDATE) {
             accountBroker.updateAccountPaymentReference(getUserProfile().getUid(), account.getUid(), paymentRef);
+            addMessage(attributes, MessageType.SUCCESS, "account.payment.changed", request);
         }
-        addMessage(attributes, MessageType.SUCCESS, "account.payment.changed", request);
+        attributes.addAttribute("accountUid", account.getUid());
         return "redirect:/account/view";
     }
 

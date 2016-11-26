@@ -40,10 +40,10 @@
 
         <div class="col-md-8 col-md-offset-2 col-sm-6 col-sm-offset-3 col-xs-12">
           <div class="row no-padding">
-            <div class="col-md-2 col-sm-4 col-xs-12">
+            <div class="col-md-3 col-sm-4 col-xs-12">
               <label class="grassroot-sidebar" for="account_type">Type</label>
             </div>
-            <div class="col-md-7 col-sm-5 col-xs-12">
+            <div class="col-md-6 col-sm-5 col-xs-12">
               <select id="account_type" class="form-control input-lg">
                 <option th:each="type: ${T(za.org.grassroot.core.enums.AccountType).values()}"
                         th:text="#{web.account.signup.__${type}__}"
@@ -59,10 +59,10 @@
           <hr>
 
           <div class="row no-padding">
-            <div class="col-md-2 col-sm-4 col-xs-12">
+            <div class="col-md-3 col-sm-4 col-xs-12">
               <label class="grassroot-sidebar">Groups</label>
             </div>
-            <div th:switch="${#lists.isEmpty(paidGroups)}" class="col-md-7 col-sm-5 col-xs-12">
+            <div th:switch="${#lists.isEmpty(paidGroups)}" class="col-md-6 col-sm-5 col-xs-12">
               <div th:case="true">
                 <p class="grassroot-body">You have not added any groups to this account yet.
                   <a th:if="${canAddAllGroups}" id="addAllGroups" th:href="@{group/add/all}">Add all my groups to my account.</a>
@@ -81,7 +81,7 @@
           </div>
 
           <div th:unless="${#lists.isEmpty(paidGroups)}" class="row narrow-vertical">
-            <div class="col-md-7 col-md-offset-2 col-sm-5 col-sm-offset-4 col-xs-12">
+            <div class="col-md-6 col-md-offset-2 col-sm-5 col-sm-offset-4 col-xs-12">
               <ul class="list-group">
                 <li th:each="paidGroup: ${paidGroups}" class="list-group-item clearfix">
                   <a th:href="@{/group/view(groupUid=paidGroup.group.uid)}">
@@ -99,11 +99,11 @@
           <hr>
 
           <div class="row no-padding">
-            <div class="col-md-2 col-sm-4 col-xs-12">
+            <div class="col-md-3 col-sm-4 col-xs-12">
               <label class="grassroot-sidebar">Statements</label>
             </div>
             <form th:action="@{/account/statement}" method="GET">
-            <div th:switch="${#lists.isEmpty(billingRecords)}" class="col-md-7 col-sm-5 col-xs-12">
+            <div th:switch="${#lists.isEmpty(billingRecords)}" class="col-md-6 col-sm-5 col-xs-12">
               <div th:case="true">
                 <p class="grassroot-body">This account has not been billed yet</p>
               </div>
@@ -126,10 +126,10 @@
           <hr>
 
           <div class="row no-padding">
-            <div class="col-md-2 col-sm-4 col-xs-12">
+            <div class="col-md-3 col-sm-4 col-xs-12">
               <label class="grassroot-sidebar">Admins</label>
             </div>
-            <div class="col-md-7 col-sm-5 col-xs-12">
+            <div class="col-md-6 col-sm-5 col-xs-12">
               <ul class="list-group">
                 <li th:each="admin: ${administrators}" class="list-group-item borderless no-padding clearfix">
                   <a th:href="@{/group/view(groupUid=paidGroup.group.uid)}">
