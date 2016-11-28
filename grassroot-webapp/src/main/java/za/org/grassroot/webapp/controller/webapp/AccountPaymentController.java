@@ -93,23 +93,6 @@ public class AccountPaymentController extends BaseController {
         }
     }
 
-    @RequestMapping(value = "signup/done", method = RequestMethod.GET)
-    public String paymentDone(@RequestParam String paymentId, @RequestParam String paymentRef, @RequestParam boolean succeeded,
-                              @RequestParam(required = false) String description, RedirectAttributes attributes, HttpServletRequest request) {
-        if (succeeded) {
-            AccountBillingRecord billingRecord = accountBillingBroker.fetchRecordByPayment(paymentId);
-            Account account = billingRecord.getAccount();
-            accountBroker.enableAccount(getUserProfile().getUid(), account.getUid(), LocalDate.now().plusMonths(1L), paymentRef);
-
-            attributes.addAttribute("accountUid", accountBroker.loadUsersAccount(getUserProfile().getUid()));
-            return "redirect:/account/view";
-        } else {
-            addMessage(attributes, MessageType.ERROR, "account.payment.failed", request);
-            attributes.addAttribute("errorDescription", description == null ? "" : description);
-            return "account/disabled";
-        }
-    }
-
     @RequestMapping(value = "signup/retry", method = RequestMethod.GET)
     public String retryAccountPayment(Model model, @RequestParam(required = false) String error) {
         User user = userManagementService.load(getUserProfile().getUid());
@@ -140,7 +123,7 @@ public class AccountPaymentController extends BaseController {
         model.addAttribute("newAccount", false);
         model.addAttribute("billingAmount", "R" + (new DecimalFormat("#.##").format(PAYMENT_VERIFICATION_AMT / 100)));
         model.addAttribute("method", PaymentMethod.makeEmpty());
-        return "/account/payment";
+        return "account/payment";
     }
 
     @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
@@ -164,7 +147,7 @@ public class AccountPaymentController extends BaseController {
                 }
                 String body = postRedirect(response);
                 model.addAttribute("responseBody", body);
-                return "/account/payment_confirm";
+                return "account/payment_confirm";
             } else if (response.isSuccessful()) {
                 return handleSuccess(response.getThisPaymentId(), response.getReference(), enableOrUpdate, attributes, request);
             } else {
@@ -226,6 +209,7 @@ public class AccountPaymentController extends BaseController {
     }
 
     private String handleError(int enableOrUpdate, RedirectAttributes attributes, HttpServletRequest request, String description) {
+        logger.info("Error in payment, handling with description: {}", description);
         addMessage(attributes, MessageType.ERROR, "account.payment.failed", request);
         attributes.addAttribute("error", description == null ? "" : description);
         return enableOrUpdate == ENABLE ? "redirect:/account/payment/signup/retry" : "redirect:/account/payment/change";

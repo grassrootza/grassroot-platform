@@ -79,6 +79,8 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
     private String paymentCardBrand;
     @Value("${grassroot.payments.params.type:type}")
     private String paymentTypeParam;
+    @Value("${grassroot.payments.params.statementId:transid}")
+    private String paymentTransIdParam;
 
     @Value("${grassroot.payments.params.cardnumber:card}")
     private String cardNumberParam;
@@ -167,6 +169,7 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
         try {
             UriComponentsBuilder uriToCall = generateInitialPaymentUri(method, amountToPay.getTotalAmountToPay())
                     .queryParam(paymentsAuthChannelIdParam, channelId3d)
+                    .queryParam(paymentTransIdParam, amountToPay.getUid())
                     .queryParam("shopperResultUrl", returnToUrl);
             HttpEntity<PaymentResponsePP> request = new HttpEntity<>(stdHeaders);
             logger.info("URL: " + uriToCall.toUriString());

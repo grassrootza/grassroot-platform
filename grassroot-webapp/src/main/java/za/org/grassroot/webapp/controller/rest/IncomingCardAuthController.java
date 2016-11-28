@@ -33,7 +33,6 @@ public class IncomingCardAuthController {
                                                @RequestParam String resourcePath, RedirectAttributes attributes) {
 
         logger.info("paymentId: {}, resourcePath: {}", id, resourcePath);
-        // todo : add in a progress bar? in case this might take long
 
         PaymentResponse response = paymentBroker.asyncPaymentCheckResult(id, resourcePath);
         if (response.getType().equals(PaymentResultType.SUCCESS)) {
@@ -43,8 +42,9 @@ public class IncomingCardAuthController {
             return "redirect:/account/payment/done";
         } else {
             attributes.addAttribute("paymentId", id);
-            attributes.addAttribute("failureType", response.getType()); // todo : pass the code
-            return "redirecT:/account/payment/error";
+            attributes.addAttribute("succeeded", false);
+            attributes.addAttribute("failureDescription", response.getDescription());
+            return "redirecT:/account/payment/done";
         }
     }
 
