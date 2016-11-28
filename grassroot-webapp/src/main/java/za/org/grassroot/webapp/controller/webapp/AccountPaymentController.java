@@ -1,5 +1,13 @@
 package za.org.grassroot.webapp.controller.webapp;
 
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.message.BasicNameValuePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,9 +33,14 @@ import za.org.grassroot.services.account.AccountBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 
 import javax.servlet.http.HttpServletRequest;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.text.DecimalFormat;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Created by luke on 2016/11/25.
@@ -63,7 +76,7 @@ public class AccountPaymentController extends BaseController {
     public String initiatePayment(Model model, RedirectAttributes attributes, @RequestParam String accountUid,
                                   @ModelAttribute("method") PaymentMethod paymentMethod, HttpServletRequest request) {
         AccountBillingRecord record = accountBillingBroker.generateSignUpBill(accountUid);
-        return handleInitiatingPayment(accountUid, paymentMethod, record, ENABLE, attributes, request);
+        return handleInitiatingPayment(accountUid, paymentMethod, record, ENABLE, model, attributes, request);
     }
 
     @RequestMapping(value = "done")
@@ -132,14 +145,14 @@ public class AccountPaymentController extends BaseController {
 
     @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "change", method = RequestMethod.POST)
-    public String changePaymentDo(RedirectAttributes attributes, @RequestParam String accountUid,
+    public String changePaymentDo(Model model, RedirectAttributes attributes, @RequestParam String accountUid,
                                   @ModelAttribute("method") PaymentMethod paymentMethod, HttpServletRequest request) {
         AccountBillingRecord record = accountBillingBroker.generatePaymentChangeBill(accountUid, PAYMENT_VERIFICATION_AMT);
-        return handleInitiatingPayment(accountUid, paymentMethod, record, UPDATE, attributes, request);
+        return handleInitiatingPayment(accountUid, paymentMethod, record, UPDATE, model, attributes, request);
     }
 
     private String handleInitiatingPayment(String accountUid, PaymentMethod method, AccountBillingRecord record,
-                                           int enableOrUpdate, RedirectAttributes attributes, HttpServletRequest request) {
+                                           int enableOrUpdate, Model model, RedirectAttributes attributes, HttpServletRequest request) {
         final String returnUrl = "https://" + request.getServerName() + ":" + request.getServerPort() + authorizationPath;
         logger.info("sending payment request with this URL: {}", returnUrl);
 
@@ -149,7 +162,9 @@ public class AccountPaymentController extends BaseController {
                 for (Map<String, String> parameter : response.getRedirectParams()) {
                     attributes.addAttribute(parameter.get("name"), parameter.get("value"));
                 }
-                return "redirect:" + response.getRedirectUrl();
+                String body = postRedirect(response);
+                model.addAttribute("responseBody", body);
+                return "/account/payment_confirm";
             } else if (response.isSuccessful()) {
                 return handleSuccess(response.getThisPaymentId(), response.getReference(), enableOrUpdate, attributes, request);
             } else {
@@ -167,6 +182,31 @@ public class AccountPaymentController extends BaseController {
                 description = null;
             }
             return handleError(enableOrUpdate, attributes, request, description);
+        }
+    }
+
+    private String postRedirect(PaymentResponse response) {
+        HttpClient httpClient = HttpClients.createDefault();
+        List<NameValuePair> params = response.getRedirectParams().stream()
+                .map(p -> new BasicNameValuePair(p.get("name"), p.get("value")))
+                .collect(Collectors.toList());
+        HttpPost httpPost = new HttpPost(response.getRedirectUrl());
+
+        try {
+            httpPost.setEntity(new UrlEncodedFormEntity(params, "UTF-8"));
+            HttpResponse postResponse = httpClient.execute(httpPost);
+            HttpEntity entity = postResponse.getEntity();
+            StringBuilder sb = new StringBuilder();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(entity.getContent()), 65728);
+            String line;
+            while ((line = reader.readLine()) != null) {
+                sb.append(line);
+            };
+            reader.close();
+            return sb.toString();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
         }
     }
 
