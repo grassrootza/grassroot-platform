@@ -12,13 +12,22 @@ import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.Account;
+import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.PaidGroup;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.AccountType;
+import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.integration.PdfGeneratingService;
 import za.org.grassroot.services.account.AccountBillingBroker;
 import za.org.grassroot.services.account.AccountBroker;
 import za.org.grassroot.services.account.AccountGroupBroker;
+import za.org.grassroot.services.exception.AdminRemovalException;
+import za.org.grassroot.services.exception.GroupAlreadyPaidForException;
+import za.org.grassroot.services.exception.NoSuchUserException;
+import za.org.grassroot.services.exception.UserAlreadyAdminException;
 import za.org.grassroot.webapp.controller.BaseController;
+import za.org.grassroot.webapp.model.web.PrivateGroupWrapper;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -64,20 +73,19 @@ public class AccountController extends BaseController {
         }
     }
 
-    // todo : refine / fix UI on add group search (e.g., subsequent page if not found via autocomplete)
     // todo : take out select box on account type (since using extra page for task)
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/view", method = RequestMethod.GET)
     public String viewPaidAccount(Model model, @RequestParam String accountUid) {
         Account account = accountBroker.loadAccount(accountUid);
         validateUserIsAdministrator(account);
-
         model.addAttribute("account", account);
         if (account.isEnabled()) {
             List<PaidGroup> currentlyPaidGroups = account.getPaidGroups().stream()
                     .filter(PaidGroup::isActive)
                     .collect(Collectors.toList());
             model.addAttribute("paidGroups", currentlyPaidGroups);
+            model.addAttribute("groupsLeft", accountGroupBroker.numberGroupsLeft(accountUid));
             model.addAttribute("billingRecords", accountBillingBroker.fetchBillingRecords(accountUid,
                     new Sort(Sort.Direction.DESC, "statementDateTime")));
             model.addAttribute("canAddAllGroups", currentlyPaidGroups.isEmpty()
@@ -115,15 +123,46 @@ public class AccountController extends BaseController {
     }
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
-    @RequestMapping(value = "/group/add", method = RequestMethod.POST)
+    @RequestMapping(value = "/group/add", method = RequestMethod.GET)
     public String addGroupAsPaidFor(@RequestParam String accountUid, @RequestParam String groupUid,
-                                    RedirectAttributes attributes, HttpServletRequest request) {
+                                    @RequestParam(required = false) String searchTerm,
+                                    Model model, RedirectAttributes attributes, HttpServletRequest request) {
         Account account = accountBroker.loadAccount(accountUid);
         validateUserIsAdministrator(account);
-        accountGroupBroker.addGroupToAccount(accountUid, groupUid, getUserProfile().getUid());
-        attributes.addAttribute("accountUid", accountUid);
-        addMessage(attributes, MessageType.SUCCESS, "account.addgroup.success", request);
-        return "redirect:/account/view";
+        String returnTemplate;
+
+        // not great using try/catch in this way, but alternative is a messy set of checks to DB; in future use specific exception to customize message
+        try {
+            accountGroupBroker.addGroupToAccount(accountUid, groupUid, getUserProfile().getUid());
+            attributes.addAttribute("accountUid", accountUid);
+            addMessage(attributes, MessageType.SUCCESS, "account.addgroup.success", request);
+            returnTemplate = "redirect:/account/view";
+        } catch(GroupAlreadyPaidForException e) {
+            addMessage(attributes, MessageType.INFO, "account.addgroup.paidfor", request);
+            attributes.addAttribute("accountUid", accountUid);
+            returnTemplate = "redirect:/account/view";
+        } catch (Exception e) {
+            if (!StringUtils.isEmpty(searchTerm)) {
+                List<PrivateGroupWrapper> candidateGroups = accountGroupBroker
+                        .candidateGroupsForAccount(getUserProfile().getUid(), accountUid, searchTerm)
+                        .stream().map(PrivateGroupWrapper::new).collect(Collectors.toList());
+                if (candidateGroups.isEmpty()) {
+                    attributes.addAttribute("accountUid", accountUid);
+                    addMessage(attributes, MessageType.ERROR, "account.addgroup.notfound", request);
+                    returnTemplate = "redirect:/account/view";
+                } else {
+                    model.addAttribute("account", account);
+                    model.addAttribute("searchType", "group");
+                    model.addAttribute("candidateGroups", candidateGroups);
+                    returnTemplate = "account/results";
+                }
+            } else {
+                addMessage(attributes, MessageType.ERROR, "account.addgroup.error", request);
+                attributes.addAttribute("accountUid", accountUid);
+                returnTemplate = "redirect:/account/view";
+            }
+        }
+        return returnTemplate;
     }
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
@@ -163,19 +202,64 @@ public class AccountController extends BaseController {
         return new FileSystemResource(pdfGeneratingService.generateInvoice(statementUid));
     }
 
-    // todo : as with groups, have an intermediate step if autocomplete fails
-    // todo : usual exception handling etc
-    // todo : add 'remove method'
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/admin/add", method = RequestMethod.GET)
-    public String addAccountAdmin(@RequestParam String accountUid, @RequestParam String newAdminMsisdn,
-                                  RedirectAttributes attributes, HttpServletRequest request) {
+    public String addAccountAdmin(@RequestParam String accountUid, @RequestParam(required = false) String newAdminMsisdn,
+                                  @RequestParam(required = false) String addAdminName,
+                                  Model model, RedirectAttributes attributes, HttpServletRequest request) {
         Account account = accountBroker.loadAccount(accountUid);
         validateUserIsAdministrator(account);
-        User newAdmin = userManagementService.findByInputNumber(newAdminMsisdn);
-        accountBroker.addAdministrator(getUserProfile().getUid(), accountUid, newAdmin.getUid());
-        addMessage(attributes, MessageType.SUCCESS, "account.admin.added", request);
+        String returnTemplate;
         attributes.addAttribute("accountUid", accountUid);
+
+        try {
+            User newAdmin = userManagementService.findByInputNumber(newAdminMsisdn == null ? "" : newAdminMsisdn);
+            accountBroker.addAdministrator(getUserProfile().getUid(), accountUid, newAdmin.getUid());
+            addMessage(attributes, MessageType.SUCCESS, "account.admin.added", request);
+            returnTemplate = "redirect:/account/view";
+        } catch (UserAlreadyAdminException e) {
+            addMessage(attributes, MessageType.ERROR, "account.admin.already", request);
+            returnTemplate = "redirect:/account/view";
+        } catch (NoSuchUserException|InvalidPhoneNumberException e) {
+            if (!StringUtils.isEmpty(addAdminName)) {
+                User thisUser = userManagementService.load(getUserProfile().getUid());
+                List<String[]> candidateAdmins = userManagementService.findOthersInGraph(thisUser, addAdminName);
+                if (candidateAdmins.isEmpty()) {
+                    attributes.addAttribute("accountUid", accountUid);
+                    addMessage(attributes, MessageType.ERROR, "account.addadmin.notfound", request);
+                    returnTemplate = "redirect:/account/view";
+                } else {
+                    model.addAttribute("account", account);
+                    model.addAttribute("searchType", "user");
+                    model.addAttribute("candidateAdmins", candidateAdmins);
+                    returnTemplate = "account/results";
+                }
+            } else {
+                addMessage(attributes, MessageType.ERROR, "account.addadmin.error", request);
+                attributes.addAttribute("accountUid", accountUid);
+                returnTemplate = "redirect:/account/view";
+            }
+        }
+        return returnTemplate;
+    }
+
+    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
+    @RequestMapping(value = "/admin/remove", method = RequestMethod.POST)
+    public String removeAccountAdmin(@RequestParam String accountUid, @RequestParam String adminUid,
+                                     RedirectAttributes attributes, HttpServletRequest request) {
+        Account account = accountBroker.loadAccount(accountUid);
+        validateUserIsAdministrator(account);
+        attributes.addAttribute("accountUid", account.getUid());
+
+        try {
+            accountBroker.removeAdministrator(getUserProfile().getUid(), accountUid, adminUid);
+            addMessage(attributes, MessageType.SUCCESS, "account.admin.remove.success", request);
+        } catch (AdminRemovalException e) {
+            addMessage(attributes, MessageType.ERROR, e.getMessage(), request);
+        } catch (AccessDeniedException e) {
+            addMessage(attributes, MessageType.ERROR, "account.admin.remove.access", request);
+        }
+
         return "redirect:/account/view";
     }
 
@@ -185,13 +269,6 @@ public class AccountController extends BaseController {
         if (user.getAccountAdministered() == null || !user.getAccountAdministered().equals(account)) {
             permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
         }
-    }
-
-    private List<Group> getCandidateGroupsToDesignate(User user) {
-        List<Group> groupsPartOf = permissionBroker.getActiveGroupsSorted(user, null);
-        return groupsPartOf.stream()
-                .filter(g -> !g.isPaidFor())
-                .collect(Collectors.toList());
     }
 
 }

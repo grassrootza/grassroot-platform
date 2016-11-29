@@ -17,6 +17,8 @@ import za.org.grassroot.core.repository.NotificationRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.services.PermissionBroker;
+import za.org.grassroot.services.exception.AdminRemovalException;
+import za.org.grassroot.services.exception.UserAlreadyAdminException;
 import za.org.grassroot.services.specifications.AccountSpecifications;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
@@ -387,6 +389,10 @@ public class AccountBrokerImpl implements AccountBroker {
             permissionBroker.validateSystemRole(changingUser, BaseRoles.ROLE_SYSTEM_ADMIN);
         }
 
+        if (administrator.getAccountAdministered() != null) {
+            throw new UserAlreadyAdminException();
+        }
+
         account.addAdministrator(administrator);
         administrator.setAccountAdministered(account);
         permissionBroker.addSystemRole(administrator, BaseRoles.ROLE_ACCOUNT_ADMIN);
@@ -394,6 +400,39 @@ public class AccountBrokerImpl implements AccountBroker {
         createAndStoreSingleAccountLog(new AccountLog.Builder(account)
                 .userUid(userUid)
                 .accountLogType(AccountLogType.ADMIN_ADDED)
+                .description(administrator.getUid()).build());
+    }
+
+    @Override
+    @Transactional
+    public void removeAdministrator(String userUid, String accountUid, String adminToRemoveUid) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(accountUid);
+        Objects.requireNonNull(adminToRemoveUid);
+
+        if (userUid.equals(adminToRemoveUid)) {
+            throw new AdminRemovalException("account.admin.remove.error.same");
+        }
+
+        User changingUser = userRepository.findOneByUid(userUid);
+        Account account = accountRepository.findOneByUid(accountUid);
+        User administrator = userRepository.findOneByUid(adminToRemoveUid);
+
+        if (!account.getAdministrators().contains(changingUser)) {
+            permissionBroker.validateSystemRole(changingUser, BaseRoles.ROLE_SYSTEM_ADMIN);
+        }
+
+        if (administrator.equals(account.getBillingUser())) {
+            throw new AdminRemovalException("account.admin.remove.error.bill");
+        }
+
+        account.removeAdministrator(administrator);
+        administrator.setAccountAdministered(null);
+        permissionBroker.removeSystemRole(administrator, BaseRoles.ROLE_ACCOUNT_ADMIN);
+
+        createAndStoreSingleAccountLog(new AccountLog.Builder(account)
+                .userUid(userUid)
+                .accountLogType(AccountLogType.ADMIN_REMOVED)
                 .description(administrator.getUid()).build());
     }
 

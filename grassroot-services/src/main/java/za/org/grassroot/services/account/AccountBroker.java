@@ -36,6 +36,9 @@ public interface AccountBroker {
     void addAdministrator(String userUid, String accountUid, String administratorUid);
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
+    void removeAdministrator(String userUid, String accountUid, String adminToRemoveUid);
+
+    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     void updateBillingEmail(String userUid, String accountUid, String billingEmail);
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")

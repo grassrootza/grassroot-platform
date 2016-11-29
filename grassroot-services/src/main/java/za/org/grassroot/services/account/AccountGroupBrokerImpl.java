@@ -15,6 +15,7 @@ import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.*;
+import za.org.grassroot.services.util.FullTextSearchUtils;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
@@ -106,6 +107,10 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
             throw new AccountLimitExceededException();
         }
 
+        if (group == null) {
+            throw new GroupNotFoundException();
+        }
+
         if (group.isPaidFor()) {
             throw new GroupAlreadyPaidForException();
         }
@@ -159,6 +164,28 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
         logsAndNotificationsBroker.asyncStoreBundle(bundle);
 
         return paidGroups.size();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Group> candidateGroupsForAccount(String userUid, String accountUid, String filterTerm) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(accountUid);
+
+        User user = userRepository.findOneByUid(userUid);
+        Account account = accountRepository.findOneByUid(accountUid);
+
+        if (!account.getAdministrators().contains(user)) {
+            permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
+        }
+
+        String tsQuery = FullTextSearchUtils.encodeAsTsQueryText(filterTerm == null ? "" : filterTerm, true);
+        List<Group> userGroups = groupRepository.findByActiveAndMembershipsUserWithNameContainsText(user.getId(), tsQuery);
+
+        return userGroups.stream()
+                .filter(g -> !g.isPaidFor())
+                .collect(Collectors.toList());
+
     }
 
     @Override

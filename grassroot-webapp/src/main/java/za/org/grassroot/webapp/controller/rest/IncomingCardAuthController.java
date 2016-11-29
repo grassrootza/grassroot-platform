@@ -44,7 +44,7 @@ public class IncomingCardAuthController {
             attributes.addAttribute("paymentId", id);
             attributes.addAttribute("succeeded", false);
             attributes.addAttribute("failureDescription", response.getDescription());
-            return "redirecT:/account/payment/done";
+            return "redirect:/account/payment/done";
         }
     }
 

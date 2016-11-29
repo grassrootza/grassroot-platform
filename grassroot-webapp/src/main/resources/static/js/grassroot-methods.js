@@ -99,14 +99,20 @@ var grassrootJS = {
         };
     },
 
-    // todo : add in field for different kinds of search (part of / owner of / etc)
-    groupNameAutoComplete : function(inputField, returnField) {
+    UID_VALUE: "UID",
+    NAME_VALUE: "NAME",
+    PRIVATE_SEARCH: "PRIVATE",
+    PUBLIC_SEARCH: "PUBLIC",
+
+    groupNameAutoComplete : function (inputField, returnField, valueType, searchType) {
         return {
             minLength: 1,
             delay: 350,
             source: function(request, response) {
                 console.log("finding group names");
-                $.getJSON("/ajax/group/names", { fragment : request.term }, function (data) {
+                $.getJSON("/ajax/group/names", {
+                    fragment : request.term, valueType : valueType, searchType: searchType },
+                    function (data) {
                     console.log("got group ajax data back : " + JSON.stringify(data));
                     response(data);
                 })

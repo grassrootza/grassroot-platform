@@ -211,7 +211,7 @@ public class AccountPaymentController extends BaseController {
     private String handleError(int enableOrUpdate, RedirectAttributes attributes, HttpServletRequest request, String description) {
         logger.info("Error in payment, handling with description: {}", description);
         addMessage(attributes, MessageType.ERROR, "account.payment.failed", request);
-        attributes.addAttribute("error", description == null ? "" : description);
+        attributes.addAttribute("errorDescription", description == null ? "" : description);
         return enableOrUpdate == ENABLE ? "redirect:/account/payment/signup/retry" : "redirect:/account/payment/change";
     }
 

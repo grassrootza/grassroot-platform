@@ -84,7 +84,8 @@ public class PaymentErrorPP {
     @Override
     public String toString() {
         return "PaymentErrorPP{" +
-                "result='" + result + '\'' +
+                "\nid=" + id +
+                ",\n result='" + result + '\'' +
                 ",\n card=" + card +
                 ",\n risk=" + risk +
                 ",\n buildNumber='" + buildNumber + '\'' +

@@ -38,12 +38,12 @@
     <div class="container">
       <div class="row">
 
-        <div class="col-md-8 col-md-offset-2 col-sm-6 col-sm-offset-3 col-xs-12">
+        <div class="col-md-8 col-md-offset-2 col-sm-12 col-xs-12">
           <div class="row no-padding">
-            <div class="col-md-3 col-sm-4 col-xs-12">
+            <div class="col-md-3 col-sm-3 col-xs-12">
               <label class="grassroot-sidebar" for="account_type">Type</label>
             </div>
-            <div class="col-md-6 col-sm-5 col-xs-12">
+            <div class="col-md-6 col-sm-6 col-xs-12">
               <select id="account_type" class="form-control input-lg">
                 <option th:each="type: ${T(za.org.grassroot.core.enums.AccountType).values()}"
                         th:text="#{web.account.signup.__${type}__}"
@@ -59,10 +59,10 @@
           <hr>
 
           <div class="row no-padding">
-            <div class="col-md-3 col-sm-4 col-xs-12">
+            <div class="col-md-3 col-sm-3 col-xs-12">
               <label class="grassroot-sidebar">Groups</label>
             </div>
-            <div th:switch="${#lists.isEmpty(paidGroups)}" class="col-md-6 col-sm-5 col-xs-12">
+            <div th:switch="${#lists.isEmpty(paidGroups)}" class="col-md-6 col-sm-6 col-xs-12">
               <div th:case="true">
                 <p class="grassroot-body">You have not added any groups to this account yet.
                   <a th:if="${canAddAllGroups}" id="addAllGroups" th:href="@{group/add/all}">Add all my groups to my account.</a>
@@ -71,25 +71,26 @@
               <div th:case="false">
                 <p class="grassroot-body">
                   <span th:text="${paidGroups.size()}">X</span> groups are paid for by this account.
+                  You have space for <span th:text="${groupsLeft}">X</span> more groups on this account.
                 </p>
               </div>
             </div>
             <div class="col-md-3 col-sm-3 col-xs-12">
-              <button class="btn default-button full-width-button" data-toggle="modal" data-target="#addGroupModal">
+              <button th:if="${groupsLeft > 0}" class="btn default-button full-width-button" data-toggle="modal" data-target="#addGroupModal">
                 <i class="fa fa-plus" aria-hidden="true"></i> Add</button>
             </div>
           </div>
 
-          <div th:unless="${#lists.isEmpty(paidGroups)}" class="row narrow-vertical">
-            <div class="col-md-6 col-md-offset-2 col-sm-5 col-sm-offset-4 col-xs-12">
+          <div th:unless="${#lists.isEmpty(paidGroups)}" class="row top-buffer">
+            <div class="col-md-9 col-md-offset-3 col-sm-9 col-sm-offset-3 col-xs-12">
               <ul class="list-group">
                 <li th:each="paidGroup: ${paidGroups}" class="list-group-item clearfix">
-                  <a th:href="@{/group/view(groupUid=paidGroup.group.uid)}">
+                  <a th:href="@{/group/view(groupUid=${paidGroup.group.uid})}">
                     <span class="grassroot-body" th:text="${paidGroup.group.name}">Group name</span>
                   </a>
                   <span class="pull-right">
                       <button class="btn default-button btn-neutral" data-toggle="modal" data-target="#remGroupModal"
-                              th:attr="data-groupuid=${paidGroup.uid}">Remove</button>
+                              th:attr="data-groupuid=${paidGroup.group.uid}">Remove</button>
                   </span>
                 </li>
               </ul>
@@ -99,11 +100,11 @@
           <hr>
 
           <div class="row no-padding">
-            <div class="col-md-3 col-sm-4 col-xs-12">
+            <div class="col-md-3 col-sm-3 col-xs-12">
               <label class="grassroot-sidebar">Statements</label>
             </div>
             <form th:action="@{/account/statement}" method="GET">
-            <div th:switch="${#lists.isEmpty(billingRecords)}" class="col-md-6 col-sm-5 col-xs-12">
+            <div th:switch="${#lists.isEmpty(billingRecords)}" class="col-md-6 col-sm-6 col-xs-12">
               <div th:case="true">
                 <p class="grassroot-body">This account has not been billed yet</p>
               </div>
@@ -126,37 +127,37 @@
           <hr>
 
           <div class="row no-padding">
-            <div class="col-md-3 col-sm-4 col-xs-12">
+            <div class="col-md-3 col-sm-3 col-xs-12">
               <label class="grassroot-sidebar">Admins</label>
             </div>
-            <div class="col-md-6 col-sm-5 col-xs-12">
+            <div class="col-md-6 col-sm-6 col-xs-12">
               <ul class="list-group">
                 <li th:each="admin: ${administrators}" class="list-group-item borderless no-padding clearfix">
-                  <a th:href="@{/group/view(groupUid=paidGroup.group.uid)}">
-                    <span class="grassroot-body" th:text="${admin.displayName}">Admin name</span>
-                  </a>
+                  <span class="grassroot-body" th:text="${admin.displayName}">Admin name</span>
+                  <a th:unless="${#strings.equals(admin.uid, currentUser.uid)}" href="#remAdminModal" data-toggle="modal"
+                    data-target="#remAdminModal" th:attr="data-adminuid=${admin.uid}">(remove)</a>
                 </li>
               </ul>
+              <p class="grassroot-body">
+                You can allow others to administer this account, as long as they do not have an account of their own.
+                Only the user paying for the account will be allowed to change the account type or payment method.
+              </p>
             </div>
             <div class="col-md-3 col-sm-3 col-xs-12">
               <button type="button" class="btn default-button full-width-button" data-toggle="modal" data-target="#addAdminModal">
-                Modify
+                Add
               </button>
             </div>
           </div>
 
-        </div>
-      </div>
-    </div>
-  </section>
+          <hr>
 
-  <section class="no-group-text" th:if="${@environment.getProperty('grassroot.accounts.active')}">
-    <div class="container">
-      <div class="row">
-        <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
-          <p class="text-justify">
-            <a data-target="#closeAccModal" data-toggle="modal" href="#closeAccModal">Close account</a>
-          </p>
+          <div class="row no-padding">
+            <div class="col-md-9 col-md-offset-3 col-sm-9 col-sm-offset-3 col-xs-12">
+              <a class="grassroot-body" data-target="#closeAccModal" data-toggle="modal" href="#closeAccModal">Close account</a>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
@@ -172,20 +173,20 @@
           </button>
           <h4 class="modal-title" id="addGroupModalTitle">Add groups</h4>
         </div>
-        <form th:action="@{/account/group/add}" method="post">
+        <form th:action="@{/account/group/add}" method="get">
           <input type="hidden" name="accountUid" th:value="${account.uid}" />
           <div class="modal-body">
             <div class="form-group">
               <p>
-                Your account has X groups left. Enter the name of a group to add to it, or click new group to start a new one.
+                Your account has <span th:text="${groupsLeft}">X</span> groups left. Enter the name of a group to add to it, or click new group to start a new one.
               </p>
               <input type="text" class="form-control" id="group_search_field"
-                     name="confirm_field" autocomplete="off" />
+                     name="searchTerm" autocomplete="off" />
               <input type="hidden" name="groupUid" id="group_uid_field" />
             </div>
           </div>
           <div class="modal-footer">
-            <a th:href="@{/group/create}" class="btn default-button btn-neutral">New group</a>
+            <a th:href="@{/group/create(accountUid=${account.uid})}" class="btn default-button btn-neutral">New group</a>
             <button type="submit" class="btn default-button">Add</button>
           </div>
         </form>
@@ -216,8 +217,8 @@
             </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-            <button type="submit" class="btn btn-warning">Remove</button>
+            <button type="button" class="btn default-button btn-neutral" data-dismiss="modal">Close</button>
+            <button type="submit" class="btn default-button btn-negative">Remove</button>
           </div>
         </form>
       </div>
@@ -247,8 +248,37 @@
             </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-            <button type="submit" class="btn btn-primary">Add</button>
+            <button type="button" class="btn default-button btn-neutral" data-dismiss="modal">Close</button>
+            <button type="submit" class="btn default-button">Add</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Remove admin modal -->
+  <div class="modal fade" id="remAdminModal" tabindex="-1" role="dialog" aria-labelledby="remAdminModalTitle">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+          <h4 class="modal-title" id="remAdminModalTitle">Are you sure?</h4>
+        </div>
+        <form th:action="@{/account/admin/remove}" method="post">
+          <input type="hidden" name="accountUid" th:value="${account.uid}" />
+          <input type="hidden" name="adminUid" id="remAdminUid" />
+          <div class="modal-body">
+            <div class="form-group">
+              <p>
+                Remove this administrator from your account. Are you sure?
+              </p>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn default-button btn-neutral" data-dismiss="modal">Close</button>
+            <button type="submit" class="btn default-button btn-negative">Remove</button>
           </div>
         </form>
       </div>
@@ -273,8 +303,8 @@
             </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-default btn-lg default-button btn-neutral" data-dismiss="modal">Cancel</button>
-            <button type="submit" class="btn btn-primary btn-lg default-button btn-positive">Confirmed</button>
+            <button type="button" class="btn default-button btn-neutral" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn default-button btn-negative">Confirmed</button>
           </div>
         </form>
       </div>
@@ -286,8 +316,8 @@
 
 <div class="header-container" layout:fragment="script-container">
 
-  <script th:src="@{/js/grassroot-methods.js}"></script>
   <script th:src="@{/js/lib/jquery-ui.min.js}"></script>
+  <script th:src="@{/js/grassroot-methods.js}"></script>
 
   <script>
 
@@ -303,7 +333,7 @@
       var modal = $(this);
       var searchField = modal.find("#group_search_field");
       searchField.autocomplete(
-          grassrootJS.groupNameAutoComplete(searchField, modal.find('#group_uid_field'))
+          grassrootJS.groupNameAutoComplete(searchField, modal.find('#group_uid_field'), grassrootJS.UID_VALUE, grassrootJS.PRIVATE_SEARCH)
       )
     });
 
@@ -313,6 +343,13 @@
       nameInput.autocomplete(
           grassrootJS.memberAutoComplete(nameInput, modal.find('#adminMsisdn'))
       )
+    });
+
+    $('#remAdminModal').on('show.bs.modal', function (event) {
+        var button = $(event.relatedTarget);
+        var uid = button.data('adminuid');
+        var modal = $(this);
+        modal.find('#remAdminUid').val(uid);
     });
 
     $(document).ready(function() {

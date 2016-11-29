@@ -283,7 +283,7 @@
 
     $(document).ready(function() {
         var searchBar = $("#searchTerm"); // todo : allow just a quick jump to group
-        searchBar.autocomplete(grassrootJS.groupNameAutoComplete(searchBar, searchBar));
+        searchBar.autocomplete(grassrootJS.groupNameAutoComplete(searchBar, searchBar, grassrootJS.NAME_VALUE, grassrootJS.PRIVATE_SEARCH));
     });
 
     function fetchTaskDescription(taskUid, taskType) {

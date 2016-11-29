@@ -23,7 +23,7 @@ public interface GroupQueryBroker {
 
     List<Group> loadAll();
 
-    List<GroupSearchResultDTO> groupSearch(String userUid, String searchTerm);
+    List<GroupSearchResultDTO> groupSearch(String userUid, String searchTerm, boolean searchPublic);
 
     List<Group> searchUsersGroups(String userUid, String searchTerm, boolean onlyCreatedGroups);
 

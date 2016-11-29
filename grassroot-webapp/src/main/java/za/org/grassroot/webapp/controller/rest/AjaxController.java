@@ -41,6 +41,11 @@ public class AjaxController extends BaseController {
 
     private static final Logger log = LoggerFactory.getLogger(AjaxController.class);
 
+    private static final String UID_VALUE = "UID";
+    private static final String NAME_VALUE = "NAME";
+    private static final String PRIVATE_SEARCH = "PRIVATE";
+    private static final String PUBLIC_SEARCH = "PUBLIC";
+
     private GroupQueryBroker groupQueryBroker;
     private EventBroker eventBroker;
     private TodoBroker todoBroker;
@@ -119,10 +124,13 @@ public class AjaxController extends BaseController {
     }
 
     @RequestMapping(value = "/group/names", method = RequestMethod.GET)
-    public @ResponseBody List<AutoCompleteResponse> retrieverUserGroupNames(@RequestParam String fragment) {
-        return groupQueryBroker.groupSearch(getUserProfile().getUid(), fragment)
+    public @ResponseBody List<AutoCompleteResponse> retrieverUserGroupNames(@RequestParam String fragment,
+                                                                            @RequestParam String valueType,
+                                                                            @RequestParam String searchType) {
+        boolean returnUid = UID_VALUE.equals(valueType);
+        return groupQueryBroker.groupSearch(getUserProfile().getUid(), fragment, PUBLIC_SEARCH.equals(searchType))
                 .stream()
-                .map(g -> new AutoCompleteResponse(g.getName(), g.getName()))
+                .map(g -> new AutoCompleteResponse(returnUid ? g.getUid() : g.getName(), g.getName()))
                 .collect(Collectors.toList());
     }
 

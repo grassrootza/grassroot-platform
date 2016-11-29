@@ -3,7 +3,6 @@ package za.org.grassroot.services.account;
 import org.springframework.security.access.prepost.PreAuthorize;
 import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.PaidGroup;
 
 import java.util.List;
 
@@ -20,6 +19,9 @@ public interface AccountGroupBroker {
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     int addUserCreatedGroupsToAccount(String accountUid, String userUid);
+
+    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
+    List<Group> candidateGroupsForAccount(String userUid, String accountUid, String filterTerm);
 
     boolean canAddGroupToAccount(String userUid);
 

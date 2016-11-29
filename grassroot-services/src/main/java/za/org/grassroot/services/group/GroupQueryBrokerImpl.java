@@ -89,10 +89,15 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
 
     @Override
     @Transactional(readOnly = true)
-    public List<GroupSearchResultDTO> groupSearch(String userUid, String searchTerm) {
+    public List<GroupSearchResultDTO> groupSearch(String userUid, String searchTerm, boolean searchPublic) {
         List<GroupSearchResultDTO> results = new ArrayList<>();
-        searchUsersGroups(userUid, searchTerm, true)
-                .forEach(g -> results.add(new GroupSearchResultDTO(g, GroupResultType.USER_MEMBER)));
+        if (!searchPublic) {
+            searchUsersGroups(userUid, searchTerm, true)
+                    .forEach(g -> results.add(new GroupSearchResultDTO(g, GroupResultType.USER_MEMBER)));
+        } else {
+            findPublicGroups(userUid, searchTerm, null, true)
+                    .forEach(g -> results.add(new GroupSearchResultDTO(g, GroupResultType.PUBLIC_BY_NAME)));
+        }
         return results;
     }
 
