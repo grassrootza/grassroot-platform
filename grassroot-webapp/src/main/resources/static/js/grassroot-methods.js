@@ -3,9 +3,15 @@
  */
 var grassrootJS = {
 
-    assembleMemberRow : function(listName, newMemberIndex) {
+    assembleMemberRow : function(listName, newMemberIndex, includeHiddenFields) {
         var strVar="";
         strVar += "<div class=\"form-group member-row inline-field\">";
+        if (includeHiddenFields) {
+            strVar += " <input type=\"hidden\" id=\"memberList" + newMemberIndex + ".changed\" name=\"memberList[" + newMemberIndex + "].changed\" value=\"false\" \/>";
+            strVar += " <input type=\"hidden\" id=\"memberList" + newMemberIndex + ".deleted\" name=\"memberList[" + newMemberIndex + "].deleted\" value=\"false\" \/>";
+            strVar += " <input type=\"hidden\" id=\"memberList" + newMemberIndex + ".added\" name=\"memberList[" + newMemberIndex + "].added\" value=\"true\" \/>";
+            // strVar += " <input type=\"hidden\" id=\"memberList" + newMemberIndex + ".memberUid\" name=\"memberList[" + newMemberIndex + "].memberUid\" value=\"\" \/>";
+        }
         strVar += "            <div class=\"col-md-4 col-sm-4 col-xs-12\">";
         strVar += "              <input type=\"text\" class=\"form-control input-lg\" value=\"\" id=\"" + listName + newMemberIndex + ".displayName\" " +
             "name=\"" + listName + "[" + newMemberIndex + "].displayName\" maxlength='25' placeholder='Name' \/>";

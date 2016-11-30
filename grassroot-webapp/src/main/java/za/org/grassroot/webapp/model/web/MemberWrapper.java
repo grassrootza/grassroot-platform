@@ -24,8 +24,8 @@ public class MemberWrapper implements Comparable<MemberWrapper> {
     private String phoneNumber;
 
     private boolean changed;
-    private boolean added;
     private boolean deleted;
+    private boolean added;
 
     private boolean currentUser;
 

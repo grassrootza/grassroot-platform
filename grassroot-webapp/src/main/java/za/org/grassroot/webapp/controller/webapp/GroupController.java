@@ -43,7 +43,7 @@ import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
  */
 @Controller
 @RequestMapping("/group/")
-@SessionAttributes({"groupCreator", "groupModifier"})
+@SessionAttributes({"groupModifier", "listOfMembers"})
 public class GroupController extends BaseController {
 
     private static final Logger log = LoggerFactory.getLogger(GroupController.class);
@@ -71,11 +71,6 @@ public class GroupController extends BaseController {
     Binding validators to model attributes. We could just user groupWrapper for both Creator and Modifier, but in the
     future we may need to handle differently, and the redundant code is minimal, so am making two calls
      */
-    @InitBinder("groupCreator")
-    private void initCreatorBinder(WebDataBinder binder) {
-        binder.setValidator(groupWrapperValidator);
-    }
-
     @InitBinder("groupModifier")
     private void initModifierBinder(WebDataBinder binder) { binder.setValidator(groupWrapperValidator); }
 
@@ -279,13 +274,12 @@ public class GroupController extends BaseController {
     }
 
     @RequestMapping(value = "change_multiple", method = RequestMethod.POST)
-    public String multipleMemberModify(Model model, @ModelAttribute("memberWrapperList") MemberWrapperList memberWrapperList,
+    public String multipleMemberModify(Model model, @ModelAttribute("listOfMembers") MemberWrapperList memberWrapperList,
                                        HttpServletRequest request, RedirectAttributes attributes) {
 
         final String groupUid = memberWrapperList.getGroupUid();
 
         log.info("received {} members, in full : {}", memberWrapperList.getMemberList().size(), memberWrapperList.getMemberList());
-        log.info("groupUid = " + groupUid);
 
         Set<MembershipInfo> nonNullMemberInfo = memberWrapperList.getMemberList().stream()
                 .filter(MemberWrapper::isNonNull)
@@ -305,7 +299,9 @@ public class GroupController extends BaseController {
                 nonNullMemberInfo.size(), deletedMembers.size(), validNumberMembers.size());
 
         try {
-            groupBroker.updateMembers(getUserProfile().getUid(), groupUid, validNumberMembers);
+            if (!validNumberMembers.isEmpty()) { // in case the object composition got scrambled, avoid wiping group
+                groupBroker.updateMembers(getUserProfile().getUid(), groupUid, validNumberMembers, accountsActive);
+            }
 
             if (!deletedMembers.isEmpty()) {
                 groupBroker.removeMembers(getUserProfile().getUid(), groupUid, deletedMembers);
@@ -314,7 +310,9 @@ public class GroupController extends BaseController {
             Group updatedGroup = groupBroker.load(groupUid);
             attributes.addAttribute("groupUid", updatedGroup.getUid());
 
-            if (validNumberMembers.size() == nonNullMemberInfo.size()) {
+            if (validNumberMembers.isEmpty() && deletedMembers.isEmpty()) {
+              addMessage(model, MessageType.ERROR, "group.update.error", request);
+            } else if (validNumberMembers.size() == nonNullMemberInfo.size()) {
                 addMessage(attributes, MessageType.SUCCESS, "group.update.success", new Object[]{updatedGroup.getGroupName()}, request);
             } else {
                 List<MembershipInfo> invalidMembers = new ArrayList<>(nonNullMemberInfo);

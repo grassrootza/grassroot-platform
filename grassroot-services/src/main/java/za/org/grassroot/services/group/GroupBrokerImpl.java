@@ -498,7 +498,7 @@ public class GroupBrokerImpl implements GroupBroker {
 
     @Override
     @Transactional
-    public void updateMembers(String userUid, String groupUid, Set<MembershipInfo> modifiedMembers) {
+    public void updateMembers(String userUid, String groupUid, Set<MembershipInfo> modifiedMembers, boolean checkForDeletion) {
 
         // note: a simpler way to do this might be to in effect replace the members, but then will create issues with logging
         // also, we want to check permissions separately, hence ...
@@ -531,7 +531,7 @@ public class GroupBrokerImpl implements GroupBroker {
 
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
-        if (!membershipsToRemove.isEmpty()) {
+        if (checkForDeletion && !membershipsToRemove.isEmpty()) {
             // note: only call if non-empty to avoid throwing no permission error if user hasn't removed anyone
             Set<ActionLog> removeMembershipsLogs = removeMemberships(user, group, membershipsToRemove);
             bundle.addLogs(removeMembershipsLogs);

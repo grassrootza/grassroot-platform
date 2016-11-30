@@ -37,8 +37,7 @@
       <div class="row">
         <div class="col-md-10 col-md-offset-1 col-sm-6 col-sm-offset-3 col-xs-12">
           <form id="member_entry" th:object="${listOfMembers}" th:action="@{/group/change_multiple}" method="post" autocomplete="on">
-            <input type="hidden" name="groupUid" th:value="${group.Uid}" />
-
+            <input type="hidden" th:field="*{groupUid}" />
 
             <div class="form-group inline-field">
               <div class="col-md-4 col-sm-4 col-xs-4"><label>Name</label></div>
@@ -51,6 +50,9 @@
                 <input type="hidden" th:field="*{memberList[__${iterStat.index}__].changed}" />
                 <input type="hidden" th:field="*{memberList[__${iterStat.index}__].deleted}" />
                 <input type="hidden" th:field="*{memberList[__${iterStat.index}__].memberUid}" />
+                <!-- <input type="hidden" th:field="*{memberList[__${iterStat.index}__].added}" />
+                <input type="hidden" th:field="*{memberList[__${iterStat.index}__].currentUser}" />-->
+
                 <div class="col-md-4 col-xs-12">
                   <input type="text" th:field="*{memberList[__${iterStat.index}__].displayName}" class="form-control input-lg"
                          th:readonly="${member.currentUser}" placeholder="Member's name" maxlength="35"/>
@@ -135,7 +137,7 @@
       $('#add_member').click(function() {
 
         if (member_form.valid()) {
-          member_table.find('.member-row:last').after(grassrootJS.assembleMemberRow("memberList", number_members));
+          member_table.find('.member-row:last').after(grassrootJS.assembleMemberRow("memberList", number_members, true));
           var newLastRow = member_table.find('.member-row:last');
           var phoneInput = newLastRow.find('[name$="phoneNumber"]');
           var nameInput = newLastRow.find('[name$="displayName"]');

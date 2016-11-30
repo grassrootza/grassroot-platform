@@ -48,7 +48,7 @@ public interface GroupBroker {
 
     void updateMembershipRole(String userUid, String groupUid, String memberUid, String roleName);
 
-    void updateMembers(String userUid, String groupUid, Set<MembershipInfo> membershipInfos);
+    void updateMembers(String userUid, String groupUid, Set<MembershipInfo> membershipInfos, boolean checkForDeletion);
 
     void updateGroupPermissions(String userUid, String groupUid, Map<String, Set<Permission>> newPermissions);
 

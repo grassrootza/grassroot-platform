@@ -163,7 +163,7 @@
       function addRowToTable() {
         var thisRowIndex = number_members;
 
-        member_table.find('.member-row:last').after(grassrootJS.assembleMemberRow("listOfMembers", thisRowIndex));
+        member_table.find('.member-row:last').after(grassrootJS.assembleMemberRow("listOfMembers", thisRowIndex, false));
         var newRow = member_table.find('.member-row:last');
         var phoneInput = newRow.find('[name$="phoneNumber"]');
         var nameInput = newRow.find('[name$="displayName"]');

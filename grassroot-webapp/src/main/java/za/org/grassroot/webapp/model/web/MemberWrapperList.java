@@ -39,4 +39,12 @@ public class MemberWrapperList {
     public void setGroupUid(String groupUid) {
         this.groupUid = groupUid;
     }
+
+    @Override
+    public String toString() {
+        return "MemberWrapperList{" +
+                "groupUid='" + groupUid + '\'' +
+                ", memberList=" + memberList +
+                '}';
+    }
 }
