@@ -4,6 +4,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.enums.AccountType;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -65,4 +66,12 @@ public interface AccountBroker {
     Map<AccountType, Integer> getGroupSizeLimits();
 
     Map<AccountType, Integer> getAccountTypeFees();
+
+    /* Some methods to facilitate testing */
+
+    void resetAccountBillingDates(Instant commonInstant);
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    void updateAccountBalance(String adminUid, String accountUid, long newBalance);
+
 }

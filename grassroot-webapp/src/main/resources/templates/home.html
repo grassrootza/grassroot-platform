@@ -166,7 +166,9 @@
                             <a th:href="@{vote/answer(eventUid=${task.taskUid},answer=maybe)}" class="btn default-button btn-neutral">Abstain</a>
                           </div>
                           <div th:case="TODO">
-                            <a th:href="@{todo/complete(todoUid=${task.taskUid}, source='home')}" class="btn default-button btn-positive">Mark complete</a>
+                            <button type="button" class="btn default-button btn-positive" data-toggle="modal" data-target="#todoCompleteModal"
+                                    data:uid="${task.taskUid}">
+                              Mark complete</button>
                           </div>
                         </div>
                       </div>
@@ -268,6 +270,33 @@
             <button id="taskModalYesButton" type="submit" class="btn btn-primary btn-lg default-button btn-positive" name="answer" value="yes">Yes</button>
           </form>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <div th:if="${not #lists.isEmpty(upcomingTasks)}" class="modal fade" id="todoCompleteModal" tabindex="-1" role="dialog" aria-labelledby="confirmTodoModalTitle">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">x</span></button>
+          <h4 class="modal-title" id="confirmTodoModalTitle">Confirm complete</h4>
+        </div>
+        <form th:action="@{/todo/complete}" method="get">
+          <input type="hidden" id="todoUid" name="todoUid" />
+          <input type="hidden" name="source" value="home" />
+          <div class="modal-body">
+            <div class="form-group">
+              <p>
+                Are you sure you want to mark the action complete? It will still appear as todo until 20% of members or
+                the person who recorded it marks it complete
+              </p>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn default-button btn-neutral" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn default-button">Confirm</button>
+          </div>
+        </form>
       </div>
     </div>
   </div>
@@ -391,7 +420,6 @@
     // again, insane language that doesn't even have a string format method, so have to hand write this ...
     function pad(str) { return ("00" + str).slice(-2); }
 
-
     $('#joinReqDetailsModal').on('show.bs.modal', function (event) {
       var button = $(event.relatedTarget);
 
@@ -413,6 +441,12 @@
       modal.find('#requestDescription').text(description);
       modal.find('#approveLink').attr('href', approveHref);
       modal.find('#declineLink').attr('href', declineHref);
+    });
+
+    $('#todoCompleteModal').on('show.bs.modal', function (event) {
+       var button = $(event.relatedTarget);
+       var todoUid = button.data('uid');
+       $(this).find('#todoUid').val(todoUid);
     });
 
 

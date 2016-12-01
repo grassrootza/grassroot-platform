@@ -290,7 +290,7 @@
       <div class="modal-content">
         <div class="modal-header">
           <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-          <h4 class="modal-title" id="joiningModalLabel">Close account</h4>
+          <h4 class="modal-title" id="closeAccountLabel">Close account</h4>
         </div>
         <form th:action="@{/account/close}" method="post">
           <input type="hidden" name="accountUid" th:value="${account.uid}" />
@@ -314,7 +314,7 @@
 
 </main>
 
-<div class="header-container" layout:fragment="script-container">
+<div layout:fragment="script-container">
 
   <script th:src="@{/js/lib/jquery-ui.min.js}"></script>
 

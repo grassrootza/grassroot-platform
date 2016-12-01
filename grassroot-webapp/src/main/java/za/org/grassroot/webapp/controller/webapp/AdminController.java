@@ -14,24 +14,20 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.MaskedUserDTO;
 import za.org.grassroot.core.dto.MembershipInfo;
-import za.org.grassroot.core.enums.AccountType;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.AdminService;
 import za.org.grassroot.services.PermissionBroker;
-import za.org.grassroot.services.account.AccountBroker;
 import za.org.grassroot.services.exception.MemberNotPartOfGroupException;
 import za.org.grassroot.services.exception.NoSuchUserException;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.user.PasswordTokenService;
-import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.services.util.FullTextSearchUtils;
 import za.org.grassroot.webapp.controller.BaseController;
 
@@ -40,7 +36,6 @@ import javax.servlet.http.HttpServletRequest;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -58,26 +53,20 @@ public class AdminController extends BaseController {
     @Value("${grassroot.msisdn.length:11}")
     private int phoneNumberLength;
 
-    @Autowired
-    private UserManagementService userManagementService;
+    private final GroupRepository groupRepository;
+    private final GroupBroker groupBroker;
+    private final PermissionBroker permissionBroker;
+    private final PasswordTokenService passwordTokenService;
+    private final AdminService adminService;
 
     @Autowired
-    private GroupRepository groupRepository;
-
-    @Autowired
-    private GroupBroker groupBroker;
-
-    @Autowired
-    private PermissionBroker permissionBroker;
-
-    @Autowired
-    private PasswordTokenService passwordTokenService;
-
-    @Autowired
-    private AccountBroker accountBroker;
-
-    @Autowired
-    private AdminService adminService;
+    public AdminController(GroupRepository groupRepository, GroupBroker groupBroker, PermissionBroker permissionBroker, PasswordTokenService passwordTokenService, AdminService adminService) {
+        this.groupRepository = groupRepository;
+        this.groupBroker = groupBroker;
+        this.permissionBroker = permissionBroker;
+        this.passwordTokenService = passwordTokenService;
+        this.adminService = adminService;
+    }
 
     @PostConstruct
     private void init() {
@@ -278,114 +267,4 @@ public class AdminController extends BaseController {
 		addMessage(model, MessageType.INFO, "admin.done", request);
 		return "admin/groups/search";
 	}
-
-    /**
-     * Methods to create institutional accounts and designate their administrators
-     * todo : separate out into own controller (this one is becoming far too large)
-     */
-    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    @RequestMapping("/admin/accounts/home")
-    public String listAccounts(Model model) {
-        model.addAttribute("accounts", new ArrayList<>(accountBroker.loadAllAccounts(true)));
-        return "admin/accounts/home";
-    }
-
-    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    @RequestMapping("/admin/accounts/view")
-    public String adminViewAccount(Model model, @RequestParam("accountUid") String accountUid) {
-        Account account = accountBroker.loadAccount(accountUid);
-        log.info("Viewing account ... " + account.toString());
-        model.addAttribute("account", account);
-        return "admin/accounts/view";
-    }
-
-    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    @RequestMapping("/admin/accounts/create")
-    public String createAccountForm(Model model) {
-        return "admin/accounts/create";
-    }
-
-    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    @RequestMapping(value = "/admin/accounts/create", method = RequestMethod.POST)
-    public String createAccountDo(Model model, @RequestParam("accountName") String accountName,
-                                  @RequestParam("billingAddress") String billingEmail, @RequestParam("accountType") AccountType accountType) {
-
-        // todo: all the checks & validation, e.g., whether account already exists, etc
-
-        log.info("Okay, we're going to create an account ... with name: " + accountName);
-        String createdAccountUid = accountBroker.createAccount(getUserProfile().getUid(), accountName, null, AccountType.STANDARD);
-        model.addAttribute("account", accountBroker.loadAccount(createdAccountUid));
-        return "admin/accounts/view";
-    }
-
-    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    @RequestMapping(value = "/admin/accounts/disable")
-    public String disableAccount(@RequestParam("accountUid") String accountUid, RedirectAttributes attributes, HttpServletRequest request) {
-        accountBroker.disableAccount(getUserProfile().getUid(), accountUid, "disabled by admin user", true, false); // todo : have a form to input this
-        addMessage(attributes, MessageType.INFO, "admin.accounts.disabled", request);
-        return "redirect:home";
-    }
-
-    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    @RequestMapping(value = "/admin/accounts/invisible")
-    public String makeAccountInvisible(@RequestParam("accountUid") String accountUid, RedirectAttributes attributes, HttpServletRequest request) {
-        accountBroker.closeAccount(getUserProfile().getUid(), accountUid, false);
-        addMessage(attributes, MessageType.INFO, "admin.accounts.invisible", request);
-        return "redirect:home";
-    }
-
-    // wire this up properly
-    public void changeAccountSettings(Account account) {
-        accountBroker.updateBillingEmail(getUserProfile().getUid(), account.getUid(), account.getBillingUser().getEmailAddress());
-        accountBroker.updateAccountGroupLimits(getUserProfile().getUid(), account.getUid(), account.getMaxNumberGroups(),
-                account.getMaxSizePerGroup(), account.getMaxSubGroupDepth());
-        accountBroker.updateAccountMessageSettings(getUserProfile().getUid(), account.getUid(), account.getFreeFormMessages(),
-                account.getFreeFormCost());
-    }
-
-    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    @RequestMapping("/admin/accounts/designate")
-    public String designateUserForm(Model model, @RequestParam(value = "accountUid", required = false) String accountUid) {
-        // todo: use a selector box if accountId not specified
-        model.addAttribute("account", accountBroker.loadAccount(accountUid));
-        return "admin/accounts/designate";
-    }
-
-    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    @RequestMapping(value = "admin/accounts/designate", method = RequestMethod.POST)
-    public String designateUserConfirm(Model model, @RequestParam("searchNumber") String searchNumber,
-                                       @RequestParam("accountUid") String accountUid, HttpServletRequest request) {
-
-        Account account = accountBroker.loadAccount(accountUid);
-        model.addAttribute("account", account);
-
-        try {
-            User userToDesignate = userManagementService.findByInputNumber(searchNumber); // todo: make this a multi-result search
-            model.addAttribute("userToDesignate", userToDesignate);
-            return "admin/accounts/designate-confirm";
-        } catch (Exception e) {
-            addMessage(model, MessageType.ERROR, "admin.find.error", request);
-            return "admin/accounts/designate";
-        }
-
-    }
-
-    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    @RequestMapping(value = "/admin/accounts/designate_confirmed", method = RequestMethod.POST)
-    public String designateUserDo(Model model, @RequestParam String administratorUid, @RequestParam String accountUid) {
-
-        // todo: add error handling, etc
-        User userToDesignate = userManagementService.load(administratorUid);
-        Account account = accountBroker.loadAccount(accountUid);
-
-        log.info("Inside designating method, going to add role on this account: " + account.getAccountName() + ", " +
-                         "for this user: " + userToDesignate.nameToDisplay());
-
-        accountBroker.addAdministrator(getUserProfile().getUid(), accountUid, administratorUid);
-
-        log.info("Added the user to the account and saved it");
-
-        return listAccounts(model);
-    }
-
 }

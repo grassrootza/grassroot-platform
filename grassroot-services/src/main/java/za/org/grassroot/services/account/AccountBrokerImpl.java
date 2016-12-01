@@ -15,12 +15,12 @@ import za.org.grassroot.core.enums.AccountType;
 import za.org.grassroot.core.repository.AccountRepository;
 import za.org.grassroot.core.repository.NotificationRepository;
 import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.specifications.AccountSpecifications;
 import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.AccountLimitExceededException;
 import za.org.grassroot.services.exception.AdminRemovalException;
 import za.org.grassroot.services.exception.UserAlreadyAdminException;
-import za.org.grassroot.core.specifications.AccountSpecifications;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
@@ -499,6 +499,35 @@ public class AccountBrokerImpl implements AccountBroker {
     @Override
     public Map<AccountType, Integer> getAccountTypeFees() {
         return accountFees;
+    }
+
+    @Override
+    @Transactional
+    public void resetAccountBillingDates(Instant commonInstant) {
+        if (!environment.acceptsProfiles("production")) {
+            accountRepository.findAll(Specifications.where(AccountSpecifications.isEnabled()))
+                    .forEach(account -> account.setNextBillingDate(commonInstant));
+        }
+    }
+
+    @Override
+    @Transactional
+    public void updateAccountBalance(String adminUid, String accountUid, long newBalance) {
+        Objects.requireNonNull(adminUid);
+        Objects.requireNonNull(accountUid);
+
+        User admin = userRepository.findOneByUid(adminUid);
+
+        permissionBroker.validateSystemRole(admin, BaseRoles.ROLE_SYSTEM_ADMIN);
+
+        Account account = accountRepository.findOneByUid(accountUid);
+        account.setOutstandingBalance(newBalance);
+
+        createAndStoreSingleAccountLog(new AccountLog.Builder(account)
+                .accountLogType(AccountLogType.ADMIN_CHANGED_BALANCE)
+                .userUid(adminUid)
+                .billedOrPaid(newBalance)
+                .description("Admin manually adjusted account balance").build());
     }
 
     private void createAndStoreSingleAccountLog(AccountLog accountLog) {
