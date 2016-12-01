@@ -6,112 +6,124 @@
 <head>
   <meta charset="UTF-8">
   <title>Change account type</title>
-
-  <style>
-    .currentType {
-      background: #e9e9e9;
-    }
-  </style>
-
 </head>
-<body>
 
-<div layout:fragment="header">
-    <h2 class="text-center">Change account type</h2>
+<body>
+<div layout:fragment="header" class="top-container">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
+        <h2 class="text-center header-content-title">Change account type</h2>
+        <h4 class="text-center header-content-subtitle" th:text="${account.accountName}"></h4>
+        <h4 class="text-center group-info"><a th:href="@{/account/view(accountUid=${account.uid})}">Back to account</a></h4>
+      </div>
+    </div>
+  </div>
 </div>
 
-<div layout:fragment="overview"></div>
-
 <div layout:fragment="content">
-  <div layout:fragment="messages"></div>
 
-  <!-- note : trying to avoid a payment screen here, need to make it simple, just add a confirmation screen -->
+  <section class="grassroot-form">
+    <div class="container">
+      <div class="row">
 
-  <div class="col-md-6 col-md-offset-3 col-sm-6 col-sm-offset-3 col-xs-12 grassroot-well" th:with="current=${account.type.name()}">
+        <div class="col-md-8 col-md-offset-2 col-sm-6 col-sm-offset-3 col-xs-12" th:with="current=${account.type.name()}">
 
-    <div class="row tight-vertical" th:classappend="${current == 'HEAVY'} ? currentType : ''">
-      <div class="col-md-3 col-sm-4 col-xs-12">
-        <label class="grassroot-sidebar">Heavy</label>
-      </div>
-      <div class="col-md-6 col-sm-5 col-xs-12">
-        <ul>
-          <li>Core features</li>
-          <li>Max group size of 500</li>
-          <li>No subgroups, etc</li>
-          <li>Max 8 todos per month</li>
-        </ul>
-      </div>
-      <div class="col-md-3 col-sm-3 col-xs-12">
-        <button type="button" th:unless="${current == 'HEAVY'}" class="btn btn-primary btn-block btn-lg"
-                data-toggle="modal" data-target="#confirmModal" data-type="HEAVY">Select</button>
-        <p th:if="${current == 'HEAVY'}" class="grassroot-body">Your current account type</p>
+          <div class="row" th:classappend="${current == 'HEAVY'} ? highlight : ''">
+            <div class="col-md-3 col-sm-12 col-xs-12">
+              <label class="grassroot-sidebar">Heavy (R1,000 per month)</label>
+            </div>
+            <div class="col-md-6 col-sm-9 col-xs-12 explanatory-text">
+              <ul>
+                <li>All core features</li>
+                <li>Up to 50 groups on the account</li>
+                <li>Max group size of 5,000</li>
+                <li>Up to 5 levels of branches, subgroups, etc</li>
+                <li>Up to 50 todos per month</li>
+                <li>Up to 2,000 customizable SMSs per month</li>
+              </ul>
+            </div>
+            <div class="col-md-3 col-sm-3 col-xs-12">
+              <button type="button" th:unless="${current == 'HEAVY'}" class="btn default-button"
+                      data-toggle="modal" data-target="#confirmModal" data-type="HEAVY">Select</button>
+              <p th:if="${current == 'HEAVY'}" class="explanatory-text prominent">Your current account type</p>
+            </div>
+          </div>
+
+          <hr>
+
+          <div class="row vertical-padding" th:classappend="${current == 'STANDARD'} ? highlight : ''">
+            <div class="col-md-3 col-sm-12 col-xs-12">
+              <label class="grassroot-sidebar">Standard (R250 per month)</label>
+            </div>
+            <div class="col-md-6 col-sm-9 col-xs-12 explanatory-text">
+              <ul>
+                <li>All core features</li>
+                <li>Up to 10 groups on the account</li>
+                <li>Max group size of 1,000</li>
+                <li>Up to 2 levels of branches, subgroups, etc</li>
+                <li>Up to 15 todos per month</li>
+                <li>Up to 500 customizable SMSs per month</li>
+              </ul>
+            </div>
+            <div class="col-md-3 col-sm-3 col-xs-12">
+              <button type="button" th:unless="${current == 'STANDARD'}" class="btn default-button"
+                      data-toggle="modal" data-target="#confirmModal" data-type="STANDARD">Select</button>
+              <p th:if="${current == 'STANDARD'}" class="explanatory-text prominent">Your current account type</p>
+            </div>
+          </div>
+
+          <hr>
+
+          <div class="row vertical-padding" th:classappend="${current == 'LIGHT'} ? highlight : ''">
+            <div class="col-md-3 col-sm-12 col-xs-12">
+              <label class="grassroot-sidebar">Light (R100 per month)</label>
+            </div>
+            <div class="col-md-6 col-sm-9 col-xs-12 explanatory-text">
+              <ul>
+                <li>All core features</li>
+                <li>Up to 5 groups on the account</li>
+                <li>Max group size of 500</li>
+                <li>One level branches, subgroups, etc</li>
+                <li>Up to 10 todos per month</li>
+                <li>Up to 200 customizable SMSs per month</li>
+              </ul>
+            </div>
+            <div class="col-md-3 col-sm-3 col-xs-12">
+              <button type="button" th:unless="${current == 'LIGHT'}" class="btn default-button"
+                      data-toggle="modal" data-target="#confirmModal" data-type="LIGHT">Select</button>
+              <p th:if="${current == 'LIGHT'}" class="explanatory-text prominent">Your current account type</p>
+            </div>
+          </div>
+
+          <hr>
+
+          <div class="row vertical-padding">
+            <div class="col-md-3 col-sm-12 col-xs-12 explanatory-text">
+              <label class="grassroot-sidebar">Free</label>
+            </div>
+            <div class="col-md-6 col-sm-9 col-xs-12 explanatory-text">
+              <ul>
+                <li>Core features</li>
+                <li>Maximum group size of 300</li>
+                <li>No subgroups, etc</li>
+                <li>Maximum 4 todos per month</li>
+                <li>No customizable SMSs (only Grassroot default formats)</li>
+              </ul>
+            </div>
+            <div class="col-md-3 col-sm-3 col-xs-12">
+              <button type="button" th:unless="${current == 'FREE'}" class="btn default-button"
+                      data-toggle="modal" data-target="#confirmModal" data-type="FREE">Select</button>
+              <p th:if="${current == 'FREE'}" class="explanatory-text prominent">Your current account type</p>
+            </div>
+          </div>
+
+        </div>
+
       </div>
     </div>
 
-    <hr>
-
-    <div class="row vertical-padding" th:classappend="${current == 'STANDARD'} ? currentType : ''">
-      <div class="col-md-3 col-sm-4 col-xs-12">
-        <label class="grassroot-sidebar">Standard</label>
-      </div>
-      <div class="col-md-6 col-sm-5 col-xs-12">
-        <ul>
-          <li>Core features</li>
-          <li>Max group size of 500</li>
-          <li>No subgroups, etc</li>
-          <li>Max 8 todos per month</li>
-        </ul>
-      </div>
-      <div class="col-md-3 col-sm-3 col-xs-12">
-        <button type="button" th:unless="${current == 'STANDARD'}" class="btn btn-primary btn-block btn-lg"
-                data-toggle="modal" data-target="#confirmModal" data-type="STANDARD">Select</button>
-        <p th:if="${current == 'STANDARD'}">Your current account type</p>
-      </div>
-    </div>
-
-    <hr>
-
-    <div class="row vertical-padding" th:classappend="${current == 'LIGHT'} ? currentType : ''">
-      <div class="col-md-3 col-sm-4 col-xs-12">
-        <label class="grassroot-sidebar">Light</label>
-      </div>
-      <div class="col-md-6 col-sm-5 col-xs-12">
-        <ul>
-          <li>Core features</li>
-          <li>Max group size of 500</li>
-          <li>No subgroups, etc</li>
-          <li>Max 8 todos per month</li>
-        </ul>
-      </div>
-      <div class="col-md-3 col-sm-3 col-xs-12">
-        <button type="button" th:unless="${current == 'LIGHT'}" class="btn btn-primary btn-block btn-lg"
-                data-toggle="modal" data-target="#confirmModal" data-type="LIGHT">Select</button>
-        <p th:if="${current == 'LIGHT'}">Your current account type</p>
-      </div>
-    </div>
-
-    <hr>
-
-    <div class="row vertical-padding">
-      <div class="col-md-3 col-sm-4 col-xs-12">
-        <label class="grassroot-sidebar">Free</label>
-      </div>
-      <div class="col-md-6 col-sm-5 col-xs-12">
-        <ul>
-          <li>Core features</li>
-          <li>Maximum group size of 250</li>
-          <li>No subgroups, etc</li>
-          <li>Maximum 4 todos per month</li>
-        </ul>
-      </div>
-      <div class="col-md-3 col-sm-3 col-xs-12">
-        <button type="button" th:unless="${current == 'FREE'}" class="btn btn-primary btn-block btn-lg"
-                data-toggle="modal" data-target="#confirmModal" data-type="FREE">Select</button>
-        <p th:if="${current == 'FREE'}">Your current account type</p>
-      </div>
-    </div>
-
-  </div>
+  </section>
 
   <!-- confirmation modal -->
   <div class="modal fade" id="confirmModal" tabindex="-1" role="dialog" aria-labelledby="confirmModalTitle">
@@ -128,14 +140,14 @@
           <input type="hidden" id="new_type" name="newType" value="" />
           <div class="modal-body">
             <div class="form-group">
-              <p class="grassroot-body">
+              <p class="grassroot-body" id="changeDescription">
                 You are about to change the type of your account. This will affect billing and such. Are you sure?
               </p>
             </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-default btn-lg" data-dismiss="modal">Close</button>
-            <button type="submit" class="btn btn-primary btn-lg">Confirm</button>
+            <button type="button" class="btn default-button btn-neutral" data-dismiss="modal">Close</button>
+            <button type="submit" class="btn default-button">Confirm</button>
           </div>
         </form>
       </div>
@@ -144,18 +156,33 @@
 
 </div>
 
-<div class="header-container" layout:fragment="script-container">
+<div layout:fragment="script-container">
 
-  <script>
+  <script th:inline="javascript">
 
     $(document).ready(function() {
 
-      $("#confirmModal").on('show.bs.modal', function(event) {
-        var button = $(event.relatedTarget);
-        var modal = $(this);
-        var type = button.data('type');
-        modal.find("#new_type").val(type);
-      });
+        var changeMap = /*[[${changeMap}]]*/ {};
+        console.log("changeMap: " + JSON.stringify(changeMap));
+
+        $("#confirmModal").on('show.bs.modal', function(event) {
+          var button = $(event.relatedTarget);
+          var modal = $(this);
+          var type = button.data('type');
+          modal.find("#new_type").val(type);
+          modal.find("#changeDescription").text(assembleChangeDescription(type));
+        });
+
+        function assembleChangeDescription(newType) {
+            var groupDifference = changeMap[newType + "-GROUPS-DIFFERENCE"];
+            var subsDifference = changeMap[newType + "-FEES-DIFFERENCE"];
+            var str = "Switching to a " + newType.toLowerCase() + " account will " + (groupDifference > 0 ? "increase" : "decrease");
+            str += " the number of groups you can place on your account to " + changeMap[newType + "-GROUPS-NUMBER"] + ", ";
+            str += "and the number of monthly customized messages to " + changeMap[newType + "-MESSAGES-LIMIT"] + ". ";
+            str += "Your monthly subscription will " + (subsDifference > 0 ? "increase" : "decrease") + " to R";
+            str += (changeMap[newType + "-MONTHLY-FEE"] / 100) + ". Are you sure you want to proceed?";
+            return str;
+        }
 
     });
 

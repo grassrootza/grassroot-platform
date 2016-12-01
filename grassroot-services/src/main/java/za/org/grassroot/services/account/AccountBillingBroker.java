@@ -1,10 +1,10 @@
 package za.org.grassroot.services.account;
 
-import org.springframework.data.domain.Sort;
+import org.springframework.security.access.prepost.PreAuthorize;
+import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.AccountBillingRecord;
 
 import java.util.List;
-import java.util.Set;
 
 /**
  * Created by luke on 2016/10/25.
@@ -17,12 +17,20 @@ public interface AccountBillingBroker {
 
     void generateClosingBill(String userUid, final String accountUid);
 
-    void calculateAccountStatements(boolean sendEmails, boolean sendNotifications);
+    // for use when doing an account shift, etc
+    void generateBillOutOfCycle(String accountUid, boolean generateStatement, boolean triggerPayment);
 
-    void processAccountStatementEmails(Set<String> billingRecordUids);
+    void calculateStatementsForDueAccounts(boolean sendEmails, boolean sendNotifications);
 
-    List<AccountBillingRecord> fetchBillingRecords(final String accountUid, final Sort sort);
+    void processAccountStatement(Account account, AccountBillingRecord generatingBill, boolean sendEmail);
+
+    List<AccountBillingRecord> findRecordsWithStatementDates(String accountUid);
+
+    List<AccountBillingRecord> findRecordsInSameStatementCycle(String recordUid);
 
     AccountBillingRecord fetchRecordByPayment(String paymentId);
+
+    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN')")
+    void resetAccountStatementDatesForTesting();
 
 }

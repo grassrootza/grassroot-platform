@@ -14,7 +14,7 @@ import java.util.Objects;
  */
 @Entity
 @Table(name = "paid_account_billing")
-public class AccountBillingRecord {
+public class AccountBillingRecord implements Comparable<AccountBillingRecord> {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -37,7 +37,7 @@ public class AccountBillingRecord {
     private Instant createdDateTime;
 
     @Basic
-    @Column(name="statement_date_time", nullable = false, updatable = false)
+    @Column(name="statement_date_time")
     private Instant statementDateTime;
 
     @Basic
@@ -82,6 +82,11 @@ public class AccountBillingRecord {
 
     private AccountBillingRecord() {
         // for JPA
+    }
+
+    @Override
+    public int compareTo(AccountBillingRecord record) {
+        return createdDateTime.compareTo(record.createdDateTime);
     }
 
     public static class BillingBuilder {
@@ -148,7 +153,6 @@ public class AccountBillingRecord {
 
         Objects.requireNonNull(account);
         Objects.requireNonNull(accountLog);
-        Objects.requireNonNull(statementDateTime);
         Objects.requireNonNull(billedPeriodStart);
         Objects.requireNonNull(billedPeriodEnd);
         Objects.requireNonNull(openingBalance);
@@ -252,6 +256,10 @@ public class AccountBillingRecord {
         this.paymentId = paymentId;
     }
 
+    public void setStatementDateTime(Instant statementDateTime) {
+        this.statementDateTime = statementDateTime;
+    }
+
     // for Thymeleaf
     public LocalDateTime getStatementDate() {
         return LocalDateTime.ofInstant(statementDateTime, ZoneId.systemDefault());
@@ -266,5 +274,20 @@ public class AccountBillingRecord {
                 ", amountBilledThisPeriod=" + amountBilledThisPeriod +
                 ", totalAmountToPay=" + totalAmountToPay +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        AccountBillingRecord record = (AccountBillingRecord) o;
+
+        return uid.equals(record.uid);
+    }
+
+    @Override
+    public int hashCode() {
+        return uid.hashCode();
     }
 }

@@ -114,9 +114,8 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
         }
 
         User user = userRepository.findOneByUid(userUid);
-        String tsQuery = FullTextSearchUtils.encodeAsTsQueryText(searchTerm, true);
+        String tsQuery = FullTextSearchUtils.encodeAsTsQueryText(searchTerm, true, true);
 
-        logger.info("Encoded term: " + tsQuery);
         return groupRepository.findByActiveAndMembershipsUserWithNameContainsText(user.getId(), tsQuery);
     }
 
@@ -128,7 +127,7 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
         logger.info("Finding public groups: userUid={}, searchTerm={}, locationFilter={}", userUid, searchTerm, locationFilter);
 
         User user = userRepository.findOneByUid(userUid);
-        String tsQuery = FullTextSearchUtils.encodeAsTsQueryText(searchTerm, true);
+        String tsQuery = FullTextSearchUtils.encodeAsTsQueryText(searchTerm, true, false);
         List<Group> groups = restrictToGroupName ? groupRepository.findDiscoverableGroupsWithNameWithoutMember(user.getId(), tsQuery) :
                 groupRepository.findDiscoverableGroupsWithNameOrTaskTextWithoutMember(user.getId(), tsQuery);
 

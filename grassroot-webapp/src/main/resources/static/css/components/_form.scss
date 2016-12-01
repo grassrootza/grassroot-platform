@@ -29,6 +29,11 @@
   .explanatory-text {
     font-family: 'Roboto', sans-serif;
     font-size: 1.2em;
+
+    &.prominent {
+      font-weight: bolder;
+      color: $green;
+    }
   }
 
   .checkbox-lg {
@@ -104,5 +109,9 @@
 
   textarea.full-width {
     width: 100%;
+  }
+
+  .highlight {
+    background: $light-gray;
   }
 }

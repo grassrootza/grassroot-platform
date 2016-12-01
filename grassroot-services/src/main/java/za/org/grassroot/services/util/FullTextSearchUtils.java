@@ -12,7 +12,7 @@ public class FullTextSearchUtils {
 		// utilities
 	}
 
-	public static final String encodeAsTsQueryText(String text, boolean searchAndOnly) {
+	public static final String encodeAsTsQueryText(String text, boolean searchAndOnly, boolean addWildCard) {
 		Objects.requireNonNull(text);
 		
 		String[] parts = text.split("\\s+");
@@ -25,7 +25,7 @@ public class FullTextSearchUtils {
 			if (partIsWord && lastPartIsWord) {
 				sb.append(searchAndOnly ? "& " : "| ");
 			}
-			sb.append(part).append(" ");
+			sb.append(part).append(addWildCard && partIsWord ? ":* " : " ");
 			lastPartIsWord = partIsWord;
 		}
 		return sb.toString().trim();

@@ -244,7 +244,8 @@ public class GroupController extends BaseController {
 
     @RequestMapping(value = "account/remove")
     public String removeGroupFromAccount(Model model, @RequestParam String groupUid, RedirectAttributes attributes, HttpServletRequest request) {
-        accountBroker.removeGroupFromAccount(getUserProfile().getAccountAdministered().getUid(), groupUid, getUserProfile().getUid());
+        accountBroker.removeGroupsFromAccount(getUserProfile().getAccountAdministered().getUid(), Collections.singleton(groupUid),
+                getUserProfile().getUid());
         addMessage(attributes, MessageType.INFO, "group.account.removed", request);
         attributes.addAttribute("groupUid", groupUid);
         return "redirect:/group/view";

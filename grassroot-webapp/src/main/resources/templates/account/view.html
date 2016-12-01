@@ -24,12 +24,12 @@
 
 <section layout:fragment="header" class="top-container">
   <div class="container">
-      <div class="row">
+    <div class="row">
       <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
         <h2 class="text-center header-content-title">Your account</h2>
         <h4 class="text-center header-content-subtitle" th:text="${account.accountName}"></h4>
       </div>
-      </div>
+    </div>
   </div>
 </section>
 
@@ -44,7 +44,7 @@
               <label class="grassroot-sidebar" for="account_type">Type</label>
             </div>
             <div class="col-md-6 col-sm-6 col-xs-12">
-              <select id="account_type" class="form-control input-lg">
+              <select id="account_type" class="form-control input-lg" readonly="true">
                 <option th:each="type: ${T(za.org.grassroot.core.enums.AccountType).values()}"
                         th:text="#{web.account.signup.__${type}__}"
                         th:value="${type}"
@@ -52,7 +52,7 @@
               </select>
             </div>
             <div class="col-md-3 col-sm-3 col-xs-12">
-              <a th:href="@{type(accountUid=${account.uid})}" class="btn default-button full-width-button">Change</a>
+              <a th:href="@{/account/type(accountUid=${account.uid})}" class="btn default-button full-width-button">Change</a>
             </div>
           </div>
 
@@ -65,7 +65,7 @@
             <div th:switch="${#lists.isEmpty(paidGroups)}" class="col-md-6 col-sm-6 col-xs-12">
               <div th:case="true">
                 <p class="grassroot-body">You have not added any groups to this account yet.
-                  <a th:if="${canAddAllGroups}" id="addAllGroups" th:href="@{group/add/all}">Add all my groups to my account.</a>
+                  <a th:if="${canAddAllGroups}" id="addAllGroups" th:href="@{/account/group/add/all}">Add all my groups to my account.</a>
                 </p>
               </div>
               <div th:case="false">
@@ -317,7 +317,6 @@
 <div class="header-container" layout:fragment="script-container">
 
   <script th:src="@{/js/lib/jquery-ui.min.js}"></script>
-  <script th:src="@{/js/grassroot-methods.js}"></script>
 
   <script>
 

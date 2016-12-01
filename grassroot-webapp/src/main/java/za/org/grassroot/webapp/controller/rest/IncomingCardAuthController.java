@@ -12,6 +12,8 @@ import za.org.grassroot.integration.payments.PaymentResponse;
 import za.org.grassroot.integration.payments.PaymentResultType;
 import za.org.grassroot.integration.payments.PaymentServiceBroker;
 
+import javax.servlet.http.HttpServletRequest;
+
 /**
  * Created by luke on 2016/11/14.
  */
@@ -30,7 +32,7 @@ public class IncomingCardAuthController {
 
     @RequestMapping("/3dsecure/response/{type}")
     public String receiveAuthorizationResponse(@PathVariable String type, @RequestParam String id,
-                                               @RequestParam String resourcePath, RedirectAttributes attributes) {
+                                               @RequestParam String resourcePath, RedirectAttributes attributes, HttpServletRequest request) {
 
         logger.info("paymentId: {}, resourcePath: {}", id, resourcePath);
 

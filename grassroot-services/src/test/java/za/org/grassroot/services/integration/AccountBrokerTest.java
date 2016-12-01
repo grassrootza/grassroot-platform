@@ -186,12 +186,12 @@ public class AccountBrokerTest {
 
     @Test
     public void shouldRemoveGroupFromAccount() {
-        // todo: work out why the removeGroupFromAccount method is causing optimistic locking fail
+        // todo: work out why the removeGroupsFromAccount method is causing optimistic locking fail
         /*User testUser2 = userManagementService.loadOrCreateUser("0813074085");
         Group testGroup2 = groupManagementService.createNewGroup(testUser2, "lesetse");
         Account account2 = accountBroker.createAccount("some other name");
         accountBroker.addGroupToAccount(account2, testGroup2, testUser2);
-        testGroup2 = accountBroker.removeGroupFromAccount(account2, testGroup2, testUser2);
+        testGroup2 = accountBroker.removeGroupsFromAccount(account2, testGroup2, testUser2);
         assertFalse(testGroup2.isPaidFor());*/
     }
 

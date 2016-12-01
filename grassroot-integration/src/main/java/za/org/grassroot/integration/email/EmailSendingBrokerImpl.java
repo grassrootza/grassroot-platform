@@ -9,15 +9,17 @@ import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import za.org.grassroot.core.domain.AccountBillingRecord;
-import za.org.grassroot.core.repository.AccountBillingRecordRepository;
 import za.org.grassroot.integration.PdfGeneratingService;
 
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 import java.io.File;
 import java.io.UnsupportedEncodingException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 /**
  * Created by luke on 2016/10/24.
@@ -37,29 +39,24 @@ public class EmailSendingBrokerImpl implements EmailSendingBroker {
     @Value("${grassroot.system.mail}")
     private String systemEmailAddress;
 
-    private AccountBillingRecordRepository billingRepository;
-    private PdfGeneratingService pdfGeneratingService;
-
-    private JavaMailSender mailSender;
+    private final PdfGeneratingService pdfGeneratingService;
+    private final JavaMailSender mailSender;
 
     @Autowired
-    public EmailSendingBrokerImpl(AccountBillingRecordRepository billingRepository, PdfGeneratingService pdfGeneratingService,
-                                  JavaMailSender mailSender) {
-        this.billingRepository = billingRepository;
+    public EmailSendingBrokerImpl(PdfGeneratingService pdfGeneratingService, JavaMailSender mailSender) {
         this.pdfGeneratingService = pdfGeneratingService;
         this.mailSender = mailSender;
     }
 
     @Override
-    public void generateAndSendBillingEmail(String emailSubject, String emailBody, String billingRecordUid) {
-        AccountBillingRecord record = billingRepository.findOneByUid(billingRecordUid);
+    public void generateAndSendBillingEmail(String emailAddress, String emailSubject, String emailBody, List<String> billingRecordUids) {
+        File invoice = pdfGeneratingService.generateInvoice(billingRecordUids);
 
-        File invoice = pdfGeneratingService.generateInvoice(billingRecordUid);
-
+        String fileName = "GrassrootInvoice-" + DateTimeFormatter.ISO_LOCAL_DATE.format(LocalDateTime.now()) + ".pdf";
         GrassrootEmail email = new GrassrootEmail.EmailBuilder(emailSubject)
                 .content(emailBody)
-                .address(record.getAccount().getBillingUser().getEmailAddress())
-                .attachment("invoice.pdf", invoice)
+                .address(emailAddress)
+                .attachment(fileName, invoice)
                 .build();
 
         sendMail(email);
@@ -80,6 +77,7 @@ public class EmailSendingBrokerImpl implements EmailSendingBroker {
         }
     }
 
+    @Async
     @Override
     public void sendMail(GrassrootEmail email) {
 
@@ -93,7 +91,7 @@ public class EmailSendingBrokerImpl implements EmailSendingBroker {
             if (email.hasAttachment()) {
                 helper.addAttachment(email.getAttachmentName(), email.getAttachment());
             }
-            // mailSender.send(mail);
+            mailSender.send(mail);
         } catch (MessagingException|MailException|UnsupportedEncodingException e) {
             logger.warn("Error sending user mail! Exception : " + e.toString());
         }

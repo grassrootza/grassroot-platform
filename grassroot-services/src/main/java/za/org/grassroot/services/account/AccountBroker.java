@@ -6,6 +6,8 @@ import za.org.grassroot.core.enums.AccountType;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by luke on 2015/11/12.
@@ -13,8 +15,6 @@ import java.util.List;
 public interface AccountBroker {
 
     Account loadAccount(String accountUid);
-
-    Account loadByPaymentRef(String paymentRef);
 
     Account loadUsersAccount(String userUid);
 
@@ -27,10 +27,10 @@ public interface AccountBroker {
     void enableAccount(String userUid, String accountUid, LocalDate nextStatementDate, String ongoingPaymentRef);
 
     @PreAuthorize("hasAnyRole('ROLE_ACCOUNT_ADMIN, ROLE_SYSTEM_ADMIN')")
-    void disableAccount(String administratorUid, String accountUid, String reasonToRecord, boolean removeAdminRole);
+    void disableAccount(String administratorUid, String accountUid, String reasonToRecord, boolean removeAdminRole, boolean generateClosingBill);
 
     @PreAuthorize("hasAnyRole('ROLE_ACCOUNT_ADMIN, ROLE_SYSTEM_ADMIN')")
-    void closeAccount(String userUid, String accountUid);
+    void closeAccount(String userUid, String accountUid, boolean generateClosingBill);
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     void addAdministrator(String userUid, String accountUid, String administratorUid);
@@ -42,7 +42,7 @@ public interface AccountBroker {
     void updateBillingEmail(String userUid, String accountUid, String billingEmail);
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
-    void changeAccountType(String userUid, String accountUid, AccountType accountType);
+    void changeAccountType(String userUid, String accountUid, AccountType newAccountType, Set<String> groupsToRemove);
 
     // the next two should only be called by system admin, administrators can only do type switch
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN')")
@@ -58,4 +58,11 @@ public interface AccountBroker {
 
     int calculateMessagesLeftThisMonth(String accountUid);
 
+    Map<AccountType, Integer> getNumberGroupsPerType();
+
+    Map<AccountType, Integer> getNumberMessagesPerType();
+
+    Map<AccountType, Integer> getGroupSizeLimits();
+
+    Map<AccountType, Integer> getAccountTypeFees();
 }

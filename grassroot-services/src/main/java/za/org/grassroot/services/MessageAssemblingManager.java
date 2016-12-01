@@ -274,20 +274,24 @@ public class MessageAssemblingManager implements MessageAssemblingService {
     }
 
     @Override
-    public String createAccountStatementSubject(AccountBillingRecord record) {
-        return messageSourceAccessor.getMessage("email.statement.subject", getUserLocale(record.getAccount().getBillingUser()));
+    public String createAccountStatementSubject(AccountBillingRecord generatingRecord) {
+        return messageSourceAccessor.getMessage("email.statement.subject", getUserLocale(generatingRecord.getAccount().getBillingUser()));
     }
 
     @Override
-    public String createAccountStatementEmail(AccountBillingRecord record) {
-        final User billedUser = record.getAccount().getBillingUser();
+    public String createAccountStatementEmail(AccountBillingRecord generatingRecord) {
+        final User billedUser = generatingRecord.getAccount().getBillingUser();
         final String salutation = messageSourceAccessor.getMessage("email.statement.salutation",
                 new String[] { StringUtils.isEmpty(billedUser.getFirstName()) ? billedUser.getFirstName() : billedUser.nameToDisplay() },
                 getUserLocale(billedUser));
 
+        if (generatingRecord.getNextPaymentDate() == null) {
+            throw new IllegalArgumentException("Error! Statement emails can only be generated for bill requiring payment");
+        }
+
         final String body = messageSourceAccessor.getMessage("email.statement.body",
-                new String[] { billFormat.format((double) record.getTotalAmountToPay() / 100),
-                        formatAtSAST(record.getNextPaymentDate(), shortDateFormatter) }, getUserLocale(billedUser));
+                new String[] { billFormat.format((double) generatingRecord.getTotalAmountToPay() / 100),
+                        formatAtSAST(generatingRecord.getNextPaymentDate(), shortDateFormatter) }, getUserLocale(billedUser));
 
         final String closing = messageSourceAccessor.getMessage("email.statement.closing", getUserLocale(billedUser));
 

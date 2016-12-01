@@ -25,6 +25,7 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static za.org.grassroot.services.specifications.PaidGroupSpecifications.expiresAfter;
@@ -179,8 +180,10 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
             permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
         }
 
-        String tsQuery = FullTextSearchUtils.encodeAsTsQueryText(filterTerm == null ? "" : filterTerm, true);
+        String tsQuery = FullTextSearchUtils.encodeAsTsQueryText(filterTerm == null ? "" : filterTerm, true, true);
         List<Group> userGroups = groupRepository.findByActiveAndMembershipsUserWithNameContainsText(user.getId(), tsQuery);
+
+        logger.info("number of user groups: {}", userGroups.size());
 
         return userGroups.stream()
                 .filter(g -> !g.isPaidFor())
@@ -225,25 +228,40 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
 
     @Override
     @Transactional
-    public void removeGroupFromAccount(String accountUid, String groupUid, String removingUserUid) {
+    public void removeGroupsFromAccount(String accountUid, Set<String> groupUids, String removingUserUid) {
         Objects.requireNonNull(accountUid);
-        Objects.requireNonNull(groupUid);
+        Objects.requireNonNull(groupUids);
         Objects.requireNonNull(removingUserUid);
 
         Account account = accountRepository.findOneByUid(accountUid);
-        Group group = groupRepository.findOneByUid(groupUid);
-        PaidGroup record = paidGroupRepository.findTopByGroupOrderByExpireDateTimeDesc(group);
-        User user = userRepository.findOneByUid(removingUserUid);
 
-        if (!account.getAdministrators().contains(user)) {
-            permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
+        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+
+        for (String groupUid : groupUids) {
+            Group group = groupRepository.findOneByUid(groupUid);
+            PaidGroup record = paidGroupRepository.findTopByGroupOrderByExpireDateTimeDesc(group);
+            User user = userRepository.findOneByUid(removingUserUid);
+
+            if (!account.getAdministrators().contains(user)) {
+                permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
+            }
+
+            record.setExpireDateTime(Instant.now());
+            record.setRemovedByUser(user);
+            account.removePaidGroup(record);
+            group.setPaidFor(false);
+
+            bundle.addLog(new AccountLog.Builder(account)
+                    .userUid(user.getUid())
+                    .accountLogType(AccountLogType.GROUP_REMOVED)
+                    .groupUid(group.getUid())
+                    .paidGroupUid(record.getUid())
+                    .description(group.getName()).build());
+
+            bundle.addLog(new GroupLog(group, user, GroupLogType.GROUP_REMOVED, user.getId(), account.getUid()));
         }
 
-        record.setExpireDateTime(Instant.now());
-        record.setRemovedByUser(user);
-        account.removePaidGroup(record);
-        group.setPaidFor(false);
-        storeGroupAddOrRemoveLogs(AccountLogType.GROUP_REMOVED, account, group, record.getUid(), user);
+        logsAndNotificationsBroker.asyncStoreBundle(bundle);
     }
 
     @Override

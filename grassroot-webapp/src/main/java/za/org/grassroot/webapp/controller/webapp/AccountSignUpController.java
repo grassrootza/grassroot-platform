@@ -8,23 +8,23 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.PaidGroup;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.AccountType;
 import za.org.grassroot.integration.payments.PaymentMethod;
 import za.org.grassroot.services.account.AccountBillingBroker;
 import za.org.grassroot.services.account.AccountBroker;
+import za.org.grassroot.services.exception.AccountLimitExceededException;
 import za.org.grassroot.webapp.controller.BaseController;
 
 import javax.servlet.http.HttpServletRequest;
 import java.text.DecimalFormat;
-import java.util.Arrays;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created by luke on 2016/10/26.
@@ -49,6 +49,109 @@ public class AccountSignUpController extends BaseController {
         model.addAttribute("user", userManagementService.load(getUserProfile().getUid())); // may be cached (and not reflect email) if use just getuserprofile
         model.addAttribute("accountTypes", Arrays.asList(AccountType.LIGHT, AccountType.STANDARD, AccountType.HEAVY));
         return "account/signup";
+    }
+
+    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
+    @GetMapping(value = "/type")
+    public String changeAccountTypeOptions(Model model, @RequestParam(required = false) String accountUid) {
+        Account account = !StringUtils.isEmpty(accountUid) ? accountBroker.loadAccount(accountUid)
+                : accountBroker.loadUsersAccount(getUserProfile().getUid());
+        User user = userManagementService.load(getUserProfile().getUid());
+
+        if (!user.getAccountAdministered().equals(account)) {
+            permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
+        }
+
+        model.addAttribute("account", account);
+
+        int messagesLeftNow = accountBroker.calculateMessagesLeftThisMonth(account.getUid());
+        int numberGroupsNow = (int) account.getPaidGroups().stream()
+                .filter(PaidGroup::isActive)
+                .count();
+        Map<AccountType, Integer> numberGroups = accountBroker.getNumberGroupsPerType();
+        Map<AccountType, Integer> messageSize = accountBroker.getNumberMessagesPerType();
+        Map<AccountType, Integer> groupSizes = accountBroker.getGroupSizeLimits();
+        Map<AccountType, Integer> accountFees = accountBroker.getAccountTypeFees();
+
+        Map<String, Object> changeMap = new HashMap<>();
+
+        for (AccountType type : AccountType.values()) {
+            changeMap.put(type.name() + "-GROUPS-DIFFERENCE", numberGroups.getOrDefault(type, 0)
+                    - numberGroups.getOrDefault(account.getType(), 0));
+            changeMap.put(type.name() + "-GROUPS-EXCEED", numberGroupsNow > numberGroups.get(type));
+            changeMap.put(type.name() + "-GROUPS-NUMBER", numberGroups.get(type));
+            changeMap.put(type.name() + "-GROUPS-SIZE", groupSizes.get(type));
+            changeMap.put(type.name() + "-MESSAGES-LIMIT", messageSize.get(type));
+
+            int newFee = accountFees.getOrDefault(type, 0);
+            changeMap.put(type.name() + "-MONTHLY-FEE", newFee);
+            changeMap.put(type.name() + "-FEES-DIFFERENCE", newFee - account.getSubscriptionFee());
+
+            int messagesLeftAfter = messageSize.containsKey(type) ? 0 :
+                    Math.max(0, messagesLeftNow + (messageSize.get(type) - messageSize.get(account.getType())));
+            changeMap.put(type.name() + "-MESSAGES-LEFT-AFTER", messagesLeftAfter);
+        }
+
+        model.addAttribute("changeMap", changeMap);
+
+        return "account/type";
+    }
+
+    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
+    @GetMapping(value = "/type/change")
+    public String changeAccountTypeDo(@RequestParam String accountUid, @RequestParam AccountType newType,
+                                      Model model, RedirectAttributes attributes, HttpServletRequest request) {
+
+        Account account = accountBroker.loadAccount(accountUid);
+        User user = userManagementService.load(getUserProfile().getUid());
+
+        if (!user.getAccountAdministered().equals(account)) {
+            permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
+        }
+
+        List<PaidGroup> currentlyPaidGroups = account.getPaidGroups().stream()
+                .filter(PaidGroup::isActive)
+                .collect(Collectors.toList());
+
+        int numberToRemove = currentlyPaidGroups.size() - accountBroker.getNumberGroupsPerType().getOrDefault(newType, 0);
+        if (numberToRemove > 0) {
+            model.addAttribute("numberToRemove", numberToRemove);
+            model.addAttribute("paidGroups", currentlyPaidGroups);
+            model.addAttribute("account", account);
+            model.addAttribute("newType", newType);
+            return "/account/type_confirm";
+        } else {
+            accountBroker.changeAccountType(getUserProfile().getUid(), accountUid, newType, null);
+            addMessage(attributes, MessageType.SUCCESS, "account.changetype.success", request);
+            attributes.addAttribute("accountUid", accountUid);
+            return "redirect:/account/view";
+        }
+    }
+
+    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
+    @PostMapping(value = "/type/change/remove")
+    public String changeAccountTypeRemoveGroups(@RequestParam String accountUid, @RequestParam(required = false) String groupUids,
+                                                @RequestParam AccountType newType, RedirectAttributes attributes, HttpServletRequest request) {
+        Account account = accountBroker.loadAccount(accountUid);
+        User user = userManagementService.load(getUserProfile().getUid());
+
+        logger.info("Okay, removing this list of UIDs: {}", groupUids);
+
+        if (!user.getAccountAdministered().equals(account)) {
+            permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
+        }
+
+        attributes.addAttribute("accountUid", accountUid);
+
+        try {
+            List<String> splitUids = Arrays.asList(groupUids.split(","));
+            accountBroker.changeAccountType(getUserProfile().getUid(), accountUid, newType, new HashSet<>(splitUids));
+            addMessage(attributes, MessageType.SUCCESS, "account.changetype.success", request);
+            return "redirect:/account/view";
+        } catch (NullPointerException|AccountLimitExceededException e) {
+            addMessage(attributes, MessageType.ERROR, "account.changetype.error", request);
+            return "redirect:/account/type";
+        }
     }
 
     @RequestMapping(value = "create", method = RequestMethod.POST)
@@ -90,7 +193,7 @@ public class AccountSignUpController extends BaseController {
 
         if ("confirmed".equalsIgnoreCase(confirmText.trim())) {
             billingBroker.generateClosingBill(getUserProfile().getUid(), accountUid);
-            accountBroker.closeAccount(getUserProfile().getUid(), accountUid);
+            accountBroker.closeAccount(getUserProfile().getUid(), accountUid, false);
             addMessage(attributes, MessageType.INFO, "account.closed.done", request);
             refreshAuthorities();
             return "redirect:/home";

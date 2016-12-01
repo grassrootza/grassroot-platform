@@ -18,8 +18,8 @@ public class ScheduledAccountTasks {
 
     private static final Logger logger = LoggerFactory.getLogger(ScheduledAccountTasks.class);
 
-    private AccountBillingBroker accountBillingBroker;
-    private PaymentServiceBroker paymentServiceBroker;
+    private final AccountBillingBroker accountBillingBroker;
+    private final PaymentServiceBroker paymentServiceBroker;
 
     @Autowired
     public ScheduledAccountTasks(AccountBillingBroker accountBillingBroker, PaymentServiceBroker paymentServiceBroker) {
@@ -30,7 +30,7 @@ public class ScheduledAccountTasks {
     @Scheduled(cron = "${grassroot.billing.cron.trigger: 0 0 9 * * ?}")
     public void calculateMonthlyBillingAndCosts() {
         logger.info("Calculating billing statements and sending emails and notifications ... ");
-        accountBillingBroker.calculateAccountStatements(true, true);
+        accountBillingBroker.calculateStatementsForDueAccounts(true, true);
     }
 
     @Scheduled(cron = "${grassroot.payments.cron.trigger: 0 0 20 * * ?}")

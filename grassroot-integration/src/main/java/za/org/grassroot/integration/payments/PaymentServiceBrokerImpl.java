@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
+import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +17,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.AccountBillingRecord;
 import za.org.grassroot.core.repository.AccountBillingRecordRepository;
+import za.org.grassroot.integration.email.EmailSendingBroker;
+import za.org.grassroot.integration.email.GrassrootEmail;
 import za.org.grassroot.integration.exception.PaymentMethodFailedException;
 import za.org.grassroot.integration.payments.peachp.PaymentErrorPP;
 import za.org.grassroot.integration.payments.peachp.PaymentResponsePP;
@@ -25,7 +28,8 @@ import java.io.IOException;
 import java.text.DecimalFormat;
 import java.time.Instant;
 import java.util.Objects;
-import java.util.Set;
+
+import static za.org.grassroot.core.specifications.AccountSpecifications.*;
 
 /**
  * Created by luke on 2016/10/26.
@@ -53,6 +57,8 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
     private AccountBillingRecordRepository billingRepository;
     private RestTemplate restTemplate;
     private ObjectMapper objectMapper;
+
+    private EmailSendingBroker emailSendingBroker;
 
     private UriComponentsBuilder baseUriBuilder;
     private HttpHeaders stdHeaders;
@@ -108,12 +114,20 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
     @Value("${grassroot.payments.values.currency:ZAR}")
     private String currency;
 
+    @Value("${grassroot.payments.email.address:payments@grassroot}")
+    private String paymentsEmailNotification;
+
     @Autowired
     public PaymentServiceBrokerImpl(AccountBillingRecordRepository billingRepository,
                                     RestTemplate restTemplate, ObjectMapper objectMapper) {
         this.billingRepository = billingRepository;
         this.restTemplate = restTemplate;
         this.objectMapper = objectMapper;
+    }
+
+    @Autowired(required = false)
+    public void setEmailSendingBroker(EmailSendingBroker emailSendingBroker) {
+        this.emailSendingBroker = emailSendingBroker;
     }
 
     @PostConstruct
@@ -190,6 +204,8 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
             } catch (IOException error) {
                 error.printStackTrace();
                 throw new PaymentMethodFailedException(null);
+            } finally {
+                sendFailureEmail(amountToPay, e.getResponseBodyAsString());
             }
         }
     }
@@ -220,10 +236,13 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
             AccountBillingRecord record = billingRepository.findOneByPaymentId(paymentId);
             if (responsePP.getResult().isSuccessful()) {
                 handleSuccessfulPayment(record, responsePP);
+            } else {
+                sendFailureEmail(record, response.getBody().toString());
             }
             return responsePP;
         } else {
             logger.info("Error in response! {}", response.toString());
+            sendFailureEmail(null, response.toString());
             return new PaymentResponse(PaymentResultType.FAILED_OTHER, paymentId); // todo : probably need to respond
         }
     }
@@ -246,10 +265,11 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
     @Override
     @Transactional
     public void processAccountPaymentsOutstanding() {
-        Set<AccountBillingRecord> billsDue = billingRepository.findByNextPaymentDateBeforeAndPaidFalse(Instant.now());
-        for (AccountBillingRecord record : billsDue) {
-            triggerRecurringPayment(record);
-        }
+        billingRepository.findAll(Specifications
+                .where(paymentDateNotNull())
+                .and(isPaid(false))
+                .and(paymentDateBefore(Instant.now())))
+                .forEach(this::triggerRecurringPayment);
     }
 
     private boolean triggerRecurringPayment(AccountBillingRecord billingRecord) {
@@ -292,6 +312,15 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
         record.setPaymentId(response.getId());
         record.setPaidAmount(response.getAmount() == null ? 0
                 : (long) (response.getAmount() * 100));
+
+        if (emailSendingBroker != null) {
+            String email = "A payment succeeded for account " + account.getAccountName() + ", with amount paid as "
+                    + (record.getTotalAmountToPay() / 100) + ". Next billing date is " + account.getNextBillingDate();
+            emailSendingBroker.sendMail(new GrassrootEmail.EmailBuilder("Payment notification: successful")
+                    .content(email)
+                    .address(paymentsEmailNotification)
+                    .build());
+        }
     }
 
     private PaymentErrorPP handlePaymentError(HttpStatusCodeException e) {
@@ -303,6 +332,21 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
             logger.info("Could not read in JSON!");
             error.printStackTrace();
             return null;
+        }
+    }
+
+    private void sendFailureEmail(AccountBillingRecord record, String errorBody) {
+        if (emailSendingBroker != null) {
+            String email = "A payment failed.";
+            if (record != null) {
+                email += "The payment was for " + record.getAccount().getAccountName() + ", with amount paid as "
+                        + (record.getTotalAmountToPay() / 100) + ". \n";
+            }
+            email += "The error body received from the server was: \n" + errorBody;
+            emailSendingBroker.sendMail(new GrassrootEmail.EmailBuilder("Payment notification: error!")
+                    .content(email)
+                    .address(paymentsEmailNotification)
+                    .build());
         }
     }
 

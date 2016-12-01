@@ -17,23 +17,23 @@ import java.util.Set;
 public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroker {
 	private final Logger logger = LoggerFactory.getLogger(LogsAndNotificationsBrokerImpl.class);
 
-	@Autowired
-	private NotificationRepository notificationRepository;
+	private final NotificationRepository notificationRepository;
+	private final GroupLogRepository groupLogRepository;
+	private final UserLogRepository userLogRepository;
+	private final EventLogRepository eventLogRepository;
+	private final TodoLogRepository todoLogRepository;
+	private final AccountLogRepository accountLogRepository;
 
 	@Autowired
-	private GroupLogRepository groupLogRepository;
-
-	@Autowired
-	private UserLogRepository userLogRepository;
-
-	@Autowired
-	private EventLogRepository eventLogRepository;
-
-	@Autowired
-	private TodoLogRepository todoLogRepository;
-
-	@Autowired
-	private AccountLogRepository accountLogRepository;
+	public LogsAndNotificationsBrokerImpl(NotificationRepository notificationRepository, GroupLogRepository groupLogRepository,
+										  UserLogRepository userLogRepository, EventLogRepository eventLogRepository, TodoLogRepository todoLogRepository, AccountLogRepository accountLogRepository) {
+		this.notificationRepository = notificationRepository;
+		this.groupLogRepository = groupLogRepository;
+		this.userLogRepository = userLogRepository;
+		this.eventLogRepository = eventLogRepository;
+		this.todoLogRepository = todoLogRepository;
+		this.accountLogRepository = accountLogRepository;
+	}
 
 	@Override
 	@Transactional

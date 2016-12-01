@@ -5,6 +5,7 @@ import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.Group;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * Created by luke on 2016/10/25.
@@ -28,7 +29,7 @@ public interface AccountGroupBroker {
     boolean canAddMultipleGroupsToOwnAccount(String userUid);
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
-    void removeGroupFromAccount(String accountUid, String groupUid, String removingUserUid);
+    void removeGroupsFromAccount(String accountUid, Set<String> groupUid, String removingUserUid);
 
     Account findAccountForGroup(String groupUid);
 

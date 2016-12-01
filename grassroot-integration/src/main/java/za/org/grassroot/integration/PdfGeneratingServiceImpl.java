@@ -7,10 +7,11 @@ import com.itextpdf.text.pdf.PdfStamper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.env.Environment;
+import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.AccountBillingRecord;
 import za.org.grassroot.core.repository.AccountBillingRecordRepository;
 
@@ -22,8 +23,10 @@ import java.text.DecimalFormat;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.Comparator;
 import java.util.List;
 
+import static za.org.grassroot.core.specifications.AccountSpecifications.*;
 import static za.org.grassroot.core.util.DateTimeUtil.formatAtSAST;
 
 /**
@@ -58,25 +61,33 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
     // major todo : scheduled job to clean the temp folder
     @Override
     @Transactional(readOnly = true)
-    public File generateInvoice(String currentRecordUid) {
+    public File generateInvoice(List<String> billingRecordUids) {
         try {
             PdfReader pdfReader = new PdfReader(invoiceTemplatePath);
             File tempStore = File.createTempFile("invoice", "pdf");
             PdfStamper pdfOutput = new PdfStamper(pdfReader, new FileOutputStream(tempStore));
             AcroFields fields = pdfOutput.getAcroFields();
 
-            AccountBillingRecord record = billingRepository.findOneByUid(currentRecordUid);
+            List<AccountBillingRecord> records = billingRepository.findByUidIn(billingRecordUids);
+            records.sort(Comparator.reverseOrder());
 
-            Instant priorPeriodStart = record.getBilledPeriodStart().minus(1, ChronoUnit.DAYS); // since the prior statement might have been a day or two earlier
-            // todo : replace this with proper logic & iterating through the bills
-            List<AccountBillingRecord> priorRecordsInBillingPeriod = billingRepository
-                    .findByAccountAndStatementDateTimeBetweenAndCreatedDateTimeBefore(record.getAccount(),
-                            priorPeriodStart, record.getBilledPeriodEnd(), record.getCreatedDateTime());
+            AccountBillingRecord latest = records.get(0);
+            AccountBillingRecord earliest = records.get(records.size() - 1);
 
-            logger.info("Found these records: " + priorRecordsInBillingPeriod);
+            Account account = latest.getAccount();
+            Instant priorPeriodStart = earliest.getBilledPeriodStart().minus(1, ChronoUnit.DAYS); // since the prior statement might have been a day or two earlier
 
-            if (priorRecordsInBillingPeriod != null && !priorRecordsInBillingPeriod.isEmpty()) {
-                AccountBillingRecord priorRecord = priorRecordsInBillingPeriod.get(0);
+            if (latest.getStatementDateTime() == null) {
+                throw new IllegalArgumentException("Errror! Latest bill must be a statement generating record");
+            }
+
+            List<AccountBillingRecord> priorPaidBills = billingRepository.findAll(Specifications.where(forAccount(account))
+                    .and(createdBetween(priorPeriodStart, earliest.getBilledPeriodStart(), false))
+                    .and(isPaid(true)));
+
+            if (priorPaidBills != null && !priorPaidBills.isEmpty()) {
+                priorPaidBills.sort(Comparator.reverseOrder());
+                AccountBillingRecord priorRecord = priorPaidBills.get(0);
                 fields.setField("lastBilledAmountDescription", String.format("Last invoice for R%s, dated %s",
                         amountFormat.format((double) priorRecord.getTotalAmountToPay() / 100), formatAtSAST(priorRecord.getCreatedDateTime(), dateHeader)));
                 fields.setField("lastBilledAmount", amountFormat.format((double) priorRecord.getTotalAmountToPay() / 100)); // redundancy? with description?
@@ -87,18 +98,18 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
                 }
             }
 
-            fields.setField("invoiceNumber", "INVOICE NO " + record.getId());
-            fields.setField("invoiceDate", formatAtSAST(record.getStatementDateTime(), dateHeader));
-            fields.setField("billedUserName", record.getAccount().getBillingUser().getDisplayName());
-            fields.setField("emailAddress", String.format("Email: %s", record.getAccount().getBillingUser().getEmailAddress()));
+            fields.setField("invoiceNumber", "INVOICE NO " + latest.getId());
+            fields.setField("invoiceDate", formatAtSAST(latest.getStatementDateTime(), dateHeader));
+            fields.setField("billedUserName", latest.getAccount().getBillingUser().getDisplayName());
+            fields.setField("emailAddress", String.format("Email: %s", account.getBillingUser().getEmailAddress()));
 
-            fields.setField("priorBalance", amountFormat.format((double) record.getOpeningBalance() / 100));
+            fields.setField("priorBalance", amountFormat.format((double) latest.getOpeningBalance() / 100));
             fields.setField("thisBillItems1", String.format("Monthly subscription for '%s' account",
-                    record.getAccount().getType().name().toLowerCase()));
-            fields.setField("billedAmount1", amountFormat.format((double) record.getAmountBilledThisPeriod() / 100));
-            fields.setField("totalAmountToPay", amountFormat.format((double) record.getTotalAmountToPay() / 100));
+                    latest.getAccount().getType().name().toLowerCase()));
+            fields.setField("billedAmount1", amountFormat.format((double) latest.getAmountBilledThisPeriod() / 100));
+            fields.setField("totalAmountToPay", amountFormat.format((double) latest.getTotalAmountToPay() / 100));
             fields.setField("footerTextPaymentDate", String.format("The amount due will be automatically charged to " +
-                    "your card on %s", formatAtSAST(record.getNextPaymentDate(), dateHeader)));
+                    "your card on %s", formatAtSAST(latest.getNextPaymentDate(), dateHeader)));
 
             pdfOutput.setFormFlattening(true);
             pdfOutput.setFullCompression();

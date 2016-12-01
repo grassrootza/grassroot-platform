@@ -76,7 +76,7 @@ public interface MessageAssemblingService {
 
     String createAccountBillingNotification(AccountBillingRecord record);
 
-    String createAccountStatementSubject(AccountBillingRecord record);
+    String createAccountStatementSubject(AccountBillingRecord generatingRecord);
 
-    String createAccountStatementEmail(AccountBillingRecord record);
+    String createAccountStatementEmail(AccountBillingRecord generatingRecord);
 }

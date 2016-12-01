@@ -7,16 +7,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.integration.email.EmailSendingBroker;
 import za.org.grassroot.integration.email.GrassrootEmail;
-import za.org.grassroot.services.account.AccountBillingBroker;
-
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.time.temporal.ChronoUnit;
-import java.util.Map;
 
 /**
  * Created by luke on 2016/10/25.
@@ -30,16 +22,14 @@ public class ScheduledEmailTasks {
     @Value("${grassroot.daily.admin.email:false}")
     private boolean sendDailyAdminMail;
 
-    private AccountBillingBroker accountBroker;
     private EmailSendingBroker emailSendingBroker;
 
     @Autowired
-    public ScheduledEmailTasks(AccountBillingBroker accountBroker, EmailSendingBroker emailSendingBroker) {
-        this.accountBroker = accountBroker;
+    public ScheduledEmailTasks(EmailSendingBroker emailSendingBroker) {
         this.emailSendingBroker = emailSendingBroker;
     }
 
-    @Scheduled(fixedRate = 1000 * 60 * 60 * 24)
+    @Scheduled(cron = "0 0 7 * * ?")
     public void sendSystemStatsEmail() {
         if (sendDailyAdminMail) {
             logger.info("Sending system stats email ... ");

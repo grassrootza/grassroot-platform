@@ -17,9 +17,10 @@ import za.org.grassroot.core.repository.NotificationRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.services.PermissionBroker;
+import za.org.grassroot.services.exception.AccountLimitExceededException;
 import za.org.grassroot.services.exception.AdminRemovalException;
 import za.org.grassroot.services.exception.UserAlreadyAdminException;
-import za.org.grassroot.services.specifications.AccountSpecifications;
+import za.org.grassroot.core.specifications.AccountSpecifications;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
@@ -27,10 +28,7 @@ import javax.annotation.PostConstruct;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 import static za.org.grassroot.services.specifications.NotificationSpecifications.*;
 
@@ -53,23 +51,28 @@ public class AccountBrokerImpl implements AccountBroker {
 
     private Map<AccountType, Integer> todosPerMonth = new HashMap<>();
 
-    private AccountRepository accountRepository;
-    private UserRepository userRepository;
-    private NotificationRepository notificationRepository;
+    private final AccountRepository accountRepository;
+    private final UserRepository userRepository;
+    private final NotificationRepository notificationRepository;
 
-    private LogsAndNotificationsBroker logsAndNotificationsBroker;
-    private PermissionBroker permissionBroker;
-    private Environment environment;
-    private ApplicationEventPublisher eventPublisher;
+    private final LogsAndNotificationsBroker logsAndNotificationsBroker;
+    private final PermissionBroker permissionBroker;
+    private final Environment environment;
+    private final ApplicationEventPublisher eventPublisher;
+
+    private final AccountGroupBroker accountGroupBroker;
+    private final AccountBillingBroker accountBillingBroker;
 
     @Autowired
     public AccountBrokerImpl(AccountRepository accountRepository, UserRepository userRepository, NotificationRepository notificationRepository,
-                             PermissionBroker permissionBroker, LogsAndNotificationsBroker logsAndNotificationsBroker,
-                             Environment environment, ApplicationEventPublisher eventPublisher) {
+                             PermissionBroker permissionBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, AccountGroupBroker accountGroupBroker,
+                             AccountBillingBroker accountBillingBroker, Environment environment, ApplicationEventPublisher eventPublisher) {
         this.accountRepository = accountRepository;
         this.userRepository = userRepository;
         this.notificationRepository = notificationRepository;
         this.permissionBroker = permissionBroker;
+        this.accountGroupBroker = accountGroupBroker;
+        this.accountBillingBroker = accountBillingBroker;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
         this.environment = environment;
         this.eventPublisher = eventPublisher;
@@ -94,12 +97,6 @@ public class AccountBrokerImpl implements AccountBroker {
     @Override
     public Account loadAccount(String accountUid) {
         return accountRepository.findOneByUid(accountUid);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Account loadByPaymentRef(String paymentRef) {
-        return accountRepository.findOneByPaymentRef(paymentRef);
     }
 
     @Override
@@ -131,13 +128,7 @@ public class AccountBrokerImpl implements AccountBroker {
 
         log.info("Created account, now looks like: " + account);
 
-        account.setSubscriptionFee(accountFees.get(accountType));
-        account.setFreeFormMessages(freeFormPerMonth.get(accountType));
-        account.setFreeFormCost(messagesCost.get(accountType));
-        account.setMaxSizePerGroup(maxGroupSize.get(accountType));
-        account.setMaxSubGroupDepth(maxSubGroupDepth.get(accountType));
-        account.setMaxNumberGroups(maxGroupNumber.get(accountType));
-        account.setTodosPerGroupPerMonth(todosPerMonth.get(accountType));
+        setAccountLimits(account, accountType);
 
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
         bundle.addLog(new AccountLog.Builder(account)
@@ -154,6 +145,16 @@ public class AccountBrokerImpl implements AccountBroker {
         eventPublisher.publishEvent(afterTxCommitTask);
 
         return account.getUid();
+    }
+
+    private void setAccountLimits(Account account, AccountType accountType) {
+        account.setSubscriptionFee(accountFees.get(accountType));
+        account.setFreeFormMessages(freeFormPerMonth.get(accountType));
+        account.setFreeFormCost(messagesCost.get(accountType));
+        account.setMaxSizePerGroup(maxGroupSize.get(accountType));
+        account.setMaxSubGroupDepth(maxSubGroupDepth.get(accountType));
+        account.setMaxNumberGroups(maxGroupNumber.get(accountType));
+        account.setTodosPerGroupPerMonth(todosPerMonth.get(accountType));
     }
 
     @Override
@@ -185,12 +186,16 @@ public class AccountBrokerImpl implements AccountBroker {
 
     @Override
     @Transactional
-    public void disableAccount(String administratorUid, String accountUid, String reasonToRecord, boolean removeAdminRole) {
+    public void disableAccount(String administratorUid, String accountUid, String reasonToRecord, boolean removeAdminRole, boolean generateClosingBill) {
         User user = userRepository.findOneByUid(administratorUid);
         Account account = accountRepository.findOneByUid(accountUid);
 
         if (!user.getAccountAdministered().equals(account)) {
             permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
+        }
+
+        if (generateClosingBill) {
+            accountBillingBroker.generateClosingBill(administratorUid, accountUid);
         }
 
         account.setEnabled(false);
@@ -217,7 +222,7 @@ public class AccountBrokerImpl implements AccountBroker {
 
     @Override
     @Transactional
-    public void closeAccount(String userUid, String accountUid) {
+    public void closeAccount(String userUid, String accountUid, boolean generateClosingBill) {
         // note : this is to remove the account even from views (disabled accounts can be reenabled, so still show up)
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(accountUid);
@@ -225,6 +230,10 @@ public class AccountBrokerImpl implements AccountBroker {
         Account account = accountRepository.findOneByUid(accountUid);
         if (account.isEnabled()) {
             account.setEnabled(false);
+        }
+
+        if (generateClosingBill) {
+            accountBillingBroker.generateClosingBill(userUid, accountUid);
         }
 
         User user = userRepository.findOneByUid(userUid);
@@ -259,22 +268,21 @@ public class AccountBrokerImpl implements AccountBroker {
             permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
         }
 
-        /*
-        todo : change to billing user design
-        account.setPrimaryEmail(billingEmail);
+        User billingUser = account.getBillingUser();
+        billingUser.setEmailAddress(billingEmail);
+
         createAndStoreSingleAccountLog(new AccountLog.Builder(account)
                 .userUid(userUid)
                 .accountLogType(AccountLogType.EMAIL_CHANGED)
                 .description(billingEmail).build());
-         */
     }
 
     @Override
     @Transactional
-    public void changeAccountType(String userUid, String accountUid, AccountType accountType) {
+    public void changeAccountType(String userUid, String accountUid, AccountType newAccountType, Set<String> groupsToRemove) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(accountUid);
-        Objects.requireNonNull(accountType);
+        Objects.requireNonNull(newAccountType);
 
         User user = userRepository.findOneByUid(userUid);
         Account account = accountRepository.findOneByUid(accountUid);
@@ -283,11 +291,26 @@ public class AccountBrokerImpl implements AccountBroker {
             permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
         }
 
-        account.setType(accountType);
+        int remainingGroups = (int) account.getPaidGroups().stream().filter(PaidGroup::isActive).count() -
+                (groupsToRemove == null ? 0 : groupsToRemove.size());
+
+        if (remainingGroups > maxGroupNumber.get(newAccountType)) {
+            throw new AccountLimitExceededException();
+        }
+
+        if (groupsToRemove != null && !groupsToRemove.isEmpty()) {
+            accountGroupBroker.removeGroupsFromAccount(accountUid, groupsToRemove, userUid);
+        }
+
+        accountBillingBroker.generateBillOutOfCycle(account.getUid(), false, false);
+
+        account.setType(newAccountType);
+        setAccountLimits(account, newAccountType);
+
         createAndStoreSingleAccountLog(new AccountLog.Builder(account)
                 .userUid(userUid)
                 .accountLogType(AccountLogType.TYPE_CHANGED)
-                .description(accountType.name()).build());
+                .description(newAccountType.name()).build());
     }
 
     @Override
@@ -456,6 +479,26 @@ public class AccountBrokerImpl implements AccountBroker {
         ));
 
         return Math.max(0, account.getFreeFormMessages() - (int) messagesThisMonth);
+    }
+
+    @Override
+    public Map<AccountType, Integer> getNumberGroupsPerType() {
+        return maxGroupNumber;
+    }
+
+    @Override
+    public Map<AccountType, Integer> getNumberMessagesPerType() {
+        return freeFormPerMonth;
+    }
+
+    @Override
+    public Map<AccountType, Integer> getGroupSizeLimits() {
+        return maxGroupSize;
+    }
+
+    @Override
+    public Map<AccountType, Integer> getAccountTypeFees() {
+        return accountFees;
     }
 
     private void createAndStoreSingleAccountLog(AccountLog accountLog) {
