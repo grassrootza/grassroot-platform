@@ -6,7 +6,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.env.Environment;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specifications;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
@@ -80,7 +84,7 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
         if (lastRecord == null || lastRecord.getPaid()) {
             LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
             AccountBillingRecord record = buildInstantBillForAmount(account, (long) account.getSubscriptionFee(),
-                    "Bill generated for initial account payment", bundle);
+                    "Bill generated for initial account payment", false, bundle);
             record.setStatementDateTime(Instant.now());
             record.setNextPaymentDate(Instant.now());
 
@@ -103,7 +107,7 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
 
         AccountBillingRecord lastBill = billingRepository.findTopByAccountOrderByCreatedDateTimeDesc(account);
         AccountBillingRecord record = buildInstantBillForAmount(account, amountToCharge,
-                "Bill generated when switching payment methods", bundle);
+                "Bill generated when switching payment methods", false, bundle);
 
         // note : do not change account balance as this payment is not for sub, and hence should put account in credit
         record.setStatementDateTime(null);
@@ -135,18 +139,19 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
 
     @Override
     @Transactional
-    public void generateBillOutOfCycle(String accountUid, boolean generateStatement, boolean triggerPayment) {
+    public void generateBillOutOfCycle(String accountUid, boolean generateStatement, boolean triggerPayment, Long forceAmount, boolean addToBalance) {
         Account account = accountRepository.findOneByUid(accountUid);
         AccountBillingRecord lastBill = billingRepository.findTopByAccountOrderByCreatedDateTimeDesc(account);
 
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
-        AccountBillingRecord record = generateBillSince(account, lastBill, bundle, null);
+        AccountBillingRecord record = forceAmount == null ? generateBillSince(account, lastBill, bundle, null)
+                : buildInstantBillForAmount(account, forceAmount, "Bill generated out of cycle", addToBalance, bundle);
         record.setNextPaymentDate(triggerPayment ? Instant.now().plus(PAYMENT_INTERVAL) : null);
         record.setStatementDateTime(generateStatement ? Instant.now() : null);
 
         if (generateStatement) {
             bundle.addNotifications(generateBillNotifications(record));
-            AfterTxCommitTask afterTxCommitTask = () -> processAccountStatement(account, record, true);
+            AfterTxCommitTask afterTxCommitTask = () -> processAccountStatement(account, record, triggerPayment);
             eventPublisher.publishEvent(afterTxCommitTask);
         }
 
@@ -226,18 +231,32 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
         } else {
             Account account = record.getAccount();
             Specifications<AccountBillingRecord> baseSpec = Specifications.where(forAccount(account));
-            AccountBillingRecord priorStatement = billingRepository.findOne(baseSpec.and(statementDateNotNull())
-                    .and(statementDateBeforeOrderDesc(record.getCreatedDateTime())));
-            AccountBillingRecord subseqStatement = billingRepository.findOne(baseSpec.and(statementDateNotNull())
-                    .and(statementDateAfterOrderAsc(record.getCreatedDateTime())));
-            Instant startSearch = priorStatement == null ? account.getCreatedDateTime() : priorStatement.getStatementDateTime();
-            Instant endSearch = subseqStatement == null ? Instant.now() : subseqStatement.getStatementDateTime();
+            PageRequest singleRecRequest = new PageRequest(0, 1);
+            Page<AccountBillingRecord> priorStatement = billingRepository.findAll(baseSpec.and(statementDateNotNull())
+                    .and(statementDateBeforeOrderDesc(record.getCreatedDateTime())), singleRecRequest);
+            Page<AccountBillingRecord> subseqStatement = billingRepository.findAll(baseSpec.and(statementDateNotNull())
+                    .and(statementDateAfterOrderAsc(record.getCreatedDateTime())), singleRecRequest);
+            Instant startSearch = (priorStatement == null || !priorStatement.hasContent()) ?
+                    account.getCreatedDateTime() : priorStatement.getContent().get(0).getStatementDateTime();
+            Instant endSearch = (subseqStatement == null || !subseqStatement.hasContent()) ? Instant.now() :
+                    subseqStatement.getContent().get(0).getStatementDateTime();
 
             setOfRecords.addAll(billingRepository.findAll(baseSpec
                     .and(createdBetween(startSearch, endSearch, true))));
         }
 
         return setOfRecords.stream().sorted(Comparator.reverseOrder()).collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<AccountBillingRecord> loadBillingRecordsForAccount(String accountUid, boolean unpaidOnly, Sort sort) {
+        Account account = accountRepository.findOneByUid(accountUid);
+        Specifications<AccountBillingRecord> specs = Specifications.where(forAccount(account));
+        if (unpaidOnly) {
+            specs = specs.and(isPaid(false));
+        }
+        return billingRepository.findAll(specs, sort);
     }
 
     private List<AccountBillingRecord> findRecordsToIncludeInStatement(Account account, Instant endPeriod) {
@@ -252,12 +271,12 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
                 .and(statementDateNotNull())
                 .and(statementDateBeforeOrderDesc(endPeriod));
 
-        AccountBillingRecord lastStatement = billingRepository.findOne(record);
-        if (lastStatement != null) {
-            return lastStatement.getStatementDateTime();
+        Page<AccountBillingRecord> records = billingRepository.findAll(record, new PageRequest(0, 1, Sort.Direction.DESC, "statementDateTime"));
+
+        if (records != null && records.hasContent()) {
+            return records.getContent().get(0).getStatementDateTime();
         } else {
-            return account.getEnabledDateTime().isBefore(endPeriod) ?
-                    account.getCreatedDateTime() : account.getEnabledDateTime();
+            return account.getEnabledDateTime().isBefore(endPeriod) ? account.getCreatedDateTime() : account.getEnabledDateTime();
         }
     }
 
@@ -268,36 +287,81 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
 
     @Override
     @Transactional
-    public void resetAccountStatementDatesForTesting() {
-        if (!environment.acceptsProfiles("production")) {
-            accountRepository.findAll(AccountSpecifications.isEnabled())
-                    .forEach(account -> account.setNextBillingDate(Instant.now()));
-        }
+    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN')")
+    public void forceUpdateBillingCycle(String adminUid, String accountUid, LocalDateTime nextBillingDate) {
+        Account account = accountRepository.findOneByUid(accountUid);
+        account.setNextBillingDate(nextBillingDate == null ? null : nextBillingDate.toInstant(BILLING_TZ));
+        AccountLog accountLog = new AccountLog.Builder(account)
+                .userUid(adminUid)
+                .accountLogType(AccountLogType.SYSADMIN_BILLING_DATE)
+                .description(nextBillingDate == null ? "Stopped billing" : nextBillingDate.toString())
+                .build();
+        logsAndNotificationsBroker.storeBundle(new LogsAndNotificationsBundle(Collections.singleton(accountLog), Collections.emptySet()));
     }
 
-    private AccountBillingRecord buildInstantBillForAmount(Account account, long amountToBill, String description, LogsAndNotificationsBundle bundle) {
+    @Override
+    @Transactional
+    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN')")
+    public void haltAccountPayments(String adminUid, String accountUid) {
+        Account account = accountRepository.findOneByUid(accountUid);
+        billingRepository.findAll(Specifications.where(AccountSpecifications.forAccount(account))
+                .and(AccountSpecifications.paymentDateNotNull())
+                .and(AccountSpecifications.isPaid(false)))
+                .forEach(r -> r.setNextPaymentDate(null));
+
+        AccountLog accountLog = new AccountLog.Builder(account)
+                .userUid(adminUid)
+                .accountLogType(AccountLogType.SYSADMIN_CHANGED_PAYDATE)
+                .description("Halted payments")
+                .build();
+        logsAndNotificationsBroker.storeBundle(new LogsAndNotificationsBundle(Collections.singleton(accountLog), Collections.emptySet()));
+    }
+
+    @Override
+    @Transactional
+    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN')")
+    public void changeBillPaymentDate(String adminUid, String recordUid, LocalDateTime paymentDate) {
+        AccountBillingRecord record = billingRepository.findOneByUid(recordUid);
+        record.setNextPaymentDate(paymentDate.toInstant(BILLING_TZ));
+
+        AccountLog accountLog = new AccountLog.Builder(record.getAccount())
+                .accountLogType(AccountLogType.SYSADMIN_CHANGED_PAYDATE)
+                .userUid(adminUid)
+                .description("Date: " + paymentDate + ", record UID: " + recordUid)
+                .build();
+        logsAndNotificationsBroker.storeBundle(new LogsAndNotificationsBundle(Collections.singleton(accountLog), Collections.emptySet()));
+    }
+
+    private AccountBillingRecord buildInstantBillForAmount(Account account, long amountToBill, String description,
+                                                           boolean addToAccountBalance, LogsAndNotificationsBundle bundle) {
         AccountLog billingLog = new AccountLog.Builder(account)
                 .userUid(SYSTEM_USER)
                 .accountLogType(AccountLogType.BILL_CALCULATED)
                 .billedOrPaid((long) account.getSubscriptionFee())
-                .description("Bill generated for initial account payment")
+                .description(description)
                 .build();
         bundle.addLog(billingLog);
 
-        return new AccountBillingRecord.BillingBuilder(account)
+
+        AccountBillingRecord record = new AccountBillingRecord.BillingBuilder(account)
                 .accountLog(billingLog)
                 .openingBalance(account.getOutstandingBalance())
                 .amountBilled(amountToBill)
                 .billedPeriodStart(Instant.now())
                 .billedPeriodEnd(Instant.now())
                 .build();
+
+        if (addToAccountBalance) {
+            account.addToBalance(amountToBill);
+        }
+
+        return record;
     }
 
     private AccountBillingRecord generateBillSince(Account account, AccountBillingRecord lastBill, LogsAndNotificationsBundle bundle, String logDescription) {
-        long billForPeriod = calculateAccountBillBetweenDates(account, LocalDateTime.ofInstant(lastBill.getBilledPeriodEnd(), BILLING_TZ),
-                LocalDateTime.now());
-        long costForPeriod = calculateAccountCostsInPeriod(account, LocalDateTime.ofInstant(lastBill.getBilledPeriodEnd(), BILLING_TZ),
-                LocalDateTime.now());
+        Instant periodStart = getPeriodStart(account, lastBill);
+        long billForPeriod = calculateAccountBillBetweenDates(account, LocalDateTime.ofInstant(periodStart, BILLING_TZ), LocalDateTime.now());
+        long costForPeriod = calculateAccountCostsInPeriod(account, LocalDateTime.ofInstant(periodStart, BILLING_TZ), LocalDateTime.now());
 
         AccountLog.Builder billingLogBuilder = new AccountLog.Builder(account)
                 .userUid(SYSTEM_USER)
@@ -322,7 +386,7 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
                 .accountLog(billingLog)
                 .openingBalance(account.getOutstandingBalance())
                 .amountBilled(billForPeriod)
-                .billedPeriodStart(lastBill.getBilledPeriodEnd())
+                .billedPeriodStart(periodStart)
                 .billedPeriodEnd(Instant.now())
                 .build();
 
@@ -338,7 +402,7 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
         } else {
             double proportionOfMonth = (double) (DAYS.between(billingPeriodStart, billingPeriodEnd)) / (double) DEFAULT_MONTH_LENGTH;
             log.info("Proportion of month: {}", proportionOfMonth);
-            return (long) Math.ceil(proportionOfMonth * (double) account.getSubscriptionFee());
+            return (long) Math.max(Math.ceil(proportionOfMonth * (double) account.getSubscriptionFee()), 0);
         }
     }
 
@@ -389,5 +453,10 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
             notifications.add(notification);
         }
         return notifications;
+    }
+
+    private Instant getPeriodStart(Account account, AccountBillingRecord lastBill) {
+        return lastBill != null ? lastBill.getBilledPeriodEnd() :
+                account.getEnabledDateTime().isBefore(Instant.now()) ? account.getEnabledDateTime() : Instant.now();
     }
 }

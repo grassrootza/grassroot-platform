@@ -69,9 +69,13 @@ public interface AccountBroker {
 
     /* Some methods to facilitate testing */
 
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     void resetAccountBillingDates(Instant commonInstant);
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     void updateAccountBalance(String adminUid, String accountUid, long newBalance);
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    void updateAccountFee(String adminUid, String accountUid, long newFee);
 
 }

@@ -163,7 +163,7 @@ public class AccountBrokerImpl implements AccountBroker {
         User user = userRepository.findOneByUid(userUid);
         Account account = accountRepository.findOneByUid(accountUid);
 
-        if (!user.getAccountAdministered().equals(account)) {
+        if (user.getAccountAdministered() == null || !user.getAccountAdministered().equals(account)) {
             permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
         }
 
@@ -190,7 +190,7 @@ public class AccountBrokerImpl implements AccountBroker {
         User user = userRepository.findOneByUid(administratorUid);
         Account account = accountRepository.findOneByUid(accountUid);
 
-        if (!user.getAccountAdministered().equals(account)) {
+        if (user.getAccountAdministered() == null || !user.getAccountAdministered().equals(account)) {
             permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
         }
 
@@ -302,7 +302,7 @@ public class AccountBrokerImpl implements AccountBroker {
             accountGroupBroker.removeGroupsFromAccount(accountUid, groupsToRemove, userUid);
         }
 
-        accountBillingBroker.generateBillOutOfCycle(account.getUid(), false, false);
+        accountBillingBroker.generateBillOutOfCycle(account.getUid(), false, false, null, false);
 
         account.setType(newAccountType);
         setAccountLimits(account, newAccountType);
@@ -462,8 +462,9 @@ public class AccountBrokerImpl implements AccountBroker {
     @Override
     @Transactional(readOnly = true)
     public List<Account> loadAllAccounts(boolean visibleOnly) {
-        return visibleOnly ?
-                accountRepository.findAll(AccountSpecifications.isVisible()) : accountRepository.findAll();
+        List<Account> accounts = visibleOnly ? accountRepository.findAll(AccountSpecifications.isVisible()) : accountRepository.findAll();
+        accounts.sort(Comparator.comparing(Account::getAccountName));
+        return accounts;
     }
 
     @Override
@@ -524,10 +525,30 @@ public class AccountBrokerImpl implements AccountBroker {
         account.setOutstandingBalance(newBalance);
 
         createAndStoreSingleAccountLog(new AccountLog.Builder(account)
-                .accountLogType(AccountLogType.ADMIN_CHANGED_BALANCE)
+                .accountLogType(AccountLogType.SYSADMIN_CHANGED_BALANCE)
                 .userUid(adminUid)
                 .billedOrPaid(newBalance)
                 .description("Admin manually adjusted account balance").build());
+    }
+
+    @Override
+    @Transactional
+    public void updateAccountFee(String adminUid, String accountUid, long newFee) {
+        Objects.requireNonNull(adminUid);
+        Objects.requireNonNull(accountUid);
+
+        User admin = userRepository.findOneByUid(adminUid);
+
+        permissionBroker.validateSystemRole(admin, BaseRoles.ROLE_SYSTEM_ADMIN);
+
+        Account account = accountRepository.findOneByUid(accountUid);
+        account.setSubscriptionFee((int) newFee);
+
+        createAndStoreSingleAccountLog(new AccountLog.Builder(account)
+                .accountLogType(AccountLogType.SYSADMIN_CHANGED_BALANCE)
+                .userUid(adminUid)
+                .billedOrPaid(newFee)
+                .description("Admin manually adjusted account fee").build());
     }
 
     private void createAndStoreSingleAccountLog(AccountLog accountLog) {

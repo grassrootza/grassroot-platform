@@ -6,6 +6,7 @@ import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
 import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -406,6 +407,20 @@ public class Account {
 
     public void setTodosPerGroupPerMonth(int todosPerGroupPerMonth) {
         this.todosPerGroupPerMonth = todosPerGroupPerMonth;
+    }
+
+    public boolean isBillingActive() { return nextBillingDate != null; }
+
+    public ZonedDateTime getNextBillingDateAtSAST() {
+        return nextBillingDate == null ? null : DateTimeUtil.convertToUserTimeZone(nextBillingDate, DateTimeUtil.getSAST());
+    }
+
+    public boolean hasPaidInPast() {
+        return lastPaymentDate != null;
+    }
+
+    public ZonedDateTime getLastPaymentDateAtSAST() {
+        return lastPaymentDate == null ? null : DateTimeUtil.convertToUserTimeZone(lastPaymentDate, DateTimeUtil.getSAST());
     }
 
     @Override

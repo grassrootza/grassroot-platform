@@ -63,6 +63,9 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
     private UriComponentsBuilder baseUriBuilder;
     private HttpHeaders stdHeaders;
 
+    @Value("${grassroot.payments.enabled:false}")
+    private boolean paymentsEnabled;
+
     @Value("${grassroot.payments.host:localhost}")
     private String paymentsRestHost;
     @Value("${grassroot.payments.params.auth.user:user}")
@@ -265,11 +268,13 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
     @Override
     @Transactional
     public void processAccountPaymentsOutstanding() {
-        billingRepository.findAll(Specifications
-                .where(paymentDateNotNull())
-                .and(isPaid(false))
-                .and(paymentDateBefore(Instant.now())))
-                .forEach(this::triggerRecurringPayment);
+        if (paymentsEnabled) {
+            billingRepository.findAll(Specifications
+                    .where(paymentDateNotNull())
+                    .and(isPaid(false))
+                    .and(paymentDateBefore(Instant.now())))
+                    .forEach(this::triggerRecurringPayment);
+        }
     }
 
     private boolean triggerRecurringPayment(AccountBillingRecord billingRecord) {

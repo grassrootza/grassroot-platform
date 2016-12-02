@@ -1,7 +1,10 @@
 package za.org.grassroot.webapp.controller.webapp.account;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -17,6 +20,9 @@ import za.org.grassroot.webapp.controller.BaseController;
 
 import javax.servlet.http.HttpServletRequest;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 
 /**
@@ -26,6 +32,8 @@ import java.util.ArrayList;
 @RequestMapping("/admin/accounts/")
 @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
 public class AccountAdminController extends BaseController {
+
+    private static final Logger log = LoggerFactory.getLogger(AccountAdminController.class);
 
     private final AccountBroker accountBroker;
     private final AccountBillingBroker billingBroker;
@@ -64,30 +72,85 @@ public class AccountAdminController extends BaseController {
     }
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    @RequestMapping(value = "/enable")
+    public String enableAccount(@RequestParam("accountUid") String accountUid, RedirectAttributes attributes, HttpServletRequest request) {
+        // todo : send an email notifying them it's enabled but have to add payment within a month
+        accountBroker.enableAccount(getUserProfile().getUid(), accountUid, LocalDate.now().plus(1, ChronoUnit.MONTHS), null);
+        addMessage(attributes, MessageType.INFO, "admin.accounts.disabled", request);
+        return "redirect:home";
+    }
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping(value = "/close", method = RequestMethod.GET)
-    public String makeAccountInvisible(@RequestParam("accountUid") String accountUid, RedirectAttributes attributes, HttpServletRequest request) {
+    public String closeAccount(@RequestParam("accountUid") String accountUid, RedirectAttributes attributes, HttpServletRequest request) {
         accountBroker.closeAccount(getUserProfile().getUid(), accountUid, false);
         addMessage(attributes, MessageType.INFO, "admin.accounts.invisible", request);
         return "redirect:home";
     }
 
-    // todo : have options to force set the amount to bill
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    @RequestMapping(value = "/change/subscription", method = RequestMethod.POST)
+    public String changeSubcription(@RequestParam String accountUid, @RequestParam Integer newSubscriptionFee,
+                                    RedirectAttributes attributes, HttpServletRequest request) {
+        accountBroker.updateAccountFee(getUserProfile().getUid(), accountUid, newSubscriptionFee);
+        addMessage(attributes, MessageType.INFO, "admin.accounts.fee.changed", request);
+        return "redirect:/admin/accounts/home";
+    }
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    @RequestMapping(value = "/change/balance", method = RequestMethod.POST)
+    public String changeBalance(@RequestParam String accountUid, @RequestParam Integer newBalance,
+                                RedirectAttributes attributes, HttpServletRequest request) {
+        accountBroker.updateAccountBalance(getUserProfile().getUid(), accountUid, newBalance);
+        addMessage(attributes, MessageType.INFO, "admin.accounts.balance.changed", request);
+        return "redirect:/admin/accounts/home";
+    }
+
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping(value = "/bill", method = RequestMethod.POST)
-    public String generateBill(@RequestParam String accountUid, @RequestParam(required = false) boolean generateStatement,
-                                @RequestParam(required = false) boolean triggerPayment, RedirectAttributes attributes, HttpServletRequest request) {
-        billingBroker.generateBillOutOfCycle(accountUid, generateStatement, triggerPayment);
+    public String generateBill(@RequestParam String accountUid, @RequestParam(required = false) Long billAmount,
+                               @RequestParam(required = false) boolean generateStatement, @RequestParam(required = false) boolean triggerPayment,
+                               RedirectAttributes attributes, HttpServletRequest request) {
+        billingBroker.generateBillOutOfCycle(accountUid, generateStatement, triggerPayment, billAmount, true);
         addMessage(attributes, MessageType.INFO, "admin.accounts.bill.generated", request);
         return "redirect:home";
     }
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    @RequestMapping(value = "/balance", method = RequestMethod.POST)
-    public String changeBalance(@RequestParam String accountUid, @RequestParam Integer newBalance,
+    @RequestMapping(value = "/change/billingdate", method = RequestMethod.POST)
+    public String toggleBilling(@RequestParam String accountUid, @RequestParam(required = false) boolean stopBilling,
+                                @RequestParam(required = false) LocalDateTime billingDateTime,
                                 RedirectAttributes attributes, HttpServletRequest request) {
-        accountBroker.updateAccountBalance(getUserProfile().getUid(), accountUid, newBalance);
-        addMessage(attributes, MessageType.INFO, "admin.accounts.balance.changed", request);
-        return "redirect:home";
+        log.info("stopBilling: {}", stopBilling);
+        billingBroker.forceUpdateBillingCycle(getUserProfile().getUid(), accountUid, stopBilling ? null : billingDateTime);
+        addMessage(attributes, MessageType.INFO, "admin.accounts.billingdate.changed", request);
+        return "redirect:/admin/accounts/home";
+    }
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    @RequestMapping(value = "/payments/stop", method = RequestMethod.GET)
+    public String togglePayments(@RequestParam String accountUid, RedirectAttributes attributes, HttpServletRequest request) {
+        billingBroker.haltAccountPayments(getUserProfile().getUid(), accountUid);
+        addMessage(attributes, MessageType.INFO, "admin.accounts.payment.stopped", request);
+        return "redirect:/admin/accounts/home";
+    }
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    @RequestMapping(value = "/records/list", method = RequestMethod.GET)
+    public String seeUnpaidBills(@RequestParam String accountUid, @RequestParam(required = false) boolean unpaidOnly, Model model) {
+        model.addAttribute("records", billingBroker.loadBillingRecordsForAccount(accountUid, unpaidOnly,
+                new Sort(Sort.Direction.DESC, "createdDateTime")));
+        model.addAttribute("account", accountBroker.loadAccount(accountUid));
+        return "admin/accounts/records";
+    }
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    @RequestMapping(value = "/bill/paydate/change", method = RequestMethod.POST)
+    public String changeBillPaymentDate(@RequestParam String recordUid, LocalDateTime newDate,
+                                        RedirectAttributes attributes, HttpServletRequest request) {
+        billingBroker.changeBillPaymentDate(getUserProfile().getUid(), recordUid, newDate);
+        addMessage(attributes, MessageType.INFO, "admin.accounts.billpaydate.changed", request);
+        return "redirect:/admin/accounts/bill/list/unpaid";
     }
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")

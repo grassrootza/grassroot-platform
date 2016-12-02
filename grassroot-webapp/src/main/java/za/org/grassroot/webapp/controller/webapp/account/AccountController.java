@@ -57,15 +57,14 @@ public class AccountController extends BaseController {
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = { "", "/" })
     public String paidAccountIndex(Model model, HttpServletRequest request) {
-        if (request.isUserInRole("ROLE_SYSTEM_ADMIN")) {
-            model.addAttribute("accounts", accountBroker.loadAllAccounts(true));
-            return "account/index";
-        } else if (request.isUserInRole("ROLE_ACCOUNT_ADMIN")) {
-            User user = userManagementService.load(getUserProfile().getUid());
-            Account account = user.getAccountAdministered();
+        User user = userManagementService.load(getUserProfile().getUid());
+        Account account = user.getAccountAdministered();
+        if (account == null && request.isUserInRole("ROLE_SYSTEM_ADMIN")) {
+            return "redirect:/admin/accounts/home";
+        } else if (account != null) {
             return viewPaidAccount(model, account.getUid());
         } else {
-            throw new AccessDeniedException("Error! Only system admin or account admin can access this page");
+            return "redirect:/account/signup";
         }
     }
 
