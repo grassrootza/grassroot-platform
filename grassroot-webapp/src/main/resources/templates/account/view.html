@@ -332,7 +332,7 @@
       var modal = $(this);
       var searchField = modal.find("#group_search_field");
       searchField.autocomplete(
-          grassrootJS.groupNameAutoComplete(searchField, modal.find('#group_uid_field'), grassrootJS.UID_VALUE, grassrootJS.PRIVATE_SEARCH)
+          grassrootJS.groupNameAutoComplete(searchField, modal.find('#group_uid_field'), grassrootJS.UID_VALUE, grassrootJS.PRIVATE_SEARCH, null)
       )
     });
 

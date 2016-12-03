@@ -58,13 +58,15 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
         logger.info("PDF GENERATOR: path = " + invoiceTemplatePath);
     }
 
-    // major todo : scheduled job to clean the temp folder
+    // major todo : switch to Guava temp handling & clean the temp folder periodically
     @Override
     @Transactional(readOnly = true)
     public File generateInvoice(List<String> billingRecordUids) {
         try {
             PdfReader pdfReader = new PdfReader(invoiceTemplatePath);
             File tempStore = File.createTempFile("invoice", "pdf");
+            tempStore.deleteOnExit();
+
             PdfStamper pdfOutput = new PdfStamper(pdfReader, new FileOutputStream(tempStore));
             AcroFields fields = pdfOutput.getAcroFields();
 

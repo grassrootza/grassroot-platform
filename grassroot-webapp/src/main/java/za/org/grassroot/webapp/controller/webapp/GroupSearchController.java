@@ -48,23 +48,23 @@ public class GroupSearchController extends BaseController {
 	@Value("${grassroot.learning.relatedterms.threshold:0.5}")
 	private Double defaultDistanceThreshold;
 
-	@Autowired
-	private GroupBroker groupBroker;
+	private final GroupBroker groupBroker;
+	private final GroupQueryBroker groupQueryBroker;
+	private final TaskBroker taskBroker;
+	private final GroupJoinRequestService groupJoinRequestService;
+	private final AsyncUserLogger userLogger;
+	private final LearningService learningService;
 
 	@Autowired
-	private GroupQueryBroker groupQueryBroker;
-
-	@Autowired
-	private TaskBroker taskBroker;
-
-	@Autowired
-	private GroupJoinRequestService groupJoinRequestService;
-
-	@Autowired
-	private AsyncUserLogger userLogger;
-
-	@Autowired
-	private LearningService learningService;
+	public GroupSearchController(GroupBroker groupBroker, GroupQueryBroker groupQueryBroker, TaskBroker taskBroker,
+								 GroupJoinRequestService groupJoinRequestService, AsyncUserLogger userLogger, LearningService learningService) {
+		this.groupBroker = groupBroker;
+		this.groupQueryBroker = groupQueryBroker;
+		this.taskBroker = taskBroker;
+		this.groupJoinRequestService = groupJoinRequestService;
+		this.userLogger = userLogger;
+		this.learningService = learningService;
+	}
 
 
 	@RequestMapping(value = "join/request", method = RequestMethod.POST)
@@ -89,17 +89,21 @@ public class GroupSearchController extends BaseController {
 	}
 
 	@RequestMapping(value = "/search")
-	public String searchForGroup(Model model, @RequestParam String term, @RequestParam(value = "related_terms", required = false) boolean relatedTerms,
-								 HttpServletRequest request) {
+	public String searchForGroup(@RequestParam String term, @RequestParam(required = false) String groupUid,
+								 @RequestParam(value = "related_terms", required = false) boolean relatedTerms,
+								 Model model, RedirectAttributes attributes, HttpServletRequest request) {
 
 		boolean resultFound = false;
-		if (term.isEmpty()) {
+		if (!StringUtils.isEmpty(groupUid) && groupQueryBroker.groupExists(groupUid)) {
+			attributes.addAttribute("groupUid", groupUid);
+			return "redirect:/group/view";
+		} else if (term.isEmpty()) {
 			addMessage(model, BaseController.MessageType.ERROR, "search.error.empty", request);
 		} else {
 			boolean onlyDigits = tokenPattern.matcher(term.trim()).find();
 			if (onlyDigits && !userLogger.hasUsedJoinCodeRecently(getUserProfile().getUid())) {
 				String tokenSearch = term.contains(ussdDialCode) ? term.substring(ussdDialCode.length(), term.length() - 1) : term;
-				log.info("searching for group ... token to use ... " + tokenSearch);
+				log.debug("searching for group ... token to use ... " + tokenSearch);
 				Optional<Group> groupByToken = groupQueryBroker.findGroupFromJoinCode(tokenSearch);
 				if (groupByToken.isPresent()) {
 					model.addAttribute("group", groupByToken.get());
@@ -149,7 +153,9 @@ public class GroupSearchController extends BaseController {
 	public String approveJoinRequest(@RequestParam String requestUid, @RequestParam(required = false) String source,
 									 RedirectAttributes attributes, HttpServletRequest request) {
 		// note: join request service will do the permission checking etc and throw an error before proceeding
+		long startTime = System.currentTimeMillis();
 		groupJoinRequestService.approve(getUserProfile().getUid(), requestUid);
+		log.info("Join request approval took: {} msecs", System.currentTimeMillis() - startTime);
 		final String groupUid = groupJoinRequestService.loadRequest(requestUid).getGroup().getUid();
 
 		if (!StringUtils.isEmpty(source) && "home".equals(source)) {

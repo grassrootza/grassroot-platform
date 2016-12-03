@@ -110,7 +110,7 @@ var grassrootJS = {
     PRIVATE_SEARCH: "PRIVATE",
     PUBLIC_SEARCH: "PUBLIC",
 
-    groupNameAutoComplete : function (inputField, returnField, valueType, searchType) {
+    groupNameAutoComplete : function (labelField, valueField, valueType, searchType, callback) {
         return {
             minLength: 1,
             delay: 350,
@@ -125,12 +125,16 @@ var grassrootJS = {
             },
             focus: function(event, ui) {
                 event.preventDefault();
-                inputField.val(ui.item.label);
+                labelField.val(ui.item.label);
             },
             select: function(event, ui) {
                 event.preventDefault();
-                inputField.val(ui.item.label);
-                returnField.val(ui.item.value);
+                labelField.val(ui.item.label);
+                valueField.val(ui.item.value);
+
+                if (typeof callback == "function") {
+                    callback();
+                }
             }
         };
     },

@@ -50,18 +50,26 @@ public class MessagingController extends BaseController {
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "freeform")
-    public String sendFreeForm(Model model, @RequestParam(value="groupUid", required=false) String groupUid) {
+    public String sendFreeForm(Model model, @RequestParam(required=false) String groupUid,
+                               RedirectAttributes attributes, HttpServletRequest request) {
         Account userAccount = accountBroker.loadUsersAccount(getUserProfile().getUid());
 
-        if (groupUid != null) {
-            model.addAttribute("group", groupBroker.load(groupUid));
+        if (userAccount == null) {
+            addMessage(attributes, MessageType.ERROR, "messaging.error.account.none", request);
+            return "redirect:/home";
+        } else if (!userAccount.isEnabled()) {
+            addMessage(attributes, MessageType.ERROR, "messaging.error.account.disabled", request);
+            return "redirect:/account/view";
         } else {
-            model.addAttribute("userGroups", accountGroupBroker.fetchGroupsSponsoredByAccount(userAccount.getUid()));
+            if (groupUid != null) {
+                model.addAttribute("group", groupBroker.load(groupUid));
+            } else {
+                model.addAttribute("userGroups", accountGroupBroker.fetchGroupsSponsoredByAccount(userAccount.getUid()));
+            }
+            model.addAttribute("account", userAccount);
+            model.addAttribute("messagesLeft", accountBroker.calculateMessagesLeftThisMonth(userAccount.getUid()));
+            return "messaging/freeform";
         }
-
-        model.addAttribute("account", userAccount);
-        model.addAttribute("messagesLeft", accountBroker.calculateMessagesLeftThisMonth(userAccount.getUid()));
-        return "messaging/freeform";
     }
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")

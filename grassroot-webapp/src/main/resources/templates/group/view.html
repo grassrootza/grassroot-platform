@@ -197,6 +197,22 @@
   <!-- List group members -->
   <section class="group-members" th:unless="${#lists.isEmpty(groupMembers)}">
     <div class="container">
+      <div class="row vertical-padding" th:if="${atGroupSizeLimit}">
+        <div class="alert grassroot-alert alert-warning col-md-10 col-md-offset-1">
+          <p class="alert-lg">
+            <span th:if="${canAddToAccount}">This group has reached the size limit for free groups. To add members, you
+              will need to <a href="javascript:void(0)" data-toggle="modal" data-target="#accountModal">add it to your account</a>.</span>
+            <span th:if="${canRemoveFromAccount}">This group has reached the size limit for your type of account. To
+              add more members, <a th:href="@{/account/type}">please upgrade your account</a>.</span>
+            <span th:if="${hasAccount and !canAddToAccount and !canRemoveFromAccount}">This group has reached its size limit and you do not have
+              space left on your account or it is disabled. Please <a th:href="@{/account}">enable or upgrade it</a>
+              and add the group if you want to add members.</span>
+            <span th:if="${!hasAccount}">This group has reached the size limit for free
+              groups. To add members, <a th:href="@{/account/signup}">please sign up for an account</a>.</span>
+          </p>
+        </div>
+      </div>
+
       <div class="row">
         <div class="col-md-8 col-md-offset-1 col-xs-12">
           <h4 class="green-title">Group members</h4>

@@ -35,6 +35,9 @@ public interface GroupChatService {
     List<String> usersMutedInGroup(String groupUid);
 
     void pingToSync(User addingUser, User addedUser, Group group);
+
+    void addAllGroupMembersToChat(Group group, User initiatingUser);
+
 }
 
 

@@ -19,7 +19,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.TaskType;
-import za.org.grassroot.core.repository.*;
+import za.org.grassroot.core.repository.GroupChatMessageStatsRepository;
+import za.org.grassroot.core.repository.GroupChatSettingsRepository;
+import za.org.grassroot.core.repository.GroupRepository;
+import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 import za.org.grassroot.integration.domain.MQTTPayload;
@@ -27,8 +30,10 @@ import za.org.grassroot.integration.exception.GroupChatSettingNotFoundException;
 import za.org.grassroot.integration.exception.SeloParseDateTimeFailure;
 import za.org.grassroot.integration.mqtt.MqttObjectMapper;
 import za.org.grassroot.integration.utils.MessageUtils;
+import za.org.grassroot.integration.xmpp.GcmService;
 import za.org.grassroot.integration.xmpp.GcmXmppMessageCodec;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -76,7 +81,7 @@ public class GroupChatManager implements GroupChatService {
     private GroupChatMessageStatsRepository groupChatMessageStatsRepository;
 
     @Autowired
-    private GcmRegistrationRepository gcmRegistrationRepository;
+    private GcmService gcmService;
 
     @Autowired
     private MqttObjectMapper payloadMapper;
@@ -277,8 +282,7 @@ public class GroupChatManager implements GroupChatService {
     private void pingUsersForGroupChat(Group group) {
         Map<String, Object> data = MessageUtils.generatePingMessageData(group);
         org.springframework.messaging.Message<Message> gcmMessage = GcmXmppMessageCodec.encode(TOPICS.concat(group.getUid()), (String) data.get("messageId"),
-                null,
-                data);
+                null, data);
         gcmXmppOutboundChannel.send(gcmMessage);
     }
 
@@ -293,21 +297,39 @@ public class GroupChatManager implements GroupChatService {
             final String message = mapper.writeValueAsString(payload);
             mqttOutboundChannel.send(MessageBuilder.withPayload(message).
                     setHeader(MqttHeaders.TOPIC, addedUser.getPhoneNumber()).build());
-            GcmRegistration gcmRegistration = gcmRegistrationRepository
-                    .findTopByUserOrderByCreationTimeDesc(addedUser);
-            if(gcmRegistration !=null) {
-                final String gcmKey = gcmRegistration.getRegistrationId();
+            final String gcmKey = gcmService.getGcmKey(addedUser);
+            if (gcmKey !=null) {
                 org.springframework.messaging.Message<Message> gcmMessage = GcmXmppMessageCodec.encode(gcmKey,
-                        (String) data.get("messageId"),
-                        null,
-                        data);
+                        (String) data.get("messageId"), null, data);
                 gcmXmppOutboundChannel.send(gcmMessage);
 
             }
         } catch (JsonProcessingException e) {
             logger.debug("Error sending sync request to user with number ={}", addedUser.getPhoneNumber());
         }
+    }
 
+    @Async
+    @Override
+    public void addAllGroupMembersToChat(Group group, User initiatingUser) {
+        String groupUid = group.getUid();
+        Set<Membership> memberships = group.getMemberships();
+        logger.info("handling group chat topic subscription ...");
+        for (Membership membership : memberships) {
+            User user = membership.getUser();
+            if (gcmService.hasGcmKey(user) && !messengerSettingExist(user.getUid(), groupUid)) {
+                createUserGroupMessagingSetting(user.getUid(), groupUid, true, true, true);
+                String registrationId = gcmService.getGcmKey(user);
+                try {
+                    gcmService.subscribeToTopic(registrationId, groupUid);
+                    pingToSync(initiatingUser,user,group);
+                } catch (IOException e) {
+                    logger.info("Could not subscribe user to group topic {}", groupUid);
+                }
+
+            }
+        }
+        logger.info("finished with group chat topic subscription ...");
     }
 
     private MQTTPayload generateInvalidCommandResponseData(MQTTPayload input, Group group) {

@@ -81,6 +81,11 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
     }
 
     @Override
+    public boolean groupExists(String groupUid) {
+        return groupRepository.findOneByUid(groupUid) != null;
+    }
+
+    @Override
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @Transactional(readOnly = true)
     public List<Group> loadAll() {
@@ -107,14 +112,13 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(searchTerm);
 
-        logger.info("Searching user groups for term: " + searchTerm);
-
         if (searchTerm.trim().isEmpty()) {
             throw new IllegalArgumentException("Error, cannot search for blank term");
         }
 
         User user = userRepository.findOneByUid(userUid);
         String tsQuery = FullTextSearchUtils.encodeAsTsQueryText(searchTerm, true, true);
+        logger.info("Searching term: {}", tsQuery);
 
         return groupRepository.findByActiveAndMembershipsUserWithNameContainsText(user.getId(), tsQuery);
     }

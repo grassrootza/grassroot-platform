@@ -14,6 +14,7 @@ import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.integration.DataImportBroker;
+import za.org.grassroot.services.exception.GroupSizeLimitExceededException;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.ExcelSheetAnalysis;
@@ -59,13 +60,13 @@ public class GroupAdvImportController extends BaseController {
         return "/group/bulk_import_extra";
     }
 
-    // todo: check temp periodically and clean any files left behind from abandoned sessions (maybe also a batch job?)
     @RequestMapping(value = "analyze", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     public @ResponseBody
     ExcelSheetAnalysis analyzeExcelFile(@ModelAttribute MultipartFile file) {
         logger.info("Analyzing file ... with name = " + file.getName());
         try {
             File tempStore = File.createTempFile("mbrs", "xls");
+            tempStore.deleteOnExit();
             file.transferTo(tempStore);
             logger.info("File stored: {}", tempStore.getAbsolutePath());
             return new ExcelSheetAnalysis(tempStore.getAbsolutePath(), dataImportBroker.extractFirstRowOfCells(tempStore));
@@ -97,8 +98,13 @@ public class GroupAdvImportController extends BaseController {
     @PostMapping(value = "done")
     public String addMembers(@RequestParam String groupUid, @ModelAttribute GroupWrapper groupWrapper,
                              RedirectAttributes attributes, HttpServletRequest request) {
-        groupBroker.addMembers(getUserProfile().getUid(), groupUid, new HashSet<>(groupWrapper.getListOfMembers()), false);
-        addMessage(attributes, MessageType.SUCCESS, "group.bulk.success", new Integer[] { groupWrapper.getListOfMembers().size() }, request);
+        // todo : intercept prior to here (UI)
+        try {
+            groupBroker.addMembers(getUserProfile().getUid(), groupUid, new HashSet<>(groupWrapper.getListOfMembers()), false);
+            addMessage(attributes, MessageType.SUCCESS, "group.bulk.success", new Integer[]{groupWrapper.getListOfMembers().size()}, request);
+        } catch (GroupSizeLimitExceededException e) {
+            addMessage(attributes, MessageType.ERROR, "group.addmember.limit", request);
+        }
         attributes.addAttribute("groupUid", groupUid);
         return "redirect:/group/view";
     }

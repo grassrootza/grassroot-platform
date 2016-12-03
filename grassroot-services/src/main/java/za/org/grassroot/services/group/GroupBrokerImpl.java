@@ -3,6 +3,7 @@ package za.org.grassroot.services.group;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.env.Environment;
 import org.springframework.security.access.AccessDeniedException;
@@ -26,13 +27,14 @@ import za.org.grassroot.integration.mqtt.MqttSubscriptionService;
 import za.org.grassroot.integration.xmpp.GcmService;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.PermissionBroker;
+import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.services.exception.GroupDeactivationNotAvailableException;
+import za.org.grassroot.services.exception.GroupSizeLimitExceededException;
 import za.org.grassroot.services.exception.InvalidTokenException;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 import za.org.grassroot.services.util.TokenGeneratorService;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -51,43 +53,60 @@ public class GroupBrokerImpl implements GroupBroker {
 
     private final Logger logger = LoggerFactory.getLogger(GroupBrokerImpl.class);
 
-    @Autowired
-    private Environment environment;
+    @Value("${grassroot.groups.size.limit:false}")
+    private boolean limitGroupSize;
+    @Value("${grassroot.groups.size.freemax:300}")
+    private int freeGroupSizeLimit;
+
+    private final Environment environment;
+
+    private final GroupRepository groupRepository;
+    private final UserRepository userRepository;
+    private final GroupLogRepository groupLogRepository;
+
+    private final PermissionBroker permissionBroker;
+    private final ApplicationEventPublisher applicationEventPublisher;
+    private final LogsAndNotificationsBroker logsAndNotificationsBroker;
+    private final TokenGeneratorService tokenGeneratorService;
+    private final MessageAssemblingService messageAssemblingService;
+
+    // todo : consolidate these to cut down all these dependencies
+    private final GroupChatService groupChatService;
+    private final GcmService gcmService;
+    private MqttSubscriptionService mqttSubscriptionService;
+
+    private final AccountGroupBroker accountGroupBroker;
 
     @Autowired
-    private GroupRepository groupRepository;
-    @Autowired
-    private UserRepository userRepository;
-    @Autowired
-    private GroupLogRepository groupLogRepository;
-
-    @Autowired
-    private PermissionBroker permissionBroker;
-    @Autowired
-    private ApplicationEventPublisher applicationEventPublisher;
-    @Autowired
-    private LogsAndNotificationsBroker logsAndNotificationsBroker;
-    @Autowired
-    private TokenGeneratorService tokenGeneratorService;
-    @Autowired
-    private MessageAssemblingService messageAssemblingService;
-
-    @Autowired
-    private GroupChatService groupChatSettingsService;
-
-    @Autowired
-    private GcmService gcmService;
+    public GroupBrokerImpl(GroupRepository groupRepository, Environment environment, UserRepository userRepository,
+                           GroupLogRepository groupLogRepository, PermissionBroker permissionBroker,
+                           ApplicationEventPublisher applicationEventPublisher, LogsAndNotificationsBroker logsAndNotificationsBroker,
+                           TokenGeneratorService tokenGeneratorService, MessageAssemblingService messageAssemblingService,
+                           GroupChatService groupChatService, GcmService gcmService, AccountGroupBroker accountGroupBroker) {
+        this.groupRepository = groupRepository;
+        this.environment = environment;
+        this.userRepository = userRepository;
+        this.groupLogRepository = groupLogRepository;
+        this.permissionBroker = permissionBroker;
+        this.applicationEventPublisher = applicationEventPublisher;
+        this.logsAndNotificationsBroker = logsAndNotificationsBroker;
+        this.tokenGeneratorService = tokenGeneratorService;
+        this.messageAssemblingService = messageAssemblingService;
+        this.groupChatService = groupChatService;
+        this.gcmService = gcmService;
+        this.accountGroupBroker = accountGroupBroker;
+    }
 
     @Autowired(required = false)
-    private MqttSubscriptionService mqttSubscriptionService;
+    public void setMqttSubscriptionService(MqttSubscriptionService mqttSubscriptionService) {
+        this.mqttSubscriptionService = mqttSubscriptionService;
+    }
 
     @Override
     @Transactional(readOnly = true)
     public Group load(String groupUid) {
         return groupRepository.findOneByUid(groupUid);
     }
-
-
 
     @Override
     @Transactional(readOnly = true)
@@ -140,10 +159,7 @@ public class GroupBrokerImpl implements GroupBroker {
 
         logger.info("Group created under UID {}", group.getUid());
 
-        addMembersToGroupChat(group,user );
-
-
-        logger.info("Group created under UID {}", group.getUid());
+        groupChatService.addAllGroupMembersToChat(group, user);
 
         if (openJoinToken) {
             JoinTokenOpeningResult joinTokenOpeningResult = openJoinTokenInternal(user, group, null);
@@ -249,6 +265,9 @@ public class GroupBrokerImpl implements GroupBroker {
 
         if (!adminUserCalling) {
             permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER);
+            if (!checkGroupSizeLimit(group, membershipInfos.size())) {
+                throw new GroupSizeLimitExceededException();
+            };
         } else {
             permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
         }
@@ -327,13 +346,13 @@ public class GroupBrokerImpl implements GroupBroker {
         Set<MembershipInfo> validNumberMembers = membershipInfos.stream()
                 .filter(MembershipInfo::hasValidPhoneNumber)
                 .collect(collectingAndThen(toCollection(() -> new TreeSet<>(byPhoneNumber)), HashSet::new));
-        logger.info("number of members: {}", validNumberMembers.size());
+        logger.debug("number of members: {}", validNumberMembers.size());
 
         Set<String> memberPhoneNumbers = validNumberMembers.stream()
                 .map(MembershipInfo::getPhoneNumberWithCCode)
                 .collect(Collectors.toSet());
 
-        logger.info("phoneNumbers returned: ...." + memberPhoneNumbers);
+        logger.debug("phoneNumbers returned: ...." + memberPhoneNumbers);
         Set<User> existingUsers = new HashSet<>(userRepository.findByPhoneNumberIn(memberPhoneNumbers));
         Map<String, User> existingUserMap = existingUsers.stream().collect(Collectors.toMap(User::getPhoneNumber, user -> user));
         logger.info("Number of existing users ... " + existingUsers.size());
@@ -346,7 +365,7 @@ public class GroupBrokerImpl implements GroupBroker {
             String phoneNumberWithCCode = membershipInfo.getPhoneNumberWithCCode();
             User user = existingUserMap.get(phoneNumberWithCCode);
             if (user == null) {
-                logger.info("Adding a new user, via group creation, with phone number ... " + phoneNumberWithCCode);
+                logger.debug("Adding a new user, via group creation, with phone number ... " + phoneNumberWithCCode);
                 user = new User(phoneNumberWithCCode, membershipInfo.getDisplayName());
                 createdUsers.add(user);
             }
@@ -357,6 +376,7 @@ public class GroupBrokerImpl implements GroupBroker {
             }
         }
 
+        logger.info("completed iteration, added {} users", validNumberMembers.size());
         // make sure the newly created users are stored
         userRepository.save(createdUsers);
         userRepository.flush();
@@ -371,9 +391,16 @@ public class GroupBrokerImpl implements GroupBroker {
         @SuppressWarnings("unchecked")
         Set<Meeting> meetings = (Set) group.getUpcomingEventsIncludingParents(event -> event.getEventType().equals(EventType.MEETING));
 
+        logger.debug("called up meetings");
+
         final GroupLogType logType = duringGroupCreation ? GroupLogType.GROUP_MEMBER_ADDED_AT_CREATION : GroupLogType.GROUP_MEMBER_ADDED;
 
-        if (!duringGroupCreation) addMembersToGroupChat(group,initiator);
+        if (!duringGroupCreation) {
+            // todo : just add the new users, naturally
+            groupChatService.addAllGroupMembersToChat(group,initiator);
+        }
+
+        logger.debug("added user to group chat");
 
         for (Membership membership : memberships) {
             User member = membership.getUser();
@@ -396,6 +423,8 @@ public class GroupBrokerImpl implements GroupBroker {
                 }
             }
         }
+
+        logger.info("Done with member add subroutine, returning bundle");
 
         return bundle;
     }
@@ -537,7 +566,7 @@ public class GroupBrokerImpl implements GroupBroker {
             bundle.addLogs(removeMembershipsLogs);
         }
 
-        if (!membersToAdd.isEmpty()) {
+        if (!membersToAdd.isEmpty() && checkGroupSizeLimit(group, membersToAdd.size())) {
             // note: as above, only call if non-empty so permission check only happens
             LogsAndNotificationsBundle addMembershipsBundle = addMemberships(user, group, membersToAdd, false);
             bundle.addBundle(addMembershipsBundle);
@@ -558,6 +587,10 @@ public class GroupBrokerImpl implements GroupBroker {
 
         Group firstGroup = groupRepository.findOneByUid(firstGroupUid);
         Group secondGroup = groupRepository.findOneByUid(secondGroupUid);
+
+        if (!checkGroupSizeLimit(firstGroup, secondGroup.getMemberships().size())) {
+            throw new GroupSizeLimitExceededException();
+        }
 
         logger.info("Merging groups: firstGroup={}, secondGroup={}, user={}, leaveActive={}, orderSpecified={}, createNew={}, newGroupName={}",
                 firstGroup, secondGroup, user, leaveActive, orderSpecified, createNew, newGroupName);
@@ -781,6 +814,13 @@ public class GroupBrokerImpl implements GroupBroker {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public boolean canAddMember(String groupUid) {
+        Group group = groupRepository.findOneByUid(groupUid);
+        return checkGroupSizeLimit(group, 1);
+    }
+
+    @Override
     @Transactional
     public String openJoinToken(String userUid, String groupUid, LocalDateTime expiryDateTime) {
         Objects.requireNonNull(userUid);
@@ -931,24 +971,19 @@ public class GroupBrokerImpl implements GroupBroker {
         logActionLogsAfterCommit(actionLogs);
     }
 
-    private void addMembersToGroupChat(Group group, User initiator) {
-
-        String groupUid = group.getUid();
-        Set<Membership> memberships = group.getMemberships();
-        for (Membership membership : memberships) {
-            User user = membership.getUser();
-            if (gcmService.hasGcmKey(user) && !groupChatSettingsService.messengerSettingExist(user.getUid(), groupUid)) {
-                groupChatSettingsService.createUserGroupMessagingSetting(user.getUid(), groupUid, true, true, true);
-                String registrationId = gcmService.getGcmKey(user);
-                try {
-                    gcmService.subscribeToTopic(registrationId, groupUid);
-                    groupChatSettingsService.pingToSync(initiator,user,group);
-
-                } catch (IOException e) {
-                    logger.info("Could not subscribe user to group topic {}", groupUid);
-                }
-
+    private boolean checkGroupSizeLimit(Group group, int numberOfMembersAdding) {
+        if (limitGroupSize) {
+            final int newSize = group.getMemberships().size() + numberOfMembersAdding;
+            Account account = accountGroupBroker.findAccountForGroup(group.getUid());
+            if (account == null && newSize > freeGroupSizeLimit) {
+                return false;
+            } else if (account != null && newSize > account.getMaxSizePerGroup()) {
+                return false;
+            } else {
+                return true;
             }
+        } else {
+            return true;
         }
     }
 

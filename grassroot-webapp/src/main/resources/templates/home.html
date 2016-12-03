@@ -35,9 +35,10 @@
     <div class="container">
       <div class="row">
         <div class="col-md-10 col-md-offset-1">
-          <form th:action="@{/group/search}" method="get" class="form-vertical">
+          <form th:action="@{/group/search}" method="get" class="form-vertical" id="searchForm">
             <div class="input-group input-group-lg">
               <input type="text" name="term" class="form-control" id="searchTerm" />
+              <input type="hidden" name="groupUid" id="groupSearchUid" />
               <span class="input-group-btn">
                 <button type="submit" class="btn btn-primary"><i class="fa fa-search" aria-hidden="true"></i>Search</button>
               </span>
@@ -124,7 +125,6 @@
     <div class="row">
       <div class="col-md-10 col-md-offset-1">
         <h4 class="section-subtitle text-center">Upcoming events and actions</h4>
-
         <div class="panel-group">
           <div class="panel panel-default">
             <div class="panel-heading">
@@ -310,8 +310,12 @@
   <script th:inline="javascript">
 
     $(document).ready(function() {
-        var searchBar = $("#searchTerm"); // todo : allow just a quick jump to group
-        searchBar.autocomplete(grassrootJS.groupNameAutoComplete(searchBar, searchBar, grassrootJS.NAME_VALUE, grassrootJS.PRIVATE_SEARCH));
+        var searchBar = $("#searchTerm");
+        var uidField = $("#groupSearchUid");
+        searchBar.autocomplete(grassrootJS.groupNameAutoComplete(searchBar, uidField,
+            grassrootJS.UID_VALUE, grassrootJS.PRIVATE_SEARCH, function() {
+              $('#searchForm').submit();
+            }));
     });
 
     function fetchTaskDescription(taskUid, taskType) {

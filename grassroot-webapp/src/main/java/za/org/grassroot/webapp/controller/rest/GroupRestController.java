@@ -16,9 +16,10 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
+import za.org.grassroot.integration.GroupChatService;
 import za.org.grassroot.integration.exception.GroupChatSettingNotFoundException;
 import za.org.grassroot.integration.xmpp.GcmService;
-import za.org.grassroot.integration.GroupChatService;
+import za.org.grassroot.services.exception.GroupSizeLimitExceededException;
 import za.org.grassroot.services.group.GroupPermissionTemplate;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
@@ -110,16 +111,6 @@ public class GroupRestController extends GroupAbstractRestController {
         }
     }
 
-    private Group handleUpdatingDuplicate(Group duplicate, User creatingUser, Set<MembershipInfo> membersToAdd, String description) {
-        Objects.requireNonNull(duplicate);
-        groupBroker.addMembers(creatingUser.getUid(), duplicate.getUid(), membersToAdd, false);
-        if (description != null && !description.isEmpty()) {
-            groupBroker.updateDescription(creatingUser.getUid(), duplicate.getUid(), description);
-        }
-        duplicate = groupBroker.load(duplicate.getUid());
-        return duplicate;
-    }
-
     @RequestMapping(value = "/members/add/{phoneNumber}/{code}/{uid}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> addMembersToGroup(@PathVariable String phoneNumber, @PathVariable String code,
                                                              @PathVariable("uid") String groupUid,
@@ -149,6 +140,8 @@ public class GroupRestController extends GroupAbstractRestController {
             return RestUtil.okayResponseWithData(returnMessage, groupWrapper);
         } catch (InvalidPhoneNumberException e) {
             return RestUtil.errorResponseWithData(RestMessage.GROUP_BAD_PHONE_NUMBER, e.getMessage());
+        } catch (GroupSizeLimitExceededException e) {
+            return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.GROUP_SIZE_LIMIT);
         } catch (AccessDeniedException e) {
             return RestUtil.accessDeniedResponse();
         } catch (Exception e) {

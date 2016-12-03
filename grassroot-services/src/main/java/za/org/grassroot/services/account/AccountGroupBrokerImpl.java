@@ -22,10 +22,7 @@ import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static za.org.grassroot.services.specifications.PaidGroupSpecifications.expiresAfter;
@@ -69,13 +66,15 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
     @Transactional(readOnly = true)
     public List<Group> fetchGroupsSponsoredByAccount(String accountUid) {
         Account account = accountRepository.findOneByUid(accountUid);
-        List<PaidGroup> paidGroups = paidGroupRepository.findByAccount(account);
+        List<PaidGroup> paidGroups = paidGroupRepository.findAll(Specifications
+                .where(isForAccount(account))
+                .and(expiresAfter(Instant.now())));
         List<Group> groups = new ArrayList<>();
-        // todo : just make sure this isn't doing many queries & sort by alphabetical
         if (paidGroups != null) {
             groups = paidGroups.stream()
                     .map(PaidGroup::getGroup)
                     .distinct()
+                    .sorted(Comparator.comparing(Group::getName))
                     .collect(Collectors.toList());
         }
         return groups;
@@ -220,10 +219,12 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
     @Transactional(readOnly =  true)
     public Account findAccountForGroup(String groupUid) {
         Group group = groupRepository.findOneByUid(groupUid);
-        if (!group.isPaidFor())
+        if (!group.isPaidFor()) {
             return null;
-        else
-            return paidGroupRepository.findTopByGroupOrderByExpireDateTimeDesc(group).getAccount();
+        } else {
+            PaidGroup latestRecord = paidGroupRepository.findTopByGroupOrderByExpireDateTimeDesc(group);
+            return latestRecord == null ? null : latestRecord.getAccount();
+        }
     }
 
     @Override
@@ -306,7 +307,7 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
     @Transactional(readOnly = true)
     public int numberGroupsLeft(String accountUid) {
         Account account = accountRepository.findOneByUid(accountUid);
-        return account == null ? 0 : groupsLeftOnAccount(account);
+        return account == null ? 0 : account.isEnabled() ? groupsLeftOnAccount(account) : 0;
     }
 
     @Override

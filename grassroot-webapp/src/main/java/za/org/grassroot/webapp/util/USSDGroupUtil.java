@@ -11,7 +11,8 @@ import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.util.PhoneNumberUtil;
-import za.org.grassroot.services.*;
+import za.org.grassroot.services.PermissionBroker;
+import za.org.grassroot.services.exception.GroupSizeLimitExceededException;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.group.GroupJoinRequestService;
 import za.org.grassroot.services.group.GroupQueryBroker;
@@ -40,18 +41,6 @@ import static za.org.grassroot.webapp.util.USSDUrlUtil.*;
 public class USSDGroupUtil extends USSDUtil {
 
     private static final Logger log = LoggerFactory.getLogger(USSDGroupUtil.class);
-
-    @Autowired
-    private GroupBroker groupBroker;
-
-    @Autowired
-    private GroupQueryBroker groupQueryBroker;
-
-    @Autowired
-    private PermissionBroker permissionBroker;
-
-    @Autowired
-    private GroupJoinRequestService groupJoinRequestService;
 
     @Value("${grassroot.ussd.joincode.format:*134*1994*%s#}")
     private String joinCodeFormat;
@@ -82,6 +71,19 @@ public class USSDGroupUtil extends USSDUtil {
             USSDSection.MEETINGS, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING,
             USSDSection.VOTES, Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE,
             USSDSection.TODO, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY);
+
+    private final GroupBroker groupBroker;
+    private final GroupQueryBroker groupQueryBroker;
+    private final PermissionBroker permissionBroker;
+    private final GroupJoinRequestService groupJoinRequestService;
+
+    @Autowired
+    public USSDGroupUtil(GroupBroker groupBroker, GroupQueryBroker groupQueryBroker, PermissionBroker permissionBroker, GroupJoinRequestService groupJoinRequestService) {
+        this.groupBroker = groupBroker;
+        this.groupQueryBroker = groupQueryBroker;
+        this.permissionBroker = permissionBroker;
+        this.groupJoinRequestService = groupJoinRequestService;
+    }
 
     /**
      * SECTION 1: menus to ask a user to pick a group, including via pagination
@@ -298,8 +300,16 @@ public class USSDGroupUtil extends USSDUtil {
     public USSDMenu addNumbersToExistingGroup(User user, String groupUid, USSDSection section, String userInput, String returnUrl)
             throws URISyntaxException {
         Map<String, List<String>> enteredNumbers = PhoneNumberUtil.splitPhoneNumbers(userInput);
-        groupBroker.addMembers(user.getUid(), groupUid, turnNumbersIntoMembers(enteredNumbers.get(validNumbers)), false);
-        return checkForErrorsAndSetPrompt(user, section, new USSDMenu(true), groupUid, enteredNumbers.get(invalidNumbers), returnUrl);
+        try {
+            groupBroker.addMembers(user.getUid(), groupUid, turnNumbersIntoMembers(enteredNumbers.get(validNumbers)), false);
+            return checkForErrorsAndSetPrompt(user, section, new USSDMenu(true), groupUid, enteredNumbers.get(invalidNumbers), returnUrl);
+        } catch (GroupSizeLimitExceededException e) {
+            USSDMenu menu = new USSDMenu(getMessage(USSDSection.GROUP_MANAGER, groupKeyForMessages, promptKey + ".add.limit", user));
+            menu.addMenuOption(GROUP_MANAGER.toPath() + "menu" + groupUidUrlEnding + groupUid,
+                    getMessage(GROUP_MANAGER, "limit", optionsKey + "back", user));
+            menu.addMenuOption("start", getMessage(GROUP_MANAGER, "limit", optionsKey + "home", user));
+            return menu;
+        }
     }
 
     private Set<MembershipInfo> turnNumbersIntoMembers(List<String> validNumbers) {

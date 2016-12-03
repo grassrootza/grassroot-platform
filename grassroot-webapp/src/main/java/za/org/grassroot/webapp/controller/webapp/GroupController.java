@@ -20,6 +20,7 @@ import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.account.AccountGroupBroker;
+import za.org.grassroot.services.exception.GroupSizeLimitExceededException;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.group.GroupQueryBroker;
 import za.org.grassroot.services.task.TaskBroker;
@@ -113,7 +114,8 @@ public class GroupController extends BaseController {
         model.addAttribute("canAlter", hasUpdatePermission);
         model.addAttribute("canDeleteGroup", hasUpdatePermission && groupBroker.isDeactivationAvailable(user, group, true));
         model.addAttribute("canMergeWithOthers", hasUpdatePermission); // replace with specific permission later
-        model.addAttribute("canAddMembers", userPermissions.contains(Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER));
+        model.addAttribute("canAddMembers", userPermissions.contains(Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER) &&
+                groupBroker.canAddMember(groupUid));
         model.addAttribute("canDeleteMembers", userPermissions.contains(Permission.GROUP_PERMISSION_DELETE_GROUP_MEMBER));
         model.addAttribute("canChangePermissions", userPermissions.contains(Permission.GROUP_PERMISSION_CHANGE_PERMISSION_TEMPLATE));
 
@@ -133,6 +135,8 @@ public class GroupController extends BaseController {
             model.addAttribute("canAddToAccount", false);
         }
 
+        model.addAttribute("atGroupSizeLimit", !groupBroker.canAddMember(groupUid));
+        model.addAttribute("hasAccount", user.getAccountAdministered() != null);
         model.addAttribute("canRemoveFromAccount", isGroupPaidFor && user.getAccountAdministered() != null &&
                 user.getAccountAdministered().equals(accountBroker.findAccountForGroup(groupUid)));
 
@@ -154,12 +158,16 @@ public class GroupController extends BaseController {
     @RequestMapping(value = "addmember", method = RequestMethod.POST)
     public String addMember(Model model, @RequestParam String groupUid, @RequestParam String phoneNumber,
                             @RequestParam String displayName, @RequestParam String roleName, HttpServletRequest request) {
-
         // note : we validate client side, on length & only chars, but need to check again for slip throughs (e.g., right digits, non-existent network)
         if (PhoneNumberUtil.testInputNumber(phoneNumber)) {
             MembershipInfo newMember = new MembershipInfo(phoneNumber, roleName, displayName);
-            groupBroker.addMembers(getUserProfile().getUid(), groupUid, Sets.newHashSet(newMember), false);
-            addMessage(model, MessageType.SUCCESS, "group.addmember.success", request);
+            try {
+                groupBroker.addMembers(getUserProfile().getUid(), groupUid, Sets.newHashSet(newMember), false);
+                addMessage(model, MessageType.SUCCESS, "group.addmember.success", request);
+            } catch (GroupSizeLimitExceededException e) {
+                // todo : redirect to the account page?
+                addMessage(model, MessageType.ERROR, "group.addmember.limit", request);
+            }
         } else {
             addMessage(model, MessageType.ERROR, "user.enter.error.phoneNumber.invalid", request);
         }
@@ -370,19 +378,30 @@ public class GroupController extends BaseController {
 
         Map<String, List<String>> mapOfNumbers = BulkUserImportUtil.splitPhoneNumbers(list);
         List<String> numbersToBeAdded = mapOfNumbers.get("valid");
+        boolean sizeExceeded = false;
 
         if (!numbersToBeAdded.isEmpty()) {
             Long startTime = System.currentTimeMillis();
             Set<MembershipInfo> membershipInfoSet = new HashSet<>();
             for (String number : numbersToBeAdded)
                 membershipInfoSet.add(new MembershipInfo(number, BaseRoles.ROLE_ORDINARY_MEMBER, null));
-            groupBroker.addMembers(getUserProfile().getUid(), groupUid, membershipInfoSet, false);
+            // todo : intercept before it gets here (i.e., put a count and do a validation)
+            try {
+                groupBroker.addMembers(getUserProfile().getUid(), groupUid, membershipInfoSet, false);
+            } catch (GroupSizeLimitExceededException e) {
+                sizeExceeded = true;
+            }
             Long duration = System.currentTimeMillis() - startTime;
             log.info("Time taken to add {} numbers: {} msecs", numbersToBeAdded.size(), duration);
         }
 
+        // todo : fix this (error page etc)
         if (mapOfNumbers.get("error").isEmpty()) {
-            addMessage(model, MessageType.SUCCESS, "group.bulk.success", new Integer[] { numbersToBeAdded.size() }, request);
+            if (!sizeExceeded) {
+                addMessage(model, MessageType.SUCCESS, "group.bulk.success", new Integer[]{numbersToBeAdded.size()}, request);
+            } else {
+                addMessage(model, MessageType.ERROR, "group.addmember.limit", request);
+            }
             return viewGroupIndex(model, groupUid);
         } else {
             model.addAttribute("errors", true);
