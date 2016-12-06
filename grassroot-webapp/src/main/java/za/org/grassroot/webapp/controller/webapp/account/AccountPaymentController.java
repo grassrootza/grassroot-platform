@@ -94,7 +94,7 @@ public class AccountPaymentController extends BaseController {
     }
 
     @RequestMapping(value = "signup/retry", method = RequestMethod.GET)
-    public String retryAccountPayment(Model model, @RequestParam(required = false) String error) {
+    public String retryAccountPayment(Model model, @RequestParam(required = false) String errorDescription) {
         User user = userManagementService.load(getUserProfile().getUid());
         Account account = user.getAccountAdministered();
 
@@ -107,8 +107,8 @@ public class AccountPaymentController extends BaseController {
         model.addAttribute("billingAmount", "R" + (new DecimalFormat("#.##")).format((double) account.getSubscriptionFee() / 100));
         model.addAttribute("method", PaymentMethod.makeEmpty());
 
-        if (!StringUtils.isEmpty(error)) {
-            model.addAttribute("errorDescription", error);
+        if (!StringUtils.isEmpty(errorDescription)) {
+            model.addAttribute("errorDescription", errorDescription);
         }
 
         return "account/payment";
@@ -116,13 +116,19 @@ public class AccountPaymentController extends BaseController {
 
     @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "change", method = RequestMethod.GET)
-    public String changePaymentMethod(Model model, @RequestParam(required = false) String accountUid) {
+    public String changePaymentMethod(Model model, @RequestParam(required = false) String accountUid,
+                                      @RequestParam(required = false) String errorDescription) {
         Account account = StringUtils.isEmpty(accountUid) ? accountBroker.loadUsersAccount(getUserProfile().getUid()) :
                 accountBroker.loadAccount(accountUid);
         model.addAttribute("account", account);
         model.addAttribute("newAccount", false);
         model.addAttribute("billingAmount", "R" + (new DecimalFormat("#.##").format(PAYMENT_VERIFICATION_AMT / 100)));
         model.addAttribute("method", PaymentMethod.makeEmpty());
+
+        if (!StringUtils.isEmpty(errorDescription)) {
+            model.addAttribute("errorDescription", errorDescription);
+        }
+
         return "account/payment";
     }
 
@@ -211,9 +217,8 @@ public class AccountPaymentController extends BaseController {
     private String handleError(int enableOrUpdate, RedirectAttributes attributes, HttpServletRequest request, String description) {
         logger.info("Error in payment, handling with description: {}", description);
         addMessage(attributes, MessageType.ERROR, "account.payment.failed", request);
-        attributes.addAttribute("errorDescription", description == null ? "" : description);
+        attributes.addFlashAttribute("errorDescription", description == null ? "" : description);
         return enableOrUpdate == ENABLE ? "redirect:/account/payment/signup/retry" : "redirect:/account/payment/change";
     }
-
 
 }

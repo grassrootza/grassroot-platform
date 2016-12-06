@@ -20,7 +20,7 @@
 <main layout:fragment="content">
 
   <!-- todo : add related terms -->
-  <section class="grassroot-form">
+  <section class="grassroot-form" th:with="viewOptionsNeeded = ${group == null and not #lists.isEmpty(foundGroups) and not #lists.isEmpty(groupCandidates)}">
     <div class="container">
       <div class="row vertical-padding" th:unless="${resultFound}">
         <div class="col-md-8 col-md-offset-2 col-sm-12 col-xs-12">
@@ -40,11 +40,22 @@
           </form>
         </div>
       </div>
-      <div class="row vertical-padding">
-        <div class="col-md-10 col-md-offset-1 text-center">
+      <div class="row vertical-padding" th:if="${viewOptionsNeeded}">
+        <div class="col-md-10 col-md-offset-1 text-center" style="font-size: 1.2em"> <!-- inline style not great, but CSS -->
           <label class="radio-inline"><input type="radio" name="viewtype" value="public_and_private" checked />Your groups and other groups</label>
           <label class="radio-inline"><input type="radio" name="viewtype" value="private">Just your groups</label>
           <label class="radio-inline"><input type="radio" name="viewtype" value="public">Just other groups</label>
+        </div>
+      </div>
+      <div class="row" th:unless="${#lists.isEmpty(relatedTerms)}" th:classappend="${viewOptionsNeeded} ? '' : 'top-buffer'">
+        <div class="col-md-10 col-md-offset-1 text-center">
+          <p class="form-text-lg">
+            Search for related terms? You may find results for words like:
+            <span th:each="word, wStat: ${relatedTerms}" th:unless="${wStat.index > 4}">
+              <a th:text="${word}" th:href="@{search(term=${word})}">Term</a>
+              <span th:unless="${wStat.last or wStat.index == 4}">&#8226; </span>
+            </span>
+          </p>
         </div>
       </div>
     </div>

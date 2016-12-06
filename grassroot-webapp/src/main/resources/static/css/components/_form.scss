@@ -41,6 +41,10 @@
     padding-left: 10px;
   }
 
+  .text-lg {
+    font-size: 1.2em !important;
+  }
+
   .table-header {
     margin: 0;
     border-bottom: solid 2px #DDDDDD;
@@ -114,4 +118,5 @@
   .highlight {
     background: $light-gray;
   }
+
 }

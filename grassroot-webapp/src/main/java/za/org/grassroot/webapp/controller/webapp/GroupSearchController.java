@@ -25,7 +25,7 @@ import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.PublicGroupWrapper;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -90,10 +90,10 @@ public class GroupSearchController extends BaseController {
 
 	@RequestMapping(value = "/search")
 	public String searchForGroup(@RequestParam String term, @RequestParam(required = false) String groupUid,
-								 @RequestParam(value = "related_terms", required = false) boolean relatedTerms,
 								 Model model, RedirectAttributes attributes, HttpServletRequest request) {
 
 		boolean resultFound = false;
+
 		if (!StringUtils.isEmpty(groupUid) && groupQueryBroker.groupExists(groupUid)) {
 			attributes.addAttribute("groupUid", groupUid);
 			return "redirect:/group/view";
@@ -119,22 +119,19 @@ public class GroupSearchController extends BaseController {
 				List<PublicGroupWrapper> publicGroups = groupQueryBroker.findPublicGroups(userUid, term, locationFilter, false).stream()
 						.map(g -> new PublicGroupWrapper(g, description)).collect(Collectors.toList());
 
-				model.addAttribute("groupCandidates", publicGroups);
+				List<String> relatedTerms = learningService.findRelatedTerms(term).entrySet().stream()
+						.sorted((e1, e2) -> Double.compare(e2.getValue(), e1.getValue()))
+						.map(Map.Entry::getKey)
+						.collect(Collectors.toList());
 
-				if (relatedTerms) {
-					List<PublicGroupWrapper> publicGroupsRelatedTerms = new ArrayList<>();
-					Map<String, Double> foundTerms = learningService.findRelatedTerms(term);
-					log.info("Okay, returned with these terms: {}", foundTerms);
-					// major todo : remove the double iteration by passing a list of terms into find public groups
-					foundTerms.entrySet().stream()
-							.filter(e -> e.getValue() > defaultDistanceThreshold)
-							.forEach(e -> {
-								groupQueryBroker.findPublicGroups(userUid, e.getKey(), locationFilter, true)
-										.forEach(g -> publicGroupsRelatedTerms.add(new PublicGroupWrapper(g, description)));
-							});
-					log.info("complete sweep, have found : {} total groups", publicGroupsRelatedTerms.size());
-					model.addAttribute("relatedTermGroups", publicGroupsRelatedTerms);
-				}
+				log.info("Received this list of related terms from learning service: {}", relatedTerms);
+
+				// testing line (remove once related terms operational)
+				// relatedTerms = Arrays.asList("Water", "Taps", "Pipes");
+
+				model.addAttribute("groupCandidates", publicGroups);
+				model.addAttribute("relatedTerms", relatedTerms);
+
 
 				List<Group> memberGroups = groupQueryBroker.searchUsersGroups(userUid, term, false);
 				List<TaskDTO> memberTasks = taskBroker.searchForTasks(userUid, term);
