@@ -464,6 +464,7 @@ public class User implements UserDetails, Comparable<User> {
         sb.append(", phoneNumber='").append(phoneNumber).append('\'');
         sb.append(", username='").append(username).append('\'');
         sb.append(", enabled=").append(enabled);
+        sb.append(", emailAddress=").append(emailAddress);
         sb.append('}');
         return sb.toString();
     }

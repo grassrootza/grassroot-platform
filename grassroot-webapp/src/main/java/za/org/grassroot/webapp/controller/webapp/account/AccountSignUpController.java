@@ -15,6 +15,8 @@ import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.PaidGroup;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.AccountType;
+import za.org.grassroot.integration.email.EmailSendingBroker;
+import za.org.grassroot.integration.email.GrassrootEmail;
 import za.org.grassroot.integration.payments.PaymentMethod;
 import za.org.grassroot.services.account.AccountBillingBroker;
 import za.org.grassroot.services.account.AccountBroker;
@@ -35,13 +37,15 @@ public class AccountSignUpController extends BaseController {
 
     private static final Logger logger = LoggerFactory.getLogger(AccountSignUpController.class);
 
-    private AccountBroker accountBroker;
-    private AccountBillingBroker billingBroker;
+    private final AccountBroker accountBroker;
+    private final AccountBillingBroker billingBroker;
+    private final EmailSendingBroker emailSendingBroker;
 
     @Autowired
-    public AccountSignUpController(AccountBroker accountBroker, AccountBillingBroker billingBroker) {
+    public AccountSignUpController(AccountBroker accountBroker, AccountBillingBroker billingBroker, EmailSendingBroker emailSendingBroker) {
         this.accountBroker = accountBroker;
         this.billingBroker = billingBroker;
+        this.emailSendingBroker = emailSendingBroker;
     }
 
     @GetMapping("signup")
@@ -206,6 +210,32 @@ public class AccountSignUpController extends BaseController {
                 return "redirect:/account/disabled";
             }
         }
+    }
+
+    @RequestMapping(value = "contact", method = RequestMethod.POST)
+    public String sendContactMail(@RequestParam(required = false) String emailAddress, @RequestParam String message,
+                                  RedirectAttributes attributes, HttpServletRequest request) {
+        User user = userManagementService.load(getUserProfile().getUid());
+        Account account = accountBroker.loadUsersAccount(user.getUid());
+
+        if (!StringUtils.isEmpty(emailAddress)) {
+            userManagementService.updateEmailAddress(user.getUid(), emailAddress);
+            user.setEmailAddress(emailAddress); // so it's set when inserted into email body
+        }
+
+        StringBuilder mailBody = new StringBuilder("User message:\n\n");
+        mailBody.append(message);
+        mailBody.append("\n\n User details: \n");
+        mailBody.append(user.toString());
+        mailBody.append("\n\n Account details: \n");
+        mailBody.append(account == null ? "Null account" : account.toString());
+
+        emailSendingBroker.sendMail(new GrassrootEmail.EmailBuilder("Account 'Contact Us' Query")
+                .address("contact@grassroot.org.za")
+                .content(mailBody.toString()).build());
+
+        addMessage(attributes, MessageType.SUCCESS, "account.contact.done", request);
+        return "redirect:/account/";
     }
 
 }

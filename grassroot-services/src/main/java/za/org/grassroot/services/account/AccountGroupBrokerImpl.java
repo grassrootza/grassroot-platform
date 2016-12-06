@@ -195,7 +195,7 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
     public boolean canAddGroupToAccount(String userUid) {
         User user = userRepository.findOneByUid(userUid);
         Account account = user.getAccountAdministered();
-        return account != null && groupsLeftOnAccount(account) > 0;
+        return account != null && account.isEnabled() && groupsLeftOnAccount(account) > 0;
     }
 
     @Override

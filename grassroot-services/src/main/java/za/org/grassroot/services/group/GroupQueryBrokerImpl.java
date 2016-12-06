@@ -137,6 +137,7 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
 
         Predicate<Group> locationPredicate = constructLocationPredicate(user, new HashSet<>(groups), locationFilter);
         return groups.stream()
+                .filter(Group::isActive)
                 .filter(locationPredicate)
                 .collect(Collectors.toList());
     }

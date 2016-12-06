@@ -88,4 +88,15 @@ public class GrassrootEmail {
     public boolean hasAttachment() {
         return attachment != null;
     }
+
+    @Override
+    public String toString() {
+        return "GrassrootEmail{" +
+                "from='" + from + '\'' +
+                ", address='" + address + '\'' +
+                ", subject='" + subject + '\'' +
+                ", content='" + content + '\'' +
+                ", attachmentName='" + attachmentName + '\'' +
+                '}';
+    }
 }
