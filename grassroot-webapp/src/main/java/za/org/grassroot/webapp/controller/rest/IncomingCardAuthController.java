@@ -12,8 +12,6 @@ import za.org.grassroot.integration.payments.PaymentResponse;
 import za.org.grassroot.integration.payments.PaymentResultType;
 import za.org.grassroot.integration.payments.PaymentServiceBroker;
 
-import javax.servlet.http.HttpServletRequest;
-
 /**
  * Created by luke on 2016/11/14.
  */
@@ -36,18 +34,12 @@ public class IncomingCardAuthController {
 
         logger.info("paymentId: {}, resourcePath: {}", id, resourcePath);
 
+        // todo : move this check deeper into the redirect chain
         PaymentResponse response = paymentBroker.asyncPaymentCheckResult(id, resourcePath);
-        if (response.getType().equals(PaymentResultType.SUCCESS)) {
-            attributes.addFlashAttribute("paymentId", id);
-            attributes.addFlashAttribute("paymentRef", response.getReference());
-            attributes.addFlashAttribute("succeeded", true);
-            return "redirect:/account/payment/done/redirect";
-        } else {
-            attributes.addFlashAttribute("paymentId", id);
-            attributes.addFlashAttribute("succeeded", false);
-            attributes.addFlashAttribute("failureDescription", response.getDescription());
-            return "redirect:/account/payment/done/redirect";
-        }
+        attributes.addAttribute("paymentId", id);
+        attributes.addAttribute("paymentRef", response.getReference());
+        attributes.addAttribute("succeeded", response.getType().equals(PaymentResultType.SUCCESS));
+        return "redirect:/account/payment/done/redirect";
     }
 
 }

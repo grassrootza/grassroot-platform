@@ -34,17 +34,18 @@ import javax.sql.DataSource;
 @Order(SecurityProperties.ACCESS_OVERRIDE_ORDER)
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
-    @Autowired
-    private UserDetailsService userDetailsService;
+    private final UserDetailsService userDetailsService;
+    private final PasswordEncoder passwordEncoder;
+    private final DataSource dataSource;
+    private final Environment environment;
 
     @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @Autowired
-    private DataSource dataSource;
-
-    @Autowired
-    private Environment environment;
+    public SecurityConfig(UserDetailsService userDetailsService, PasswordEncoder passwordEncoder, DataSource dataSource, Environment environment) {
+        this.userDetailsService = userDetailsService;
+        this.passwordEncoder = passwordEncoder;
+        this.dataSource = dataSource;
+        this.environment = environment;
+    }
 
     @Override
     public void configure(WebSecurity web) throws Exception {
@@ -85,6 +86,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .rememberMe()
                     .rememberMeServices(rememberMeServices())
                     .useSecureCookie(true).and()
+                .headers().frameOptions().sameOrigin().and() // in future see if can path restrict this
                 .csrf().csrfTokenRepository(new HttpSessionCsrfTokenRepository());
     }
 
