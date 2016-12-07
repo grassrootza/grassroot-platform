@@ -32,21 +32,21 @@ public class IncomingCardAuthController {
 
     @RequestMapping("/3dsecure/response/{type}")
     public String receiveAuthorizationResponse(@PathVariable String type, @RequestParam String id,
-                                               @RequestParam String resourcePath, RedirectAttributes attributes, HttpServletRequest request) {
+                                               @RequestParam String resourcePath, RedirectAttributes attributes) {
 
         logger.info("paymentId: {}, resourcePath: {}", id, resourcePath);
 
         PaymentResponse response = paymentBroker.asyncPaymentCheckResult(id, resourcePath);
         if (response.getType().equals(PaymentResultType.SUCCESS)) {
-            attributes.addAttribute("paymentId", id);
-            attributes.addAttribute("paymentRef", response.getReference());
-            attributes.addAttribute("succeeded", true);
-            return "redirect:/account/payment/done";
+            attributes.addFlashAttribute("paymentId", id);
+            attributes.addFlashAttribute("paymentRef", response.getReference());
+            attributes.addFlashAttribute("succeeded", true);
+            return "redirect:/account/payment/done/redirect";
         } else {
-            attributes.addAttribute("paymentId", id);
-            attributes.addAttribute("succeeded", false);
-            attributes.addAttribute("failureDescription", response.getDescription());
-            return "redirect:/account/payment/done";
+            attributes.addFlashAttribute("paymentId", id);
+            attributes.addFlashAttribute("succeeded", false);
+            attributes.addFlashAttribute("failureDescription", response.getDescription());
+            return "redirect:/account/payment/done/redirect";
         }
     }
 

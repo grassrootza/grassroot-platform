@@ -32,10 +32,11 @@ import za.org.grassroot.webapp.util.BulkUserImportUtil;
 import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static java.time.temporal.TemporalAdjusters.firstDayOfMonth;
+import static java.time.temporal.TemporalAdjusters.lastDayOfMonth;
 import static za.org.grassroot.core.util.DateTimeUtil.convertToSystemTime;
 import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
 
@@ -608,8 +609,9 @@ public class GroupController extends BaseController {
         final LocalDateTime endDateTime;
 
         if (StringUtils.isEmpty(monthToView)) {
-            startDateTime = LocalDate.now().withDayOfMonth(1).atStartOfDay();
-            endDateTime = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES); // leaving seconds out on causes spurious test failures
+            LocalDate now = LocalDate.now();
+            startDateTime = now.with(firstDayOfMonth()).atStartOfDay();
+            endDateTime = now.with(lastDayOfMonth()).atTime(23, 59);
         } else {
             startDateTime = LocalDate.parse(monthToView).atStartOfDay();
             endDateTime = startDateTime.plusMonths(1L);

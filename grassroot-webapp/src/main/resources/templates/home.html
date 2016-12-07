@@ -306,6 +306,7 @@
 <div layout:fragment="script-container">
 
   <script th:src="@{/js/lib/jquery-ui.min.js}"></script>
+  <script th:src="@{/js/lib/moment.min.js}"></script>
 
   <script th:inline="javascript">
 
@@ -354,7 +355,10 @@
 
       var uid = task.taskUid;
       var type = task.type;
-      var deadline = formatDeadline(new Date(task.deadlineAtSAST), task.type);
+
+      var newD = moment(task.deadlineISO);
+      deadline = formatDeadlineMoment(newD, type);
+
       var replied = task.hasResponded;
       var wholeGroup = task.wholeGroupAssigned;
       var descriptionExists = task.description != undefined && task.description != "";
@@ -403,26 +407,15 @@
       modal.modal();
     }
 
-    // required due to javascript's incredibly limited date functionality ... replace once/if using jquery UI or other library
-    function formatDeadline(date, type) {
-
-      var weekday = new Array(7), months = new Array(12);
-      weekday[0]="Sunday",weekday[1]="Monday",weekday[2]="Tuesday",weekday[3]="Wednesday",weekday[4]="Thursday",weekday[5]="Friday",weekday[6]="Saturday";
-      months[0]="January",months[1]="February",months[2]="March",months[3]="April",months[4]="May",months[5]="June",months[6]="July",
-              months[7]="August",months[8]="September",months[9]="October",months[10]="November",months[11]="December";
-
-      if (type == "MEETING") {
-        return pad(date.getHours()) + "h" + pad(date.getMinutes()) + " on " + weekday[date.getDay()] + ", " + pad(date.getDate()) + " "
-                + months[date.getMonth()];
-      } else if (type == "VOTE") {
-        return pad(date.getHours()) + "h" + pad(date.getMinutes()) + ", " + pad(date.getDate()) + "-" + pad(date.getMonth() + 1) + "-" + date.getFullYear();
-      } else if(type == "TODO") {
-        return weekday[date.getDay()] + ", " + pad(date.getDate()) + " " + months[date.getMonth()];
-      }
+    function formatDeadlineMoment(deadline, type) {
+        if (type == "MEETING") {
+            return deadline.format("H:mm [on] ddd, D MMMM");
+        } else if (type == "VOTE") {
+            return deadline.format("H:mm [on] D MMM");
+        } else if (type == "TODO") {
+            return deadline.format("dddd D MMM");
+        }
     }
-
-    // again, insane language that doesn't even have a string format method, so have to hand write this ...
-    function pad(str) { return ("00" + str).slice(-2); }
 
     $('#joinReqDetailsModal').on('show.bs.modal', function (event) {
       var button = $(event.relatedTarget);
