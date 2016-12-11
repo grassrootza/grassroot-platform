@@ -63,8 +63,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     protected void configure(HttpSecurity http) throws Exception {
         http
                 .authorizeRequests()
-                    .antMatchers("/signup").permitAll()
                     .antMatchers("/index").permitAll()
+                    .antMatchers("/signup").permitAll()
+                    .antMatchers("/signup/extra").permitAll()
                     .antMatchers("/user/recovery").permitAll()
                     .antMatchers("/user/recovery/success").permitAll()
                     .antMatchers("/grass-root-verification/*").permitAll()

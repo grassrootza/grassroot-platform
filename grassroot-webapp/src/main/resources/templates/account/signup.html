@@ -3,18 +3,21 @@
       data-layout-decorate="~{layout}">
 <head>
   <meta charset="UTF-8">
-  <title>Sign up for account</title>
+  <title>Sign up for Grassroot Extra</title>
   <link rel="stylesheet" th:href="@{/static/assets/font-awesome/css/font-awesome.min.css}" />
 </head>
 
 <body>
 
-  <div layout:fragment="header">
-    <h2 class="text-center">Sign up for account</h2>
-  </div>
-
-  <div layout:fragment="overview">
-    <h4 class="text-center">Set up a paid account to unlock additional features</h4>
+  <div layout:fragment="header" class="top-container">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
+          <h2 class="text-center header-content-title">Sign up</h2>
+          <h4 class="text-center">Set up a paid account to unlock additional features</h4>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div layout:fragment="content">
@@ -32,7 +35,7 @@
               <option th:each="type: ${accountTypes}"
                       th:text="#{web.account.signup.__${type}__}"
                       th:value="${type}"
-                      th:selected="${#strings.equals(type, 'STANDARD')}"></option>
+                      th:selected="${#strings.equals(type, defaultType)}"></option>
             </select>
           </div>
           <div class="form-group">

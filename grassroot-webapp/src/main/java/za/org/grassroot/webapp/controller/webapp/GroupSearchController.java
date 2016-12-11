@@ -45,7 +45,7 @@ public class GroupSearchController extends BaseController {
 	@Value("${grassroot.ussd.dialcode:*134*1994*}")
 	private String ussdDialCode;
 
-	@Value("${grassroot.learning.relatedterms.threshold:0.5}")
+	@Value("${grassroot.learning.relatedterms.threshold:0.1}")
 	private Double defaultDistanceThreshold;
 
 	private final GroupBroker groupBroker;

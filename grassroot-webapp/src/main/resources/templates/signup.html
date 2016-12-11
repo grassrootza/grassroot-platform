@@ -26,7 +26,7 @@
         <div class="row">
           <div class="col-md-4 col-md-offset-4 col-sm-6 col-sm-offset-3 col-xs-12">
             <form name="userRegistration" th:action="@{/signup}" th:object="${userRegistration}" method="post" id="register-form">
-
+              <input th:if="${accountType}" type="hidden" name="accountType" th:value="${accountType}" />
               <div class="form-group" th:class="${#fields.hasErrors('displayName')} ? 'form-group has-error': 'form-group'">
                 <label for="displayname" class="control-label">Your name (what people know you by):</label>
                 <input type="text" th:field="*{user.displayName}" class="form-control input-lg" id="displayname" placeholder="Siya" maxlength="25" />

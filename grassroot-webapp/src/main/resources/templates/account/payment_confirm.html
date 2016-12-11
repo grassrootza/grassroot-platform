@@ -33,10 +33,6 @@
 <div layout:fragment="script-container">
   <script>
     $(document).ready(function() {
-        $("#redirect").submit(function() {
-           var form = $(this);
-           form.parent().remove();
-        });
         $("#redirect").submit();
     });
   </script>

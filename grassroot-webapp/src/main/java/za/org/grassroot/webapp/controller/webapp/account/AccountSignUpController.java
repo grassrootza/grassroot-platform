@@ -49,10 +49,21 @@ public class AccountSignUpController extends BaseController {
     }
 
     @GetMapping("signup")
-    public String startAccountSignup(Model model) {
-        model.addAttribute("user", userManagementService.load(getUserProfile().getUid())); // may be cached (and not reflect email) if use just getuserprofile
-        model.addAttribute("accountTypes", Arrays.asList(AccountType.LIGHT, AccountType.STANDARD, AccountType.HEAVY));
-        return "account/signup";
+    public String startAccountSignup(Model model, @RequestParam(required = false) String accountType) {
+        User user = userManagementService.load(getUserProfile().getUid());
+        logger.info("accountType in parameter: {}", accountType);
+        if (user.getAccountAdministered() != null) {
+            return user.getAccountAdministered().isEnabled() ? "redirect:/account/type" : "redirect:/account";
+        } else {
+            model.addAttribute("user", user); // may be cached (and not reflect email) if use just getuserprofile
+            model.addAttribute("accountTypes", Arrays.asList(AccountType.LIGHT, AccountType.STANDARD, AccountType.HEAVY));
+            if (!StringUtils.isEmpty(accountType) && AccountType.contains(accountType)) {
+                model.addAttribute("defaultType", AccountType.valueOf(accountType));
+            } else {
+                model.addAttribute("defaultType", AccountType.STANDARD);
+            }
+            return "account/signup";
+        }
     }
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
