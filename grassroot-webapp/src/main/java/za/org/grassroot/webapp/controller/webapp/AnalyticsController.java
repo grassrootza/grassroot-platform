@@ -1,6 +1,5 @@
 package za.org.grassroot.webapp.controller.webapp;
 
-import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -9,7 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
 import za.org.grassroot.core.dto.KeywordDTO;
-import za.org.grassroot.services.AdminService;
+import za.org.grassroot.services.AnalyticalService;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 
@@ -26,27 +25,27 @@ import java.util.stream.Collectors;
  */
 
 @Controller
-
 @RequestMapping(value = "admin/analytics")
 public class AnalyticsController extends BaseController {
 
-    private Logger log = Logger.getLogger(AnalyticsController.class);
+    private final AnalyticalService analyticalService;
+    private final GeoLocationBroker geoLocationBroker;
 
     @Autowired
-    private AdminService adminService;
-
-    @Autowired
-    private GeoLocationBroker geoLocationBroker;
+    public AnalyticsController(AnalyticalService analyticalService, GeoLocationBroker geoLocationBroker) {
+        this.analyticalService = analyticalService;
+        this.geoLocationBroker = geoLocationBroker;
+    }
 
 
     @RequestMapping("geo_stats")
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     public String viewGeoInfo(Model model) {
 
-        Long allUsersCount = adminService.countAllUsers();
-        Long allGroups = adminService.countActiveGroups();
-        int allUsersWithGeoInfoCount = adminService.countUsersWithGeoLocationData();
-        int allGroupsWithGeoInfoCount = adminService.countGroupsWithGeoLocationData();
+        Long allUsersCount = analyticalService.countAllUsers();
+        Long allGroups = analyticalService.countActiveGroups();
+        int allUsersWithGeoInfoCount = analyticalService.countUsersWithGeoLocationData();
+        int allGroupsWithGeoInfoCount = analyticalService.countGroupsWithGeoLocationData();
         Map<String, Integer> geoStats = new HashMap<>();
         geoStats.put("totalGroupsWithGeoData", allGroupsWithGeoInfoCount);
         geoStats.put("totalUsersWithGeoData", allUsersWithGeoInfoCount);
@@ -68,7 +67,7 @@ public class AnalyticsController extends BaseController {
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     public String viewKeywordFequency(Model model) {
 
-        List<KeywordDTO> frequentWords = adminService.getKeywordStats(LocalDateTime.now().minusDays(365));
+        List<KeywordDTO> frequentWords = analyticalService.getKeywordStats(LocalDateTime.now().minusDays(365));
         model.addAttribute("frequentWords", frequentWords);
 
         return "admin/analytics/word_stats";

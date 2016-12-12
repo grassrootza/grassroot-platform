@@ -3,6 +3,10 @@
       data-layout-decorate="~{layout}">
 <head>
   <title>Call meeting</title>
+
+  <meta name="_csrf" th:content="${_csrf.token}"/>
+  <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+
 </head>
 <body>
 
@@ -24,10 +28,9 @@
       <div class="row">
         <div class="col-md-8 col-md-offset-2 col-sm-6 col-sm-offset-3 col-xs-12">
           <form id="meetingForm" th:object="${meeting}" th:action="@{/meeting/create}" method="post">
-
             <div class="form-group">
               <label for="group" class="control-label">Who is meeting? Group:</label>
-              <select th:unless="${groupSpecified}" name="selectedGroupUid" id="selectedgroup" class="form-control input-lg">
+              <select th:unless="${groupSpecified}" name="selectedGroupUid" id="groupSelect" class="form-control input-lg">
                 <option th:each="group, iterStat: ${userGroups}"
                         th:value="${group.Uid}"
                         th:text="${group.getName('')}"
@@ -77,18 +80,23 @@
               </div>
             </div>
 
+            <div th:replace="~{fragments :: member-picker(messageKey='web.meeting.create.memberpick')}"></div>
+
             <div class="form-group pull-right top-buffer">
               <a th:if="${groupSpecified}"
-                 th:href="@{/group/view(groupUid=${group.Uid})}" role="button" class="btn btn-default btn-lg">Cancel</a>
+                 th:href="@{/group/view(groupUid=${group.Uid})}" role="button" class="btn default-button btn-neutral">Cancel</a>
               <a th:if="${not groupSpecified}"
-                 th:href="@{/home}" role="button" class="btn btn-default btn-lg">Cancel</a>
-              <button type="submit" class="btn btn-primary btn-lg">Call meeting</button>
+                 th:href="@{/home}" role="button" class="btn default-button btn-neutral">Cancel</a>
+              <button type="submit" class="btn default-button">Call meeting</button>
             </div>
+
+            <div th:replace="~{fragments :: member-picker-modal}"></div>
 
         </form>
         </div>
       </div>
     </div>
+
   </section>
 
 </main>
@@ -98,6 +106,8 @@
   <script th:src="@{/js/lib/moment.min.js}"></script>
   <script th:src="@{/js/lib/bootstrap-datetimepicker.min.js}"></script>
   <script th:src="@{/js/lib/jquery.validate.min.js}"></script>
+
+  <script th:replace="~{fragments :: member-picker-script(parentType='GROUP', selectByDefault=true)}"></script>
 
   <script>
 
@@ -120,7 +130,7 @@
       });
 
       reminderSelector.changeGroupMinutes();
-      $('#selectedgroup').change(function() {
+      $('#groupSelect').change(function() {
         $("#reminderType").changeGroupMinutes();
       });
 
@@ -156,7 +166,7 @@
 
     jQuery.fn.extend({
       changeGroupMinutes: function() {
-        var groupSelected = $("#selectedgroup option:selected").data("mins");
+        var groupSelected = $("#groupSelect option:selected").data("mins");
         var text = "Group default (" + groupSelected + ")"; // todo: i18n at some point
         $(this).find("#groupOption").text(text);
       }

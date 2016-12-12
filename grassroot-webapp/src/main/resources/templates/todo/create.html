@@ -103,10 +103,10 @@
             <div class="form-group pull-right">
               <!-- todo : add a view traffic director to handle the links below for non-group parents -->
                 <a th:if="${parentSpecified}"
-                   th:href="@{/group/view(groupUid=${parent.uid})}" role="button" class="btn btn-default btn-lg">Cancel</a>
+                   th:href="@{/group/view(groupUid=${parent.uid})}" role="button" class="btn default-button btn-neutral">Cancel</a>
                 <a th:if="${not parentSpecified}"
-                   th:href="@{/home}" role="button" class="btn btn-default btn-lg">Cancel</a>
-                <button type="submit" class="btn btn-primary btn-lg">Record</button>
+                   th:href="@{/home}" role="button" class="btn default-button btn-neutral">Cancel</a>
+                <button type="submit" class="btn default-button">Record</button>
             </div>
 
             <div class="modal fade" id="memberModal" tabindex="-1" role="dialog" aria-labelledby="memberModalLabel">
@@ -118,12 +118,12 @@
                   </div>
                   <div class="modal-body">
                     <div th:if="${parentSpecified}" class="list-group checked-list-box">
-                      <li class="list-group-item checkbox"
+                      <li class="list-group-item"
                           th:each="member, iterStat: *{memberPicker.getListOfMembers()}">
                         <label>
-                          <input type="checkbox" th:field="*{memberPicker.listOfMembers[__${iterStat.index}__].selected}" class="pull-right"/>
+                          <input type="checkbox" th:field="*{memberPicker.listOfMembers[__${iterStat.index}__].selected}" class="list-checkbox"/>
                           <input type="hidden" th:field="*{memberPicker.listOfMembers[__${iterStat.index}__].userUid}" />
-                          <span th:text="${member.nameToDisplay}">Name</span>
+                          <span class="list-checkbox-label" th:text="${member.nameToDisplay}">Name</span>
                         </label>
                       </li>
                     </div>
@@ -131,7 +131,7 @@
                     </div>
                   </div>
                   <div class="modal-footer">
-                    <button type="button" class="btn btn-default" data-dismiss="modal">Done</button>
+                    <button type="button" class="btn default-button" data-dismiss="modal">Done</button>
                   </div>
                 </div>
               </div>
@@ -157,7 +157,7 @@
           <p class="grassroot-body">
             <!-- todo : alter text if, say, user has an account with space for this group -->
             Sorry, you have reached the maximum number of todos this group can call per month. To increase the limit,
-            sign up for or upgrade your account (or add it to your account).
+            sign up for or upgrade your Grassroot Extra account (or add this group to your account).
           </p>
         </div>
         <div class="modal-footer">

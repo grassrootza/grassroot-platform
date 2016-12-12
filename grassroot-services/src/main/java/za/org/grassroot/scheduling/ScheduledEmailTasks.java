@@ -7,8 +7,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.integration.email.EmailSendingBroker;
 import za.org.grassroot.integration.email.GrassrootEmail;
+import za.org.grassroot.services.AnalyticalService;
+
+import java.time.LocalDateTime;
 
 /**
  * Created by luke on 2016/10/25.
@@ -23,18 +27,56 @@ public class ScheduledEmailTasks {
     private boolean sendDailyAdminMail;
 
     private EmailSendingBroker emailSendingBroker;
+    private AnalyticalService analyticalService;
 
     @Autowired
-    public ScheduledEmailTasks(EmailSendingBroker emailSendingBroker) {
+    public ScheduledEmailTasks(EmailSendingBroker emailSendingBroker, AnalyticalService analyticalService) {
         this.emailSendingBroker = emailSendingBroker;
+        this.analyticalService = analyticalService;
     }
 
-    @Scheduled(cron = "0 0 7 * * ?")
+    @Scheduled(cron = "0 0 5 * * ?")
     public void sendSystemStatsEmail() {
         if (sendDailyAdminMail) {
             logger.info("Sending system stats email ... ");
+
+            LocalDateTime yesterday = LocalDateTime.now().minusDays(1L);
+            LocalDateTime now = LocalDateTime.now();
+
+            long totalUsers = analyticalService.countAllUsers();
+            long usersYesterday = analyticalService.countUsersCreatedInInterval(yesterday, now);
+            long totalInitiated = analyticalService.countUsersThatHaveInitiatedSession();
+            long initiatedYesterday = analyticalService.countUsersCreatedAndInitiatedInPeriod(yesterday, now);
+            long androidTotal = analyticalService.countUsersThatHaveAndroidProfile();
+            long webTotal = analyticalService.countUsersThatHaveWebProfile();
+
+            final String userLine = String.format("Grassroot has reached %d users, of whom %d were added yesterday. A " +
+                    "total of %d users have initiated a session, of which %d were yesterday. There have been %d Android " +
+                    "users, and %d web users.%n", totalUsers, usersYesterday, totalInitiated, initiatedYesterday, androidTotal, webTotal);
+
+            long allMeetings = analyticalService.countAllEvents(EventType.MEETING);
+            long allVotes = analyticalService.countAllEvents(EventType.VOTE);
+            long allTodos = analyticalService.countAllTodos();
+
+            long mtgsYesterday = analyticalService.countEventsCreatedInInterval(yesterday, now, EventType.MEETING);
+            long votesYesterday = analyticalService.countEventsCreatedInInterval(yesterday, now, EventType.VOTE);
+            long todosYesterday = analyticalService.countTodosRecordedInInterval(yesterday, now);
+
+            final String taskLine = String.format("Yesterday %d meetings were called, %d votes and %d todos. In total, there" +
+                    "have been %d meetings, %d votes and %d todos called through Grassroot.%n%n", mtgsYesterday, votesYesterday, todosYesterday,
+                    allMeetings, allVotes, allTodos);
+
+            long groupsTotal = analyticalService.countActiveGroups();
+            int groupsYesterday = analyticalService.countGroupsCreatedInInterval(yesterday, now);
+            int groupsGeo = analyticalService.countGroupsWithGeoLocationData();
+
+            final String groupLine = String.format("Yesterday %d groups were created. In total there are %d groups on the platform, " +
+                    "of which %d have location data.%n%n", groupsYesterday, groupsTotal, groupsGeo);
+
+            final String emailBody = "Good morning,\n" + userLine + taskLine + groupLine + "\nGrassroot";
+
             emailSendingBroker.sendSystemStatusMail(new GrassrootEmail.EmailBuilder("System Email")
-                    .content("Hello this is a system email, it will soon have stats and so on").build());
+                    .content(emailBody).build());
         }
     }
 

@@ -1,7 +1,6 @@
 package za.org.grassroot.webapp.model.web;
 
 import za.org.grassroot.core.domain.EventReminderType;
-import za.org.grassroot.core.domain.Meeting;
 
 /**
  * Created by luke on 2016/04/06.
@@ -13,16 +12,10 @@ public class MeetingWrapper extends EventWrapper {
     private MeetingWrapper() {
     }
 
-    public MeetingWrapper(Meeting meeting) {
-        super(meeting);
-        this.location = meeting.getEventLocation();
-    }
-
     public static MeetingWrapper makeEmpty(EventReminderType reminderType, int customReminderMinutes, boolean rsvpRequired) {
         MeetingWrapper meetingWrapper = new MeetingWrapper();
         meetingWrapper.reminderType = reminderType;
         meetingWrapper.customReminderMinutes = customReminderMinutes;
-        meetingWrapper.rsvpRequired = rsvpRequired;
         return meetingWrapper;
     }
 

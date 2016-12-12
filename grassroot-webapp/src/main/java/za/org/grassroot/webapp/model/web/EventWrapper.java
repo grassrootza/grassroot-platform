@@ -21,17 +21,21 @@ public class EventWrapper {
     protected LocalDateTime eventDateTime;
 
     protected boolean includeSubGroups;
-    protected boolean rsvpRequired;
-    protected boolean relayable;
 
     protected EventReminderType reminderType;
     protected int customReminderMinutes;
     protected int defaultReminderMinutes;
 
+    private String assignmentType;
+    private MemberPicker memberPicker;
+
     protected Set<String> assignedMembers;
 
     protected EventWrapper() {
+    }
 
+    public static EventWrapper makeEmpty() {
+        return new EventWrapper();
     }
 
     public EventWrapper(Event event) {
@@ -61,20 +65,10 @@ public class EventWrapper {
         this.eventDateTime = DateTimeUtil.convertToUserTimeZone(event.getEventStartDateTime(), DateTimeUtil.getSAST())
                 .toLocalDateTime();
         this.includeSubGroups = event.isIncludeSubGroups();
-        this.rsvpRequired = event.isRsvpRequired();
-        this.relayable = event.isRelayable();
 
         this.reminderType = event.getReminderType();
         this.customReminderMinutes = event.getCustomReminderMinutes();
         this.defaultReminderMinutes = event.getAncestorGroup().getReminderMinutes();
-
-        // todo: assign members ... also, set custom reminder minute (and reminder settings) to be same as parent
-    }
-
-    public static EventWrapper makeEmpty(boolean rsvpRequired) {
-        EventWrapper eventWrapper = new EventWrapper();
-        eventWrapper.rsvpRequired = rsvpRequired;
-        return eventWrapper;
     }
 
     public String getEntityUid() {
@@ -135,22 +129,6 @@ public class EventWrapper {
         this.includeSubGroups = includeSubGroups;
     }
 
-    public boolean isRsvpRequired() {
-        return rsvpRequired;
-    }
-
-    public void setRsvpRequired(boolean rsvpRequired) {
-        this.rsvpRequired = rsvpRequired;
-    }
-
-    public boolean isRelayable() {
-        return relayable;
-    }
-
-    public void setRelayable(boolean relayable) {
-        this.relayable = relayable;
-    }
-
     public EventReminderType getReminderType() {
         return reminderType;
     }
@@ -167,6 +145,22 @@ public class EventWrapper {
 
     public void setCustomReminderMinutes(int customReminderMinutes) {
         this.customReminderMinutes = customReminderMinutes;
+    }
+
+    public String getAssignmentType() {
+        return assignmentType;
+    }
+
+    public void setAssignmentType(String assignmentType) {
+        this.assignmentType = assignmentType;
+    }
+
+    public MemberPicker getMemberPicker() {
+        return memberPicker;
+    }
+
+    public void setMemberPicker(MemberPicker memberPicker) {
+        this.memberPicker = memberPicker;
     }
 
     public Set<String> getAssignedMembers() {

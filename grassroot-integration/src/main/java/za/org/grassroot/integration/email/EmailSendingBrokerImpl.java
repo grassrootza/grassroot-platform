@@ -66,7 +66,12 @@ public class EmailSendingBrokerImpl implements EmailSendingBroker {
     public void sendSystemStatusMail(GrassrootEmail systemStatsEmail) {
         SimpleMailMessage mail = new SimpleMailMessage();
         mail.setFrom(emailFromAddress);
-        mail.setTo(systemEmailAddress);
+
+        if (systemEmailAddress.contains(",")) {
+            mail.setTo(systemEmailAddress.split(","));
+        } else {
+            mail.setTo(systemEmailAddress);
+        }
         mail.setSubject(systemStatsEmail.getSubject());
         mail.setText(systemStatsEmail.getContent());
 

@@ -23,6 +23,7 @@ import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.EventLogBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.MeetingWrapper;
+import za.org.grassroot.webapp.model.web.MemberPicker;
 
 import javax.servlet.http.HttpServletRequest;
 import java.time.Instant;
@@ -76,19 +77,24 @@ public class MeetingController extends BaseController {
             addMessage(attributes, MessageType.INFO, "meeting.create.group", request);
             return "redirect:/group/create";
         } else {
+
             if (groupUid != null) {
                 Group group = groupBroker.load(groupUid);
                 model.addAttribute("group", group);
+                model.addAttribute("parentSpecified", true);
+                meeting.setMemberPicker(MemberPicker.create(group, JpaEntityType.GROUP, true));
                 meeting.setParentUid(groupUid);
             } else {
                 User user = userManagementService.load(getUserProfile().getUid()); // refresh user entity, in case permissions changed
+                model.addAttribute("parentSpecified", false);
                 model.addAttribute("userGroups", permissionBroker.getActiveGroupsSorted(user, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING));
             }
+
+            meeting.setAssignmentType("group");
 
             model.addAttribute("meeting", meeting);
             model.addAttribute("reminderOptions", reminderMinuteOptions(false));
 
-            log.info("Wrapper we are passing: " + meeting.toString());
             return "meeting/create";
         }
     }
@@ -98,18 +104,20 @@ public class MeetingController extends BaseController {
                                 @RequestParam(value="selectedGroupUid", required=false) String selectedGroupUid,
                                 HttpServletRequest request, RedirectAttributes redirectAttributes) {
 
-        // todo: add error handling and validation
+        // todo: move parent selection into MeetingWrapper when implement non-group meetings
+        // todo : clean up a lot of old / now redundant properties (include rsvp, is relayable, etc
 
         log.info("The meeting wrapper as passed back to us: " + meeting.toString());
 
-        // todo: move parent selection into MeetingWrapper when implement non-group meetings
-        // todo : clean up a lot of old / now redundant properties (include rsvp, is relayable, etc
         try {
+            Set<String> invitedMemberUids = "members".equalsIgnoreCase(meeting.getAssignmentType()) ?
+                    meeting.getMemberPicker().getSelectedUids() : Collections.emptySet();
+
             eventBroker.createMeeting(getUserProfile().getUid(), selectedGroupUid, JpaEntityType.GROUP,
                     meeting.getTitle(), meeting.getEventDateTime(), meeting.getLocation(),
-                    meeting.isIncludeSubGroups(), true, meeting.isRelayable(),
+                    meeting.isIncludeSubGroups(), true, false,
                     meeting.getReminderType(), meeting.getCustomReminderMinutes(), meeting.getDescription(),
-                    Collections.emptySet(), MeetingImportance.ORDINARY);
+                    invitedMemberUids, MeetingImportance.ORDINARY);
 
             addMessage(redirectAttributes, MessageType.SUCCESS, "meeting.creation.success", request);
             redirectAttributes.addAttribute("groupUid", selectedGroupUid);

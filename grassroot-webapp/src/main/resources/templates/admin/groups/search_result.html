@@ -1,19 +1,25 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      layout:decorator="layout">
+      data-layout-decorate="~{layout}">
 <head>
-  <title>Grassroot - System Admin</title>
+  <title>System Admin</title>
 </head>
 <body>
 
-<div layout:fragment="content">
-  <div layout:fragment="messages"></div>
+<main layout:fragment="content">
 
-  <div class="well">
-    <div class="row">
-      <h2>Search results:</h2>
-    </div>
-    <div class="row">
+  <section class="grassroot-form">
+    <div class="col-md-10 col-md-offset-1">
+      <div class="row text-center">
+        <form th:action="@{search}" method="get">
+          <input type="text" name="searchTerm" />
+          <input type="submit" value="Search" />
+        </form>
+      </div>
+      <div class="row">
+        <h2>Search results:</h2>
+     </div>
+      <div class="row">
       <table class="table table-striped">
         <thead>
           <th></th>
@@ -25,31 +31,42 @@
           <th></th>
           <th></th>
           <th></th>
+          <th></th>
         </thead>
         <tbody>
         <tr th:each="group, iterStat : ${possibleGroups}">
           <td><span th:text="${iterStat.count}">1</span></td>
-          <td><a th:href="@{view(groupUid=${group.uid})}"><span th:text="${group.getName('')}"></span></a></td>
+          <td><span th:text="${group.getName('')}"></span></td>
           <td><span th:text="${group.createdByUser.nameToDisplay()}"></span></td>
           <td><span th:text="${group.getMembers().size()}"></span></td>
           <td><span th:text="${#temporals.format(group.getCreatedDateTimeAtSAST(),'dd MMMM yyyy')}"></span></td>
           <td><span th:text="${group.getEvents().size()}">Number</span></td>
-          <td>
-            <a th:href="@{deactivate(groupUid=${group.uid})}">Deactivate</a>
+          <td th:if="${group.active}">
+            <button type="button" class="btn btn-primary btn-xs" data-toggle="modal" data-target="#deactivateModal"
+                    th:attr="data-groupuid=${group.uid}">Deactivate</button>
+          </td>
+          <td th:unless="${group.active}">
+            <button type="button" class="btn btn-primary btn-xs" data-toggle="modal" data-target="#activateModal"
+                    th:attr="data-groupuid=${group.uid}">Activate</button>
           </td>
           <td>
-            <button type="button" class="btn btn-default btn-xs" data-toggle="modal" data-target="#addModal"
+            <button type="button" class="btn btn-primary btn-xs" data-toggle="modal" data-target="#addModal"
                     th:attr="data-groupuid=${group.uid}">Add member</button>
           </td>
           <td>
-            <button type="button" class="btn btn-default btn-xs" data-toggle="modal" data-target="#removeModal"
+            <button type="button" class="btn btn-primary btn-xs" data-toggle="modal" data-target="#removeModal"
                     th:attr="data-groupuid=${group.uid}">Remove member</button>
+          </td>
+          <td>
+            <button type="button" class="btn btn-primary btn-xs" data-toggle="modal" data-target="#roleModal"
+                    th:attr="data-groupuid=${group.uid}">Change a role</button>
           </td>
         </tr>
         </tbody>
       </table>
+      </div>
     </div>
-  </div>
+  </section>
 
   <div class="modal fade" id="addModal" tabindex="-1" role="dialog" aria-labelledby="addModalLabel">
     <div class="modal-dialog" role="document">
@@ -60,6 +77,7 @@
         </div>
         <form th:action="@{add}" method="post">
           <input type="hidden" name="groupUid" id="groupUid" value="ABC" />
+          <input type="hidden" name="searchTerm" th:value="${param.searchTerm}" />
           <div class="modal-body">
             <div class="form-group">
               <label for="new-member-name" class="control-label">Name</label>
@@ -87,6 +105,39 @@
     </div>
   </div>
 
+  <div class="modal fade" id="roleModal" tabindex="-1" role="dialog" aria-labelledby="roleModalLabel">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title" id="roleModalLabel">Add member to group</h4>
+        </div>
+        <form th:action="@{role}" method="post">
+          <input type="hidden" name="groupUid" id="roleGroupUid" value="ABC" />
+          <input type="hidden" name="searchTerm" th:value="${param.searchTerm}" />
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="roleMsisdn" class="control-label">Phone number</label>
+              <input type="text" class="form-control input-lg" id="roleMsisdn" name="msisdn" />
+            </div>
+            <div class="form-group">
+              <label for="new-member-role" class="control-label">Role</label>
+              <select class="form-control" id="roleSelect" name="roleName">
+                <option th:each="role : ${T(za.org.grassroot.core.domain.BaseRoles).groupRoles}"
+                        th:value="${role}"
+                        th:text="#{web.group.role.__${role}__}"></option>
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn default-button btn-neutral" data-dismiss="modal">Close</button>
+            <button type="submit" class="btn default-button">Change</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <div class="modal fade" id="removeModal" tabindex="-1" role="dialog" aria-labelledby="removeMemberLabel">
     <div class="modal-dialog" role="document">
       <div class="modal-content">
@@ -96,6 +147,7 @@
         </div>
         <form th:action="@{remove}" method="post">
           <input type="hidden" name="groupUid" id="remGroupUid" value="ABC" />
+          <input type="hidden" name="searchTerm" th:value="${param.searchTerm}" />
           <div class="modal-body">
             <div class="form-group">
               <label for="member-phone" class="control-label">Phone number (in msisdn format)</label>
@@ -111,7 +163,59 @@
     </div>
   </div>
 
-</div>
+  <div class="modal fade" id="deactivateModal" tabindex="-1" role="dialog" aria-labelledby="deactivateModalTitle">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">x</span></button>
+          <h4 class="modal-title" id="deactivateModalTitle">Confirm deactivate?</h4>
+        </div>
+        <form th:action="@{deactivate}" method="post">
+          <input type="hidden" id="deactivateGroupUid" name="groupUid" />
+          <input type="hidden" name="searchTerm" th:value="${param.searchTerm}" />
+          <div class="modal-body">
+            <div class="form-group">
+              <p>
+                Are you sure you want to deactivate the group? After doing so, no users will be able to access it.
+              </p>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn default-button btn-neutral" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn default-button">Confirm</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="activateModal" tabindex="-1" role="dialog" aria-labelledby="activateModalTitle">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">x</span></button>
+          <h4 class="modal-title" id="activateModalTitle">Confirm activation?</h4>
+        </div>
+        <form th:action="@{activate}" method="post">
+          <input type="hidden" id="activateGroupUid" name="groupUid" />
+          <input type="hidden" name="searchTerm" th:value="${param.searchTerm}" />
+          <div class="modal-body">
+            <div class="form-group">
+              <p>
+                Are you sure you want to reactivate the group?
+              </p>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn default-button btn-neutral" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn default-button">Confirm</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+</main>
 
 <div class="header-container" layout:fragment="script-container">
   <script>
@@ -121,14 +225,32 @@
       var modal = $(this);
       console.log("GroupUID: " + uid);
       modal.find('#groupUid').val(uid);
-    })
+    });
+
+    $('#roleModal').on('show.bs.modal', function(event) {
+       var button = $(event.relatedTarget);
+       var uid = button.data('groupuid');
+       var modal = $(this);
+       modal.find('#roleGroupUid').val(uid);
+    });
 
     $('#removeModal').on('show.bs.modal', function(event) {
       var button = $(event.relatedTarget);
       var uid = button.data('groupuid');
       var modal = $(this);
       modal.find('#remGroupUid').val(uid);
-    })
+    });
+
+    $('#deactivateModal').on('show.bs.modal', function(event) {
+        var button = $(event.relatedTarget);
+        var uid = button.data('groupuid');
+        $(this).find('#deactivateGroupUid').val(uid);
+    });
+
+    $('#activateModal').on('show.bs.modal', function(event) {
+       $(this).find('#activateGroupUid').val($(event.relatedTarget).data('groupuid'));
+    });
+
   </script>
 </div>
 

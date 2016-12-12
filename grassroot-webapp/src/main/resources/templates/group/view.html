@@ -79,14 +79,23 @@
           <button type="button" class="dropdown-toggle white-button group-center-button" data-toggle="modal" data-target="#unsubModal">Unsubscribe</button>
         </div>
 
-        <div th:unless="${#strings.isEmpty(group.description)}" class="row group-description">
-          <div class="col-md-8 col-md-offset-2 col-xs-12">
-            <h4 class="text-center">Description</h4>
-            <p class="text-center" th:text="${group.description}">Lorem ipsum dolor sit amet, consectetur adispicing elit. Duis ac nulla tincidunt, dictum magna sed, mattis elit.</p>
-          </div>
-        </div>
       </div>
     </div>
+
+    <div class="row group-description">
+      <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
+        <h4 class="text-center">Description</h4>
+        <p th:unless="${#strings.isEmpty(group.description)}"><span th:text="${group.description}">Lorem ipsum dolor sit amet, consectetur adispicing elit.
+          Duis ac nulla tincidunt, dictum magna sed, mattis elit.</span>
+          <a href="#descriptionModal" data-toggle="modal" data-target="#descriptionModal">Change.</a>
+        </p>
+        <p th:if="${#strings.isEmpty(group.description)}">
+          This group has no description. A description helps other people find the group, and members to know what its purpose is.
+          <a href="#descriptionModal" data-toggle="modal" data-target="#descriptionModal">Add a description now?</a>
+        </p>
+      </div>
+    </div>
+
   </div>
 
 </section>
@@ -472,6 +481,34 @@
           <div class="modal-footer">
             <button type="button" class="btn btn-default btn-lg default-button btn-neutral" data-dismiss="modal">Cancel</button>
             <button type="submit" class="btn btn-primary btn-lg default-button">Rename</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Group description modal -->
+  <div th:if="${canAlter}" class="modal fade" id="descriptionModal" tabindex="-1" role="dialog" aria-labelledby="renameModalLabel">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title" id="descriptionModalLabel">Rename group</h4>
+        </div>
+        <form th:action="@{/group/description}" method="post">
+          <input type="hidden" name="groupUid" th:value="${group.uid}" />
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="groupDescription" class="control-label">Set a description for the group (one to three sentences):</label>
+            </div>
+            <div class="form-group">
+              <textarea name="groupDescription" th:text="${group.description}" id="groupDescription" class="form-control input-lg" rows="2" maxlength="250">
+              </textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn default-button btn-neutral" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn default-button">Update</button>
           </div>
         </form>
       </div>

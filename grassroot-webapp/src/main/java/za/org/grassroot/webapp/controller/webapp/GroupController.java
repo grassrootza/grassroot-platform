@@ -53,21 +53,20 @@ public class GroupController extends BaseController {
     @Value("${grassroot.accounts.active:false}")
     private boolean accountsActive;
 
-    @Autowired
-    private GroupBroker groupBroker;
+    private final GroupBroker groupBroker;
+    private final TaskBroker taskBroker;
+    private final GroupQueryBroker groupQueryBroker;
+    private final AccountGroupBroker accountBroker;
+    private final Validator groupWrapperValidator;
 
     @Autowired
-    private TaskBroker taskBroker;
-
-    @Autowired
-    private GroupQueryBroker groupQueryBroker;
-
-    @Autowired
-    private AccountGroupBroker accountBroker;
-
-    @Autowired
-    @Qualifier("groupWrapperValidator")
-    private Validator groupWrapperValidator;
+    public GroupController(GroupBroker groupBroker, TaskBroker taskBroker, GroupQueryBroker groupQueryBroker, AccountGroupBroker accountBroker, @Qualifier("groupWrapperValidator") Validator groupWrapperValidator) {
+        this.groupBroker = groupBroker;
+        this.taskBroker = taskBroker;
+        this.groupQueryBroker = groupQueryBroker;
+        this.accountBroker = accountBroker;
+        this.groupWrapperValidator = groupWrapperValidator;
+    }
 
     /*
     Binding validators to model attributes. We could just user groupWrapper for both Creator and Modifier, but in the
@@ -191,12 +190,22 @@ public class GroupController extends BaseController {
         return "redirect:view";
     }
 
-    @RequestMapping(value = "rename")
-    public String renameGroup(Model model, @RequestParam String groupUid, @RequestParam String groupName,
-                              HttpServletRequest request) {
+    @PostMapping(value = "rename")
+    public String renameGroup(@RequestParam String groupUid, @RequestParam String groupName,
+                              RedirectAttributes attributes, HttpServletRequest request) {
         groupBroker.updateName(getUserProfile().getUid(), groupUid, groupName);
-        addMessage(model, MessageType.SUCCESS, "group.rename.success", request);
-        return viewGroupIndex(model, groupUid);
+        addMessage(attributes, MessageType.SUCCESS, "group.rename.success", request);
+        attributes.addAttribute("groupUid", groupUid);
+        return "redirect:/group/view";
+    }
+
+    @PostMapping("description")
+    public String updateDescription(@RequestParam String groupUid, @RequestParam String groupDescription,
+                                    RedirectAttributes attributes, HttpServletRequest request) {
+        groupBroker.updateDescription(getUserProfile().getUid(), groupUid, groupDescription);
+        addMessage(attributes, MessageType.SUCCESS, "group.description.success", request);
+        attributes.addAttribute("groupUid", groupUid);
+        return "redirect:/group/view";
     }
 
     @RequestMapping(value = "token", method = RequestMethod.POST)

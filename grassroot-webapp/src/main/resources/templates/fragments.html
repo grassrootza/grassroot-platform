@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org">
+<body>
+
+  <div th:fragment="member-picker (messageKey)" class="form-group" >
+    <label class="control-label" th:text="#{__${messageKey}__}"></label>
+    <div class="radio">
+      <label class="radio-inline radio-inline-lg"><input th:field="*{assignmentType}" type="radio" value="group" id="wholeGroup" />The whole group</label>
+      <label class="radio-inline radio-inline-lg"><input th:field="*{assignmentType}" type="radio" value="members" id="pickMembers" />Pick members</label>
+      <h5 id="pickedMemberCount">Number of members picked</h5>
+    </div>
+  </div>
+
+  <div th:fragment="member-picker-modal" class="modal fade" id="memberModal" tabindex="-1" role="dialog" aria-labelledby="memberModalLabel">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button id="dismissMemberModal" type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title" id="memberModalLabel">Assign members to action</h4>
+        </div>
+        <div class="modal-body">
+          <div th:if="${parentSpecified}" class="list-group checked-list-box">
+            <li class="list-group-item"
+                th:each="member, iterStat: *{memberPicker.getListOfMembers()}">
+              <label>
+                <input type="checkbox" th:field="*{memberPicker.listOfMembers[__${iterStat.index}__].selected}" class="list-checkbox"/>
+                <input type="hidden" th:field="*{memberPicker.listOfMembers[__${iterStat.index}__].userUid}" />
+                <span th:text="${member.nameToDisplay}" class="list-checkbox-label">Name</span>
+              </label>
+            </li>
+          </div>
+          <div th:unless="${parentSpecified}" id="dynamicMemberPicker" class="list-group checked-list-box">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn default-button" id="membersPicked">Done</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script th:fragment="member-picker-script (parentType, selectByDefault)" th:inline="javascript">
+
+    $(document).ready(function() {
+
+        var groupSelect = $("#groupSelect");
+        var parentType = /*[[${parentType}]]*/ 'GROUP';
+        var selectByDefault = /*[[${selectByDefault}]]*/ true;
+
+        var assignedMemberCount = $("#pickedMemberCount");
+        assignedMemberCount.hide();
+
+        var wholeGroupRadio = $('#wholeGroup');
+        var pickMemberRadio = $('#pickMembers');
+        var memberModal = $('#memberModal');
+
+        var wholeGroupPicked = true;
+        var membersPicked = false;
+
+        pickMemberRadio.click(function(){
+            memberModal.modal("show");
+        });
+
+        wholeGroupRadio.click(function() {
+            assignedMemberCount.hide();
+            wholeGroupPicked = true;
+            membersPicked = false;
+        });
+
+        $('#dismissMemberModal').click(function() {
+            wholeGroupRadio.prop("checked", wholeGroupPicked);
+            pickMemberRadio.prop("checked", membersPicked);
+            memberModal.modal("hide");
+        });
+
+        $('#membersPicked').click(function() {
+            var membersSelected = memberModal.find('input[type="checkbox"]:checked').length;
+            var countText = "You've assigned " + membersSelected + ((membersSelected == 1) ? " member" : " members") + " to this task";
+
+            assignedMemberCount.text(countText);
+            assignedMemberCount.show();
+            wholeGroupRadio.prop("checked", false);
+
+            wholeGroupPicked = false;
+            membersPicked = true;
+
+            memberModal.modal('hide');
+        });
+
+        if (groupSelect.length > 0) {
+            grassrootJS.setUpAjax($("meta[name='_csrf']"), $("meta[name='_csrf_header']"));
+            grassrootJS.fetchParentMemberList(parentType, selectByDefault, groupSelect.val(), addMembersToModal);
+            groupSelect.change(function() {
+                wholeGroupRadio.prop("checked", true);
+                pickMemberRadio.prop("checked", false);
+                $('#pickedMemberCount').hide();
+                grassrootJS.fetchParentMemberList(parentType, selectByDefault, groupSelect.val(), addMembersToModal);
+            });
+        }
+
+        function addMembersToModal(returnedObject) {
+            var listBox = $("#dynamicMemberPicker");
+            listBox.empty();
+            var memberList = returnedObject.data.listOfMembers;
+            for (var i = 0; i < memberList.length; i++) {
+                listBox.append(constructItem(memberList[i], i));
+            }
+
+            function constructItem(member, index) {
+                // this is a bit of a hack to engineer the list to look like Thymeleaf when it creates an entity
+                var listFieldName = "memberPicker.listOfMembers";
+                var selectedField = listFieldName + "[" + index + "].selected";
+                var userUidField = listFieldName + "[" + index + "].userUid";
+
+                var tickbox = JSON.parse(member.selected) ? "checked" : "";
+
+                return "<li class=\"list-group-item\">" +
+                    "<label>" +
+                    "<input type=\"checkbox\" class='list-checkbox' " + tickbox + " name='" + selectedField + "'/>" +
+                    "<input type='hidden' name='" + userUidField + "' value='" + member.userUid + "'/>" +
+                    "<span class='list-checkbox-label'>" + member.nameToDisplay + "</span></label>";
+            }
+        }
+
+    });
+
+  </script>
+
+</body>
+</html>

@@ -105,10 +105,19 @@ var grassrootJS = {
         };
     },
 
-    UID_VALUE: "UID",
-    NAME_VALUE: "NAME",
-    PRIVATE_SEARCH: "PRIVATE",
-    PUBLIC_SEARCH: "PUBLIC",
+    fetchParentMemberList: function(parentType, selectByDefault, parentUid, callback) {
+        var data = {};
+        data["parentEntityType"] = parentType;
+        data["selectedByDefault"] = selectByDefault;
+        data["parentUid"] = parentUid;
+
+        $.getJSON("/ajax/members/list", {
+            parentEntityType: parentType,
+            parentUid: parentUid,
+            selectedByDefault: selectByDefault
+        }, callback);
+
+    },
 
     groupNameAutoComplete : function (labelField, valueField, valueType, searchType, callback) {
         return {
@@ -138,6 +147,12 @@ var grassrootJS = {
             }
         };
     },
+
+    UID_VALUE: "UID",
+    NAME_VALUE: "NAME",
+    PRIVATE_SEARCH: "PRIVATE",
+    PUBLIC_SEARCH: "PUBLIC",
+
     phoneRules : {
         required: true,
         number: true,

@@ -49,13 +49,19 @@
               <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/vote/create}">Take Vote</a></li>
             <li>
               <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/todo/create}">Create to-do</a></li>
-            <li sec:authorize="hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')">
-              <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/messaging/freeform}">Send Message</a></li>
+
             <li th:if="${@environment.getProperty('grassroot.accounts.active')}" sec:authorize="!hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')">
               <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/account/signup}">Grassroot Extra</a></li>
 
-            <li sec:authorize="hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')">
-              <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/account}">Manage account</a></li>
+            <li sec:authorize="hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')" class="dropdown">
+              <a href="javascript:void(0)" data-target="#" class="dropdown-toggle gr-navbar-link" data-toggle="dropdown" aria-expanded="false">
+                Grassroot Extra <b class="caret"></b></a>
+              <ul class="dropdown-menu">
+                <li><a th:href="@{/messaging/freeform}">Send custom message</a></li>
+                <li><a th:href="@{/account}">Manage account</a></li>
+              </ul>
+
+            </li>
 
             <li sec:authorize="hasRole('ROLE_SYSTEM_ADMIN')">
               <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/admin/home}">System admin</a></li>
@@ -78,7 +84,6 @@
               <ul class="dropdown-menu">
                 <li><a href="javascript:void(0)" th:href="@{/user/settings}">Settings</a></li>
                 <li><a href="javascript:void(0)" th:href="@{/user/password}">Change password</a></li>
-                <li class="divider"></li>
                 <li><a href="javascript:void(0)"  class="user-logout" id="user-logout" th:href="@{/logout}">Logout</a></li>
               </ul>
             </li>
@@ -134,7 +139,7 @@
 
   <script th:src="@{/js/lib/jquery-2.2.4.min.js}"></script>
   <script th:src="@{/js/lib/bootstrap.min.js}"></script>
-  <script th:src="@{/js/grassroot_methods_v1.js}"></script>
+  <script th:src="@{/js/grassroot_methods_v1.1.js}"></script>
 
   <div layout:fragment="script-container">
 

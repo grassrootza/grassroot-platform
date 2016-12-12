@@ -9,6 +9,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -23,6 +24,7 @@ import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.AdminService;
+import za.org.grassroot.services.AnalyticalService;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.MemberNotPartOfGroupException;
 import za.org.grassroot.services.exception.NoSuchUserException;
@@ -58,14 +60,17 @@ public class AdminController extends BaseController {
     private final PermissionBroker permissionBroker;
     private final PasswordTokenService passwordTokenService;
     private final AdminService adminService;
+    private final AnalyticalService analyticalService;
 
     @Autowired
-    public AdminController(GroupRepository groupRepository, GroupBroker groupBroker, PermissionBroker permissionBroker, PasswordTokenService passwordTokenService, AdminService adminService) {
+    public AdminController(GroupRepository groupRepository, GroupBroker groupBroker, PermissionBroker permissionBroker,
+                           PasswordTokenService passwordTokenService, AdminService adminService, AnalyticalService analyticalService) {
         this.groupRepository = groupRepository;
         this.groupBroker = groupBroker;
         this.permissionBroker = permissionBroker;
         this.passwordTokenService = passwordTokenService;
         this.adminService = adminService;
+        this.analyticalService = analyticalService;
     }
 
     @PostConstruct
@@ -84,38 +89,38 @@ public class AdminController extends BaseController {
 
         // todo: put these into maps
 
-        model.addAttribute("countLastWeek", adminService.countUsersCreatedInInterval(week, now));
-        model.addAttribute("countLastMonth", adminService.countUsersCreatedInInterval(month, now));
-        model.addAttribute("userCount", adminService.countAllUsers());
+        model.addAttribute("countLastWeek", analyticalService.countUsersCreatedInInterval(week, now));
+        model.addAttribute("countLastMonth", analyticalService.countUsersCreatedInInterval(month, now));
+        model.addAttribute("userCount", analyticalService.countAllUsers());
 
-        model.addAttribute("countUssdLastWeek", adminService.countUsersCreatedAndInitiatedInPeriod(week, now));
-        model.addAttribute("countUssdLastMonth", adminService.countUsersCreatedAndInitiatedInPeriod(month, now));
-        model.addAttribute("countUssdTotal", adminService.countUsersThatHaveInitiatedSession());
+        model.addAttribute("countUssdLastWeek", analyticalService.countUsersCreatedAndInitiatedInPeriod(week, now));
+        model.addAttribute("countUssdLastMonth", analyticalService.countUsersCreatedAndInitiatedInPeriod(month, now));
+        model.addAttribute("countUssdTotal", analyticalService.countUsersThatHaveInitiatedSession());
 
-        model.addAttribute("countWebLastWeek", adminService.countUsersCreatedWithWebProfileInPeriod(week, now));
-        model.addAttribute("countWebLastMonth", adminService.countUsersCreatedWithWebProfileInPeriod(month, now));
-        model.addAttribute("countWebTotal", adminService.countUsersThatHaveWebProfile());
+        model.addAttribute("countWebLastWeek", analyticalService.countUsersCreatedWithWebProfileInPeriod(week, now));
+        model.addAttribute("countWebLastMonth", analyticalService.countUsersCreatedWithWebProfileInPeriod(month, now));
+        model.addAttribute("countWebTotal", analyticalService.countUsersThatHaveWebProfile());
 
 
-        model.addAttribute("countAndroidLastWeek", adminService.countUsersCreatedWithAndroidProfileInPeriod(week, now));
-        model.addAttribute("countAndroidLastMonth", adminService.countUsersCreatedWithAndroidProfileInPeriod(month, now));
-        model.addAttribute("countAndroidTotal", adminService.countUsersThatHaveAndroidProfile());
+        model.addAttribute("countAndroidLastWeek", analyticalService.countUsersCreatedWithAndroidProfileInPeriod(week, now));
+        model.addAttribute("countAndroidLastMonth", analyticalService.countUsersCreatedWithAndroidProfileInPeriod(month, now));
+        model.addAttribute("countAndroidTotal", analyticalService.countUsersThatHaveAndroidProfile());
 
-        model.addAttribute("groupsLastWeek", adminService.countGroupsCreatedInInterval(week, now));
-        model.addAttribute("groupsLastMonth", adminService.countGroupsCreatedInInterval(month, now));
-        model.addAttribute("groupsTotal", adminService.countActiveGroups());
+        model.addAttribute("groupsLastWeek", analyticalService.countGroupsCreatedInInterval(week, now));
+        model.addAttribute("groupsLastMonth", analyticalService.countGroupsCreatedInInterval(month, now));
+        model.addAttribute("groupsTotal", analyticalService.countActiveGroups());
 
-        model.addAttribute("meetingsLastWeek", adminService.countEventsCreatedInInterval(week, now, EventType.MEETING));
-        model.addAttribute("meetingsLastMonth", adminService.countEventsCreatedInInterval(month, now, EventType.MEETING));
-        model.addAttribute("meetingsTotal", adminService.countAllEvents(EventType.MEETING));
+        model.addAttribute("meetingsLastWeek", analyticalService.countEventsCreatedInInterval(week, now, EventType.MEETING));
+        model.addAttribute("meetingsLastMonth", analyticalService.countEventsCreatedInInterval(month, now, EventType.MEETING));
+        model.addAttribute("meetingsTotal", analyticalService.countAllEvents(EventType.MEETING));
 
-        model.addAttribute("votesLastWeek", adminService.countEventsCreatedInInterval(week, now, EventType.VOTE));
-        model.addAttribute("votesLastMonth", adminService.countEventsCreatedInInterval(month, now, EventType.VOTE));
-        model.addAttribute("votesTotal", adminService.countAllEvents(EventType.VOTE));
+        model.addAttribute("votesLastWeek", analyticalService.countEventsCreatedInInterval(week, now, EventType.VOTE));
+        model.addAttribute("votesLastMonth", analyticalService.countEventsCreatedInInterval(month, now, EventType.VOTE));
+        model.addAttribute("votesTotal", analyticalService.countAllEvents(EventType.VOTE));
 
-        model.addAttribute("todosLastWeek", adminService.countTodosRecordedInInterval(week, now));
-        model.addAttribute("todosLastMonth", adminService.countTodosRecordedInInterval(month, now));
-        model.addAttribute("todosTotal", adminService.countAllTodos());
+        model.addAttribute("todosLastWeek", analyticalService.countTodosRecordedInInterval(week, now));
+        model.addAttribute("todosLastMonth", analyticalService.countTodosRecordedInInterval(month, now));
+        model.addAttribute("todosTotal", analyticalService.countAllTodos());
 
         return "admin/home";
 
@@ -132,13 +137,13 @@ public class AdminController extends BaseController {
         Instant end = Instant.now();
         Instant start = end.minus(30, ChronoUnit.DAYS);
 
-        model.addAttribute("totalUserCount", adminService.countAllUsers());
-        model.addAttribute("maxUserSessions", adminService.getMaxSessionsInLastMonth());
+        model.addAttribute("totalUserCount", analyticalService.countAllUsers());
+        model.addAttribute("maxUserSessions", analyticalService.getMaxSessionsInLastMonth());
 
-        Map<Integer, Integer> sessionHistogram = adminService.getSessionHistogram(start, end, 10);
+        Map<Integer, Integer> sessionHistogram = analyticalService.getSessionHistogram(start, end, 10);
         model.addAttribute("histogramData", sessionHistogram);
 
-        log.info("max user sessions in last month: " + adminService.getMaxSessionsInLastMonth());
+        log.info("max user sessions in last month: " + analyticalService.getMaxSessionsInLastMonth());
 
         return "admin/users/home";
     }
@@ -196,75 +201,94 @@ public class AdminController extends BaseController {
 	 */
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    @RequestMapping("/admin/groups/search")
-    public String searchForGroup() {
-        return "admin/groups/search";
-    }
-
-    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    @RequestMapping(value = "/admin/groups/search", method = RequestMethod.POST)
-    public String findGroup(Model model, @RequestParam(value = "search_term") String searchTerm) {
-        String tsQuery = FullTextSearchUtils.encodeAsTsQueryText(searchTerm, true, false);
-        List<Group> possibleGroups = groupRepository.findByGroupNameContainingIgnoreCase(tsQuery);
-        model.addAttribute("possibleGroups", possibleGroups);
-        model.addAttribute("roles", BaseRoles.groupRoles);
-        return "admin/groups/search_result";
-    }
-
-    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    @RequestMapping(value = "/admin/groups/view", method = RequestMethod.GET)
-    public String adminViewGroup(Model model, @RequestParam String groupUid) {
-	    model.addAttribute("group", groupBroker.load(groupUid));
-        return "admin/groups/view";
+    @RequestMapping(value = "/admin/groups/search", method = RequestMethod.GET)
+    public String findGroup(Model model, @RequestParam(required = false) String searchTerm) {
+        if (StringUtils.isEmpty(searchTerm)) {
+            return "admin/groups/search";
+        } else {
+            String tsQuery = FullTextSearchUtils.encodeAsTsQueryText(searchTerm, false, true);
+            log.info("encoded query: {}", tsQuery);
+            List<Group> possibleGroups = groupRepository.findByFullTextSearchOnGroupName(tsQuery);
+            if (possibleGroups == null || possibleGroups.isEmpty()) {
+                // sometimes stop words / lexemes means the query comes back empty, hence use this
+                possibleGroups = groupRepository.findByGroupNameContainingIgnoreCase(searchTerm);
+            }
+            model.addAttribute("possibleGroups", possibleGroups);
+            model.addAttribute("roles", BaseRoles.groupRoles);
+            return "admin/groups/search_result";
+        }
     }
 
 	@PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-	@RequestMapping(value = "/admin/groups/deactivate", method = RequestMethod.GET)
-	public String deactivateGroup(Model model, @RequestParam String groupUid, HttpServletRequest request) {
-		adminService.deactiveGroup(getUserProfile().getUid(), groupUid);
-        addMessage(model, MessageType.SUCCESS, "admin.group.deactivated", request);
-        return "admin/groups/search";
+	@RequestMapping(value = "/admin/groups/deactivate", method = RequestMethod.POST)
+	public String deactivateGroup(RedirectAttributes attributes, @RequestParam String groupUid, @RequestParam String searchTerm, HttpServletRequest request) {
+		adminService.updateGroupActive(getUserProfile().getUid(), groupUid, false);
+        addMessage(attributes, MessageType.SUCCESS, "admin.group.deactivated", request);
+        attributes.addAttribute("searchTerm", searchTerm);
+        return "redirect:/admin/groups/search";
 	}
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    @RequestMapping(value = "/admin/groups/activate", method = RequestMethod.POST)
+    public String activateGroup(RedirectAttributes attributes, @RequestParam String groupUid, @RequestParam String searchTerm, HttpServletRequest request) {
+        adminService.updateGroupActive(getUserProfile().getUid(), groupUid, true);
+        addMessage(attributes, MessageType.SUCCESS, "admin.group.activated", request);
+        attributes.addAttribute("searchTerm", searchTerm);
+        return "redirect:/admin/groups/search";
+    }
 
 	@PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
 	@RequestMapping(value = "/admin/groups/add", method = RequestMethod.POST)
-	public String addMemberToGroup(Model model, HttpServletRequest request,
-                                   @RequestParam String groupUid,
-                                   @RequestParam String displayName,
-                                   @RequestParam String phoneNumber,
-	                               @RequestParam String roleName) {
+	public String addMemberToGroup(RedirectAttributes attributes, HttpServletRequest request, @RequestParam String searchTerm,
+                                   @RequestParam String groupUid, @RequestParam String displayName,
+                                   @RequestParam String phoneNumber, @RequestParam String roleName) {
         MembershipInfo membershipInfo = new MembershipInfo(phoneNumber, roleName, displayName);
 		adminService.addMemberToGroup(getUserProfile().getUid(), groupUid, membershipInfo);
-        addMessage(model, MessageType.SUCCESS, "admin.group.added", request);
-        return "admin/groups/search";
+        addMessage(attributes, MessageType.SUCCESS, "admin.group.added", request);
+        attributes.addAttribute("searchTerm", searchTerm);
+        return "redirect:/admin/groups/search";
 	}
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping(value = "/admin/groups/remove", method = RequestMethod.POST)
-    public String removeGroupMember(Model model, HttpServletRequest request,
-                                    @RequestParam String groupUid,
-                                    @RequestParam String phoneNumber) {
+    public String removeGroupMember(RedirectAttributes attributes, HttpServletRequest request,
+                                    @RequestParam String groupUid, @RequestParam String phoneNumber, @RequestParam String searchTerm) {
         try {
             adminService.removeMemberFromGroup(getUserProfile().getUid(), groupUid, phoneNumber);
-            addMessage(model, MessageType.SUCCESS, "admin.group.removed", request);
+            addMessage(attributes, MessageType.SUCCESS, "admin.group.removed", request);
         } catch (NoSuchUserException e) {
-            addMessage(model, MessageType.ERROR, "admin.group.removed.nouser", request);
+            addMessage(attributes, MessageType.ERROR, "admin.group.removed.nouser", request);
         } catch (MemberNotPartOfGroupException e) {
-            addMessage(model, MessageType.ERROR, "admin.group.removed.error", request);
+            addMessage(attributes, MessageType.ERROR, "admin.group.removed.error", request);
         }
-        return "admin/groups/search";
+        attributes.addAttribute("searchTerm", searchTerm);
+        return "redirect:/admin/groups/search";
     }
 
 	@PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-	@RequestMapping(value = "/admin/groups/role_change", method = RequestMethod.POST)
-	public String changeMemberRole(Model model, @RequestParam String groupUid, @RequestParam String userUid,
-	                               @RequestParam String roleName, HttpServletRequest request) {
-		User userToModify = userManagementService.load(userUid);
+	@RequestMapping(value = "/admin/groups/role", method = RequestMethod.POST)
+	public String changeMemberRole(RedirectAttributes attributes, @RequestParam String groupUid, @RequestParam String msisdn,
+	                               @RequestParam String roleName, @RequestParam String searchTerm, HttpServletRequest request) {
+
+        final String returnRedir = "redirect:/admin/groups/search";
+        attributes.addAttribute("searchTerm", searchTerm);
+
+        if (!userManagementService.userExist(msisdn)) {
+            addMessage(attributes, MessageType.ERROR, "admin.role.change.notfound", new String[] { msisdn }, request);
+            return returnRedir;
+        }
+
+        User userToModify = userManagementService.findByInputNumber(msisdn);
 		Group group = groupBroker.load(groupUid);
+
+		if (!group.getMembers().contains(userToModify)) {
+		    addMessage(attributes, MessageType.ERROR, "admin.role.change.notfound", new String[] { msisdn }, request);
+		    return returnRedir;
+        }
 
 		groupBroker.updateMembershipRole(getUserProfile().getUid(), group.getUid(), userToModify.getUid(), roleName);
 
-		addMessage(model, MessageType.INFO, "admin.done", request);
-		return "admin/groups/search";
+		addMessage(attributes, MessageType.INFO, "admin.done", request);
+		return returnRedir;
 	}
 }

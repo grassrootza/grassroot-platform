@@ -62,26 +62,25 @@ public class AjaxController extends BaseController {
         this.geoLocationBroker = geoLocationBroker;
     }
 
-    @RequestMapping(value = "/members/list", method = RequestMethod.POST)
-    public ResponseEntity<ResponseWrapper> retrieveParentMembers(@RequestBody MemberListDTO listRequest) {
+    @RequestMapping(value = "/members/list", method = RequestMethod.GET)
+    public ResponseEntity<ResponseWrapper> retrieveParentMembers(@RequestParam JpaEntityType parentEntityType,
+                                                                 @RequestParam String parentUid,
+                                                                 @RequestParam boolean selectedByDefault) {
 
         MemberPicker memberPicker;
-        final JpaEntityType type = listRequest.getParentEntityType();
-        final String parentUid = listRequest.getParentUid();
-        final boolean selected = listRequest.isSelectedByDefault();
 
-        if (JpaEntityType.GROUP.equals(type)) {
-            memberPicker = new MemberPicker(groupQueryBroker.load(parentUid), selected);
-        } else if (JpaEntityType.MEETING.equals(type) || JpaEntityType.VOTE.equals(type)) {
-            memberPicker = new MemberPicker(eventBroker.load(parentUid), selected);
-        } else if (JpaEntityType.TODO.equals(type)) {
-            memberPicker = new MemberPicker(todoBroker.load(parentUid), selected);
+        if (JpaEntityType.GROUP.equals(parentEntityType)) {
+            memberPicker = new MemberPicker(groupQueryBroker.load(parentUid), selectedByDefault);
+        } else if (JpaEntityType.MEETING.equals(parentEntityType) || JpaEntityType.VOTE.equals(parentEntityType)) {
+            memberPicker = new MemberPicker(eventBroker.load(parentUid), selectedByDefault);
+        } else if (JpaEntityType.TODO.equals(parentEntityType)) {
+            memberPicker = new MemberPicker(todoBroker.load(parentUid), selectedByDefault);
         } else {
             return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.INVALID_ENTITY_TYPE);
         }
 
         ResponseWrapper body = new GenericResponseWrapper(HttpStatus.FOUND, RestMessage.PARENT_MEMBERS,
-                                                                     RestStatus.SUCCESS, memberPicker);
+                RestStatus.SUCCESS, memberPicker);
         return new ResponseEntity<>(body, HttpStatus.OK);
     }
 

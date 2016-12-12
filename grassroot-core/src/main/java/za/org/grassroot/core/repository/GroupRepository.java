@@ -15,7 +15,6 @@ import za.org.grassroot.core.domain.User;
 import java.time.Instant;
 import java.util.List;
 
-
 public interface GroupRepository extends JpaRepository<Group, Long> {
 
     Group findOneByUid(String uid);
@@ -70,9 +69,10 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     List<Group> findDiscoverableGroupsWithNameWithoutMember(Long userId, String tsQuery);
 
     @Query(value = "select g.* from group_profile g " +
-            "where g.active = true and to_tsvector('english', g.name) @@ to_tsquery('english', ?1)",
-            nativeQuery = true)
-    List<Group> findByGroupNameContainingIgnoreCase(String nameTsQuery);
+            "where to_tsvector('english', g.name) @@ to_tsquery('english', ?1)", nativeQuery = true)
+    List<Group> findByFullTextSearchOnGroupName(String nameTsQuery);
+
+    List<Group> findByGroupNameContainingIgnoreCase(String nameQuery);
 
     @Query(value = "select g.* from group_profile g " +
             "inner join group_user_membership m on g.id = m.group_id " +

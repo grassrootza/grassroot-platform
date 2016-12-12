@@ -63,7 +63,7 @@ public class VoteController extends BaseController {
             return "redirect:/group/create";
         }
 
-        EventWrapper voteWrapper = EventWrapper.makeEmpty(true);
+        EventWrapper voteWrapper = EventWrapper.makeEmpty();
         if (groupSpecified) {
             Group group = groupBroker.load(groupUid);
             permissionBroker.validateGroupPermission(user, group, GROUP_PERMISSION_CREATE_GROUP_VOTE); // double check, given sensitivity
@@ -88,7 +88,7 @@ public class VoteController extends BaseController {
 
         try {
             eventBroker.createVote(getUserProfile().getUid(), groupUid, JpaEntityType.GROUP, vote.getTitle(), vote.getEventDateTime(),
-                    vote.isIncludeSubGroups(), vote.isRelayable(), vote.getDescription(), Collections.emptySet());
+                    vote.isIncludeSubGroups(), false, vote.getDescription(), Collections.emptySet());
             log.info("Stored vote, at end of creation: " + vote.toString());
             addMessage(redirectAttributes, MessageType.SUCCESS, "vote.creation.success", request);
             redirectAttributes.addAttribute("groupUid", groupUid);

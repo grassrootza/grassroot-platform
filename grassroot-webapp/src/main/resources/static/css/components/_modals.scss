@@ -6,6 +6,17 @@
 
 .modal-body {
     font-size: 1.2em;
+
+	.list-group .list-group-item > .list-checkbox {
+		width: 18px;
+		height: 18px;
+	}
+
+	.list-group .list-group-item > .list-checkbox-label {
+		margin-left: 20px;
+		font-size: 1.3em;
+		font-weight: normal;
+	}
 }
 
 	.modal-body .form-group {

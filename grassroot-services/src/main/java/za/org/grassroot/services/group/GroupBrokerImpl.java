@@ -504,7 +504,9 @@ public class GroupBrokerImpl implements GroupBroker {
         User user = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
 
-        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+        if (!permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS)) {
+            permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
+        }
 
         Membership membership = group.getMemberships().stream()
                 .filter(membership1 -> membership1.getUser().getUid().equals(memberUid))

@@ -14,8 +14,6 @@ $(document).ready(function() {
 
     grassrootJS.setUpAjax(token, header);
 
-
-
     var defTime = new Date();
     defTime.setTime(defTime.getTime() + 5*60*1000);
 
@@ -139,42 +137,18 @@ function addGroupToAccount(groupUid) {
 }
 
 function fetchParentMemberList(selectedByDefault) {
-
-    var data = {};
-    data["parentEntityType"] = "GROUP";
-    data["selectedByDefault"] = selectedByDefault;
-    data["parentUid"] = $("#groupSelector").val();
-    data["userUid"] = $("#userUid").val();
-
-    $.ajax({
-        type : "POST",
-        contentType : "application/json",
-        url : "/ajax/members/list",
-        dataType : "json",
-        data : JSON.stringify(data),
-        timeout : 100000,
-        beforeSend : function(xhr) { // need to retain this since the set ajax method seems to only work for getJSON
-            xhr.setRequestHeader(header.attr("content"), token.attr("content"));
-        },
-        success : function(data) {
-            addMembersToModal(data);
-        },
-        error : function(xhr, textStatus, errorThrown) {
-            console.log("ERROR! : " + errorThrown);
-            console.log("Status : " + textStatus);
-            console.log("xhr: " + xhr.status);
-            // display(errorThrown);
-        }
-    });
-
+    var groupUid = $("#groupSelector").val();
+    console.log("groupUid: " + groupUid);
+    grassrootJS.fetchParentMemberList("GROUP", selectedByDefault, groupUid, addMembersToModal);
 }
 
 function addMembersToModal(returnedObject) {
-    $("#dynamicMemberPicker").empty();
+    var listBox = $("#dynamicMemberPicker");
+    listBox.empty();
     var memberList = returnedObject.data.listOfMembers;
     for (var i = 0; i < memberList.length; i++) {
-        $("#dynamicMemberPicker").append(constructItem(memberList[i], i));
-    };
+        listBox.append(constructItem(memberList[i], i));
+    }
 
     function constructItem(member, index) {
         // this is a bit of a hack to engineer the list to look like Thymeleaf when it creates an entity
@@ -184,10 +158,10 @@ function addMembersToModal(returnedObject) {
 
         var tickbox = JSON.parse(member.selected) ? "checked" : "";
 
-        return "<li class=\"list-group-item checkbox\">" +
+        return "<li class=\"list-group-item\">" +
             "<label>" +
-            "<input type=\"checkbox\" class='pull-right' " + tickbox + " name='" + selectedField + "'/>" +
+            "<input type=\"checkbox\" class='list-checkbox' " + tickbox + " name='" + selectedField + "'/>" +
             "<input type='hidden' name='" + userUidField + "' value='" + member.userUid + "'/>" +
-            member.nameToDisplay + "</label>";
+            "<span class='list-checkbox-label'>" + member.nameToDisplay + "</span></label>";
     }
 }
