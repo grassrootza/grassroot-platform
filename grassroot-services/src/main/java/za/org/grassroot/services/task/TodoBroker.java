@@ -44,6 +44,8 @@ public interface TodoBroker {
 
 	void updateSubject(String userUid, String todoUid, String newMessage);
 
+	void updateDescription(String userUid, String todoUid, String description);
+
 	void updateActionByDate(String userUid, String todoUid, LocalDateTime revisedActionByDate);
 
 	/**

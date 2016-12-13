@@ -1,9 +1,6 @@
 package za.org.grassroot.webapp.model.web;
 
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.JpaEntityType;
-import za.org.grassroot.core.domain.Task;
-import za.org.grassroot.core.domain.UidIdentifiable;
+import za.org.grassroot.core.domain.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,6 +42,21 @@ public class MemberPicker {
         listOfMembers = new ArrayList<>();
         if (group != null) {
             group.getMembers().forEach(m -> listOfMembers.add(new AssignmentWrapper(m, selectedByDefault)));
+        }
+    }
+
+    // member picker for members assigned to task from group
+    public static MemberPicker taskAssigned(Task<?> task) {
+        if (task.isAllGroupMembersAssigned()) {
+            return new MemberPicker(task.getAncestorGroup(), true);
+        } else {
+            MemberPicker memberPicker = new MemberPicker(task.getAncestorGroup(), false);
+            Set<String> taskAssignedUids = task.getAssignedMembers().stream()
+                    .map(User::getUid).collect(Collectors.toSet());
+            memberPicker.listOfMembers.stream()
+                    .filter(m -> taskAssignedUids.contains(m.getUserUid()))
+                    .forEach(m -> m.setSelected(true));
+            return memberPicker;
         }
     }
 

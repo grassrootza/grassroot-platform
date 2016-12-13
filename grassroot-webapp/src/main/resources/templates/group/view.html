@@ -119,7 +119,7 @@
             <button class="white-button group-button"><i class="fa fa-users" aria-hidden="true"></i>Record action</button></a>
         </div>
         <div class="col-md-2">
-          <a href="" th:href="@{/todo/view(groupUid=${group.uid})}">
+          <a href="" th:href="@{/todo/list(groupUid=${group.uid})}">
             <button class="white-button group-button"><i class="fa fa-list-ol" aria-hidden="true"></i>View to-dos</button></a>
         </div>
       </div>
@@ -180,7 +180,7 @@
 
                       <div th:case="TODO" th:with="deadline=${#temporals.format(task.deadlineDateTime,'EEE d MMM')}">
                         <div class="col-md-8 event-item">
-                          <a class="list-header" href="" th:href="@{/todo/details(todoUid=${task.taskUid}, source='GROUP')}"><b>TODO:</b>
+                          <a class="list-header" href="" th:href="@{/todo/view(todoUid=${task.taskUid}, source='GROUP')}"><b>TODO:</b>
                           <span th:text="${task.title}"></span> (due <span th:text="${#temporals.format(task.deadlineDateTime, 'd MMM')}">11 Sep 2015</span>)</a>
                         </div>
                         <div th:unless="${task.hasResponded}" class="col-md-4 button-md-align">

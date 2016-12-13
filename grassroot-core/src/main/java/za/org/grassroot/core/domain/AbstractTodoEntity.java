@@ -158,6 +158,8 @@ public abstract class AbstractTodoEntity {
 
 	public Instant getScheduledReminderTime() { return scheduledReminderTime; }
 
+	public LocalDateTime getReminderTimeAtSAST() { return scheduledReminderTime.atZone(DateTimeUtil.getSAST()).toLocalDateTime(); }
+
 	public void setScheduledReminderTime(Instant scheduledReminderTime) { this.scheduledReminderTime = scheduledReminderTime; }
 
 	public boolean isReminderActive() { return reminderActive; }

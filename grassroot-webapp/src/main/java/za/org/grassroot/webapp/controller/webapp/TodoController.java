@@ -1,6 +1,5 @@
 package za.org.grassroot.webapp.controller.webapp;
 
-import com.google.common.base.Joiner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,10 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.TodoCompletionConfirmType;
@@ -27,11 +23,13 @@ import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static za.org.grassroot.core.domain.Permission.*;
 
 /**
  * Created by luke on 2016/01/02.
+ * major todo : restore replication to subgroups when that feature is properly redesigned
  */
 @Controller
 @RequestMapping("/todo/")
@@ -106,7 +104,7 @@ public class TodoController extends BaseController {
 
     @RequestMapping(value = "record", method = RequestMethod.POST)
     public String recordTodo(@ModelAttribute("entry") TodoWrapper todoEntry,
-                             HttpServletRequest request, RedirectAttributes redirectAttributes) {
+                             RedirectAttributes redirectAttributes, HttpServletRequest request) {
 
         log.info("TodoWrapper received, looks like: {}", todoEntry.toString());
 
@@ -131,8 +129,6 @@ public class TodoController extends BaseController {
         log.info("Time to create, store, todos: {} msecs", System.currentTimeMillis() - startTime);
 
         addMessage(redirectAttributes, MessageType.SUCCESS, "todo.creation.success", request);
-        // redirectAttributes.addAttribute("todoUid", created.getUid());
-
         return "redirect:/home";
     }
 
@@ -147,14 +143,14 @@ public class TodoController extends BaseController {
         addMessage(attributes, MessageType.SUCCESS, "todo.creation.success", request);
         attributes.addAttribute("todoUid", created.getUid());
 
-        return "redirect:/todo/details";
+        return "redirect:/todo/view";
     }
 
     /**
      * SECTION: Views and methods for examining a group's actions and todos
      * The standard view just looks at the entry as applied to the group ... There's a click through to check sub-group ones
      */
-    @RequestMapping(value = "view")
+    @RequestMapping(value = "list")
     public String viewGroupActions(Model model, @RequestParam String groupUid) {
 
         User user = userManagementService.load(getUserProfile().getUid());
@@ -172,25 +168,85 @@ public class TodoController extends BaseController {
         model.addAttribute("incompleteEntries", todoBroker.fetchTodosForGroupByStatus(group.getUid(), false, TodoStatus.INCOMPLETE));
         model.addAttribute("completedEntries", todoBroker.fetchTodosForGroupByStatus(group.getUid(), false, TodoStatus.COMPLETE));
 
-        return "todo/view";
+        return "todo/list";
     }
 
-    // major todo : restore replication to subgroups when that feature is properly redesigned
-    @RequestMapping(value = "details")
-    public String viewTodoDetails(Model model, @RequestParam String todoUid) {
+    @RequestMapping(value = "view")
+    public String viewTodoDetails(Model model, @RequestParam String todoUid, @RequestParam(required = false) SourceMarker source) {
 
         Todo todoEntry = todoBroker.load(todoUid);
         User user = userManagementService.load(getUserProfile().getUid());
 
-        log.info("Retrieved todo entry with these details ... " + todoEntry);
-
-        model.addAttribute("entry", todoEntry);
+        model.addAttribute("todo", todoEntry);
         model.addAttribute("parent", todoEntry.getParent());
         model.addAttribute("isComplete", todoEntry.isCompleted(COMPLETION_PERCENTAGE_BOUNDARY));
+        model.addAttribute("hasReminders", todoEntry.isReminderActive() && todoEntry.getNumberOfRemindersLeftToSend() > 0);
         model.addAttribute("canModify", todoEntry.getCreatedByUser().equals(user) ||
                 permissionBroker.isGroupPermissionAvailable(user, todoEntry.getAncestorGroup(), GROUP_PERMISSION_UPDATE_GROUP_DETAILS));
+        model.addAttribute("fromGroup", SourceMarker.GROUP.equals(source));
+        model.addAttribute("memberPicker", MemberPicker.taskAssigned(todoEntry));
 
-        return "todo/details";
+        return "todo/view";
+    }
+
+    @RequestMapping(value = "cancel", method = RequestMethod.POST)
+    public String cancelTodo(@RequestParam String todoUid, @RequestParam String parentUid,
+                             RedirectAttributes redirectAttributes, HttpServletRequest request) {
+        // service layer will test for permission etc and throw errors
+        todoBroker.cancel(getUserProfile().getUid(), todoUid);
+        addMessage(redirectAttributes, MessageType.INFO, "todo.cancelled.done", request);
+        // for now, assuming it's a group
+        redirectAttributes.addAttribute("groupUid", parentUid);
+        return "redirect:/group/view";
+    }
+
+    @PostMapping("description")
+    public String changeDescription(@RequestParam String todoUid, @RequestParam String description,
+                                    RedirectAttributes attributes, HttpServletRequest request) {
+        todoBroker.updateDescription(getUserProfile().getUid(), todoUid, description);
+        addMessage(attributes, MessageType.SUCCESS, "todo.description.updated", request);
+        attributes.addAttribute("todoUid", todoUid);
+        return "redirect:/todo/view";
+    }
+
+    @PostMapping("changeduedate")
+    public String changeDueDate(@RequestParam String todoUid, @RequestParam LocalDateTime actionByDate,
+                                RedirectAttributes attributes, HttpServletRequest request) {
+        todoBroker.updateActionByDate(getUserProfile().getUid(), todoUid, actionByDate);
+        addMessage(attributes, MessageType.SUCCESS, "todo.deadline.updated", request);
+        attributes.addAttribute("todoUid", todoUid);
+        return "redirect:/todo/view";
+    }
+
+    @PostMapping("assignment")
+    public String changeAssignment(@RequestParam String todoUid, @ModelAttribute("memberPicker") MemberPicker memberPicker,
+                                   RedirectAttributes attributes, HttpServletRequest request) {
+        Todo todo = todoBroker.load(todoUid);
+        attributes.addAttribute("todoUid", todoUid);
+
+        Set<String> assignedUids = memberPicker.getSelectedUids();
+        if (assignedUids.isEmpty()) {
+            addMessage(attributes, MessageType.ERROR, "todo.assigned.error.empty", request);
+            return "redirect:/todo/view";
+        }
+
+        Set<String> originalUids = todo.isAllGroupMembersAssigned() ?
+                todo.getAncestorGroup().getMembers().stream().map(User::getUid).collect(Collectors.toSet()) :
+                todo.getAssignedMembers().stream().map(User::getUid).collect(Collectors.toSet());
+
+        Set<String> addedUids = assignedUids.stream()
+                .filter(s -> !originalUids.contains(s))
+                .collect(Collectors.toSet());
+
+        Set<String> removedUids = originalUids.stream()
+                .filter(s -> !assignedUids.contains(s))
+                .collect(Collectors.toSet());
+
+        todoBroker.removeAssignedMembers(getUserProfile().getUid(), todoUid, removedUids);
+        todoBroker.assignMembers(getUserProfile().getUid(), todoUid, addedUids);
+
+        addMessage(attributes, MessageType.SUCCESS, "todo.assigned.changed", request);
+        return "redirect:/todo/view";
     }
 
     @RequestMapping(value = "complete", method = RequestMethod.GET)
@@ -206,71 +262,13 @@ public class TodoController extends BaseController {
             return "redirect:/group/view";
         } else if ("todolist".equalsIgnoreCase(source)) {
             attributes.addAttribute("groupUid", todo.getAncestorGroup().getUid());
-            return "redirect:/todo/view";
+            return "redirect:/todo/list";
         } else if ("todoview".equalsIgnoreCase(source)) {
             attributes.addAttribute("todoUid", todo.getUid());
-            return "redirect:/todo/details";
+            return "redirect:/todo/view";
         } else {
             return "redirect:/home";
         }
-    }
-
-    // todo : add back assignment
-    @RequestMapping("modify")
-    public String modifyTodo(Model model, @RequestParam String todoUid) {
-
-        User user = userManagementService.load(getUserProfile().getUid());
-        Todo todo = todoBroker.load(todoUid);
-        Group group = todo.getAncestorGroup();
-
-        if (!todo.getCreatedByUser().equals(user)) {
-            permissionBroker.validateGroupPermission(user, group, GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
-        }
-
-        model.addAttribute("todo", todo);
-        model.addAttribute("groupMembers", group.getMembers());
-
-        return "todo/modify";
-    }
-
-    @RequestMapping(value = "cancel", method = RequestMethod.POST)
-    public String cancelTodo(@RequestParam String todoUid, @RequestParam String parentUid, RedirectAttributes redirectAttributes, HttpServletRequest request) {
-        // service layer will test for permission etc and throw errors
-        todoBroker.cancel(getUserProfile().getUid(), todoUid);
-        addMessage(redirectAttributes, MessageType.INFO, "todo.cancelled.done", request);
-        // for now, assuming it's a group
-        redirectAttributes.addAttribute("groupUid", parentUid);
-        return "redirect:/group/view";
-    }
-
-    // todo: cancellation & assignment
-    @RequestMapping(value = "modify", method = RequestMethod.POST)
-    public String changeTodoEntry(Model model, @ModelAttribute("todo") Todo todo, HttpServletRequest request) {
-
-        // may consider doing some of this in services layer, but main point is can't just use to-do entity passed
-        // back from form as thymeleaf whacks all the attributes we don't explicitly code into hidden inputs
-
-        Todo savedTodo = todoBroker.load(todo.getUid());
-        User user = userManagementService.load(getUserProfile().getUid());
-        Group group = savedTodo.getAncestorGroup();
-
-        if (!todo.getCreatedByUser().equals(user)) {
-            permissionBroker.validateGroupPermission(user, group, GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
-        }
-
-        if (!todo.getMessage().equals(savedTodo.getMessage()))
-            savedTodo.setMessage(todo.getMessage());
-
-        if (!todo.getActionByDate().equals(savedTodo.getActionByDate()))
-            savedTodo.setActionByDate(todo.getActionByDate());
-
-        if (todo.getReminderMinutes() != savedTodo.getReminderMinutes())
-            savedTodo.setReminderMinutes(todo.getReminderMinutes());
-
-        savedTodo = todoBroker.update(savedTodo);
-
-        addMessage(model, MessageType.SUCCESS, "todo.modified.done", request);
-        return viewTodoDetails(model, savedTodo.getUid());
     }
 
 }

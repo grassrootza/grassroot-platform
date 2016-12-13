@@ -467,14 +467,24 @@ public class TodoBrokerImpl implements TodoBroker {
 		User user = userRepository.findOneByUid(userUid);
 		Todo todo = todoRepository.findOneByUid(todoUid);
 
-		if (!todo.getCreatedByUser().equals(user)) {
-			throw new AccessDeniedException("Error! Only the user who recorded the action can change it");
-		}
-
+		validateUserCanModify(user, todo);
 		todo.setMessage(newMessage);
 	}
 
-	@Override
+    @Override
+	@Transactional
+    public void updateDescription(String userUid, String todoUid, String description) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(todoUid);
+
+        User user = userRepository.findOneByUid(userUid);
+        Todo todo = todoRepository.findOneByUid(todoUid);
+        validateUserCanModify(user, todo);
+
+        todo.setDescription(description);
+    }
+
+    @Override
 	@Transactional
 	public void updateActionByDate(String userUid, String todoUid, LocalDateTime revisedActionByDate) {
 		Objects.requireNonNull(userUid);
@@ -484,10 +494,7 @@ public class TodoBrokerImpl implements TodoBroker {
 		User user = userRepository.findOneByUid(userUid);
 		Todo todo = todoRepository.findOneByUid(todoUid);
 
-		if (!todo.getCreatedByUser().equals(user)) {
-			throw new AccessDeniedException("Error! Only the user who recorded the action can change the due date");
-		}
-
+		validateUserCanModify(user, todo);
 		todo.setActionByDate(convertToSystemTime(revisedActionByDate, getSAST()));
 	}
 
@@ -501,5 +508,11 @@ public class TodoBrokerImpl implements TodoBroker {
 	@Transactional(readOnly = true)
 	public List<Todo> getAllReplicatedEntriesFromParent(Todo todo) {
 		return todoRepository.findBySourceTodo(todo);
+	}
+
+	private void validateUserCanModify(User user, Todo todo) {
+		if (!todo.getCreatedByUser().equals(user)) {
+			throw new AccessDeniedException("Error! Only the user who recorded the action can change its details");
+		}
 	}
 }

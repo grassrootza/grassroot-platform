@@ -21,8 +21,12 @@ public class TaskController extends BaseController {
 
     private static final Logger logger = LoggerFactory.getLogger(TaskController.class);
 
+    private final TaskBroker taskBroker;
+
     @Autowired
-    private TaskBroker taskBroker;
+    public TaskController(TaskBroker taskBroker) {
+        this.taskBroker = taskBroker;
+    }
 
     @RequestMapping("view")
     public String viewTask(@RequestParam String taskUid, RedirectAttributes attributes) {
@@ -37,7 +41,7 @@ public class TaskController extends BaseController {
                 return "redirect:/vote/view";
             case TODO:
                 attributes.addAttribute("todoUid", taskUid);
-                return "redirect:/todo/details";
+                return "redirect:/todo/view";
             default:
                 logger.error("Error! Task with no type passed to view router");
                 return "redirect:/home";

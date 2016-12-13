@@ -396,7 +396,7 @@
         replyForm.find("#taskUid").attr("name", "todoUid");
         replyForm.find("#taskModalYesButton").text("Mark completed").toggle(!replied);
         replyForm.find("#taskModalNoButton").hide();
-        detailsButton.attr("href", "todo/details?todoUid=" + uid).show();
+        detailsButton.attr("href", "todo/view?todoUid=" + uid).show();
       }
 
       modal.find("#taskModalTitle").html(type + ": " + task.title);
