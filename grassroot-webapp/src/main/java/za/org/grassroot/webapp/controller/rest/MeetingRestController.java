@@ -94,7 +94,7 @@ public class MeetingRestController {
         // todo : decide what to do with event reminder types
         try {
             Meeting meeting = eventBroker.createMeeting(user.getUid(), parentUid, JpaEntityType.GROUP, title, eventStartDateTime,
-                    location, false, true, false, reminderType, reminderMinutes, description,
+                    location, false, reminderType, reminderMinutes, description,
                     assignedMemberUids, MeetingImportance.ORDINARY);
             TaskDTO createdMeeting = taskBroker.load(user.getUid(), meeting.getUid(), TaskType.MEETING);
             return RestUtil.okayResponseWithData(RestMessage.MEETING_CREATED, Collections.singletonList(createdMeeting));

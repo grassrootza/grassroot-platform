@@ -29,22 +29,13 @@ public class Meeting extends Event<MeetingContainer> implements VoteContainer {
 	}
 
 	public Meeting(String name, Instant startDateTime, User user, MeetingContainer parent, String eventLocation, boolean includeSubGroups) {
-		this(name, startDateTime, user, parent, eventLocation, includeSubGroups, false, false, EventReminderType.DISABLED, 0, null);
+		this(name, startDateTime, user, parent, eventLocation, includeSubGroups, EventReminderType.DISABLED, 0, null);
 	}
 
 	public Meeting(String name, Instant startDateTime, User user, MeetingContainer parent, String eventLocation, boolean includeSubGroups,
-				   boolean rsvpRequired, boolean relayable, EventReminderType reminderType, int customReminderMinutes, String description) {
-		super(startDateTime, user, parent, name, includeSubGroups, rsvpRequired, relayable, reminderType, customReminderMinutes, description);
+				   EventReminderType reminderType, int customReminderMinutes, String description) {
+		super(startDateTime, user, parent, name, includeSubGroups, reminderType, customReminderMinutes, description, true, false);
 		this.eventLocation = Objects.requireNonNull(eventLocation);
-		setScheduledReminderActive(true);
-		setParent(parent);
-	}
-
-	public Meeting(String name, Instant startDateTime, User user, MeetingContainer parent, String eventLocation, boolean includeSubGroups,
-				   boolean rsvpRequired, boolean relayable, EventReminderType reminderType, MeetingImportance importance, int customReminderMinutes, String description) {
-		super(startDateTime, user, parent, name, includeSubGroups, rsvpRequired, relayable, reminderType, customReminderMinutes, description);
-		this.eventLocation = Objects.requireNonNull(eventLocation);
-		this.importance = Objects.requireNonNull(importance);
 		setScheduledReminderActive(true);
 		setParent(parent);
 	}

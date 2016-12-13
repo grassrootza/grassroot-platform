@@ -71,7 +71,7 @@ public abstract class Event<P extends UidIdentifiable> extends AbstractEventEnti
 	}
 
 	protected Event(Instant eventStartDateTime, User user, UidIdentifiable parent, String name, boolean includeSubGroups,
-					boolean rsvpRequired, boolean relayable, EventReminderType reminderType, int customReminderMinutes, String description) {
+					EventReminderType reminderType, int customReminderMinutes, String description, boolean rsvpRequired, boolean relayable) {
 		super(name, eventStartDateTime, user, includeSubGroups, rsvpRequired, relayable, reminderType, customReminderMinutes, description);
 		this.canceled = false;
 		this.noRemindersSent = 0;

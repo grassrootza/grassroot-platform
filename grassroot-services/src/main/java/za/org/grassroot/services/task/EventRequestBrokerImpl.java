@@ -131,13 +131,13 @@ public class EventRequestBrokerImpl implements EventRequestBroker {
             if (meetingRequest.getReminderType() == null) meetingRequest.setReminderType(EventReminderType.GROUP_CONFIGURED);
 			createdEntityUid = eventBroker.createMeeting(userUid, parent.getUid(), parent.getJpaEntityType(), meetingRequest.getName(),
 					meetingRequest.getEventDateTimeAtSAST(), meetingRequest.getEventLocation(), meetingRequest.isIncludeSubGroups(),
-					rsvpRequired, meetingRequest.isRelayable(), meetingRequest.getReminderType(), meetingRequest.getCustomReminderMinutes(),
+					meetingRequest.getReminderType(), meetingRequest.getCustomReminderMinutes(),
 					meetingRequest.getDescription(), assignedMemberUids, MeetingImportance.ORDINARY).getUid();
 		} else {
 			VoteRequest voteRequest = (VoteRequest) request;
 			VoteContainer parent = voteRequest.getParent();
 			createdEntityUid = eventBroker.createVote(userUid, parent.getUid(), parent.getJpaEntityType(), voteRequest.getName(),
-					voteRequest.getEventDateTimeAtSAST(), voteRequest.isIncludeSubGroups(), voteRequest.isRelayable(),
+					voteRequest.getEventDateTimeAtSAST(), voteRequest.isIncludeSubGroups(),
 					voteRequest.getDescription(), assignedMemberUids).getUid();
 		}
 

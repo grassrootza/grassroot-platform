@@ -88,7 +88,7 @@ public class VoteController extends BaseController {
 
         try {
             eventBroker.createVote(getUserProfile().getUid(), groupUid, JpaEntityType.GROUP, vote.getTitle(), vote.getEventDateTime(),
-                    vote.isIncludeSubGroups(), false, vote.getDescription(), Collections.emptySet());
+                    vote.isIncludeSubGroups(), vote.getDescription(), Collections.emptySet());
             log.info("Stored vote, at end of creation: " + vote.toString());
             addMessage(redirectAttributes, MessageType.SUCCESS, "vote.creation.success", request);
             redirectAttributes.addAttribute("groupUid", groupUid);

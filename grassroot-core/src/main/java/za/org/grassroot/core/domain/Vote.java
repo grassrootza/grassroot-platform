@@ -25,11 +25,11 @@ public class Vote extends Event<VoteContainer> {
 	}
 
 	public Vote(String name, Instant startDateTime, User user, VoteContainer parent, boolean includeSubGroups) {
-		this(name, startDateTime, user, parent, includeSubGroups, false, null);
+		this(name, startDateTime, user, parent, includeSubGroups, null);
 	}
 
-	public Vote(String name, Instant startDateTime, User user, VoteContainer parent, boolean includeSubGroups, boolean relayable, String description) {
-		super(startDateTime, user, parent, name, includeSubGroups, true, relayable, EventReminderType.DISABLED, 0, description);
+	public Vote(String name, Instant startDateTime, User user, VoteContainer parent, boolean includeSubGroups, String description) {
+		super(startDateTime, user, parent, name, includeSubGroups, EventReminderType.DISABLED, 0, description, true, false);
 		setParent(parent);
 	}
 

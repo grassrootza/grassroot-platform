@@ -95,11 +95,12 @@ public abstract class AbstractEventEntity {
 		this.eventStartDateTime = Objects.requireNonNull(eventStartDateTime);
 		this.createdByUser = Objects.requireNonNull(createdByUser);
 		this.includeSubGroups = includeSubGroups;
-		this.rsvpRequired = rsvpRequired;
-		this.relayable = relayable;
 		this.reminderType = Objects.requireNonNull(reminderType);
 		this.customReminderMinutes = customReminderMinutes;
 		this.description = (description == null) ? "" : description;
+
+		this.rsvpRequired = rsvpRequired;
+		this.relayable = relayable;
 	}
 
 	public Long getId() {

@@ -28,8 +28,6 @@ public interface EventBroker {
 	 * @param eventStartDateTime The date and time when the meeting will take place
 	 * @param eventLocation The location of the meeting
 	 * @param includeSubGroups Whether the meeting notifications should be sent to the members of all subgroups (ignored if the parent is not a group)
-	 * @param rsvpRequired Whether to ask members to confirm attendance or not. Almost always true.
-	 * @param relayable Whether the meeting invite can be relayed to other people. Currently not implemented.
 	 * @param reminderType The type of reminder time (group default / no reminder / custom time)
 	 * @param customReminderMinutes If the reminder type is custom, the number of minutes in advance to send the reminder
 	 * @param description An optional longer description -- can be null
@@ -38,8 +36,8 @@ public interface EventBroker {
 	 * @return
      */
 	Meeting createMeeting(String userUid, String parentUid, JpaEntityType parentType, String name, LocalDateTime eventStartDateTime, String eventLocation,
-						  boolean includeSubGroups, boolean rsvpRequired, boolean relayable, EventReminderType reminderType,
-						  int customReminderMinutes, String description, Set<String> assignMemberUids, MeetingImportance importance);
+						  boolean includeSubGroups, EventReminderType reminderType, int customReminderMinutes, String description,
+						  Set<String> assignMemberUids, MeetingImportance importance);
 
 	// for commonly updated fields (in particular, the only fields that can be changed via USSD) -- returns true if field actually changed ...
 	boolean updateMeeting(String userUid, String meetingUid, String name, LocalDateTime eventStartDateTime, String eventLocation);
@@ -49,7 +47,7 @@ public interface EventBroker {
 	                   EventReminderType reminderType, int customReminderMinutes, Set<String> assignedMemberUids);
 
 	Vote createVote(String userUid, String parentUid, JpaEntityType parentType, String name, LocalDateTime eventStartDateTime,
-					boolean includeSubGroups, boolean relayable, String description, Set<String> assignMemberUids);
+					boolean includeSubGroups, String description, Set<String> assignMemberUids);
 
     // votes cannot change topic or scope (groups included or not) after creation, just closing time & description field
     Vote updateVote(String userUid, String voteUid, LocalDateTime eventStartDateTime, String description);

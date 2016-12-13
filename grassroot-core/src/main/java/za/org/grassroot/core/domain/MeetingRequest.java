@@ -20,13 +20,7 @@ public class MeetingRequest extends EventRequest<MeetingContainer> {
 
 	@Override
 	public boolean isFilled() {
-		if (eventLocation == null || eventLocation.trim().equals("")) {
-			return false;
-		}
-		if (getParent() == null) {
-			return false;
-		}
-		return isFilledWithCommonFields();
+		return !(eventLocation == null || eventLocation.trim().equals("")) && getParent() != null && isFilledWithCommonFields();
 	}
 
 	private MeetingRequest() {

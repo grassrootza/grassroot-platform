@@ -96,7 +96,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
 
         verify(eventBrokerMock, times(1)).createMeeting(sessionTestUser.getUid(), dummyGroup.getUid(), JpaEntityType.GROUP, "test meeting",
                                                         oneDayAway.atZone(DateTimeUtil.getSAST()).toLocalDateTime(),
-                                                        "some place", false, true, false, EventReminderType.CUSTOM, 60,
+                                                        "some place", false, EventReminderType.CUSTOM, 60,
                                                         "", Collections.emptySet(), MeetingImportance.ORDINARY);
 
         verifyNoMoreInteractions(groupBrokerMock);

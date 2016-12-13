@@ -35,12 +35,6 @@ public abstract class EventRequest<P extends UidIdentifiable> extends AbstractEv
 	}
 
 	protected boolean isFilledWithCommonFields() {
-		if (getName() == null || getName().trim().equals("")) {
-			return false;
-		}
-		if (getCreatedByUser() == null) {
-			return false;
-		}
-		return getEventStartDateTime() != null;
+		return !(getName() == null || getName().trim().equals("")) && getCreatedByUser() != null && getEventStartDateTime() != null;
 	}
 }

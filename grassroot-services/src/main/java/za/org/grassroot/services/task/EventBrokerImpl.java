@@ -84,8 +84,8 @@ public class EventBrokerImpl implements EventBroker {
     @Override
     @Transactional
     public Meeting createMeeting(String userUid, String parentUid, JpaEntityType parentType, String name, LocalDateTime eventStartDateTime, String eventLocation,
-								 boolean includeSubGroups, boolean rsvpRequired, boolean relayable, EventReminderType reminderType,
-								 int customReminderMinutes, String description, Set<String> assignMemberUids, MeetingImportance importance) {
+								 boolean includeSubGroups, EventReminderType reminderType, int customReminderMinutes,
+								 String description, Set<String> assignMemberUids, MeetingImportance importance) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(parentUid);
         Objects.requireNonNull(parentType);
@@ -114,7 +114,7 @@ public class EventBrokerImpl implements EventBroker {
 		}
 
 		Meeting meeting = new Meeting(name, eventStartDateTimeInSystem, user, parent, eventLocation,
-                                      includeSubGroups, rsvpRequired, relayable, reminderType, customReminderMinutes, description);
+                                      includeSubGroups, reminderType, customReminderMinutes, description);
 
 		if (!assignMemberUids.isEmpty()) {
 			assignMemberUids.add(userUid); // enforces creating user part of meeting, if partial selection
@@ -335,7 +335,7 @@ public class EventBrokerImpl implements EventBroker {
 	@Override
 	@Transactional
 	public Vote createVote(String userUid, String parentUid, JpaEntityType parentType, String name, LocalDateTime eventStartDateTime,
-						   boolean includeSubGroups, boolean relayable, String description, Set<String> assignMemberUids) {
+						   boolean includeSubGroups, String description, Set<String> assignMemberUids) {
 		Objects.requireNonNull(userUid);
 		Objects.requireNonNull(parentUid);
 		Objects.requireNonNull(parentType);
@@ -360,7 +360,7 @@ public class EventBrokerImpl implements EventBroker {
 			throw new TaskNameTooLongException();
 		}
 
-		Vote vote = new Vote(name, convertedClosingDateTime, user, parent, includeSubGroups, relayable, description);
+		Vote vote = new Vote(name, convertedClosingDateTime, user, parent, includeSubGroups, description);
 		if (assignMemberUids != null && !assignMemberUids.isEmpty()) {
 			assignMemberUids.add(userUid); // enforce creating user part of vote
 		}
