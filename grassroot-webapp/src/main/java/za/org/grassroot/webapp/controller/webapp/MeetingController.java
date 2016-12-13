@@ -13,9 +13,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
-import za.org.grassroot.core.enums.MeetingImportance;
 import za.org.grassroot.core.util.DateTimeUtil;
-import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.services.group.GroupBroker;
@@ -49,16 +47,14 @@ public class MeetingController extends BaseController {
 
     private GroupBroker groupBroker;
     private EventBroker eventBroker;
-    private PermissionBroker permissionBroker;
     private EventLogBroker eventLogBroker;
     private AccountGroupBroker accountBroker;
 
     @Autowired
-    public MeetingController(GroupBroker groupBroker, EventBroker eventBroker, PermissionBroker permissionBroker,
+    public MeetingController(GroupBroker groupBroker, EventBroker eventBroker,
                              EventLogBroker eventLogBroker, AccountGroupBroker accountBroker) {
         this.groupBroker = groupBroker;
         this.eventBroker = eventBroker;
-        this.permissionBroker = permissionBroker;
         this.eventLogBroker = eventLogBroker;
         this.accountBroker = accountBroker;
     }
@@ -77,16 +73,17 @@ public class MeetingController extends BaseController {
             addMessage(attributes, MessageType.INFO, "meeting.create.group", request);
             return "redirect:/group/create";
         } else {
-
             if (groupUid != null) {
                 Group group = groupBroker.load(groupUid);
                 model.addAttribute("group", group);
                 model.addAttribute("parentSpecified", true);
+                model.addAttribute("thisGroupPaidFor", accountBroker.isGroupOnAccount(groupUid)); // slightly more robust check than "is paid for"
                 meeting.setMemberPicker(MemberPicker.create(group, JpaEntityType.GROUP, true));
                 meeting.setParentUid(groupUid);
             } else {
                 User user = userManagementService.load(getUserProfile().getUid()); // refresh user entity, in case permissions changed
                 model.addAttribute("parentSpecified", false);
+                model.addAttribute("thisGroupPaidFor", false); // by definition ... instead taken from group properties
                 model.addAttribute("userGroups", permissionBroker.getActiveGroupsSorted(user, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING));
             }
 
@@ -112,11 +109,14 @@ public class MeetingController extends BaseController {
             Set<String> invitedMemberUids = "members".equalsIgnoreCase(meeting.getAssignmentType()) ?
                     meeting.getMemberPicker().getSelectedUids() : Collections.emptySet();
 
+            if (!invitedMemberUids.isEmpty() && !invitedMemberUids.contains(getUserProfile().getUid())) {
+                invitedMemberUids.add(getUserProfile().getUid()); // in future ask if they're sure
+            }
+
             eventBroker.createMeeting(getUserProfile().getUid(), selectedGroupUid, JpaEntityType.GROUP,
                     meeting.getTitle(), meeting.getEventDateTime(), meeting.getLocation(),
-                    meeting.isIncludeSubGroups(),
-                    meeting.getReminderType(), meeting.getCustomReminderMinutes(), meeting.getDescription(),
-                    invitedMemberUids, MeetingImportance.ORDINARY);
+                    meeting.isIncludeSubGroups(), meeting.getReminderType(), meeting.getCustomReminderMinutes(),
+                    meeting.getDescription(), invitedMemberUids, meeting.getImportance());
 
             addMessage(redirectAttributes, MessageType.SUCCESS, "meeting.creation.success", request);
             redirectAttributes.addAttribute("groupUid", selectedGroupUid);
@@ -135,7 +135,7 @@ public class MeetingController extends BaseController {
      */
 
     @RequestMapping("view")
-    public String viewMeetingDetails(Model model, @RequestParam String eventUid) {
+    public String viewMeetingDetails(Model model, @RequestParam String eventUid, @RequestParam(required = false) SourceMarker source) {
 
         Meeting meeting = eventBroker.loadMeeting(eventUid);
         User user = getUserProfile();
@@ -167,10 +167,11 @@ public class MeetingController extends BaseController {
         if (meeting.getScheduledReminderTime() != null)
             model.addAttribute("scheduledReminderTime", DateTimeUtil.convertToUserTimeZone(meeting.getScheduledReminderTime(),
                                                                                            getSAST()));
+        model.addAttribute("fromGroup", SourceMarker.GROUP.equals(source));
+        model.addAttribute("parentUid", meeting.getParent().getUid());
 
         return "meeting/view";
     }
-
 
     @RequestMapping(value = "modify", method=RequestMethod.POST)
     public String changeMeeting(Model model, @RequestParam String eventUid, @RequestParam String location,
@@ -186,25 +187,28 @@ public class MeetingController extends BaseController {
         } else {
             addMessage(model, MessageType.ERROR, "meeting.update.error.time", request);
         }
-        return viewMeetingDetails(model, eventUid);
+        return viewMeetingDetails(model, eventUid, null);
+    }
+
+    @PostMapping("description")
+    public String changeDescription(@RequestParam String eventUid, @RequestParam String meetingDescription,
+                                    RedirectAttributes attributes, HttpServletRequest request) {
+        eventBroker.updateDescription(getUserProfile().getUid(), eventUid, meetingDescription);
+        attributes.addAttribute("eventUid", eventUid);
+        addMessage(attributes, MessageType.SUCCESS, "meeting.description.changed", request);
+        return "redirect:/meeting/view";
     }
 
     @RequestMapping(value = "cancel", method=RequestMethod.POST)
-    public String cancelMeeting(Model model, @ModelAttribute("meeting") MeetingWrapper meeting, BindingResult bindingResult,
-                                RedirectAttributes redirectAttributes, HttpServletRequest request) {
-
-        log.info("Meeting that is about to be cancelled: " + meeting.toString());
-        eventBroker.cancel(getUserProfile().getUid(), meeting.getEntityUid());
+    public String cancelMeeting(@RequestParam String eventUid, RedirectAttributes redirectAttributes, HttpServletRequest request) {
+        eventBroker.cancel(getUserProfile().getUid(), eventUid);
         addMessage(redirectAttributes, MessageType.SUCCESS, "meeting.cancel.success", request);
-        return "redirect:/home";
-
+        return "redirect:/home"; // todo : send to group if came from group
     }
 
     @RequestMapping(value = "reminder", method=RequestMethod.POST)
     public String changeReminderSettings(Model model, @RequestParam String eventUid, @RequestParam EventReminderType reminderType,
                                          @RequestParam(value = "custom_minutes", required = false) Integer customMinutes, HttpServletRequest request) {
-
-        // todo: maybe move this into a common place ... since call it from all controllers ...
         int minutes = (customMinutes != null && reminderType.equals(EventReminderType.CUSTOM)) ? customMinutes : 0;
         eventBroker.updateReminderSettings(getUserProfile().getUid(), eventUid, reminderType, minutes);
         Instant newScheduledTime = eventBroker.loadMeeting(eventUid).getScheduledReminderTime();
@@ -215,15 +219,14 @@ public class MeetingController extends BaseController {
         } else {
             addMessage(model, MessageType.SUCCESS, "meeting.reminder.changed.none", request);
         }
-        return viewMeetingDetails(model, eventUid);
+        return viewMeetingDetails(model, eventUid, null);
     }
 
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/meeting/remind", method=RequestMethod.POST)
-    public String sendReminder(Model model, @RequestParam("entityUid") String meetingUid, RedirectAttributes redirectAttributes,
+    public String sendReminder(@RequestParam("entityUid") String meetingUid, RedirectAttributes redirectAttributes,
                                HttpServletRequest request) {
-
         // todo: check for paid group & for feature enabled
         Meeting meeting = eventBroker.loadMeeting(meetingUid);
         eventBroker.sendManualReminder( getUserProfile().getUid(), meeting.getUid());
@@ -237,8 +240,7 @@ public class MeetingController extends BaseController {
      */
 
     @RequestMapping(value = "rsvp")
-    public String rsvpYes(Model model, @RequestParam String eventUid, @RequestParam String answer,
-                          HttpServletRequest request, RedirectAttributes attributes) {
+    public String rsvpYes(@RequestParam String eventUid, @RequestParam String answer, HttpServletRequest request, RedirectAttributes attributes) {
 
         Meeting meeting = eventBroker.loadMeeting(eventUid);
         User user = getUserProfile();

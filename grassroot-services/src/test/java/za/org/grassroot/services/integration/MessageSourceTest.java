@@ -35,7 +35,7 @@ public class MessageSourceTest {
     @Test
     public void testMessagesInUKLocale() throws Exception {
         //Calling messageSource.getMessage throws exception if messages for Locale is not found
-      String message =   messageSource.getMessage("sms.mtg.send.new", new Object[]{"Grassroot", "Thabo", "Activism", "The Square", "15 October 2PM"}, Locale.UK);
+      String message =   messageSource.getMessage("sms.mtg.send.new.rsvp", new Object[]{"Grassroot", "Thabo", "Activism", "The Square", "15 October 2PM"}, Locale.UK);
       assertThat(message, is(not(isEmptyOrNullString())));
 
     }
@@ -44,7 +44,7 @@ public class MessageSourceTest {
     @Test
     public void testMessagesInEnglishLocale() throws Exception {
         //Calling messageSource.getMessage throws exception if messages for Locale is not found
-        String message =   messageSource.getMessage("sms.mtg.send.new", new Object[]{"Grassroot", "Thabo", "Activism", "The Square", "15 October 2PM"}, Locale.ENGLISH);
+        String message =   messageSource.getMessage("sms.mtg.send.new.rsvp", new Object[]{"Grassroot", "Thabo", "Activism", "The Square", "15 October 2PM"}, Locale.ENGLISH);
         assertThat(message, is(not(isEmptyOrNullString())));
 
     }
@@ -52,7 +52,7 @@ public class MessageSourceTest {
     @Test
     public void testMessagesInZuluLocale() throws Exception {
         //Calling messageSource.getMessage throws exception if messages for Locale is not found
-        String message =   messageSource.getMessage("sms.mtg.send.new", new Object[]{"Grassroot", "Thabo", "Activism", "The Square", "15 October 2PM"}, new Locale("zu"));
+        String message =   messageSource.getMessage("sms.mtg.send.new.rsvp", new Object[]{"Grassroot", "Thabo", "Activism", "The Square", "15 October 2PM"}, new Locale("zu"));
         assertThat(message, is(not(isEmptyOrNullString())));
 
     }

@@ -4,7 +4,6 @@ package za.org.grassroot.core.domain;
  * Created by luke on 2015/07/16.
  */
 
-
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.DateTimeUtil;
 

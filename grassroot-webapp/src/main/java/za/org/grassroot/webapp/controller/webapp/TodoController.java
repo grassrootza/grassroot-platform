@@ -5,7 +5,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
@@ -64,7 +63,6 @@ public class TodoController extends BaseController {
                              RedirectAttributes attributes, HttpServletRequest request) {
 
         TodoWrapper wrapper;
-
         if (!StringUtils.isEmpty(parentUid)) {
             JpaEntityType parentType = passedParentType == null ? JpaEntityType.GROUP : passedParentType;
             boolean isParentGroup = JpaEntityType.GROUP.equals(parentType);
@@ -79,9 +77,6 @@ public class TodoController extends BaseController {
             wrapper.setReminderType(parent.getReminderType());
             wrapper.setReminderMinutes(parent.getTodoReminderMinutes() == null ? AbstractTodoEntity.DEFAULT_REMINDER_MINUTES
                     : parent.getTodoReminderMinutes());
-            model.addAttribute("actionTodo", wrapper);
-
-            return "todo/create";
         } else {
             // reload user entity in case things have changed during session (else bug w/ list of possible groups)
             User userFromDb = userManagementService.load(getUserProfile().getUid());
@@ -101,10 +96,10 @@ public class TodoController extends BaseController {
             wrapper.setReminderType(EventReminderType.GROUP_CONFIGURED);
             wrapper.setReminderMinutes(AbstractTodoEntity.DEFAULT_REMINDER_MINUTES);
 
-            model.addAttribute("actionTodo", wrapper);
-            return "todo/create";
         }
 
+        model.addAttribute("actionTodo", wrapper);
+        return "todo/create";
     }
 
     // todo : abstract & consolidate these two
@@ -122,9 +117,8 @@ public class TodoController extends BaseController {
 
         Set<String> assignedUids;
         if ("members".equals(todoEntry.getAssignmentType())) {
-            MemberPicker listOfMembers = todoEntry.getMemberPicker();
-            log.info("The memberUids are : ..." + Joiner.on(", ").join(listOfMembers.getSelectedUids()));
-            assignedUids = listOfMembers.getSelectedUids();
+            assignedUids = todoEntry.getMemberPicker().getSelectedUids();
+            assignedUids.add(getUserProfile().getUid()); // to avoid accidental removal from own action
         } else {
             assignedUids = Collections.emptySet();
         }

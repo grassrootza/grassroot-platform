@@ -4,9 +4,7 @@ import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.MeetingImportance;
 import za.org.grassroot.core.util.UIDGenerator;
 
-import javax.persistence.Column;
-import javax.persistence.DiscriminatorValue;
-import javax.persistence.Entity;
+import javax.persistence.*;
 import java.time.Instant;
 import java.util.Objects;
 
@@ -18,6 +16,7 @@ public class Meeting extends Event<MeetingContainer> implements VoteContainer {
 	private String eventLocation;
 
 	@Column(name="importance")
+	@Enumerated(EnumType.STRING)
 	private MeetingImportance importance;
 
 	private Meeting() {
@@ -29,13 +28,15 @@ public class Meeting extends Event<MeetingContainer> implements VoteContainer {
 	}
 
 	public Meeting(String name, Instant startDateTime, User user, MeetingContainer parent, String eventLocation, boolean includeSubGroups) {
-		this(name, startDateTime, user, parent, eventLocation, includeSubGroups, EventReminderType.DISABLED, 0, null);
+		this(name, startDateTime, user, parent, eventLocation, includeSubGroups, EventReminderType.DISABLED, 0, null, null);
 	}
 
+	// production constructor : above are only used in tests
 	public Meeting(String name, Instant startDateTime, User user, MeetingContainer parent, String eventLocation, boolean includeSubGroups,
-				   EventReminderType reminderType, int customReminderMinutes, String description) {
+				   EventReminderType reminderType, int customReminderMinutes, String description, MeetingImportance importance) {
 		super(startDateTime, user, parent, name, includeSubGroups, reminderType, customReminderMinutes, description, true, false);
 		this.eventLocation = Objects.requireNonNull(eventLocation);
+		this.importance = importance == null ? MeetingImportance.ORDINARY : importance;
 		setScheduledReminderActive(true);
 		setParent(parent);
 	}
@@ -68,6 +69,8 @@ public class Meeting extends Event<MeetingContainer> implements VoteContainer {
 	public MeetingImportance getImportance() {
 		return importance;
 	}
+
+	public void setImportance(MeetingImportance importance) { this.importance = importance; }
 
 	public MeetingContainer getParent() {
 		if (parentGroup != null) {

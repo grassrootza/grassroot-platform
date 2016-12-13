@@ -151,7 +151,7 @@
 
                       <div th:case="MEETING"  th:with="deadline=${#temporals.format(task.deadlineDateTime,'dd MMM, HH:mm')}">
                         <div class="col-md-8 event-item">
-                          <a class="list-header" href="" th:href="@{/meeting/view(eventUid=${uid})}">
+                          <a class="list-header" href="" th:href="@{/meeting/view(eventUid=${uid}, source='GROUP')}">
                             <b>MEETING:</b> <span th:text="${task.title}"></span>
                           </a>
                         </div>
@@ -164,7 +164,7 @@
 
                       <div th:case="VOTE" th:with="deadline=${#temporals.format(task.deadlineDateTime, 'dd MMM, HH:mm')}">
                         <div class="col-md-8 event-item">
-                          <a class="list-header" href="" th:href="@{/vote/view(eventUid=${task.taskUid})}">
+                          <a class="list-header" href="" th:href="@{/vote/view(eventUid=${task.taskUid}, source='GROUP')}">
                             <b>VOTE:</b> <span th:text="${task.title}"></span>
                           </a>
                         </div>
@@ -180,7 +180,7 @@
 
                       <div th:case="TODO" th:with="deadline=${#temporals.format(task.deadlineDateTime,'EEE d MMM')}">
                         <div class="col-md-8 event-item">
-                          <a class="list-header" href="" th:href="@{/todo/details(todoUid=${task.taskUid})}"><b>TODO:</b>
+                          <a class="list-header" href="" th:href="@{/todo/details(todoUid=${task.taskUid}, source='GROUP')}"><b>TODO:</b>
                           <span th:text="${task.title}"></span> (due <span th:text="${#temporals.format(task.deadlineDateTime, 'd MMM')}">11 Sep 2015</span>)</a>
                         </div>
                         <div th:unless="${task.hasResponded}" class="col-md-4 button-md-align">
@@ -488,12 +488,12 @@
   </div>
 
   <!-- Group description modal -->
-  <div th:if="${canAlter}" class="modal fade" id="descriptionModal" tabindex="-1" role="dialog" aria-labelledby="renameModalLabel">
+  <div th:if="${canAlter}" class="modal fade" id="descriptionModal" tabindex="-1" role="dialog" aria-labelledby="descriptionModalLabel">
     <div class="modal-dialog" role="document">
       <div class="modal-content">
         <div class="modal-header">
           <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-          <h4 class="modal-title" id="descriptionModalLabel">Rename group</h4>
+          <h4 class="modal-title" id="descriptionModalLabel">Change description</h4>
         </div>
         <form th:action="@{/group/description}" method="post">
           <input type="hidden" name="groupUid" th:value="${group.uid}" />

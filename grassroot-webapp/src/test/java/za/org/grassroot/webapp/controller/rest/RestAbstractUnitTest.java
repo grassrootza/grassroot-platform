@@ -63,7 +63,7 @@ public class RestAbstractUnitTest {
                                                      true,
             testEventDescription);
 
-    protected final static Meeting meetingEvent = new Meeting(testEventTitle, testInstant, sessionTestUser, testGroup, testEventLocation, true, EventReminderType.DISABLED, 15, testEventDescription);
+    protected final static Meeting meetingEvent = new Meeting(testEventTitle, testInstant, sessionTestUser, testGroup, testEventLocation, true, EventReminderType.DISABLED, 15, testEventDescription, null);
 
     protected final static Todo TEST_TO_DO = new Todo(sessionTestUser, testGroup, "A test log book", testInstant);
 

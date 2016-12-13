@@ -32,9 +32,11 @@ import java.util.*;
 public class BaseController {
 
     private static final Logger log = LoggerFactory.getLogger(BaseController.class);
-
     private static final String SNACKBAR_MESSAGE = "snackbarMessage";
-
+    protected enum SourceMarker {
+        HOME,
+        GROUP
+    }
     public enum MessageType {
         INFO("infoMessage"),
         SUCCESS("successMessage"),
@@ -55,7 +57,7 @@ public class BaseController {
 
     @Autowired
     @Qualifier("messageSourceAccessor")
-    protected MessageSourceAccessor messageSourceAccessor; // making it protected just briefly, for SMS send
+    private MessageSourceAccessor messageSourceAccessor; // making it protected just briefly, for SMS send
 
     @Autowired
     protected UserManagementService userManagementService;
@@ -151,7 +153,7 @@ public class BaseController {
      * getMessageSourceAccessor() is used because the RequestContext variable
      * is not set in unit tests b/c there's no DispatchServlet Request.
       */
-    public String getText(String msgKey, Locale locale) {
+    private String getText(String msgKey, Locale locale) {
         return messageSourceAccessor.getMessage("web." + msgKey, locale);
     }
 
@@ -171,7 +173,7 @@ public class BaseController {
     /**
      * Convenience method for getting a i18n key's value with arguments.
      * */
-    public String getText(String msgKey, Object[] args, Locale locale) {
+    private String getText(String msgKey, Object[] args, Locale locale) {
         return messageSourceAccessor.getMessage("web." + msgKey, args, locale);
     }
 

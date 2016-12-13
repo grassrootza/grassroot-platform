@@ -2,7 +2,7 @@
  * Created by luke on 2016/10/31.
  */
 
-var groupSelect = $("#groupSelector");
+var groupSelect = $("#groupSelect");
 
 var token = $("meta[name='_csrf']");
 var header = $("meta[name='_csrf_header']");
@@ -26,7 +26,7 @@ $(document).ready(function() {
     // if the group selector exists, do the ajax call to populate the member picker & bind refresh to its change function
     if (groupSelect.length > 0) {
         fetchTodosRemaining(groupSelect.find("option:selected").val());
-        fetchParentMemberList(true);
+        // fetchParentMemberList(true);
 
         reminderSelect.changeGroupMinutes();
         groupSelect.change(function() {
@@ -34,7 +34,7 @@ $(document).ready(function() {
             reminderSelect.changeGroupMinutes();
             $('#wholeGroup').prop("checked", true);
             $('#pickedMemberCount').hide();
-            fetchParentMemberList(false);
+            // fetchParentMemberList(false);
         });
     } else {
         fetchTodosRemaining($("#parentUid").val());
@@ -134,34 +134,4 @@ function addGroupToAccount(groupUid) {
         console.log("done! group added");
         fetchTodosRemaining(groupUid);
     });
-}
-
-function fetchParentMemberList(selectedByDefault) {
-    var groupUid = $("#groupSelector").val();
-    console.log("groupUid: " + groupUid);
-    grassrootJS.fetchParentMemberList("GROUP", selectedByDefault, groupUid, addMembersToModal);
-}
-
-function addMembersToModal(returnedObject) {
-    var listBox = $("#dynamicMemberPicker");
-    listBox.empty();
-    var memberList = returnedObject.data.listOfMembers;
-    for (var i = 0; i < memberList.length; i++) {
-        listBox.append(constructItem(memberList[i], i));
-    }
-
-    function constructItem(member, index) {
-        // this is a bit of a hack to engineer the list to look like Thymeleaf when it creates an entity
-        var listFieldName = "memberPicker.listOfMembers";
-        var selectedField = listFieldName + "[" + index + "].selected";
-        var userUidField = listFieldName + "[" + index + "].userUid";
-
-        var tickbox = JSON.parse(member.selected) ? "checked" : "";
-
-        return "<li class=\"list-group-item\">" +
-            "<label>" +
-            "<input type=\"checkbox\" class='list-checkbox' " + tickbox + " name='" + selectedField + "'/>" +
-            "<input type='hidden' name='" + userUidField + "' value='" + member.userUid + "'/>" +
-            "<span class='list-checkbox-label'>" + member.nameToDisplay + "</span></label>";
-    }
 }

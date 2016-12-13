@@ -1,7 +1,7 @@
 package za.org.grassroot.webapp.model.web;
 
-import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.core.domain.EventReminderType;
+import za.org.grassroot.core.domain.JpaEntityType;
 
 import java.time.LocalDateTime;
 import java.util.Set;
@@ -36,39 +36,6 @@ public class EventWrapper {
 
     public static EventWrapper makeEmpty() {
         return new EventWrapper();
-    }
-
-    public EventWrapper(Event event) {
-        this.entityUid = event.getUid();
-
-        this.parentEntityType = event.getParent().getJpaEntityType();
-        this.parentUid = event.getParent().getUid();
-
-        switch (event.getParent().getJpaEntityType()) {
-            case GROUP:
-                Group parent = (Group) event.getParent();
-                this.parentName = parent.getName("");
-                break;
-            case MEETING:
-                this.parentName = ((Meeting) event.getParent()).getName();
-                break;
-            case VOTE:
-                this.parentName = ((Vote) event.getParent()).getName();
-                break;
-            case TODO:
-                this.parentName = ((Todo) event.getParent()).getMessage();
-                break;
-        }
-
-        this.title = event.getName();
-        this.description = event.getDescription();
-        this.eventDateTime = DateTimeUtil.convertToUserTimeZone(event.getEventStartDateTime(), DateTimeUtil.getSAST())
-                .toLocalDateTime();
-        this.includeSubGroups = event.isIncludeSubGroups();
-
-        this.reminderType = event.getReminderType();
-        this.customReminderMinutes = event.getCustomReminderMinutes();
-        this.defaultReminderMinutes = event.getAncestorGroup().getReminderMinutes();
     }
 
     public String getEntityUid() {

@@ -13,16 +13,16 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
+import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
+import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.EventLogBroker;
-import za.org.grassroot.services.group.GroupBroker;
-import za.org.grassroot.services.PermissionBroker;
-import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.EventWrapper;
 
 import javax.servlet.http.HttpServletRequest;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
@@ -39,17 +39,16 @@ public class VoteController extends BaseController {
 
     Logger log = LoggerFactory.getLogger(VoteController.class);
 
-    @Autowired
-    private EventBroker eventBroker;
+    private final EventBroker eventBroker;
+    private final GroupBroker groupBroker;
+    private final EventLogBroker eventLogBroker;
 
     @Autowired
-    private PermissionBroker permissionBroker;
-
-    @Autowired
-    private GroupBroker groupBroker;
-
-    @Autowired
-    private EventLogBroker eventLogBroker;
+    public VoteController(EventBroker eventBroker, GroupBroker groupBroker, EventLogBroker eventLogBroker) {
+        this.eventBroker = eventBroker;
+        this.groupBroker = groupBroker;
+        this.eventLogBroker = eventLogBroker;
+    }
 
     @RequestMapping("create")
     public String createVote(Model model, @RequestParam(value="groupUid", required = false) String groupUid,
@@ -103,7 +102,7 @@ public class VoteController extends BaseController {
     }
 
     @RequestMapping("view")
-    public String viewVote(Model model, @RequestParam String eventUid) {
+    public String viewVote(Model model, @RequestParam String eventUid, @RequestParam(required = false) SourceMarker source) {
 
         Event vote = eventBroker.load(eventUid);
         boolean canModify = (vote.getCreatedByUser().equals(getUserProfile())
@@ -111,7 +110,7 @@ public class VoteController extends BaseController {
 
         ResponseTotalsDTO responses = eventLogBroker.getResponseCountForEvent(vote);
 
-        model.addAttribute("vote", new EventWrapper(vote));
+        model.addAttribute("vote", vote);
         model.addAttribute("yes", responses.getYes());
         model.addAttribute("no", responses.getNo());
         model.addAttribute("abstained", responses.getMaybe());
@@ -119,37 +118,39 @@ public class VoteController extends BaseController {
         model.addAttribute("replied", responses.getNumberOfUsers() - responses.getNumberNoRSVP());
         model.addAttribute("possible", responses.getNumberOfUsers());
 
-        if (canModify) {
-            model.addAttribute("canModify", true);
-            model.addAttribute("reminderOptions", EventReminderType.values());
-            model.addAttribute("customReminderOptions", reminderMinuteOptions(false));
-        }
+        model.addAttribute("canModify", canModify);
+        model.addAttribute("reminderOptions", EventReminderType.values());
+        model.addAttribute("customReminderOptions", reminderMinuteOptions(false));
+
+        model.addAttribute("fromGroup", SourceMarker.GROUP.equals(source));
+        model.addAttribute("parentUid", vote.getParent().getUid());
 
         return "vote/view";
     }
 
     @RequestMapping(value = "description", method = RequestMethod.POST)
-    public String changeDescription(Model model, @ModelAttribute("vote") Vote vote, HttpServletRequest request) {
-        log.info("Vote we are passed back ... " + vote);
-        eventBroker.updateVote(getUserProfile().getUid(), vote.getUid(), vote.getEventDateTimeAtSAST(), vote.getDescription());
-        addMessage(model, MessageType.SUCCESS, "vote.update.done", request);
-        return viewVote(model, vote.getUid());
+    public String changeDescription(@RequestParam String eventUid, @RequestParam String description, RedirectAttributes attributes, HttpServletRequest request) {
+        eventBroker.updateDescription(getUserProfile().getUid(), eventUid, description);
+        addMessage(attributes, MessageType.SUCCESS, "vote.update.done", request);
+        attributes.addAttribute("eventUid", eventUid);
+        return "redirect:/vote/view";
     }
 
     @RequestMapping(value = "changedatetime", method = RequestMethod.POST)
-    public String changeDateTime(Model model, @ModelAttribute("vote") Vote vote, HttpServletRequest request) {
+    public String changeDateTime(@RequestParam String eventUid, @RequestParam LocalDateTime closingDateTime,
+                                 RedirectAttributes attributes, HttpServletRequest request) {
         // note: this is pretty much the same as above, but may make it more sophisticated later, so am keeping separate
-        Vote changedVote = eventBroker.updateVote(getUserProfile().getUid(), vote.getUid(),
-                                                  vote.getEventDateTimeAtSAST(), vote.getDescription());
-        String toDisplay = DateTimeFormatter.ofPattern("h:mm a' on 'E, d MMMM").
-                format(changedVote.getEventDateTimeAtSAST());
-        addMessage(model, MessageType.SUCCESS, "vote.update.closing.done", new String[] {toDisplay}, request);
-        return viewVote(model, vote.getUid());
+        eventBroker.updateVoteClosingTime(getUserProfile().getUid(), eventUid, closingDateTime);
+        String toDisplay = DateTimeFormatter.ofPattern("h:mm a' on 'E, d MMMM").format(closingDateTime);
+        addMessage(attributes, MessageType.SUCCESS, "vote.update.closing.done", new String[] {toDisplay}, request);
+        attributes.addAttribute("eventUid", eventUid);
+        return "redirect:/vote/view";
     }
 
     @RequestMapping(value = "reminder", method = RequestMethod.POST)
-    public String changeReminderSettings(Model model, @RequestParam String eventUid, @RequestParam EventReminderType reminderType,
-                                         @RequestParam(value = "custom_minutes", required = false) Integer customMinutes, HttpServletRequest request) {
+    public String changeReminderSettings(@RequestParam String eventUid, @RequestParam EventReminderType reminderType,
+                                         @RequestParam(value = "custom_minutes", required = false) Integer customMinutes,
+                                         RedirectAttributes attributes, HttpServletRequest request) {
 
         int minutes = (customMinutes != null && reminderType.equals(EventReminderType.CUSTOM)) ? customMinutes : 0;
         eventBroker.updateReminderSettings(getUserProfile().getUid(), eventUid, reminderType, minutes);
@@ -158,11 +159,12 @@ public class VoteController extends BaseController {
             // todo: make sure this actually works properly with zones, on AWS in Ireland, etc ...
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("h:mm a' on 'E, d MMMM").withZone(ZoneId.systemDefault());
             String reminderTime = formatter.format(newScheduledTime);
-            addMessage(model, MessageType.SUCCESS, "vote.reminder.changed", new String[] {reminderTime}, request);
+            addMessage(attributes, MessageType.SUCCESS, "vote.reminder.changed", new String[] {reminderTime}, request);
         } else {
-            addMessage(model, MessageType.SUCCESS, "vote.reminder.none", request);
+            addMessage(attributes, MessageType.SUCCESS, "vote.reminder.none", request);
         }
-        return viewVote(model, eventUid);
+        attributes.addAttribute("eventUid", eventUid);
+        return "redirect:/vote/view";
     }
 
     @RequestMapping(value = "answer", method = RequestMethod.GET)

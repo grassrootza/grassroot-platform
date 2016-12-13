@@ -216,6 +216,11 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
     }
 
     @Override
+    public boolean isGroupOnAccount(String groupUid) {
+        return findAccountForGroup(groupUid) != null;
+    }
+
+    @Override
     @Transactional(readOnly =  true)
     public Account findAccountForGroup(String groupUid) {
         Group group = groupRepository.findOneByUid(groupUid);

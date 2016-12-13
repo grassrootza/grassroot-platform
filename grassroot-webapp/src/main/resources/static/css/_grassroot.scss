@@ -303,7 +303,7 @@ h4.header-content-subtitle {
 
 .form-group > .control-label {
     color: $green;
-    font-size: 16px;
+    font-size: 20px;
     line-height: 1.8;
     padding-left: 2px;
     text-align: left;
@@ -315,6 +315,18 @@ h4.header-content-subtitle {
     color: black;
     line-height: 1.5;
     font-weight: normal;
+}
+
+.form-group > a.collapse-label {
+    @extend .control-label;
+
+    font-weight: bold;
+
+    &:hover,
+    &:focus,
+    &:active {
+        text-decoration: none;
+    }
 }
 
 .form-group > table > thead > tr > th {

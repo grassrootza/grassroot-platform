@@ -114,7 +114,7 @@ public class EventBrokerImpl implements EventBroker {
 		}
 
 		Meeting meeting = new Meeting(name, eventStartDateTimeInSystem, user, parent, eventLocation,
-                                      includeSubGroups, reminderType, customReminderMinutes, description);
+                                      includeSubGroups, reminderType, customReminderMinutes, description, importance);
 
 		if (!assignMemberUids.isEmpty()) {
 			assignMemberUids.add(userUid); // enforces creating user part of meeting, if partial selection
@@ -129,10 +129,9 @@ public class EventBrokerImpl implements EventBroker {
 			meeting.updateScheduledReminderTime();
 		}
 
-		logger.info("Created meeting, with reminder type={} and time={}", meeting.getReminderType(), meeting.getScheduledReminderTime());
+		logger.info("Created meeting, with importance={}, reminder type={} and time={}", meeting.getImportance(), meeting.getReminderType(), meeting.getScheduledReminderTime());
 
 		meetingRepository.save(meeting);
-
 		eventLogBroker.rsvpForEvent(meeting.getUid(), meeting.getCreatedByUser().getUid(), EventRSVPResponse.YES);
 
 		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
@@ -423,7 +422,30 @@ public class EventBrokerImpl implements EventBroker {
 		return savedVote;
 	}
 
-    @Override
+	@Override
+	@Transactional
+	public void updateVoteClosingTime(String userUid, String eventUid, LocalDateTime closingDateTime) {
+    	Objects.requireNonNull(userUid);
+    	Objects.requireNonNull(eventUid);
+    	Objects.requireNonNull(closingDateTime);
+
+    	Event event = eventRepository.findOneByUid(eventUid);
+    	User user = userRepository.findOneByUid(userUid);
+
+    	if (!event.getCreatedByUser().equals(user)) {
+    		throw new AccessDeniedException("Only vote caller can change closing date time");
+		}
+
+		Instant convertedClosing = DateTimeUtil.convertToSystemTime(closingDateTime, DateTimeUtil.getSAST());
+    	if (convertedClosing.isBefore(Instant.now())) {
+    		throw new EventStartTimeNotInFutureException("Error! Vote changing to past");
+		}
+
+		event.setEventStartDateTime(convertedClosing);
+    	event.updateScheduledReminderTime();
+	}
+
+	@Override
     @Transactional
     public void updateReminderSettings(String userUid, String eventUid, EventReminderType reminderType, int customReminderMinutes) {
         Objects.requireNonNull(userUid);
@@ -447,6 +469,22 @@ public class EventBrokerImpl implements EventBroker {
             event.setCustomReminderMinutes(60);
             event.updateScheduledReminderTime();
         }
+    }
+
+    @Override
+	@Transactional
+    public void updateDescription(String userUid, String eventUid, String eventDescription) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(eventUid);
+
+        Event event = eventRepository.findOneByUid(eventUid);
+        User user = userRepository.findOneByUid(userUid);
+
+        if (!event.getCreatedByUser().equals(user)) {
+        	throw new AccessDeniedException("Error! Only the user who created the meeting can change its description");
+		}
+
+		event.setDescription(eventDescription);
     }
 
     private void validateEventStartTime(Instant eventStartDateTimeInstant) {

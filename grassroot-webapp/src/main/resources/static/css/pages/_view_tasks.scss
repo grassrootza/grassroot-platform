@@ -23,6 +23,15 @@
     &.incomplete {
       color: $orange;
     }
+
+    a {
+      color: $green;
+
+      // as usual with CSS, this doesn't seem to actually work, but leaving here as a marker for future
+      .external {
+        color: blue;
+      }
+    }
   }
 
 }

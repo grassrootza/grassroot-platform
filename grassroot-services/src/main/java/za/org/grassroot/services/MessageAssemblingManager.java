@@ -11,6 +11,7 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.core.enums.MeetingImportance;
 import za.org.grassroot.core.util.FormatUtil;
 
 import java.text.DecimalFormat;
@@ -30,18 +31,22 @@ public class MessageAssemblingManager implements MessageAssemblingService {
 
     private Logger log = LoggerFactory.getLogger(MessageAssemblingManager.class);
 
-    @Autowired
-    @Qualifier("servicesMessageSourceAccessor")
-    MessageSourceAccessor messageSourceAccessor;
+    private final MessageSourceAccessor messageSourceAccessor;
 
     // major todo : consolidate & externalize all the date formatters
     private static final DateTimeFormatter shortDateFormatter = DateTimeFormatter.ofPattern("EEE, d/M");
     private static final DecimalFormat billFormat = new DecimalFormat("#.##");
 
+    @Autowired
+    public MessageAssemblingManager(@Qualifier("servicesMessageSourceAccessor") MessageSourceAccessor messageSourceAccessor) {
+        this.messageSourceAccessor = messageSourceAccessor;
+    }
+
     @Override
     public String createEventInfoMessage(User user, Event event) {
-        String messageKey = EventType.VOTE.equals(event.getEventType()) ? "sms.vote.send.new" :
-                event.isRsvpRequired() ? "sms.mtg.send.new.rsvp" : "sms.mtg.send.new";
+        String messageKey = event instanceof Vote ? "sms.vote.send.new" :
+                MeetingImportance.SPECIAL.equals(((Meeting) event).getImportance())
+                        ? "sms.mtg.send.special" : "sms.mtg.send.new.rsvp";
         return messageSourceAccessor.getMessage(messageKey, populateEventFields(event), getUserLocale(user));
     }
 

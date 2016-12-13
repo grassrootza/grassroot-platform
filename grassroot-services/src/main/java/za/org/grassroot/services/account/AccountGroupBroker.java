@@ -12,9 +12,12 @@ import java.util.Set;
  */
 public interface AccountGroupBroker {
 
+    boolean isGroupOnAccount(String groupUid);
+
+    Account findAccountForGroup(String groupUid);
+
     List<Group> fetchGroupsSponsoredByAccount(String accountUid);
 
-    // Methods to designate groups as paid for by accounts (and remove the designation)
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     void addGroupToAccount(String accountUid, String groupUid, String addingUserUid);
 
@@ -31,9 +34,7 @@ public interface AccountGroupBroker {
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     void removeGroupsFromAccount(String accountUid, Set<String> groupUid, String removingUserUid);
 
-    Account findAccountForGroup(String groupUid);
 
-    // Methods to handle additional features for accounts
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     void sendFreeFormMessage(String userUid, String groupUid, String message);
 

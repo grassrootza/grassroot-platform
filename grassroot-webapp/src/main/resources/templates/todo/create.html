@@ -33,9 +33,9 @@
 
             <input type="hidden" th:field="*{parentEntityType}" />
             <div class="form-group">
-              <label for="groupSelector" class="control-label">Group:</label>
+              <label for="groupSelect" class="control-label">Group:</label>
               <div th:unless="${parentSpecified}">
-                <select th:unless="${parentSpecified}" th:field="*{parentUid}" id="groupSelector" class="form-control input-lg">
+                <select th:unless="${parentSpecified}" th:field="*{parentUid}" id="groupSelect" class="form-control input-lg">
                   <option th:each="group: ${possibleGroups}"
                           th:value="${group.Uid}"
                           th:text="${group.getName('')}"
@@ -91,14 +91,7 @@
               </div>
             </div>
 
-            <div class="form-group">
-              <label class="control-label">Who has responsibility for completing the action?</label>
-              <div class="radio">
-                <label class="radio-inline radio-inline-lg"><input type="radio" th:field="*{assignmentType}" value="group" id="wholeGroup" />The whole group</label>
-                <label class="radio-inline radio-inline-lg"><input type="radio" th:field="*{assignmentType}" value="members" id="pickMembers" />Pick members</label>
-                <h5 id="pickedMemberCount">Number of members picked</h5>
-              </div>
-            </div>
+            <div th:replace="~{fragments :: member-picker(messageKey='web.todo.create.memberpick')}"></div>
 
             <div class="form-group pull-right">
               <!-- todo : add a view traffic director to handle the links below for non-group parents -->
@@ -109,33 +102,7 @@
                 <button type="submit" class="btn default-button">Record</button>
             </div>
 
-            <div class="modal fade" id="memberModal" tabindex="-1" role="dialog" aria-labelledby="memberModalLabel">
-              <div class="modal-dialog" role="document">
-                <div class="modal-content">
-                  <div class="modal-header">
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                    <h4 class="modal-title" id="memberModalLabel">Assign members to action</h4>
-                  </div>
-                  <div class="modal-body">
-                    <div th:if="${parentSpecified}" class="list-group checked-list-box">
-                      <li class="list-group-item"
-                          th:each="member, iterStat: *{memberPicker.getListOfMembers()}">
-                        <label>
-                          <input type="checkbox" th:field="*{memberPicker.listOfMembers[__${iterStat.index}__].selected}" class="list-checkbox"/>
-                          <input type="hidden" th:field="*{memberPicker.listOfMembers[__${iterStat.index}__].userUid}" />
-                          <span class="list-checkbox-label" th:text="${member.nameToDisplay}">Name</span>
-                        </label>
-                      </li>
-                    </div>
-                    <div th:unless="${parentSpecified}" id="dynamicMemberPicker" class="list-group checked-list-box">
-                    </div>
-                  </div>
-                  <div class="modal-footer">
-                    <button type="button" class="btn default-button" data-dismiss="modal">Done</button>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <div th:replace="~{fragments :: member-picker-modal}"></div>
 
           </form>
 
@@ -174,6 +141,8 @@
 
   <script th:src="@{/js/lib/moment.min.js}"></script>
   <script th:src="@{/js/lib/bootstrap-datetimepicker.min.js}"></script>
+
+  <script th:replace="~{fragments :: member-picker-script(parentType='GROUP', selectByDefault=false)}"></script>
 
   <script th:src="@{/js/create_todo.js}"></script>
 
