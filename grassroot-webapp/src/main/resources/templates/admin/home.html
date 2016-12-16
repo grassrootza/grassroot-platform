@@ -62,6 +62,7 @@
           <th>Meetings called</th>
           <th>Votes called</th>
           <th>To-dos recorded</th>
+          <th>Safety events recorded</th>
         </thead>
         <tbody>
           <tr>
@@ -74,6 +75,7 @@
             <td><span th:text="${meetingsLastWeek}">Z</span></td>
             <td><span th:text="${votesLastWeek}">Z</span></td>
             <td><span th:text="${todosLastWeek}">Z</span></td>
+            <td><span th:text="${safetyLastWeek}">Z</span></td>
           </tr>
           <tr>
             <td>Last month</td>
@@ -85,6 +87,7 @@
             <td><span th:text="${meetingsLastMonth}">Z</span></td>
             <td><span th:text="${votesLastMonth}">Z</span></td>
             <td><span th:text="${todosLastMonth}">Z</span></td>
+            <td><span th:text="${safetyLastMonth}">Z</span></td>
           </tr>
           <tr>
             <td>Total</td>
@@ -96,6 +99,7 @@
             <td><span th:text="${meetingsTotal}">X</span></td>
             <td><span th:text="${votesTotal}">X</span></td>
             <td><span th:text="${todosTotal}">X</span></td>
+            <td><span th:text="${safetyTotal}">Z</span></td>
           </tr>
         </tbody>
       </table>

@@ -73,7 +73,13 @@ public class ScheduledEmailTasks {
             final String groupLine = String.format("Yesterday %d groups were created. In total there are %d groups on the platform, " +
                     "of which %d have location data.%n%n", groupsYesterday, groupsTotal, groupsGeo);
 
-            final String emailBody = "Good morning,\n" + userLine + taskLine + groupLine + "\nGrassroot";
+            long safetyTotal = analyticalService.countSafetyEventsInInterval(null, null);
+            long safetyYesterday = analyticalService.countSafetyEventsInInterval(yesterday, now);
+
+            final String safetyLine = String.format("Finally, yesterday %d safety events were created. In total, %d safety" +
+                    " alerts have been triggered.%n%n", safetyYesterday, safetyTotal);
+
+            final String emailBody = "Good morning,\n" + userLine + taskLine + groupLine + safetyLine + "\nGrassroot";
 
             emailSendingBroker.sendSystemStatusMail(new GrassrootEmail.EmailBuilder("System Email")
                     .content(emailBody).build());

@@ -34,7 +34,6 @@ public class VoteRestControllerTest extends RestAbstractUnitTest {
     @InjectMocks
     private VoteRestController voteRestController;
 
-
     @Before
     public void setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(voteRestController).build();

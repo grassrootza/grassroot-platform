@@ -27,4 +27,6 @@ public interface SafetyEventRepository extends JpaRepository<SafetyEvent, Long> 
             "and se.scheduledReminderTime < ?2 and se.active = true")
     List<SafetyEvent> findSafetyEvents(Instant from, Instant to);
 
+    long countByCreatedDateTimeBetween(Instant from, Instant to);
+
 }

@@ -12,7 +12,8 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.services.*;
+import za.org.grassroot.services.PermissionBroker;
+import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.group.GroupQueryBroker;
 import za.org.grassroot.services.task.EventBroker;
@@ -53,6 +54,8 @@ public abstract class WebAppAbstractUnitTest {
     protected PermissionBroker permissionBrokerMock;
     @Mock
     protected TaskBroker taskBrokerMock;
+    @Mock
+    protected AccountGroupBroker accountGroupBrokerMock;
 
     protected void setUp(BaseController baseController) {
         mockAuthentication();

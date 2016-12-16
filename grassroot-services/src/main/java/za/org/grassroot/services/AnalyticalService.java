@@ -54,6 +54,12 @@ public interface AnalyticalService {
     Long countTodosRecordedInInterval(LocalDateTime start, LocalDateTime end);
 
     /*
+    Count safety events, put in nulls for no start/end point
+     */
+
+    int countSafetyEventsInInterval(LocalDateTime start, LocalDateTime end);
+
+    /*
     Methods for closer analysis of user sessions etc
      */
     List<KeywordDTO> getKeywordStats(LocalDateTime from);

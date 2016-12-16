@@ -27,8 +27,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import static za.org.grassroot.core.util.DateTimeUtil.convertToSystemTime;
-import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
+import static za.org.grassroot.core.util.DateTimeUtil.*;
 import static za.org.grassroot.services.specifications.UserSpecifications.*;
 
 /**
@@ -50,11 +49,12 @@ public class AnalyticalServiceImpl implements AnalyticalService {
     private final TodoRepository todoRepository;
     private final GeoLocationBroker geoLocationBroker;
     private final EntityManager entityManager;
+    private final SafetyEventRepository safetyEventRepository;
 
     @Autowired
     public AnalyticalServiceImpl(UserRepository userRepository, UserLogRepository userLogRepository, GroupRepository groupRepository,
                                  VoteRepository voteRepository, MeetingRepository meetingRepository, EntityManager entityManager,
-                                 TodoRepository todoRepository, GeoLocationBroker geoLocationBroker) {
+                                 TodoRepository todoRepository, GeoLocationBroker geoLocationBroker, SafetyEventRepository safetyRepository) {
         this.userRepository = userRepository;
         this.userLogRepository = userLogRepository;
         this.groupRepository = groupRepository;
@@ -63,6 +63,7 @@ public class AnalyticalServiceImpl implements AnalyticalService {
         this.entityManager = entityManager;
         this.todoRepository = todoRepository;
         this.geoLocationBroker = geoLocationBroker;
+        this.safetyEventRepository = safetyRepository;
     }
 
     @Override
@@ -178,6 +179,14 @@ public class AnalyticalServiceImpl implements AnalyticalService {
     @Transactional(readOnly = true)
     public Long countTodosRecordedInInterval(LocalDateTime start, LocalDateTime end) {
         return todoRepository.countByCreatedDateTimeBetween(start.toInstant(ZoneOffset.UTC), end.toInstant(ZoneOffset.UTC));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public int countSafetyEventsInInterval(LocalDateTime start, LocalDateTime end) {
+        Instant startInstant = start == null ? getEarliestInstant() : convertToSystemTime(start, getSAST());
+        Instant endInstant = end == null ? getVeryLongAwayInstant() : convertToSystemTime(end, getSAST());
+        return (int) safetyEventRepository.countByCreatedDateTimeBetween(startInstant, endInstant);
     }
 
     @Override

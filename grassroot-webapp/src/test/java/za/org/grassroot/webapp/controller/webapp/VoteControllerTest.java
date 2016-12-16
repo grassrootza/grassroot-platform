@@ -88,7 +88,7 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
 
         Group testGroup = new Group("Dummy Group3", new User("234345345"));
         LocalDateTime testTime = LocalDateTime.now().plusMinutes(7L);
-        EventWrapper testVote = EventWrapper.makeEmpty(true);
+        EventWrapper testVote = EventWrapper.makeEmpty();
         testVote.setTitle("test vote");
         testVote.setEventDateTime(testTime);
         testVote.setDescription("Abracadabra");
@@ -120,7 +120,7 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
                 .andExpect(model().attribute("no", is(testVoteResults.getNo())))
                 .andExpect(model().attribute("abstained", is(testVoteResults.getMaybe())))
                 .andExpect(model().attribute("possible", is(testVoteResults.getNumberOfUsers())))
-                .andExpect(model().attribute("vote", hasProperty("entityUid", is(testVote.getUid()))));
+                .andExpect(model().attribute("vote", hasProperty("uid", is(testVote.getUid()))));
 
         verify(eventBrokerMock, times(1)).load(testVote.getUid());
         verifyNoMoreInteractions(eventBrokerMock);

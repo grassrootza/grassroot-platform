@@ -67,7 +67,7 @@ public class MeetingController extends BaseController {
     public String createMeetingIndex(Model model, @RequestParam(value="groupUid", required=false) String groupUid,
                                      RedirectAttributes attributes, HttpServletRequest request) {
 
-        MeetingWrapper meeting = MeetingWrapper.makeEmpty(EventReminderType.GROUP_CONFIGURED, 24*60, true);
+        MeetingWrapper meeting = MeetingWrapper.makeEmpty(EventReminderType.GROUP_CONFIGURED, 24*60);
 
         if (permissionBroker.countActiveGroupsWithPermission(getUserProfile(), Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING) == 0) {
             addMessage(attributes, MessageType.INFO, "meeting.create.group", request);

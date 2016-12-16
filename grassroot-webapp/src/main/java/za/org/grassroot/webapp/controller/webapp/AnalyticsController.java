@@ -37,7 +37,6 @@ public class AnalyticsController extends BaseController {
         this.geoLocationBroker = geoLocationBroker;
     }
 
-
     @RequestMapping("geo_stats")
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     public String viewGeoInfo(Model model) {

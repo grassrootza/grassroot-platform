@@ -44,8 +44,6 @@ import java.util.Map;
 /**
  * Created by luke on 2015/10/08.
  * Class for G/R's internal administration functions
- * In time, will probably have multiple controllers in a separate or sub-folder
- * Obviously also need to add security, pronto
  */
 @Controller
 public class AdminController extends BaseController {
@@ -121,6 +119,10 @@ public class AdminController extends BaseController {
         model.addAttribute("todosLastWeek", analyticalService.countTodosRecordedInInterval(week, now));
         model.addAttribute("todosLastMonth", analyticalService.countTodosRecordedInInterval(month, now));
         model.addAttribute("todosTotal", analyticalService.countAllTodos());
+
+        model.addAttribute("safetyLastWeek", analyticalService.countSafetyEventsInInterval(week, now));
+        model.addAttribute("safetyLastMonth", analyticalService.countSafetyEventsInInterval(month, now));
+        model.addAttribute("safetyTotal", analyticalService.countSafetyEventsInInterval(null, null));
 
         return "admin/home";
 

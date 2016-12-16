@@ -20,9 +20,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 
+import static java.time.temporal.TemporalAdjusters.firstDayOfMonth;
+import static java.time.temporal.TemporalAdjusters.lastDayOfMonth;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -44,9 +45,6 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
     public void setUp() {
         setUp(groupController);
     }
-
-    // todo: check for languages, check permissions, etc etc -- in effect, expand this to lots of testing, since
-    // group view is the principal screen now for most group actions
 
     @Test
     public void viewGroupIndexWorks() throws Exception {
@@ -389,7 +387,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         EventLog dummyLog = new EventLog(sessionTestUser, dummyEvents.get(0), EventLogType.RSVP);
 
         List<Todo> dummyTodos = Arrays.asList(new Todo(sessionTestUser, testGroup, "Do stuff", LocalDateTime.now().plusDays(2L).toInstant(ZoneOffset.ofHours(0))),
-                                                  new Todo(sessionTestUser, testGroup, "Do more stuff", LocalDateTime.now().plusDays(5L).toInstant(ZoneOffset.ofHours(0))));
+                new Todo(sessionTestUser, testGroup, "Do more stuff", LocalDateTime.now().plusDays(5L).toInstant(ZoneOffset.ofHours(0))));
 
         List<TaskDTO> dummyTasks = new ArrayList<>();
         dummyEvents.forEach(e -> dummyTasks.add(new TaskDTO(e, sessionTestUser, dummyLog)));
@@ -399,9 +397,10 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
                                                       new GroupLog(testGroup, sessionTestUser, GroupLogType.GROUP_MEMBER_REMOVED, 0L, "other guy left"));
         List<LocalDate> dummyMonths = Arrays.asList(LocalDate.now(), LocalDate.now().minusMonths(1L));
 
-        LocalDateTime start = LocalDate.now().withDayOfMonth(1).atStartOfDay();
-        LocalDateTime end = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES);
-
+        LocalDate now = LocalDate.now();
+        LocalDateTime start = now.with(firstDayOfMonth()).atStartOfDay();
+        LocalDateTime end = now.with(lastDayOfMonth()).atTime(23, 59);
+        
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
         when(userManagementServiceMock.load(sessionTestUser.getUid())).thenReturn(sessionTestUser);
 

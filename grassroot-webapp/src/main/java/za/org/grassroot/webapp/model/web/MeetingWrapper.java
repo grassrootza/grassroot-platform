@@ -14,7 +14,7 @@ public class MeetingWrapper extends EventWrapper {
     private MeetingWrapper() {
     }
 
-    public static MeetingWrapper makeEmpty(EventReminderType reminderType, int customReminderMinutes, boolean rsvpRequired) {
+    public static MeetingWrapper makeEmpty(EventReminderType reminderType, int customReminderMinutes) {
         MeetingWrapper meetingWrapper = new MeetingWrapper();
         meetingWrapper.reminderType = reminderType;
         meetingWrapper.customReminderMinutes = customReminderMinutes;

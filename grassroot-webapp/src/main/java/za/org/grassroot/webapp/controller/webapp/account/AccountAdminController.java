@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.integration.payments.PaymentServiceBroker;
 import za.org.grassroot.services.account.AccountBillingBroker;
 import za.org.grassroot.services.account.AccountBroker;
@@ -190,13 +189,28 @@ public class AccountAdminController extends BaseController {
         return "redirect:/admin/accounts/home";
     }
 
-    // todo: wire this up properly
-    public void changeAccountSettings(Account account) {
-        accountBroker.updateBillingEmail(getUserProfile().getUid(), account.getUid(), account.getBillingUser().getEmailAddress());
-        accountBroker.updateAccountGroupLimits(getUserProfile().getUid(), account.getUid(), account.getMaxNumberGroups(),
-                account.getMaxSizePerGroup(), account.getMaxSubGroupDepth());
-        accountBroker.updateAccountMessageSettings(getUserProfile().getUid(), account.getUid(), account.getFreeFormMessages(),
-                account.getFreeFormCost());
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    @RequestMapping(value = "/limits", method = RequestMethod.GET)
+    public String adjustGroupLimits(Model model, @RequestParam String accountUid) {
+        model.addAttribute("account", accountBroker.loadAccount(accountUid));
+        return "admin/accounts/limits";
+    }
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    @RequestMapping(value = "/limits", method = RequestMethod.POST)
+    public String resetGroupLimits(RedirectAttributes attributes, HttpServletRequest request, @RequestParam String accountUid,
+                                   @RequestParam int numberGroups, @RequestParam int sizePerGroup,
+                                   @RequestParam int subGroupDepth, @RequestParam int messagesPerMonth,
+                                   @RequestParam int todosPerMonth) {
+        try {
+            accountBroker.updateAccountGroupLimits(getUserProfile().getUid(), accountUid, numberGroups, sizePerGroup,
+                    subGroupDepth, messagesPerMonth, todosPerMonth);
+            addMessage(attributes, MessageType.SUCCESS, "admin.accounts.limits.changed", request);
+        } catch (Exception e) {
+            log.error("Error! Exception thrown updating group limits: {}", e.toString());
+            addMessage(attributes, MessageType.ERROR, "admin.accounts.limits.error", request);
+        }
+        return "redirect:/admin/accounts/home";
     }
 
 }

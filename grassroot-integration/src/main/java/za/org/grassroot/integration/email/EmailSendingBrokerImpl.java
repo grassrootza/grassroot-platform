@@ -76,7 +76,9 @@ public class EmailSendingBrokerImpl implements EmailSendingBroker {
         mail.setText(systemStatsEmail.getContent());
 
         try {
+            logger.info("Sending system email to: {}", systemEmailAddress);
             mailSender.send(mail);
+            logger.info("System stats mail has been sent");
         } catch (MailException e) {
             logger.warn("Error sending system mail! Exception : " + e.toString());
         }

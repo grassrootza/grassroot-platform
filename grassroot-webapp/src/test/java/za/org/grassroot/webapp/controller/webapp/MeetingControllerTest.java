@@ -11,6 +11,7 @@ import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.MeetingImportance;
 import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.webapp.model.web.MeetingWrapper;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -81,23 +82,24 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
 
     @Test
     public void testCreateMeetingWorks() throws Exception {
-
         Group dummyGroup = new Group("Dummy Group3", new User("234345345"));
-        Meeting dummyMeeting = new Meeting("test meeting", oneDayAway, sessionTestUser, dummyGroup, "some place");
-        dummyMeeting.setRsvpRequired(true);
-        dummyMeeting.setReminderType(EventReminderType.CUSTOM);
-        dummyMeeting.setCustomReminderMinutes(60);
+        LocalDateTime tomorrow = LocalDateTime.now().plus(1, ChronoUnit.DAYS);
+        MeetingWrapper wrapper = MeetingWrapper.makeEmpty(EventReminderType.GROUP_CONFIGURED, 60);
+        wrapper.setTitle("test meeting");
+        wrapper.setEventDateTime(tomorrow);
+        wrapper.setLocation("some place");
+        wrapper.setDescription("This is a description");
 
-        mockMvc.perform(post("/meeting/create").sessionAttr("meeting", dummyMeeting)
+        mockMvc.perform(post("/meeting/create").sessionAttr("meeting", wrapper)
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED).param("selectedGroupUid", dummyGroup.getUid()))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(view().name("redirect:/group/view"))
                 .andExpect(redirectedUrl("/group/view?groupUid=" + dummyGroup.getUid()));
 
-        verify(eventBrokerMock, times(1)).createMeeting(sessionTestUser.getUid(), dummyGroup.getUid(), JpaEntityType.GROUP, "test meeting",
-                                                        oneDayAway.atZone(DateTimeUtil.getSAST()).toLocalDateTime(),
-                                                        "some place", false, EventReminderType.CUSTOM, 60,
-                                                        "", Collections.emptySet(), MeetingImportance.ORDINARY);
+        verify(eventBrokerMock, times(1))
+                .createMeeting(sessionTestUser.getUid(), dummyGroup.getUid(), JpaEntityType.GROUP, "test meeting",
+                        tomorrow, "some place", false, EventReminderType.GROUP_CONFIGURED, 60,
+                        "This is a description", Collections.emptySet(), MeetingImportance.ORDINARY);
 
         verifyNoMoreInteractions(groupBrokerMock);
         verifyZeroInteractions(userManagementServiceMock);

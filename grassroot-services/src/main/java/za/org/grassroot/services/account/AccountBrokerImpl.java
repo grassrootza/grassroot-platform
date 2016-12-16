@@ -255,30 +255,6 @@ public class AccountBrokerImpl implements AccountBroker {
 
     @Override
     @Transactional
-    public void updateBillingEmail(String userUid, String accountUid, String billingEmail) {
-        Objects.requireNonNull(userUid);
-        Objects.requireNonNull(accountUid);
-
-        User user = userRepository.findOneByUid(userUid);
-        Account account = accountRepository.findOneByUid(accountUid);
-
-        log.info("Looking up administrators for this account: {}, from this uid: {}", account, accountUid);
-
-        if (!account.getAdministrators().contains(user)) {
-            permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
-        }
-
-        User billingUser = account.getBillingUser();
-        billingUser.setEmailAddress(billingEmail);
-
-        createAndStoreSingleAccountLog(new AccountLog.Builder(account)
-                .userUid(userUid)
-                .accountLogType(AccountLogType.EMAIL_CHANGED)
-                .description(billingEmail).build());
-    }
-
-    @Override
-    @Transactional
     public void changeAccountType(String userUid, String accountUid, AccountType newAccountType, Set<String> groupsToRemove) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(accountUid);
@@ -315,7 +291,7 @@ public class AccountBrokerImpl implements AccountBroker {
 
     @Override
     @Transactional
-    public void updateAccountGroupLimits(String userUid, String accountUid, Integer maxGroups, Integer maxSizePerGroup, Integer maxDepth) {
+    public void updateAccountGroupLimits(String userUid, String accountUid, int maxGroups, int maxSizePerGroup, int maxDepth, int messagesPerMonth, int todosPerMonth) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(accountUid);
 
@@ -323,50 +299,31 @@ public class AccountBrokerImpl implements AccountBroker {
         User user = userRepository.findOneByUid(userUid);
 
         permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
-        StringBuilder sb = new StringBuilder("Group settings changed: ");
+        StringBuilder sb = new StringBuilder("Account limits changed: ");
 
-        if (maxGroups != null) {
+        if (account.getMaxNumberGroups() != maxGroups) {
             account.setMaxNumberGroups(maxGroups);
             sb.append("MaxGroups: ").append(maxGroups).append("; ");
         }
 
-        if (maxSizePerGroup != null) {
+        if (account.getMaxSizePerGroup() != maxSizePerGroup) {
             account.setMaxSizePerGroup(maxSizePerGroup);
             sb.append("MaxSize: ").append(maxSizePerGroup).append("; ");
         }
 
-        if (maxDepth != null) {
+        if (account.getMaxSubGroupDepth() != maxDepth) {
             account.setMaxSubGroupDepth(maxDepth);
             sb.append("Depth: ").append(maxDepth).append(";");
         }
 
-        createAndStoreSingleAccountLog(new AccountLog.Builder(account)
-                .userUid(userUid)
-                .accountLogType(AccountLogType.DISCRETE_SETTING_CHANGE)
-                .description(sb.toString()).build());
-    }
-
-    @Override
-    @Transactional
-    public void updateAccountMessageSettings(String userUid, String accountUid, int freeFormPerMonth, Integer costPerMessage) {
-        Objects.requireNonNull(userUid);
-        Objects.requireNonNull(accountUid);
-
-        Account account = accountRepository.findOneByUid(accountUid);
-        User user = userRepository.findOneByUid(userUid);
-
-        if (!user.getAccountAdministered().equals(account)) {
-            permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
+        if (account.getFreeFormMessages() != messagesPerMonth) {
+            account.setFreeFormMessages(messagesPerMonth);
+            sb.append("Messages: ").append(messagesPerMonth).append(";");
         }
 
-        StringBuilder sb = new StringBuilder("Messaging settings changed: ");
-
-        account.setFreeFormMessages(freeFormPerMonth);
-        sb.append("FreeForm: ").append(freeFormPerMonth).append("; ");
-
-        if (costPerMessage != null) {
-            account.setFreeFormCost(costPerMessage);
-            sb.append("CostPerMsg: ").append(costPerMessage).append(";");
+        if (account.getTodosPerGroupPerMonth() != todosPerMonth) {
+            account.setTodosPerGroupPerMonth(todosPerMonth);
+            sb.append("Todos per month: ").append(todosPerMonth).append(";");
         }
 
         createAndStoreSingleAccountLog(new AccountLog.Builder(account)

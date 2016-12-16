@@ -36,9 +36,6 @@ public class NotificationServiceTest {
     @Qualifier("servicesMessageSourceAccessor")
     private MessageSourceAccessor messageSourceAccessor;
 
-    //TODO this test as well as the corresponding test welcome.vm should be removed
-    //     this is only useful now to test application configuration
-
     @Test
     public void shouldGetMessageTemplate() {
         String template = "welcome.test";
@@ -52,7 +49,7 @@ public class NotificationServiceTest {
 
     @Test
     public void shouldGiveEnglishMessageForMeetingInvite() {
-        String message = messageSourceAccessor.getMessage("sms.mtg.send.new", new Object[]{"Grassroot", "Thabo", "Activism", "The Square", "15 October 2PM"}, Locale.ENGLISH);
+        String message = messageSourceAccessor.getMessage("sms.mtg.send.new.rsvp", new Object[]{"Grassroot", "Thabo", "Activism", "The Square", "15 October 2PM"}, Locale.ENGLISH);
     }
 
     private String writeTempFile(String data) {

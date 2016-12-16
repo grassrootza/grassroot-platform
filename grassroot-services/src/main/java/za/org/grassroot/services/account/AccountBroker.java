@@ -40,17 +40,12 @@ public interface AccountBroker {
     void removeAdministrator(String userUid, String accountUid, String adminToRemoveUid);
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
-    void updateBillingEmail(String userUid, String accountUid, String billingEmail);
-
-    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     void changeAccountType(String userUid, String accountUid, AccountType newAccountType, Set<String> groupsToRemove);
 
     // the next two should only be called by system admin, administrators can only do type switch
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN')")
-    void updateAccountGroupLimits(String userUid, String accountUid, Integer numberOfGroups, Integer maxSizePerGroup, Integer maxDepth);
-
-    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN')")
-    void updateAccountMessageSettings(String userUid, String accountUid, int freeFormPerMonth, Integer costPerMessage);
+    void updateAccountGroupLimits(String userUid, String accountUid, int numberOfGroups, int maxSizePerGroup,
+                                  int maxDepth, int messagesPerMonth, int todosPerMonth);
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     void updateAccountPaymentReference(String userUid, String accountUid, String paymentRef);
