@@ -102,9 +102,10 @@ public class GroupController extends BaseController {
         model.addAttribute("subGroups", groupQueryBroker.subGroups(groupUid));
         model.addAttribute("openToken", group.hasValidGroupTokenCode());
 
-        if (userPermissions.contains(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS)) {
+        boolean canViewMembers = userPermissions.contains(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
+        if (canViewMembers) {
             List<MembershipInfo> members = new ArrayList<>(MembershipInfo.createFromMembers(group.getMemberships()));
-            Collections.sort(members, Collections.reverseOrder());
+            members.sort(Collections.reverseOrder());
             model.addAttribute("groupMembers", members);
         }
 
@@ -127,12 +128,18 @@ public class GroupController extends BaseController {
         model.addAttribute("isPaidFor", isGroupPaidFor);
         model.addAttribute("canCreateSubGroup", isGroupPaidFor && userPermissions.contains(Permission.GROUP_PERMISSION_CREATE_SUBGROUP));
 
-        if (accountsActive && !isGroupPaidFor && user.getAccountAdministered() != null) {
+        boolean userHasAccount = user.getAccountAdministered() != null;
+        if (accountsActive && !isGroupPaidFor && userHasAccount) {
             int groupsLeft = accountBroker.numberGroupsLeft(user.getAccountAdministered().getUid());
             model.addAttribute("canAddToAccount", groupsLeft > 0);
             model.addAttribute("accountGroupsLeft", groupsLeft);
         } else {
             model.addAttribute("canAddToAccount", false);
+        }
+
+        if (accountsActive && canViewMembers && userHasAccount) {
+            model.addAttribute("canMoveMembers", true);
+            model.addAttribute("groupsForMove", permissionBroker.getActiveGroupsSorted(user, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER));
         }
 
         model.addAttribute("atGroupSizeLimit", !groupBroker.canAddMember(groupUid));

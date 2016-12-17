@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.*;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -35,20 +36,11 @@ public class GcmManager implements GcmService {
 
     private static final Logger log = LoggerFactory.getLogger(GcmManager.class);
 
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private GcmRegistrationRepository gcmRegistrationRepository;
-
-    @Autowired
-    private GroupRepository groupRepository;
-
-    @Autowired
-    private RestTemplate restTemplate;
-
-    @Autowired
-    private GroupChatSettingsRepository groupChatSettingsRepository;
+    private final UserRepository userRepository;
+    private final GcmRegistrationRepository gcmRegistrationRepository;
+    private final GroupRepository groupRepository;
+    private final RestTemplate restTemplate;
+    private final GroupChatSettingsRepository groupChatSettingsRepository;
 
     private final static String INSTANCE_ID_FIXED_PATH = "/iid/v1/";
 
@@ -77,6 +69,15 @@ public class GcmManager implements GcmService {
 
     private static final ObjectMapper mapper = new ObjectMapper();
     private final static Random random = new Random();
+
+    @Autowired
+    public GcmManager(UserRepository userRepository, GcmRegistrationRepository gcmRegistrationRepository, GroupRepository groupRepository, RestTemplate restTemplate, GroupChatSettingsRepository groupChatSettingsRepository) {
+        this.userRepository = userRepository;
+        this.gcmRegistrationRepository = gcmRegistrationRepository;
+        this.groupRepository = groupRepository;
+        this.restTemplate = restTemplate;
+        this.groupChatSettingsRepository = groupChatSettingsRepository;
+    }
 
     @PostConstruct
     public void init() {
@@ -137,8 +138,13 @@ public class GcmManager implements GcmService {
                         subscribeToTopic(registrationId, group.getUid());
                     }
                 } else {
-                    groupChatSettingsRepository.save(new GroupChatSettings(user, group, true, true, true, true));
                     subscribeToTopic(registrationId, group.getUid());
+                    try {
+                        GroupChatSettings thisGroupSettings = new GroupChatSettings(user, group, true, true, true, true);
+                        groupChatSettingsRepository.saveAndFlush(thisGroupSettings);
+                    } catch (DataIntegrityViolationException e) {
+                        log.error("Error storing group chat settings, possibly due to async loop");
+                    }
                 }
             } catch (IOException e) {
                 log.info("IO exception in loop ... XMPP connection must be down");

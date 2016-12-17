@@ -212,7 +212,8 @@
             </div>
             <div class="col-md-9 col-sm-8 col-xs-12">
               <p class="description"><span th:text="${responseTotals.numberOfUsers}">3</span> people invited.
-                <span th:text="${responseTotals.yes}">X</span> have confirmed as attending</span></p>
+                <span th:text="${responseTotals.yes}">X</span> have confirmed as attending</p>.
+              <a href="#memberModal" data-toggle="modal" data-target="#memberModal" th:if="${canAlterDetails}">Change invitations</a>
             </div>
           </div>
         </div>
@@ -282,6 +283,36 @@
         </div>
       </div>
     </div>
+
+    <div th:if="${canAlterDetails}" class="modal fade" id="memberModal" tabindex="-1" role="dialog" aria-labelledby="memberModalLabel">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button id="dismissMemberModal" type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title" id="memberModalLabel">Change invitations</h4>
+          </div>
+          <form th:action="@{assignment}" th:object="${memberPicker}" method="post">
+            <input type="hidden" name="eventUid" th:value="${meeting.uid}" />
+            <div class="modal-body">
+              <div class="list-group checked-list-box">
+                <li class="list-group-item" th:each="member, iterStat: *{listOfMembers}">
+                  <label>
+                    <input type="checkbox" th:field="*{listOfMembers[__${iterStat.index}__].selected}" class="list-checkbox"/>
+                    <input type="hidden" th:field="*{listOfMembers[__${iterStat.index}__].userUid}" />
+                    <span th:text="${member.nameToDisplay}" class="list-checkbox-label">Name</span>
+                  </label>
+                </li>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn default-button btn-neutral" data-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn default-button">Update</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
 
   </section>
 

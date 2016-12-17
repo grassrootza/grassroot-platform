@@ -32,7 +32,7 @@ public interface EventBroker {
 	 * @param customReminderMinutes If the reminder type is custom, the number of minutes in advance to send the reminder
 	 * @param description An optional longer description -- can be null
      * @param assignMemberUids The UIDs of the assigned members. If an empty set, then all members in the parent entity will be assigned.
-     * @param importance
+     * @param importance The meeting importance
 	 * @return
      */
 	Meeting createMeeting(String userUid, String parentUid, JpaEntityType parentType, String name, LocalDateTime eventStartDateTime, String eventLocation,

@@ -39,26 +39,30 @@ public class UserRestController {
 
     private static final Logger log = LoggerFactory.getLogger(UserRestController.class);
 
-    @Autowired
-    private UserManagementService userManagementService;
+    private final UserManagementService userManagementService;
+
+    private final PasswordTokenService passwordTokenService;
+
+    private final GeoLocationBroker geoLocationBroker;
+
+    private final SmsSendingService smsSendingService;
+
+    private final NotificationService notificationService;
+
+    private final PermissionBroker permissionBroker;
+
+    private final Environment environment;
 
     @Autowired
-    private PasswordTokenService passwordTokenService;
-
-    @Autowired
-    private GeoLocationBroker geoLocationBroker;
-
-    @Autowired
-    private SmsSendingService smsSendingService;
-
-    @Autowired
-    private NotificationService notificationService;
-
-    @Autowired
-    private PermissionBroker permissionBroker;
-
-    @Autowired
-    private Environment environment;
+    public UserRestController(UserManagementService userManagementService, PasswordTokenService passwordTokenService, GeoLocationBroker geoLocationBroker, SmsSendingService smsSendingService, NotificationService notificationService, PermissionBroker permissionBroker, Environment environment) {
+        this.userManagementService = userManagementService;
+        this.passwordTokenService = passwordTokenService;
+        this.geoLocationBroker = geoLocationBroker;
+        this.smsSendingService = smsSendingService;
+        this.notificationService = notificationService;
+        this.permissionBroker = permissionBroker;
+        this.environment = environment;
+    }
 
     @RequestMapping(value = "/add/{phoneNumber}/{displayName}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> add(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("displayName") String displayName) {

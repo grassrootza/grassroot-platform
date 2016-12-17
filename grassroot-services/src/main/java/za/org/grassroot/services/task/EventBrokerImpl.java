@@ -139,7 +139,7 @@ public class EventBrokerImpl implements EventBroker {
 		EventLog eventLog = new EventLog(user, meeting, EventLogType.CREATED);
 		bundle.addLog(eventLog);
 
-		Set<Notification> notifications = constructEventInfoNotifications(meeting, eventLog);
+		Set<Notification> notifications = constructEventInfoNotifications(meeting, eventLog, meeting.getMembers());
 		bundle.addNotifications(notifications);
 
 		logsAndNotificationsBroker.storeBundle(bundle);
@@ -164,9 +164,9 @@ public class EventBrokerImpl implements EventBroker {
 		return eventRepository.findOneByCreatedByUserAndParentGroupAndNameAndEventStartDateTimeBetweenAndCanceledFalse(user, parentGroup, name, intervalStart, intervalEnd);
 	}
 
-	private Set<Notification> constructEventInfoNotifications(Event event, EventLog eventLog) {
+	private Set<Notification> constructEventInfoNotifications(Event event, EventLog eventLog, Set<User> usersToNotify) {
 		Set<Notification> notifications = new HashSet<>();
-		for (User member : getAllEventMembers(event)) {
+		for (User member : usersToNotify) {
 			cacheUtilService.clearRsvpCacheForUser(member, event.getEventType());
 			String message = messageAssemblingService.createEventInfoMessage(member, event);
 			Notification notification = new EventInfoNotification(member, message, eventLog);
@@ -313,7 +313,6 @@ public class EventBrokerImpl implements EventBroker {
 		EventLog eventLog = new EventLog(user, meeting, EventLogType.CHANGE, null, startTimeChanged);
 		bundle.addLog(eventLog);
 
-		// todo : handle member addition or removal differently (use a flag / enum to record meeting change type?)
 		Set<Notification> notifications = constructEventChangedNotifications(meeting, eventLog, startTimeChanged);
 		bundle.addNotifications(notifications);
 
@@ -372,7 +371,7 @@ public class EventBrokerImpl implements EventBroker {
 		EventLog eventLog = new EventLog(user, vote, EventLogType.CREATED);
 		bundle.addLog(eventLog);
 
-		Set<Notification> notifications = constructEventInfoNotifications(vote, eventLog);
+		Set<Notification> notifications = constructEventInfoNotifications(vote, eventLog, vote.getMembers());
 		bundle.addNotifications(notifications);
 
 		logsAndNotificationsBroker.storeBundle(bundle);
@@ -738,12 +737,16 @@ public class EventBrokerImpl implements EventBroker {
 
 	@Override
 	@Transactional
+	@SuppressWarnings("unchecked") // for weirdness on event.getmembers
 	public void assignMembers(String userUid, String eventUid, Set<String> assignMemberUids) {
 		Objects.requireNonNull(userUid);
 		Objects.requireNonNull(eventUid);
+		Objects.requireNonNull(assignMemberUids);
 
 		User user = userRepository.findOneByUid(userUid);
 		Event event = eventRepository.findOneByUid(eventUid);
+
+		Set<User> priorMembers = (Set<User>) event.getMembers();
 
 		// consider allowing organizers to also add/remove assignment
 		if (!event.getCreatedByUser().equals(user)) {
@@ -751,10 +754,20 @@ public class EventBrokerImpl implements EventBroker {
 		}
 
 		event.assignMembers(assignMemberUids);
+
+		Set<User> addedMembers = (Set<User>) event.getMembers();
+		addedMembers.removeAll(priorMembers);
+
+		if (!addedMembers.isEmpty()) {
+			EventLog newLog = new EventLog(user, event, EventLogType.ASSIGNED_ADDED);
+			Set<Notification> notifications = constructEventInfoNotifications(event, newLog, addedMembers);
+			logsAndNotificationsBroker.storeBundle(new LogsAndNotificationsBundle(Collections.singleton(newLog), notifications));
+		}
 	}
 
 	@Override
 	@Transactional
+	@SuppressWarnings("unchecked")
 	public void removeAssignedMembers(String userUid, String eventUid, Set<String> memberUids) {
 		Objects.requireNonNull(userUid);
 		Objects.requireNonNull(eventUid);
@@ -762,11 +775,20 @@ public class EventBrokerImpl implements EventBroker {
 		User user = userRepository.findOneByUid(userUid);
 		Event event = eventRepository.findOneByUid(eventUid);
 
+		Set<User> membersRemoved = (Set<User>) event.getMembers();
+
 		if (!event.getCreatedByUser().equals(user)) {
 			throw new AccessDeniedException("Error! Only user who created meeting can remove members");
 		}
 
 		event.removeAssignedMembers(memberUids);
+
+		Set<User> finishedMembers = (Set<User>) event.getMembers();
+		membersRemoved.removeAll(finishedMembers);
+		if (!membersRemoved.isEmpty()) {
+			EventLog newLog = new EventLog(user, event, EventLogType.ASSIGNED_REMOVED);
+			logsAndNotificationsBroker.storeBundle(new LogsAndNotificationsBundle(Collections.singleton(newLog), Collections.emptySet()));
+		}
 	}
 
 	/*

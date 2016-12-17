@@ -31,6 +31,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
 
@@ -170,6 +171,8 @@ public class MeetingController extends BaseController {
         model.addAttribute("fromGroup", SourceMarker.GROUP.equals(source));
         model.addAttribute("parentUid", meeting.getParent().getUid());
 
+        model.addAttribute("memberPicker", MemberPicker.taskAssigned(meeting));
+
         return "meeting/view";
     }
 
@@ -204,6 +207,37 @@ public class MeetingController extends BaseController {
         eventBroker.cancel(getUserProfile().getUid(), eventUid);
         addMessage(redirectAttributes, MessageType.SUCCESS, "meeting.cancel.success", request);
         return "redirect:/home"; // todo : send to group if came from group
+    }
+
+    @PostMapping("assignment")
+    public String changeAssignment(@RequestParam String eventUid, @ModelAttribute("memberPicker") MemberPicker memberPicker,
+                                   RedirectAttributes attributes, HttpServletRequest request) {
+        Event meeting = eventBroker.load(eventUid);
+        attributes.addAttribute("eventUid", eventUid);
+
+        Set<String> assignedUids = memberPicker.getSelectedUids();
+        if (assignedUids.isEmpty()) {
+            addMessage(attributes, MessageType.ERROR, "meeting.assigned.error.empty", request);
+            return "redirect:/todo/view";
+        }
+
+        @SuppressWarnings("unchecked")
+        Set<User> priorUsers = (Set<User>) meeting.getMembers();
+        Set<String> originalUids = priorUsers.stream().map(User::getUid).collect(Collectors.toSet());
+
+        Set<String> addedUids = assignedUids.stream()
+                .filter(s -> !originalUids.contains(s))
+                .collect(Collectors.toSet());
+
+        Set<String> removedUids = originalUids.stream()
+                .filter(s -> !assignedUids.contains(s))
+                .collect(Collectors.toSet());
+
+        eventBroker.removeAssignedMembers(getUserProfile().getUid(), eventUid, removedUids);
+        eventBroker.assignMembers(getUserProfile().getUid(), eventUid, addedUids);
+
+        addMessage(attributes, MessageType.SUCCESS, "meeting.assigned.changed", request);
+        return "redirect:/meeting/view";
     }
 
     @RequestMapping(value = "reminder", method=RequestMethod.POST)

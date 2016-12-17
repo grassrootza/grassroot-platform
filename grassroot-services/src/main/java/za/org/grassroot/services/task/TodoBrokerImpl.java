@@ -150,7 +150,7 @@ public class TodoBrokerImpl implements TodoBroker {
 		TodoLog todoLog = new TodoLog(TodoLogType.CREATED, user, todo, null);
 		bundle.addLog(todoLog);
 
-		Set<Notification> notifications = constructTodoNotifications(todo, todoLog);
+		Set<Notification> notifications = constructTodoNotifications(todo, todoLog, todo.getMembers());
 		bundle.addNotifications(notifications);
 
 		logsAndNotificationsBroker.storeBundle(bundle);
@@ -163,10 +163,9 @@ public class TodoBrokerImpl implements TodoBroker {
 		return todo;
 	}
 
-	private Set<Notification> constructTodoNotifications(Todo todo, TodoLog todoLog) {
+	private Set<Notification> constructTodoNotifications(Todo todo, TodoLog todoLog, Set<User> membersToNotify) {
 		Set<Notification> notifications = new HashSet<>();
-		// the "recorded" notification gets sent to all users in parent, not just assigned (to re-evaluate in future)
-		for (User member : todo.getParent().getMembers()) {
+		for (User member : membersToNotify) {
 			String message = messageAssemblingService.createTodoRecordedNotificationMessage(member, todo);
 			Notification notification = new TodoInfoNotification(member, message, todoLog);
 			notifications.add(notification);
@@ -199,11 +198,23 @@ public class TodoBrokerImpl implements TodoBroker {
 			throw new AccessDeniedException("Only user who created todo can change assignment");
 		}
 
+		Set<User> priorMembers = todo.getMembers();
+
 		if (assignMemberUids != null && !assignMemberUids.isEmpty()) {
 			assignMemberUids.add(userUid);
 		}
 
 		todo.assignMembers(assignMemberUids);
+
+		Set<User> addedMembers = todo.getMembers();
+		addedMembers.removeAll(priorMembers);
+
+		if (!addedMembers.isEmpty()) {
+			TodoLog newLog = new TodoLog(TodoLogType.ASSIGNED_ADDED, user, todo, "Assigned " + addedMembers.size() +
+					" new members to todo");
+			Set<Notification> notifications = constructTodoNotifications(todo, newLog, addedMembers);
+			logsAndNotificationsBroker.storeBundle(new LogsAndNotificationsBundle(Collections.singleton(newLog), notifications));
+		}
 	}
 
 	@Override
@@ -215,11 +226,19 @@ public class TodoBrokerImpl implements TodoBroker {
 		User user = userRepository.findOneByUid(userUid);
 		Todo todo = todoRepository.findOneByUid(todoUid);
 
+		Set<User> priorMembers = todo.getMembers();
+
 		if (!todo.getCreatedByUser().equals(user)) {
 			throw new AccessDeniedException("Only user who created todo can change assignment");
 		}
 
 		todo.removeAssignedMembers(memberUids);
+
+		priorMembers.removeAll(todo.getMembers());
+		if (!priorMembers.isEmpty()) {
+			TodoLog newLog = new TodoLog(TodoLogType.ASSIGNED_REMOVED, user, todo, "Removed " + priorMembers.size() + " from todo");
+			logsAndNotificationsBroker.storeBundle(new LogsAndNotificationsBundle(Collections.singleton(newLog), Collections.emptySet()));
+		}
 	}
 
 	@Override
@@ -449,7 +468,7 @@ public class TodoBrokerImpl implements TodoBroker {
 		TodoLog todoLog = new TodoLog(TodoLogType.CHANGED, user, todo, null);
 		bundle.addLog(todoLog);
 
-		Set<Notification> notifications = constructTodoNotifications(todo, todoLog);
+		Set<Notification> notifications = constructTodoNotifications(todo, todoLog, null);
 		bundle.addNotifications(notifications);
 
 		logsAndNotificationsBroker.storeBundle(bundle);

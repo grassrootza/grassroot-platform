@@ -400,7 +400,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         LocalDate now = LocalDate.now();
         LocalDateTime start = now.with(firstDayOfMonth()).atStartOfDay();
         LocalDateTime end = now.with(lastDayOfMonth()).atTime(23, 59);
-        
+
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
         when(userManagementServiceMock.load(sessionTestUser.getUid())).thenReturn(sessionTestUser);
 

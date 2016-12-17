@@ -85,8 +85,8 @@ public class MVCConfig extends WebMvcConfigurerAdapter {
                 .setCacheControl(staticCache);
         registry.addResourceHandler("/fonts/**").addResourceLocations("classpath:/static/fonts/")
                 .setCacheControl(staticCache);
-        /*registry.addResourceHandler("/js/**").addResourceLocations("classpath:/static/js/")
-                .setCacheControl(staticCache);*/
+        registry.addResourceHandler("/js/**").addResourceLocations("classpath:/static/js/")
+                .setCacheControl(staticCache);
     }
 
     @Override

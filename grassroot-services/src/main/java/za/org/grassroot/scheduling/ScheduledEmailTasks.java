@@ -35,7 +35,7 @@ public class ScheduledEmailTasks {
         this.analyticalService = analyticalService;
     }
 
-    @Scheduled(cron = "0 0 5 * * ?")
+    @Scheduled(cron = "${grassroot.admin.mail.cron.trigger: 0 0 5 * * ?}")
     public void sendSystemStatsEmail() {
         if (sendDailyAdminMail) {
             logger.info("Sending system stats email ... ");
