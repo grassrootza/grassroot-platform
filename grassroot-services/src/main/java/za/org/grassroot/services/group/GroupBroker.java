@@ -40,6 +40,8 @@ public interface GroupBroker {
 
     void addMembers(String userUid, String groupUid, Set<MembershipInfo> membershipInfos, boolean adminUserCalling);
 
+    void copyMembersIntoGroup(String userUid, String groupUid, Set<String> memberUids);
+
     void addMemberViaJoinCode(String userUidToAdd, String groupUid, String tokenPassed);
 
     void notifyOrganizersOfJoinCodeUse(Instant periodStart, Instant periodEnd);

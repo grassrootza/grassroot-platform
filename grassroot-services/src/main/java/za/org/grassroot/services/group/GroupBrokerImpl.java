@@ -283,6 +283,39 @@ public class GroupBrokerImpl implements GroupBroker {
 
     @Override
     @Transactional
+    public void copyMembersIntoGroup(String userUid, String groupUid, Set<String> memberUids) {
+        User user = userRepository.findOneByUid(userUid);
+        Group group = groupRepository.findOneByUid(groupUid);
+
+        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER);
+
+        if (!checkGroupSizeLimit(group, memberUids.size())) {
+            throw new GroupSizeLimitExceededException();
+        }
+
+        List<User> users = userRepository.findByUidIn(memberUids);
+        Set<User> userSet = new HashSet<>(users);
+        logger.info("list size {}, set size {}", users.size(), userSet.size());
+        group.addMembers(userSet, BaseRoles.ROLE_ORDINARY_MEMBER);
+
+        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+
+        @SuppressWarnings("unchecked")
+        Set<Meeting> meetings = (Set) group.getUpcomingEventsIncludingParents(event -> event.getEventType().equals(EventType.MEETING));
+
+        groupChatService.addAllGroupMembersToChat(group, user);
+
+        for (User u  : users) {
+            GroupLog groupLog = new GroupLog(group, user, GroupLogType.GROUP_MEMBER_ADDED, u.getId());
+            bundle.addLog(groupLog);
+            notifyNewMembersOfUpcomingMeetings(bundle, u, group, groupLog, meetings);
+        }
+
+        logsAndNotificationsBroker.asyncStoreBundle(bundle);
+    }
+
+    @Override
+    @Transactional
     public void addMemberViaJoinCode(String userUidToAdd, String groupUid, String tokenPassed) {
         User user = userRepository.findOneByUid(userUidToAdd);
         Group group = groupRepository.findOneByUid(groupUid);
@@ -390,13 +423,9 @@ public class GroupBrokerImpl implements GroupBroker {
 
         @SuppressWarnings("unchecked")
         Set<Meeting> meetings = (Set) group.getUpcomingEventsIncludingParents(event -> event.getEventType().equals(EventType.MEETING));
-
-        logger.debug("called up meetings");
-
         final GroupLogType logType = duringGroupCreation ? GroupLogType.GROUP_MEMBER_ADDED_AT_CREATION : GroupLogType.GROUP_MEMBER_ADDED;
 
-        if (!duringGroupCreation) {
-            // todo : just add the new users, naturally
+        if (!duringGroupCreation) { // todo : just add the new users
             groupChatService.addAllGroupMembersToChat(group,initiator);
         }
 
@@ -408,26 +437,31 @@ public class GroupBrokerImpl implements GroupBroker {
             GroupLog groupLog = new GroupLog(group, initiator, logType, member.getId());
             bundle.addLog(groupLog);
 
-            // for each meeting that belongs to this group, or it belongs to one of parent groups and apply to subgroups,
-            // we create event notification for new member, but in case when meeting belongs to parent group, then only if member
-            // is not already contained in this ancestor group (otherwise, it already got the notification for such meetings)
-            for (Meeting meeting : meetings) {
-                Group meetingGroup = meeting.getAncestorGroup();
-                if (meetingGroup.equals(group) || !meetingGroup.hasMember(member)) {
-                    // meeting doesn't have to always apply to every member of its group ...
-                    boolean appliesToMember = meeting.isAllGroupMembersAssigned() || meeting.getAssignedMembers().contains(member);
-                    if (appliesToMember) {
-                        String message = messageAssemblingService.createEventInfoMessage(member, meeting);
-                        bundle.addNotification(new EventInfoNotification(member, message, groupLog, meeting));
-                    }
-                }
-            }
+            notifyNewMembersOfUpcomingMeetings(bundle, member, group, groupLog, meetings);
         }
 
         logger.info("Done with member add subroutine, returning bundle");
 
         return bundle;
     }
+
+    // for each meeting that belongs to this group, or it belongs to one of parent groups and apply to subgroups,
+    // we create event notification for new member, but in case when meeting belongs to parent group, then only if member
+    // is not already contained in this ancestor group (otherwise, it already got the notification for such meetings)
+    private void notifyNewMembersOfUpcomingMeetings(LogsAndNotificationsBundle bundle, User user, Group group, GroupLog groupLog,
+                                                    Set<Meeting> meetings) {
+        meetings.forEach(m -> {
+            Group meetingGroup = m.getAncestorGroup();
+            if (meetingGroup.equals(group) || !meetingGroup.hasMember(user)) {
+                boolean appliesToMember = m.isAllGroupMembersAssigned() || m.getAssignedMembers().contains(user);
+                if (appliesToMember) {
+                    String message = messageAssemblingService.createEventInfoMessage(user, m);
+                    bundle.addNotification(new EventInfoNotification(user, message, groupLog, m));
+                }
+            }
+        });
+    }
+
 
     private Set<ActionLog> removeMemberships(User initiator, Group group, Set<Membership> memberships) {
         Set<ActionLog> actionLogs = new HashSet<>();

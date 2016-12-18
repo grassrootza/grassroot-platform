@@ -43,15 +43,11 @@ public class GroupRestController extends GroupAbstractRestController {
 
     private static final Logger log = LoggerFactory.getLogger(GroupRestController.class);
 
-    @Autowired
-    private GroupChatService groupChatSettingsService;
+    private final GroupChatService groupChatSettingsService;
 
-    @Autowired
-    private GcmService gcmService;
+    private final GcmService gcmService;
 
-    @Autowired
-    @Qualifier("messageSourceAccessor")
-    protected MessageSourceAccessor messageSourceAccessor;
+    protected final MessageSourceAccessor messageSourceAccessor;
 
     private final static Set<Permission> permissionsDisplayed = Sets.newHashSet(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS,
             Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING,
@@ -60,6 +56,14 @@ public class GroupRestController extends GroupAbstractRestController {
             Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER,
             Permission.GROUP_PERMISSION_DELETE_GROUP_MEMBER,
             Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+
+    @Autowired
+    public GroupRestController(GroupChatService groupChatSettingsService, GcmService gcmService,
+                               @Qualifier("messageSourceAccessor") MessageSourceAccessor messageSourceAccessor) {
+        this.groupChatSettingsService = groupChatSettingsService;
+        this.gcmService = gcmService;
+        this.messageSourceAccessor = messageSourceAccessor;
+    }
 
     @RequestMapping(value = "/create/{phoneNumber}/{code}/{groupName}/{description:.+}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> createGroupWithDescription(@PathVariable String phoneNumber, @PathVariable String code,

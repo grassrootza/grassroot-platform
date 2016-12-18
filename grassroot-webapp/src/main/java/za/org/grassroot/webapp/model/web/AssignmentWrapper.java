@@ -4,7 +4,6 @@ import za.org.grassroot.core.domain.User;
 
 /**
  * Created by luke on 2016/03/26.
- * todo: combine this with MemberWrapper
  */
 public class AssignmentWrapper {
 
@@ -42,5 +41,28 @@ public class AssignmentWrapper {
 
     public void setSelected(boolean selected) {
         this.selected = selected;
+    }
+
+    @Override
+    public String toString() {
+        return "AssignmentWrapper{" +
+                "nameToDisplay='" + nameToDisplay + '\'' +
+                ", selected=" + selected +
+                '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        AssignmentWrapper that = (AssignmentWrapper) o;
+
+        return userUid != null ? userUid.equals(that.userUid) : that.userUid == null;
+    }
+
+    @Override
+    public int hashCode() {
+        return userUid != null ? userUid.hashCode() : 0;
     }
 }

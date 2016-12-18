@@ -22,9 +22,11 @@ import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.services.exception.GroupSizeLimitExceededException;
 import za.org.grassroot.services.group.GroupBroker;
+import za.org.grassroot.services.group.GroupPermissionTemplate;
 import za.org.grassroot.services.group.GroupQueryBroker;
 import za.org.grassroot.services.task.TaskBroker;
 import za.org.grassroot.webapp.controller.BaseController;
+import za.org.grassroot.webapp.model.web.MemberPicker;
 import za.org.grassroot.webapp.model.web.MemberWrapper;
 import za.org.grassroot.webapp.model.web.MemberWrapperList;
 import za.org.grassroot.webapp.util.BulkUserImportUtil;
@@ -429,8 +431,64 @@ public class GroupController extends BaseController {
         }
     }
 
-    @RequestMapping(value = "language")
-    public String setGroupLanguage(Model model, @RequestParam String groupUid, @RequestParam String locale,
+    @RequestMapping(value = "copy", method = RequestMethod.GET)
+    public String listMembersToMoveOrCopy(Model model, @RequestParam String groupUid) {
+        User user = userManagementService.load(getUserProfile().getUid());
+        Group group = groupBroker.load(groupUid);
+        List<Group> candidates = permissionBroker.getActiveGroupsSorted(user, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER);
+        candidates.remove(group);
+        MemberPicker memberPicker = MemberPicker.create(group, JpaEntityType.GROUP, false);
+        memberPicker.removeMember(getUserProfile().getUid());
+
+        model.addAttribute("group", group);
+        model.addAttribute("memberPicker", memberPicker);
+        model.addAttribute("targetGroups", candidates);
+
+        return "group/move_copy";
+    }
+
+    @RequestMapping(value = "copy", method = RequestMethod.POST)
+    public String moveOrCopyMembers(RedirectAttributes attributes, HttpServletRequest request,
+                                    @ModelAttribute MemberPicker memberPicker,
+                                    @RequestParam String originalGroupUid,
+                                    @RequestParam String targetGroupUid,
+                                    @RequestParam String moveType,
+                                    @RequestParam(required = false) Boolean newGroup,
+                                    @RequestParam(required = false) String groupName) {
+        boolean removeMembers = "MOVE".equalsIgnoreCase(moveType);
+        Set<String> memberUids = memberPicker.getSelectedUids() == null ? new HashSet<>() : memberPicker.getSelectedUids();
+        String redirectUid;
+
+        if (newGroup) {
+            if (StringUtils.isEmpty(groupName) || memberUids.isEmpty()) {
+                removeMembers = false;
+                addMessage(attributes, MessageType.ERROR, "group.transfer.new.empty", request);
+                redirectUid = originalGroupUid;
+            } else {
+                MembershipInfo thisMember = new MembershipInfo(getUserProfile().getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER,
+                        getUserProfile().getDisplayName());
+                Group group = groupBroker.create(getUserProfile().getUid(), groupName, null, Collections.singleton(thisMember),
+                        GroupPermissionTemplate.DEFAULT_GROUP, null, null, true);
+                groupBroker.copyMembersIntoGroup(getUserProfile().getUid(), group.getUid(), memberUids);
+                addMessage(attributes, MessageType.SUCCESS, "group.transfer." + (removeMembers ? "move" : "copy") + ".new", request);
+                redirectUid = group.getUid();
+            }
+        } else {
+            groupBroker.copyMembersIntoGroup(getUserProfile().getUid(), targetGroupUid, memberUids);
+            addMessage(attributes, MessageType.SUCCESS, "group.transfer." + (removeMembers ? "move" : "copy") + ".existing", request);
+            redirectUid = targetGroupUid;
+        }
+
+        if (removeMembers) {
+            groupBroker.removeMembers(getUserProfile().getUid(), originalGroupUid, memberUids);
+        }
+
+        attributes.addAttribute("groupUid", redirectUid);
+        return "redirect:/group/view";
+    }
+
+    @RequestMapping(value = "language", method = RequestMethod.POST)
+    public String setGroupLanguage(RedirectAttributes attributes, @RequestParam String groupUid, @RequestParam String locale,
                                    @RequestParam(value = "includeSubGroups", required = false) boolean includeSubGroups,
                                    HttpServletRequest request) {
 
@@ -443,8 +501,9 @@ public class GroupController extends BaseController {
 
         groupBroker.updateGroupDefaultLanguage(getUserProfile().getUid(), group.getUid(), locale, includeSubGroups);
 
-        addMessage(model, MessageType.SUCCESS, "group.language.success", request);
-        return viewGroupIndex(model, groupUid);
+        addMessage(attributes, MessageType.SUCCESS, "group.language.success", request);
+        attributes.addAttribute("groupUid", groupUid);
+        return "redirect:/group/view";
     }
 
 

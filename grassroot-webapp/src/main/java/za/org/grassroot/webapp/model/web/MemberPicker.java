@@ -68,6 +68,14 @@ public class MemberPicker {
         this.listOfMembers = listOfMembers;
     }
 
+    public void removeMember(String memberUid) {
+        Objects.requireNonNull(memberUid);
+
+        listOfMembers = listOfMembers.stream()
+                .filter(u -> !u.getUserUid().equals(memberUid))
+                .collect(Collectors.toList());
+    }
+
     public Set<String> getSelectedUids() {
         return listOfMembers.stream()
                 .filter(AssignmentWrapper::isSelected)

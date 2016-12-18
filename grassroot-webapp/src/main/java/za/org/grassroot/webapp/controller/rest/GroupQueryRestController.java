@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.GroupJoinRequest;
@@ -15,11 +16,11 @@ import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
 import za.org.grassroot.services.ChangedSinceData;
-import za.org.grassroot.services.group.GroupJoinRequestService;
-import za.org.grassroot.services.group.GroupLocationFilter;
 import za.org.grassroot.services.exception.JoinRequestNotOpenException;
 import za.org.grassroot.services.exception.RequestorAlreadyPartOfGroupException;
 import za.org.grassroot.services.geo.GeoLocationBroker;
+import za.org.grassroot.services.group.GroupJoinRequestService;
+import za.org.grassroot.services.group.GroupLocationFilter;
 import za.org.grassroot.webapp.enums.JoinReqType;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
@@ -162,18 +163,23 @@ public class GroupQueryRestController extends GroupAbstractRestController {
     @RequestMapping(value = "/join/request/{phoneNumber}/{code}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> requestToJoinGroup(@PathVariable("phoneNumber") String phoneNumber,
                                                               @PathVariable("code") String code,
-                                                              @RequestParam(value = "uid") String groupToJoinUid,
+                                                              @RequestParam(value = "uid", required = false) String groupToJoinUid,
                                                               @RequestParam(value = "message") String message) {
+        if (StringUtils.isEmpty(groupToJoinUid)) {
+            log.warn("Missing groupUid in join request, check client");
+            return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.REQUEST_MISSING_UID);
+        } else {
 
-        User user = userManagementService.findByInputNumber(phoneNumber);
-        try {
-            final String openedRequestUid = groupJoinRequestService.open(user.getUid(), groupToJoinUid, message);
-            final GroupJoinRequestDTO returnedRequest = new GroupJoinRequestDTO(groupJoinRequestService.loadRequest(openedRequestUid), user);
-            ResponseEntity<ResponseWrapper> response = RestUtil.okayResponseWithData(RestMessage.GROUP_JOIN_REQUEST_SENT, Collections.singletonList(returnedRequest));
-            log.info("user requested to join group, response = {}", response.toString());
-            return response;
-        } catch (RequestorAlreadyPartOfGroupException e) {
-            return RestUtil.errorResponse(HttpStatus.CONFLICT, RestMessage.USER_ALREADY_PART_OF_GROUP);
+            User user = userManagementService.findByInputNumber(phoneNumber);
+            try {
+                final String openedRequestUid = groupJoinRequestService.open(user.getUid(), groupToJoinUid, message);
+                final GroupJoinRequestDTO returnedRequest = new GroupJoinRequestDTO(groupJoinRequestService.loadRequest(openedRequestUid), user);
+                ResponseEntity<ResponseWrapper> response = RestUtil.okayResponseWithData(RestMessage.GROUP_JOIN_REQUEST_SENT, Collections.singletonList(returnedRequest));
+                log.info("user requested to join group, response = {}", response.toString());
+                return response;
+            } catch (RequestorAlreadyPartOfGroupException e) {
+                return RestUtil.errorResponse(HttpStatus.CONFLICT, RestMessage.USER_ALREADY_PART_OF_GROUP);
+            }
         }
     }
 

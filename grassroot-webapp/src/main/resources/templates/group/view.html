@@ -57,6 +57,7 @@
               Change roles' permissions</a></li>
             <li><a th:href="@{/group/change_multiple(groupUid=${group.uid})}">Add, remove multiple members</a></li>
             <li><a th:if="${isPaidFor}" th:href="@{/group/import/start(groupUid=${group.uid})}">Import members</a></li>
+            <li><a th:if="${isPaidFor}" th:href="@{/group/copy(groupUid=${group.uid})}">Copy or move members to other group</a></li>
             <li><a href="javascript:void(0)" data-toggle="modal" data-target="#reminderModal">Change reminder timing</a></li>
             <li><a href="javascript:void(0)" data-toggle="modal" data-target="#renameModal">Rename group</a></li>
             <li><a href="javascript:void(0)" data-toggle="modal" data-target="#languageModal">Set default language</a></li>
@@ -523,7 +524,7 @@
           <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
           <h4 class="modal-title" id="languageModalLabel">Change group language</h4>
         </div>
-        <form th:action="@{/group/language}" method="get">
+        <form th:action="@{/group/language}" method="post">
           <input type="hidden" name="groupUid" th:value="${group.getUid()}" />
           <div class="modal-body">
             <div class="form-group">
