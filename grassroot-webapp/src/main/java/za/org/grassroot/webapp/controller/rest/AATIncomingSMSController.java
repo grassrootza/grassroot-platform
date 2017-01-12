@@ -12,9 +12,9 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.integration.sms.SmsSendingService;
+import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.EventLogBroker;
-import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.user.UserManagementService;
 
 import java.util.List;
@@ -32,28 +32,32 @@ public class AATIncomingSMSController {
     private static final Logger log = LoggerFactory.getLogger(AATIncomingSMSController.class);
     private static final String patternToMatch = "\\b(?:yes|no|abstain|maybe)\\b";
 
-    @Autowired
-    EventBroker eventBroker;
+    private final EventBroker eventBroker;
+
+    private final UserManagementService userManager;
+
+    private final EventLogBroker eventLogManager;
+
+    private final MessageAssemblingService messageAssemblingService;
+
+    private final SmsSendingService smsSendingService;
+
+    private static final String fromNumber ="fn";
+    private static final String message ="ms";
 
     @Autowired
-    UserManagementService userManager;
-
-    @Autowired
-    EventLogBroker eventLogManager;
-
-    @Autowired
-    MessageAssemblingService messageAssemblingService;
-
-    @Autowired
-    SmsSendingService smsSendingService;
-
-    public static final String fromNumber ="fn";
-    public static final String message ="ms";
+    public AATIncomingSMSController(EventBroker eventBroker, UserManagementService userManager, EventLogBroker eventLogManager, MessageAssemblingService messageAssemblingService, SmsSendingService smsSendingService) {
+        this.eventBroker = eventBroker;
+        this.userManager = userManager;
+        this.eventLogManager = eventLogManager;
+        this.messageAssemblingService = messageAssemblingService;
+        this.smsSendingService = smsSendingService;
+    }
 
 
     @RequestMapping(value = "incoming", method = RequestMethod.GET)
-    public void receiveSms(@RequestParam(value =fromNumber, required = true) String phoneNumber,
-                                   @RequestParam(value = message,required = true) String msg) {
+    public void receiveSms(@RequestParam(value = fromNumber) String phoneNumber,
+                           @RequestParam(value = message) String msg) {
 
 
         log.info("Inside AATIncomingSMSController -" + " following param values were received + ms ="+msg+ " fn= "+phoneNumber);

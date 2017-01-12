@@ -14,7 +14,8 @@ import za.org.grassroot.core.domain.Todo;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.core.enums.TaskType;
-import za.org.grassroot.services.*;
+import za.org.grassroot.services.ChangedSinceData;
+import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.TaskBroker;
 import za.org.grassroot.services.task.TodoBroker;
@@ -40,22 +41,22 @@ public class TaskRestController {
 
     private static final Logger logger = LoggerFactory.getLogger(TaskRestController.class);
 
-    @Autowired
-    private UserManagementService userManagementService;
-
-    @Autowired
-    private TaskBroker taskBroker;
-
-	@Autowired
-	private EventBroker eventBroker;
+    private final UserManagementService userManagementService;
+    private final TaskBroker taskBroker;
+	private final EventBroker eventBroker;
+	private final TodoBroker todoBroker;
+	private final PermissionBroker permissionBroker;
 
 	@Autowired
-	private TodoBroker todoBroker;
+	public TaskRestController(UserManagementService userManagementService, TaskBroker taskBroker, EventBroker eventBroker, TodoBroker todoBroker, PermissionBroker permissionBroker) {
+		this.userManagementService = userManagementService;
+		this.taskBroker = taskBroker;
+		this.eventBroker = eventBroker;
+		this.todoBroker = todoBroker;
+		this.permissionBroker = permissionBroker;
+	}
 
-	@Autowired
-	private PermissionBroker permissionBroker;
-
-    // calling this "for parent" as in future will use it for any entity that can have sub-tasks, but for now just used for groups
+	// calling this "for parent" as in future will use it for any entity that can have sub-tasks, but for now just used for groups
 	@RequestMapping(value = "/list/{phoneNumber}/{code}/{parentUid}", method = RequestMethod.GET)
     public ResponseEntity<ChangedSinceData<TaskDTO>> getTasksForParent(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code,
 																	   @PathVariable("parentUid") String parentUid,
@@ -77,7 +78,7 @@ public class TaskRestController {
 			@PathVariable String code) {
         User user = userManagementService.findByInputNumber(phoneNumber);
 		List<TaskDTO> tasks = taskBroker.fetchUpcomingUserTasks(user.getUid());
-        Collections.sort(tasks, Collections.reverseOrder());
+        tasks.sort(Collections.reverseOrder());
 	    logger.info("returning tasks for user : {}", tasks.toString());
         RestMessage message = (tasks.isEmpty()) ? RestMessage.USER_HAS_NO_TASKS : RestMessage.USER_ACTIVITIES;
         return RestUtil.okayResponseWithData(message, tasks);

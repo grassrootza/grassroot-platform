@@ -45,11 +45,14 @@ public class GroupQueryRestController extends GroupAbstractRestController {
     @Value("${grassroot.ussd.dialcode:'*134*1994*'}")
     private String ussdDialCode;
 
-    @Autowired
-    private GeoLocationBroker geoLocationBroker;
+    private final GeoLocationBroker geoLocationBroker;
+    private final GroupJoinRequestService groupJoinRequestService;
 
     @Autowired
-    private GroupJoinRequestService groupJoinRequestService;
+    public GroupQueryRestController(GeoLocationBroker geoLocationBroker, GroupJoinRequestService groupJoinRequestService) {
+        this.geoLocationBroker = geoLocationBroker;
+        this.groupJoinRequestService = groupJoinRequestService;
+    }
 
     @RequestMapping(value = "/list/{phoneNumber}/{code}", method = RequestMethod.GET)
     public ResponseEntity<ChangedSinceData<GroupResponseWrapper>> getUserGroups(

@@ -268,6 +268,7 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
     @Override
     @Transactional
     public void processAccountPaymentsOutstanding() {
+        logger.info("Inside Payment Service Broker, handling payments ...");
         if (paymentsEnabled) {
             billingRepository.findAll(Specifications
                     .where(paymentDateNotNull())
@@ -281,6 +282,8 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
         Account account = billingRecord.getAccount();
         final String recurringPaymentPathVar = String.format(recurringPaymentRestPath, account.getPaymentRef());
         final double amountToPay = (double) billingRecord.getTotalAmountToPay() / 100;
+        logger.info("Triggering recurring payment for : {}", account.getAccountName());
+
         UriComponentsBuilder paymentUri = baseUriBuilder.cloneBuilder()
                 .path(recurringPaymentPathVar)
                 .queryParam(paymentAmountParam,  AMOUNT_FORMAT.format(amountToPay))
