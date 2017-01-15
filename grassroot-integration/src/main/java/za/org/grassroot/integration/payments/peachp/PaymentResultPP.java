@@ -73,6 +73,8 @@ public class PaymentResultPP {
         this.description = description;
     }
 
+    public String fullDescription() { return code + ": " + description; }
+
     public PaymentParameterError[] getParameterErrors() {
         return parameterErrors;
     }

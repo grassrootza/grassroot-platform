@@ -53,6 +53,7 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
 
     private static final String OKAY_CODE = "000.100.110";
     private static final String NO_3D_CODE = "100.390.109";
+    private static final String ZEROS_CODE = "000.000.000";
 
     private AccountBillingRecordRepository billingRepository;
     private RestTemplate restTemplate;
@@ -168,6 +169,7 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
             try {
                 PaymentErrorPP errorResponse = objectMapper.readValue(e.getResponseBodyAsString(), PaymentErrorPP.class);
                 logger.info("Payment Error!: {}", errorResponse.toString());
+                billingRecord.setPaymentDescription(errorResponse.getResult().fullDescription());
             } catch (IOException error) {
                 logger.info("Could not read in JSON!");
                 error.printStackTrace();
@@ -203,6 +205,7 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
             try {
                 PaymentErrorPP errorResponse = objectMapper.readValue(e.getResponseBodyAsString(), PaymentErrorPP.class);
                 logger.info("Payment Error!: {}", errorResponse.toString());
+                amountToPay.setPaymentDescription(errorResponse.getResult().fullDescription());
                 throw new PaymentMethodFailedException(errorResponse);
             } catch (IOException error) {
                 error.printStackTrace();
@@ -214,6 +217,7 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
     }
 
     @Override
+    @Transactional
     public PaymentResponse asyncPaymentCheckResult(String paymentId, String resourcePath) {
         UriComponentsBuilder builder = UriComponentsBuilder.newInstance()
                 .scheme("https")
@@ -240,6 +244,7 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
             if (responsePP.getResult().isSuccessful()) {
                 handleSuccessfulPayment(record, responsePP);
             } else {
+                record.setPaymentDescription(responsePP.getResult().fullDescription());
                 sendFailureEmail(record, response.getBody().toString());
             }
             return responsePP;
@@ -268,8 +273,8 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
     @Override
     @Transactional
     public void processAccountPaymentsOutstanding() {
-        logger.info("Inside Payment Service Broker, handling payments ...");
         if (paymentsEnabled) {
+            logger.info("Inside Payment Service Broker, payments enabled, handling ...");
             billingRepository.findAll(Specifications
                     .where(paymentDateNotNull())
                     .and(isPaid(false))
@@ -278,7 +283,8 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
         }
     }
 
-    private boolean triggerRecurringPayment(AccountBillingRecord billingRecord) {
+    @Transactional
+    private void triggerRecurringPayment(AccountBillingRecord billingRecord) {
         Account account = billingRecord.getAccount();
         final String recurringPaymentPathVar = String.format(recurringPaymentRestPath, account.getPaymentRef());
         final double amountToPay = (double) billingRecord.getTotalAmountToPay() / 100;
@@ -286,6 +292,7 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
 
         UriComponentsBuilder paymentUri = baseUriBuilder.cloneBuilder()
                 .path(recurringPaymentPathVar)
+                .queryParam(paymentsAuthChannelIdParam, channelId)
                 .queryParam(paymentAmountParam,  AMOUNT_FORMAT.format(amountToPay))
                 .queryParam(paymentTypeParam, RECURRING)
                 .queryParam(recurringParam, REPEAT);
@@ -294,19 +301,20 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
             HttpHeaders headers = new HttpHeaders();
             headers.add(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE);
             HttpEntity<PaymentResponsePP> request = new HttpEntity<>(headers);
-            // logger.info("URL: " + paymentUri.toUriString());
+
             ResponseEntity<PaymentResponsePP> response = restTemplate.exchange(paymentUri.build().toUri(), HttpMethod.POST, request, PaymentResponsePP.class);
             PaymentResponsePP okayResponse = response.getBody();
             logger.info("Payment Success!: {}", okayResponse.toString());
 
-            if (OKAY_CODE.equals(okayResponse.getResult().getCode())) {
+            final String resultCode = okayResponse.getResult().getCode();
+            if (OKAY_CODE.equals(resultCode) || ZEROS_CODE.equals(resultCode)) {
                 handleSuccessfulPayment(billingRecord, okayResponse);
+            } else {
+                billingRecord.setPaymentDescription(okayResponse.getResult().fullDescription());
+                sendFailureEmail(billingRecord, okayResponse.getResult().fullDescription());
             }
-
-            return false;
         } catch (HttpStatusCodeException e) {
-            handlePaymentError(e);
-            return false;
+            handlePaymentError(e, billingRecord);
         }
     }
 
@@ -318,8 +326,11 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
         record.setPaid(true);
         record.setPaidDate(Instant.now());
         record.setPaymentId(response.getId());
-        record.setPaidAmount(response.getAmount() == null ? 0
-                : (long) (response.getAmount() * 100));
+        record.setPaidAmount(response.getAmount() == null ? 0 : (long) (response.getAmount() * 100));
+
+        final String desc = StringUtils.isEmpty(response.getResult().getDescription()) ?
+                response.getDescription() : response.getResult().getDescription();
+        record.setPaymentDescription(response.getResult().getCode() + ": " + desc);
 
         if (emailSendingBroker != null) {
             String email = "A payment succeeded for account " + account.getAccountName() + ", with amount paid as "
@@ -331,10 +342,12 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
         }
     }
 
-    private PaymentErrorPP handlePaymentError(HttpStatusCodeException e) {
+    @Transactional
+    private PaymentErrorPP handlePaymentError(HttpStatusCodeException e, AccountBillingRecord record) {
         try {
             PaymentErrorPP errorResponse = objectMapper.readValue(e.getResponseBodyAsString(), PaymentErrorPP.class);
             logger.info("Payment Error!: {}", errorResponse.toString());
+            record.setPaymentDescription(errorResponse.getResult().getCode() + ": " + errorResponse.getResult().getDescription());
             return errorResponse;
         } catch (IOException error) {
             logger.info("Could not read in JSON!");

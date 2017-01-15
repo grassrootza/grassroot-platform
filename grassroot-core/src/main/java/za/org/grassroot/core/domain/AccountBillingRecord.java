@@ -80,6 +80,10 @@ public class AccountBillingRecord implements Comparable<AccountBillingRecord> {
     @Column(name="payment_id", length = 50)
     private String paymentId;
 
+    @Basic
+    @Column(name="payment_desc")
+    private String paymentDescription;
+
     private AccountBillingRecord() {
         // for JPA
     }
@@ -232,6 +236,10 @@ public class AccountBillingRecord implements Comparable<AccountBillingRecord> {
         this.paid = paid;
     }
 
+    public void togglePaid() {
+        paid = !paid;
+    }
+
     public Instant getPaidDate() {
         return paidDate;
     }
@@ -258,6 +266,14 @@ public class AccountBillingRecord implements Comparable<AccountBillingRecord> {
 
     public void setStatementDateTime(Instant statementDateTime) {
         this.statementDateTime = statementDateTime;
+    }
+
+    public String getPaymentDescription() {
+        return paymentDescription;
+    }
+
+    public void setPaymentDescription(String paymentDescription) {
+        this.paymentDescription = paymentDescription;
     }
 
     // for Thymeleaf

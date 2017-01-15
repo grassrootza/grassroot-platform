@@ -11,8 +11,10 @@
     <div class="row">
       <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
         <h2 class="text-center header-content-title">Account Billing Records</h2>
-        <h4 class="text-center header-content-subtitle" th:text="${account.accountName}"></h4>
-        <h4 class="text-center header-content-subtitle"><a th:href="@{/admin/accounts/home}">Back</a></h4>
+        <div th:if="${account != null}">
+          <h4 class="text-center header-content-subtitle" th:text="${account.accountName}"></h4>
+          <h4 class="text-center header-content-subtitle"><a th:href="@{/admin/accounts/home}">Back</a></h4>
+        </div>
       </div>
     </div>
   </div>
@@ -27,33 +29,34 @@
           <table class="table">
             <!-- todo : wire up some form of entity viewer for randomvly viewing a bunch of things (e.g., logs) & also enable sorting, filtering etc -->
             <thead>
-            <th>Created Date</th>
-            <th>Bill period start</th>
-            <th>Bill period end</th>
-            <th>Statement date</th>
-            <th>Log Type</th>
-            <th>Opening Balance</th>
-            <th>Amount Billed</th>
-            <th>To pay</th>
-            <th>Payment due</th>
-            <th>Paid?</th>
-            <th>Payment Date</th>
-            <th>Payment Amount</th>
+              <tr>
+                <th>Statement date</th>
+                <th>Bill period start</th>
+                <th>Bill period end</th>
+                <th>Log Type</th>
+                <th>Opening Balance</th>
+                <th>Amount Billed</th>
+                <th>To pay</th>
+                <th>Payment due</th>
+                <th>Paid?</th>
+                <th>Payment Date/Desc</th>
+                <th></th>
+              </tr>
             </thead>
             <tbody>
             <tr th:each="record : ${records}">
-              <td><span th:text="${#dates.format(record.createdDateTime, 'dd MMM, yyyy')}"></span></td>
-              <td><span th:text="${#dates.format(record.billedPeriodStart, 'dd MMM, yyyy')}"></span></td>
-              <td><span th:text="${#dates.format(record.billedPeriodEnd, 'dd MMM, yyyy')}"></span></td>
-              <td><span th:text="${#dates.format(record.statementDateTime, 'dd MMM, yyyy')}"></span></td>
+              <td><span th:text="${#dates.format(record.statementDateTime, 'dd MMM')}"></span></td>
+              <td><span th:text="${#dates.format(record.billedPeriodStart, 'dd MMM')}"></span></td>
+              <td><span th:text="${#dates.format(record.billedPeriodEnd, 'dd MMM')}"></span></td>
               <td><span th:text="${record.accountLog.accountLogType}"></span></td>
-              <td><span th:text="${#numbers.formatDecimal(record.openingBalance / 100, 0, 'COMMA', 2, 'POINT')}"></span></td>
-              <td><span th:text="${#numbers.formatDecimal(record.amountBilledThisPeriod / 100, 0, 'COMMA', 2, 'POINT')}"></span>
-              <td><span th:text="${#numbers.formatDecimal(record.totalAmountToPay / 100, 0, 'COMMA', 2, 'POINT')}"></span>
-              <td><span th:text="${#dates.format(record.nextPaymentDate, 'HH:mm, dd MMM, yyyy')}"></span></td>
-              <td><span th:text="${record.paid}"></span></td>
-              <td><span th:text="${#dates.format(record.paidDate, 'dd MMM, yyyy')}"></span></td>
-              <td><span th:text="${record.paid ? #numbers.formatDecimal(record.paidAmount / 100, 0, 'COMMA', 2, 'POINT') : ''}"></span>
+              <td><span th:text="${#numbers.formatDecimal(record.openingBalance / 100, 0, 'COMMA', 0, 'POINT')}"></span></td>
+              <td><span th:text="${#numbers.formatDecimal(record.amountBilledThisPeriod / 100, 0, 'COMMA', 0, 'POINT')}"></span>
+              <td><span th:text="${#numbers.formatDecimal(record.totalAmountToPay / 100, 0, 'COMMA', 0, 'POINT')}"></span>
+              <td><span th:text="${#dates.format(record.nextPaymentDate, 'HH:mm, dd MMM')}"></span></td>
+              <td><span th:text="${record.paid ? 'Yes' : 'No'}"></span></td>
+              <td><span th:text="${record.paid ? #dates.format(record.paidDate, 'dd MMM, yyyy') : record.paymentDescription}"></span></td>
+              <td><a th:href="@{/admin/accounts/bill/pay/toggle(recordUid=${record.uid})}"
+                     th:text="${record.paid ? 'Pay again' : 'Stop payment'}"></a></td>
             </tr>
             </tbody>
           </table>

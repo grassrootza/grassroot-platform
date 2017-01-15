@@ -8,6 +8,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -136,10 +137,14 @@ public class AccountAdminController extends BaseController {
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping(value = "/records/list", method = RequestMethod.GET)
-    public String seeUnpaidBills(@RequestParam String accountUid, @RequestParam(required = false) boolean unpaidOnly, Model model) {
-        model.addAttribute("records", billingBroker.loadBillingRecordsForAccount(accountUid, unpaidOnly,
+    public String seeUnpaidBills(@RequestParam(required = false) String accountUid,
+                                 @RequestParam(required = false) boolean unpaidOnly,
+                                 Model model) {
+        model.addAttribute("records", billingBroker.loadBillingRecords(accountUid, unpaidOnly,
                 new Sort(Sort.Direction.DESC, "createdDateTime")));
-        model.addAttribute("account", accountBroker.loadAccount(accountUid));
+        if (!StringUtils.isEmpty(accountUid)) {
+            model.addAttribute("account", accountBroker.loadAccount(accountUid));
+        }
         return "admin/accounts/records";
     }
 
@@ -150,6 +155,18 @@ public class AccountAdminController extends BaseController {
         billingBroker.changeBillPaymentDate(getUserProfile().getUid(), recordUid, newDate);
         addMessage(attributes, MessageType.INFO, "admin.accounts.billpaydate.changed", request);
         return "redirect:/admin/accounts/bill/list/unpaid";
+    }
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    @RequestMapping(value = "/bill/pay/toggle", method = RequestMethod.GET)
+    public String toggleBillPayment(@RequestParam String recordUid, @RequestParam(required = false) String accountUid,
+                                    RedirectAttributes attributes, HttpServletRequest request) {
+        billingBroker.togglePaymentStatus(recordUid);
+        addMessage(attributes, MessageType.INFO, "admin.accounts.billpaid.toggled", request);
+        if (!StringUtils.isEmpty(accountUid)) {
+            attributes.addAttribute("accountUid", accountUid);
+        }
+        return "redirect:/admin/accounts/records/list";
     }
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")

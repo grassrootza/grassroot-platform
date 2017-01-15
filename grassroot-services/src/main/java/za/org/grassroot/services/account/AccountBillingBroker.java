@@ -30,9 +30,18 @@ public interface AccountBillingBroker {
 
     List<AccountBillingRecord> findRecordsInSameStatementCycle(String recordUid);
 
-    List<AccountBillingRecord> loadBillingRecordsForAccount(String accountUid, boolean unpaidOnly, Sort sort);
+    /**
+     *
+     * @param accountUid Optional : specify an account to load
+     * @param unpaidOnly Whether to load only unpaid or unpaid and paid
+     * @param sort A sort
+     * @return
+     */
+    List<AccountBillingRecord> loadBillingRecords(String accountUid, boolean unpaidOnly, Sort sort);
 
     AccountBillingRecord fetchRecordByPayment(String paymentId);
+
+    void togglePaymentStatus(String recordUid);
 
     /*
     Three methods used to control billing & payment flow by sys admin

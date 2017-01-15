@@ -1,6 +1,5 @@
 package za.org.grassroot.services.account;
 
-import org.jivesoftware.smack.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +12,7 @@ import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.notification.AccountBillingNotification;
 import za.org.grassroot.core.enums.AccountLogType;
@@ -250,12 +250,18 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
 
     @Override
     @Transactional(readOnly = true)
-    public List<AccountBillingRecord> loadBillingRecordsForAccount(String accountUid, boolean unpaidOnly, Sort sort) {
+    public List<AccountBillingRecord> loadBillingRecords(String accountUid, boolean unpaidOnly, Sort sort) {
         Account account = accountRepository.findOneByUid(accountUid);
-        Specifications<AccountBillingRecord> specs = Specifications.where(forAccount(account));
-        if (unpaidOnly) {
-            specs = specs.and(isPaid(false));
+        Specifications<AccountBillingRecord> specs;
+        if (!StringUtils.isEmpty(accountUid)) {
+            specs = Specifications.where(forAccount(account));
+            if (unpaidOnly) {
+                specs = specs.and(isPaid(false));
+            }
+        } else {
+            specs = unpaidOnly ? Specifications.where(isPaid(false)) : Specifications.where(paymentDateNotNull());
         }
+
         return billingRepository.findAll(specs, sort);
     }
 
@@ -283,6 +289,15 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
     @Override
     public AccountBillingRecord fetchRecordByPayment(String paymentId) {
         return billingRepository.findOneByPaymentId(paymentId);
+    }
+
+    @Override
+    @Transactional
+    public void togglePaymentStatus(String recordUid) {
+        Objects.requireNonNull(recordUid);
+
+        AccountBillingRecord record = billingRepository.findOneByUid(recordUid);
+        record.togglePaid();
     }
 
     @Override
