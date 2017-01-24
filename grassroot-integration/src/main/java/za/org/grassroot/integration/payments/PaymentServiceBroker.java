@@ -7,13 +7,13 @@ import za.org.grassroot.core.domain.AccountBillingRecord;
  */
 public interface PaymentServiceBroker {
 
-    // return true/false depending on whether payment succeeded (though may want this to be a response)
-    boolean linkPaymentMethodToAccount(PaymentMethod method, String accountUid,
-                                       AccountBillingRecord billingRecord, boolean deleteBillOnFailure);
-
     PaymentResponse asyncPaymentInitiate(String accountUid, PaymentMethod method, AccountBillingRecord amountToPay, String returnToUrl);
 
     PaymentResponse asyncPaymentCheckResult(String paymentId, String resourcePath);
+
+    PaymentResponse initiateMobilePayment(AccountBillingRecord record);
+
+    PaymentResponse checkMobilePaymentResult(String paymentId);
 
     void processAccountPaymentsOutstanding();
 }

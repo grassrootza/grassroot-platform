@@ -41,6 +41,7 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
 
     private boolean hasTasks;
     private boolean discoverable;
+    private boolean paidFor;
 
     private List<MembershipResponseWrapper> members;
     private List<String> invalidNumbers; // for added member / group creation error handling
@@ -60,6 +61,7 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
         this.imageUrl = group.getImageUrl();
         this.defaultImage = group.getDefaultImage();
         this.description = group.getDescription();
+        this.paidFor = group.isPaidFor();
 
         if (group.hasValidGroupTokenCode()) {
             this.joinCode = group.getGroupTokenCode();
@@ -149,6 +151,8 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
     public void setInvalidNumbers(List<String> invalidNumbers) {
         this.invalidNumbers = invalidNumbers;
     }
+
+    public boolean isPaidFor() { return paidFor; }
 
     @Override
     public int compareTo(GroupResponseWrapper g) {

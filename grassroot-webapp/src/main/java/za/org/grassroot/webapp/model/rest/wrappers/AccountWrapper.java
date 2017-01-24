@@ -34,7 +34,10 @@ public class AccountWrapper {
     private final long outstandingBalance;
     private final int subscriptionFee;
 
-    public AccountWrapper(Account account, User callingUser) {
+    private final int groupsLeft;
+    private final int messagesLeft;
+
+    public AccountWrapper(Account account, User callingUser, int groupsLeft, int messagesLeft) {
         this.uid = account.getUid();
         this.createdByUserName = account.getCreatedByUser().nameToDisplay();
         this.createdByCallingUser = account.getCreatedByUser().equals(callingUser);
@@ -56,6 +59,9 @@ public class AccountWrapper {
         this.nextBillingDateMilli = account.getNextBillingDate() == null ? 0 : account.getNextBillingDate().toEpochMilli();
         this.outstandingBalance = account.getOutstandingBalance();
         this.subscriptionFee = account.getSubscriptionFee();
+
+        this.groupsLeft = groupsLeft;
+        this.messagesLeft = messagesLeft;
     }
 
     public String getUid() {
@@ -122,5 +128,13 @@ public class AccountWrapper {
 
     public int getSubscriptionFee() {
         return subscriptionFee;
+    }
+
+    public int getGroupsLeft() {
+        return groupsLeft;
+    }
+
+    public int getMessagesLeft() {
+        return messagesLeft;
     }
 }

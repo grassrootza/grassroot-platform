@@ -52,8 +52,6 @@ public interface AccountBroker {
 
     /* Methods to work out some limits left on account */
 
-    int calculateMessagesLeftThisMonth(String accountUid);
-
     Map<AccountType, Integer> getNumberGroupsPerType();
 
     Map<AccountType, Integer> getNumberMessagesPerType();

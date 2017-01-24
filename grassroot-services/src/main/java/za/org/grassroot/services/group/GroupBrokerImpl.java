@@ -159,7 +159,7 @@ public class GroupBrokerImpl implements GroupBroker {
 
         logger.info("Group created under UID {}", group.getUid());
 
-        groupChatService.addAllGroupMembersToChat(group, user);
+        addGroupMembersToChatAfterCommit(group, user);
 
         if (openJoinToken) {
             JoinTokenOpeningResult joinTokenOpeningResult = openJoinTokenInternal(user, group, null);
@@ -178,6 +178,11 @@ public class GroupBrokerImpl implements GroupBroker {
             AfterTxCommitTask afterTxCommitTask = () -> logsAndNotificationsBroker.asyncStoreBundle(bundle); // we want to log group events after transaction has committed
             applicationEventPublisher.publishEvent(afterTxCommitTask);
         }
+    }
+
+    private void addGroupMembersToChatAfterCommit(Group group, User user) {
+        AfterTxCommitTask afterTxCommitTask = () -> groupChatService.addAllGroupMembersToChat(group, user);
+        applicationEventPublisher.publishEvent(afterTxCommitTask);
     }
 
     @Override
@@ -303,7 +308,7 @@ public class GroupBrokerImpl implements GroupBroker {
         @SuppressWarnings("unchecked")
         Set<Meeting> meetings = (Set) group.getUpcomingEventsIncludingParents(event -> event.getEventType().equals(EventType.MEETING));
 
-        groupChatService.addAllGroupMembersToChat(group, user);
+        addGroupMembersToChatAfterCommit(group, user);
 
         for (User u  : users) {
             GroupLog groupLog = new GroupLog(group, user, GroupLogType.GROUP_MEMBER_ADDED, u.getId());
@@ -426,7 +431,7 @@ public class GroupBrokerImpl implements GroupBroker {
         final GroupLogType logType = duringGroupCreation ? GroupLogType.GROUP_MEMBER_ADDED_AT_CREATION : GroupLogType.GROUP_MEMBER_ADDED;
 
         if (!duringGroupCreation) { // todo : just add the new users
-            groupChatService.addAllGroupMembersToChat(group,initiator);
+            addGroupMembersToChatAfterCommit(group,initiator);
         }
 
         logger.debug("added user to group chat");

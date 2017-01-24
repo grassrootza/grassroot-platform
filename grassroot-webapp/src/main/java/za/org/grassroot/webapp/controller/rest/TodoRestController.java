@@ -14,6 +14,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.enums.TodoCompletionConfirmType;
+import za.org.grassroot.services.exception.AccountLimitExceededException;
 import za.org.grassroot.services.task.TaskBroker;
 import za.org.grassroot.services.task.TodoBroker;
 import za.org.grassroot.services.user.UserManagementService;
@@ -79,13 +80,13 @@ public class TodoRestController {
         User user = userManagementService.findByInputNumber(phoneNumber);
         Set<String> assignedMemberUids = (members == null) ? new HashSet<>() : members;
 
-        // todo : handle negative reminderMinutes
         try {
-            Todo todo = todoBroker.create(user.getUid(), JpaEntityType.GROUP,
-                    parentUid, title, dueDate, reminderMinutes,
+            Todo todo = todoBroker.create(user.getUid(), JpaEntityType.GROUP, parentUid, title, dueDate, reminderMinutes,
                     false, assignedMemberUids);
             TaskDTO createdTask = taskBroker.load(user.getUid(), todo.getUid(), TaskType.TODO);
             return RestUtil.okayResponseWithData(RestMessage.TODO_CREATED, Collections.singletonList(createdTask));
+        } catch(AccountLimitExceededException e) {
+            return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.TODO_LIMIT_REACHED);
         } catch (AccessDeniedException e) {
             return RestUtil.accessDeniedResponse();
         }

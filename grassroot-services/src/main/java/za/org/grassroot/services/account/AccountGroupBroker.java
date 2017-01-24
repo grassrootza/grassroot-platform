@@ -18,7 +18,6 @@ public interface AccountGroupBroker {
 
     List<Group> fetchGroupsSponsoredByAccount(String accountUid);
 
-    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     void addGroupToAccount(String accountUid, String groupUid, String addingUserUid);
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
@@ -34,11 +33,11 @@ public interface AccountGroupBroker {
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     void removeGroupsFromAccount(String accountUid, Set<String> groupUid, String removingUserUid);
 
-
-    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     void sendFreeFormMessage(String userUid, String groupUid, String message);
 
     int numberGroupsLeft(String accountUid);
 
     int numberTodosLeftForGroup(String groupUid);
+
+    int calculateMessagesLeftThisMonth(String accountUid);
 }

@@ -20,11 +20,13 @@ import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static za.org.grassroot.services.specifications.NotificationSpecifications.*;
 import static za.org.grassroot.services.specifications.PaidGroupSpecifications.expiresAfter;
 import static za.org.grassroot.services.specifications.PaidGroupSpecifications.isForAccount;
 import static za.org.grassroot.services.specifications.TodoSpecifications.createdDateBetween;
@@ -338,6 +340,19 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
         return monthlyLimit - todosThisMonth;
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public int calculateMessagesLeftThisMonth(String accountUid) {
+        Account account = accountRepository.findOneByUid(accountUid);
+
+        long messagesThisMonth = logsAndNotificationsBroker.countNotifications(Specifications.where(
+                accountLogTypeIs(AccountLogType.MESSAGE_SENT))
+                .and(belongsToAccount(account))
+                .and(createdTimeBetween(LocalDate.now().withDayOfMonth(1).atStartOfDay().toInstant(ZoneOffset.UTC), Instant.now())));
+
+        return Math.max(0, account.getFreeFormMessages() - (int) messagesThisMonth);
+    }
+
     private void storeGroupAddOrRemoveLogs(AccountLogType accountLogType, Account account, Group group, String paidGroupUid, User user) {
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
@@ -366,6 +381,10 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
 
         if (!paidGroup.getAccount().equals(account)) {
             throw new GroupAccountMismatchException();
+        }
+
+        if (group.getMemberships().size() > calculateMessagesLeftThisMonth(account.getUid())) {
+            throw new AccountLimitExceededException();
         }
     }
 

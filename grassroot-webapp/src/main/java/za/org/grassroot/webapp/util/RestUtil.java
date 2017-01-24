@@ -55,9 +55,13 @@ public class RestUtil {
         return reminderMins;
     }
 
-	public static ResponseEntity<ResponseWrapper> errorResponse(HttpStatus httpCode, RestMessage message) {
+    public static ResponseEntity<ResponseWrapper> errorResponse(HttpStatus httpCode, RestMessage message) {
 		return new ResponseEntity<>(new ResponseWrapperImpl(httpCode, message, RestStatus.FAILURE), httpCode);
 	}
+
+    public static ResponseEntity<ResponseWrapper> errorResponse(RestMessage restMessage) {
+        return errorResponse(HttpStatus.BAD_REQUEST, restMessage);
+    }
 
     public static ResponseEntity<ResponseWrapper> accessDeniedResponse() {
 	    return new ResponseEntity<>(new ResponseWrapperImpl(FORBIDDEN, RestMessage.PERMISSION_DENIED, RestStatus.FAILURE), FORBIDDEN);

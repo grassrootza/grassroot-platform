@@ -425,21 +425,6 @@ public class AccountBrokerImpl implements AccountBroker {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public int calculateMessagesLeftThisMonth(String accountUid) {
-        Account account = accountRepository.findOneByUid(accountUid);
-        // NotificationSpecifications.
-
-        long messagesThisMonth = notificationRepository.count(Specifications.where(
-                accountLogTypeIs(AccountLogType.MESSAGE_SENT))
-                .and(belongsToAccount(account))
-                .and(createdTimeBetween(LocalDate.now().withDayOfMonth(1).atStartOfDay().toInstant(ZoneOffset.UTC), Instant.now())
-        ));
-
-        return Math.max(0, account.getFreeFormMessages() - (int) messagesThisMonth);
-    }
-
-    @Override
     public Map<AccountType, Integer> getNumberGroupsPerType() {
         return maxGroupNumber;
     }

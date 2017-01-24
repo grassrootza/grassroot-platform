@@ -20,6 +20,7 @@ import za.org.grassroot.integration.email.GrassrootEmail;
 import za.org.grassroot.integration.payments.PaymentMethod;
 import za.org.grassroot.services.account.AccountBillingBroker;
 import za.org.grassroot.services.account.AccountBroker;
+import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.services.exception.AccountLimitExceededException;
 import za.org.grassroot.webapp.controller.BaseController;
 
@@ -39,12 +40,15 @@ public class AccountSignUpController extends BaseController {
 
     private final AccountBroker accountBroker;
     private final AccountBillingBroker billingBroker;
+    private final AccountGroupBroker accountGroupBroker;
     private final EmailSendingBroker emailSendingBroker;
 
     @Autowired
-    public AccountSignUpController(AccountBroker accountBroker, AccountBillingBroker billingBroker, EmailSendingBroker emailSendingBroker) {
+    public AccountSignUpController(AccountBroker accountBroker, AccountBillingBroker billingBroker,
+                                   AccountGroupBroker accountGroupBroker, EmailSendingBroker emailSendingBroker) {
         this.accountBroker = accountBroker;
         this.billingBroker = billingBroker;
+        this.accountGroupBroker = accountGroupBroker;
         this.emailSendingBroker = emailSendingBroker;
     }
 
@@ -79,7 +83,7 @@ public class AccountSignUpController extends BaseController {
 
         model.addAttribute("account", account);
 
-        int messagesLeftNow = accountBroker.calculateMessagesLeftThisMonth(account.getUid());
+        int messagesLeftNow = accountGroupBroker.calculateMessagesLeftThisMonth(account.getUid());
         int numberGroupsNow = (int) account.getPaidGroups().stream()
                 .filter(PaidGroup::isActive)
                 .count();

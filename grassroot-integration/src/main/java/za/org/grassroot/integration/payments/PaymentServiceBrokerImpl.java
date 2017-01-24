@@ -150,36 +150,6 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
 
     @Override
     @Transactional
-    public boolean linkPaymentMethodToAccount(PaymentMethod paymentMethod, String accountUid, AccountBillingRecord billingRecord, boolean deleteBillOnFailure) {
-        final double amountToPay = (double) billingRecord.getTotalAmountToPay() / 100;
-        logger.info("About to charge R{} to payment method, from billing record for {}", amountToPay, billingRecord.getTotalAmountToPay());
-        UriComponentsBuilder paymentUri = generateInitialPaymentUri(paymentMethod, amountToPay);
-        try {
-            HttpEntity<PaymentResponsePP> request = new HttpEntity<>(stdHeaders);
-            // logger.info("URL: " + paymentUri.toUriString());
-            ResponseEntity<PaymentResponsePP> response = restTemplate.exchange(paymentUri.build().toUri(), HttpMethod.POST, request, PaymentResponsePP.class);
-            PaymentResponsePP okayResponse = response.getBody();
-            logger.info("Payment Success!: With reference : {}", okayResponse.getRegistrationId());
-
-            Account account = billingRecord.getAccount();
-            account.setPaymentRef(okayResponse.getRegistrationId());
-            handleSuccessfulPayment(billingRecord, okayResponse);
-            return true;
-        } catch (HttpStatusCodeException e) {
-            try {
-                PaymentErrorPP errorResponse = objectMapper.readValue(e.getResponseBodyAsString(), PaymentErrorPP.class);
-                logger.info("Payment Error!: {}", errorResponse.toString());
-                billingRecord.setPaymentDescription(errorResponse.getResult().fullDescription());
-            } catch (IOException error) {
-                logger.info("Could not read in JSON!");
-                error.printStackTrace();
-            }
-            return false;
-        }
-    }
-
-    @Override
-    @Transactional
     public PaymentResponse asyncPaymentInitiate(String accountUid, PaymentMethod method, AccountBillingRecord amountToPay, String returnToUrl) {
         Objects.requireNonNull(accountUid);
         Objects.requireNonNull(method);
@@ -202,17 +172,55 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
             }
             return paymentResponse;
         } catch (HttpStatusCodeException e) {
-            try {
-                PaymentErrorPP errorResponse = objectMapper.readValue(e.getResponseBodyAsString(), PaymentErrorPP.class);
-                logger.info("Payment Error!: {}", errorResponse.toString());
-                amountToPay.setPaymentDescription(errorResponse.getResult().fullDescription());
-                throw new PaymentMethodFailedException(errorResponse);
-            } catch (IOException error) {
-                error.printStackTrace();
-                throw new PaymentMethodFailedException(null);
-            } finally {
-                sendFailureEmail(amountToPay, e.getResponseBodyAsString());
-            }
+            handlePaymentInitError(e, amountToPay);
+            return null; // will throw error before getting here
+        }
+    }
+
+    @Override
+    @Transactional
+    public PaymentResponse initiateMobilePayment(AccountBillingRecord record) {
+        Objects.requireNonNull(record);
+
+        try {
+          UriComponentsBuilder uriToCall = baseUriBuilder.cloneBuilder()
+                  .path("/v1/checkouts")
+                  .queryParam(paymentAmountParam, AMOUNT_FORMAT.format(record.getTotalAmountToPay() / 100.00))
+                  .queryParam(paymentsAuthChannelIdParam, channelId)
+                  .queryParam(paymentTypeParam, DEBIT)
+                  .queryParam(recurringParam, INITIAL)
+                  .queryParam(registrationFlag, "true");
+
+          HttpEntity<PaymentResponsePP> request = new HttpEntity<>(stdHeaders);
+          logger.info("In mobile payments, about to call ... {}", uriToCall.toString());
+          ResponseEntity<PaymentResponsePP> response = restTemplate.exchange(uriToCall.build().toUri(), HttpMethod.POST,
+                  request, PaymentResponsePP.class);
+          logger.info("Mobile response: " + response.toString());
+          PaymentResponsePP paymentResponse = response.getBody();
+          record.setPaymentId(paymentResponse.getThisPaymentId());
+          return paymentResponse;
+        } catch (HttpStatusCodeException e) {
+            handlePaymentInitError(e, record);
+            return null; // will throw error before getting here
+        }
+    }
+
+    @Override
+    public PaymentResponse checkMobilePaymentResult(String paymentId) {
+        return null;
+    }
+
+    private void handlePaymentInitError(HttpStatusCodeException e, AccountBillingRecord record) throws PaymentMethodFailedException {
+        try {
+            PaymentErrorPP errorResponse = objectMapper.readValue(e.getResponseBodyAsString(), PaymentErrorPP.class);
+            logger.info("Payment Error!: {}", errorResponse.toString());
+            record.setPaymentDescription(errorResponse.getResult().fullDescription());
+            throw new PaymentMethodFailedException(errorResponse);
+        } catch (IOException error) {
+            error.printStackTrace();
+            throw new PaymentMethodFailedException(null);
+        } finally {
+            sendFailureEmail(record, e.getResponseBodyAsString());
         }
     }
 
@@ -254,6 +262,8 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
             return new PaymentResponse(PaymentResultType.FAILED_OTHER, paymentId); // todo : probably need to respond
         }
     }
+
+
 
     private UriComponentsBuilder generateInitialPaymentUri(PaymentMethod paymentMethod, double amountToPay) {
         return baseUriBuilder.cloneBuilder()
