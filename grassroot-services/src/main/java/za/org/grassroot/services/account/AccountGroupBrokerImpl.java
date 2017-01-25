@@ -342,7 +342,7 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
 
     @Override
     @Transactional(readOnly = true)
-    public int calculateMessagesLeftThisMonth(String accountUid) {
+    public int numberMessagesLeft(String accountUid) {
         Account account = accountRepository.findOneByUid(accountUid);
 
         long messagesThisMonth = logsAndNotificationsBroker.countNotifications(Specifications.where(
@@ -383,7 +383,7 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
             throw new GroupAccountMismatchException();
         }
 
-        if (group.getMemberships().size() > calculateMessagesLeftThisMonth(account.getUid())) {
+        if (group.getMemberships().size() > numberMessagesLeft(account.getUid())) {
             throw new AccountLimitExceededException();
         }
     }

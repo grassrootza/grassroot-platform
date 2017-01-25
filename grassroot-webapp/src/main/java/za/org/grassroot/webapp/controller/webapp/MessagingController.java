@@ -67,7 +67,7 @@ public class MessagingController extends BaseController {
                 model.addAttribute("userGroups", accountGroupBroker.fetchGroupsSponsoredByAccount(userAccount.getUid()));
             }
             model.addAttribute("account", userAccount);
-            model.addAttribute("messagesLeft", accountGroupBroker.calculateMessagesLeftThisMonth(userAccount.getUid()));
+            model.addAttribute("messagesLeft", accountGroupBroker.numberMessagesLeft(userAccount.getUid()));
             return "messaging/freeform";
         }
     }
@@ -80,7 +80,7 @@ public class MessagingController extends BaseController {
         model.addAttribute("account", account);
         model.addAttribute("group", group);
 
-        int messagesLeft = accountGroupBroker.calculateMessagesLeftThisMonth(account.getUid());
+        int messagesLeft = accountGroupBroker.numberMessagesLeft(account.getUid());
 
         if (messagesLeft < group.getMembers().size()) {
             model.addAttribute("leftThisMonth", messagesLeft);

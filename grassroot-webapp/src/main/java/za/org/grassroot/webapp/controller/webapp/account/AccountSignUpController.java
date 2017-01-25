@@ -83,7 +83,7 @@ public class AccountSignUpController extends BaseController {
 
         model.addAttribute("account", account);
 
-        int messagesLeftNow = accountGroupBroker.calculateMessagesLeftThisMonth(account.getUid());
+        int messagesLeftNow = accountGroupBroker.numberMessagesLeft(account.getUid());
         int numberGroupsNow = (int) account.getPaidGroups().stream()
                 .filter(PaidGroup::isActive)
                 .count();

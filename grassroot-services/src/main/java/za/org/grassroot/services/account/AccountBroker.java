@@ -39,7 +39,6 @@ public interface AccountBroker {
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     void removeAdministrator(String userUid, String accountUid, String adminToRemoveUid);
 
-    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     void changeAccountType(String userUid, String accountUid, AccountType newAccountType, Set<String> groupsToRemove);
 
     // the next two should only be called by system admin, administrators can only do type switch

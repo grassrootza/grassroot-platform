@@ -30,7 +30,6 @@ public interface AccountGroupBroker {
 
     boolean canAddMultipleGroupsToOwnAccount(String userUid);
 
-    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     void removeGroupsFromAccount(String accountUid, Set<String> groupUid, String removingUserUid);
 
     void sendFreeFormMessage(String userUid, String groupUid, String message);
@@ -39,5 +38,5 @@ public interface AccountGroupBroker {
 
     int numberTodosLeftForGroup(String groupUid);
 
-    int calculateMessagesLeftThisMonth(String accountUid);
+    int numberMessagesLeft(String accountUid);
 }
