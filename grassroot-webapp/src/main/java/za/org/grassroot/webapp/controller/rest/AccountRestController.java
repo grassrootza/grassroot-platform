@@ -69,13 +69,13 @@ public class AccountRestController {
     @GetMapping("settings/fetch/{phoneNumber}/{code}")
     public ResponseEntity<ResponseWrapper> getAccountSettings(@PathVariable String phoneNumber, @RequestParam(required = false) String accountUid) {
         User user = userService.findByInputNumber(phoneNumber);
-        Account account = StringUtils.isEmpty(accountUid) ? accountBroker.loadUsersAccount(user.getUid()) : accountBroker.loadAccount(accountUid);
+        Account account = StringUtils.isEmpty(accountUid) ? user.getAccountAdministered() : accountBroker.loadAccount(accountUid);
 
-        if (account == null || !account.isEnabled()) { // once client wired for disabled account, remove or condition
-           return RestUtil.messageOkayResponse(RestMessage.MESSAGE_SETTING_NOT_FOUND);
+        if (account == null) {
+           return RestUtil.messageOkayResponse(RestMessage.USER_NO_ACCOUNT);
         } else {
-            final int groupsLeft = accountGroupBroker.numberGroupsLeft(account.getUid());
-            final int messagesLeft = accountGroupBroker.numberMessagesLeft(account.getUid());
+            final int groupsLeft = account.isEnabled() ? accountGroupBroker.numberGroupsLeft(account.getUid()) : 0;
+            final int messagesLeft = account.isEnabled() ? accountGroupBroker.numberMessagesLeft(account.getUid()) : 0;
             return RestUtil.okayResponseWithData(account.isEnabled() ? RestMessage.ACCOUNT_ENABLED : RestMessage.ACCOUNT_DISABLED,
                     new AccountWrapper(account, user, groupsLeft, messagesLeft));
         }
@@ -99,6 +99,20 @@ public class AccountRestController {
         record.setPaymentId(response.getThisPaymentId()); // also done in method but saving a return trip to DB (and/or possible overwrite issues)
 
         return RestUtil.okayResponseWithData(RestMessage.ACCOUNT_CREATED, new BillingWrapper(record));
+    }
+
+    @GetMapping("payment/enable/initiate/{phoneNumber}/{code}")
+    public ResponseEntity<ResponseWrapper> initiateAccountEnablePayment(@PathVariable String phoneNumber,
+                                                                        @RequestParam String accountUid) {
+        Account account = accountBroker.loadAccount(accountUid);
+        if (account.isEnabled()) {
+            return RestUtil.errorResponse(RestMessage.ACCOUNT_ENABLED);
+        } else {
+            // todo : double check if really want to generate new bill (might have separate method here)
+            AccountBillingRecord record = billingBroker.generateSignUpBill(accountUid);
+            PaymentResponse response = paymentBroker.initiateMobilePayment(record);
+            return RestUtil.okayResponseWithData(RestMessage.PAYMENT_STARTED, response.getThisPaymentId());
+        }
     }
 
     @GetMapping("payment/status/check/{phoneNumber}/{code}")
