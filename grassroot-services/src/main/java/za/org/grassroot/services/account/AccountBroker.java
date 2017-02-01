@@ -24,7 +24,6 @@ public interface AccountBroker {
 
     String createAccount(String userUid, String accountName, String billedUserUid, AccountType accountType);
 
-    @PreAuthorize("hasAnyRole('ROLE_ACCOUNT_ADMIN, ROLE_SYSTEM_ADMIN')")
     void enableAccount(String userUid, String accountUid, LocalDate nextStatementDate, String ongoingPaymentRef);
 
     @PreAuthorize("hasAnyRole('ROLE_ACCOUNT_ADMIN, ROLE_SYSTEM_ADMIN')")

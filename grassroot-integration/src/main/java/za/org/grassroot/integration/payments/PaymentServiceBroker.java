@@ -11,9 +11,11 @@ public interface PaymentServiceBroker {
 
     PaymentResponse asyncPaymentCheckResult(String paymentId, String resourcePath);
 
-    PaymentResponse initiateMobilePayment(AccountBillingRecord record);
+    PaymentResponse initiateMobilePayment(AccountBillingRecord record, String notificationUrl);
 
     PaymentResponse checkMobilePaymentResult(String paymentId);
 
     void processAccountPaymentsOutstanding();
+
+    String fetchDetailsForDirectDeposit(String accountUid);
 }

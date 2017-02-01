@@ -1,9 +1,12 @@
 package za.org.grassroot.webapp.controller.rest;
 
 import org.apache.commons.validator.routines.EmailValidator;
+import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -34,6 +37,8 @@ import za.org.grassroot.webapp.model.rest.wrappers.PaidGroupWrapper;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
+import javax.servlet.http.HttpServletRequest;
+import java.net.URISyntaxException;
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
@@ -44,7 +49,11 @@ import java.util.stream.Collectors;
  */
 @Controller
 @RequestMapping(value = "/api/account", produces = MediaType.APPLICATION_JSON_VALUE)
+@PropertySource(value = "${grassroot.payments.properties}", ignoreResourceNotFound = true)
 public class AccountRestController {
+
+    @Value("${grassroot.payments.auth.path.mobile:/auth/incoming/mobile}")
+    private String mobilePaymentNotifyPath;
 
     private static final Logger logger = LoggerFactory.getLogger(AccountRestController.class);
 
@@ -54,7 +63,6 @@ public class AccountRestController {
 
     private final AccountBillingBroker billingBroker;
     private final PaymentServiceBroker paymentBroker;
-
 
     @Autowired
     public AccountRestController(UserManagementService userService, AccountBroker accountBroker, AccountGroupBroker accountGroupBroker,
@@ -83,9 +91,10 @@ public class AccountRestController {
 
     @GetMapping("payment/signup/initiate/{phoneNumber}/{code}")
     public ResponseEntity<ResponseWrapper> initiateAccountSignup(@PathVariable String phoneNumber,
-                                                                @RequestParam String accountName,
-                                                                @RequestParam String billingEmail,
-                                                                @RequestParam AccountType accountType) {
+                                                                 @RequestParam String accountName,
+                                                                 @RequestParam String billingEmail,
+                                                                 @RequestParam AccountType accountType,
+                                                                 HttpServletRequest request) {
         User user = userService.findByInputNumber(phoneNumber);
 
         final String accountUid = accountBroker.createAccount(user.getUid(), accountName, user.getUid(), accountType);
@@ -93,29 +102,51 @@ public class AccountRestController {
             userService.updateEmailAddress(user.getUid(), billingEmail);
         }
 
-        AccountBillingRecord record = billingBroker.generateSignUpBill(accountUid);
-        PaymentResponse response = paymentBroker.initiateMobilePayment(record);
+        try {
+            final String notifyUrl = generateNotifyUrl(request);
+            logger.info("initiating mobile payment with return URL : {}", notifyUrl);
 
-        record.setPaymentId(response.getThisPaymentId()); // also done in method but saving a return trip to DB (and/or possible overwrite issues)
+            AccountBillingRecord record = billingBroker.generateSignUpBill(accountUid);
+            PaymentResponse response = paymentBroker.initiateMobilePayment(record, notifyUrl);
 
-        return RestUtil.okayResponseWithData(RestMessage.ACCOUNT_CREATED, new BillingWrapper(record));
+            record.setPaymentId(response.getThisPaymentId()); // also done in method but saving a return trip to DB (and/or possible overwrite issues)
+
+            return RestUtil.okayResponseWithData(RestMessage.ACCOUNT_CREATED, new BillingWrapper(record));
+        } catch (URISyntaxException e) {
+            return RestUtil.errorResponse(RestMessage.MISC_PAYMENT_ERROR);
+        }
     }
 
     @GetMapping("payment/enable/initiate/{phoneNumber}/{code}")
-    public ResponseEntity<ResponseWrapper> initiateAccountEnablePayment(@PathVariable String phoneNumber,
-                                                                        @RequestParam String accountUid) {
+    public ResponseEntity<ResponseWrapper> initiateAccountEnablePayment(@RequestParam String accountUid,
+                                                                        HttpServletRequest request) {
         Account account = accountBroker.loadAccount(accountUid);
         if (account.isEnabled()) {
             return RestUtil.errorResponse(RestMessage.ACCOUNT_ENABLED);
         } else {
             // todo : double check if really want to generate new bill (might have separate method here)
-            AccountBillingRecord record = billingBroker.generateSignUpBill(accountUid);
-            PaymentResponse response = paymentBroker.initiateMobilePayment(record);
-            return RestUtil.okayResponseWithData(RestMessage.PAYMENT_STARTED, response.getThisPaymentId());
+            try {
+                AccountBillingRecord record = billingBroker.generateSignUpBill(accountUid);
+                final String notifyUrl = generateNotifyUrl(request);
+                logger.info("mobile payment URL: {}", notifyUrl);
+                PaymentResponse response = paymentBroker.initiateMobilePayment(record, notifyUrl);
+                return RestUtil.okayResponseWithData(RestMessage.PAYMENT_STARTED, response.getThisPaymentId());
+            } catch (URISyntaxException e) {
+                return RestUtil.errorResponse(RestMessage.MISC_PAYMENT_ERROR);
+            }
         }
     }
 
-    @GetMapping("payment/status/check/{phoneNumber}/{code}")
+    private String generateNotifyUrl(HttpServletRequest request) throws URISyntaxException {
+        return new URIBuilder().setScheme("https")
+                .setHost(request.getServerName())
+                .setPort(request.getServerPort())
+                .setPath(mobilePaymentNotifyPath)
+                .build().toString();
+
+    }
+
+    @GetMapping("payment/result/{phoneNumber}/{code}")
     public ResponseEntity<ResponseWrapper> checkPaymentStatus(@PathVariable String phoneNumber,
                                                               @RequestParam String accountUid,
                                                               @RequestParam String paymentId) {

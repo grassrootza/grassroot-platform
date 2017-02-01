@@ -184,6 +184,15 @@ public class AccountSignUpController extends BaseController {
             userManagementService.updateEmailAddress(getUserProfile().getUid(), emailAddress);
         }
 
+        refreshAuthorities();
+
+        return "account/payment_options";
+    }
+
+    // todo : move this to payment controller (and/or just reuse disabled/enabled payment
+    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
+    @RequestMapping(value = "payment_now", method = RequestMethod.GET)
+    public String creditCardNow(Model model, @RequestParam String accountUid) {
         Account createdAccount = accountBroker.loadAccount(accountUid);
 
         model.addAttribute("account", createdAccount);
@@ -193,9 +202,8 @@ public class AccountSignUpController extends BaseController {
         model.addAttribute("billingAmount", "R" + (new DecimalFormat("#.##"))
                 .format((double) createdAccount.getSubscriptionFee() / 100));
 
-        refreshAuthorities();
 
-        logger.info("account created! here is the name: {}, and uid: {}", accountName, accountUid);
+        logger.info("account created! here is the name: {}, and uid: {}", createdAccount.getAccountName(), accountUid);
         return "account/payment";
     }
 

@@ -17,6 +17,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.AccountBillingRecord;
 import za.org.grassroot.core.repository.AccountBillingRecordRepository;
+import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.integration.email.EmailSendingBroker;
 import za.org.grassroot.integration.email.GrassrootEmail;
 import za.org.grassroot.integration.exception.PaymentMethodFailedException;
@@ -25,8 +26,10 @@ import za.org.grassroot.integration.payments.peachp.PaymentResponsePP;
 
 import javax.annotation.PostConstruct;
 import java.io.IOException;
+import java.net.URI;
 import java.text.DecimalFormat;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 
 import static za.org.grassroot.core.specifications.AccountSpecifications.*;
@@ -118,8 +121,11 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
     @Value("${grassroot.payments.values.currency:ZAR}")
     private String currency;
 
-    @Value("${grassroot.payments.email.address:payments@grassroot}")
+    @Value("${grassroot.payments.email.address:payments@grassroot.org.za}")
     private String paymentsEmailNotification;
+
+    @Value("${grassroot.payments.deposit.details:Details")
+    private String depositDetails;
 
     @Autowired
     public PaymentServiceBrokerImpl(AccountBillingRecordRepository billingRepository,
@@ -172,6 +178,7 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
             }
             return paymentResponse;
         } catch (HttpStatusCodeException e) {
+            amountToPay.setNextPaymentDate(null);
             handlePaymentInitError(e, amountToPay);
             return null; // will throw error before getting here
         }
@@ -179,7 +186,7 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
 
     @Override
     @Transactional
-    public PaymentResponse initiateMobilePayment(AccountBillingRecord record) {
+    public PaymentResponse initiateMobilePayment(AccountBillingRecord record, String notificationUrl) {
         Objects.requireNonNull(record);
 
         try {
@@ -189,10 +196,13 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
                   .queryParam(paymentsAuthChannelIdParam, channelId)
                   .queryParam(paymentTypeParam, DEBIT)
                   .queryParam(recurringParam, INITIAL)
+                  .queryParam("notificationUrl", notificationUrl)
+                  .queryParam("shopperResultUrl", notificationUrl)
                   .queryParam(registrationFlag, "true");
 
           HttpEntity<PaymentResponsePP> request = new HttpEntity<>(stdHeaders);
-          logger.info("In mobile payments, about to call ... {}", uriToCall.toString());
+          final URI formedUrl = uriToCall.build().toUri();
+          logger.info("In mobile payments, about to call ... {}", formedUrl.toString());
           ResponseEntity<PaymentResponsePP> response = restTemplate.exchange(uriToCall.build().toUri(), HttpMethod.POST,
                   request, PaymentResponsePP.class);
           logger.info("Mobile response: " + response.toString());
@@ -200,14 +210,10 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
           record.setPaymentId(paymentResponse.getThisPaymentId());
           return paymentResponse;
         } catch (HttpStatusCodeException e) {
+            record.setNextPaymentDate(null); // to make sure this isn't tried again by accident
             handlePaymentInitError(e, record);
             return null; // will throw error before getting here
         }
-    }
-
-    @Override
-    public PaymentResponse checkMobilePaymentResult(String paymentId) {
-        return null;
     }
 
     private void handlePaymentInitError(HttpStatusCodeException e, AccountBillingRecord record) throws PaymentMethodFailedException {
@@ -235,16 +241,39 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
                 .queryParam(paymentsAuthPasswordParam, password)
                 .queryParam(paymentsAuthChannelIdParam, channelId3d);
 
-        stdHeaders = new HttpHeaders();
-        stdHeaders.add(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE);
-        stdHeaders.add(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded;charset=UTF-8");
-
         logger.info("Calling URI: " + builder.toUriString());
 
         HttpEntity<PaymentResponsePP> request = new HttpEntity<>(stdHeaders);
         ResponseEntity<PaymentResponsePP> response = restTemplate.exchange(builder.build().toUri(), HttpMethod.GET,
                 request, PaymentResponsePP.class);
         logger.info("Async response: {}", response.toString());
+        return handlePaymentCheckCleanUp(response, paymentId);
+    }
+
+    @Override
+    @Transactional
+    public PaymentResponse checkMobilePaymentResult(String paymentId) {
+        UriComponentsBuilder builder = UriComponentsBuilder.newInstance()
+                .scheme("https")
+                .host(paymentsRestHost)
+                .path("/v1/checkouts")
+                .pathSegment(paymentId)
+                .pathSegment("payment")
+                .queryParam(paymentsAuthUserIdParam, userId)
+                .queryParam(paymentsAuthPasswordParam, password)
+                .queryParam(paymentsAuthChannelIdParam, channelId);
+
+        logger.info("checking payment status with URL: {}", builder.toUriString());
+
+        HttpEntity<PaymentResponsePP> request = new HttpEntity<>(stdHeaders);
+        ResponseEntity<PaymentResponsePP> response = restTemplate.exchange(builder.build().toUri(), HttpMethod.GET,
+                request, PaymentResponsePP.class);
+        logger.info("Mobile check response: {}", response.toString());
+        return handlePaymentCheckCleanUp(response, paymentId);
+    }
+
+    private PaymentResponse handlePaymentCheckCleanUp(ResponseEntity<PaymentResponsePP> response, final String paymentId) {
+        DebugUtil.transactionRequired("PaymentService");
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody().getResult() != null) {
             PaymentResponsePP responsePP = response.getBody();
@@ -262,8 +291,6 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
             return new PaymentResponse(PaymentResultType.FAILED_OTHER, paymentId); // todo : probably need to respond
         }
     }
-
-
 
     private UriComponentsBuilder generateInitialPaymentUri(PaymentMethod paymentMethod, double amountToPay) {
         return baseUriBuilder.cloneBuilder()
@@ -291,6 +318,12 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
                     .and(paymentDateBefore(Instant.now())))
                     .forEach(this::triggerRecurringPayment);
         }
+    }
+
+    @Override
+    public String fetchDetailsForDirectDeposit(String accountUid) {
+        // todo : generate an account reference
+        return depositDetails;
     }
 
     @Transactional
@@ -321,9 +354,11 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
                 handleSuccessfulPayment(billingRecord, okayResponse);
             } else {
                 billingRecord.setPaymentDescription(okayResponse.getResult().fullDescription());
+                billingRecord.setNextPaymentDate(Instant.now().plus(1L, ChronoUnit.DAYS)); // so it doesn't try again  immediately
                 sendFailureEmail(billingRecord, okayResponse.getResult().fullDescription());
             }
         } catch (HttpStatusCodeException e) {
+            billingRecord.setNextPaymentDate(Instant.now().plus(1L, ChronoUnit.DAYS)); // so it doesn't try again  immediately
             handlePaymentError(e, billingRecord);
         }
     }

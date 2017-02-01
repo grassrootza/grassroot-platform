@@ -66,6 +66,14 @@ public class AccountPaymentController extends BaseController {
         return handleInitiatingPayment(accountUid, paymentMethod, record, ENABLE, model, attributes, request);
     }
 
+    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
+    @RequestMapping(value = "payment_eft", method = RequestMethod.GET)
+    public String depositNow(Model model, @RequestParam String accountUid) {
+        // todo : need a reference number! use (long) ID?
+        model.addAttribute("details", paymentServiceBroker.fetchDetailsForDirectDeposit(accountUid));
+        return "account/payment_eft";
+    }
+
     @RequestMapping(value = "done/redirect", method = RequestMethod.GET)
     public String asyncPaymentDone(@RequestParam String paymentId, @RequestParam(required = false) String paymentRef,
                                    @RequestParam boolean succeeded, @RequestParam(required = false) String failureDescription,
