@@ -1,5 +1,6 @@
 package za.org.grassroot.core.domain;
 
+import za.org.grassroot.core.enums.AccountPaymentType;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
@@ -84,6 +85,11 @@ public class AccountBillingRecord implements Comparable<AccountBillingRecord> {
     @Column(name="payment_desc")
     private String paymentDescription;
 
+    // defaults to the account default, but leaving flexibility to override if necessary
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_type", length = 50, nullable = true)
+    protected AccountPaymentType paymentType;
+
     private AccountBillingRecord() {
         // for JPA
     }
@@ -102,6 +108,7 @@ public class AccountBillingRecord implements Comparable<AccountBillingRecord> {
         private Long openingBalance;
         private Long amountBilled;
         private Instant paymentDueDate;
+        private AccountPaymentType paymentType;
 
         public BillingBuilder(Account account) {
             this.account = account;
@@ -142,11 +149,19 @@ public class AccountBillingRecord implements Comparable<AccountBillingRecord> {
             return this;
         }
 
+        public BillingBuilder paymentType(AccountPaymentType paymentType) {
+            this.paymentType = paymentType;
+            return this;
+        }
+
         public AccountBillingRecord build() {
             AccountBillingRecord record = new AccountBillingRecord(account, accountLog, statementDateTime, billedPeriodStart, billedPeriodEnd,
                     openingBalance, amountBilled);
             if (paymentDueDate != null) {
                 record.setNextPaymentDate(paymentDueDate);
+            }
+            if (paymentType != null) {
+                record.setPaymentType(paymentType);
             }
             return record;
         }
@@ -174,6 +189,7 @@ public class AccountBillingRecord implements Comparable<AccountBillingRecord> {
         this.amountBilledThisPeriod = amountBilled;
 
         this.totalAmountToPay = openingBalance + amountBilled;
+        this.paymentType = account.getDefaultPaymentType();
 
         this.paid = false;
     }
@@ -274,6 +290,14 @@ public class AccountBillingRecord implements Comparable<AccountBillingRecord> {
 
     public void setPaymentDescription(String paymentDescription) {
         this.paymentDescription = paymentDescription;
+    }
+
+    public AccountPaymentType getPaymentType() {
+        return paymentType;
+    }
+
+    public void setPaymentType(AccountPaymentType paymentType) {
+        this.paymentType = paymentType;
     }
 
     // for Thymeleaf

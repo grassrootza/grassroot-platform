@@ -164,7 +164,7 @@ public class PaymentResponsePP extends PaymentResponse {
         return "PaymentResponsePP{" +
                 "id='" + id + '\'' +
                 ", registrationId='" + registrationId + '\'' +
-                ", paymentType='" + paymentType + '\'' +
+                ", defaultPaymentType='" + paymentType + '\'' +
                 ", paymentBrand='" + paymentBrand + '\'' +
                 ", redirect=" + redirect +
                 ", result=" + result +

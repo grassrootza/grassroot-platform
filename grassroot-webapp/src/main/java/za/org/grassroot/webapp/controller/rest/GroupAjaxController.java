@@ -47,7 +47,7 @@ public class GroupAjaxController extends BaseController {
 
     @RequestMapping("/account/add")
     public @ResponseBody Boolean addGroupToAccount(@RequestParam String groupUid) {
-        Account userAccount = accountBroker.loadUsersAccount(getUserProfile().getUid());
+        Account userAccount = accountBroker.loadUsersAccount(getUserProfile().getUid(), false);
         if (userAccount.isEnabled()) {
             logger.info("adding group to account!");
             accountGroupBroker.addGroupToAccount(userAccount.getUid(), groupUid, getUserProfile().getUid());
@@ -59,7 +59,7 @@ public class GroupAjaxController extends BaseController {
 
     private Map<String, Object> addStandardFields(Map<String, Object> map, String groupUid) {
         Account groupAccount = accountGroupBroker.findAccountForGroup(groupUid);
-        Account userAccount = accountBroker.loadUsersAccount(getUserProfile().getUid());
+        Account userAccount = accountBroker.loadUsersAccount(getUserProfile().getUid(), false);
 
         map.put(IS_PAID_FOR, groupAccount != null);
         map.put(USER_HAS_ACCOUNT, userAccount != null);

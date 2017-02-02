@@ -137,7 +137,7 @@ public class AccountController extends BaseController {
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/group/add/all", method = RequestMethod.GET)
     public String addAllGroupsToAccount(RedirectAttributes attributes, HttpServletRequest request) {
-        Account account = accountBroker.loadUsersAccount(getUserProfile().getUid());
+        Account account = accountBroker.loadUsersAccount(getUserProfile().getUid(), false);
         int groupsAdded = accountGroupBroker.addUserCreatedGroupsToAccount(account.getUid(), getUserProfile().getUid());
         if (groupsAdded > 0) {
             addMessage(attributes, MessageType.SUCCESS, "account.groups.many.added", new Object[] { groupsAdded }, request);

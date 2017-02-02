@@ -5,6 +5,7 @@ import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.AccountBillingRecord;
 import za.org.grassroot.core.domain.AccountBillingRecord_;
 import za.org.grassroot.core.domain.Account_;
+import za.org.grassroot.core.enums.AccountPaymentType;
 
 import java.time.Instant;
 
@@ -35,6 +36,10 @@ public final class AccountSpecifications {
 
     public static Specification<AccountBillingRecord> paymentDateNotNull() {
         return (root, query, cb) -> cb.isNotNull(root.get(AccountBillingRecord_.nextPaymentDate));
+    }
+
+    public static Specification<AccountBillingRecord> paymentType(AccountPaymentType paymentType) {
+        return (root, query, cb) -> cb.equal(root.get(AccountBillingRecord_.paymentType), paymentType);
     }
 
     public static Specification<AccountBillingRecord> statementDateBeforeOrderDesc(Instant endPeriod) {

@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import za.org.grassroot.integration.payments.PaymentServiceBroker;
+import za.org.grassroot.integration.payments.PaymentBroker;
 import za.org.grassroot.services.account.AccountBillingBroker;
 
 /**
@@ -19,12 +19,12 @@ public class ScheduledAccountTasks {
     private static final Logger logger = LoggerFactory.getLogger(ScheduledAccountTasks.class);
 
     private final AccountBillingBroker accountBillingBroker;
-    private final PaymentServiceBroker paymentServiceBroker;
+    private final PaymentBroker paymentBroker;
 
     @Autowired
-    public ScheduledAccountTasks(AccountBillingBroker accountBillingBroker, PaymentServiceBroker paymentServiceBroker) {
+    public ScheduledAccountTasks(AccountBillingBroker accountBillingBroker, PaymentBroker paymentBroker) {
         this.accountBillingBroker = accountBillingBroker;
-        this.paymentServiceBroker = paymentServiceBroker;
+        this.paymentBroker = paymentBroker;
     }
 
     @Scheduled(cron = "${grassroot.billing.cron.trigger: 0 0 9 * * ?}")
@@ -36,7 +36,7 @@ public class ScheduledAccountTasks {
     @Scheduled(cron = "${grassroot.payments.cron.trigger: 0 0 20 * * ?}")
     public void processMonthlyBillPayments() {
         logger.info("Charging monthly billing amounts");
-        paymentServiceBroker.processAccountPaymentsOutstanding();
+        paymentBroker.processAccountPaymentsOutstanding();
     }
 
 }

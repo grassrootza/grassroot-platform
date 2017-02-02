@@ -10,10 +10,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.enums.AccountBillingCycle;
 import za.org.grassroot.core.enums.AccountLogType;
+import za.org.grassroot.core.enums.AccountPaymentType;
 import za.org.grassroot.core.enums.AccountType;
 import za.org.grassroot.core.repository.AccountRepository;
-import za.org.grassroot.core.repository.NotificationRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.specifications.AccountSpecifications;
 import za.org.grassroot.core.util.AfterTxCommitTask;
@@ -27,10 +28,7 @@ import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 import javax.annotation.PostConstruct;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneOffset;
 import java.util.*;
-
-import static za.org.grassroot.services.specifications.NotificationSpecifications.*;
 
 /**
  * Created by luke on 2015/11/12.
@@ -53,7 +51,6 @@ public class AccountBrokerImpl implements AccountBroker {
 
     private final AccountRepository accountRepository;
     private final UserRepository userRepository;
-    private final NotificationRepository notificationRepository;
 
     private final LogsAndNotificationsBroker logsAndNotificationsBroker;
     private final PermissionBroker permissionBroker;
@@ -64,12 +61,11 @@ public class AccountBrokerImpl implements AccountBroker {
     private final AccountBillingBroker accountBillingBroker;
 
     @Autowired
-    public AccountBrokerImpl(AccountRepository accountRepository, UserRepository userRepository, NotificationRepository notificationRepository,
-                             PermissionBroker permissionBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, AccountGroupBroker accountGroupBroker,
+    public AccountBrokerImpl(AccountRepository accountRepository, UserRepository userRepository, PermissionBroker permissionBroker,
+                             LogsAndNotificationsBroker logsAndNotificationsBroker, AccountGroupBroker accountGroupBroker,
                              AccountBillingBroker accountBillingBroker, Environment environment, ApplicationEventPublisher eventPublisher) {
         this.accountRepository = accountRepository;
         this.userRepository = userRepository;
-        this.notificationRepository = notificationRepository;
         this.permissionBroker = permissionBroker;
         this.accountGroupBroker = accountGroupBroker;
         this.accountBillingBroker = accountBillingBroker;
@@ -101,15 +97,16 @@ public class AccountBrokerImpl implements AccountBroker {
 
     @Override
     @Transactional(readOnly = true)
-    public Account loadUsersAccount(String userUid) {
+    public Account loadUsersAccount(String userUid, boolean loadEvenIfDisabled) {
         User user = userRepository.findOneByUid(userUid);
         Account account = user.getAccountAdministered();
-        return (account != null && account.isEnabled()) ? account : null;
+        return (account != null && (loadEvenIfDisabled || account.isEnabled())) ? account : null;
     }
 
     @Override
     @Transactional
-    public String createAccount(String userUid, String accountName, String billedUserUid, AccountType accountType) {
+    public String createAccount(String userUid, String accountName, String billedUserUid, AccountType accountType,
+                                AccountPaymentType accountPaymentType, AccountBillingCycle billingCycle) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(billedUserUid);
         Objects.requireNonNull(accountName);
@@ -118,7 +115,8 @@ public class AccountBrokerImpl implements AccountBroker {
         User creatingUser = userRepository.findOneByUid(userUid);
         User billedUser = userRepository.findOneByUid(billedUserUid);
 
-        Account account = new Account(creatingUser, accountName, accountType, billedUser);
+        Account account = new Account(creatingUser, accountName, accountType, billedUser, accountPaymentType,
+                billingCycle == null ? AccountBillingCycle.MONTHLY : billingCycle);
 
         accountRepository.saveAndFlush(account);
 

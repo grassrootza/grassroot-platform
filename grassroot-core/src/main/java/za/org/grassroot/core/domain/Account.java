@@ -1,5 +1,7 @@
 package za.org.grassroot.core.domain;
 
+import za.org.grassroot.core.enums.AccountBillingCycle;
+import za.org.grassroot.core.enums.AccountPaymentType;
 import za.org.grassroot.core.enums.AccountType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.UIDGenerator;
@@ -141,6 +143,14 @@ public class Account {
     @Column(name="free_form_cost")
     private int freeFormCost; // stored as cents
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_type", length = 50, nullable = true)
+    protected AccountPaymentType defaultPaymentType;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "billing_cycle", length = 50, nullable = false)
+    protected AccountBillingCycle billingCycle;
+
     @Version
     private Integer version;
 
@@ -152,7 +162,8 @@ public class Account {
         // For JPA
     }
 
-    public Account(User createdByUser, String accountName, AccountType accountType, User billingUser) {
+    public Account(User createdByUser, String accountName, AccountType accountType, User billingUser,
+                   AccountPaymentType paymentType, AccountBillingCycle billingCycle) {
         Objects.requireNonNull(createdByUser);
         Objects.requireNonNull(billingUser);
         Objects.requireNonNull(accountName);
@@ -174,6 +185,8 @@ public class Account {
 
         this.type = accountType;
         this.billingUser = billingUser;
+        this.defaultPaymentType = paymentType;
+        this.billingCycle = billingCycle == null ? AccountBillingCycle.MONTHLY : billingCycle;
 
         this.outstandingBalance = 0;
     }
@@ -421,6 +434,22 @@ public class Account {
 
     public ZonedDateTime getLastPaymentDateAtSAST() {
         return lastPaymentDate == null ? null : DateTimeUtil.convertToUserTimeZone(lastPaymentDate, DateTimeUtil.getSAST());
+    }
+
+    public AccountPaymentType getDefaultPaymentType() {
+        return defaultPaymentType;
+    }
+
+    public void setDefaultPaymentType(AccountPaymentType defaultPaymentType) {
+        this.defaultPaymentType = defaultPaymentType;
+    }
+
+    public AccountBillingCycle getBillingCycle() {
+        return billingCycle;
+    }
+
+    public void setBillingCycle(AccountBillingCycle billingCycle) {
+        this.billingCycle = billingCycle;
     }
 
     @Override

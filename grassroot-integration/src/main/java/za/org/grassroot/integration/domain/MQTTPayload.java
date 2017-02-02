@@ -21,6 +21,7 @@ public class MQTTPayload {
     private String displayName;
     private String groupName;
     private String type;
+    private String taskType;
     private List<String> tokens;
 
     private LocalDateTime time;
@@ -128,6 +129,14 @@ public class MQTTPayload {
 
     public void setTokens(List<String> tokens) {
         this.tokens = tokens;
+    }
+
+    public String getTaskType() {
+        return taskType;
+    }
+
+    public void setTaskType(String taskType) {
+        this.taskType = taskType;
     }
 
     @Override

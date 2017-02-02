@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import za.org.grassroot.integration.payments.PaymentServiceBroker;
+import za.org.grassroot.integration.payments.PaymentBroker;
 import za.org.grassroot.services.account.AccountBillingBroker;
 import za.org.grassroot.services.account.AccountBroker;
 import za.org.grassroot.webapp.controller.BaseController;
@@ -39,7 +39,7 @@ public class AccountAdminController extends BaseController {
     private final AccountBillingBroker billingBroker;
     private final Environment environment;
 
-    private PaymentServiceBroker paymentServiceBroker;
+    private PaymentBroker paymentBroker;
 
     @Autowired
     public AccountAdminController(AccountBroker accountBroker, AccountBillingBroker billingBroker, Environment environment) {
@@ -49,8 +49,8 @@ public class AccountAdminController extends BaseController {
     }
 
     @Autowired(required = false)
-    public void setPaymentServiceBroker(PaymentServiceBroker paymentServiceBroker) {
-        this.paymentServiceBroker = paymentServiceBroker;
+    public void setPaymentBroker(PaymentBroker paymentBroker) {
+        this.paymentBroker = paymentBroker;
     }
 
     /**
@@ -197,8 +197,8 @@ public class AccountAdminController extends BaseController {
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping(value = "/reset/payments", method = RequestMethod.GET)
     public String triggerPayments(@RequestParam RedirectAttributes attributes, @RequestParam HttpServletRequest request) {
-        if (!environment.acceptsProfiles("production") && paymentServiceBroker != null) {
-            paymentServiceBroker.processAccountPaymentsOutstanding();
+        if (!environment.acceptsProfiles("production") && paymentBroker != null) {
+            paymentBroker.processAccountPaymentsOutstanding();
             addMessage(attributes, MessageType.INFO, "admin.accounts.payments.done", request);
         } else {
             addMessage(attributes, MessageType.ERROR, "admin.accounts.production", request);

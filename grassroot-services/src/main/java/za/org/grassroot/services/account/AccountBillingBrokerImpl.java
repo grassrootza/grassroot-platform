@@ -4,7 +4,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.core.env.Environment;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -15,12 +14,15 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.notification.AccountBillingNotification;
+import za.org.grassroot.core.enums.AccountBillingCycle;
 import za.org.grassroot.core.enums.AccountLogType;
+import za.org.grassroot.core.enums.AccountPaymentType;
 import za.org.grassroot.core.repository.AccountBillingRecordRepository;
 import za.org.grassroot.core.repository.AccountRepository;
 import za.org.grassroot.core.specifications.AccountSpecifications;
 import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.integration.email.EmailSendingBroker;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
@@ -59,19 +61,28 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
     private final ApplicationEventPublisher eventPublisher;
 
     private final EmailSendingBroker emailSendingBroker;
-    private final Environment environment;
 
     @Autowired
     public AccountBillingBrokerImpl(AccountRepository accountRepository, AccountBillingRecordRepository billingRepository,
                                     LogsAndNotificationsBroker logsAndNotificationsBroker, MessageAssemblingService messageAssemblingService,
-                                    ApplicationEventPublisher eventPublisher, EmailSendingBroker emailSendingBroker, Environment environment) {
+                                    ApplicationEventPublisher eventPublisher, EmailSendingBroker emailSendingBroker) {
         this.accountRepository = accountRepository;
         this.billingRepository = billingRepository;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
         this.messageAssemblingService = messageAssemblingService;
         this.eventPublisher = eventPublisher;
         this.emailSendingBroker = emailSendingBroker;
-        this.environment = environment;
+    }
+
+    @Override
+    @Transactional
+    public void setAccountPaymentType(String accountUid, AccountPaymentType paymentType) {
+        Objects.requireNonNull(accountUid);
+        Objects.requireNonNull(paymentType);
+        DebugUtil.transactionRequired("AccountBilling: ");
+
+        Account account = accountRepository.findOneByUid(accountUid);
+        account.setDefaultPaymentType(paymentType);
     }
 
     @Override
@@ -105,7 +116,6 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
         log.info("Generating payment change bill, amount is : " + amountToCharge);
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
-        AccountBillingRecord lastBill = billingRepository.findTopByAccountOrderByCreatedDateTimeDesc(account);
         AccountBillingRecord record = buildInstantBillForAmount(account, amountToCharge,
                 "Bill generated when switching payment methods", false, bundle);
 
@@ -180,7 +190,9 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
                 bundle.addNotifications(generateBillNotifications(thisBill));
             }
 
-            account.setNextBillingDate(LocalDateTime.now().plusMonths(1L).toInstant(ZoneOffset.UTC));
+            LocalDateTime nextBillingDate = account.getBillingCycle() == null || account.getBillingCycle().equals(AccountBillingCycle.MONTHLY)
+                    ? LocalDateTime.now().plusMonths(1L) : LocalDateTime.now().plusYears(1L);
+            account.setNextBillingDate(nextBillingDate.toInstant(ZoneOffset.UTC));
             AfterTxCommitTask afterTxCommitTask = () -> processAccountStatement(account, thisBill, sendEmails);
             eventPublisher.publishEvent(afterTxCommitTask);
         }

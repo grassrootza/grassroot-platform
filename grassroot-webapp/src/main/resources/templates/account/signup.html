@@ -4,7 +4,6 @@
 <head>
   <meta charset="UTF-8">
   <title>Sign up for Grassroot Extra</title>
-  <link rel="stylesheet" th:href="@{/static/assets/font-awesome/css/font-awesome.min.css}" />
 </head>
 
 <body>
@@ -23,7 +22,7 @@
   <div layout:fragment="content">
     <div class="row">
       <div class="col-md-4 col-md-offset-4">
-        <form id="signupForm" th:action="@{create}" method="POST" class="form-vertical">
+        <form id="signupForm" th:action="@{payment/create}" method="POST" class="form-vertical">
           <div class="form-group">
             <label for="account_name" class="control-label">1. Account name</label>
             <input type="text" id="account_name" name="accountName" class="form-control input-lg"
@@ -52,6 +51,23 @@
             <label for="billing_email" class="control-label">3. Billing email</label>
             <input type="text" id="billing_email" name="emailAddress" class="form-control input-lg" />
           </div>
+          <div class="form-group">
+            <label for="billingCycle" class="control-label">4. Billing period</label>
+            <p th:text="#{web.account.period.describe}">All the benefits of an annual period</p>
+            <select id="billingCycle" name="billingCycle" class="form-control input-lg">
+              <option th:each="cycle: ${T(za.org.grassroot.core.enums.AccountBillingCycle).values()}"
+                      th:text="#{web.account.period.__${cycle}__}"
+                      th:value="${cycle}"></option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="paymentType" class="control-label">5. Payment type</label>
+            <select id="paymentType" name="paymentType" class="form-control input-lg" disabled="true">
+              <option th:each="type: ${T(za.org.grassroot.core.enums.AccountPaymentType).values()}"
+                      th:text="#{web.account.payment.type.__${type}__}"
+                      th:value="${type}"></option>
+            </select>
+          </div>
           <div class="form-group top-buffer">
             <button type="submit" class="btn default-button full-width-button">Next</button>
           </div>
@@ -61,6 +77,8 @@
   </div>
 
   <div class="header-container" layout:fragment="script-container">
+
+    <script th:src="@{/js/lib/jquery.validate.min.js}"></script>
 
     <script>
 
@@ -98,7 +116,6 @@
           HEAVY: "Up to 1600 customizable SMSs per month"
         };
 
-        // todo : tool tips?
         var subGroupLimits = {
           LIGHT: "Up to one level of subgroup depth",
           STANDARD: "Up to two levels of subgroups",
@@ -113,6 +130,17 @@
           freeForm.text(freeFormLimitText[type]);
           subgroupDepth.text(subGroupLimits[type]);
         });
+
+        var payTypeSel = $("#paymentType");
+
+        $("#billingCycle").change(function() {
+            if ($(this).val() == 'ANNUAL') {
+                payTypeSel.prop('disabled', false);
+            } else {
+                payTypeSel.prop('disabled', true);
+                payTypeSel.val('CARD_PAYMENT');
+            }
+          });
 
         $("#signupForm").validate({
           rules: {

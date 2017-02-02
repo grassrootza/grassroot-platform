@@ -45,20 +45,20 @@ public class MessagingController extends BaseController {
 
     /**
      * Free text entry, for authorized accounts
-     * todo : throw an error if account not enabled or no messages left
      */
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "freeform")
     public String sendFreeForm(Model model, @RequestParam(required=false) String groupUid,
                                RedirectAttributes attributes, HttpServletRequest request) {
-        Account userAccount = accountBroker.loadUsersAccount(getUserProfile().getUid());
+        Account userAccount = accountBroker.loadUsersAccount(getUserProfile().getUid(), true);
 
         if (userAccount == null) {
             addMessage(attributes, MessageType.ERROR, "messaging.error.account.none", request);
-            return "redirect:/home";
+            return "redirect:/account/signup";
         } else if (!userAccount.isEnabled()) {
             addMessage(attributes, MessageType.ERROR, "messaging.error.account.disabled", request);
+            attributes.addAttribute("accountUid", userAccount.getUid());
             return "redirect:/account/view";
         } else {
             if (groupUid != null) {
@@ -75,7 +75,7 @@ public class MessagingController extends BaseController {
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "confirm", method = RequestMethod.GET)
     public String confirmFreeMsg(Model model, @RequestParam String groupUid, @RequestParam String message) {
-        Account account = accountBroker.loadUsersAccount(getUserProfile().getUid());
+        Account account = accountBroker.loadUsersAccount(getUserProfile().getUid(), false);
         Group group = groupBroker.load(groupUid);
         model.addAttribute("account", account);
         model.addAttribute("group", group);
@@ -103,11 +103,11 @@ public class MessagingController extends BaseController {
 
         try {
             accountGroupBroker.sendFreeFormMessage(getUserProfile().getUid(), groupUid, message);
-            addMessage(redirectAttributes, BaseController.MessageType.SUCCESS, "sms.message.sent", request);
+            addMessage(redirectAttributes, BaseController.MessageType.SUCCESS, "messaging.freeform.sent", request);
             log.info("Sent message, redirecting to home");
         } catch (AccessDeniedException|GroupNotPaidForException|GroupAccountMismatchException e) {
             // todo : use different messages for the different exceptions
-            addMessage(redirectAttributes, BaseController.MessageType.ERROR, "sms.message.error", request);
+            addMessage(redirectAttributes, BaseController.MessageType.ERROR, "messaging.freeform.error", request);
             e.printStackTrace();
         }
 

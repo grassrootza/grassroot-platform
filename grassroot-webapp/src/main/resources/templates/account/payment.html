@@ -37,7 +37,7 @@
               to verify the card. This amount will be deducted from your next statement.
             </p>
           </div>
-          <form id="cardForm" th:action="${newAccount} ? @{/account/payment/signup} : @{change}" th:object="${method}" method="POST" class="form-vertical">
+          <form id="cardForm" th:action="${newAccount} ? @{/account/payment/process} : @{change}" th:object="${method}" method="POST" class="form-vertical">
             <input type="hidden" name="accountUid" th:value="${account.uid}" />
             <div class="form-group">
               <label class="control-label">1. Name</label>

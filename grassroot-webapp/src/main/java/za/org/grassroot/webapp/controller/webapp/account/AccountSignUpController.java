@@ -1,9 +1,9 @@
 package za.org.grassroot.webapp.controller.webapp.account;
 
-import org.apache.commons.validator.routines.EmailValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -17,7 +17,6 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.AccountType;
 import za.org.grassroot.integration.email.EmailSendingBroker;
 import za.org.grassroot.integration.email.GrassrootEmail;
-import za.org.grassroot.integration.payments.PaymentMethod;
 import za.org.grassroot.services.account.AccountBillingBroker;
 import za.org.grassroot.services.account.AccountBroker;
 import za.org.grassroot.services.account.AccountGroupBroker;
@@ -25,7 +24,6 @@ import za.org.grassroot.services.exception.AccountLimitExceededException;
 import za.org.grassroot.webapp.controller.BaseController;
 
 import javax.servlet.http.HttpServletRequest;
-import java.text.DecimalFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -34,6 +32,7 @@ import java.util.stream.Collectors;
  */
 @Controller
 @RequestMapping("/account/")
+@PropertySource(value = "${grassroot.payments.properties}", ignoreResourceNotFound = true)
 public class AccountSignUpController extends BaseController {
 
     private static final Logger logger = LoggerFactory.getLogger(AccountSignUpController.class);
@@ -74,7 +73,7 @@ public class AccountSignUpController extends BaseController {
     @GetMapping(value = "/type")
     public String changeAccountTypeOptions(Model model, @RequestParam(required = false) String accountUid) {
         Account account = !StringUtils.isEmpty(accountUid) ? accountBroker.loadAccount(accountUid)
-                : accountBroker.loadUsersAccount(getUserProfile().getUid());
+                : accountBroker.loadUsersAccount(getUserProfile().getUid(), false);
         User user = userManagementService.load(getUserProfile().getUid());
 
         if (!user.getAccountAdministered().equals(account)) {
@@ -173,40 +172,6 @@ public class AccountSignUpController extends BaseController {
         }
     }
 
-    @RequestMapping(value = "create", method = RequestMethod.POST)
-    public String createAccountEntity(Model model, @RequestParam(required = false) String accountName, @RequestParam AccountType accountType,
-                                      @RequestParam(value = "emailAddress", required = false) String emailAddress) {
-
-        final String nameToUse = StringUtils.isEmpty(accountName) ? getUserProfile().nameToDisplay() : accountName;
-        final String accountUid = accountBroker.createAccount(getUserProfile().getUid(), nameToUse, getUserProfile().getUid(), accountType);
-
-        if (!StringUtils.isEmpty(emailAddress) && EmailValidator.getInstance(false).isValid(emailAddress)) {
-            userManagementService.updateEmailAddress(getUserProfile().getUid(), emailAddress);
-        }
-
-        refreshAuthorities();
-
-        return "account/payment_options";
-    }
-
-    // todo : move this to payment controller (and/or just reuse disabled/enabled payment
-    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
-    @RequestMapping(value = "payment_now", method = RequestMethod.GET)
-    public String creditCardNow(Model model, @RequestParam String accountUid) {
-        Account createdAccount = accountBroker.loadAccount(accountUid);
-
-        model.addAttribute("account", createdAccount);
-        model.addAttribute("newAccount", true);
-
-        model.addAttribute("method", PaymentMethod.makeEmpty());
-        model.addAttribute("billingAmount", "R" + (new DecimalFormat("#.##"))
-                .format((double) createdAccount.getSubscriptionFee() / 100));
-
-
-        logger.info("account created! here is the name: {}, and uid: {}", createdAccount.getAccountName(), accountUid);
-        return "account/payment";
-    }
-
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "close", method = RequestMethod.POST)
     public String closeAccount(@RequestParam String accountUid, @RequestParam String confirmText,
@@ -239,7 +204,7 @@ public class AccountSignUpController extends BaseController {
     public String sendContactMail(@RequestParam(required = false) String emailAddress, @RequestParam String message,
                                   RedirectAttributes attributes, HttpServletRequest request) {
         User user = userManagementService.load(getUserProfile().getUid());
-        Account account = accountBroker.loadUsersAccount(user.getUid());
+        Account account = accountBroker.loadUsersAccount(user.getUid(), false);
 
         if (!StringUtils.isEmpty(emailAddress)) {
             userManagementService.updateEmailAddress(user.getUid(), emailAddress);

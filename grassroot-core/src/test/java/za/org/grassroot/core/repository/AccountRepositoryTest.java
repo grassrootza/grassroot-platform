@@ -15,6 +15,7 @@ import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.PaidGroup;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.AccountBillingCycle;
 import za.org.grassroot.core.enums.AccountType;
 
 import javax.transaction.Transactional;
@@ -66,7 +67,7 @@ public class AccountRepositoryTest {
 
         assertThat(accountRepository.count(), is(0L));
 
-        Account account = new Account(testUser, "accountname", AccountType.STANDARD, testUser);
+        Account account = new Account(testUser, "accountname", AccountType.STANDARD, testUser, null, AccountBillingCycle.MONTHLY);
         account = accountRepository.save(account);
         assertNotEquals(null, account.getId());
 
@@ -78,7 +79,7 @@ public class AccountRepositoryTest {
 
         assertThat(accountRepository.count(), is(0L));
 
-        Account account = new Account(testUser, accountName, AccountType.STANDARD, testUser);
+        Account account = new Account(testUser, accountName, AccountType.STANDARD, testUser, null, AccountBillingCycle.MONTHLY);
         accountRepository.save(account);
 
         assertThat(accountRepository.count(), is(1L));
@@ -97,7 +98,7 @@ public class AccountRepositoryTest {
 
         assertThat(accountRepository.count(), is(0L));
 
-        Account account = new Account(testUser, accountName, AccountType.STANDARD, testUser);
+        Account account = new Account(testUser, accountName, AccountType.STANDARD, testUser, null, AccountBillingCycle.MONTHLY);
         accountRepository.save(account);
 
         assertThat(accountRepository.count(), is(1L));
@@ -121,7 +122,7 @@ public class AccountRepositoryTest {
     public void shouldFindByAccountName() {
 
         assertThat(accountRepository.count(), is(0L));
-        Account account = new Account(testUser, accountName, AccountType.STANDARD, testUser);
+        Account account = new Account(testUser, accountName, AccountType.STANDARD, testUser, null, AccountBillingCycle.MONTHLY);
         account = accountRepository.save(account);
         List<Account> accountList = accountRepository.findByAccountName(accountName);
         assertEquals(accountList.size(), 1);
@@ -138,7 +139,7 @@ public class AccountRepositoryTest {
         assertThat(accountRepository.count(), is(0L));
         User billingUser = userRepository.save(new User("0601110000", "Paying the bill"));
         billingUser.setEmailAddress(billingEmail);
-        Account account = new Account(testUser, accountName, AccountType.STANDARD, billingUser);
+        Account account = new Account(testUser, accountName, AccountType.STANDARD, billingUser, null, AccountBillingCycle.MONTHLY);
         accountRepository.save(account);
         List<Account> accountList = accountRepository.findByAccountName(accountName);
         assertEquals(accountList.size(), 1);
@@ -154,7 +155,7 @@ public class AccountRepositoryTest {
     public void shouldDisable() {
 
         assertThat(accountRepository.count(), is(0L));
-        Account account = new Account(testUser, accountName, AccountType.STANDARD, testUser);
+        Account account = new Account(testUser, accountName, AccountType.STANDARD, testUser, null, AccountBillingCycle.MONTHLY);
         accountRepository.save(account);
         Account accountFromDb = accountRepository.findByAccountName(accountName).get(0);
         accountFromDb.setDisabledDateTime(Instant.now());
@@ -170,8 +171,8 @@ public class AccountRepositoryTest {
 
         assertThat(accountRepository.count(), is(0L));
 
-        Account accountEnabled = new Account(testUser, accountName + "_enabled", AccountType.STANDARD, testUser);
-        Account accountDisabled = new Account(testUser, accountName + "_disabled", AccountType.STANDARD, testUser);
+        Account accountEnabled = new Account(testUser, accountName + "_enabled", AccountType.STANDARD, testUser, null, AccountBillingCycle.MONTHLY);
+        Account accountDisabled = new Account(testUser, accountName + "_disabled", AccountType.STANDARD, testUser, null, AccountBillingCycle.MONTHLY);
         accountDisabled.setDisabledDateTime(Instant.now());
 
         accountRepository.save(accountEnabled);
@@ -202,7 +203,7 @@ public class AccountRepositoryTest {
         User testAdmin = new User("0505550000");
         testAdmin = userRepository.save(testAdmin);
 
-        Account account = new Account(testUser, accountName, AccountType.STANDARD, testUser);
+        Account account = new Account(testUser, accountName, AccountType.STANDARD, testUser, null, AccountBillingCycle.MONTHLY);
         account.addAdministrator(testAdmin);
         accountRepository.save(account);
 
@@ -230,7 +231,7 @@ public class AccountRepositoryTest {
         testUser = userRepository.save(testUser);
         Group testGroup = new Group("testGroup", testUser);
         testGroup = groupRepository.save(testGroup);
-        Account account = new Account(testUser, accountName, AccountType.STANDARD, testUser);
+        Account account = new Account(testUser, accountName, AccountType.STANDARD, testUser, null, AccountBillingCycle.MONTHLY);
         account = accountRepository.save(account);
         PaidGroup testPaidGroup = new PaidGroup(testGroup, account, testUser);
         testPaidGroup = paidGroupRepository.save(testPaidGroup);
@@ -260,7 +261,7 @@ public class AccountRepositoryTest {
 
         assertThat(accountRepository.count(), is(0L));
 
-        Account account = new Account(testUser, accountName, AccountType.STANDARD, testUser);
+        Account account = new Account(testUser, accountName, AccountType.STANDARD, testUser, null, AccountBillingCycle.MONTHLY);
         account.setMaxSizePerGroup(500);
         account.setMaxSubGroupDepth(3);
         account.setFreeFormMessages(100);

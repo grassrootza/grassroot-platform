@@ -5,7 +5,7 @@ import za.org.grassroot.core.domain.AccountBillingRecord;
 /**
  * Created by luke on 2016/10/26.
  */
-public interface PaymentServiceBroker {
+public interface PaymentBroker {
 
     PaymentResponse asyncPaymentInitiate(String accountUid, PaymentMethod method, AccountBillingRecord amountToPay, String returnToUrl);
 

@@ -8,9 +8,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import za.org.grassroot.integration.payments.PaymentBroker;
 import za.org.grassroot.integration.payments.PaymentResponse;
 import za.org.grassroot.integration.payments.PaymentResultType;
-import za.org.grassroot.integration.payments.PaymentServiceBroker;
 
 /**
  * Created by luke on 2016/11/14.
@@ -21,10 +21,10 @@ public class IncomingCardAuthController {
 
     private static final Logger logger = LoggerFactory.getLogger(IncomingCardAuthController.class);
 
-    private PaymentServiceBroker paymentBroker;
+    private PaymentBroker paymentBroker;
 
     @Autowired
-    public IncomingCardAuthController(PaymentServiceBroker paymentBroker) {
+    public IncomingCardAuthController(PaymentBroker paymentBroker) {
         this.paymentBroker = paymentBroker;
     }
 
@@ -39,7 +39,7 @@ public class IncomingCardAuthController {
         attributes.addAttribute("paymentId", id);
         attributes.addAttribute("paymentRef", response.getReference());
         attributes.addAttribute("succeeded", response.getType().equals(PaymentResultType.SUCCESS));
-        return "redirect:/account/payment/done/redirect";
+        return "redirect:/account/payment/redirect";
     }
 
 }

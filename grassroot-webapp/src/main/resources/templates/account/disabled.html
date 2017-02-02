@@ -41,8 +41,16 @@
 
       <div class="row">
         <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
-          <a th:href="@{/account/payment/signup/retry}" class="btn default-button full-width-button text-center">
-            Enter payment method
+          <a th:href="@{/account/payment/retry}" class="btn default-button full-width-button text-center">
+            Pay by card
+          </a>
+        </div>
+      </div>
+
+      <div class="row" th:if="${account.billingCycle.name() == 'ANNUAL'}">
+        <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
+          <a th:href="@{/account/payment/retry(paymentType='DIRECT_DEPOSIT')}" class="btn default-button full-width-button text-center">
+            Pay by deposit
           </a>
         </div>
       </div>

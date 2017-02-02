@@ -14,6 +14,7 @@ import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.PaidGroup;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.AccountBillingCycle;
 import za.org.grassroot.core.enums.AccountType;
 
 import javax.transaction.Transactional;
@@ -59,8 +60,8 @@ public class PaidGroupRepositoryTest {
         testUser = userRepository.save(new User(testPhoneNumber));
         testGroup = groupRepository.save(new Group(testGroupName, testUser));
         testGroup2 = groupRepository.save(new Group(testGroupName + "2", testUser));
-        testAccount = accountRepository.save(new Account(testUser, testAccountName, AccountType.STANDARD, testUser));
-        testAccount2 = accountRepository.save(new Account(testUser, testAccountName + "2", AccountType.STANDARD, testUser));
+        testAccount = accountRepository.save(new Account(testUser, testAccountName, AccountType.STANDARD, testUser, null, AccountBillingCycle.MONTHLY));
+        testAccount2 = accountRepository.save(new Account(testUser, testAccountName + "2", AccountType.STANDARD, testUser, null, AccountBillingCycle.MONTHLY));
 
     }
 

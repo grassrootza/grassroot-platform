@@ -19,9 +19,11 @@ import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.AccountBillingRecord;
 import za.org.grassroot.core.domain.PaidGroup;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.AccountBillingCycle;
+import za.org.grassroot.core.enums.AccountPaymentType;
 import za.org.grassroot.core.enums.AccountType;
+import za.org.grassroot.integration.payments.PaymentBroker;
 import za.org.grassroot.integration.payments.PaymentResponse;
-import za.org.grassroot.integration.payments.PaymentServiceBroker;
 import za.org.grassroot.services.account.AccountBillingBroker;
 import za.org.grassroot.services.account.AccountBroker;
 import za.org.grassroot.services.account.AccountGroupBroker;
@@ -62,11 +64,11 @@ public class AccountRestController {
     private final AccountGroupBroker accountGroupBroker;
 
     private final AccountBillingBroker billingBroker;
-    private final PaymentServiceBroker paymentBroker;
+    private final PaymentBroker paymentBroker;
 
     @Autowired
     public AccountRestController(UserManagementService userService, AccountBroker accountBroker, AccountGroupBroker accountGroupBroker,
-                                 AccountBillingBroker billingBroker, PaymentServiceBroker paymentBroker) {
+                                 AccountBillingBroker billingBroker, PaymentBroker paymentBroker) {
         this.userService = userService;
         this.accountBroker = accountBroker;
         this.billingBroker = billingBroker;
@@ -97,7 +99,9 @@ public class AccountRestController {
                                                                  HttpServletRequest request) {
         User user = userService.findByInputNumber(phoneNumber);
 
-        final String accountUid = accountBroker.createAccount(user.getUid(), accountName, user.getUid(), accountType);
+        final String accountUid = accountBroker.createAccount(user.getUid(), accountName, user.getUid(), accountType,
+                AccountPaymentType.CARD_PAYMENT, AccountBillingCycle.MONTHLY);
+
         if (!StringUtils.isEmpty(billingEmail) && EmailValidator.getInstance(false).isValid(billingEmail)) {
             userService.updateEmailAddress(user.getUid(), billingEmail);
         }

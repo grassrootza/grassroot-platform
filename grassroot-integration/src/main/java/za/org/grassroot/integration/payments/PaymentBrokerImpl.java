@@ -16,6 +16,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.AccountBillingRecord;
+import za.org.grassroot.core.enums.AccountPaymentType;
 import za.org.grassroot.core.repository.AccountBillingRecordRepository;
 import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.integration.email.EmailSendingBroker;
@@ -39,9 +40,9 @@ import static za.org.grassroot.core.specifications.AccountSpecifications.*;
  */
 @Service
 @PropertySource(value = "${grassroot.payments.properties}", ignoreResourceNotFound = true)
-public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
+public class PaymentBrokerImpl implements PaymentBroker {
 
-    private static final Logger logger = LoggerFactory.getLogger(PaymentServiceBrokerImpl.class);
+    private static final Logger logger = LoggerFactory.getLogger(PaymentBrokerImpl.class);
 
     private static final String MONTH_FORMAT = "%1$02d";
     private static final String YEAR_FORMAT = "20%d";
@@ -128,8 +129,8 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
     private String depositDetails;
 
     @Autowired
-    public PaymentServiceBrokerImpl(AccountBillingRecordRepository billingRepository,
-                                    RestTemplate restTemplate, ObjectMapper objectMapper) {
+    public PaymentBrokerImpl(AccountBillingRecordRepository billingRepository,
+                             RestTemplate restTemplate, ObjectMapper objectMapper) {
         this.billingRepository = billingRepository;
         this.restTemplate = restTemplate;
         this.objectMapper = objectMapper;
@@ -315,6 +316,7 @@ public class PaymentServiceBrokerImpl implements PaymentServiceBroker {
             billingRepository.findAll(Specifications
                     .where(paymentDateNotNull())
                     .and(isPaid(false))
+                    .and(paymentType(AccountPaymentType.CARD_PAYMENT))
                     .and(paymentDateBefore(Instant.now())))
                     .forEach(this::triggerRecurringPayment);
         }

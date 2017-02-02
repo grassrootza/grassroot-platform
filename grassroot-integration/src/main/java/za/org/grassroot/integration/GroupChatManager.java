@@ -51,7 +51,9 @@ public class GroupChatManager implements GroupChatService {
     private static final String GRASSROOT_SYSTEM = "Grassroot";
     private static final String ERROR = "error";
     private static final String SYNC = "sync";
-    private static final String PROMPT = "prompt";
+
+    private static final String SERVER_PROMPT = "SERVER_PROMPT"; // for command prompts (e.g., call a vote?)
+    private static final String SERVER_MSG = "SERVER_MESSAGE"; // for broadcast messages
 
     @Value("${gcm.topics.path}")
     private String TOPICS;
@@ -150,7 +152,7 @@ public class GroupChatManager implements GroupChatService {
     @Transactional
     public void markMessagesAsRead(String groupUid, String groupName, Set<String> messageUids) {
         for (String messageUid : messageUids) {
-            MQTTPayload payload = generateMarkMessageAsReadData(messageUid, groupName, groupName);
+            MQTTPayload payload = new MQTTPayload(messageUid, groupUid, groupName, GRASSROOT_SYSTEM, "update_read_status");;
             GroupChatMessageStats groupChatMessageStats = groupChatMessageStatsRepository.findByUidAndRead(messageUid, false);
             if (groupChatMessageStats != null) {
                 groupChatMessageStats.incrementReadCount();
@@ -377,28 +379,23 @@ public class GroupChatManager implements GroupChatService {
                 GRASSROOT_SYSTEM,
                 LocalDateTime.now(),
                 taskDateTime,
-                PROMPT);
+                SERVER_PROMPT);
 
         if (TaskType.MEETING.equals(type)) {
             final String text = messageSourceAccessor.getMessage("gcm.xmpp.command.meeting", tokens);
             outboundMessage.setText(text);
-            outboundMessage.setType(TaskType.MEETING.toString());
-
+            outboundMessage.setTaskType(TaskType.MEETING.name());
         } else if (TaskType.VOTE.equals(type)) {
             final String text = messageSourceAccessor.getMessage("gcm.xmpp.command.vote", tokens);
             outboundMessage.setText(text);
-            outboundMessage.setType(TaskType.VOTE.toString());
+            outboundMessage.setTaskType(TaskType.VOTE.name());
         } else {
             final String text = messageSourceAccessor.getMessage("gcm.xmpp.command.todo", tokens);
             outboundMessage.setText(text);
-            outboundMessage.setType(TaskType.TODO.toString());
+            outboundMessage.setTaskType(TaskType.TODO.name());
         }
-        outboundMessage.setTokens(Arrays.asList(tokens));
-        /*if (taskDateTime != null) {
-            ZonedDateTime zonedDateTime = taskDateTime.atZone(DateTimeUtil.getSAST());
-            outboundMessage.setActionDateTime(Date.from(zonedDateTime.toInstant()));
-        }*/
 
+        outboundMessage.setTokens(Arrays.asList(tokens));
         return outboundMessage;
     }
 
@@ -406,7 +403,8 @@ public class GroupChatManager implements GroupChatService {
     private MQTTPayload generateCommandResponseMessage(MQTTPayload input, Group group) {
         MQTTPayload data;
         final String msg = input.getText();
-        final String[] tokens = MessageUtils.tokenize(msg);
+        final String[] tokens = splitCommandMessage(msg);
+
         final TaskType cmdType = msg.contains("/meeting") ? TaskType.MEETING :
                 msg.contains("/vote") ? TaskType.VOTE : TaskType.TODO;
 
@@ -430,13 +428,6 @@ public class GroupChatManager implements GroupChatService {
         return data;
     }
 
-    private MQTTPayload generateMarkMessageAsReadData(String messageUid, String groupUid, String groupName) {
-        return new MQTTPayload(messageUid, groupUid,
-                groupName,
-                GRASSROOT_SYSTEM,
-                "update_read_status");
-    }
-
     private MQTTPayload generateUserMutedResponseData(Group group) {
         String groupUid = group.getUid();
         String messageId = UIDGenerator.generateId();
@@ -451,5 +442,17 @@ public class GroupChatManager implements GroupChatService {
         return payload;
     }
 
+    private String[] splitCommandMessage(String message) {
+        if (message.contains("/meeting")) {
+            message = message.replace("/meeting", "");
+        }
+        if (message.contains("/vote")) {
+            message = message.replace("/vote", "");
+        }
+        if (message.contains("/todo")) {
+            message = message.replace("/todo", "");
+        }
+        return message.split(",");
+    }
 
 }

@@ -2,6 +2,8 @@ package za.org.grassroot.services.account;
 
 import org.springframework.security.access.prepost.PreAuthorize;
 import za.org.grassroot.core.domain.Account;
+import za.org.grassroot.core.enums.AccountBillingCycle;
+import za.org.grassroot.core.enums.AccountPaymentType;
 import za.org.grassroot.core.enums.AccountType;
 
 import java.time.Instant;
@@ -17,12 +19,13 @@ public interface AccountBroker {
 
     Account loadAccount(String accountUid);
 
-    Account loadUsersAccount(String userUid);
+    Account loadUsersAccount(String userUid, boolean loadEvenIfDisabled);
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     List<Account> loadAllAccounts(boolean visibleOnly);
 
-    String createAccount(String userUid, String accountName, String billedUserUid, AccountType accountType);
+    String createAccount(String userUid, String accountName, String billedUserUid, AccountType accountType,
+                         AccountPaymentType accountPaymentType, AccountBillingCycle billingCycle);
 
     void enableAccount(String userUid, String accountUid, LocalDate nextStatementDate, String ongoingPaymentRef);
 

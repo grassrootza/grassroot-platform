@@ -1,5 +1,6 @@
 package za.org.grassroot.webapp.controller.webapp.account;
 
+import org.apache.commons.validator.routines.EmailValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,11 +16,14 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.AccountBillingRecord;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.AccountBillingCycle;
+import za.org.grassroot.core.enums.AccountPaymentType;
+import za.org.grassroot.core.enums.AccountType;
 import za.org.grassroot.integration.exception.PaymentMethodFailedException;
+import za.org.grassroot.integration.payments.PaymentBroker;
 import za.org.grassroot.integration.payments.PaymentMethod;
 import za.org.grassroot.integration.payments.PaymentResponse;
 import za.org.grassroot.integration.payments.PaymentResultType;
-import za.org.grassroot.integration.payments.PaymentServiceBroker;
 import za.org.grassroot.services.account.AccountBillingBroker;
 import za.org.grassroot.services.account.AccountBroker;
 import za.org.grassroot.webapp.controller.BaseController;
@@ -46,35 +50,54 @@ public class AccountPaymentController extends BaseController {
 
     @Value("${grassroot.payments.auth.path:/auth/incoming}")
     private String authorizationPath;
+    @Value("${grassroot.payments.deposit.details:DepositDetails}")
+    private String depositDetails;
+    @Value("${grassroot.payments.email.address:payments@grassroot.org.za}")
+    private String paymentsEmail;
 
     private AccountBroker accountBroker;
     private AccountBillingBroker accountBillingBroker;
-    private PaymentServiceBroker paymentServiceBroker;
+    private PaymentBroker paymentBroker;
 
     @Autowired
     public AccountPaymentController(AccountBroker accountBroker, AccountBillingBroker accountBillingBroker,
-                                    PaymentServiceBroker paymentServiceBroker) {
+                                    PaymentBroker paymentBroker) {
         this.accountBroker = accountBroker;
         this.accountBillingBroker = accountBillingBroker;
-        this.paymentServiceBroker = paymentServiceBroker;
+        this.paymentBroker = paymentBroker;
     }
 
-    @RequestMapping(value = "signup", method = RequestMethod.POST)
+    @RequestMapping(value = "create", method = RequestMethod.POST)
+    public String createAccountEntity(Model model, @RequestParam(required = false) String accountName, @RequestParam AccountType accountType,
+                                      @RequestParam(value = "emailAddress", required = false) String emailAddress,
+                                      @RequestParam AccountBillingCycle billingCycle, @RequestParam(required = false) AccountPaymentType paymentType) {
+
+        final String nameToUse = StringUtils.isEmpty(accountName) ? getUserProfile().nameToDisplay() : accountName;
+        final String accountUid = accountBroker.createAccount(getUserProfile().getUid(), nameToUse, getUserProfile().getUid(), accountType,
+                paymentType == null ? AccountPaymentType.CARD_PAYMENT : paymentType, billingCycle);
+
+        if (!StringUtils.isEmpty(emailAddress) && EmailValidator.getInstance(false).isValid(emailAddress)) {
+            userManagementService.updateEmailAddress(getUserProfile().getUid(), emailAddress);
+        }
+
+        refreshAuthorities();
+        Account createdAccount = accountBroker.loadAccount(accountUid);
+
+        if (AccountPaymentType.DIRECT_DEPOSIT.equals(paymentType)) {
+            return loadDebitInstruction(model, createdAccount);
+        } else {
+            return loadCreditCardForm(model, createdAccount, true, (double) createdAccount.getSubscriptionFee());
+        }
+    }
+
+    @RequestMapping(value = "process", method = RequestMethod.POST)
     public String initiatePayment(Model model, RedirectAttributes attributes, @RequestParam String accountUid,
                                   @ModelAttribute("method") PaymentMethod paymentMethod, HttpServletRequest request) {
         AccountBillingRecord record = accountBillingBroker.generateSignUpBill(accountUid);
         return handleInitiatingPayment(accountUid, paymentMethod, record, ENABLE, model, attributes, request);
     }
 
-    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
-    @RequestMapping(value = "payment_eft", method = RequestMethod.GET)
-    public String depositNow(Model model, @RequestParam String accountUid) {
-        // todo : need a reference number! use (long) ID?
-        model.addAttribute("details", paymentServiceBroker.fetchDetailsForDirectDeposit(accountUid));
-        return "account/payment_eft";
-    }
-
-    @RequestMapping(value = "done/redirect", method = RequestMethod.GET)
+    @RequestMapping(value = "redirect", method = RequestMethod.GET)
     public String asyncPaymentDone(@RequestParam String paymentId, @RequestParam(required = false) String paymentRef,
                                    @RequestParam boolean succeeded, @RequestParam(required = false) String failureDescription,
                                    Model model) {
@@ -99,8 +122,9 @@ public class AccountPaymentController extends BaseController {
         }
     }
 
-    @RequestMapping(value = "signup/retry", method = RequestMethod.GET)
-    public String retryAccountPayment(Model model, @RequestParam(required = false) String errorDescription) {
+    @RequestMapping(value = "retry", method = RequestMethod.GET)
+    public String retryAccountPayment(Model model, @RequestParam(required = false) String errorDescription,
+                                      @RequestParam(required = false) AccountPaymentType paymentType) {
         User user = userManagementService.load(getUserProfile().getUid());
         Account account = user.getAccountAdministered();
 
@@ -108,34 +132,43 @@ public class AccountPaymentController extends BaseController {
             throw new AccessDeniedException("Must have an account before trying to retry payment");
         }
 
-        model.addAttribute("account", account);
-        model.addAttribute("newAccount", true); // by definition, this account hasn't paid before
-        model.addAttribute("billingAmount", "R" + (new DecimalFormat("#.##")).format((double) account.getSubscriptionFee() / 100));
-        model.addAttribute("method", PaymentMethod.makeEmpty());
-
-        if (!StringUtils.isEmpty(errorDescription)) {
-            model.addAttribute("errorDescription", errorDescription);
+        if (AccountPaymentType.DIRECT_DEPOSIT.equals(paymentType)) {
+            return loadDebitInstruction(model, account);
+        } else {
+            if (!StringUtils.isEmpty(errorDescription)) {
+                model.addAttribute("errorDescription", errorDescription);
+            }
+            return loadCreditCardForm(model, account, true, account.getSubscriptionFee());
         }
-
-        return "account/payment";
     }
 
     @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "change", method = RequestMethod.GET)
     public String changePaymentMethod(Model model, @RequestParam(required = false) String accountUid,
                                       @RequestParam(required = false) String errorDescription) {
-        Account account = StringUtils.isEmpty(accountUid) ? accountBroker.loadUsersAccount(getUserProfile().getUid()) :
+        Account account = StringUtils.isEmpty(accountUid) ? accountBroker.loadUsersAccount(getUserProfile().getUid(), false) :
                 accountBroker.loadAccount(accountUid);
-        model.addAttribute("account", account);
-        model.addAttribute("newAccount", false);
-        model.addAttribute("billingAmount", "R" + (new DecimalFormat("#.##").format(PAYMENT_VERIFICATION_AMT / 100)));
-        model.addAttribute("method", PaymentMethod.makeEmpty());
 
         if (!StringUtils.isEmpty(errorDescription)) {
             model.addAttribute("errorDescription", errorDescription);
         }
 
+        return loadCreditCardForm(model, account, false, PAYMENT_VERIFICATION_AMT);
+    }
+
+    private String loadCreditCardForm(Model model, Account account, boolean newAccount, double amountToPay) {
+        model.addAttribute("account", account);
+        model.addAttribute("newAccount", newAccount);
+        model.addAttribute("method", PaymentMethod.makeEmpty());
+        model.addAttribute("billingAmount", "R" + (new DecimalFormat("#.##").format(amountToPay / 100)));
         return "account/payment";
+    }
+
+    private String loadDebitInstruction(Model model, Account account) {
+        model.addAttribute("reference", account.getAccountName());
+        model.addAttribute("details", depositDetails);
+        model.addAttribute("paymentsEmail", paymentsEmail);
+        return "account/deposit";
     }
 
     @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
@@ -152,7 +185,7 @@ public class AccountPaymentController extends BaseController {
         logger.info("sending payment request with this URL: {}", returnUrl);
 
         try {
-            PaymentResponse response = paymentServiceBroker.asyncPaymentInitiate(accountUid, method, record, returnUrl);
+            PaymentResponse response = paymentBroker.asyncPaymentInitiate(accountUid, method, record, returnUrl);
             if (!StringUtils.isEmpty(response.getRedirectUrl())) {
                 for (Map<String, String> parameter : response.getRedirectParams()) {
                     attributes.addAttribute(parameter.get("name"), parameter.get("value"));

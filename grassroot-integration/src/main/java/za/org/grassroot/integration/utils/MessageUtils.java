@@ -40,20 +40,6 @@ public class MessageUtils {
     }
 
 
-    public static String[] tokenize(String message) {
-        if (message.contains("/meeting")) {
-            message = message.replace("/meeting", "");
-        }
-        if (message.contains("/vote")) {
-            message = message.replace("/vote", "");
-        }
-        if (message.contains("/todo")) {
-            message = message.replace("/todo", "");
-        }
-        return message.split(",");
-    }
-
-
     public static Map<String, Object> generateUserMutedResponseData(MessageSourceAccessor messageSourceAccessor, GroupChatMessage input, Group group) {
         String groupUid = (String) input.getData().get(Constants.GROUP_UID);
         String messageId = UIDGenerator.generateId().concat(String.valueOf(System.currentTimeMillis()));

@@ -14,6 +14,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.enums.AccountBillingCycle;
 import za.org.grassroot.core.enums.AccountType;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.RoleRepository;
@@ -113,14 +114,14 @@ public class AccountBrokerTest {
     }
 
     private Account createTestAccount() {
-        String accountUid = accountBroker.createAccount(testUser.getUid(), accountName, testAdmin.getUid(), AccountType.STANDARD);
+        String accountUid = accountBroker.createAccount(testUser.getUid(), accountName, testAdmin.getUid(), AccountType.STANDARD, null, AccountBillingCycle.MONTHLY);
         Account account = accountBroker.loadAccount(accountUid);
         return account;
     }
 
     @Test
     public void shouldSaveBilling() {
-        String accountUid = accountBroker.createAccount(testUser.getUid(), accountName, testAdmin.getUid(), AccountType.STANDARD);
+        String accountUid = accountBroker.createAccount(testUser.getUid(), accountName, testAdmin.getUid(), AccountType.STANDARD, null, AccountBillingCycle.MONTHLY);
         Account account = accountBroker.loadAccount(accountUid);
         assertNotEquals(null,account.getId());
         assertEquals(billingEmail, account.getBillingUser().getEmailAddress());
@@ -200,7 +201,7 @@ public class AccountBrokerTest {
         // todo: change this to try/catch, to handle it better
         Account account = createTestAccount();
         accountBroker.enableAccount(testAdmin.getUid(), account.getUid(), LocalDate.now().plus(1, ChronoUnit.MONTHS), null);
-        String account2Uid = accountBroker.createAccount(testUser.getUid(), accountName + "2", testAdmin.getUid(), AccountType.STANDARD);
+        String account2Uid = accountBroker.createAccount(testUser.getUid(), accountName + "2", testAdmin.getUid(), AccountType.STANDARD, null, AccountBillingCycle.MONTHLY);
         accountBroker.enableAccount(testAdmin.getUid(), account2Uid, LocalDate.now().plus(1, ChronoUnit.MONTHS), null);
         accountGroupBroker.addGroupToAccount(account.getUid(), testGroup.getUid(), testAdmin.getUid());
         accountGroupBroker.addGroupToAccount(account2Uid, testGroup.getUid(), testAdmin.getUid());

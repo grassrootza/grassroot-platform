@@ -37,6 +37,22 @@
                     th:value="${type}"></option>
           </select>
         </div>
+        <div class="form-group">
+          <label for="billingCycle">Billing cycle</label>
+          <select id="billingCycle" name="billingCycle" class="form-control">
+            <option th:each="cycle: ${T(za.org.grassroot.core.enums.AccountBillingCycle).values()}"
+                    th:text="${cycle.name}"
+                    th:value="${cycle}"></option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="paymentType">Payment type</label>
+          <select id="paymentType" name="paymentType" class="form-control">
+            <option th:each="type: ${T(za.org.grassroot.core.enums.AccountPaymentType).values()}"
+                    th:text="${type.name}"
+                    th:value="${type}"></option>
+          </select>
+        </div>
 
         <div class="form-group pull-right">
           <button type="submit" class="btn btn-primary">Create account</button>
