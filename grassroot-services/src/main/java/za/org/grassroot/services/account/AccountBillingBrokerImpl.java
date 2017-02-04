@@ -14,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.notification.AccountBillingNotification;
-import za.org.grassroot.core.enums.AccountBillingCycle;
 import za.org.grassroot.core.enums.AccountLogType;
 import za.org.grassroot.core.enums.AccountPaymentType;
 import za.org.grassroot.core.repository.AccountBillingRecordRepository;
@@ -76,7 +75,7 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
 
     @Override
     @Transactional
-    public void setAccountPaymentType(String accountUid, AccountPaymentType paymentType) {
+    public void updateAccountPaymentType(String accountUid, AccountPaymentType paymentType) {
         Objects.requireNonNull(accountUid);
         Objects.requireNonNull(paymentType);
         DebugUtil.transactionRequired("AccountBilling: ");
@@ -94,12 +93,14 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
 
         if (lastRecord == null || lastRecord.getPaid()) {
             LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
-            AccountBillingRecord record = buildInstantBillForAmount(account, (long) account.getSubscriptionFee(),
+            long amountToBill = ((account.calculatePeriodCost() + 99) / 100) * 100;
+            log.info("calculated amount for sign up bill: {}", amountToBill);
+            AccountBillingRecord record = buildInstantBillForAmount(account, amountToBill,
                     "Bill generated for initial account payment", false, bundle);
             record.setStatementDateTime(Instant.now());
             record.setNextPaymentDate(Instant.now());
 
-            account.setOutstandingBalance(account.getSubscriptionFee());
+            account.setOutstandingBalance(amountToBill);
 
             logsAndNotificationsBroker.storeBundle(bundle);
             return billingRepository.save(record);
@@ -190,9 +191,7 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
                 bundle.addNotifications(generateBillNotifications(thisBill));
             }
 
-            LocalDateTime nextBillingDate = account.getBillingCycle() == null || account.getBillingCycle().equals(AccountBillingCycle.MONTHLY)
-                    ? LocalDateTime.now().plusMonths(1L) : LocalDateTime.now().plusYears(1L);
-            account.setNextBillingDate(nextBillingDate.toInstant(ZoneOffset.UTC));
+            account.incrementBillingDate(STD_BILLING_HOUR, BILLING_TZ);
             AfterTxCommitTask afterTxCommitTask = () -> processAccountStatement(account, thisBill, sendEmails);
             eventPublisher.publishEvent(afterTxCommitTask);
         }

@@ -16,7 +16,6 @@ import za.org.grassroot.core.enums.AccountPaymentType;
 import za.org.grassroot.core.enums.AccountType;
 import za.org.grassroot.core.repository.AccountRepository;
 import za.org.grassroot.core.repository.UserRepository;
-import za.org.grassroot.core.specifications.AccountSpecifications;
 import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.AccountLimitExceededException;
@@ -27,8 +26,10 @@ import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import javax.annotation.PostConstruct;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.*;
+
+import static org.springframework.data.jpa.domain.Specifications.where;
+import static za.org.grassroot.core.specifications.AccountSpecifications.*;
 
 /**
  * Created by luke on 2015/11/12.
@@ -39,6 +40,7 @@ public class AccountBrokerImpl implements AccountBroker {
     private static final Logger log = LoggerFactory.getLogger(AccountBroker.class);
 
     private Map<AccountType, Integer> accountFees = new HashMap<>();
+    private double annualDiscount;
 
     private Map<AccountType, Integer> freeFormPerMonth = new HashMap<>();
     private Map<AccountType, Integer> messagesCost = new HashMap<>();
@@ -76,6 +78,7 @@ public class AccountBrokerImpl implements AccountBroker {
 
     @PostConstruct
     public void init() {
+        annualDiscount = environment.getProperty("accounts.annual.discount", Double.class, (double) (10/12));
         for (AccountType accountType : AccountType.values()) {
             final String key = accountType.name().toLowerCase();
             accountFees.put(accountType, environment.getProperty("accounts.subscription.cost." + key, Integer.class));
@@ -146,7 +149,8 @@ public class AccountBrokerImpl implements AccountBroker {
     }
 
     private void setAccountLimits(Account account, AccountType accountType) {
-        account.setSubscriptionFee(accountFees.get(accountType));
+        int subscriptionFee = (int) (accountFees.get(accountType) * (account.isAnnualAccount() ? annualDiscount : 1));
+        account.setSubscriptionFee(subscriptionFee);
         account.setFreeFormMessages(freeFormPerMonth.get(accountType));
         account.setFreeFormCost(messagesCost.get(accountType));
         account.setMaxSizePerGroup(maxGroupSize.get(accountType));
@@ -157,7 +161,7 @@ public class AccountBrokerImpl implements AccountBroker {
 
     @Override
     @Transactional
-    public void enableAccount(String userUid, String accountUid, LocalDate nextStatementDate, String ongoingPaymentRef) {
+    public void enableAccount(String userUid, String accountUid, String ongoingPaymentRef) {
         User user = userRepository.findOneByUid(userUid);
         Account account = accountRepository.findOneByUid(accountUid);
 
@@ -168,8 +172,7 @@ public class AccountBrokerImpl implements AccountBroker {
         account.setEnabled(true);
         account.setEnabledDateTime(Instant.now());
         account.setEnabledByUser(user);
-        account.setNextBillingDate(nextStatementDate.atTime(AccountBillingBrokerImpl.STD_BILLING_HOUR)
-                .toInstant(AccountBillingBrokerImpl.BILLING_TZ));
+        account.incrementBillingDate(AccountBillingBrokerImpl.STD_BILLING_HOUR, AccountBillingBrokerImpl.BILLING_TZ);
 
         if (!StringUtils.isEmpty(ongoingPaymentRef)) {
             account.setPaymentRef(ongoingPaymentRef);
@@ -416,8 +419,26 @@ public class AccountBrokerImpl implements AccountBroker {
 
     @Override
     @Transactional(readOnly = true)
-    public List<Account> loadAllAccounts(boolean visibleOnly) {
-        List<Account> accounts = visibleOnly ? accountRepository.findAll(AccountSpecifications.isVisible()) : accountRepository.findAll();
+    public List<Account> loadAllAccounts(boolean visibleOnly, AccountPaymentType paymentMethod, AccountBillingCycle billingCycle) {
+        List<Account> accounts;
+        boolean noSpecifications = !visibleOnly && paymentMethod == null && billingCycle == null;
+        if (noSpecifications) {
+            accounts = accountRepository.findAll();
+        } else {
+            Specifications<Account> specifications = null;
+            if (visibleOnly) {
+                specifications = where(isVisible());
+            }
+            if (paymentMethod != null) {
+                specifications = (specifications == null) ? where(defaultPaymentType(paymentMethod)) :
+                        specifications.and(defaultPaymentType(paymentMethod));
+            }
+            if (billingCycle != null) {
+                specifications = (specifications == null) ? where(billingCycle(billingCycle)) :
+                        specifications.and(billingCycle(billingCycle));
+            }
+            accounts = accountRepository.findAll(specifications);
+        }
         accounts.sort(Comparator.comparing(Account::getAccountName));
         return accounts;
     }
@@ -446,7 +467,7 @@ public class AccountBrokerImpl implements AccountBroker {
     @Transactional
     public void resetAccountBillingDates(Instant commonInstant) {
         if (!environment.acceptsProfiles("production")) {
-            accountRepository.findAll(Specifications.where(AccountSpecifications.isEnabled()))
+            accountRepository.findAll(where(isEnabled()))
                     .forEach(account -> account.setNextBillingDate(commonInstant));
         }
     }

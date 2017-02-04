@@ -7,7 +7,6 @@ import za.org.grassroot.core.enums.AccountPaymentType;
 import za.org.grassroot.core.enums.AccountType;
 
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -22,12 +21,12 @@ public interface AccountBroker {
     Account loadUsersAccount(String userUid, boolean loadEvenIfDisabled);
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    List<Account> loadAllAccounts(boolean visibleOnly);
+    List<Account> loadAllAccounts(boolean visibleOnly, AccountPaymentType paymentMethod, AccountBillingCycle billingCycle);
 
     String createAccount(String userUid, String accountName, String billedUserUid, AccountType accountType,
                          AccountPaymentType accountPaymentType, AccountBillingCycle billingCycle);
 
-    void enableAccount(String userUid, String accountUid, LocalDate nextStatementDate, String ongoingPaymentRef);
+    void enableAccount(String userUid, String accountUid, String ongoingPaymentRef);
 
     @PreAuthorize("hasAnyRole('ROLE_ACCOUNT_ADMIN, ROLE_SYSTEM_ADMIN')")
     void disableAccount(String administratorUid, String accountUid, String reasonToRecord, boolean removeAdminRole, boolean generateClosingBill);

@@ -5,6 +5,7 @@ import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.AccountBillingRecord;
 import za.org.grassroot.core.domain.AccountBillingRecord_;
 import za.org.grassroot.core.domain.Account_;
+import za.org.grassroot.core.enums.AccountBillingCycle;
 import za.org.grassroot.core.enums.AccountPaymentType;
 
 import java.time.Instant;
@@ -24,6 +25,14 @@ public final class AccountSpecifications {
 
     public static Specification<Account> isVisible() {
         return (root, query, cb) -> cb.isTrue(root.get(Account_.visible));
+    }
+
+    public static Specification<Account> defaultPaymentType(AccountPaymentType paymentType) {
+        return (root, query, cb) -> cb.equal(root.get(Account_.defaultPaymentType), paymentType);
+    }
+
+    public static Specification<Account> billingCycle(AccountBillingCycle billingCycle) {
+        return (root, query, cb) -> cb.equal(root.get(Account_.billingCycle), billingCycle);
     }
 
     public static Specification<AccountBillingRecord> forAccount(Account account) {

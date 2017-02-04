@@ -7,8 +7,8 @@ import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
-import java.time.Instant;
-import java.time.ZonedDateTime;
+import java.time.*;
+import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -402,12 +402,21 @@ public class Account {
         this.subscriptionFee = subscriptionFee;
     }
 
+    public int calculatePeriodCost() {
+        return subscriptionFee * (isAnnualAccount() ? 12 : 1);
+    }
+
     public Instant getNextBillingDate() {
         return nextBillingDate;
     }
 
     public void setNextBillingDate(Instant nextBillingDate) {
         this.nextBillingDate = nextBillingDate;
+    }
+
+    public void incrementBillingDate(LocalTime billingTime, ZoneOffset billingTz) {
+        LocalDate nextDate = LocalDate.now().plus(1, isAnnualAccount() ? ChronoUnit.YEARS : ChronoUnit.MONTHS);
+        this.nextBillingDate = nextDate.atTime(billingTime).toInstant(billingTz);
     }
 
     public String getPaymentRef() { return paymentRef; }
@@ -446,6 +455,10 @@ public class Account {
 
     public AccountBillingCycle getBillingCycle() {
         return billingCycle;
+    }
+
+    public boolean isAnnualAccount() {
+        return AccountBillingCycle.ANNUAL.equals(billingCycle);
     }
 
     public void setBillingCycle(AccountBillingCycle billingCycle) {

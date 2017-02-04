@@ -41,7 +41,6 @@ import za.org.grassroot.webapp.util.RestUtil;
 
 import javax.servlet.http.HttpServletRequest;
 import java.net.URISyntaxException;
-import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -163,7 +162,7 @@ public class AccountRestController {
 
         PaymentResponse response = paymentBroker.checkMobilePaymentResult(paymentId);
         if (response != null && response.isSuccessful()) {
-            accountBroker.enableAccount(user.getUid(), accountUid, LocalDate.now().plusMonths(1L), response.getReference());
+            accountBroker.enableAccount(user.getUid(), accountUid, response.getReference());
             return RestUtil.okayResponseWithData(RestMessage.ACCOUNT_ENABLED, new AccountWrapper(account, user,
                     account.getMaxNumberGroups(), account.getFreeFormMessages())); // by definition a newly enabled account has full quota
         } else {

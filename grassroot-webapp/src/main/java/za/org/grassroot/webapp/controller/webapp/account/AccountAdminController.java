@@ -13,6 +13,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import za.org.grassroot.core.domain.Account;
+import za.org.grassroot.core.enums.AccountPaymentType;
+import za.org.grassroot.integration.email.EmailSendingBroker;
+import za.org.grassroot.integration.email.GrassrootEmail;
 import za.org.grassroot.integration.payments.PaymentBroker;
 import za.org.grassroot.services.account.AccountBillingBroker;
 import za.org.grassroot.services.account.AccountBroker;
@@ -20,9 +24,7 @@ import za.org.grassroot.webapp.controller.BaseController;
 
 import javax.servlet.http.HttpServletRequest;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 
 /**
@@ -37,14 +39,16 @@ public class AccountAdminController extends BaseController {
 
     private final AccountBroker accountBroker;
     private final AccountBillingBroker billingBroker;
+    private final EmailSendingBroker emailSendingBroker;
     private final Environment environment;
 
     private PaymentBroker paymentBroker;
 
     @Autowired
-    public AccountAdminController(AccountBroker accountBroker, AccountBillingBroker billingBroker, Environment environment) {
+    public AccountAdminController(AccountBroker accountBroker, AccountBillingBroker billingBroker, EmailSendingBroker emailSendingBroker, Environment environment) {
         this.accountBroker = accountBroker;
         this.billingBroker = billingBroker;
+        this.emailSendingBroker = emailSendingBroker;
         this.environment = environment;
     }
 
@@ -58,8 +62,15 @@ public class AccountAdminController extends BaseController {
      */
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping("/home")
-    public String listAccounts(Model model) {
-        model.addAttribute("accounts", new ArrayList<>(accountBroker.loadAllAccounts(true)));
+    public String listAccounts(Model model, @RequestParam(required = false) Boolean showClosed) {
+        model.addAttribute("accounts", new ArrayList<>(accountBroker.loadAllAccounts(showClosed == null ? true : showClosed, null, null)));
+        return "admin/accounts/home";
+    }
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    @RequestMapping("/deposit")
+    public String listDepositAccounts(Model model) {
+        model.addAttribute("accounts", new ArrayList<>(accountBroker.loadAllAccounts(true, AccountPaymentType.DIRECT_DEPOSIT, null)));
         return "admin/accounts/home";
     }
 
@@ -73,10 +84,17 @@ public class AccountAdminController extends BaseController {
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping(value = "/enable")
-    public String enableAccount(@RequestParam("accountUid") String accountUid, RedirectAttributes attributes, HttpServletRequest request) {
-        // todo : send an email notifying them it's enabled but have to add payment within a month
-        accountBroker.enableAccount(getUserProfile().getUid(), accountUid, LocalDate.now().plus(1, ChronoUnit.MONTHS), null);
-        addMessage(attributes, MessageType.INFO, "admin.accounts.disabled", request);
+    public String enableAccount(@RequestParam("accountUid") String accountUid, @RequestParam(required = false) Boolean sendEmail,
+                                RedirectAttributes attributes, HttpServletRequest request) {
+        accountBroker.enableAccount(getUserProfile().getUid(), accountUid, null);
+        Account account = accountBroker.loadAccount(accountUid);
+        if (sendEmail != null && sendEmail) {
+            GrassrootEmail.EmailBuilder builder = new GrassrootEmail.EmailBuilder("Grassroot Extra Account Enabled")
+                    .address(account.getBillingUser().getEmailAddress())
+                    .content("Hello!\nYour account is enabled. Great!\nGrassroot");
+            emailSendingBroker.sendMail(builder.build());
+        }
+        addMessage(attributes, MessageType.INFO, "admin.accounts.enabled", request);
         return "redirect:home";
     }
 

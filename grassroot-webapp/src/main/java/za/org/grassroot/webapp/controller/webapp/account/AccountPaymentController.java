@@ -30,7 +30,6 @@ import za.org.grassroot.webapp.controller.BaseController;
 
 import javax.servlet.http.HttpServletRequest;
 import java.text.DecimalFormat;
-import java.time.LocalDate;
 import java.util.Map;
 
 /**
@@ -86,7 +85,7 @@ public class AccountPaymentController extends BaseController {
         if (AccountPaymentType.DIRECT_DEPOSIT.equals(paymentType)) {
             return loadDebitInstruction(model, createdAccount);
         } else {
-            return loadCreditCardForm(model, createdAccount, true, (double) createdAccount.getSubscriptionFee());
+            return loadCreditCardForm(model, createdAccount, true);
         }
     }
 
@@ -138,14 +137,14 @@ public class AccountPaymentController extends BaseController {
             if (!StringUtils.isEmpty(errorDescription)) {
                 model.addAttribute("errorDescription", errorDescription);
             }
-            return loadCreditCardForm(model, account, true, account.getSubscriptionFee());
+            return loadCreditCardForm(model, account, true);
         }
     }
 
     @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "change", method = RequestMethod.GET)
-    public String changePaymentMethod(Model model, @RequestParam(required = false) String accountUid,
-                                      @RequestParam(required = false) String errorDescription) {
+    public String changePaymentCard(Model model, @RequestParam(required = false) String accountUid,
+                                    @RequestParam(required = false) String errorDescription) {
         Account account = StringUtils.isEmpty(accountUid) ? accountBroker.loadUsersAccount(getUserProfile().getUid(), false) :
                 accountBroker.loadAccount(accountUid);
 
@@ -153,14 +152,14 @@ public class AccountPaymentController extends BaseController {
             model.addAttribute("errorDescription", errorDescription);
         }
 
-        return loadCreditCardForm(model, account, false, PAYMENT_VERIFICATION_AMT);
+        return loadCreditCardForm(model, account, false);
     }
 
-    private String loadCreditCardForm(Model model, Account account, boolean newAccount, double amountToPay) {
+    private String loadCreditCardForm(Model model, Account account, boolean newAccount) {
         model.addAttribute("account", account);
         model.addAttribute("newAccount", newAccount);
         model.addAttribute("method", PaymentMethod.makeEmpty());
-        model.addAttribute("billingAmount", "R" + (new DecimalFormat("#.##").format(amountToPay / 100)));
+        model.addAttribute("billingAmount", "R" + (new DecimalFormat("#,###.##").format(calculateAmountToPay(account))));
         return "account/payment";
     }
 
@@ -168,7 +167,12 @@ public class AccountPaymentController extends BaseController {
         model.addAttribute("reference", account.getAccountName());
         model.addAttribute("details", depositDetails);
         model.addAttribute("paymentsEmail", paymentsEmail);
+        model.addAttribute("billingAmount", "R" + (new DecimalFormat("#,###.##").format(calculateAmountToPay(account))));
         return "account/deposit";
+    }
+
+    private double calculateAmountToPay(Account account) {
+        return Math.round((double) account.calculatePeriodCost() / 100);
     }
 
     @PreAuthorize("hasRole('ROLE_ACCOUNT_ADMIN')")
@@ -219,7 +223,7 @@ public class AccountPaymentController extends BaseController {
         AccountBillingRecord record = accountBillingBroker.fetchRecordByPayment(paymentId);
         Account account = record.getAccount();
         if (enableOrUpdateAccount == ENABLE) {
-            accountBroker.enableAccount(getUserProfile().getUid(), account.getUid(), LocalDate.now().plusMonths(1L), paymentRef);
+            accountBroker.enableAccount(getUserProfile().getUid(), account.getUid(), paymentRef);
             addMessage(attributes, MessageType.SUCCESS, "account.signup.payment.done", request);
         } else if (enableOrUpdateAccount == UPDATE) {
             accountBroker.updateAccountPaymentReference(getUserProfile().getUid(), account.getUid(), paymentRef);

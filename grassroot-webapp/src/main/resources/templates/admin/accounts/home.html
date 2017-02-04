@@ -32,7 +32,15 @@
         </div>
       </div>
       <div class="row">
-        <a th:href="@{records/list}" class="text-center">View all bills for payment</a>
+        <div class="col-md-4">
+          <a th:href="@{/admin/accounts/deposit}"><button class="white-button group-button">ETF accounts</button></a>
+        </div>
+        <div class="col-md-4">
+          <a th:href="@{records/list}"><button class="white-button group-button">List bills for payment</button></a>
+        </div>
+        <div class="col-md-4">
+          <a th:href="@{/admin/accounts/home}">All open accounts</a>
+        </div>
       </div>
     </div>
   </section>
@@ -79,7 +87,8 @@
                   <span th:unless="${account.isBillingActive()}">None</span></a>
               </td>
               <td>
-                <a th:href="${account.enabled} ? @{disable(accountUid=${account.uid})} : @{enable(accountUid=${account.uid})}">
+                <a th:href="${account.enabled} ? '#confirmDisableModal' : '#confirmEnableModal'" data-toggle="modal"
+                   data:target="${account.enabled} ? '#confirmDisableModal' : '#confirmEnableModal'" data:uid="${account.uid}">
                   <span th:text="${account.enabled} ? 'Disable' : 'Enable'">Disable</span>
                 </a>
               </td>
@@ -248,6 +257,62 @@
     </div>
   </div>
 
+  <div class="modal fade" id="confirmEnableModal" tabindex="-1" role="dialog" aria-labelledby="confirmEnableLabel">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title" id="confirmEnableLabel">Enable account</h4>
+        </div>
+        <form th:action="@{enable}" method="post">
+          <input type="hidden" name="accountUid" id="accountUidEnable" />
+          <div class="modal-body">
+            <div class="form-group">
+              <p>Confirmed to enable this account?</p>
+            </div>
+            <div class="form-group">
+              <label class="checkbox-inline">
+                <input type="checkbox" name="sendEmail" /><span style="margin-left: 20px">Send notification email</span>
+              </label>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn default-button btn-neutral" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn default-button btn-negative">Confirmed</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="confirmDisableModal" tabindex="-1" role="dialog" aria-labelledby="confirmDisableLabel">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title" id="confirmDisableLabel">Disable account</h4>
+        </div>
+        <form th:action="@{enable}" method="post">
+          <input type="hidden" name="accountUid" id="accountUidDisable" />
+          <div class="modal-body">
+            <div class="form-group">
+              <p>Confirmed to disable this account?</p>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="checkbox-inline">
+              <input type="checkbox" name="sendEmail" /><span style="margin-left: 20px">Send notification email</span>
+            </label>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn default-button btn-neutral" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn default-button btn-negative">Confirmed</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
 </main>
 
 <div layout:fragment="script-container">
@@ -298,10 +363,20 @@
           $('#confirmStopPaymentModal').on('show.bs.modal', function(event) {
               var link = $(event.relatedTarget);
               var uid = link.data('uid');
-
               $(this).find('#accountUidStopPayment').val(uid);
           });
 
+          $('#confirmEnableModal').on('show.bs.modal', function(event) {
+              var link = $(event.relatedTarget);
+              var uid = link.data('uid');
+              $(this).find('#accountUidEnable').val(uid);
+          });
+
+          $('#confirmDisableModal').on('show.bs.modal', function(event) {
+              var link = $(event.relatedTarget);
+              var uid = link.data('uid');
+              $(this).find('#accountUidDisable').val(uid);
+          });
 
       });
 

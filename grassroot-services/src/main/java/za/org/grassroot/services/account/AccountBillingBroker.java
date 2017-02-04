@@ -14,7 +14,7 @@ import java.util.List;
  */
 public interface AccountBillingBroker {
 
-    void setAccountPaymentType(String accountUid, AccountPaymentType paymentType);
+    void updateAccountPaymentType(String accountUid, AccountPaymentType paymentType);
 
     AccountBillingRecord generateSignUpBill(final String accountUid);
 
