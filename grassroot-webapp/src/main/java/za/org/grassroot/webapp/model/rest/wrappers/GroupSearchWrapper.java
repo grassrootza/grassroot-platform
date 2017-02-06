@@ -2,7 +2,7 @@ package za.org.grassroot.webapp.model.rest.wrappers;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.GroupJoinRequest;
+import za.org.grassroot.core.domain.association.GroupJoinRequest;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;

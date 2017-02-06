@@ -9,11 +9,13 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.association.AssociationRequestEvent;
+import za.org.grassroot.core.domain.association.GroupJoinRequest;
 import za.org.grassroot.core.domain.notification.JoinRequestNotification;
 import za.org.grassroot.core.domain.notification.JoinRequestResultNotification;
 import za.org.grassroot.core.dto.MembershipInfo;
-import za.org.grassroot.core.enums.GroupJoinRequestEventType;
-import za.org.grassroot.core.enums.GroupJoinRequestStatus;
+import za.org.grassroot.core.enums.AssocRequestEventType;
+import za.org.grassroot.core.enums.AssocRequestStatus;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.*;
@@ -36,7 +38,7 @@ public class GroupJoinRequestManager implements GroupJoinRequestService {
     private final GroupRepository groupRepository;
     private final UserRepository userRepository;
     private final GroupJoinRequestRepository groupJoinRequestRepository;
-    private final GroupJoinRequestEventRepository groupJoinRequestEventRepository;
+    private final AssociationRequestEventRepository groupJoinRequestEventRepository;
 
     private final GroupBroker groupBroker;
     private final PermissionBroker permissionBroker;
@@ -54,7 +56,7 @@ public class GroupJoinRequestManager implements GroupJoinRequestService {
     public GroupJoinRequestManager(GroupRepository groupRepository,
                                    UserRepository userRepository,
                                    GroupJoinRequestRepository groupJoinRequestRepository,
-                                   GroupJoinRequestEventRepository groupJoinRequestEventRepository,
+                                   AssociationRequestEventRepository groupJoinRequestEventRepository,
                                    GroupBroker groupBroker,
                                    PermissionBroker permissionBroker) {
         this.groupRepository = groupRepository;
@@ -76,14 +78,14 @@ public class GroupJoinRequestManager implements GroupJoinRequestService {
             throw new RequestorAlreadyPartOfGroupException("The user requesting to join is already part of this group");
 
         GroupJoinRequest checkPending = groupJoinRequestRepository.
-                findByGroupAndRequestorAndStatus(group, requestor, GroupJoinRequestStatus.PENDING);
+                findByGroupAndRequestorAndStatus(group, requestor, AssocRequestStatus.PENDING);
         if (checkPending != null)
             return checkPending.getUid();
 
         logger.info("Opening new group join request: requestor={}, group={}, description={}", requestor, group, description);
 
         Instant time = Instant.now();
-        GroupJoinRequest request = new GroupJoinRequest(requestor, group, time, (description != null) ? description : null);
+        GroupJoinRequest request = new GroupJoinRequest(requestor, group, (description != null) ? description : null);
         groupJoinRequestRepository.save(request);
 
         String message = messageAssemblingService.createGroupJoinRequestMessage(group.getJoinApprover(), request);
@@ -97,7 +99,7 @@ public class GroupJoinRequestManager implements GroupJoinRequestService {
         bundle.addNotification(notification);
         logsAndNotificationsBroker.storeBundle(bundle);
 
-        GroupJoinRequestEvent event = new GroupJoinRequestEvent(GroupJoinRequestEventType.OPENED, request, requestor, time);
+        AssociationRequestEvent event = new AssociationRequestEvent(AssocRequestEventType.OPENED, request, requestor, time);
         groupJoinRequestEventRepository.save(event);
 
         logger.info("Group join request opened: {}", request);
@@ -140,7 +142,7 @@ public class GroupJoinRequestManager implements GroupJoinRequestService {
 
         logger.info("Approving request: request={}, user={}", request, user);
         Instant time = Instant.now();
-        request.setStatus(GroupJoinRequestStatus.APPROVED);
+        request.setStatus(AssocRequestStatus.APPROVED);
         request.setProcessedTime(time);
 
         MembershipInfo membershipInfo =
@@ -157,7 +159,7 @@ public class GroupJoinRequestManager implements GroupJoinRequestService {
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle(Collections.singleton(userLog), Collections.singleton(notification));
         logsAndNotificationsBroker.storeBundle(bundle);
 
-        GroupJoinRequestEvent event = new GroupJoinRequestEvent(GroupJoinRequestEventType.APPROVED, request, user, time);
+        AssociationRequestEvent event = new AssociationRequestEvent(AssocRequestEventType.APPROVED, request, user, time);
         groupJoinRequestEventRepository.save(event);
     }
 
@@ -171,7 +173,7 @@ public class GroupJoinRequestManager implements GroupJoinRequestService {
             throw new AccessDeniedException("User is not the join approver for this group");
 
         logger.info("Declining request: request={}, user={}", request, user);
-        request.setStatus(GroupJoinRequestStatus.DECLINED);
+        request.setStatus(AssocRequestStatus.DECLINED);
         Instant time = Instant.now();
         request.setProcessedTime(time);
 
@@ -181,7 +183,7 @@ public class GroupJoinRequestManager implements GroupJoinRequestService {
         JoinRequestResultNotification notification = new JoinRequestResultNotification(request.getRequestor(), message, userLog);
         logsAndNotificationsBroker.storeBundle(new LogsAndNotificationsBundle(Collections.singleton(userLog), Collections.singleton(notification)));
 
-        GroupJoinRequestEvent event = new GroupJoinRequestEvent(GroupJoinRequestEventType.DECLINED, request, user, time);
+        AssociationRequestEvent event = new AssociationRequestEvent(AssocRequestEventType.DECLINED, request, user, time);
         groupJoinRequestEventRepository.save(event);
     }
 
@@ -194,7 +196,7 @@ public class GroupJoinRequestManager implements GroupJoinRequestService {
         User user = userRepository.findOneByUid(requestorUid);
         Group group = groupBroker.load(groupUid);
 
-        GroupJoinRequest request = groupJoinRequestRepository.findByGroupAndRequestorAndStatus(group, user, GroupJoinRequestStatus.PENDING);
+        GroupJoinRequest request = groupJoinRequestRepository.findByGroupAndRequestorAndStatus(group, user, AssocRequestStatus.PENDING);
 
         if (request == null) {
             // e.g., if the request has already been approved but client hasn't updated
@@ -203,10 +205,10 @@ public class GroupJoinRequestManager implements GroupJoinRequestService {
 
         // for the moment, we do not log denials or notify the requester, as will generate a lot of noise, but reconsider based on feedback
         Instant time = Instant.now();
-        request.setStatus(GroupJoinRequestStatus.CANCELLED);
+        request.setStatus(AssocRequestStatus.CANCELLED);
         request.setProcessedTime(time);
 
-        GroupJoinRequestEvent event = new GroupJoinRequestEvent(GroupJoinRequestEventType.CANCELLED, request, user, time);
+        AssociationRequestEvent event = new AssociationRequestEvent(AssocRequestEventType.CANCELLED, request, user, time);
         groupJoinRequestEventRepository.save(event);
     }
 
@@ -219,7 +221,7 @@ public class GroupJoinRequestManager implements GroupJoinRequestService {
         User user = userRepository.findOneByUid(requestorUid);
         Group group = groupBroker.load(groupUid);
 
-        GroupJoinRequest request = groupJoinRequestRepository.findByGroupAndRequestorAndStatus(group, user, GroupJoinRequestStatus.PENDING);
+        GroupJoinRequest request = groupJoinRequestRepository.findByGroupAndRequestorAndStatus(group, user, AssocRequestStatus.PENDING);
         if (request == null) {
             throw new JoinRequestNotOpenException();
         }
@@ -236,7 +238,7 @@ public class GroupJoinRequestManager implements GroupJoinRequestService {
         bundle.addNotification(notification);
         logsAndNotificationsBroker.storeBundle(bundle);
 
-        GroupJoinRequestEvent event = new GroupJoinRequestEvent(GroupJoinRequestEventType.REMINDED, request, user, Instant.now());
+        AssociationRequestEvent event = new AssociationRequestEvent(AssocRequestEventType.REMINDED, request, user, Instant.now());
         groupJoinRequestEventRepository.save(event);
     }
 
@@ -250,14 +252,14 @@ public class GroupJoinRequestManager implements GroupJoinRequestService {
     public List<GroupJoinRequest> getPendingRequestsForUser(String userUid) {
         Sort sort = new Sort(Sort.Direction.DESC, "creationTime");
         User user = userRepository.findOneByUid(userUid);
-        return groupJoinRequestRepository.findByGroupJoinApproverAndStatus(user, GroupJoinRequestStatus.PENDING, sort);
+        return groupJoinRequestRepository.findByGroupJoinApproverAndStatus(user, AssocRequestStatus.PENDING, sort);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<GroupJoinRequest> getPendingRequestsFromUser(String userUid) {
         User user = userRepository.findOneByUid(userUid);
-        return groupJoinRequestRepository.findByRequestorAndStatus(user, GroupJoinRequestStatus.PENDING,
+        return groupJoinRequestRepository.findByRequestorAndStatus(user, AssocRequestStatus.PENDING,
                 new Sort(Sort.Direction.DESC, "creationTime"));
     }
 
@@ -268,6 +270,6 @@ public class GroupJoinRequestManager implements GroupJoinRequestService {
         Objects.requireNonNull(possibleGroups);
 
         User requestor = userRepository.findOneByUid(requestorUid);
-        return groupJoinRequestRepository.findByRequestorAndStatusAndGroupIn(requestor, GroupJoinRequestStatus.PENDING, possibleGroups);
+        return groupJoinRequestRepository.findByRequestorAndStatusAndGroupIn(requestor, AssocRequestStatus.PENDING, possibleGroups);
     }
 }

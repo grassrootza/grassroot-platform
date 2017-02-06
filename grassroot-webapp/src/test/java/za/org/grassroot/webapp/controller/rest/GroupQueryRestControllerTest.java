@@ -9,11 +9,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.association.GroupJoinRequest;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.services.ChangedSinceData;
 import za.org.grassroot.core.dto.MembershipInfo;
 
-import java.time.Instant;
 import java.util.*;
 
 import static org.mockito.Mockito.*;
@@ -78,7 +78,7 @@ public class GroupQueryRestControllerTest extends RestAbstractUnitTest {
 
     @Test
     public void searchRequestToJoinGroup() throws Exception {
-        GroupJoinRequest testRequest = new GroupJoinRequest(sessionTestUser, testGroup, Instant.now(), "please let me in");
+        GroupJoinRequest testRequest = new GroupJoinRequest(sessionTestUser, testGroup, "please let me in");
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
         when(groupJoinRequestServiceMock.open(sessionTestUser.getUid(), testGroup.getUid(), "please let me in")).thenReturn(testRequest.getUid());
         when(groupJoinRequestServiceMock.loadRequest(testRequest.getUid())).thenReturn(testRequest);

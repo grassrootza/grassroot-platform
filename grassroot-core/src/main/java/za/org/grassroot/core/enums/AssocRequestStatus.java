@@ -1,6 +1,6 @@
 package za.org.grassroot.core.enums;
 
-public enum GroupJoinRequestStatus {
+public enum AssocRequestStatus {
     PENDING,
     APPROVED,
     DECLINED,

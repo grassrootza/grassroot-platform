@@ -19,7 +19,7 @@ import static za.org.grassroot.core.util.PhoneNumberUtil.invertPhoneNumber;
 
 @Entity
 @Table(name = "user_profile")  //table name needs to be quoted in SQL because 'user' is a reserved keyword
-public class User implements UserDetails, Comparable<User> {
+public class User implements GrassrootEntity, UserDetails, Comparable<User> {
     private static final int DEFAULT_NOTIFICATION_PRIORITY = 1;
 
     @Id
@@ -145,6 +145,8 @@ public class User implements UserDetails, Comparable<User> {
     public String getUid() {
         return uid;
     }
+
+    public String getName() { return nameToDisplay(); }
 
     public String getFirstName() {
         return firstName;

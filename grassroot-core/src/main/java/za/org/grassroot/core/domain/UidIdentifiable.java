@@ -2,7 +2,7 @@ package za.org.grassroot.core.domain;
 
 import java.util.Set;
 
-public interface UidIdentifiable {
+public interface UidIdentifiable extends GrassrootEntity {
 	JpaEntityType getJpaEntityType();
 
 	String getUid();

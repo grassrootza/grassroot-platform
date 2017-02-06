@@ -2,9 +2,9 @@ package za.org.grassroot.webapp.model.rest;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import za.org.grassroot.core.domain.GroupJoinRequest;
+import za.org.grassroot.core.domain.association.GroupJoinRequest;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.enums.GroupJoinRequestStatus;
+import za.org.grassroot.core.enums.AssocRequestStatus;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.webapp.enums.JoinReqType;
@@ -28,7 +28,7 @@ public class GroupJoinRequestDTO implements Comparable<GroupJoinRequestDTO> {
 	private String requestDescription;
 
 	private JoinReqType joinReqType;
-	private GroupJoinRequestStatus status;
+	private AssocRequestStatus status;
 
 	@JsonIgnore
 	private Instant createdDateTime;

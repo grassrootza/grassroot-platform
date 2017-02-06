@@ -1,11 +1,11 @@
-package za.org.grassroot.core.domain;
+package za.org.grassroot.core.domain.association;
 
 
-import za.org.grassroot.core.enums.GroupJoinRequestStatus;
-import za.org.grassroot.core.util.UIDGenerator;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.AssociationRequestType;
 
 import javax.persistence.*;
-import java.time.Instant;
 import java.util.Objects;
 
 /**
@@ -16,15 +16,7 @@ import java.util.Objects;
 @Entity
 @Table(name = "group_join_request",
         uniqueConstraints = @UniqueConstraint(name = "uk_group_join_request_uid", columnNames = "uid"))
-public class GroupJoinRequest {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", nullable = false)
-    private Long id;
-
-    @Column(name = "uid", nullable = false, length = 50)
-    private String uid;
+public class GroupJoinRequest extends AbstractAssociationRequest<User,Group> {
 
     @ManyToOne
     @JoinColumn(name = "requestor_id", nullable = false, foreignKey = @ForeignKey(name = "fk_group_join_requestor"))
@@ -34,38 +26,14 @@ public class GroupJoinRequest {
     @JoinColumn(name = "group_id", nullable = false, foreignKey = @ForeignKey(name = "fk_group_join_request_group"))
     private Group group;
 
-    @Column(name = "creation_time", nullable = false)
-    private Instant creationTime;
-
-    @Column(name = "processed_time")
-    private Instant processedTime;
-
-    @Column(name = "description")
-    private String description;
-
-    @Column(name = "status", nullable = false, length = 50)
-    @Enumerated(EnumType.STRING)
-    private GroupJoinRequestStatus status;
-
     private GroupJoinRequest() {
         // for JPA
     }
 
-    public GroupJoinRequest(User requestor, Group group, Instant creationTime, String description) {
-        this.uid = UIDGenerator.generateId();
+    public GroupJoinRequest(User requestor, Group group, String description) {
+        super(description);
         this.requestor = Objects.requireNonNull(requestor);
         this.group = Objects.requireNonNull(group);
-        this.creationTime = Objects.requireNonNull(creationTime);
-        this.status = GroupJoinRequestStatus.PENDING;
-        this.description = description;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public String getUid() {
-        return uid;
     }
 
     public User getRequestor() {
@@ -76,29 +44,11 @@ public class GroupJoinRequest {
         return group;
     }
 
-    public Instant getCreationTime() {
-        return creationTime;
+    public Group getDestination() {
+        return group;
     }
 
-    public GroupJoinRequestStatus getStatus() {
-        return status;
-    }
-
-    public Instant getProcessedTime() {
-        return processedTime;
-    }
-
-    public void setProcessedTime(Instant processedTime) {
-        this.processedTime = processedTime;
-    }
-
-    public void setStatus(GroupJoinRequestStatus status) {
-        this.status = status;
-    }
-
-    public String getDescription() { return description; }
-
-    public void setDescription(String description) { this.description = description; }
+    public AssociationRequestType getType() { return AssociationRequestType.GROUP_JOIN; }
 
     @Override
     public boolean equals(Object o) {

@@ -1,6 +1,8 @@
-package za.org.grassroot.core.domain;
+package za.org.grassroot.core.domain.association;
 
-import za.org.grassroot.core.enums.GroupJoinRequestEventType;
+import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.AssocRequestEventType;
+import za.org.grassroot.core.enums.AssociationRequestType;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
@@ -11,9 +13,10 @@ import java.util.Objects;
  * Represents event that occurred on group join request.
  */
 @Entity
-@Table(name = "group_join_request_event",
-        uniqueConstraints = @UniqueConstraint(name = "uk_group_join_req_event_uid", columnNames = "uid"))
-public class GroupJoinRequestEvent {
+@Table(name = "association_request_event",
+        uniqueConstraints = @UniqueConstraint(name = "uk_assoc_req_event_uid", columnNames = "uid"),
+        indexes = {@Index(name = "idx_assoc_req_event_req_uid", columnList = "request_uid")})
+public class AssociationRequestEvent {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,29 +27,34 @@ public class GroupJoinRequestEvent {
     private String uid;
 
     @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false, foreignKey = @ForeignKey(name = "fk_group_join_req_event_user"))
+    @JoinColumn(name = "user_id", nullable = false, foreignKey = @ForeignKey(name = "fk_assoc_req_event_user"))
     private User user;
 
     @Column(name = "type", nullable = false, length = 50)
     @Enumerated(EnumType.STRING)
-    private GroupJoinRequestEventType type;
+    private AssocRequestEventType type;
 
     @Column(name = "occurrence_time", nullable = false)
     private Instant occurrenceTime;
 
-    @ManyToOne
-    @JoinColumn(name = "request_id", nullable = false,
-            foreignKey = @ForeignKey(name = "fk_group_join_req_event_request"))
-    private GroupJoinRequest request;
+    @Column(name = "request_uid", length = 50, updatable = false, nullable = false)
+    private String requestUid;
 
-    private GroupJoinRequestEvent() {
+    @Column(name = "request_type", nullable = false, length = 50)
+    @Enumerated(EnumType.STRING)
+    private AssociationRequestType requestType;
+
+    private AssociationRequestEvent() {
         // for JPA
     }
 
-    public GroupJoinRequestEvent(GroupJoinRequestEventType type, GroupJoinRequest request, User user, Instant occurrenceTime) {
+    public AssociationRequestEvent(AssocRequestEventType type, AbstractAssociationRequest request, User user, Instant occurrenceTime) {
+        Objects.requireNonNull(request);
+
         this.uid = UIDGenerator.generateId();
         this.type = Objects.requireNonNull(type);
-        this.request = Objects.requireNonNull(request);
+        this.requestUid = request.getUid();
+        this.requestType = request.getType();
         this.user = Objects.requireNonNull(user);
         this.occurrenceTime = Objects.requireNonNull(occurrenceTime);
     }
@@ -63,7 +71,7 @@ public class GroupJoinRequestEvent {
         return user;
     }
 
-    public GroupJoinRequestEventType getType() {
+    public AssocRequestEventType getType() {
         return type;
     }
 
@@ -71,18 +79,20 @@ public class GroupJoinRequestEvent {
         return occurrenceTime;
     }
 
-    public GroupJoinRequest getRequest() { return request; }
+    public String getRequestUid() { return requestUid; }
+
+    public AssociationRequestType getRequestType() { return requestType; }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) {
             return true;
         }
-        if (!(o instanceof GroupJoinRequestEvent)) {
+        if (!(o instanceof AssociationRequestEvent)) {
             return false;
         }
 
-        GroupJoinRequestEvent that = (GroupJoinRequestEvent) o;
+        AssociationRequestEvent that = (AssociationRequestEvent) o;
 
         return getUid() != null ? getUid().equals(that.getUid()) : that.getUid() == null;
     }
@@ -94,7 +104,7 @@ public class GroupJoinRequestEvent {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("GroupJoinRequestEvent{");
+        final StringBuilder sb = new StringBuilder("AssociationRequestEvent{");
         sb.append("type=").append(type);
         sb.append(", id=").append(id);
         sb.append(", uid='").append(uid).append('\'');
