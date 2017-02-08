@@ -16,15 +16,16 @@ public class DebugUtil {
     private static final boolean transactionDebugging = true;
     private static final boolean verboseTransactionDebugging = true;
 
-    public static void showTransactionStatus(String message) {
+    private static void showTransactionStatus(String message) {
         logger.info(((transactionActive()) ? "[+] " : "[-] ") + message);
     }
 
-    public static boolean transactionActive() {
+    @SuppressWarnings("unchecked")
+    private static boolean transactionActive() {
         try {
             ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
             Class tsmClass = contextClassLoader.loadClass("org.springframework.transaction.support.TransactionSynchronizationManager");
-            return (Boolean) tsmClass.getMethod("isActualTransactionActive", null).invoke(null, null);
+            return (Boolean) tsmClass.getMethod("isActualTransactionActive", (Class<?>) null).invoke(null, (Object) null);
         } catch (ClassNotFoundException | IllegalArgumentException | IllegalAccessException | SecurityException | NoSuchMethodException | InvocationTargetException e) {
             e.printStackTrace();
         }

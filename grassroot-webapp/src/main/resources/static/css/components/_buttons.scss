@@ -113,6 +113,11 @@
   &.full-width-button {
     width: 100%;
   }
+
+  &.btn-xl {
+    font-size: 1.5em !important;
+    font-weight: bolder;
+  }
 }
 
 .main-button {

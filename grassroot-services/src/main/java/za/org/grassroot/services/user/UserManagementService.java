@@ -5,7 +5,6 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.enums.AlertPreference;
 import za.org.grassroot.core.enums.UserMessagingPreference;
-import za.org.grassroot.services.exception.NoSuchProfileException;
 import za.org.grassroot.services.exception.NoSuchUserException;
 import za.org.grassroot.services.exception.UserExistsException;
 
@@ -39,9 +38,9 @@ public interface UserManagementService {
     Methods to create a user, for various interfaces
      */
 
-    User createUserProfile(User userProfile);
+    String create(String phoneNumber, String displayName, String emailAddress);
 
-    User deactiveAndroidProfile(User user) throws NoSuchProfileException;
+    User createUserProfile(User userProfile);
 
     UserDTO loadUserCreateRequest(String phoneNumber);
 

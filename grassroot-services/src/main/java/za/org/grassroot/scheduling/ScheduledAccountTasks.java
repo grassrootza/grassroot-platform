@@ -39,4 +39,12 @@ public class ScheduledAccountTasks {
         paymentBroker.processAccountPaymentsOutstanding();
     }
 
+    public void cleanupUnansweredSponsorship() {
+
+    }
+
+    public void processPendingPaymentSponsorships() {
+
+    }
+
 }

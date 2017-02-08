@@ -99,7 +99,7 @@ public class EmailSendingBrokerImpl implements EmailSendingBroker {
             if (email.hasAttachment()) {
                 helper.addAttachment(email.getAttachmentName(), email.getAttachment());
             }
-            logger.info("Okay, sending a mail, looks like : " + email);
+            logger.info("Okay, sending a mail, to : " + email.getAddress());
             mailSender.send(mail);
         } catch (MessagingException|MailException|UnsupportedEncodingException e) {
             logger.warn("Error sending user mail! Exception : " + e.toString());

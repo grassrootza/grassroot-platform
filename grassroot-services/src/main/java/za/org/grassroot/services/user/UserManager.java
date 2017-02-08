@@ -202,28 +202,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
-    public User deactiveAndroidProfile(User user) {
-
-        if (!user.hasAndroidProfile()) {
-            throw new NoSuchProfileException();
-        }
-        user.setHasAndroidProfile(false);
-        user.setMessagingPreference(UserMessagingPreference.SMS);
-        user.setHasInitiatedSession(true);
-
-        try {
-            user = userRepository.saveAndFlush(user);
-            gcmService.unregisterUser(user);
-            asyncUserService.recordUserLog(user.getUid(), UserLogType.DEREGISTERED_ANDROID, "User android profile deleted");
-        } catch (final Exception e) {
-            e.printStackTrace();
-            log.warn(e.getMessage());
-        }
-        return user;
-
-    }
-
-    @Override
     @Transactional
     public void updateUser(String userUid, String displayName, String emailAddress, AlertPreference alertPreference, Locale locale)
             throws IllegalArgumentException {
@@ -351,6 +329,26 @@ public class UserManager implements UserManagementService, UserDetailsService {
     public List<User> searchByGroupAndNameNumber(String groupUid, String nameOrNumber) {
         return userRepository.findByGroupsPartOfAndDisplayNameContainingIgnoreCaseOrPhoneNumberLike(
                 groupRepository.findOneByUid(groupUid), "%" + nameOrNumber + "%", "%" + nameOrNumber + "%");
+    }
+
+    @Override
+    @Transactional
+    public String create(String phoneNumber, String displayName, String emailAddress) {
+        Objects.requireNonNull(phoneNumber);
+        Objects.requireNonNull(displayName);
+
+        String msisdn = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
+        if (userExist(msisdn)) {
+            throw new UserExistsException("Error! User with that phone number exists!");
+        }
+
+        User user = new User(msisdn);
+        user.setUsername(msisdn);
+        user.setDisplayName(displayName);
+        user.setEmailAddress(emailAddress);
+        user = userRepository.save(user);
+        asyncUserService.recordUserLog(user.getUid(), UserLogType.CREATED_IN_DB, "Created via sponsorship request");
+        return user.getUid();
     }
 
     @Override

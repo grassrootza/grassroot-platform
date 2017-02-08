@@ -61,21 +61,21 @@ public class AccountAdminController extends BaseController {
      * Methods to create institutional accounts and designate their administrators
      */
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    @RequestMapping("/home")
+    @RequestMapping(value = "/home", method = RequestMethod.GET)
     public String listAccounts(Model model, @RequestParam(required = false) Boolean showClosed) {
         model.addAttribute("accounts", new ArrayList<>(accountBroker.loadAllAccounts(showClosed == null ? true : showClosed, null, null)));
         return "admin/accounts/home";
     }
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    @RequestMapping("/deposit")
+    @RequestMapping(value = "/deposit", method = RequestMethod.GET)
     public String listDepositAccounts(Model model) {
         model.addAttribute("accounts", new ArrayList<>(accountBroker.loadAllAccounts(true, AccountPaymentType.DIRECT_DEPOSIT, null)));
         return "admin/accounts/home";
     }
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    @RequestMapping(value = "/disable")
+    @RequestMapping(value = "/disable", method = RequestMethod.GET)
     public String disableAccount(@RequestParam("accountUid") String accountUid, RedirectAttributes attributes, HttpServletRequest request) {
         accountBroker.disableAccount(getUserProfile().getUid(), accountUid, "disabled by admin user", true, false); // todo : have a form to input this
         addMessage(attributes, MessageType.INFO, "admin.accounts.disabled", request);
@@ -83,7 +83,7 @@ public class AccountAdminController extends BaseController {
     }
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    @RequestMapping(value = "/enable")
+    @RequestMapping(value = "/enable", method = RequestMethod.GET)
     public String enableAccount(@RequestParam("accountUid") String accountUid, @RequestParam(required = false) Boolean sendEmail,
                                 RedirectAttributes attributes, HttpServletRequest request) {
         accountBroker.enableAccount(getUserProfile().getUid(), accountUid, null);

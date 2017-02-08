@@ -29,8 +29,9 @@
               Payment error description: <span th:text="${errorDescription}">Error goes here</span>
             </p>
             <p class="grassroot-body" th:case="true">
-              As a final step, please enter your credit or debit card details. You will be charged
-              <span th:text="${billingAmount}">RX</span> now, and then monthly from now on.
+              As a final step, please enter your credit or debit card details. You will be charged <span th:text="${billingAmount}">RX</span>.
+              Alternately, if someone else is willing to pay for your account,
+              <a th:href="@{/account/sponsor/request(accountUid=${account.uid})}">send them a sponsorship request.</a>
             </p>
             <p class="grassroot-body" th:case="false">
               Please enter your new card details below. You will be charged <span th:text="${billingAmount}">RX</span> now

@@ -183,6 +183,9 @@ public class AccountBrokerImpl implements AccountBroker {
                 .userUid(userUid)
                 .description("account enabled")
                 .build());
+
+        // since the user that enables may be different to user that creates, and leaving out this role breaks a lot of UI, just make sure role is added (no regret)
+        permissionBroker.addSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
     }
 
     @Override

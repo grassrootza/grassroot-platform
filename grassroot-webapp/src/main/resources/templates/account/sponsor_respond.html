@@ -1,0 +1,79 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      data-layout-decorate="~{layout}">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Disabled account</title>
+</head>
+
+<body>
+
+<section layout:fragment="header" class="top-container">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
+        <h2 class="text-center header-content-title">Sponsor Account</h2>
+      </div>
+    </div>
+  </div>
+</section>
+
+<main layout:fragment="content">
+
+  <section class="grassroot-form">
+    <div class="container">
+      <div class="row">
+
+        <div class="col-md-6 col-md-offset-3 col-sm-10 col-sm-offset-1 col-xs-12">
+          <div class="form-group">
+            <p class="grassroot-body" th:text="#{web.account.sponsorship.respond.intro(${request.requestor.getName()})}">
+              Hello you are responding to this thing
+            </p>
+          </div>
+
+          <form th:replace="~{fragments :: payment-form(accountUid='abc', action='respond')}"></form>
+
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <div class="modal fade" id="closeAccModal" tabindex="-1" role="dialog" aria-labelledby="closeAccountLabel">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title" id="joiningModalLabel">Close account</h4>
+        </div>
+        <form th:action="@{/account/close}" method="post">
+          <div class="modal-body">
+            <div class="form-group">
+              <p>Are you sure you want to close this account? If so, type "confirmed" below</p>
+            </div>
+            <div class="form-group">
+              <input type="text" name="confirmText" class="form-control input-lg" id="confirmText" />
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default btn-lg default-button btn-neutral" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary btn-lg default-button btn-positive">Confirmed</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<div layout:fragment="script-container">
+
+  <script th:src="@{/js/lib/jquery.validate.min.js}"></script>
+
+  <script th:replace="~{fragments :: form-script}"></script>
+
+</div>
+
+</body>
+</html>

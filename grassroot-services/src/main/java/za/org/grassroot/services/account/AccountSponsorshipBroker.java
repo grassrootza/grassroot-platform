@@ -11,13 +11,15 @@ import java.util.List;
  */
 public interface AccountSponsorshipBroker {
 
-    void openSponsorshipRequest(String openingUserUid, String accountUid, String requestedUserUid, String messageToUser);
+    void openSponsorshipRequest(String openingUserUid, String accountUid, String destinationUserUid, String messageToUser);
 
-    AccountSponsorshipRequest fetchSponsorshipRequest(String requestUid);
+    AccountSponsorshipRequest load(String requestUid);
 
     void denySponsorshipRequest(String requestUid);
 
-    void approveSponsorshipRequest(String requestUid);
+    void approveRequestPendingPayment(String requestUid); // requested sponsor has clicked 'approve' but may not have completed payment
+
+    void approveRequestPaymentComplete(String requestUid); // requested sponsor has completed payment
 
     /*
     In case user approves, but then payment fails / they back out
@@ -27,5 +29,8 @@ public interface AccountSponsorshipBroker {
     List<AccountSponsorshipRequest> requestsForUser(String userUid, AssocRequestStatus status, Sort sort);
 
     List<AccountSponsorshipRequest> requestsForAccount(String accountUid, AssocRequestStatus status, Sort sort);
+
+    // e.g., if account pays for itself in interim
+    void closeOutstandingRequestsForAccount(String userUid, String accountUid);
 
 }

@@ -60,7 +60,7 @@
                       th:value="${cycle}"></option>
             </select>
           </div>
-          <div class="form-group">
+          <div class="form-group" id="paymentTypeHolder">
             <label for="paymentType" class="control-label">5. Payment type</label>
             <select id="paymentType" name="paymentType" class="form-control input-lg" disabled="true">
               <option th:each="type: ${T(za.org.grassroot.core.enums.AccountPaymentType).values()}"
@@ -69,7 +69,7 @@
             </select>
           </div>
           <div class="form-group top-buffer">
-            <button type="submit" class="btn default-button full-width-button">Next</button>
+            <button type="submit" class="btn default-button full-width-button btn-xl"><i class="fa fa-arrow-right" aria-hidden="true"></i> NEXT</button>
           </div>
         </form>
       </div>
@@ -131,10 +131,14 @@
           subgroupDepth.text(subGroupLimits[type]);
         });
 
+        var payTypeDiv = $("#paymentTypeHolder");
         var payTypeSel = $("#paymentType");
+
+        payTypeDiv.hide();
 
         $("#billingCycle").change(function() {
             if ($(this).val() == 'ANNUAL') {
+                payTypeDiv.show();
                 payTypeSel.prop('disabled', false);
             } else {
                 payTypeSel.prop('disabled', true);
