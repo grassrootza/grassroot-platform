@@ -91,7 +91,7 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
         Group group = groupRepository.findOneByUid(groupUid);
         User addingUser = userRepository.findOneByUid(addingUserUid);
 
-        Account account = StringUtils.isEmpty(accountUid) ? addingUser.getAccountAdministered() : accountRepository.findOneByUid(accountUid);
+        Account account = StringUtils.isEmpty(accountUid) ? addingUser.getPrimaryAccount() : accountRepository.findOneByUid(accountUid);
 
         if (account == null) {
             throw new IllegalArgumentException("Error! Account UID not supplied and user does not have an account");
@@ -196,7 +196,7 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
     @Transactional(readOnly = true)
     public boolean canAddGroupToAccount(String userUid) {
         User user = userRepository.findOneByUid(userUid);
-        Account account = user.getAccountAdministered();
+        Account account = user.getPrimaryAccount();
         return account != null && account.isEnabled() && groupsLeftOnAccount(account) > 0;
     }
 
@@ -204,7 +204,7 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
     @Transactional(readOnly = true)
     public boolean canAddMultipleGroupsToOwnAccount(String userUid) {
         User user = userRepository.findOneByUid(userUid);
-        if (user.getAccountAdministered() == null) {
+        if (user.getPrimaryAccount() == null) {
             return false;
         } else {
             List<Group> userGroups = groupRepository.findByCreatedByUserAndActiveTrueOrderByCreatedDateTimeDesc(user);
@@ -280,7 +280,7 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
 
         User user = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
-        Account account = user.getAccountAdministered();
+        Account account = user.getPrimaryAccount();
         PaidGroup paidGroup = paidGroupRepository.findTopByGroupOrderByExpireDateTimeDesc(group);
 
         Objects.requireNonNull(user);

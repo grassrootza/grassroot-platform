@@ -25,7 +25,7 @@ public class DebugUtil {
         try {
             ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
             Class tsmClass = contextClassLoader.loadClass("org.springframework.transaction.support.TransactionSynchronizationManager");
-            return (Boolean) tsmClass.getMethod("isActualTransactionActive", (Class<?>) null).invoke(null, (Object) null);
+            return (Boolean) tsmClass.getMethod("isActualTransactionActive", (Class<?>[]) null).invoke(null, (Object[]) null);
         } catch (ClassNotFoundException | IllegalArgumentException | IllegalAccessException | SecurityException | NoSuchMethodException | InvocationTargetException e) {
             e.printStackTrace();
         }

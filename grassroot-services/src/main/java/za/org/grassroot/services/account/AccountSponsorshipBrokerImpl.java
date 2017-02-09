@@ -128,17 +128,6 @@ public class AccountSponsorshipBrokerImpl implements AccountSponsorshipBroker {
 
     @Override
     @Transactional
-    public void approveRequestPendingPayment(String requestUid) {
-        Objects.requireNonNull(requestUid);
-        DebugUtil.transactionRequired("");
-
-        AccountSponsorshipRequest request = requestRepository.findOneByUid(requestUid);
-        requestEventRepository.save(new AssociationRequestEvent(AssocRequestEventType.PENDING_PAYMENT, request,
-                request.getDestination(), Instant.now()));
-    }
-
-    @Override
-    @Transactional
     public void approveRequestPaymentComplete(String requestUid) {
         Objects.requireNonNull(requestUid);
         DebugUtil.transactionRequired("");
@@ -153,7 +142,7 @@ public class AccountSponsorshipBrokerImpl implements AccountSponsorshipBroker {
 
         account.addAdministrator(newBillingUser);
         account.setBillingUser(newBillingUser);
-        newBillingUser.setAccountAdministered(account);
+        newBillingUser.setPrimaryAccount(account);
 
         final String subject = messageSource.getMessage("email.sponsorship.approved.subject");
         final String[] fields = new String[2];
@@ -168,6 +157,15 @@ public class AccountSponsorshipBrokerImpl implements AccountSponsorshipBroker {
                             .content(messageSource.getMessage("email.sponsorship.approved.body", fields))
                             .build());
                 });
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean hasUserBeenAskedToSponsor(String userUid, String accountUid) {
+        logger.info("checking if this user has a request pending .... ");
+        User user = userRepository.findOneByUid(userUid);
+        Account account = accountRepository.findOneByUid(accountUid);
+        return requestRepository.countByRequestorAndDestinationAndStatus(account, user, AssocRequestStatus.PENDING) > 0;
     }
 
     @Override

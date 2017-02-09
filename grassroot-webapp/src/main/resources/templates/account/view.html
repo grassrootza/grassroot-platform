@@ -36,8 +36,15 @@
 <main layout:fragment="content">
   <section class="grassroot-form">
     <div class="container">
+      <div class="row" th:if="${user.hasMultipleAccounts()}">
+        <div class="col-md-8 col-md-offset-2 col-sm-12 col-xs-12">
+          <p class="grassroot-body">
+            You administer multiple Grassroot Extra accounts. You are currently viewing your primary account. If you would
+            like to manage another account, <a href="#switchAccountModal" data-toggle="modal" data-target="#switchAccountModal">click here.</a>
+          </p>
+        </div>
+      </div>
       <div class="row">
-
         <div class="col-md-8 col-md-offset-2 col-sm-12 col-xs-12">
           <div class="row no-padding">
             <div class="col-md-3 col-sm-3 col-xs-12">
@@ -139,8 +146,8 @@
                 </li>
               </ul>
               <p class="grassroot-body">
-                You can allow others to administer this account, as long as they do not have an account of their own.
-                Only the user paying for the account will be allowed to change the account type or payment method.
+                You can allow others to administer this account. Only the user paying for the account will be allowed to
+                change the account type or payment method.
               </p>
             </div>
             <div class="col-md-3 col-sm-3 col-xs-12">
@@ -162,6 +169,25 @@
       </div>
     </div>
   </section>
+
+  <!-- Select account modal -->
+  <div th:if="${user.hasMultipleAccounts()}" class="modal fade" id="switchAccountModal" tabindex="-1" role="dialog" aria-labelledby="switchAccountModalTitle">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+          <h4 class="modal-title" id="switchAccountModalTitle">Choose account</h4>
+        </div>
+        <div class="modal-body">
+          <div class="form-group" th:each="acc : ${otherAccounts}">
+            <a th:href="@{/account/view(accountUid=${acc.uid})}" th:text="${acc.name}"></a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Add group modal -->
   <div class="modal fade" id="addGroupModal" tabindex="-1" role="dialog" aria-labelledby="addGroupModalTitle">

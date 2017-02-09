@@ -18,7 +18,7 @@ public interface AccountBroker {
 
     Account loadAccount(String accountUid);
 
-    Account loadUsersAccount(String userUid, boolean loadEvenIfDisabled);
+    Account loadPrimaryAccountForUser(String userUid, boolean loadEvenIfDisabled);
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     List<Account> loadAllAccounts(boolean visibleOnly, AccountPaymentType paymentMethod, AccountBillingCycle billingCycle);
@@ -26,7 +26,7 @@ public interface AccountBroker {
     String createAccount(String userUid, String accountName, String billedUserUid, AccountType accountType,
                          AccountPaymentType accountPaymentType, AccountBillingCycle billingCycle);
 
-    void enableAccount(String userUid, String accountUid, String ongoingPaymentRef);
+    void enableAccount(String userUid, String accountUid, String ongoingPaymentRef, boolean ensureUserAddedToAdmin);
 
     @PreAuthorize("hasAnyRole('ROLE_ACCOUNT_ADMIN, ROLE_SYSTEM_ADMIN')")
     void disableAccount(String administratorUid, String accountUid, String reasonToRecord, boolean removeAdminRole, boolean generateClosingBill);

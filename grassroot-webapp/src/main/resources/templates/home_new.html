@@ -45,7 +45,7 @@
     </div>
   </section>
 
-  <section class="no-group-text" th:if="${@environment.getProperty('grassroot.accounts.active') and (currentUser.accountAdministered == null)}">
+  <section class="no-group-text" th:if="${@environment.getProperty('grassroot.accounts.active') and (currentUser.primaryAccount == null)}">
     <div class="container">
       <div class="row">
         <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">

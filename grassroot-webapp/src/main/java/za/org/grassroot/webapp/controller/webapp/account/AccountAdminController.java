@@ -86,7 +86,7 @@ public class AccountAdminController extends BaseController {
     @RequestMapping(value = "/enable", method = RequestMethod.GET)
     public String enableAccount(@RequestParam("accountUid") String accountUid, @RequestParam(required = false) Boolean sendEmail,
                                 RedirectAttributes attributes, HttpServletRequest request) {
-        accountBroker.enableAccount(getUserProfile().getUid(), accountUid, null);
+        accountBroker.enableAccount(getUserProfile().getUid(), accountUid, null, false);
         Account account = accountBroker.loadAccount(accountUid);
         if (sendEmail != null && sendEmail) {
             GrassrootEmail.EmailBuilder builder = new GrassrootEmail.EmailBuilder("Grassroot Extra Account Enabled")

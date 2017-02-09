@@ -78,7 +78,7 @@ public class AccountRestController {
     @GetMapping("settings/fetch/{phoneNumber}/{code}")
     public ResponseEntity<ResponseWrapper> getAccountSettings(@PathVariable String phoneNumber, @RequestParam(required = false) String accountUid) {
         User user = userService.findByInputNumber(phoneNumber);
-        Account account = StringUtils.isEmpty(accountUid) ? user.getAccountAdministered() : accountBroker.loadAccount(accountUid);
+        Account account = StringUtils.isEmpty(accountUid) ? user.getPrimaryAccount() : accountBroker.loadAccount(accountUid);
 
         if (account == null) {
            return RestUtil.messageOkayResponse(RestMessage.USER_NO_ACCOUNT);
@@ -162,7 +162,7 @@ public class AccountRestController {
 
         PaymentResponse response = paymentBroker.checkMobilePaymentResult(paymentId);
         if (response != null && response.isSuccessful()) {
-            accountBroker.enableAccount(user.getUid(), accountUid, response.getReference());
+            accountBroker.enableAccount(user.getUid(), accountUid, response.getReference(), true);
             return RestUtil.okayResponseWithData(RestMessage.ACCOUNT_ENABLED, new AccountWrapper(account, user,
                     account.getMaxNumberGroups(), account.getFreeFormMessages())); // by definition a newly enabled account has full quota
         } else {

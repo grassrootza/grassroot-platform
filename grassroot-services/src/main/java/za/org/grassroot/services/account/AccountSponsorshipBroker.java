@@ -17,9 +17,9 @@ public interface AccountSponsorshipBroker {
 
     void denySponsorshipRequest(String requestUid);
 
-    void approveRequestPendingPayment(String requestUid); // requested sponsor has clicked 'approve' but may not have completed payment
-
     void approveRequestPaymentComplete(String requestUid); // requested sponsor has completed payment
+
+    boolean hasUserBeenAskedToSponsor(String userUid, String accountUid);
 
     /*
     In case user approves, but then payment fails / they back out

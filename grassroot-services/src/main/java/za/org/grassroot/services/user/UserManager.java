@@ -28,7 +28,6 @@ import za.org.grassroot.integration.xmpp.GcmService;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.exception.InvalidTokenException;
-import za.org.grassroot.services.exception.NoSuchProfileException;
 import za.org.grassroot.services.exception.NoSuchUserException;
 import za.org.grassroot.services.exception.UserExistsException;
 import za.org.grassroot.services.util.CacheUtilService;
@@ -451,12 +450,11 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     @Transactional(readOnly = true)
     public List<String[]> findOthersInGraph(User user, String nameFragment) {
+        // todo : fix this causing errors when groups is empty (and also profile that collection call on getGroups)
         // note : there is probably a way to avoid the getGroups and use criteria builder on a join
         List<User> records = userRepository.findAll(Specifications.where(
                 nameContains(nameFragment)).and(
                 inGroups(user.getGroups())));
-
-        log.info("Number of users in graph : {}", records.size());
 
         return records.stream()
                 .map(u -> new String[] { u.getDisplayName(), u.getPhoneNumber() })

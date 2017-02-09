@@ -82,24 +82,23 @@ public class AccountPaymentController extends BaseController {
         refreshAuthorities();
         Account createdAccount = accountBroker.loadAccount(accountUid);
 
-        if (AccountPaymentType.DIRECT_DEPOSIT.equals(paymentType)) {
-            return loadDebitInstruction(model, createdAccount);
-        } else {
-            return loadCreditCardForm(model, createdAccount, true);
-        }
+        return AccountPaymentType.DIRECT_DEPOSIT.equals(paymentType)
+                ? loadDebitInstruction(model, createdAccount)
+                : loadCreditCardForm(model, createdAccount, true);
     }
 
     @RequestMapping(value = "process", method = RequestMethod.POST)
     public String initiatePayment(Model model, RedirectAttributes attributes, @RequestParam String accountUid,
+                                  // @RequestParam(required = false) String pathOnFailure,
                                   @ModelAttribute("method") PaymentMethod paymentMethod, HttpServletRequest request) {
         AccountBillingRecord record = accountBillingBroker.generateSignUpBill(accountUid);
         return handleInitiatingPayment(accountUid, paymentMethod, record, ENABLE, model, attributes, request);
     }
 
     @RequestMapping(value = "redirect", method = RequestMethod.GET)
-    public String asyncPaymentDone(@RequestParam String paymentId, @RequestParam(required = false) String paymentRef,
-                                   @RequestParam boolean succeeded, @RequestParam(required = false) String failureDescription,
-                                   Model model) {
+    public String asyncPaymentTrafficControl(@RequestParam String paymentId, @RequestParam(required = false) String paymentRef,
+                                             @RequestParam boolean succeeded, @RequestParam(required = false) String failureDescription,
+                                             Model model) {
         model.addAttribute("paymentId", paymentId);
         model.addAttribute("paymentRef", paymentRef);
         model.addAttribute("succeeded", succeeded);
@@ -108,9 +107,9 @@ public class AccountPaymentController extends BaseController {
     }
 
     @RequestMapping(value = "done", method = RequestMethod.POST)
-    public String asyncPaymentTop(@RequestParam String paymentId, @RequestParam(required = false) String paymentRef,
-                                  @RequestParam boolean succeeded, @RequestParam(required = false) String failureDescription,
-                                  RedirectAttributes attributes, HttpServletRequest request) {
+    public String asyncPaymentDone(@RequestParam String paymentId, @RequestParam(required = false) String paymentRef,
+                                   @RequestParam boolean succeeded, @RequestParam(required = false) String failureDescription,
+                                   RedirectAttributes attributes, HttpServletRequest request) {
         AccountBillingRecord record = accountBillingBroker.fetchRecordByPayment(paymentId);
         Account account = record.getAccount();
         int typeOfCall = account.isEnabled() ? UPDATE : ENABLE;
@@ -125,7 +124,7 @@ public class AccountPaymentController extends BaseController {
     public String retryAccountPayment(Model model, @RequestParam(required = false) String errorDescription,
                                       @RequestParam(required = false) AccountPaymentType paymentType) {
         User user = userManagementService.load(getUserProfile().getUid());
-        Account account = user.getAccountAdministered();
+        Account account = user.getPrimaryAccount();
 
         if (account == null) {
             throw new AccessDeniedException("Must have an account before trying to retry payment");
@@ -145,7 +144,7 @@ public class AccountPaymentController extends BaseController {
     @RequestMapping(value = "change", method = RequestMethod.GET)
     public String changePaymentCard(Model model, @RequestParam(required = false) String accountUid,
                                     @RequestParam(required = false) String errorDescription) {
-        Account account = StringUtils.isEmpty(accountUid) ? accountBroker.loadUsersAccount(getUserProfile().getUid(), false) :
+        Account account = StringUtils.isEmpty(accountUid) ? accountBroker.loadPrimaryAccountForUser(getUserProfile().getUid(), false) :
                 accountBroker.loadAccount(accountUid);
 
         if (!StringUtils.isEmpty(errorDescription)) {
@@ -220,15 +219,17 @@ public class AccountPaymentController extends BaseController {
 
     private String handleSuccess(String paymentId, String paymentRef, int enableOrUpdateAccount,
                                  RedirectAttributes attributes, HttpServletRequest request) {
+        logger.info("handling successful payment, enable set to true = {}", enableOrUpdateAccount == ENABLE);
         AccountBillingRecord record = accountBillingBroker.fetchRecordByPayment(paymentId);
         Account account = record.getAccount();
         if (enableOrUpdateAccount == ENABLE) {
-            accountBroker.enableAccount(getUserProfile().getUid(), account.getUid(), paymentRef);
+            accountBroker.enableAccount(getUserProfile().getUid(), account.getUid(), paymentRef, true);
             addMessage(attributes, MessageType.SUCCESS, "account.signup.payment.done", request);
         } else if (enableOrUpdateAccount == UPDATE) {
             accountBroker.updateAccountPaymentReference(getUserProfile().getUid(), account.getUid(), paymentRef);
             addMessage(attributes, MessageType.SUCCESS, "account.payment.changed", request);
         }
+
         attributes.addAttribute("accountUid", account.getUid());
         return "redirect:/account/view";
     }
@@ -237,7 +238,7 @@ public class AccountPaymentController extends BaseController {
         logger.info("Error in payment, handling with description: {}", description);
         addMessage(attributes, MessageType.ERROR, "account.payment.failed", request);
         attributes.addFlashAttribute("errorDescription", description == null ? "" : description);
-        return enableOrUpdate == ENABLE ? "redirect:/account/payment/signup/retry" : "redirect:/account/payment/change";
+        return enableOrUpdate == ENABLE ? "redirect:/account/payment/retry" : "redirect:/account/payment/change";
     }
 
 }

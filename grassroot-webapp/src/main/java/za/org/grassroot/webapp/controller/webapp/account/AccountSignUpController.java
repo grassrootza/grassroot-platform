@@ -55,8 +55,8 @@ public class AccountSignUpController extends BaseController {
     public String startAccountSignup(Model model, @RequestParam(required = false) String accountType) {
         User user = userManagementService.load(getUserProfile().getUid());
         logger.info("accountType in parameter: {}", accountType);
-        if (user.getAccountAdministered() != null) {
-            return user.getAccountAdministered().isEnabled() ? "redirect:/account/type" : "redirect:/account";
+        if (user.getPrimaryAccount() != null) {
+            return user.getPrimaryAccount().isEnabled() ? "redirect:/account/type" : "redirect:/account";
         } else {
             model.addAttribute("user", user); // may be cached (and not reflect email) if use just getuserprofile
             model.addAttribute("accountTypes", Arrays.asList(AccountType.LIGHT, AccountType.STANDARD, AccountType.HEAVY));
@@ -73,10 +73,10 @@ public class AccountSignUpController extends BaseController {
     @GetMapping(value = "/type")
     public String changeAccountTypeOptions(Model model, @RequestParam(required = false) String accountUid) {
         Account account = !StringUtils.isEmpty(accountUid) ? accountBroker.loadAccount(accountUid)
-                : accountBroker.loadUsersAccount(getUserProfile().getUid(), false);
+                : accountBroker.loadPrimaryAccountForUser(getUserProfile().getUid(), false);
         User user = userManagementService.load(getUserProfile().getUid());
 
-        if (!user.getAccountAdministered().equals(account)) {
+        if (!user.getPrimaryAccount().equals(account)) {
             permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
         }
 
@@ -123,7 +123,7 @@ public class AccountSignUpController extends BaseController {
         Account account = accountBroker.loadAccount(accountUid);
         User user = userManagementService.load(getUserProfile().getUid());
 
-        if (!user.getAccountAdministered().equals(account)) {
+        if (!user.getPrimaryAccount().equals(account)) {
             permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
         }
 
@@ -155,7 +155,7 @@ public class AccountSignUpController extends BaseController {
 
         logger.info("Okay, removing this list of UIDs: {}", groupUids);
 
-        if (!user.getAccountAdministered().equals(account)) {
+        if (!user.getPrimaryAccount().equals(account)) {
             permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
         }
 
@@ -204,7 +204,7 @@ public class AccountSignUpController extends BaseController {
     public String sendContactMail(@RequestParam(required = false) String emailAddress, @RequestParam String message,
                                   RedirectAttributes attributes, HttpServletRequest request) {
         User user = userManagementService.load(getUserProfile().getUid());
-        Account account = accountBroker.loadUsersAccount(user.getUid(), false);
+        Account account = accountBroker.loadPrimaryAccountForUser(user.getUid(), false);
 
         if (!StringUtils.isEmpty(emailAddress)) {
             userManagementService.updateEmailAddress(user.getUid(), emailAddress);

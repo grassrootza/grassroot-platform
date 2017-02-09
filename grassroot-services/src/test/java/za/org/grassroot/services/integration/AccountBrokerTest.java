@@ -133,7 +133,7 @@ public class AccountBrokerTest {
 
         assertEquals(1, account.getAdministrators().size());
         assertEquals(testAdmin.getId(), account.getAdministrators().iterator().next().getId());
-        assertEquals(testAdmin.getAccountAdministered().getId(), account.getId());
+        assertEquals(testAdmin.getPrimaryAccount().getId(), account.getId());
         // note : role checking fails, appears to be for persistence reasons
     }
 
@@ -142,10 +142,10 @@ public class AccountBrokerTest {
         Account account = createTestAccount();
         assertNotEquals(null, account.getId());
         assertEquals(billingEmail, account.getBillingUser().getEmailAddress());
-        accountBroker.enableAccount(testAdmin.getUid(), account.getUid(), null);
+        accountBroker.enableAccount(testAdmin.getUid(), account.getUid(), null, true);
         assertTrue(account.isEnabled());
         assertEquals(testAdmin.getId(), account.getAdministrators().iterator().next().getId()); // note: equals on User as whole fails for persistence reasons
-        assertEquals(testAdmin.getAccountAdministered().getId(), account.getId()); // note: as above, full equals fails ... possibly within-test persistence issues
+        assertEquals(testAdmin.getPrimaryAccount().getId(), account.getId()); // note: as above, full equals fails ... possibly within-test persistence issues
         // assertTrue(testUser.getStandardRoles().contains(roleRepository.findOneByNameAndRoleType(accountAdminRole, Role.RoleType.STANDARD))); // as above
     }
 
@@ -158,8 +158,8 @@ public class AccountBrokerTest {
         assertEquals(account.getAdministrators().size(), 2);
         assertTrue(account.getAdministrators().contains(testAdmin));
         assertTrue(account.getAdministrators().contains(admin2));
-        assertEquals(account, testAdmin.getAccountAdministered());
-        assertEquals(account, admin2.getAccountAdministered());
+        assertEquals(account, testAdmin.getPrimaryAccount());
+        assertEquals(account, admin2.getPrimaryAccount());
         // assertTrue(testUser.getStandardRoles().contains(roleRepository.findOneByNameAndRoleType(accountAdminRole, Role.RoleType.STANDARD)));
     }
 
@@ -176,7 +176,7 @@ public class AccountBrokerTest {
         // todo: add tests to check it fails if not done by admin
         // todo: add lots more asserts, to make sure group added is the actual group
         Account account = createTestAccount();
-        accountBroker.enableAccount(testAdmin.getUid(), account.getUid(), null);
+        accountBroker.enableAccount(testAdmin.getUid(), account.getUid(), null, true);
         accountGroupBroker.addGroupToAccount(account.getUid(), testGroup.getUid(), testAdmin.getUid());
         assertTrue(testGroup.isPaidFor());
         assertNotNull(accountGroupBroker.findAccountForGroup(testGroup.getUid()));
@@ -198,9 +198,9 @@ public class AccountBrokerTest {
     public void shouldNotAllowDuplicatePaidGroups() {
         // todo: change this to try/catch, to handle it better
         Account account = createTestAccount();
-        accountBroker.enableAccount(testAdmin.getUid(), account.getUid(), null);
+        accountBroker.enableAccount(testAdmin.getUid(), account.getUid(), null, true);
         String account2Uid = accountBroker.createAccount(testUser.getUid(), accountName + "2", testAdmin.getUid(), AccountType.STANDARD, null, AccountBillingCycle.MONTHLY);
-        accountBroker.enableAccount(testAdmin.getUid(), account2Uid, null);
+        accountBroker.enableAccount(testAdmin.getUid(), account2Uid, null, true);
         accountGroupBroker.addGroupToAccount(account.getUid(), testGroup.getUid(), testAdmin.getUid());
         accountGroupBroker.addGroupToAccount(account2Uid, testGroup.getUid(), testAdmin.getUid());
     }

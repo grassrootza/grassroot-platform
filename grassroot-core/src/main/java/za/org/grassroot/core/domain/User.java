@@ -1,5 +1,6 @@
 package za.org.grassroot.core.domain;
 
+import org.hibernate.validator.constraints.Email;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import za.org.grassroot.core.enums.AlertPreference;
@@ -33,6 +34,7 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
     @Column(name = "phone_number", nullable = false, length = 20, unique = true)
     private String phoneNumber;
 
+    @Email
     @Column(name = "email_address")
     private String emailAddress;
 
@@ -93,16 +95,20 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
     @OneToMany
     @JoinTable(name = "user_roles",
             joinColumns = {@JoinColumn(name = "user_id", referencedColumnName = "id", unique = false)},
-            inverseJoinColumns = {@JoinColumn(name = "role_id", referencedColumnName = "id", unique = false)}
-    )
+            inverseJoinColumns = {@JoinColumn(name = "role_id", referencedColumnName = "id", unique = false)})
     private Set<Role> standardRoles = new HashSet<>();
 
     @OneToMany(mappedBy = "user")
     private Set<Membership> memberships = new HashSet<>();
 
-    @ManyToOne
-    @JoinColumn(name = "account_administered")
-    private Account accountAdministered;
+    // this is the Grassroot Extra account that the user themselves runs
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "primary_account")
+    private Account primaryAccount;
+
+    // note: keep an eye on this in profiling, make sure it is super lazy (i.e., join table not hit at all), else drop on this side
+    @ManyToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "administrators")
+    private Set<Account> accountsAdministered = new HashSet<>();
 
     private User() {
         // for JPA
@@ -206,12 +212,16 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
         return createdDateTime;
     }
 
-    public Account getAccountAdministered() {
-        return accountAdministered;
+    public Account getPrimaryAccount() {
+        return primaryAccount;
     }
 
-    public void setAccountAdministered(Account accountAdministered) {
-        this.accountAdministered = accountAdministered;
+    public void setPrimaryAccount(Account primaryAccount) {
+        this.primaryAccount = primaryAccount;
+        if (primaryAccount != null) { // since can reset to not having a primary account, but adding a null account causes an error
+            addAccountAdministered(primaryAccount);
+            primaryAccount.addAdministrator(this);
+        }
     }
 
     public Set<Membership> getMemberships() {
@@ -337,6 +347,44 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
     public void removeStandardRole(Role role) {
         Objects.requireNonNull(role);
         this.standardRoles.remove(role);
+    }
+
+    /*
+    We use the next set to handle Grassroot Extra accounts
+     */
+
+    public Set<Account> getAccountsAdministered() {
+        if (accountsAdministered == null) {
+            accountsAdministered = new HashSet<>();
+        }
+        return new HashSet<>(accountsAdministered);
+    }
+
+    public void setAccountsAdministered(Set<Account> accountsAdministered) {
+        Objects.requireNonNull(accountsAdministered);
+        this.accountsAdministered = accountsAdministered;
+    }
+
+    public void addAccountAdministered(Account account) {
+        Objects.requireNonNull(account);
+        if (accountsAdministered == null) {
+            accountsAdministered = new HashSet<>();
+        }
+        this.accountsAdministered.add(account);
+    }
+
+    public void removeAccountAdministered(Account account) {
+        Objects.requireNonNull(account);
+        if (accountsAdministered == null) {
+            throw new IllegalArgumentException("Cannot remove an account from admin set when set is empty");
+        }
+        this.accountsAdministered.remove(account);
+        // as above
+        account.removeAdministrator(this);
+    }
+
+    public boolean hasMultipleAccounts() {
+        return accountsAdministered != null && accountsAdministered.size() > 1;
     }
 
     /*

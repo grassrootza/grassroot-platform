@@ -27,6 +27,7 @@ import za.org.grassroot.webapp.model.web.PrivateGroupWrapper;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -58,7 +59,7 @@ public class AccountController extends BaseController {
     @RequestMapping(value = { "", "/" })
     public String paidAccountIndex(Model model, HttpServletRequest request) {
         User user = userManagementService.load(getUserProfile().getUid());
-        Account account = user.getAccountAdministered();
+        Account account = user.getPrimaryAccount();
         if (account == null && request.isUserInRole("ROLE_SYSTEM_ADMIN")) {
             return "redirect:/admin/accounts/home";
         } else if (account != null) {
@@ -70,10 +71,22 @@ public class AccountController extends BaseController {
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/view", method = RequestMethod.GET)
-    public String viewPaidAccount(Model model, @RequestParam String accountUid) {
-        Account account = accountBroker.loadAccount(accountUid);
+    public String viewPaidAccount(Model model, @RequestParam(required = false) String accountUid) {
+        User user = userManagementService.load(getUserProfile().getUid()); // make sure loads latest set of accounts
+        Account account = StringUtils.isEmpty(accountUid) ?
+                accountBroker.loadPrimaryAccountForUser(user.getUid(), true) :
+                accountBroker.loadAccount(accountUid);
         validateUserIsAdministrator(account);
         model.addAttribute("account", account);
+        model.addAttribute("user", user);
+
+        if (user.getAccountsAdministered().size() > 1) {
+            model.addAttribute("otherAccounts", user.getAccountsAdministered().stream()
+                    .filter(a -> !account.equals(a))
+                    .sorted(Comparator.comparing(Account::getName))
+                    .collect(Collectors.toList()));
+        }
+
         if (account.isEnabled()) {
             List<PaidGroup> currentlyPaidGroups = account.getPaidGroups().stream()
                     .filter(PaidGroup::isActive)
@@ -137,7 +150,7 @@ public class AccountController extends BaseController {
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/group/add/all", method = RequestMethod.GET)
     public String addAllGroupsToAccount(RedirectAttributes attributes, HttpServletRequest request) {
-        Account account = accountBroker.loadUsersAccount(getUserProfile().getUid(), false);
+        Account account = accountBroker.loadPrimaryAccountForUser(getUserProfile().getUid(), false);
         int groupsAdded = accountGroupBroker.addUserCreatedGroupsToAccount(account.getUid(), getUserProfile().getUid());
         if (groupsAdded > 0) {
             addMessage(attributes, MessageType.SUCCESS, "account.groups.many.added", new Object[] { groupsAdded }, request);
@@ -237,7 +250,7 @@ public class AccountController extends BaseController {
     /* quick helper method to do role & permission check */
     private void validateUserIsAdministrator(Account account) {
         User user = userManagementService.load(getUserProfile().getUid());
-        if (user.getAccountAdministered() == null || !user.getAccountAdministered().equals(account)) {
+        if (user.getPrimaryAccount() == null || !user.getPrimaryAccount().equals(account)) {
             permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
         }
     }

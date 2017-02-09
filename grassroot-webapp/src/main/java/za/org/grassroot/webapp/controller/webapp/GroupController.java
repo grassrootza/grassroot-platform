@@ -58,7 +58,7 @@ public class GroupController extends BaseController {
     private final GroupBroker groupBroker;
     private final TaskBroker taskBroker;
     private final GroupQueryBroker groupQueryBroker;
-    private final AccountGroupBroker accountBroker;
+    private final AccountGroupBroker accountGroupBroker;
     private final Validator groupWrapperValidator;
 
     @Autowired
@@ -66,7 +66,7 @@ public class GroupController extends BaseController {
         this.groupBroker = groupBroker;
         this.taskBroker = taskBroker;
         this.groupQueryBroker = groupQueryBroker;
-        this.accountBroker = accountBroker;
+        this.accountGroupBroker = accountBroker;
         this.groupWrapperValidator = groupWrapperValidator;
     }
 
@@ -130,9 +130,9 @@ public class GroupController extends BaseController {
         model.addAttribute("isPaidFor", isGroupPaidFor);
         model.addAttribute("canCreateSubGroup", isGroupPaidFor && userPermissions.contains(Permission.GROUP_PERMISSION_CREATE_SUBGROUP));
 
-        boolean userHasAccount = user.getAccountAdministered() != null;
+        boolean userHasAccount = user.getPrimaryAccount() != null;
         if (accountsActive && !isGroupPaidFor && userHasAccount) {
-            int groupsLeft = accountBroker.numberGroupsLeft(user.getAccountAdministered().getUid());
+            int groupsLeft = accountGroupBroker.numberGroupsLeft(user.getPrimaryAccount().getUid());
             model.addAttribute("canAddToAccount", groupsLeft > 0);
             model.addAttribute("accountGroupsLeft", groupsLeft);
         } else {
@@ -145,9 +145,9 @@ public class GroupController extends BaseController {
         }
 
         model.addAttribute("atGroupSizeLimit", !groupBroker.canAddMember(groupUid));
-        model.addAttribute("hasAccount", user.getAccountAdministered() != null);
-        model.addAttribute("canRemoveFromAccount", isGroupPaidFor && user.getAccountAdministered() != null &&
-                user.getAccountAdministered().equals(accountBroker.findAccountForGroup(groupUid)));
+        model.addAttribute("hasAccount", user.getPrimaryAccount() != null);
+        model.addAttribute("canRemoveFromAccount", isGroupPaidFor && user.getPrimaryAccount() != null &&
+                user.getPrimaryAccount().equals(accountGroupBroker.findAccountForGroup(groupUid)));
 
         return "group/view";
     }
@@ -261,9 +261,10 @@ public class GroupController extends BaseController {
      */
 
     @RequestMapping(value = "account/add")
-    public String addGroupToAccount(Model model, @RequestParam String groupUid, RedirectAttributes attributes, HttpServletRequest request) {
+    public String addGroupToAccount(@RequestParam String groupUid, @RequestParam(required = false) String accountUid,
+                                    RedirectAttributes attributes, HttpServletRequest request) {
         // todo : exception handling etc
-        accountBroker.addGroupToAccount(getUserProfile().getAccountAdministered().getUid(), groupUid, getUserProfile().getUid());
+        accountGroupBroker.addGroupToAccount(accountUid, groupUid, getUserProfile().getUid());
         addMessage(attributes, MessageType.SUCCESS, "group.account.added", request);
         attributes.addAttribute("groupUid", groupUid);
         return "redirect:/group/view";
@@ -271,7 +272,7 @@ public class GroupController extends BaseController {
 
     @RequestMapping(value = "account/remove")
     public String removeGroupFromAccount(Model model, @RequestParam String groupUid, RedirectAttributes attributes, HttpServletRequest request) {
-        accountBroker.removeGroupsFromAccount(getUserProfile().getAccountAdministered().getUid(), Collections.singleton(groupUid),
+        accountGroupBroker.removeGroupsFromAccount(getUserProfile().getPrimaryAccount().getUid(), Collections.singleton(groupUid),
                 getUserProfile().getUid());
         addMessage(attributes, MessageType.INFO, "group.account.removed", request);
         attributes.addAttribute("groupUid", groupUid);

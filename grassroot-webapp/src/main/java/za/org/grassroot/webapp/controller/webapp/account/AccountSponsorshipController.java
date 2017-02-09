@@ -91,17 +91,11 @@ public class AccountSponsorshipController extends BaseController {
         return "account/sponsor_respond";
     }
 
-    @RequestMapping(value = "/respond/approve/start", method = RequestMethod.GET)
-    public String approveSponsorRequestInitiate(Model model, @RequestParam String requestUid) {
-        sponsorshipBroker.approveRequestPendingPayment(requestUid);
-        return "account/sponsor_payment";
-    }
-
     @RequestMapping(value = "/respond/approve/done", method = RequestMethod.GET)
     public String approveSponsorRequestDone(Model model, @RequestParam String requestUid, @RequestParam String paymentRef) {
         AccountSponsorshipRequest request = sponsorshipBroker.load(requestUid);
         sponsorshipBroker.approveRequestPaymentComplete(requestUid);
-        accountBroker.enableAccount(request.getDestination().getUid(), request.getRequestor().getUid(), paymentRef);
+        accountBroker.enableAccount(request.getDestination().getUid(), request.getRequestor().getUid(), paymentRef, true);
         return "accont/sponsor_approved";
     }
 

@@ -4,7 +4,7 @@
 
 <head>
   <meta charset="UTF-8" />
-  <title>Disabled account</title>
+  <title>Sponsorship request</title>
 </head>
 
 <body>
@@ -28,32 +28,33 @@
         <div class="col-md-6 col-md-offset-3 col-sm-10 col-sm-offset-1 col-xs-12">
           <div class="form-group">
             <p class="grassroot-body" th:text="#{web.account.sponsorship.respond.intro(${request.requestor.getName()})}">
-              Hello you are responding to this thing
+              Hello you are responding to this request
             </p>
           </div>
 
-          <form th:replace="~{fragments :: payment-form(accountUid='abc', action='respond')}"></form>
+          <form th:replace="~{fragments :: payment-form(accountUid=${request.requestor.uid}, action=@{/account/payment/process})}"></form>
+
+          <div class="form-group">
+            <button type="button" data-toggle="modal" data-target="#denyModal" class="btn default-button full-width-button btn-xl">Deny request</button>
+          </div>
 
         </div>
-
       </div>
     </div>
   </section>
 
-  <div class="modal fade" id="closeAccModal" tabindex="-1" role="dialog" aria-labelledby="closeAccountLabel">
+  <div class="modal fade" id="denyModal" tabindex="-1" role="dialog" aria-labelledby="denyLabel">
     <div class="modal-dialog" role="document">
       <div class="modal-content">
         <div class="modal-header">
           <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-          <h4 class="modal-title" id="joiningModalLabel">Close account</h4>
+          <h4 class="modal-title" id="denyLabel">Deny request</h4>
         </div>
-        <form th:action="@{/account/close}" method="post">
+        <form th:action="@{respond/deny}" method="get">
+          <input type="hidden" name="requestUid" th:value="${request.uid}" />
           <div class="modal-body">
             <div class="form-group">
-              <p>Are you sure you want to close this account? If so, type "confirmed" below</p>
-            </div>
-            <div class="form-group">
-              <input type="text" name="confirmText" class="form-control input-lg" id="confirmText" />
+              <p>Are you sure you want to deny this request?</p>
             </div>
           </div>
           <div class="modal-footer">

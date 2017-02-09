@@ -51,7 +51,7 @@ public class MessagingController extends BaseController {
     @RequestMapping(value = "freeform")
     public String sendFreeForm(Model model, @RequestParam(required=false) String groupUid,
                                RedirectAttributes attributes, HttpServletRequest request) {
-        Account userAccount = accountBroker.loadUsersAccount(getUserProfile().getUid(), true);
+        Account userAccount = accountBroker.loadPrimaryAccountForUser(getUserProfile().getUid(), true);
 
         if (userAccount == null) {
             addMessage(attributes, MessageType.ERROR, "messaging.error.account.none", request);
@@ -75,7 +75,7 @@ public class MessagingController extends BaseController {
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "confirm", method = RequestMethod.GET)
     public String confirmFreeMsg(Model model, @RequestParam String groupUid, @RequestParam String message) {
-        Account account = accountBroker.loadUsersAccount(getUserProfile().getUid(), false);
+        Account account = accountBroker.loadPrimaryAccountForUser(getUserProfile().getUid(), false);
         Group group = groupBroker.load(groupUid);
         model.addAttribute("account", account);
         model.addAttribute("group", group);

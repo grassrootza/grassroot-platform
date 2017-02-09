@@ -61,13 +61,11 @@ public class Account implements GrassrootEntity {
     @Basic
     @Column(name = "visible", nullable = false)
     private boolean visible;
-    
-    /*
-    Doing this as one-to-many from account to users, rather than the inverse, because we are (much) more likely to have
-    an account with 2-3 administrators than to have a user administering two accounts. The latter is not a non-zero
-    possibility, but until/unless we have (very) strong user demand, catering to it is not worth many-to-many overheads
-     */
-    @OneToMany(mappedBy = "accountAdministered")
+
+    @ManyToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinTable(name = "account_admins",
+            joinColumns = {@JoinColumn(name = "account_id", referencedColumnName = "id", unique = false)},
+            inverseJoinColumns = {@JoinColumn(name = "user_id", referencedColumnName = "id", unique = false)} )
     private Set<User> administrators = new HashSet<>();
 
     @OneToMany(mappedBy = "account", fetch = FetchType.LAZY)
@@ -158,7 +156,7 @@ public class Account implements GrassrootEntity {
     Constructors
      */
 
-    private Account() {
+    protected Account() {
         // For JPA
     }
 
@@ -176,6 +174,7 @@ public class Account implements GrassrootEntity {
         
         this.createdByUser = createdByUser;
         this.enabledByUser = createdByUser;
+        this.administrators.add(createdByUser);
         
         // until the account payment has gone through, do not set it as enabled, but do leave it visible
         this.visible = true;
@@ -295,7 +294,8 @@ public class Account implements GrassrootEntity {
      */
 
     public void addAdministrator(User administrator) {
-        administrators.add(administrator);
+        // todo: figure out why Hibernate is unreliable in setting both sides of this
+        this.administrators.add(administrator);
     }
 
     public void removeAdministrator(User administrator) {

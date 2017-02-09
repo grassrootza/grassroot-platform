@@ -20,7 +20,6 @@ import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.AccountLimitExceededException;
 import za.org.grassroot.services.exception.AdminRemovalException;
-import za.org.grassroot.services.exception.UserAlreadyAdminException;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
@@ -61,16 +60,18 @@ public class AccountBrokerImpl implements AccountBroker {
 
     private final AccountGroupBroker accountGroupBroker;
     private final AccountBillingBroker accountBillingBroker;
+    private final AccountSponsorshipBroker sponsorshipBroker;
 
     @Autowired
     public AccountBrokerImpl(AccountRepository accountRepository, UserRepository userRepository, PermissionBroker permissionBroker,
-                             LogsAndNotificationsBroker logsAndNotificationsBroker, AccountGroupBroker accountGroupBroker,
+                             LogsAndNotificationsBroker logsAndNotificationsBroker, AccountGroupBroker accountGroupBroker, AccountSponsorshipBroker sponsorshipBroker,
                              AccountBillingBroker accountBillingBroker, Environment environment, ApplicationEventPublisher eventPublisher) {
         this.accountRepository = accountRepository;
         this.userRepository = userRepository;
         this.permissionBroker = permissionBroker;
         this.accountGroupBroker = accountGroupBroker;
         this.accountBillingBroker = accountBillingBroker;
+        this.sponsorshipBroker = sponsorshipBroker;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
         this.environment = environment;
         this.eventPublisher = eventPublisher;
@@ -100,9 +101,9 @@ public class AccountBrokerImpl implements AccountBroker {
 
     @Override
     @Transactional(readOnly = true)
-    public Account loadUsersAccount(String userUid, boolean loadEvenIfDisabled) {
+    public Account loadPrimaryAccountForUser(String userUid, boolean loadEvenIfDisabled) {
         User user = userRepository.findOneByUid(userUid);
-        Account account = user.getAccountAdministered();
+        Account account = user.getPrimaryAccount();
         return (account != null && (loadEvenIfDisabled || account.isEnabled())) ? account : null;
     }
 
@@ -124,7 +125,7 @@ public class AccountBrokerImpl implements AccountBroker {
         accountRepository.saveAndFlush(account);
 
         account.addAdministrator(billedUser);
-        billedUser.setAccountAdministered(account);
+        billedUser.setPrimaryAccount(account);
         permissionBroker.addSystemRole(billedUser, BaseRoles.ROLE_ACCOUNT_ADMIN);
 
         log.info("Created account, now looks like: " + account);
@@ -161,11 +162,11 @@ public class AccountBrokerImpl implements AccountBroker {
 
     @Override
     @Transactional
-    public void enableAccount(String userUid, String accountUid, String ongoingPaymentRef) {
+    public void enableAccount(String userUid, String accountUid, String ongoingPaymentRef, boolean ensureUserAddedToAdmin) {
         User user = userRepository.findOneByUid(userUid);
         Account account = accountRepository.findOneByUid(accountUid);
 
-        if (user.getAccountAdministered() == null || !user.getAccountAdministered().equals(account)) {
+        if (!account.getAdministrators().contains(user) && !sponsorshipBroker.hasUserBeenAskedToSponsor(userUid, accountUid)) {
             permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
         }
 
@@ -178,14 +179,27 @@ public class AccountBrokerImpl implements AccountBroker {
             account.setPaymentRef(ongoingPaymentRef);
         }
 
-        createAndStoreSingleAccountLog(new AccountLog.Builder(account)
+        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+        bundle.addLog(new AccountLog.Builder(account)
                 .accountLogType(AccountLogType.ACCOUNT_ENABLED)
                 .userUid(userUid)
                 .description("account enabled")
                 .build());
 
         // since the user that enables may be different to user that creates, and leaving out this role breaks a lot of UI, just make sure role is added (no regret)
-        permissionBroker.addSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
+        if (ensureUserAddedToAdmin && !account.equals(user.getPrimaryAccount())) {
+            account.addAdministrator(user);
+            user.addAccountAdministered(account);
+            permissionBroker.addSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
+
+            bundle.addLog(new AccountLog.Builder(account)
+                    .accountLogType(AccountLogType.ADMIN_ADDED)
+                    .userUid(userUid)
+                    .description("account admin added during enabling")
+                    .build());
+        }
+
+        logsAndNotificationsBroker.asyncStoreBundle(bundle);
     }
 
     @Override
@@ -194,7 +208,7 @@ public class AccountBrokerImpl implements AccountBroker {
         User user = userRepository.findOneByUid(administratorUid);
         Account account = accountRepository.findOneByUid(accountUid);
 
-        if (user.getAccountAdministered() == null || !user.getAccountAdministered().equals(account)) {
+        if (user.getPrimaryAccount() == null || !user.getPrimaryAccount().equals(account)) {
             permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
         }
 
@@ -213,7 +227,7 @@ public class AccountBrokerImpl implements AccountBroker {
 
         if (removeAdminRole) {
             for (User admin : account.getAdministrators()) {
-                admin.setAccountAdministered(null);
+                admin.setPrimaryAccount(null);
                 permissionBroker.removeSystemRole(admin, BaseRoles.ROLE_ACCOUNT_ADMIN);
             }
         }
@@ -241,13 +255,13 @@ public class AccountBrokerImpl implements AccountBroker {
         }
 
         User user = userRepository.findOneByUid(userUid);
-        if (!user.getAccountAdministered().equals(account)) {
+        if (!user.getPrimaryAccount().equals(account)) {
             permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
         }
 
         account.setVisible(false);
         for (User admin : account.getAdministrators()) {
-            admin.setAccountAdministered(null);
+            admin.setPrimaryAccount(null);
             permissionBroker.removeSystemRole(admin, BaseRoles.ROLE_ACCOUNT_ADMIN);
         }
 
@@ -373,13 +387,13 @@ public class AccountBrokerImpl implements AccountBroker {
             permissionBroker.validateSystemRole(changingUser, BaseRoles.ROLE_SYSTEM_ADMIN);
         }
 
-        if (administrator.getAccountAdministered() != null) {
-            throw new UserAlreadyAdminException();
-        }
-
         account.addAdministrator(administrator);
-        administrator.setAccountAdministered(account);
+        administrator.addAccountAdministered(account);
         permissionBroker.addSystemRole(administrator, BaseRoles.ROLE_ACCOUNT_ADMIN);
+
+        if (administrator.getPrimaryAccount() == null) {
+            administrator.setPrimaryAccount(account);
+        }
 
         createAndStoreSingleAccountLog(new AccountLog.Builder(account)
                 .userUid(userUid)
@@ -411,8 +425,11 @@ public class AccountBrokerImpl implements AccountBroker {
         }
 
         account.removeAdministrator(administrator);
-        administrator.setAccountAdministered(null);
-        permissionBroker.removeSystemRole(administrator, BaseRoles.ROLE_ACCOUNT_ADMIN);
+        administrator.removeAccountAdministered(account);
+        if (administrator.getAccountsAdministered().isEmpty()) {
+            administrator.setPrimaryAccount(null);
+            permissionBroker.removeSystemRole(administrator, BaseRoles.ROLE_ACCOUNT_ADMIN);
+        }
 
         createAndStoreSingleAccountLog(new AccountLog.Builder(account)
                 .userUid(userUid)
@@ -518,6 +535,6 @@ public class AccountBrokerImpl implements AccountBroker {
     private void createAndStoreSingleAccountLog(AccountLog accountLog) {
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
         bundle.addLog(accountLog);
-        logsAndNotificationsBroker.storeBundle(bundle);
+        logsAndNotificationsBroker.asyncStoreBundle(bundle);
     }
 }

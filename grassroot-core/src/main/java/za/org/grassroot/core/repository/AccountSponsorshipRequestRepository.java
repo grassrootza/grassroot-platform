@@ -16,6 +16,8 @@ public interface AccountSponsorshipRequestRepository extends JpaRepository<Accou
 
     AccountSponsorshipRequest findOneByUid(String uid);
 
+    int countByRequestorAndDestinationAndStatus(Account requestor, User destination, AssocRequestStatus status);
+
     List<AccountSponsorshipRequest> findByDestinationAndStatus(User destination, AssocRequestStatus status, Sort sort);
 
     List<AccountSponsorshipRequest> findByRequestorAndStatus(Account requestor, AssocRequestStatus status, Sort sort);

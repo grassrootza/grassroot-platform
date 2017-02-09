@@ -30,5 +30,7 @@ dependencies {
     compile group: 'net.sf.ehcache', name: 'ehcache', version:'2.10.2.2.21'
     runtime group: 'org.postgresql', name: 'postgresql', version:'9.4.1210'
 
+    compile group: 'org.hibernate', name: 'hibernate-validator', version: '5.4.0.Final'
+
     testCompile group: 'org.springframework', name: 'spring-orm', version:libs.springVersion // else tests fail on dependency issues
 }

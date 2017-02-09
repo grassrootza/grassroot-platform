@@ -3,6 +3,7 @@ package za.org.grassroot.core.repository;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.annotation.Rollback;
@@ -37,24 +38,24 @@ import static org.junit.Assert.*;
 @ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
 public class AccountRepositoryTest {
 
-    private static final org.slf4j.Logger log = LoggerFactory.getLogger(AccountRepositoryTest.class);
+    private static final Logger log = LoggerFactory.getLogger(AccountRepositoryTest.class);
 
     private static final String accountName = "Paying institution";
     private static final String billingEmail = "accounts@institution.com";
 
     @Autowired
-    AccountRepository accountRepository;
+    private AccountRepository accountRepository;
 
     @Autowired
-    UserRepository userRepository;
+    private UserRepository userRepository;
 
     @Autowired
-    GroupRepository groupRepository;
+    private GroupRepository groupRepository;
 
     @Autowired
-    PaidGroupRepository paidGroupRepository;
+    private PaidGroupRepository paidGroupRepository;
 
-    User testUser;
+    private User testUser;
 
     @Before
     public void setUp() throws Exception {
@@ -76,7 +77,6 @@ public class AccountRepositoryTest {
 
     @Test
     public void shouldCreateAndSaveAccount() {
-
         assertThat(accountRepository.count(), is(0L));
 
         Account account = new Account(testUser, accountName, AccountType.STANDARD, testUser, null, AccountBillingCycle.MONTHLY);
@@ -94,8 +94,46 @@ public class AccountRepositoryTest {
     }
 
     @Test
-    public void shouldSetBillingAddress() {
+    public void shouldHandleAccountAdmins() {
+        assertThat(accountRepository.count(), is (0L));
+        User testUser2 = userRepository.save(new User("0701112345"));
 
+        Account account = accountRepository.save(new Account(testUser, accountName, AccountType.STANDARD, testUser, null, AccountBillingCycle.MONTHLY));
+        testUser.setPrimaryAccount(account);
+        testUser = userRepository.save(testUser);
+
+        assertNotNull(account.getId());
+        assertTrue(testUser.getAccountsAdministered().contains(account));
+        assertTrue(account.getAdministrators().contains(testUser));
+        assertFalse(testUser2.getAccountsAdministered().contains(account));
+        assertFalse(account.getAdministrators().contains(testUser2));
+
+        Account account2 = accountRepository.save(new Account(testUser2, accountName + "2", AccountType.HEAVY, testUser2, null, AccountBillingCycle.ANNUAL));
+        testUser2.setPrimaryAccount(account2);
+        testUser2 = userRepository.save(testUser2);
+
+        account2.addAdministrator(testUser);
+        account2 = accountRepository.save(account2);
+        testUser.addAccountAdministered(account2);
+        testUser = userRepository.save(testUser);
+
+        assertNotNull(account2.getId());
+        assertTrue(testUser2.getAccountsAdministered().contains(account2));
+        assertTrue(account2.getAdministrators().contains(testUser2));
+        assertTrue(testUser.getAccountsAdministered().contains(account2));
+        assertTrue(account2.getAdministrators().contains(testUser));
+
+        account2.removeAdministrator(testUser);
+        testUser.removeAccountAdministered(account2);
+        account2 = accountRepository.save(account2);
+        testUser = userRepository.save(testUser);
+
+        assertFalse(testUser.getAccountsAdministered().contains(account2));
+        assertFalse(account2.getAdministrators().contains(testUser));
+    }
+
+    @Test
+    public void shouldSetBillingAddress() {
         assertThat(accountRepository.count(), is(0L));
 
         Account account = new Account(testUser, accountName, AccountType.STANDARD, testUser, null, AccountBillingCycle.MONTHLY);
@@ -120,7 +158,6 @@ public class AccountRepositoryTest {
     @Test
     @Rollback
     public void shouldFindByAccountName() {
-
         assertThat(accountRepository.count(), is(0L));
         Account account = new Account(testUser, accountName, AccountType.STANDARD, testUser, null, AccountBillingCycle.MONTHLY);
         account = accountRepository.save(account);
@@ -129,7 +166,6 @@ public class AccountRepositoryTest {
         Account accountFromDb = accountList.get(0);
         assertNotNull(accountFromDb);
         assertEquals(accountName, accountFromDb.getAccountName());
-
     }
 
     @Test
@@ -153,7 +189,6 @@ public class AccountRepositoryTest {
     @Test
     @Rollback
     public void shouldDisable() {
-
         assertThat(accountRepository.count(), is(0L));
         Account account = new Account(testUser, accountName, AccountType.STANDARD, testUser, null, AccountBillingCycle.MONTHLY);
         accountRepository.save(account);
@@ -207,7 +242,7 @@ public class AccountRepositoryTest {
         account.addAdministrator(testAdmin);
         accountRepository.save(account);
 
-        testAdmin.setAccountAdministered(account);
+        testAdmin.setPrimaryAccount(account);
         userRepository.save(testAdmin);
 
         Account accountFromDbByName = accountRepository.findByAccountName(accountName).get(0);
