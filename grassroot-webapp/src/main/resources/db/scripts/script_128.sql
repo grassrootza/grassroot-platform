@@ -22,6 +22,8 @@ alter table association_request_event rename constraint fk_group_join_req_event_
 
 alter table association_request_event add column request_uid varchar(50);
 alter table association_request_event add column request_type varchar(50);
+alter table association_request_event add column aux_description varchar(255);
+alter table association_request_event alter column user_id drop not null;
 
 update association_request_event set request_uid = request.uid from group_join_request as request where request_id = request.id;
 alter table association_request_event alter column request_uid set not null;

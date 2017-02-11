@@ -4,8 +4,10 @@ package za.org.grassroot.core.domain.association;
 import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.AssociationRequestType;
+import za.org.grassroot.core.util.DateTimeUtil;
 
 import javax.persistence.*;
+import java.time.ZonedDateTime;
 import java.util.Objects;
 
 /**
@@ -45,6 +47,8 @@ public class AccountSponsorshipRequest extends AbstractAssociationRequest<Accoun
     }
 
     public AssociationRequestType getType() { return AssociationRequestType.ACCOUNT_SPONSOR; }
+
+    public ZonedDateTime getCreationTimeAtSAST() { return creationTime.atZone(DateTimeUtil.getSAST()); }
 
     @Override
     public boolean equals(Object o) {

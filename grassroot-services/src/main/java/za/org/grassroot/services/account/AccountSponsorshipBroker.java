@@ -2,7 +2,6 @@ package za.org.grassroot.services.account;
 
 import org.springframework.data.domain.Sort;
 import za.org.grassroot.core.domain.association.AccountSponsorshipRequest;
-import za.org.grassroot.core.enums.AssocRequestStatus;
 
 import java.util.List;
 
@@ -11,26 +10,26 @@ import java.util.List;
  */
 public interface AccountSponsorshipBroker {
 
+    AccountSponsorshipRequest load(String requestUid);
+
     void openSponsorshipRequest(String openingUserUid, String accountUid, String destinationUserUid, String messageToUser);
 
-    AccountSponsorshipRequest load(String requestUid);
+    void markRequestAsResponded(String requestUid);
 
     void denySponsorshipRequest(String requestUid);
 
-    void approveRequestPaymentComplete(String requestUid); // requested sponsor has completed payment
-
     boolean hasUserBeenAskedToSponsor(String userUid, String accountUid);
+
+    // if user is the same as the destination of a request, the request will be marked approved
+    void closeRequestsAndMarkApproved(String userUid, String accountUid);
 
     /*
     In case user approves, but then payment fails / they back out
      */
-    void abortSponsorshipRequest(String requestUid);
+    void abortAndCleanSponsorshipRequests();
 
-    List<AccountSponsorshipRequest> requestsForUser(String userUid, AssocRequestStatus status, Sort sort);
+    boolean accountHasOpenRequests(String accountUid);
 
-    List<AccountSponsorshipRequest> requestsForAccount(String accountUid, AssocRequestStatus status, Sort sort);
-
-    // e.g., if account pays for itself in interim
-    void closeOutstandingRequestsForAccount(String userUid, String accountUid);
+    List<AccountSponsorshipRequest> openRequestsForAccount(String accountUid, Sort sort);
 
 }

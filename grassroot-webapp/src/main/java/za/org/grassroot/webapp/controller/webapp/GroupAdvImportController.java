@@ -36,11 +36,14 @@ public class GroupAdvImportController extends BaseController {
 
     private static final Logger logger = LoggerFactory.getLogger(GroupAdvImportController.class);
 
-    @Autowired
-    DataImportBroker dataImportBroker;
+    private final DataImportBroker dataImportBroker;
+    private final GroupBroker groupBroker;
 
     @Autowired
-    GroupBroker groupBroker;
+    public GroupAdvImportController(DataImportBroker dataImportBroker, GroupBroker groupBroker) {
+        this.dataImportBroker = dataImportBroker;
+        this.groupBroker = groupBroker;
+    }
 
     @ModelAttribute("groupWrapper")
     public GroupWrapper getGroupWrapper() {
@@ -57,12 +60,11 @@ public class GroupAdvImportController extends BaseController {
         permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER);
 
         model.addAttribute("groupUid", groupUid);
-        return "/group/bulk_import_extra";
+        return "group/bulk_import_extra";
     }
 
     @RequestMapping(value = "analyze", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    public @ResponseBody
-    ExcelSheetAnalysis analyzeExcelFile(@ModelAttribute MultipartFile file) {
+    public @ResponseBody ExcelSheetAnalysis analyzeExcelFile(@ModelAttribute MultipartFile file) {
         logger.info("Analyzing file ... with name = " + file.getName());
         try {
             File tempStore = File.createTempFile("mbrs", "xls");
@@ -92,7 +94,7 @@ public class GroupAdvImportController extends BaseController {
         model.addAttribute("groupUid", groupUid);
         model.addAttribute("groupWrapper", groupWrapper);
 
-        return "/group/bulk_import_confirm";
+        return "group/bulk_import_confirm";
     }
 
     @PostMapping(value = "done")

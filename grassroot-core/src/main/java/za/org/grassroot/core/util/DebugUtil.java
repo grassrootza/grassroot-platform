@@ -14,7 +14,7 @@ public class DebugUtil {
     private static final Logger logger = LoggerFactory.getLogger(DebugUtil.class);
 
     private static final boolean transactionDebugging = true;
-    private static final boolean verboseTransactionDebugging = true;
+    private static final boolean verboseTransactionDebugging = false;
 
     private static void showTransactionStatus(String message) {
         logger.info(((transactionActive()) ? "[+] " : "[-] ") + message);

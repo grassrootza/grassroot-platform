@@ -162,7 +162,10 @@ public class AccountBrokerImpl implements AccountBroker {
 
     @Override
     @Transactional
-    public void enableAccount(String userUid, String accountUid, String ongoingPaymentRef, boolean ensureUserAddedToAdmin) {
+    public void enableAccount(String userUid, String accountUid, String ongoingPaymentRef, boolean ensureUserAddedToAdmin, boolean setBillingUser) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(accountUid);
+
         User user = userRepository.findOneByUid(userUid);
         Account account = accountRepository.findOneByUid(accountUid);
 
@@ -177,6 +180,10 @@ public class AccountBrokerImpl implements AccountBroker {
 
         if (!StringUtils.isEmpty(ongoingPaymentRef)) {
             account.setPaymentRef(ongoingPaymentRef);
+        }
+
+        if (setBillingUser && !account.getBillingUser().equals(user)) {
+            account.setBillingUser(user);
         }
 
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();

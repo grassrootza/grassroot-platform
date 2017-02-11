@@ -8,6 +8,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.integration.payments.PaymentBroker;
 import za.org.grassroot.services.account.AccountBillingBroker;
+import za.org.grassroot.services.account.AccountSponsorshipBroker;
 
 /**
  * Created by luke on 2016/10/25.
@@ -20,11 +21,13 @@ public class ScheduledAccountTasks {
 
     private final AccountBillingBroker accountBillingBroker;
     private final PaymentBroker paymentBroker;
+    private final AccountSponsorshipBroker sponsorshipBroker;
 
     @Autowired
-    public ScheduledAccountTasks(AccountBillingBroker accountBillingBroker, PaymentBroker paymentBroker) {
+    public ScheduledAccountTasks(AccountBillingBroker accountBillingBroker, PaymentBroker paymentBroker, AccountSponsorshipBroker sponsorshipBroker) {
         this.accountBillingBroker = accountBillingBroker;
         this.paymentBroker = paymentBroker;
+        this.sponsorshipBroker = sponsorshipBroker;
     }
 
     @Scheduled(cron = "${grassroot.billing.cron.trigger: 0 0 9 * * ?}")
@@ -39,12 +42,10 @@ public class ScheduledAccountTasks {
         paymentBroker.processAccountPaymentsOutstanding();
     }
 
+    @Scheduled(cron = "${grassroot.payments.cron.trigger: 0 0 10 * * ?}")
     public void cleanupUnansweredSponsorship() {
-
-    }
-
-    public void processPendingPaymentSponsorships() {
-
+        logger.info("closing unanswered sponsorship requests & reminding incomplete ones ...");
+        sponsorshipBroker.abortAndCleanSponsorshipRequests();
     }
 
 }

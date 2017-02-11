@@ -5,5 +5,6 @@ public enum AssocRequestStatus {
     APPROVED,
     DECLINED,
     CANCELLED,
+    VIEWED,
     CLOSED
 }

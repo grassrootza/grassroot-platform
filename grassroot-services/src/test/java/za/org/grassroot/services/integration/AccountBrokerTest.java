@@ -54,10 +54,7 @@ public class AccountBrokerTest {
 
     private final String accountName = "testAccount";
     private final String billingEmail = "billingemail@cso.org";
-    private final String groupName = "testGroup";
-    private final String userNumber = "0605550000";
-    private final String accountAdminNumber = "0605550011";
-    
+
     private User testUser;
     private User testAdmin;
     private Group testGroup;
@@ -66,13 +63,16 @@ public class AccountBrokerTest {
     public void setUp() {
         setAccountFields();
 
+        String userNumber = "0605550000";
         testUser = new User(userNumber, "test user");
         userRepository.save(testUser);
 
+        String accountAdminNumber = "0605550011";
         testAdmin = new User(accountAdminNumber);
         testAdmin.setEmailAddress(billingEmail);
         userRepository.save(testAdmin);
 
+        String groupName = "testGroup";
         testGroup = groupRepository.save(new Group(groupName, testUser));
 
         Role systemAdmin = new Role(BaseRoles.ROLE_SYSTEM_ADMIN, null);
@@ -112,9 +112,8 @@ public class AccountBrokerTest {
     }
 
     private Account createTestAccount() {
-        String accountUid = accountBroker.createAccount(testUser.getUid(), accountName, testAdmin.getUid(), AccountType.STANDARD, null, AccountBillingCycle.MONTHLY);
-        Account account = accountBroker.loadAccount(accountUid);
-        return account;
+        String accountUid = accountBroker.createAccount(testAdmin.getUid(), accountName, testAdmin.getUid(), AccountType.STANDARD, null, AccountBillingCycle.MONTHLY);
+        return accountBroker.loadAccount(accountUid);
     }
 
     @Test
@@ -142,7 +141,7 @@ public class AccountBrokerTest {
         Account account = createTestAccount();
         assertNotEquals(null, account.getId());
         assertEquals(billingEmail, account.getBillingUser().getEmailAddress());
-        accountBroker.enableAccount(testAdmin.getUid(), account.getUid(), null, true);
+        accountBroker.enableAccount(testAdmin.getUid(), account.getUid(), null, true, true);
         assertTrue(account.isEnabled());
         assertEquals(testAdmin.getId(), account.getAdministrators().iterator().next().getId()); // note: equals on User as whole fails for persistence reasons
         assertEquals(testAdmin.getPrimaryAccount().getId(), account.getId()); // note: as above, full equals fails ... possibly within-test persistence issues
@@ -176,7 +175,7 @@ public class AccountBrokerTest {
         // todo: add tests to check it fails if not done by admin
         // todo: add lots more asserts, to make sure group added is the actual group
         Account account = createTestAccount();
-        accountBroker.enableAccount(testAdmin.getUid(), account.getUid(), null, true);
+        accountBroker.enableAccount(testAdmin.getUid(), account.getUid(), null, true, true);
         accountGroupBroker.addGroupToAccount(account.getUid(), testGroup.getUid(), testAdmin.getUid());
         assertTrue(testGroup.isPaidFor());
         assertNotNull(accountGroupBroker.findAccountForGroup(testGroup.getUid()));
@@ -198,9 +197,9 @@ public class AccountBrokerTest {
     public void shouldNotAllowDuplicatePaidGroups() {
         // todo: change this to try/catch, to handle it better
         Account account = createTestAccount();
-        accountBroker.enableAccount(testAdmin.getUid(), account.getUid(), null, true);
+        accountBroker.enableAccount(testAdmin.getUid(), account.getUid(), null, true, true);
         String account2Uid = accountBroker.createAccount(testUser.getUid(), accountName + "2", testAdmin.getUid(), AccountType.STANDARD, null, AccountBillingCycle.MONTHLY);
-        accountBroker.enableAccount(testAdmin.getUid(), account2Uid, null, true);
+        accountBroker.enableAccount(testAdmin.getUid(), account2Uid, null, true, true);
         accountGroupBroker.addGroupToAccount(account.getUid(), testGroup.getUid(), testAdmin.getUid());
         accountGroupBroker.addGroupToAccount(account2Uid, testGroup.getUid(), testAdmin.getUid());
     }

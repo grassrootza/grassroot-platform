@@ -162,7 +162,7 @@ public class AccountRestController {
 
         PaymentResponse response = paymentBroker.checkMobilePaymentResult(paymentId);
         if (response != null && response.isSuccessful()) {
-            accountBroker.enableAccount(user.getUid(), accountUid, response.getReference(), true);
+            accountBroker.enableAccount(user.getUid(), accountUid, response.getReference(), true, true);
             return RestUtil.okayResponseWithData(RestMessage.ACCOUNT_ENABLED, new AccountWrapper(account, user,
                     account.getMaxNumberGroups(), account.getFreeFormMessages())); // by definition a newly enabled account has full quota
         } else {

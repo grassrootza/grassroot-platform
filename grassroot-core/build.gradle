@@ -31,6 +31,7 @@ dependencies {
     runtime group: 'org.postgresql', name: 'postgresql', version:'9.4.1210'
 
     compile group: 'org.hibernate', name: 'hibernate-validator', version: '5.4.0.Final'
+    compile group: 'org.glassfish.web', name: 'javax.el', version: '2.2.6'
 
     testCompile group: 'org.springframework', name: 'spring-orm', version:libs.springVersion // else tests fail on dependency issues
 }

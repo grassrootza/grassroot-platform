@@ -26,6 +26,7 @@ import za.org.grassroot.integration.payments.PaymentResponse;
 import za.org.grassroot.integration.payments.PaymentResultType;
 import za.org.grassroot.services.account.AccountBillingBroker;
 import za.org.grassroot.services.account.AccountBroker;
+import za.org.grassroot.services.account.AccountSponsorshipBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 
 import javax.servlet.http.HttpServletRequest;
@@ -54,16 +55,18 @@ public class AccountPaymentController extends BaseController {
     @Value("${grassroot.payments.email.address:payments@grassroot.org.za}")
     private String paymentsEmail;
 
-    private AccountBroker accountBroker;
-    private AccountBillingBroker accountBillingBroker;
-    private PaymentBroker paymentBroker;
+    private final AccountBroker accountBroker;
+    private final AccountBillingBroker accountBillingBroker;
+    private final PaymentBroker paymentBroker;
+    private final AccountSponsorshipBroker sponsorshipBroker;
 
     @Autowired
     public AccountPaymentController(AccountBroker accountBroker, AccountBillingBroker accountBillingBroker,
-                                    PaymentBroker paymentBroker) {
+                                    PaymentBroker paymentBroker, AccountSponsorshipBroker sponsorshipBroker) {
         this.accountBroker = accountBroker;
         this.accountBillingBroker = accountBillingBroker;
         this.paymentBroker = paymentBroker;
+        this.sponsorshipBroker = sponsorshipBroker;
     }
 
     @RequestMapping(value = "create", method = RequestMethod.POST)
@@ -223,7 +226,8 @@ public class AccountPaymentController extends BaseController {
         AccountBillingRecord record = accountBillingBroker.fetchRecordByPayment(paymentId);
         Account account = record.getAccount();
         if (enableOrUpdateAccount == ENABLE) {
-            accountBroker.enableAccount(getUserProfile().getUid(), account.getUid(), paymentRef, true);
+            accountBroker.enableAccount(getUserProfile().getUid(), account.getUid(), paymentRef, true, true);
+            sponsorshipBroker.closeRequestsAndMarkApproved(getUserProfile().getUid(), account.getUid());
             addMessage(attributes, MessageType.SUCCESS, "account.signup.payment.done", request);
         } else if (enableOrUpdateAccount == UPDATE) {
             accountBroker.updateAccountPaymentReference(getUserProfile().getUid(), account.getUid(), paymentRef);

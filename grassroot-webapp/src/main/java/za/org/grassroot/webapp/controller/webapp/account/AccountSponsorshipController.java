@@ -38,9 +38,15 @@ public class AccountSponsorshipController extends BaseController {
     }
 
     @RequestMapping(value = "/request", method = RequestMethod.GET)
-    public String initiateSponsorRequest(Model model, @RequestParam(required = false) String accountUid) {
-        Account account = accountBroker.loadAccount(accountUid);
+    public String initiateSponsorRequest(Model model, @RequestParam(required = false) String accountUid,
+                                         @RequestParam(required = false) String requestUid) {
+        Account account = !StringUtils.isEmpty(accountUid) ? accountBroker.loadAccount(accountUid) :
+                accountBroker.loadPrimaryAccountForUser(getUserProfile().getUid(), true);
         model.addAttribute("account", account);
+        model.addAttribute("resendExisting", !StringUtils.isEmpty(requestUid));
+        if (!StringUtils.isEmpty(requestUid)) {
+            model.addAttribute("request", sponsorshipBroker.load(requestUid));
+        }
         return "account/sponsor_request";
     }
 
@@ -82,21 +88,14 @@ public class AccountSponsorshipController extends BaseController {
         return "account/sponsor_request";
     }
 
-    // confirm approval, select payment method, hand this to payments, and return via a parameter
+    // confirm approval, select payment method, hand this to payments, which then handles account enabling & closing sponsorships
     @RequestMapping(value = "/respond", method = RequestMethod.GET)
     public String respondSponsorRequest(Model model, @RequestParam String requestUid) {
         AccountSponsorshipRequest request = sponsorshipBroker.load(requestUid);
         model.addAttribute("request", request);
         model.addAttribute("method", PaymentMethod.makeEmpty());
+        sponsorshipBroker.markRequestAsResponded(requestUid);
         return "account/sponsor_respond";
-    }
-
-    @RequestMapping(value = "/respond/approve/done", method = RequestMethod.GET)
-    public String approveSponsorRequestDone(Model model, @RequestParam String requestUid, @RequestParam String paymentRef) {
-        AccountSponsorshipRequest request = sponsorshipBroker.load(requestUid);
-        sponsorshipBroker.approveRequestPaymentComplete(requestUid);
-        accountBroker.enableAccount(request.getDestination().getUid(), request.getRequestor().getUid(), paymentRef, true);
-        return "accont/sponsor_approved";
     }
 
     @RequestMapping(value = "/respond/deny", method = RequestMethod.GET)

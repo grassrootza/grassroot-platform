@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.FileSystemResource;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -17,6 +18,7 @@ import za.org.grassroot.integration.PdfGeneratingService;
 import za.org.grassroot.services.account.AccountBillingBroker;
 import za.org.grassroot.services.account.AccountBroker;
 import za.org.grassroot.services.account.AccountGroupBroker;
+import za.org.grassroot.services.account.AccountSponsorshipBroker;
 import za.org.grassroot.services.exception.AdminRemovalException;
 import za.org.grassroot.services.exception.GroupAlreadyPaidForException;
 import za.org.grassroot.services.exception.NoSuchUserException;
@@ -41,17 +43,19 @@ public class AccountController extends BaseController {
 
     private static final Logger log = LoggerFactory.getLogger(AccountController.class);
 
-    private AccountBroker accountBroker;
-    private AccountBillingBroker accountBillingBroker;
-    private AccountGroupBroker accountGroupBroker;
-    private PdfGeneratingService pdfGeneratingService;
+    private final AccountBroker accountBroker;
+    private final AccountBillingBroker accountBillingBroker;
+    private final AccountGroupBroker accountGroupBroker;
+    private final AccountSponsorshipBroker sponsorshipBroker;
+    private final PdfGeneratingService pdfGeneratingService;
 
     @Autowired
     public AccountController(AccountBroker accountBroker, AccountGroupBroker accountGroupBroker, AccountBillingBroker accountBillingBroker,
-                             PdfGeneratingService pdfGeneratingService) {
+                             AccountSponsorshipBroker sponsorshipBroker, PdfGeneratingService pdfGeneratingService) {
         this.accountBroker = accountBroker;
         this.accountGroupBroker = accountGroupBroker;
         this.accountBillingBroker = accountBillingBroker;
+        this.sponsorshipBroker = sponsorshipBroker;
         this.pdfGeneratingService = pdfGeneratingService;
     }
 
@@ -60,6 +64,7 @@ public class AccountController extends BaseController {
     public String paidAccountIndex(Model model, HttpServletRequest request) {
         User user = userManagementService.load(getUserProfile().getUid());
         Account account = user.getPrimaryAccount();
+        // todo : make this list accounts instead
         if (account == null && request.isUserInRole("ROLE_SYSTEM_ADMIN")) {
             return "redirect:/admin/accounts/home";
         } else if (account != null) {
@@ -100,6 +105,9 @@ public class AccountController extends BaseController {
             return "account/view";
         } else {
             model.addAttribute("needEmailAddress", StringUtils.isEmpty(getUserProfile().getEmailAddress()));
+            model.addAttribute("hasRequestedSponsorship", sponsorshipBroker.accountHasOpenRequests(account.getUid()));
+            model.addAttribute("openSponsorshipRequests", sponsorshipBroker.openRequestsForAccount(account.getUid(),
+                    new Sort(Sort.Direction.DESC, "creationTime")));
             return "account/disabled";
         }
     }

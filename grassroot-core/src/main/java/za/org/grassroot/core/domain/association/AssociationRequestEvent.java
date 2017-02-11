@@ -26,8 +26,9 @@ public class AssociationRequestEvent {
     @Column(name = "uid", nullable = false, length = 50)
     private String uid;
 
+    // must let this be null since sometimes the system generates an vent
     @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false, foreignKey = @ForeignKey(name = "fk_assoc_req_event_user"))
+    @JoinColumn(name = "user_id", foreignKey = @ForeignKey(name = "fk_assoc_req_event_user"))
     private User user;
 
     @Column(name = "type", nullable = false, length = 50)
@@ -44,6 +45,9 @@ public class AssociationRequestEvent {
     @Enumerated(EnumType.STRING)
     private AssociationRequestType requestType;
 
+    @Column(name = "aux_description")
+    private String auxDescription;
+
     private AssociationRequestEvent() {
         // for JPA
     }
@@ -55,7 +59,7 @@ public class AssociationRequestEvent {
         this.type = Objects.requireNonNull(type);
         this.requestUid = request.getUid();
         this.requestType = request.getType();
-        this.user = Objects.requireNonNull(user);
+        this.user = user;
         this.occurrenceTime = Objects.requireNonNull(occurrenceTime);
     }
 
@@ -82,6 +86,10 @@ public class AssociationRequestEvent {
     public String getRequestUid() { return requestUid; }
 
     public AssociationRequestType getRequestType() { return requestType; }
+
+    public void setAuxDescription(String auxDescription) { this.auxDescription = auxDescription; }
+
+    public String getAuxDescription() { return auxDescription; }
 
     @Override
     public boolean equals(Object o) {

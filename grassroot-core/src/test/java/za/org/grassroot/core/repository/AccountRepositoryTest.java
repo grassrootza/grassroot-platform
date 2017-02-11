@@ -24,7 +24,9 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
 
@@ -247,10 +249,11 @@ public class AccountRepositoryTest {
 
         Account accountFromDbByName = accountRepository.findByAccountName(accountName).get(0);
         assertNotNull(accountFromDbByName);
-        assertThat(accountFromDbByName.getAdministrators().size(), is(1));
+        assertThat(accountFromDbByName.getAdministrators().size(), is(2));
         User adminFromAccount = accountFromDbByName.getAdministrators().iterator().next();
         assertNotNull(adminFromAccount);
-        assertThat(adminFromAccount.getPhoneNumber(), is("0505550000"));
+        List<String> phoneNumbers = accountFromDbByName.getAdministrators().stream().map(User::getPhoneNumber).collect(Collectors.toList());
+        assertTrue(phoneNumbers.contains("0505550000"));
 
         Account accountFromDbByAdmin = accountRepository.findByAdministrators(testAdmin);
         assertNotNull(accountFromDbByAdmin);

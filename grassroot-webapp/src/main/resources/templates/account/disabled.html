@@ -25,10 +25,16 @@
   <section class="no-group-text">
     <div class="container">
       <div class="row">
-        <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
+        <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12" th:unless="${hasRequestedSponsorship}">
           <p class="text-justify">
-            Due to a problem with payment, your account has been disabled. Please enter a new payment method, click below
-            to contact us, or close the account.
+            Due to a problem with payment, your account has been disabled. You can enter a new payment method below, or
+            request someone to sponsor the account.
+          </p>
+        </div>
+        <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12" th:if="${hasRequestedSponsorship}">
+          <p class="text-justify">
+            Your sponsorship request has not been approved yet. You can switch to paying directly yourself, or send another
+            sponsorship request. You can view your open requests <a href="#sponsorRequestModal" data-toggle="modal" data-target="#sponsorRequestModal">here.</a>
           </p>
         </div>
       </div>
@@ -80,12 +86,39 @@
     </div>
   </section>
 
+  <div class="modal fade" id="sponsorRequestModal" tabindex="-1" role="dialog" aria-labelledby="sponsorRequestModalLabel">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title" id="sponsorRequestModalLabel">Sponsorship Requests</h4>
+        </div>
+        <div class="modal-body home-groups">
+          <ul class="list-group">
+            <li th:each="request : ${openSponsorshipRequests}" class="list-group-item no-vertical">
+              <a th:href="@{/account/sponsor/request(accountUid=${account.uid}, requestUid=${request.uid})}" class="list-header no-vertical">
+                Sent to: <span th:text="${request.destination.name}">Person</span>
+              </a>
+              <p>Sent on <span th:text="${#temporals.format(request.getCreationTimeAtSAST(),'d MMM yyyy')}"></span>. Your request has
+                <span th:text="${request.status.name() == 'VIEWED' ? 'been viewed but not approved yet' :'not been viewed yet'}"></span>.
+              </p>
+            </li>
+          </ul>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default btn-lg default-button btn-neutral" data-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="modal fade" id="contactModal" tabindex="-1" role="dialog" aria-labelledby="contactModal">
     <div class="modal-dialog" role="document">
       <div class="modal-content">
         <div class="modal-header">
           <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-          <h4 class="modal-title" id="contactModalLabel">Close account</h4>
+          <h4 class="modal-title" id="contactModalLabel">Contact us</h4>
         </div>
         <form th:action="@{/account/contact}" method="post">
           <div class="modal-body">
