@@ -61,36 +61,33 @@ public class GroupChatManager implements GroupChatService {
     @Value("${mqtt.status.read.threshold:0.5}")
     private Double readStatusThreshold;
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
+    private final GroupRepository groupRepository;
+    private final GroupChatSettingsRepository groupChatSettingsRepository;
+    private final LearningService learningService;
+    private final MessageChannel gcmXmppOutboundChannel;
+    private final MessageChannel mqttOutboundChannel;
+    private final GroupChatMessageStatsRepository groupChatMessageStatsRepository;
+    private final GcmService gcmService;
+    private final MqttObjectMapper payloadMapper;
+    private final MessageSourceAccessor messageSourceAccessor;
 
     @Autowired
-    private GroupRepository groupRepository;
-
-    @Autowired
-    private GroupChatSettingsRepository groupChatSettingsRepository;
-
-    @Autowired
-    private LearningService learningService;
-
-    @Autowired
-    private MessageChannel gcmXmppOutboundChannel;
-
-    @Autowired
-    private MessageChannel mqttOutboundChannel;
-
-    @Autowired
-    private GroupChatMessageStatsRepository groupChatMessageStatsRepository;
-
-    @Autowired
-    private GcmService gcmService;
-
-    @Autowired
-    private MqttObjectMapper payloadMapper;
-
-    @Autowired
-    @Qualifier("integrationMessageSourceAccessor")
-    MessageSourceAccessor messageSourceAccessor;
+    public GroupChatManager(UserRepository userRepository, GroupRepository groupRepository, GroupChatSettingsRepository groupChatSettingsRepository,
+                            LearningService learningService, MessageChannel gcmXmppOutboundChannel, MessageChannel mqttOutboundChannel,
+                            GroupChatMessageStatsRepository groupChatMessageStatsRepository, GcmService gcmService, MqttObjectMapper payloadMapper,
+                            @Qualifier("integrationMessageSourceAccessor") MessageSourceAccessor messageSourceAccessor) {
+        this.userRepository = userRepository;
+        this.groupRepository = groupRepository;
+        this.groupChatSettingsRepository = groupChatSettingsRepository;
+        this.learningService = learningService;
+        this.gcmXmppOutboundChannel = gcmXmppOutboundChannel;
+        this.mqttOutboundChannel = mqttOutboundChannel;
+        this.groupChatMessageStatsRepository = groupChatMessageStatsRepository;
+        this.gcmService = gcmService;
+        this.payloadMapper = payloadMapper;
+        this.messageSourceAccessor = messageSourceAccessor;
+    }
 
     @Override
     @Transactional
@@ -269,6 +266,7 @@ public class GroupChatManager implements GroupChatService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<String> usersMutedInGroup(String groupUid) {
         Objects.requireNonNull(groupUid);
         Group group = groupRepository.findOneByUid(groupUid);
@@ -313,6 +311,7 @@ public class GroupChatManager implements GroupChatService {
 
     @Async
     @Override
+    @Transactional
     public void addAllGroupMembersToChat(Group group, User initiatingUser) {
         String groupUid = group.getUid();
         Set<Membership> memberships = group.getMemberships();
