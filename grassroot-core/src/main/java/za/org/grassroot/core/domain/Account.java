@@ -12,6 +12,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Created by luke on 2015/10/18. (and significantly overhauled / modified during 2016/10)
@@ -206,6 +207,8 @@ public class Account implements GrassrootEntity {
         return createdDateTime;
     }
 
+    public ZonedDateTime getCreatedDateTimeAtSAST() { return DateTimeUtil.convertToUserTimeZone(createdDateTime, DateTimeUtil.getSAST()); }
+
     public User getCreatedByUser() { return createdByUser; }
 
     public void setDisabledByUser(User disabledByUser) { this.disabledByUser = disabledByUser; }
@@ -229,6 +232,10 @@ public class Account implements GrassrootEntity {
 
     public Set<PaidGroup> getPaidGroups() {
         return paidGroups;
+    }
+
+    public Set<PaidGroup> getCurrentPaidGroups() {
+        return paidGroups.stream().filter(PaidGroup::isActive).collect(Collectors.toSet());
     }
 
     public void setPaidGroups(Set<PaidGroup> paidGroups) {

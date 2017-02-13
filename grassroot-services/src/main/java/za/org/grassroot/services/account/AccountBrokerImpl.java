@@ -17,6 +17,7 @@ import za.org.grassroot.core.enums.AccountType;
 import za.org.grassroot.core.repository.AccountRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.AfterTxCommitTask;
+import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.AccountLimitExceededException;
 import za.org.grassroot.services.exception.AdminRemovalException;
@@ -207,6 +208,23 @@ public class AccountBrokerImpl implements AccountBroker {
         }
 
         logsAndNotificationsBroker.asyncStoreBundle(bundle);
+    }
+
+    @Override
+    @Transactional
+    public void setAccountPrimary(String userUid, String accountUid) {
+        DebugUtil.transactionRequired("");
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(accountUid);
+
+        User user = userRepository.findOneByUid(userUid);
+        Account account = accountRepository.findOneByUid(accountUid);
+
+        if (!account.getAdministrators().contains(user)) {
+            throw new IllegalArgumentException("Error! User must be an administrator of their primary account");
+        }
+
+        user.setPrimaryAccount(account);
     }
 
     @Override

@@ -35,7 +35,7 @@
           <form th:replace="~{fragments :: payment-form(accountUid=${request.requestor.uid}, action=@{/account/payment/process})}"></form>
 
           <div class="form-group">
-            <button type="button" data-toggle="modal" data-target="#denyModal" class="btn default-button full-width-button btn-xl">Deny request</button>
+            <button type="button" data-toggle="modal" data-target="#denyModal" class="btn default-button full-width-button btn-neutral btn-xl">DENY REQUEST</button>
           </div>
 
         </div>
@@ -71,7 +71,6 @@
 <div layout:fragment="script-container">
 
   <script th:src="@{/js/lib/jquery.validate.min.js}"></script>
-
   <script th:replace="~{fragments :: form-script}"></script>
 
 </div>

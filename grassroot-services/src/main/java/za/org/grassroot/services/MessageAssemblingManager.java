@@ -304,6 +304,41 @@ public class MessageAssemblingManager implements MessageAssemblingService {
         return String.join("\n\n", Arrays.asList(salutation, body, closing));
     }
 
+    @Override
+    public String createEndOfTrialNotification(Account account) {
+        return messageSourceAccessor.getMessage("notification.account.trial.ended");
+    }
+
+    @Override
+    public String createEndOfTrialEmailSubject() {
+        return messageSourceAccessor.getMessage("email.account.trial.ended.subject");
+    }
+
+    @Override
+    public String createEndOfTrialEmailBody(Account account, User adminToEmail, String paymentLink) {
+        String[] emailFields = new String[] {
+                adminToEmail.getName(),
+                paymentLink
+        };
+
+        return messageSourceAccessor.getMessage("email.account.trial.ended.body", emailFields);
+    }
+
+    @Override
+    public String createDisabledNotification(Account account) {
+        return messageSourceAccessor.getMessage("notification.account.disabled");
+    }
+
+    @Override
+    public String createDisabledEmailSubject() {
+        return messageSourceAccessor.getMessage("email.account.disabled.subject");
+    }
+
+    @Override
+    public String createDisabledEmailBody(User adminToEmail, String paymentLink) {
+        return messageSourceAccessor.getMessage("email.account.disabled.subject");
+    }
+
 
     public Locale getUserLocale(User user) {
         return getUserLocale(user.getLanguageCode());
@@ -318,7 +353,7 @@ public class MessageAssemblingManager implements MessageAssemblingService {
 
     }
 
-    public String[] populateEventFields(Event event) {
+    private String[] populateEventFields(Event event) {
         return populateEventFields(event, 0D, 0D, 0D, 0D);
     }
 

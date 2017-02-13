@@ -12,4 +12,5 @@ public interface EmailSendingBroker {
     void sendSystemStatusMail(GrassrootEmail systemStatsEmail);
 
     void sendMail(GrassrootEmail email);
+
 }

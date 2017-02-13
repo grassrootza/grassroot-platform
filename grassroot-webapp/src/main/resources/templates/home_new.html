@@ -45,7 +45,7 @@
     </div>
   </section>
 
-  <section class="no-group-text" th:if="${@environment.getProperty('grassroot.accounts.active') and (currentUser.primaryAccount == null)}">
+  <section class="no-group-text" th:if="${@environment.getProperty('grassroot.accounts.active') and (account == null)}">
     <div class="container">
       <div class="row">
         <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
@@ -53,6 +53,19 @@
             You are on a free account. You can call meetings, take votes, and record actions, for groups of up to 250 people.
             <a th:href="@{/account/signup}">Signing up for Grassroot Extra</a> will open up larger group sizes, customized messages,
             and much more.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="no-group-text" th:if="${account != null}">
+    <div class="container" th:unless="${account.enabled}">
+      <div class="row">
+        <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
+          <p class="text-justify">
+            You have signed up for a Grassroot Extra account, but it is disabled at the moment because the trial period has
+            expired or you have not completed payment. To enable the account, <a th:href="@{/account/view}">click here</a>.
           </p>
         </div>
       </div>

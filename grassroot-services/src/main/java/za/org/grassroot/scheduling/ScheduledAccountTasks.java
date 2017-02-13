@@ -3,10 +3,10 @@ package za.org.grassroot.scheduling;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import za.org.grassroot.integration.payments.PaymentBroker;
 import za.org.grassroot.services.account.AccountBillingBroker;
 import za.org.grassroot.services.account.AccountSponsorshipBroker;
 
@@ -17,16 +17,17 @@ import za.org.grassroot.services.account.AccountSponsorshipBroker;
 @ConditionalOnProperty(name = "grassroot.billing.enabled", havingValue = "true")
 public class ScheduledAccountTasks {
 
+    @Value("${grassroot.payments.enabled:false}")
+    private boolean paymentsEnabled;
+
     private static final Logger logger = LoggerFactory.getLogger(ScheduledAccountTasks.class);
 
     private final AccountBillingBroker accountBillingBroker;
-    private final PaymentBroker paymentBroker;
     private final AccountSponsorshipBroker sponsorshipBroker;
 
     @Autowired
-    public ScheduledAccountTasks(AccountBillingBroker accountBillingBroker, PaymentBroker paymentBroker, AccountSponsorshipBroker sponsorshipBroker) {
+    public ScheduledAccountTasks(AccountBillingBroker accountBillingBroker, AccountSponsorshipBroker sponsorshipBroker) {
         this.accountBillingBroker = accountBillingBroker;
-        this.paymentBroker = paymentBroker;
         this.sponsorshipBroker = sponsorshipBroker;
     }
 
@@ -38,8 +39,10 @@ public class ScheduledAccountTasks {
 
     @Scheduled(cron = "${grassroot.payments.cron.trigger: 0 0 20 * * ?}")
     public void processMonthlyBillPayments() {
-        logger.info("Charging monthly billing amounts");
-        paymentBroker.processAccountPaymentsOutstanding();
+        if (paymentsEnabled) {
+            logger.info("Charging monthly billing amounts");
+            accountBillingBroker.processBillsDueForPayment();
+        }
     }
 
     @Scheduled(cron = "${grassroot.payments.cron.trigger: 0 0 10 * * ?}")

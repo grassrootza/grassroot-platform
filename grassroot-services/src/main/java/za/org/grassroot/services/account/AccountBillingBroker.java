@@ -29,20 +29,16 @@ public interface AccountBillingBroker {
 
     void processAccountStatement(Account account, AccountBillingRecord generatingBill, boolean sendEmail);
 
-    List<AccountBillingRecord> findRecordsWithStatementDates(String accountUid);
+    void processBillsDueForPayment();
 
-    List<AccountBillingRecord> findRecordsInSameStatementCycle(String recordUid);
-
-    /**
-     *
-     * @param accountUid Optional : specify an account to load
-     * @param unpaidOnly Whether to load only unpaid or unpaid and paid
-     * @param sort A sort
-     * @return
-     */
+    // load all the bills for an account, with the unpaidOnly allowing a filter on that status
     List<AccountBillingRecord> loadBillingRecords(String accountUid, boolean unpaidOnly, Sort sort);
 
     AccountBillingRecord fetchRecordByPayment(String paymentId);
+
+    List<AccountBillingRecord> findRecordsInSameStatementCycle(String recordUid);
+
+    List<AccountBillingRecord> findRecordsWithStatementDates(String accountUid);
 
     void togglePaymentStatus(String recordUid);
 

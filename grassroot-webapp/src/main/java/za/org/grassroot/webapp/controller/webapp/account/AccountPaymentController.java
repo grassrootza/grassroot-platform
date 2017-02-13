@@ -90,6 +90,21 @@ public class AccountPaymentController extends BaseController {
                 : loadCreditCardForm(model, createdAccount, true);
     }
 
+    @RequestMapping(value = "start", method = RequestMethod.GET)
+    public String initialAccountPayment(Model model, @RequestParam String accountUid,
+                                        @RequestParam(required = false) AccountPaymentType paymentType) {
+        Account account = accountBroker.loadAccount(accountUid);
+        User user = userManagementService.load(getUserProfile().getUid());
+
+        if (!account.getAdministrators().contains(user)) {
+            throw new AccessDeniedException("Error! Only an administrator of the account can pay for it, except via sponsorship request");
+        }
+
+        return AccountPaymentType.DIRECT_DEPOSIT.equals(paymentType)
+                ? loadDebitInstruction(model, account)
+                : loadCreditCardForm(model, account, true);
+    }
+
     @RequestMapping(value = "process", method = RequestMethod.POST)
     public String initiatePayment(Model model, RedirectAttributes attributes, @RequestParam String accountUid,
                                   // @RequestParam(required = false) String pathOnFailure,

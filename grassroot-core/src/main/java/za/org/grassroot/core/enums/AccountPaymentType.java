@@ -6,5 +6,7 @@ package za.org.grassroot.core.enums;
 public enum AccountPaymentType {
 
     CARD_PAYMENT,
-    DIRECT_DEPOSIT
+    DIRECT_DEPOSIT,
+    FREE_TRIAL
+
 }

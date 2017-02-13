@@ -3,6 +3,7 @@ package za.org.grassroot.services.account;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -18,11 +19,12 @@ import za.org.grassroot.core.enums.AccountLogType;
 import za.org.grassroot.core.enums.AccountPaymentType;
 import za.org.grassroot.core.repository.AccountBillingRecordRepository;
 import za.org.grassroot.core.repository.AccountRepository;
-import za.org.grassroot.core.specifications.AccountSpecifications;
 import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.integration.email.EmailSendingBroker;
+import za.org.grassroot.integration.email.GrassrootEmail;
+import za.org.grassroot.integration.payments.PaymentBroker;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
@@ -34,7 +36,8 @@ import java.util.stream.Collectors;
 
 import static java.time.temporal.ChronoUnit.DAYS;
 import static org.springframework.util.StringUtils.isEmpty;
-import static za.org.grassroot.core.specifications.AccountSpecifications.*;
+import static za.org.grassroot.core.specifications.AccountSpecifications.nextStatementBefore;
+import static za.org.grassroot.core.specifications.BillingSpecifications.*;
 import static za.org.grassroot.services.specifications.NotificationSpecifications.*;
 
 /**
@@ -44,6 +47,10 @@ import static za.org.grassroot.services.specifications.NotificationSpecification
 public class AccountBillingBrokerImpl implements AccountBillingBroker {
 
     private static final Logger log = LoggerFactory.getLogger(AccountBillingBrokerImpl.class);
+
+    // todo : make sure this can handle both end-of-trial and payment failed
+    @Value("${grassroot.trial.end.link:https://localhost:8080/account/payment/start}")
+    private String accountPaymentLink;
 
     private static final String SYSTEM_USER = "system_user"; // fake user since user_uid is null and these batch jobs are automated
     private static final int DEFAULT_MONTH_LENGTH = 30;
@@ -59,18 +66,20 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
     private final MessageAssemblingService messageAssemblingService;
     private final ApplicationEventPublisher eventPublisher;
 
+    private final PaymentBroker paymentBroker;
     private final EmailSendingBroker emailSendingBroker;
 
     @Autowired
     public AccountBillingBrokerImpl(AccountRepository accountRepository, AccountBillingRecordRepository billingRepository,
-                                    LogsAndNotificationsBroker logsAndNotificationsBroker, MessageAssemblingService messageAssemblingService,
-                                    ApplicationEventPublisher eventPublisher, EmailSendingBroker emailSendingBroker) {
+                                    PaymentBroker paymentBroker, EmailSendingBroker emailSendingBroker, ApplicationEventPublisher eventPublisher,
+                                    LogsAndNotificationsBroker logsAndNotificationsBroker, MessageAssemblingService messageAssemblingService) {
         this.accountRepository = accountRepository;
         this.billingRepository = billingRepository;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
         this.messageAssemblingService = messageAssemblingService;
         this.eventPublisher = eventPublisher;
         this.emailSendingBroker = emailSendingBroker;
+        this.paymentBroker = paymentBroker;
     }
 
     @Override
@@ -139,7 +148,7 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
             AccountBillingRecord lastBill = billingRepository.findTopByAccountOrderByCreatedDateTimeDesc(account);
 
             LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
-            AccountBillingRecord record = generateBillSince(account, lastBill, bundle, "Account closing bill");
+            AccountBillingRecord record = generateStandardBill(account, lastBill, bundle, "Account closing bill");
             record.setNextPaymentDate(Instant.now().plus(PAYMENT_INTERVAL));
             record.setStatementDateTime(Instant.now());
 
@@ -155,7 +164,7 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
         AccountBillingRecord lastBill = billingRepository.findTopByAccountOrderByCreatedDateTimeDesc(account);
 
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
-        AccountBillingRecord record = forceAmount == null ? generateBillSince(account, lastBill, bundle, null)
+        AccountBillingRecord record = forceAmount == null ? generateStandardBill(account, lastBill, bundle, null)
                 : buildInstantBillForAmount(account, forceAmount, "Bill generated out of cycle", addToBalance, bundle);
         record.setNextPaymentDate(triggerPayment ? Instant.now().plus(PAYMENT_INTERVAL) : null);
         record.setStatementDateTime(generateStatement ? Instant.now() : null);
@@ -168,36 +177,6 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
 
         logsAndNotificationsBroker.storeBundle(bundle);
         billingRepository.save(record);
-    }
-
-    @Override
-    @Transactional
-    public void calculateStatementsForDueAccounts(boolean sendEmails, boolean sendNotifications) {
-
-        List<Account> accountsForStatements = accountRepository.findAll((nextStatementBefore(Instant.now())));
-
-        List<AccountBillingRecord> records = new ArrayList<>();
-        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
-
-        for (Account account : accountsForStatements) {
-            AccountBillingRecord lastBill = billingRepository.findTopByAccountOrderByCreatedDateTimeDesc(account);
-            AccountBillingRecord thisBill = generateBillSince(account, lastBill, bundle, null);
-
-            thisBill.setStatementDateTime(Instant.now());
-            thisBill.setNextPaymentDate(Instant.now().plus(PAYMENT_INTERVAL));
-            records.add(thisBill);
-
-            if (sendNotifications) {
-                bundle.addNotifications(generateBillNotifications(thisBill));
-            }
-
-            account.incrementBillingDate(STD_BILLING_HOUR, BILLING_TZ);
-            AfterTxCommitTask afterTxCommitTask = () -> processAccountStatement(account, thisBill, sendEmails);
-            eventPublisher.publishEvent(afterTxCommitTask);
-        }
-
-        logsAndNotificationsBroker.storeBundle(bundle);
-        billingRepository.save(records);
     }
 
     @Override
@@ -217,7 +196,73 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
             emailSendingBroker.generateAndSendBillingEmail(emailAddress, emailSubject, emailBody,
                     records.stream().map(AccountBillingRecord::getUid).collect(Collectors.toList()));
         }
+    }
 
+    @Override
+    @Transactional
+    public void calculateStatementsForDueAccounts(boolean sendEmails, boolean sendNotifications) {
+        List<AccountBillingRecord> records = new ArrayList<>();
+        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+
+        accountRepository.findAll((nextStatementBefore(Instant.now())))
+                .forEach(a -> {
+                    switch (a.getDefaultPaymentType()) {
+                        case FREE_TRIAL:
+                            handleFreeTrialStatements(a, bundle, records, sendEmails, sendNotifications);
+                            break;
+                        case CARD_PAYMENT:
+                        case DIRECT_DEPOSIT: // for now just handle like a card payment, todo : handle differently
+                        default:
+                            handleCreditCardStatements(a, bundle, records, sendEmails, sendNotifications);
+                            break;
+                    }
+                });
+
+        logsAndNotificationsBroker.storeBundle(bundle);
+        billingRepository.save(records);
+    }
+
+    private void handleCreditCardStatements(Account account, LogsAndNotificationsBundle bundle, List<AccountBillingRecord> records,
+                                            boolean sendEmails, boolean sendNotifications) {
+        DebugUtil.transactionRequired("");
+        AccountBillingRecord lastBill = billingRepository.findTopByAccountOrderByCreatedDateTimeDesc(account);
+        AccountBillingRecord thisBill = generateStandardBill(account, lastBill, bundle, null);
+
+        thisBill.setStatementDateTime(Instant.now());
+        thisBill.setNextPaymentDate(Instant.now().plus(PAYMENT_INTERVAL));
+        records.add(thisBill);
+
+        if (sendNotifications) {
+            bundle.addNotifications(generateBillNotifications(thisBill));
+        }
+
+        account.incrementBillingDate(STD_BILLING_HOUR, BILLING_TZ);
+        AfterTxCommitTask afterTxCommitTask = () -> processAccountStatement(account, thisBill, sendEmails);
+        eventPublisher.publishEvent(afterTxCommitTask);
+    }
+
+    private void handleFreeTrialStatements(Account account, LogsAndNotificationsBundle bundle, List<AccountBillingRecord> records,
+                                           boolean sendEmails, boolean sendNotifications) {
+        DebugUtil.transactionRequired("");
+
+        long billForPeriod = account.getSubscriptionFee();
+        long costForPeriod = calculateAccountCostsInPeriod(account, LocalDateTime.ofInstant(account.getEnabledDateTime(), BILLING_TZ),
+                LocalDateTime.now());
+
+        AccountBillingRecord endOfTrialBill = generateBillForAmount(account, billForPeriod, costForPeriod, account.getCreatedDateTime(), bundle,
+                "Bill generated at end of free trial");
+
+        endOfTrialBill.setStatementDateTime(Instant.now());
+        endOfTrialBill.setNextPaymentDate(null);
+        records.add(endOfTrialBill);
+
+        if (sendNotifications) {
+            bundle.addNotifications(generateTrialExpiredNotifications(account, endOfTrialBill));
+        }
+
+        if (sendEmails) {
+            sendTrialExpiredEmails(account);
+        }
     }
 
     @Override
@@ -306,9 +351,32 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
     @Transactional
     public void togglePaymentStatus(String recordUid) {
         Objects.requireNonNull(recordUid);
-
         AccountBillingRecord record = billingRepository.findOneByUid(recordUid);
         record.togglePaid();
+    }
+
+    @Override
+    @Transactional
+    public void processBillsDueForPayment() {
+        billingRepository.findAll(Specifications
+                .where(paymentDateNotNull())
+                .and(isPaid(false))
+                .and(paymentType(AccountPaymentType.CARD_PAYMENT))
+                .and(paymentDateBefore(Instant.now())))
+                .forEach(this::handlePayment);
+    }
+
+    private void handlePayment(AccountBillingRecord record) {
+        DebugUtil.transactionRequired("");
+
+        boolean transactionSucceeded = paymentBroker.triggerRecurringPayment(record);
+        if (!transactionSucceeded) {
+            Account account = record.getAccount();
+            account.setEnabled(false);
+            logsAndNotificationsBroker.asyncStoreBundle(new LogsAndNotificationsBundle(Collections.emptySet(),
+                    accountDisabledNotification(account, record)));
+            sendDisabledEmails(account);
+        }
     }
 
     @Override
@@ -330,9 +398,9 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN')")
     public void haltAccountPayments(String adminUid, String accountUid) {
         Account account = accountRepository.findOneByUid(accountUid);
-        billingRepository.findAll(Specifications.where(AccountSpecifications.forAccount(account))
-                .and(AccountSpecifications.paymentDateNotNull())
-                .and(AccountSpecifications.isPaid(false)))
+        billingRepository.findAll(Specifications.where(forAccount(account))
+                .and(paymentDateNotNull())
+                .and(isPaid(false)))
                 .forEach(r -> r.setNextPaymentDate(null));
 
         AccountLog accountLog = new AccountLog.Builder(account)
@@ -384,10 +452,15 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
         return record;
     }
 
-    private AccountBillingRecord generateBillSince(Account account, AccountBillingRecord lastBill, LogsAndNotificationsBundle bundle, String logDescription) {
+    private AccountBillingRecord generateStandardBill(Account account, AccountBillingRecord lastBill, LogsAndNotificationsBundle bundle, String logDescription) {
         Instant periodStart = getPeriodStart(account, lastBill);
         long billForPeriod = calculateAccountBillBetweenDates(account, LocalDateTime.ofInstant(periodStart, BILLING_TZ), LocalDateTime.now());
         long costForPeriod = calculateAccountCostsInPeriod(account, LocalDateTime.ofInstant(periodStart, BILLING_TZ), LocalDateTime.now());
+        return generateBillForAmount(account, billForPeriod, costForPeriod, periodStart, bundle, logDescription);
+    }
+
+    private AccountBillingRecord generateBillForAmount(Account account, long billForPeriod, long costForPeriod, Instant periodStart,
+                                                       LogsAndNotificationsBundle bundle, String logDescription) {
 
         AccountLog.Builder billingLogBuilder = new AccountLog.Builder(account)
                 .userUid(SYSTEM_USER)
@@ -475,10 +548,52 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
             AccountBillingNotification notification = new AccountBillingNotification(user,
                     messageAssemblingService.createAccountBillingNotification(billingRecord),
                     billingRecord.getAccountLog());
-            notification.setNextAttemptTime(Instant.now()); // make sure it's tomorrow morning ...
             notifications.add(notification);
         }
         return notifications;
+    }
+
+    private Set<Notification> generateTrialExpiredNotifications(Account account, AccountBillingRecord bill) {
+        Set<Notification> notifications = new HashSet<>();
+
+        account.getAdministrators().forEach(user -> notifications.add(new AccountBillingNotification(user,
+                    messageAssemblingService.createEndOfTrialNotification(account),
+                    bill.getAccountLog()))
+        );
+
+        return notifications;
+    }
+
+    private void sendTrialExpiredEmails(Account account) {
+        GrassrootEmail.EmailBuilder builder = new GrassrootEmail.EmailBuilder(messageAssemblingService.createEndOfTrialEmailSubject());
+
+        // todo : make the email pretty & have multiple types (e.g., with direct deposit) [and also campaign tracking etc]
+        final String formedPaymentLink = accountPaymentLink + "?accountUid=" + account.getUid();
+        account.getAdministrators()
+                .stream()
+                .filter(User::hasEmailAddress)
+                .forEach(u -> emailSendingBroker.sendMail(builder.address(u.getEmailAddress())
+                    .content(messageAssemblingService.createEndOfTrialEmailBody(account, u, formedPaymentLink)).build()));
+    }
+
+    private Set<Notification> accountDisabledNotification(Account account, AccountBillingRecord bill) {
+        Set<Notification> notifications = new HashSet<>();
+        account.getAdministrators().forEach(user -> {
+
+        });
+        return notifications;
+    }
+
+    private void sendDisabledEmails(Account account) {
+        // todo : as above, make emails pretty, etc
+
+        GrassrootEmail.EmailBuilder builder = new GrassrootEmail.EmailBuilder(messageAssemblingService.createDisabledEmailSubject());
+        final String formedPaymentLink = accountPaymentLink + "?accountUid=" + account.getUid();
+        account.getAdministrators()
+                .stream()
+                .filter(User::hasEmailAddress)
+                .forEach(u -> emailSendingBroker.sendMail(builder.address(u.getEmailAddress())
+                        .content(messageAssemblingService.createDisabledEmailBody(u, formedPaymentLink)).build()));
     }
 
     private Instant getPeriodStart(Account account, AccountBillingRecord lastBill) {

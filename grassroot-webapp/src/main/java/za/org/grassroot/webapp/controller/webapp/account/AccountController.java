@@ -60,18 +60,28 @@ public class AccountController extends BaseController {
     }
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
-    @RequestMapping(value = { "", "/" })
+    @RequestMapping(value = { "", "/" }, method = RequestMethod.GET)
     public String paidAccountIndex(Model model, HttpServletRequest request) {
         User user = userManagementService.load(getUserProfile().getUid());
         Account account = user.getPrimaryAccount();
-        // todo : make this list accounts instead
-        if (account == null && request.isUserInRole("ROLE_SYSTEM_ADMIN")) {
-            return "redirect:/admin/accounts/home";
+        if (account == null && user.hasMultipleAccounts()) {
+            model.addAttribute("accounts", user.getAccountsAdministered().stream()
+                    .sorted(Comparator.comparing(Account::getName)).collect(Collectors.toList()));
+            return "account/list";
         } else if (account != null) {
             return viewPaidAccount(model, account.getUid());
         } else {
             return "redirect:/account/signup";
         }
+    }
+
+    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
+    @RequestMapping(value = "setprimary", method = RequestMethod.POST)
+    public String setAccountPrimary(RedirectAttributes attributes, @RequestParam String accountUid, HttpServletRequest request) {
+        accountBroker.setAccountPrimary(getUserProfile().getUid(), accountUid);
+        addMessage(attributes, MessageType.SUCCESS, "account.primary.done", request);
+        attributes.addAttribute("accountUid", accountUid);
+        return "redirect:/account/view";
     }
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")

@@ -26,7 +26,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
 
-import static za.org.grassroot.core.specifications.AccountSpecifications.*;
+import static za.org.grassroot.core.specifications.BillingSpecifications.*;
 import static za.org.grassroot.core.util.DateTimeUtil.formatAtSAST;
 
 /**

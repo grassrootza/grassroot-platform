@@ -3,6 +3,7 @@ package za.org.grassroot.core.domain;
 import org.hibernate.validator.constraints.Email;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.util.StringUtils;
 import za.org.grassroot.core.enums.AlertPreference;
 import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.core.util.PhoneNumberUtil;
@@ -206,6 +207,10 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
 
     public void setEmailAddress(String emailAddress) {
         this.emailAddress = emailAddress;
+    }
+
+    public boolean hasEmailAddress() {
+        return !StringUtils.isEmpty(emailAddress);
     }
 
     public Instant getCreatedDateTime() {

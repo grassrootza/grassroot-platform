@@ -17,6 +17,8 @@ import za.org.grassroot.services.group.GroupJoinRequestService;
 import za.org.grassroot.services.task.TaskBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 
+import javax.servlet.http.HttpServletRequest;
+
 /**
  * @author Lesetse Kimwaga
  */
@@ -43,25 +45,27 @@ public class HomeController extends BaseController {
     }
 
     @RequestMapping(value={"/", "/home"})
-    public ModelAndView getRootPage(Model model, @ModelAttribute("currentUser") UserDetails userDetails) {
-
-        log.info("getRootPage ... attempting to authenticate user ...");
+    public ModelAndView getRootPage(Model model, @ModelAttribute("currentUser") UserDetails userDetails, HttpServletRequest request) {
 
         Long startTime = System.currentTimeMillis();
         ModelAndView homePageModelAndView;
-        log.info("Getting user profile ... ");
         User user = userManagementService.load(getUserProfile().getUid());
+
+        if (user.getPrimaryAccount() != null && !user.getPrimaryAccount().isEnabled()) {
+            addMessage(model, MessageType.ERROR, "account.disabled.banner", request);
+        }
 
         // will check cache & only log if not called for several hours, i.e., will not log spurious returns to home page
         userLogger.recordUserSession(user.getUid(), UserInterfaceType.WEB);
         Long startTimeCountGroups = System.currentTimeMillis();
+
         log.info(String.format("Getting user profile took %d msecs", startTimeCountGroups - startTime));
 
         if (permissionBroker.countActiveGroupsWithPermission(user, null) != 0) {
             log.info(String.format("Counting user groups took ... %d msecs", System.currentTimeMillis() - startTimeCountGroups));
             homePageModelAndView = getHomePageUserHasGroups(model, user);
         } else {
-            homePageModelAndView = getHomePageUserHasNoGroups(model);
+            homePageModelAndView = getHomePageUserHasNoGroups(model, user);
         }
 
         Long endTime = System.currentTimeMillis();
@@ -69,7 +73,8 @@ public class HomeController extends BaseController {
         return homePageModelAndView;
     }
 
-    private ModelAndView getHomePageUserHasNoGroups(Model model) {
+    private ModelAndView getHomePageUserHasNoGroups(Model model, User user) {
+        model.addAttribute("account", user.getPrimaryAccount());
         return new ModelAndView("home_new", model.asMap());
     }
 

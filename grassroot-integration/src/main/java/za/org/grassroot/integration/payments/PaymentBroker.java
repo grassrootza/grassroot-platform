@@ -15,7 +15,7 @@ public interface PaymentBroker {
 
     PaymentResponse checkMobilePaymentResult(String paymentId);
 
-    void processAccountPaymentsOutstanding();
+    boolean triggerRecurringPayment(AccountBillingRecord billingRecord);
 
     String fetchDetailsForDirectDeposit(String accountUid);
 }

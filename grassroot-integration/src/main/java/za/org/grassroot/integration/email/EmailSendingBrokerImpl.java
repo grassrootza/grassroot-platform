@@ -20,6 +20,7 @@ import java.io.UnsupportedEncodingException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Created by luke on 2016/10/24.
@@ -87,7 +88,6 @@ public class EmailSendingBrokerImpl implements EmailSendingBroker {
     @Async
     @Override
     public void sendMail(GrassrootEmail email) {
-
         MimeMessage mail = mailSender.createMimeMessage();
         try {
             MimeMessageHelper helper = new MimeMessageHelper(mail, email.hasAttachment());

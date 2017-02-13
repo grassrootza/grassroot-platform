@@ -6,7 +6,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
-import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,7 +15,6 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.AccountBillingRecord;
-import za.org.grassroot.core.enums.AccountPaymentType;
 import za.org.grassroot.core.repository.AccountBillingRecordRepository;
 import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.integration.email.EmailSendingBroker;
@@ -32,8 +30,6 @@ import java.text.DecimalFormat;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Objects;
-
-import static za.org.grassroot.core.specifications.AccountSpecifications.*;
 
 /**
  * Created by luke on 2016/10/26.
@@ -67,9 +63,6 @@ public class PaymentBrokerImpl implements PaymentBroker {
 
     private UriComponentsBuilder baseUriBuilder;
     private HttpHeaders stdHeaders;
-
-    @Value("${grassroot.payments.enabled:false}")
-    private boolean paymentsEnabled;
 
     @Value("${grassroot.payments.host:localhost}")
     private String paymentsRestHost;
@@ -309,27 +302,14 @@ public class PaymentBrokerImpl implements PaymentBroker {
     }
 
     @Override
-    @Transactional
-    public void processAccountPaymentsOutstanding() {
-        if (paymentsEnabled) {
-            logger.info("Inside Payment Service Broker, payments enabled, handling ...");
-            billingRepository.findAll(Specifications
-                    .where(paymentDateNotNull())
-                    .and(isPaid(false))
-                    .and(paymentType(AccountPaymentType.CARD_PAYMENT))
-                    .and(paymentDateBefore(Instant.now())))
-                    .forEach(this::triggerRecurringPayment);
-        }
-    }
-
-    @Override
     public String fetchDetailsForDirectDeposit(String accountUid) {
         // todo : generate an account reference
         return depositDetails;
     }
 
+    @Override
     @Transactional
-    private void triggerRecurringPayment(AccountBillingRecord billingRecord) {
+    public boolean triggerRecurringPayment(AccountBillingRecord billingRecord) {
         Account account = billingRecord.getAccount();
         final String recurringPaymentPathVar = String.format(recurringPaymentRestPath, account.getPaymentRef());
         final double amountToPay = (double) billingRecord.getTotalAmountToPay() / 100;
@@ -354,19 +334,20 @@ public class PaymentBrokerImpl implements PaymentBroker {
             final String resultCode = okayResponse.getResult().getCode();
             if (OKAY_CODE.equals(resultCode) || ZEROS_CODE.equals(resultCode)) {
                 handleSuccessfulPayment(billingRecord, okayResponse);
+                return true;
             } else {
-                billingRecord.setPaymentDescription(okayResponse.getResult().fullDescription());
-                billingRecord.setNextPaymentDate(Instant.now().plus(1L, ChronoUnit.DAYS)); // so it doesn't try again  immediately
-                sendFailureEmail(billingRecord, okayResponse.getResult().fullDescription());
+                handlePaymentError(billingRecord, okayResponse.getResult().getCode(), okayResponse.getResult().getDescription());
+                return false;
             }
         } catch (HttpStatusCodeException e) {
-            billingRecord.setNextPaymentDate(Instant.now().plus(1L, ChronoUnit.DAYS)); // so it doesn't try again  immediately
-            handlePaymentError(e, billingRecord);
+            handlePaymentError(billingRecord, e);
+            return false;
         }
     }
 
-    @Transactional
     private void handleSuccessfulPayment(AccountBillingRecord record, PaymentResponsePP response) {
+        DebugUtil.transactionRequired("");
+
         Account account = record.getAccount();
         account.setLastPaymentDate(Instant.now());
         account.decreaseBalance(record.getTotalAmountToPay());
@@ -389,18 +370,26 @@ public class PaymentBrokerImpl implements PaymentBroker {
         }
     }
 
-    @Transactional
-    private PaymentErrorPP handlePaymentError(HttpStatusCodeException e, AccountBillingRecord record) {
+    private void handlePaymentError(AccountBillingRecord record, HttpStatusCodeException e) {
+        String errorCode, description;
         try {
             PaymentErrorPP errorResponse = objectMapper.readValue(e.getResponseBodyAsString(), PaymentErrorPP.class);
-            logger.info("Payment Error!: {}", errorResponse.toString());
-            record.setPaymentDescription(errorResponse.getResult().getCode() + ": " + errorResponse.getResult().getDescription());
-            return errorResponse;
-        } catch (IOException error) {
-            logger.info("Could not read in JSON!");
-            error.printStackTrace();
-            return null;
+            errorCode = errorResponse.getResult().getCode();
+            description = errorResponse.getResult().getDescription();
+        } catch (IOException io) {
+            errorCode = "0";
+            description = "Unknown, error processing response";
         }
+        handlePaymentError(record, errorCode, description);
+    }
+
+    private void handlePaymentError(AccountBillingRecord record, String errorCode, String description) {
+        DebugUtil.transactionRequired("");
+        record.setNextPaymentDate(Instant.now().plus(1L, ChronoUnit.DAYS)); // so it doesn't try again  immediately
+        final String errorDescription = errorCode + ": " + description;
+        logger.info("Payment Error!: {}", errorDescription);
+        record.setPaymentDescription(errorDescription);
+        sendFailureEmail(record, errorDescription);
     }
 
     private void sendFailureEmail(AccountBillingRecord record, String errorBody) {

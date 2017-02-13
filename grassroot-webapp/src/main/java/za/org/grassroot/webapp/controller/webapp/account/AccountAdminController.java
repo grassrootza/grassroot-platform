@@ -58,7 +58,7 @@ public class AccountAdminController extends BaseController {
     }
 
     /**
-     * Methods to create institutional accounts and designate their administrators
+     * Methods to create Grassroot Extra accounts and designate their administrators
      */
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping(value = "/home", method = RequestMethod.GET)
@@ -75,15 +75,15 @@ public class AccountAdminController extends BaseController {
     }
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    @RequestMapping(value = "/disable", method = RequestMethod.GET)
+    @RequestMapping(value = "/disable", method = RequestMethod.POST)
     public String disableAccount(@RequestParam("accountUid") String accountUid, RedirectAttributes attributes, HttpServletRequest request) {
-        accountBroker.disableAccount(getUserProfile().getUid(), accountUid, "disabled by admin user", true, false); // todo : have a form to input this
+        accountBroker.disableAccount(getUserProfile().getUid(), accountUid, "disabled by admin user", false, false); // todo : have a form to input this
         addMessage(attributes, MessageType.INFO, "admin.accounts.disabled", request);
         return "redirect:home";
     }
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    @RequestMapping(value = "/enable", method = RequestMethod.GET)
+    @RequestMapping(value = "/enable", method = RequestMethod.POST)
     public String enableAccount(@RequestParam("accountUid") String accountUid, @RequestParam(required = false) Boolean sendEmail,
                                 RedirectAttributes attributes, HttpServletRequest request) {
         accountBroker.enableAccount(getUserProfile().getUid(), accountUid, null, false, false);
@@ -216,7 +216,7 @@ public class AccountAdminController extends BaseController {
     @RequestMapping(value = "/reset/payments", method = RequestMethod.GET)
     public String triggerPayments(@RequestParam RedirectAttributes attributes, @RequestParam HttpServletRequest request) {
         if (!environment.acceptsProfiles("production") && paymentBroker != null) {
-            paymentBroker.processAccountPaymentsOutstanding();
+            billingBroker.processBillsDueForPayment();
             addMessage(attributes, MessageType.INFO, "admin.accounts.payments.done", request);
         } else {
             addMessage(attributes, MessageType.ERROR, "admin.accounts.production", request);

@@ -2,6 +2,7 @@ package za.org.grassroot.webapp.controller.webapp.account;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
@@ -92,6 +93,12 @@ public class AccountSponsorshipController extends BaseController {
     @RequestMapping(value = "/respond", method = RequestMethod.GET)
     public String respondSponsorRequest(Model model, @RequestParam String requestUid) {
         AccountSponsorshipRequest request = sponsorshipBroker.load(requestUid);
+        User user = userManagementService.load(getUserProfile().getUid());
+
+        if (!request.getDestination().equals(user)) {
+            throw new AccessDeniedException("Error! Only the user asked to sponsor can respond to the request");
+        }
+
         model.addAttribute("request", request);
         model.addAttribute("method", PaymentMethod.makeEmpty());
         sponsorshipBroker.markRequestAsResponded(requestUid);
@@ -100,6 +107,13 @@ public class AccountSponsorshipController extends BaseController {
 
     @RequestMapping(value = "/respond/deny", method = RequestMethod.GET)
     public String denySponsorRequest(@RequestParam String requestUid, RedirectAttributes attributes, HttpServletRequest request) {
+        AccountSponsorshipRequest sponsorshipRequest = sponsorshipBroker.load(requestUid);
+        User user = userManagementService.load(getUserProfile().getUid());
+
+        if (!sponsorshipRequest.getDestination().equals(user)) {
+            throw new AccessDeniedException("Error! Only the user asked to sponsor can respond to the request");
+        }
+
         sponsorshipBroker.denySponsorshipRequest(requestUid);
         addMessage(attributes, MessageType.INFO, "account.sponsorship.denied.done", request);
         return "redirect:/home";
