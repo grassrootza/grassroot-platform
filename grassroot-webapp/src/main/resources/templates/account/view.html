@@ -72,7 +72,8 @@
             <div th:switch="${#lists.isEmpty(paidGroups)}" class="col-md-6 col-sm-6 col-xs-12">
               <div th:case="true">
                 <p class="grassroot-body">You have not added any groups to this account yet.
-                  <a th:if="${canAddAllGroups}" id="addAllGroups" th:href="@{/account/group/add/all}">Add all my groups to my account.</a>
+                  <a th:if="${canAddAllGroups}" id="addAllGroups" th:href="@{/account/group/add/all(accountUid=${account.uid},trial=false)}">
+                    Add all my groups to my account.</a>
                 </p>
               </div>
               <div th:case="false">

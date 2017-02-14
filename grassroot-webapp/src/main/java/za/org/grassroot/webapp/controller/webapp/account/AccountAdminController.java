@@ -86,7 +86,8 @@ public class AccountAdminController extends BaseController {
     @RequestMapping(value = "/enable", method = RequestMethod.POST)
     public String enableAccount(@RequestParam("accountUid") String accountUid, @RequestParam(required = false) Boolean sendEmail,
                                 RedirectAttributes attributes, HttpServletRequest request) {
-        accountBroker.enableAccount(getUserProfile().getUid(), accountUid, null, false, false);
+        accountBroker.enableAccount(getUserProfile().getUid(), accountUid, null, AccountPaymentType.DIRECT_DEPOSIT,
+                false, false);
         Account account = accountBroker.loadAccount(accountUid);
         if (sendEmail != null && sendEmail) {
             GrassrootEmail.EmailBuilder builder = new GrassrootEmail.EmailBuilder("Grassroot Extra Account Enabled")
@@ -200,7 +201,7 @@ public class AccountAdminController extends BaseController {
     }
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    @RequestMapping(value = "/reset/billing", method = RequestMethod.GET)
+    @RequestMapping(value = "/reset/billing", method = RequestMethod.POST)
     public String triggerBilling(@RequestParam(required = false) boolean sendEmails, @RequestParam(required = false) boolean sendNotifications,
                                  RedirectAttributes attributes, HttpServletRequest request) {
         if (!environment.acceptsProfiles("production")) {

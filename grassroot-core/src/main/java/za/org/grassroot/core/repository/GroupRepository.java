@@ -2,11 +2,13 @@ package za.org.grassroot.core.repository;
 
 /**
  * Created by luke on 2015/07/16.
+ * todo : flip several of these over to specifications
  */
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Permission;
@@ -15,7 +17,7 @@ import za.org.grassroot.core.domain.User;
 import java.time.Instant;
 import java.util.List;
 
-public interface GroupRepository extends JpaRepository<Group, Long> {
+public interface GroupRepository extends JpaRepository<Group, Long>, JpaSpecificationExecutor<Group> {
 
     Group findOneByUid(String uid);
 

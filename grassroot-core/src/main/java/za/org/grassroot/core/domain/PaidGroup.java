@@ -1,6 +1,7 @@
 package za.org.grassroot.core.domain;
 
 import org.springframework.util.StringUtils;
+import za.org.grassroot.core.enums.PaidGroupStatus;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 
@@ -14,7 +15,8 @@ import java.util.Objects;
 @Entity
 @Table(name="paid_group", indexes = {
         @Index(name = "idx_paid_group_origin_group", columnList = "group_id"),
-        @Index(name = "idx_paid_group_account", columnList = "account_id")})
+        @Index(name = "idx_paid_group_account", columnList = "account_id"),
+        @Index(name = "idx_paid_group_status", columnList = "status")})
 public class PaidGroup {
 
     @Id
@@ -60,6 +62,10 @@ public class PaidGroup {
     @Column(name="expire_date_time")
     private Instant expireDateTime;
 
+    @Column(name = "status", nullable = false, length = 50)
+    @Enumerated(EnumType.STRING)
+    protected PaidGroupStatus status;
+
     /*
     Constructors
      */
@@ -96,6 +102,7 @@ public class PaidGroup {
 
         this.activeDateTime = Instant.now();
         this.expireDateTime = DateTimeUtil.getVeryLongAwayInstant();
+        this.status = PaidGroupStatus.ACTIVE;
 
     }
 
@@ -146,8 +153,18 @@ public class PaidGroup {
 
     public void setExpireDateTime(Instant expireDateTime) { this.expireDateTime = expireDateTime; }
 
+    public PaidGroupStatus getStatus() { return status; }
+
+    public void setStatus(PaidGroupStatus status) { this.status = status; }
+
     public boolean isActive() {
-        return expireDateTime == null || expireDateTime.isAfter(Instant.now());
+        return PaidGroupStatus.ACTIVE.equals(status);
+    }
+
+    public void suspend() {
+        this.status = PaidGroupStatus.SUSPENDED;
+        this.expireDateTime = Instant.now();
+        this.group.setPaidFor(false);
     }
 
     @Override

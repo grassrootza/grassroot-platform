@@ -4,7 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.jpa.domain.Specifications;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -13,6 +13,8 @@ import za.org.grassroot.core.domain.notification.FreeFormMessageNotification;
 import za.org.grassroot.core.enums.AccountLogType;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.repository.*;
+import za.org.grassroot.core.specifications.GroupSpecifications;
+import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.*;
 import za.org.grassroot.services.util.FullTextSearchUtils;
@@ -26,9 +28,10 @@ import java.time.ZoneOffset;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.springframework.data.jpa.domain.Specifications.where;
 import static za.org.grassroot.services.specifications.NotificationSpecifications.*;
-import static za.org.grassroot.services.specifications.PaidGroupSpecifications.expiresAfter;
-import static za.org.grassroot.services.specifications.PaidGroupSpecifications.isForAccount;
+import static za.org.grassroot.core.specifications.PaidGroupSpecifications.expiresAfter;
+import static za.org.grassroot.core.specifications.PaidGroupSpecifications.isForAccount;
 import static za.org.grassroot.services.specifications.TodoSpecifications.createdDateBetween;
 import static za.org.grassroot.services.specifications.TodoSpecifications.hasGroupAsAncestor;
 
@@ -64,12 +67,18 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
     }
 
+    private void validateAdmin(User user, Account account) {
+        if (!account.getAdministrators().contains(user)) {
+            permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
+        }
+    }
+
     @Override
     @Transactional(readOnly = true)
     public List<Group> fetchGroupsSponsoredByAccount(String accountUid) {
         Account account = accountRepository.findOneByUid(accountUid);
-        List<PaidGroup> paidGroups = paidGroupRepository.findAll(Specifications
-                .where(isForAccount(account))
+        List<PaidGroup> paidGroups = paidGroupRepository.findAll(
+                where(isForAccount(account))
                 .and(expiresAfter(Instant.now())));
         List<Group> groups = new ArrayList<>();
         if (paidGroups != null) {
@@ -97,9 +106,7 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
             throw new IllegalArgumentException("Error! Account UID not supplied and user does not have an account");
         }
 
-        if (!account.getAdministrators().contains(addingUser)) {
-            permissionBroker.validateSystemRole(addingUser, BaseRoles.ROLE_SYSTEM_ADMIN);
-        }
+        validateAdmin(addingUser, account);
 
         if (!account.isEnabled()) {
             throw new AccountExpiredException();
@@ -126,6 +133,23 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
 
     @Override
     @Transactional
+    public void addGroupsToAccount(String accountUid, Set<String> groupUids, String userUid) {
+        Objects.requireNonNull(accountUid);
+        Objects.requireNonNull(groupUids);
+        Objects.requireNonNull(userUid);
+
+        Account account = accountRepository.findOneByUid(accountUid);
+        User user = userRepository.findOneByUid(userUid);
+        validateAdmin(user, account);
+
+        List<Group> groups = groupRepository.findAll(where(GroupSpecifications.uidIn(groupUids)));
+        logger.info("number of groups matching list: {}", groups.size());
+
+        addGroupsToAccount(groups, account, user);
+    }
+
+    @Override
+    @Transactional
     public int addUserCreatedGroupsToAccount(String accountUid, String userUid) {
         Objects.requireNonNull(accountUid);
         Objects.requireNonNull(userUid);
@@ -138,10 +162,15 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
         }
 
         List<Group> groups = groupRepository.findByCreatedByUserAndActiveTrueOrderByCreatedDateTimeDesc(user);
-        int spaceOnAccount = groupsLeftOnAccount(account);
+        return addGroupsToAccount(groups, account, user);
+    }
+
+    private int addGroupsToAccount(List<Group> groups, Account account, User user) {
+        DebugUtil.transactionRequired("AddingGroupsToAccount");
 
         List<PaidGroup> paidGroups = new ArrayList<>();
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+        int spaceOnAccount = groupsLeftOnAccount(account);
 
         for (int i = 0; i < groups.size() && (spaceOnAccount - i) > 0; i++) {
             Group group = groups.get(i);
@@ -170,7 +199,7 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
 
     @Override
     @Transactional(readOnly = true)
-    public List<Group> candidateGroupsForAccount(String userUid, String accountUid, String filterTerm) {
+    public List<Group> searchGroupsForAddingToAccount(String userUid, String accountUid, String filterTerm) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(accountUid);
 
@@ -189,32 +218,51 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
         return userGroups.stream()
                 .filter(g -> !g.isPaidFor())
                 .collect(Collectors.toList());
+    }
 
+    @Override
+    public List<Group> fetchUserCreatedGroupsUnpaidFor(String userUid, Sort sort) {
+        User user = userRepository.findOneByUid(userUid);
+        return groupRepository.findAll(
+                where(GroupSpecifications.createdByUser(user))
+                .and(GroupSpecifications.isActive())
+                .and(GroupSpecifications.paidForStatus(false)));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public boolean canAddGroupToAccount(String userUid) {
-        User user = userRepository.findOneByUid(userUid);
-        Account account = user.getPrimaryAccount();
+    public boolean canAddGroupToAccount(String userUid, String accountUid) {
+        Account account;
+        if (StringUtils.isEmpty(accountUid)) {
+            User user = userRepository.findOneByUid(userUid);
+            account = user.getPrimaryAccount();
+        } else {
+            account = accountRepository.findOneByUid(accountUid);
+        }
         return account != null && account.isEnabled() && groupsLeftOnAccount(account) > 0;
     }
 
     @Override
     @Transactional(readOnly = true)
-    public boolean canAddMultipleGroupsToOwnAccount(String userUid) {
+    public boolean canAddAllCreatedGroupsToAccount(String userUid, String accountUid) {
         User user = userRepository.findOneByUid(userUid);
+        Account account = accountRepository.findOneByUid(accountUid);
         if (user.getPrimaryAccount() == null) {
             return false;
         } else {
-            List<Group> userGroups = groupRepository.findByCreatedByUserAndActiveTrueOrderByCreatedDateTimeDesc(user);
-            return userGroups != null && !userGroups.isEmpty() && userGroups.stream().anyMatch(g -> !g.isPaidFor());
+            List<Group> userGroups = groupRepository.findAll(
+                    where(GroupSpecifications.createdByUser(user))
+                    .and(GroupSpecifications.paidForStatus(false))
+                    .and(GroupSpecifications.isActive()));
+
+            logger.info("number of user groups: {}, groups left on account: {}", userGroups.size(), groupsLeftOnAccount(account));
+            return userGroups.size() < groupsLeftOnAccount(account);
         }
     }
 
     private int groupsLeftOnAccount(Account account) {
-        return account.getMaxNumberGroups() - (int) paidGroupRepository.count(Specifications.where(
-                expiresAfter(Instant.now())).and(isForAccount(account)));
+        return account.getMaxNumberGroups() -
+                (int) paidGroupRepository.count(where(expiresAfter(Instant.now())).and(isForAccount(account)));
     }
 
     @Override
@@ -321,7 +369,7 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
     @Transactional(readOnly = true)
     public int numberTodosLeftForGroup(String groupUid) {
         Group group = groupRepository.findOneByUid(groupUid);
-        int todosThisMonth = (int) todoRepository.count(Specifications.where(hasGroupAsAncestor(group))
+        int todosThisMonth = (int) todoRepository.count(where(hasGroupAsAncestor(group))
                 .and(createdDateBetween(LocalDateTime.now().withDayOfMonth(1).withHour(0).toInstant(ZoneOffset.UTC), Instant.now())));
 
         int monthlyLimit;
@@ -345,7 +393,7 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
     public int numberMessagesLeft(String accountUid) {
         Account account = accountRepository.findOneByUid(accountUid);
 
-        long messagesThisMonth = logsAndNotificationsBroker.countNotifications(Specifications.where(
+        long messagesThisMonth = logsAndNotificationsBroker.countNotifications(where(
                 accountLogTypeIs(AccountLogType.MESSAGE_SENT))
                 .and(belongsToAccount(account))
                 .and(createdTimeBetween(LocalDate.now().withDayOfMonth(1).atStartOfDay().toInstant(ZoneOffset.UTC), Instant.now())));

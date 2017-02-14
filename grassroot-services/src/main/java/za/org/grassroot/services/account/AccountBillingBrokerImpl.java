@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
 
 import static java.time.temporal.ChronoUnit.DAYS;
 import static org.springframework.util.StringUtils.isEmpty;
+import static za.org.grassroot.core.specifications.AccountSpecifications.isVisible;
 import static za.org.grassroot.core.specifications.AccountSpecifications.nextStatementBefore;
 import static za.org.grassroot.core.specifications.BillingSpecifications.*;
 import static za.org.grassroot.services.specifications.NotificationSpecifications.*;
@@ -49,7 +50,7 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
     private static final Logger log = LoggerFactory.getLogger(AccountBillingBrokerImpl.class);
 
     // todo : make sure this can handle both end-of-trial and payment failed
-    @Value("${grassroot.trial.end.link:https://localhost:8080/account/payment/start}")
+    @Value("${grassroot.trial.end.link:http://localhost:8080/account/signup/start}")
     private String accountPaymentLink;
 
     private static final String SYSTEM_USER = "system_user"; // fake user since user_uid is null and these batch jobs are automated
@@ -204,17 +205,13 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
         List<AccountBillingRecord> records = new ArrayList<>();
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
-        accountRepository.findAll((nextStatementBefore(Instant.now())))
+        accountRepository.findAll(Specifications.where(isVisible())
+                .and(nextStatementBefore(Instant.now())))
                 .forEach(a -> {
-                    switch (a.getDefaultPaymentType()) {
-                        case FREE_TRIAL:
-                            handleFreeTrialStatements(a, bundle, records, sendEmails, sendNotifications);
-                            break;
-                        case CARD_PAYMENT:
-                        case DIRECT_DEPOSIT: // for now just handle like a card payment, todo : handle differently
-                        default:
-                            handleCreditCardStatements(a, bundle, records, sendEmails, sendNotifications);
-                            break;
+                    if (AccountPaymentType.FREE_TRIAL.equals(a.getDefaultPaymentType())) {
+                        handleFreeTrialStatements(a, bundle, records, sendEmails, sendNotifications);
+                    } else {
+                        handleCreditCardStatements(a, bundle, records, sendEmails, sendNotifications);
                     }
                 });
 
@@ -245,6 +242,8 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
                                            boolean sendEmails, boolean sendNotifications) {
         DebugUtil.transactionRequired("");
 
+        log.info("A free trial account has expired, disabling and sending notice ... ");
+
         long billForPeriod = account.getSubscriptionFee();
         long costForPeriod = calculateAccountCostsInPeriod(account, LocalDateTime.ofInstant(account.getEnabledDateTime(), BILLING_TZ),
                 LocalDateTime.now());
@@ -255,6 +254,13 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
         endOfTrialBill.setStatementDateTime(Instant.now());
         endOfTrialBill.setNextPaymentDate(null);
         records.add(endOfTrialBill);
+
+        account.setEnabled(false);
+        account.setDisabledDateTime(Instant.now());
+        // note: do not detach the paid groups from the account, since once the account is paid, will want to re-enable;
+        // also, leave it as 'active', else can't distinguish when re-enabling (should maybe rename that field ...)
+        log.info("suspending paid groups at end of free trial ... ");
+        account.getCurrentPaidGroups().forEach(PaidGroup::suspend);
 
         if (sendNotifications) {
             bundle.addNotifications(generateTrialExpiredNotifications(account, endOfTrialBill));
@@ -373,6 +379,8 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
         if (!transactionSucceeded) {
             Account account = record.getAccount();
             account.setEnabled(false);
+            account.getCurrentPaidGroups().forEach(PaidGroup::suspend);
+
             logsAndNotificationsBroker.asyncStoreBundle(new LogsAndNotificationsBundle(Collections.emptySet(),
                     accountDisabledNotification(account, record)));
             sendDisabledEmails(account);

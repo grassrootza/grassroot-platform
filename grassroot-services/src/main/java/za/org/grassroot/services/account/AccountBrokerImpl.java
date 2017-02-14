@@ -10,13 +10,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.enums.AccountBillingCycle;
-import za.org.grassroot.core.enums.AccountLogType;
-import za.org.grassroot.core.enums.AccountPaymentType;
-import za.org.grassroot.core.enums.AccountType;
+import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.repository.AccountRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.AfterTxCommitTask;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.AccountLimitExceededException;
@@ -26,10 +24,14 @@ import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import javax.annotation.PostConstruct;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.springframework.data.jpa.domain.Specifications.where;
 import static za.org.grassroot.core.specifications.AccountSpecifications.*;
+import static za.org.grassroot.services.account.AccountBillingBrokerImpl.BILLING_TZ;
+import static za.org.grassroot.services.account.AccountBillingBrokerImpl.STD_BILLING_HOUR;
 
 /**
  * Created by luke on 2015/11/12.
@@ -100,6 +102,12 @@ public class AccountBrokerImpl implements AccountBroker {
         return accountRepository.findOneByUid(accountUid);
     }
 
+    private void validateAdmin(User user, Account account) {
+        if (!account.getAdministrators().contains(user)) {
+            permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
+        }
+    }
+
     @Override
     @Transactional(readOnly = true)
     public Account loadPrimaryAccountForUser(String userUid, boolean loadEvenIfDisabled) {
@@ -111,7 +119,7 @@ public class AccountBrokerImpl implements AccountBroker {
     @Override
     @Transactional
     public String createAccount(String userUid, String accountName, String billedUserUid, AccountType accountType,
-                                AccountPaymentType accountPaymentType, AccountBillingCycle billingCycle) {
+                                AccountPaymentType accountPaymentType, AccountBillingCycle billingCycle, boolean enableFreeTrial) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(billedUserUid);
         Objects.requireNonNull(accountName);
@@ -144,6 +152,21 @@ public class AccountBrokerImpl implements AccountBroker {
                 .accountLogType(AccountLogType.ADMIN_ADDED)
                 .description("billed user set as admin").build());
 
+
+        if (enableFreeTrial) {
+            account.setEnabled(true);
+            account.setEnabledDateTime(Instant.now());
+            account.setEnabledByUser(creatingUser);
+            account.setNextBillingDate(LocalDateTime.now().plusMonths(1).toInstant(BILLING_TZ));
+            account.setDefaultPaymentType(AccountPaymentType.FREE_TRIAL); // todo : rethink if want to handle it this way, and/or alter payment type selection UX/UI
+
+            bundle.addLog(new AccountLog.Builder(account)
+                    .accountLogType(AccountLogType.ACCOUNT_ENABLED)
+                    .userUid(userUid)
+                    .description("account enabled for free trial, at creation")
+                    .build());
+        }
+
         AfterTxCommitTask afterTxCommitTask = () -> logsAndNotificationsBroker.asyncStoreBundle(bundle);
         eventPublisher.publishEvent(afterTxCommitTask);
 
@@ -163,7 +186,7 @@ public class AccountBrokerImpl implements AccountBroker {
 
     @Override
     @Transactional
-    public void enableAccount(String userUid, String accountUid, String ongoingPaymentRef, boolean ensureUserAddedToAdmin, boolean setBillingUser) {
+    public void enableAccount(String userUid, String accountUid, String ongoingPaymentRef, AccountPaymentType paymentType, boolean ensureUserAddedToAdmin, boolean setBillingUser) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(accountUid);
 
@@ -177,8 +200,19 @@ public class AccountBrokerImpl implements AccountBroker {
         account.setEnabled(true);
         account.setEnabledDateTime(Instant.now());
         account.setEnabledByUser(user);
-        account.incrementBillingDate(AccountBillingBrokerImpl.STD_BILLING_HOUR, AccountBillingBrokerImpl.BILLING_TZ);
+        account.incrementBillingDate(STD_BILLING_HOUR, AccountBillingBrokerImpl.BILLING_TZ);
 
+        // re-enable any groups that were disabled when the account expired
+        log.info("enabling {} paid groups ... from among ...", account.getPaidGroups().size()); // force a quick cache to avoid N+1
+        account.getPaidGroups().stream()
+                .filter(pg -> PaidGroupStatus.SUSPENDED.equals(pg.getStatus()) && !pg.getGroup().isPaidFor())
+                .forEach(pg -> {
+                    pg.setExpireDateTime(DateTimeUtil.getVeryLongAwayInstant());
+                    pg.setStatus(PaidGroupStatus.ACTIVE);
+                    pg.getGroup().setPaidFor(true);
+                });
+
+        account.setDefaultPaymentType(paymentType);
         if (!StringUtils.isEmpty(ongoingPaymentRef)) {
             account.setPaymentRef(ongoingPaymentRef);
         }
@@ -230,12 +264,12 @@ public class AccountBrokerImpl implements AccountBroker {
     @Override
     @Transactional
     public void disableAccount(String administratorUid, String accountUid, String reasonToRecord, boolean removeAdminRole, boolean generateClosingBill) {
+        Objects.requireNonNull(administratorUid);
+        Objects.requireNonNull(accountUid);
+
         User user = userRepository.findOneByUid(administratorUid);
         Account account = accountRepository.findOneByUid(accountUid);
-
-        if (user.getPrimaryAccount() == null || !user.getPrimaryAccount().equals(account)) {
-            permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
-        }
+        validateAdmin(user, account);
 
         if (generateClosingBill) {
             accountBillingBroker.generateClosingBill(administratorUid, accountUid);
@@ -248,6 +282,8 @@ public class AccountBrokerImpl implements AccountBroker {
         for (PaidGroup paidGroup : account.getPaidGroups()) {
             paidGroup.setExpireDateTime(Instant.now());
             paidGroup.setRemovedByUser(user);
+            paidGroup.setStatus(PaidGroupStatus.REMOVED);
+            paidGroup.getGroup().setPaidFor(false);
         }
 
         if (removeAdminRole) {
@@ -280,20 +316,24 @@ public class AccountBrokerImpl implements AccountBroker {
         }
 
         User user = userRepository.findOneByUid(userUid);
-        if (!user.getPrimaryAccount().equals(account)) {
-            permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
-        }
+        validateAdmin(user, account); // note: this allows non-billing admin to close account, leaving for now but may revisit
 
         account.setVisible(false);
-        for (User admin : account.getAdministrators()) {
-            admin.setPrimaryAccount(null);
-            permissionBroker.removeSystemRole(admin, BaseRoles.ROLE_ACCOUNT_ADMIN);
-        }
+
+        log.info("removing {} paid groups", account.getPaidGroups().size());
+        Set<String> paidGroupUids = account.getPaidGroups().stream().map(pg -> pg.getGroup().getUid()).collect(Collectors.toSet());
+        accountGroupBroker.removeGroupsFromAccount(accountUid, paidGroupUids, userUid);
 
         createAndStoreSingleAccountLog(new AccountLog.Builder(account)
                 .userUid(userUid)
                 .accountLogType(AccountLogType.ACCOUNT_INVISIBLE)
                 .description("account closed and removed from view").build());
+
+        log.info("removing {} administrators", account.getAdministrators().size());
+        account.getAdministrators().stream().filter(u -> !u.getUid().equals(userUid))
+                .forEach(a -> removeAdministrator(userUid, accountUid, a.getUid(), true));
+
+        removeAdministrator(userUid, accountUid, userUid, false); // at the end, remove self
     }
 
     @Override
@@ -305,10 +345,7 @@ public class AccountBrokerImpl implements AccountBroker {
 
         User user = userRepository.findOneByUid(userUid);
         Account account = accountRepository.findOneByUid(accountUid);
-
-        if (!account.getAdministrators().contains(user)) {
-            permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
-        }
+        validateAdmin(user, account);
 
         int remainingGroups = (int) account.getPaidGroups().stream().filter(PaidGroup::isActive).count() -
                 (groupsToRemove == null ? 0 : groupsToRemove.size());
@@ -384,10 +421,7 @@ public class AccountBrokerImpl implements AccountBroker {
 
         Account account = accountRepository.findOneByUid(accountUid);
         User user = userRepository.findOneByUid(userUid);
-
-        if (!account.getAdministrators().contains(user)) {
-            permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
-        }
+        validateAdmin(user, account);
 
         account.setPaymentRef(paymentRef);
 
@@ -408,9 +442,7 @@ public class AccountBrokerImpl implements AccountBroker {
         Account account = accountRepository.findOneByUid(accountUid);
         User administrator = userRepository.findOneByUid(administratorUid);
 
-        if (!account.getAdministrators().contains(changingUser)) {
-            permissionBroker.validateSystemRole(changingUser, BaseRoles.ROLE_SYSTEM_ADMIN);
-        }
+        validateAdmin(changingUser, account);
 
         account.addAdministrator(administrator);
         administrator.addAccountAdministered(account);
@@ -428,12 +460,13 @@ public class AccountBrokerImpl implements AccountBroker {
 
     @Override
     @Transactional
-    public void removeAdministrator(String userUid, String accountUid, String adminToRemoveUid) {
+    public void removeAdministrator(String userUid, String accountUid, String adminToRemoveUid, boolean preventRemovingSelfOrBilling) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(accountUid);
         Objects.requireNonNull(adminToRemoveUid);
+        DebugUtil.transactionRequired("");
 
-        if (userUid.equals(adminToRemoveUid)) {
+        if (preventRemovingSelfOrBilling && userUid.equals(adminToRemoveUid)) {
             throw new AdminRemovalException("account.admin.remove.error.same");
         }
 
@@ -441,18 +474,20 @@ public class AccountBrokerImpl implements AccountBroker {
         Account account = accountRepository.findOneByUid(accountUid);
         User administrator = userRepository.findOneByUid(adminToRemoveUid);
 
-        if (!account.getAdministrators().contains(changingUser)) {
-            permissionBroker.validateSystemRole(changingUser, BaseRoles.ROLE_SYSTEM_ADMIN);
-        }
+        validateAdmin(changingUser, account);
 
-        if (administrator.equals(account.getBillingUser())) {
+        if (preventRemovingSelfOrBilling && administrator.equals(account.getBillingUser())) {
             throw new AdminRemovalException("account.admin.remove.error.bill");
         }
 
         account.removeAdministrator(administrator);
         administrator.removeAccountAdministered(account);
-        if (administrator.getAccountsAdministered().isEmpty()) {
+
+        if (account.equals(administrator.getPrimaryAccount())) {
             administrator.setPrimaryAccount(null);
+        }
+
+        if (administrator.getAccountsAdministered().isEmpty()) {
             permissionBroker.removeSystemRole(administrator, BaseRoles.ROLE_ACCOUNT_ADMIN);
         }
 

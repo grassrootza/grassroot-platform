@@ -114,6 +114,11 @@
     width: 100%;
   }
 
+  &.word-wrap-button {
+    white-space: normal !important;
+    word-wrap: break-word;
+  }
+
   &.btn-xl {
     font-size: 1.5em !important;
     font-weight: bolder;

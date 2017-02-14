@@ -1,6 +1,5 @@
 package za.org.grassroot.webapp.controller.webapp.account;
 
-import org.apache.commons.validator.routines.EmailValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,9 +15,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.AccountBillingRecord;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.enums.AccountBillingCycle;
 import za.org.grassroot.core.enums.AccountPaymentType;
-import za.org.grassroot.core.enums.AccountType;
 import za.org.grassroot.integration.exception.PaymentMethodFailedException;
 import za.org.grassroot.integration.payments.PaymentBroker;
 import za.org.grassroot.integration.payments.PaymentMethod;
@@ -67,27 +64,6 @@ public class AccountPaymentController extends BaseController {
         this.accountBillingBroker = accountBillingBroker;
         this.paymentBroker = paymentBroker;
         this.sponsorshipBroker = sponsorshipBroker;
-    }
-
-    @RequestMapping(value = "create", method = RequestMethod.POST)
-    public String createAccountEntity(Model model, @RequestParam(required = false) String accountName, @RequestParam AccountType accountType,
-                                      @RequestParam(value = "emailAddress", required = false) String emailAddress,
-                                      @RequestParam AccountBillingCycle billingCycle, @RequestParam(required = false) AccountPaymentType paymentType) {
-
-        final String nameToUse = StringUtils.isEmpty(accountName) ? getUserProfile().nameToDisplay() : accountName;
-        final String accountUid = accountBroker.createAccount(getUserProfile().getUid(), nameToUse, getUserProfile().getUid(), accountType,
-                paymentType == null ? AccountPaymentType.CARD_PAYMENT : paymentType, billingCycle);
-
-        if (!StringUtils.isEmpty(emailAddress) && EmailValidator.getInstance(false).isValid(emailAddress)) {
-            userManagementService.updateEmailAddress(getUserProfile().getUid(), emailAddress);
-        }
-
-        refreshAuthorities();
-        Account createdAccount = accountBroker.loadAccount(accountUid);
-
-        return AccountPaymentType.DIRECT_DEPOSIT.equals(paymentType)
-                ? loadDebitInstruction(model, createdAccount)
-                : loadCreditCardForm(model, createdAccount, true);
     }
 
     @RequestMapping(value = "start", method = RequestMethod.GET)
@@ -241,7 +217,7 @@ public class AccountPaymentController extends BaseController {
         AccountBillingRecord record = accountBillingBroker.fetchRecordByPayment(paymentId);
         Account account = record.getAccount();
         if (enableOrUpdateAccount == ENABLE) {
-            accountBroker.enableAccount(getUserProfile().getUid(), account.getUid(), paymentRef, true, true);
+            accountBroker.enableAccount(getUserProfile().getUid(), account.getUid(), paymentRef, AccountPaymentType.CARD_PAYMENT, true, true);
             sponsorshipBroker.closeRequestsAndMarkApproved(getUserProfile().getUid(), account.getUid());
             addMessage(attributes, MessageType.SUCCESS, "account.signup.payment.done", request);
         } else if (enableOrUpdateAccount == UPDATE) {

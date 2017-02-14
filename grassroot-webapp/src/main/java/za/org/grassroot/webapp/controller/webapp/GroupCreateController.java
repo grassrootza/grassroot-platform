@@ -60,7 +60,7 @@ public class GroupCreateController extends BaseController {
 		}
 
 		model.addAttribute("groupCreator", groupCreator);
-		model.addAttribute("canAddToAccount", accountGroupBroker.canAddGroupToAccount(getUserProfile().getUid()));
+		model.addAttribute("canAddToAccount", accountGroupBroker.canAddGroupToAccount(getUserProfile().getUid(), null));
 
 		return "group/create";
 	}

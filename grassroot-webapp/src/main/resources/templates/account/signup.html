@@ -22,7 +22,7 @@
   <div layout:fragment="content">
     <div class="row">
       <div class="col-md-4 col-md-offset-4">
-        <form id="signupForm" th:action="@{payment/create}" method="POST" class="form-vertical">
+        <form id="signupForm" th:action="@{create}" method="POST" class="form-vertical">
           <div class="form-group">
             <label for="account_name" class="control-label">1. Account name</label>
             <input type="text" id="account_name" name="accountName" class="form-control input-lg"
@@ -51,7 +51,7 @@
             <label for="billing_email" class="control-label">3. Billing email</label>
             <input type="text" id="billing_email" name="emailAddress" class="form-control input-lg" />
           </div>
-          <div class="form-group">
+          <div class="form-group" th:if="${showBillingOptions}">
             <label for="billingCycle" class="control-label">4. Billing period</label>
             <p th:text="#{web.account.period.describe}">All the benefits of an annual period</p>
             <select id="billingCycle" name="billingCycle" class="form-control input-lg">
@@ -60,7 +60,7 @@
                       th:value="${cycle}"></option>
             </select>
           </div>
-          <div class="form-group" id="paymentTypeHolder">
+          <div class="form-group" id="paymentTypeHolder" th:if="${showBillingOptions}">
             <label for="paymentType" class="control-label">5. Payment type</label>
             <select id="paymentType" name="paymentType" class="form-control input-lg" disabled="true">
               <option th:each="type: ${T(za.org.grassroot.core.enums.AccountPaymentType).values()}"
@@ -68,6 +68,13 @@
                       th:value="${type}"></option>
             </select>
           </div>
+          <div class="form-group" th:if="${showFreeTrialText}">
+            <p class="grassroot-body">
+              Your account will have a one month free trial period. All features will be available during that time. The
+              free trial is only available once.
+            </p>
+          </div>
+
           <div class="form-group top-buffer">
             <button type="submit" class="btn default-button full-width-button btn-xl"><i class="fa fa-arrow-right" aria-hidden="true"></i> NEXT</button>
           </div>
@@ -80,7 +87,7 @@
 
     <script th:src="@{/js/lib/jquery.validate.min.js}"></script>
 
-    <script>
+    <script th:inline="javascript">
 
       $(document).ready(function() {
 
@@ -131,20 +138,24 @@
           subgroupDepth.text(subGroupLimits[type]);
         });
 
-        var payTypeDiv = $("#paymentTypeHolder");
-        var payTypeSel = $("#paymentType");
+        var showBillingOptions = /*[[${showBillingOptions}]]*/ true;
 
-        payTypeDiv.hide();
+        if (showBillingOptions) {
+            var payTypeDiv = $("#paymentTypeHolder");
+            var payTypeSel = $("#paymentType");
 
-        $("#billingCycle").change(function() {
-            if ($(this).val() == 'ANNUAL') {
-                payTypeDiv.show();
-                payTypeSel.prop('disabled', false);
-            } else {
-                payTypeSel.prop('disabled', true);
-                payTypeSel.val('CARD_PAYMENT');
-            }
-          });
+            payTypeDiv.hide();
+
+            $("#billingCycle").change(function () {
+                if ($(this).val() == 'ANNUAL') {
+                    payTypeDiv.show();
+                    payTypeSel.prop('disabled', false);
+                } else {
+                    payTypeSel.prop('disabled', true);
+                    payTypeSel.val('CARD_PAYMENT');
+                }
+            });
+        }
 
         $("#signupForm").validate({
           rules: {

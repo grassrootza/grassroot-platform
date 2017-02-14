@@ -1,5 +1,6 @@
 package za.org.grassroot.webapp.controller.webapp.account;
 
+import org.apache.commons.validator.routines.EmailValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +15,8 @@ import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.PaidGroup;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.AccountBillingCycle;
+import za.org.grassroot.core.enums.AccountPaymentType;
 import za.org.grassroot.core.enums.AccountType;
 import za.org.grassroot.integration.email.EmailSendingBroker;
 import za.org.grassroot.integration.email.GrassrootEmail;
@@ -51,7 +54,7 @@ public class AccountSignUpController extends BaseController {
         this.emailSendingBroker = emailSendingBroker;
     }
 
-    @GetMapping("signup")
+    @RequestMapping(value = "signup", method = RequestMethod.GET)
     public String startAccountSignup(Model model, @RequestParam(required = false) String accountType) {
         User user = userManagementService.load(getUserProfile().getUid());
         logger.info("accountType in parameter: {}", accountType);
@@ -60,17 +63,45 @@ public class AccountSignUpController extends BaseController {
         } else {
             model.addAttribute("user", user); // may be cached (and not reflect email) if use just getuserprofile
             model.addAttribute("accountTypes", Arrays.asList(AccountType.LIGHT, AccountType.STANDARD, AccountType.HEAVY));
+
             if (!StringUtils.isEmpty(accountType) && AccountType.contains(accountType)) {
                 model.addAttribute("defaultType", AccountType.valueOf(accountType));
             } else {
                 model.addAttribute("defaultType", AccountType.STANDARD);
             }
+
+            model.addAttribute("showBillingOptions", false); // in future, use some promotional logic here
+            model.addAttribute("showFreeTrialText", true);
+
             return "account/signup";
         }
     }
 
+    @RequestMapping(value = "create", method = RequestMethod.POST)
+    public String createAccountEntity(RedirectAttributes attributes, HttpServletRequest request,
+                                      @RequestParam(required = false) String accountName, @RequestParam AccountType accountType,
+                                      @RequestParam(required = false) String emailAddress,
+                                      @RequestParam(required = false) AccountBillingCycle billingCycle,
+                                      @RequestParam(required = false) AccountPaymentType paymentType) {
+
+        final String nameToUse = StringUtils.isEmpty(accountName) ? getUserProfile().nameToDisplay() : accountName;
+        final String accountUid = accountBroker.createAccount(getUserProfile().getUid(), nameToUse, getUserProfile().getUid(), accountType,
+                paymentType == null ? AccountPaymentType.CARD_PAYMENT : paymentType,
+                billingCycle == null ? AccountBillingCycle.MONTHLY : billingCycle, true);
+
+        if (!StringUtils.isEmpty(emailAddress) && EmailValidator.getInstance(false).isValid(emailAddress)) {
+            userManagementService.updateEmailAddress(getUserProfile().getUid(), emailAddress);
+        }
+
+        refreshAuthorities();
+
+        attributes.addAttribute("accountUid", accountUid);
+        addMessage(attributes, MessageType.SUCCESS, "account.trial.started", request);
+        return "redirect:/account/trial";
+    }
+
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
-    @GetMapping(value = "/type")
+    @RequestMapping(value = "/type", method = RequestMethod.GET)
     public String changeAccountTypeOptions(Model model, @RequestParam(required = false) String accountUid) {
         Account account = !StringUtils.isEmpty(accountUid) ? accountBroker.loadAccount(accountUid)
                 : accountBroker.loadPrimaryAccountForUser(getUserProfile().getUid(), false);
@@ -169,34 +200,6 @@ public class AccountSignUpController extends BaseController {
         } catch (NullPointerException|AccountLimitExceededException e) {
             addMessage(attributes, MessageType.ERROR, "account.changetype.error", request);
             return "redirect:/account/type";
-        }
-    }
-
-    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
-    @RequestMapping(value = "close", method = RequestMethod.POST)
-    public String closeAccount(@RequestParam String accountUid, @RequestParam String confirmText,
-                               RedirectAttributes attributes, HttpServletRequest request) {
-        Account account = accountBroker.loadAccount(accountUid);
-        User loadedUser = userManagementService.load(getUserProfile().getUid());
-
-        if (!account.getAdministrators().contains(loadedUser)) {
-            permissionBroker.validateSystemRole(loadedUser, BaseRoles.ROLE_SYSTEM_ADMIN);
-        }
-
-        if ("confirmed".equalsIgnoreCase(confirmText.trim())) {
-            billingBroker.generateClosingBill(getUserProfile().getUid(), accountUid);
-            accountBroker.closeAccount(getUserProfile().getUid(), accountUid, false);
-            addMessage(attributes, MessageType.INFO, "account.closed.done", request);
-            refreshAuthorities();
-            return "redirect:/home";
-        } else {
-            addMessage(attributes, MessageType.ERROR, "account.closed.error", request);
-            attributes.addAttribute("accountUid", account.getUid());
-            if (account.isEnabled()) {
-                return "redirect:/account/view";
-            } else {
-                return "redirect:/account/disabled";
-            }
         }
     }
 

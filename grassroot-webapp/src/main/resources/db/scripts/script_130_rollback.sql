@@ -1,0 +1,1 @@
+alter table paid_group drop column status;

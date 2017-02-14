@@ -357,7 +357,6 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
     /*
     We use the next set to handle Grassroot Extra accounts
      */
-
     public Set<Account> getAccountsAdministered() {
         if (accountsAdministered == null) {
             accountsAdministered = new HashSet<>();

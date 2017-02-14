@@ -24,9 +24,10 @@ public interface AccountBroker {
     List<Account> loadAllAccounts(boolean visibleOnly, AccountPaymentType paymentMethod, AccountBillingCycle billingCycle);
 
     String createAccount(String userUid, String accountName, String billedUserUid, AccountType accountType,
-                         AccountPaymentType accountPaymentType, AccountBillingCycle billingCycle);
+                         AccountPaymentType accountPaymentType, AccountBillingCycle billingCycle, boolean enableFreeTrial);
 
-    void enableAccount(String userUid, String accountUid, String ongoingPaymentRef, boolean ensureUserAddedToAdmin, boolean setBillingUser);
+    void enableAccount(String userUid, String accountUid, String ongoingPaymentRef, AccountPaymentType paymentType,
+                       boolean ensureUserAddedToAdmin, boolean setBillingUser);
 
     @PreAuthorize("hasAnyRole('ROLE_ACCOUNT_ADMIN, ROLE_SYSTEM_ADMIN')")
     void setAccountPrimary(String userUid, String accountUid);
@@ -41,7 +42,7 @@ public interface AccountBroker {
     void addAdministrator(String userUid, String accountUid, String administratorUid);
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
-    void removeAdministrator(String userUid, String accountUid, String adminToRemoveUid);
+    void removeAdministrator(String userUid, String accountUid, String adminToRemoveUid, boolean preventRemovingSelfOrBilling);
 
     void changeAccountType(String userUid, String accountUid, AccountType newAccountType, Set<String> groupsToRemove);
 

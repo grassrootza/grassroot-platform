@@ -20,7 +20,7 @@ import za.org.grassroot.core.repository.*;
 import za.org.grassroot.services.ChangedSinceData;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.geo.GeoLocationBroker;
-import za.org.grassroot.services.specifications.PaidGroupSpecifications;
+import za.org.grassroot.core.specifications.PaidGroupSpecifications;
 import za.org.grassroot.services.util.FullTextSearchUtils;
 
 import java.time.Instant;

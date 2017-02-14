@@ -99,7 +99,7 @@ public class AccountRestController {
         User user = userService.findByInputNumber(phoneNumber);
 
         final String accountUid = accountBroker.createAccount(user.getUid(), accountName, user.getUid(), accountType,
-                AccountPaymentType.CARD_PAYMENT, AccountBillingCycle.MONTHLY);
+                AccountPaymentType.CARD_PAYMENT, AccountBillingCycle.MONTHLY, false);
 
         if (!StringUtils.isEmpty(billingEmail) && EmailValidator.getInstance(false).isValid(billingEmail)) {
             userService.updateEmailAddress(user.getUid(), billingEmail);
@@ -162,7 +162,7 @@ public class AccountRestController {
 
         PaymentResponse response = paymentBroker.checkMobilePaymentResult(paymentId);
         if (response != null && response.isSuccessful()) {
-            accountBroker.enableAccount(user.getUid(), accountUid, response.getReference(), true, true);
+            accountBroker.enableAccount(user.getUid(), accountUid, response.getReference(), AccountPaymentType.CARD_PAYMENT, true, true);
             return RestUtil.okayResponseWithData(RestMessage.ACCOUNT_ENABLED, new AccountWrapper(account, user,
                     account.getMaxNumberGroups(), account.getFreeFormMessages())); // by definition a newly enabled account has full quota
         } else {
@@ -182,7 +182,7 @@ public class AccountRestController {
             return RestUtil.accessDeniedResponse();
         }
 
-        if (!accountGroupBroker.canAddGroupToAccount(user.getUid())) {
+        if (!accountGroupBroker.canAddGroupToAccount(user.getUid(), null)) {
             return RestUtil.errorResponse(RestMessage.ACCOUNT_GROUPS_EXHAUSTED);
         }
 

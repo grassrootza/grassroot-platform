@@ -13,6 +13,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.enums.AccountPaymentType;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.integration.PdfGeneratingService;
 import za.org.grassroot.services.account.AccountBillingBroker;
@@ -28,9 +29,7 @@ import za.org.grassroot.webapp.model.web.PrivateGroupWrapper;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -64,7 +63,7 @@ public class AccountController extends BaseController {
     public String paidAccountIndex(Model model, HttpServletRequest request) {
         User user = userManagementService.load(getUserProfile().getUid());
         Account account = user.getPrimaryAccount();
-        if (account == null && user.hasMultipleAccounts()) {
+        if (account == null && !user.getAccountsAdministered().isEmpty()) {
             model.addAttribute("accounts", user.getAccountsAdministered().stream()
                     .sorted(Comparator.comparing(Account::getName)).collect(Collectors.toList()));
             return "account/list";
@@ -95,31 +94,63 @@ public class AccountController extends BaseController {
         model.addAttribute("account", account);
         model.addAttribute("user", user);
 
-        if (user.getAccountsAdministered().size() > 1) {
-            model.addAttribute("otherAccounts", user.getAccountsAdministered().stream()
-                    .filter(a -> !account.equals(a))
-                    .sorted(Comparator.comparing(Account::getName))
-                    .collect(Collectors.toList()));
-        }
+        if (!account.isEnabled()) {
+            return viewDisabledAccount(model, account.getUid());
+        } else if (AccountPaymentType.FREE_TRIAL.equals(account.getDefaultPaymentType())) {
+            return viewTrialAccount(model, accountUid);
+        } else {
+            if (user.hasMultipleAccounts()) {
+                model.addAttribute("otherAccounts", user.getAccountsAdministered().stream()
+                        .filter(a -> !account.equals(a) && a.isVisible())
+                        .sorted(Comparator.comparing(Account::getName))
+                        .collect(Collectors.toList()));
+            }
 
-        if (account.isEnabled()) {
             List<PaidGroup> currentlyPaidGroups = account.getPaidGroups().stream()
                     .filter(PaidGroup::isActive)
                     .collect(Collectors.toList());
+
             model.addAttribute("paidGroups", currentlyPaidGroups);
-            model.addAttribute("groupsLeft", accountGroupBroker.numberGroupsLeft(accountUid));
-            model.addAttribute("billingRecords", accountBillingBroker.findRecordsWithStatementDates(accountUid));
+            model.addAttribute("groupsLeft", accountGroupBroker.numberGroupsLeft(account.getUid()));
+            model.addAttribute("billingRecords", accountBillingBroker.findRecordsWithStatementDates(account.getUid()));
             model.addAttribute("canAddAllGroups", currentlyPaidGroups.isEmpty()
-                    && accountGroupBroker.canAddMultipleGroupsToOwnAccount(getUserProfile().getUid()));
+                    && accountGroupBroker.canAddAllCreatedGroupsToAccount(getUserProfile().getUid(), account.getUid()));
             model.addAttribute("administrators", account.getAdministrators());
             return "account/view";
-        } else {
-            model.addAttribute("needEmailAddress", StringUtils.isEmpty(getUserProfile().getEmailAddress()));
-            model.addAttribute("hasRequestedSponsorship", sponsorshipBroker.accountHasOpenRequests(account.getUid()));
-            model.addAttribute("openSponsorshipRequests", sponsorshipBroker.openRequestsForAccount(account.getUid(),
-                    new Sort(Sort.Direction.DESC, "creationTime")));
-            return "account/disabled";
         }
+    }
+
+    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
+    @RequestMapping(value = "/disabled", method = RequestMethod.GET)
+    public String viewDisabledAccount(Model model, @RequestParam String accountUid) {
+        Account account = accountBroker.loadAccount(accountUid);
+        User user = userManagementService.load(getUserProfile().getUid()); // make sure loads latest set of roles etc
+
+        validateUserIsAdministrator(account);
+        model.addAttribute("account", account);
+        model.addAttribute("user", user);
+
+        model.addAttribute("needEmailAddress", StringUtils.isEmpty(getUserProfile().getEmailAddress()));
+        model.addAttribute("hasRequestedSponsorship", sponsorshipBroker.accountHasOpenRequests(account.getUid()));
+        model.addAttribute("openSponsorshipRequests", sponsorshipBroker.openRequestsForAccount(account.getUid(),
+                new Sort(Sort.Direction.DESC, "creationTime")));
+        return "account/disabled";
+    }
+
+    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
+    @RequestMapping(value = "/trial", method = RequestMethod.GET)
+    public String viewTrialAccount(Model model, @RequestParam String accountUid) {
+        model.addAttribute("account", accountBroker.loadAccount(accountUid));
+        boolean canAddAnyGroups = accountGroupBroker.canAddGroupToAccount(getUserProfile().getUid(), accountUid);
+        model.addAttribute("canAddAnyGroups", canAddAnyGroups);
+        if (canAddAnyGroups) {
+            model.addAttribute("canAddAllGroups", accountGroupBroker.canAddAllCreatedGroupsToAccount(getUserProfile().getUid(), accountUid));
+            model.addAttribute("groupsCanAdd", accountGroupBroker.fetchUserCreatedGroupsUnpaidFor(getUserProfile().getUid(), new Sort(Sort.Direction.ASC, "groupName")));
+        } else {
+            model.addAttribute("canAddAllGroups", false);
+            model.addAttribute("groupsCanAdd", new ArrayList<Group>()); // just to avoid Thymeleaf null pointer etc
+        }
+        return "account/trial";
     }
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
@@ -144,7 +175,7 @@ public class AccountController extends BaseController {
         } catch (Exception e) {
             if (!StringUtils.isEmpty(searchTerm)) {
                 List<PrivateGroupWrapper> candidateGroups = accountGroupBroker
-                        .candidateGroupsForAccount(getUserProfile().getUid(), accountUid, searchTerm)
+                        .searchGroupsForAddingToAccount(getUserProfile().getUid(), accountUid, searchTerm)
                         .stream().map(PrivateGroupWrapper::new).collect(Collectors.toList());
                 if (candidateGroups.isEmpty()) {
                     attributes.addAttribute("accountUid", accountUid);
@@ -167,7 +198,9 @@ public class AccountController extends BaseController {
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/group/add/all", method = RequestMethod.GET)
-    public String addAllGroupsToAccount(RedirectAttributes attributes, HttpServletRequest request) {
+    public String addAllGroupsToAccount(@RequestParam String accountUid, @RequestParam boolean trial,
+                                        RedirectAttributes attributes, HttpServletRequest request) {
+        // todo : specify account in case not primary
         Account account = accountBroker.loadPrimaryAccountForUser(getUserProfile().getUid(), false);
         int groupsAdded = accountGroupBroker.addUserCreatedGroupsToAccount(account.getUid(), getUserProfile().getUid());
         if (groupsAdded > 0) {
@@ -176,8 +209,22 @@ public class AccountController extends BaseController {
             addMessage(attributes, MessageType.ERROR, "account.groups.many.error", request);
         }
         attributes.addAttribute("accountUid", account.getUid());
-        return "redirect:/account/view";
+        return "redirect:/account/" + (trial ? "trial" : "view");
     }
+
+    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
+    @RequestMapping(value = "/group/add/multiple", method = RequestMethod.POST)
+    public String addMultipleGroupsToAccount(@RequestParam String accountUid, @RequestParam boolean trial,
+                                             @RequestParam String[] addGroupUids, RedirectAttributes attributes, HttpServletRequest request) {
+        log.info("group UIDs: {}", Arrays.toString(addGroupUids));
+        accountGroupBroker.addGroupsToAccount(accountUid, new HashSet<>(Arrays.asList(addGroupUids)), getUserProfile().getUid());
+
+        attributes.addAttribute("accountUid", accountUid);
+        addMessage(attributes, MessageType.SUCCESS, "account.groups.many.added", new Integer[] { addGroupUids.length }, request);
+
+        return "redirect:/account/" + (trial ? "trial" : "view");
+    }
+
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/group/remove", method = RequestMethod.POST)
@@ -254,7 +301,7 @@ public class AccountController extends BaseController {
         attributes.addAttribute("accountUid", account.getUid());
 
         try {
-            accountBroker.removeAdministrator(getUserProfile().getUid(), accountUid, adminUid);
+            accountBroker.removeAdministrator(getUserProfile().getUid(), accountUid, adminUid, true);
             addMessage(attributes, MessageType.SUCCESS, "account.admin.remove.success", request);
         } catch (AdminRemovalException e) {
             addMessage(attributes, MessageType.ERROR, e.getMessage(), request);
@@ -265,10 +312,38 @@ public class AccountController extends BaseController {
         return "redirect:/account/view";
     }
 
+    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
+    @RequestMapping(value = "close", method = RequestMethod.POST)
+    public String closeAccount(@RequestParam String accountUid, @RequestParam String confirmText,
+                               RedirectAttributes attributes, HttpServletRequest request) {
+        Account account = accountBroker.loadAccount(accountUid);
+        User loadedUser = userManagementService.load(getUserProfile().getUid());
+
+        if (!account.getAdministrators().contains(loadedUser)) {
+            permissionBroker.validateSystemRole(loadedUser, BaseRoles.ROLE_SYSTEM_ADMIN);
+        }
+
+        if ("confirmed".equalsIgnoreCase(confirmText.trim())) {
+            accountBillingBroker.generateClosingBill(getUserProfile().getUid(), accountUid);
+            accountBroker.closeAccount(getUserProfile().getUid(), accountUid, false);
+            addMessage(attributes, MessageType.INFO, "account.closed.done", request);
+            refreshAuthorities();
+            return "redirect:/home";
+        } else {
+            addMessage(attributes, MessageType.ERROR, "account.closed.error", request);
+            attributes.addAttribute("accountUid", account.getUid());
+            if (account.isEnabled()) {
+                return "redirect:/account/view";
+            } else {
+                return "redirect:/account/disabled";
+            }
+        }
+    }
+
     /* quick helper method to do role & permission check */
     private void validateUserIsAdministrator(Account account) {
         User user = userManagementService.load(getUserProfile().getUid());
-        if (user.getPrimaryAccount() == null || !user.getPrimaryAccount().equals(account)) {
+        if (!account.getAdministrators().contains(user)) {
             permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
         }
     }

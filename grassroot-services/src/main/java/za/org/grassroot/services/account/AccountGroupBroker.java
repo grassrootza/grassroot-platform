@@ -1,5 +1,6 @@
 package za.org.grassroot.services.account;
 
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.Group;
@@ -20,15 +21,19 @@ public interface AccountGroupBroker {
 
     void addGroupToAccount(String accountUid, String groupUid, String addingUserUid);
 
+    void addGroupsToAccount(String accountUid, Set<String> groupUid, String addingUserUid);
+
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     int addUserCreatedGroupsToAccount(String accountUid, String userUid);
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
-    List<Group> candidateGroupsForAccount(String userUid, String accountUid, String filterTerm);
+    List<Group> searchGroupsForAddingToAccount(String userUid, String accountUid, String filterTerm);
 
-    boolean canAddGroupToAccount(String userUid);
+    List<Group> fetchUserCreatedGroupsUnpaidFor(String userUid, Sort sort);
 
-    boolean canAddMultipleGroupsToOwnAccount(String userUid);
+    boolean canAddGroupToAccount(String userUid, String accountUid);
+
+    boolean canAddAllCreatedGroupsToAccount(String userUid, String accountUid);
 
     void removeGroupsFromAccount(String accountUid, Set<String> groupUid, String removingUserUid);
 
