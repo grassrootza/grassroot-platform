@@ -141,7 +141,7 @@ public class AccountAdminController extends BaseController {
                                 @RequestParam(required = false) LocalDateTime billingDateTime,
                                 RedirectAttributes attributes, HttpServletRequest request) {
         log.info("stopBilling: {}", stopBilling);
-        billingBroker.forceUpdateBillingCycle(getUserProfile().getUid(), accountUid, stopBilling ? null : billingDateTime);
+        billingBroker.forceUpdateBillingDate(getUserProfile().getUid(), accountUid, stopBilling ? null : billingDateTime);
         addMessage(attributes, MessageType.INFO, "admin.accounts.billingdate.changed", request);
         return "redirect:/admin/accounts/home";
     }

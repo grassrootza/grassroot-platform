@@ -81,9 +81,14 @@ public class AccountPaymentController extends BaseController {
                 : loadCreditCardForm(model, account, true);
     }
 
+    @RequestMapping(value = "deposit", method = RequestMethod.GET)
+    public String displayDepositDetails(Model model, @RequestParam String accountUid, @RequestParam(required = false) String requestUid) {
+        // todo : create a reference number ...
+        return loadDebitInstruction(model, accountBroker.loadAccount(accountUid));
+    }
+
     @RequestMapping(value = "process", method = RequestMethod.POST)
     public String initiatePayment(Model model, RedirectAttributes attributes, @RequestParam String accountUid,
-                                  // @RequestParam(required = false) String pathOnFailure,
                                   @ModelAttribute("method") PaymentMethod paymentMethod, HttpServletRequest request) {
         AccountBillingRecord record = accountBillingBroker.generateSignUpBill(accountUid);
         return handleInitiatingPayment(accountUid, paymentMethod, record, ENABLE, model, attributes, request);

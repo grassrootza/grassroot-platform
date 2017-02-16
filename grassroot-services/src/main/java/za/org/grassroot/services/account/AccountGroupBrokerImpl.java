@@ -29,9 +29,9 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.springframework.data.jpa.domain.Specifications.where;
-import static za.org.grassroot.services.specifications.NotificationSpecifications.*;
 import static za.org.grassroot.core.specifications.PaidGroupSpecifications.expiresAfter;
 import static za.org.grassroot.core.specifications.PaidGroupSpecifications.isForAccount;
+import static za.org.grassroot.services.specifications.NotificationSpecifications.*;
 import static za.org.grassroot.services.specifications.TodoSpecifications.createdDateBetween;
 import static za.org.grassroot.services.specifications.TodoSpecifications.hasGroupAsAncestor;
 
@@ -45,6 +45,9 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
 
     @Value("${accounts.todos.monthly.free:4}")
     private int FREE_TODOS_PER_MONTH;
+
+    private static final String addedDescription = "Group added to Grassroot Extra";
+    private static final String removedDescription = "Group removed from Grassroot Extra";
 
     private UserRepository userRepository;
     private GroupRepository groupRepository;
@@ -189,6 +192,8 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
                     .groupUid(group.getUid())
                     .paidGroupUid(paidGroup.getUid())
                     .description(group.getName()).build());
+
+            bundle.addLog(new GroupLog(group, user, GroupLogType.ADDED_TO_ACCOUNT, account.getId(), addedDescription));
         }
 
         paidGroupRepository.save(paidGroups);
@@ -314,7 +319,10 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
                     .paidGroupUid(record.getUid())
                     .description(group.getName()).build());
 
-            bundle.addLog(new GroupLog(group, user, GroupLogType.GROUP_REMOVED, user.getId(), account.getUid()));
+            bundle.addLog(new GroupLog(group,
+                    user,
+                    GroupLogType.REMOVED_FROM_ACCOUNT,
+                    user.getId(), removedDescription));
         }
 
         logsAndNotificationsBroker.asyncStoreBundle(bundle);
@@ -411,8 +419,12 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
                 .paidGroupUid(paidGroupUid)
                 .description(group.getName()).build());
 
-        bundle.addLog(new GroupLog(group, user, accountLogType.equals(AccountLogType.GROUP_ADDED) ?
-                GroupLogType.ADDED_TO_ACCOUNT : GroupLogType.GROUP_REMOVED, user.getId(), account.getUid()));
+        final boolean isAdded = AccountLogType.GROUP_ADDED.equals(accountLogType);
+        bundle.addLog(new GroupLog(group,
+                user,
+                isAdded ? GroupLogType.ADDED_TO_ACCOUNT : GroupLogType.REMOVED_FROM_ACCOUNT,
+                account.getId(),
+                isAdded ? addedDescription : removedDescription));
         logsAndNotificationsBroker.storeBundle(bundle);
     }
 

@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.notification.AccountBillingNotification;
+import za.org.grassroot.core.enums.AccountBillingCycle;
 import za.org.grassroot.core.enums.AccountLogType;
 import za.org.grassroot.core.enums.AccountPaymentType;
 import za.org.grassroot.core.repository.AccountBillingRecordRepository;
@@ -81,17 +82,6 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
         this.eventPublisher = eventPublisher;
         this.emailSendingBroker = emailSendingBroker;
         this.paymentBroker = paymentBroker;
-    }
-
-    @Override
-    @Transactional
-    public void updateAccountPaymentType(String accountUid, AccountPaymentType paymentType) {
-        Objects.requireNonNull(accountUid);
-        Objects.requireNonNull(paymentType);
-        DebugUtil.transactionRequired("AccountBilling: ");
-
-        Account account = accountRepository.findOneByUid(accountUid);
-        account.setDefaultPaymentType(paymentType);
     }
 
     @Override
@@ -390,7 +380,7 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
     @Override
     @Transactional
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN')")
-    public void forceUpdateBillingCycle(String adminUid, String accountUid, LocalDateTime nextBillingDate) {
+    public void forceUpdateBillingDate(String adminUid, String accountUid, LocalDateTime nextBillingDate) {
         Account account = accountRepository.findOneByUid(accountUid);
         account.setNextBillingDate(nextBillingDate == null ? null : nextBillingDate.toInstant(BILLING_TZ));
         AccountLog accountLog = new AccountLog.Builder(account)

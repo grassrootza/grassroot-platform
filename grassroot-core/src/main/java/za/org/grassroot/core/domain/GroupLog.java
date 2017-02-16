@@ -34,8 +34,9 @@ public class GroupLog implements Serializable, ActionLog {
     @Column(name="group_log_type", nullable = false, length = 50)
     private GroupLogType groupLogType;
 
+    // used for whenever the log involves a third type of entity (e.g., an account, a sub-group, a target user)
     @Column(name = "user_or_sub_group_id")
-    private Long userOrSubGroupId;
+    private Long auxiliaryId;
 
     @Column(name = "description")
     private String description;
@@ -44,15 +45,15 @@ public class GroupLog implements Serializable, ActionLog {
         // for JPA
     }
 
-    public GroupLog(Group group, User user, GroupLogType groupLogType, Long userOrSubGroupId) {
-        this(group, user, groupLogType, userOrSubGroupId, null);
+    public GroupLog(Group group, User user, GroupLogType groupLogType, Long auxiliaryId) {
+        this(group, user, groupLogType, auxiliaryId, null);
     }
 
-    public GroupLog(Group group, User user, GroupLogType groupLogType, Long userOrSubGroupId, String description) {
+    public GroupLog(Group group, User user, GroupLogType groupLogType, Long auxiliaryId, String description) {
         this.group = Objects.requireNonNull(group);
         this.user = user;
         this.groupLogType =  Objects.requireNonNull(groupLogType);
-        this.userOrSubGroupId = userOrSubGroupId;
+        this.auxiliaryId = auxiliaryId;
         this.description = description;
         this.createdDateTime = Instant.now();
     }
@@ -77,8 +78,8 @@ public class GroupLog implements Serializable, ActionLog {
         return groupLogType;
     }
 
-    public Long getUserOrSubGroupId() {
-        return userOrSubGroupId;
+    public Long getAuxiliaryId() {
+        return auxiliaryId;
     }
 
     public String getDescription() {
@@ -94,7 +95,7 @@ public class GroupLog implements Serializable, ActionLog {
         return "GroupLog{" +
                 "id=" + id +
                 ", groupLogType=" + groupLogType +
-                ", userOrSubGroupId=" + userOrSubGroupId +
+                ", auxiliaryId=" + auxiliaryId +
                 ", description='" + description + '\'' +
                 ", createdDateTime=" + createdDateTime +
                 '}';

@@ -4,7 +4,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.AccountBillingRecord;
-import za.org.grassroot.core.enums.AccountPaymentType;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -13,8 +12,6 @@ import java.util.List;
  * Created by luke on 2016/10/25.
  */
 public interface AccountBillingBroker {
-
-    void updateAccountPaymentType(String accountUid, AccountPaymentType paymentType);
 
     AccountBillingRecord generateSignUpBill(final String accountUid);
 
@@ -47,7 +44,7 @@ public interface AccountBillingBroker {
      */
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN')")
-    void forceUpdateBillingCycle(String adminUid, String accountUid, LocalDateTime nextBillingDate);
+    void forceUpdateBillingDate(String adminUid, String accountUid, LocalDateTime nextBillingDate);
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN')")
     void haltAccountPayments(String adminUid, String accountUid);

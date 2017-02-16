@@ -174,14 +174,17 @@ public class AccountBrokerImpl implements AccountBroker {
     }
 
     private void setAccountLimits(Account account, AccountType accountType) {
-        int subscriptionFee = (int) (accountFees.get(accountType) * (account.isAnnualAccount() ? annualDiscount : 1));
-        account.setSubscriptionFee(subscriptionFee);
+        account.setSubscriptionFee(calculateSubscriptionFee(account, accountType));
         account.setFreeFormMessages(freeFormPerMonth.get(accountType));
         account.setFreeFormCost(messagesCost.get(accountType));
         account.setMaxSizePerGroup(maxGroupSize.get(accountType));
         account.setMaxSubGroupDepth(maxSubGroupDepth.get(accountType));
         account.setMaxNumberGroups(maxGroupNumber.get(accountType));
         account.setTodosPerGroupPerMonth(todosPerMonth.get(accountType));
+    }
+
+    private int calculateSubscriptionFee(Account account, AccountType accountType) {
+        return (int) (accountFees.get(accountType) * (account.isAnnualAccount() ? annualDiscount : 1));
     }
 
     @Override
@@ -242,6 +245,43 @@ public class AccountBrokerImpl implements AccountBroker {
         }
 
         logsAndNotificationsBroker.asyncStoreBundle(bundle);
+    }
+
+    @Override
+    @Transactional
+    public void updateAccountPaymentCycleAndMethod(String userUid, String accountUid, AccountPaymentType paymentType, AccountBillingCycle billingCycle, boolean adjustNextBillingDate) {
+        Objects.requireNonNull(accountUid);
+        DebugUtil.transactionRequired("AccountBilling: ");
+
+        // note : not validating user is admin as this may be called by a responding sponsor prior to payment being complete
+        // todo : close this by checking in sponsor repository
+
+        Account account = accountRepository.findOneByUid(accountUid);
+
+        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+
+        if (paymentType != null && !paymentType.equals(account.getDefaultPaymentType())) {
+            account.setDefaultPaymentType(paymentType);
+            bundle.addLog(new AccountLog.Builder(account)
+                    .userUid(userUid)
+                    .accountLogType(AccountLogType.PAYMENT_METHOD_CHANGED)
+                    .description(paymentType.name()).build());
+        }
+
+        if (billingCycle != null && !billingCycle.equals(account.getBillingCycle())) {
+            account.setBillingCycle(billingCycle);
+            if (adjustNextBillingDate) {
+                account.incrementBillingDate(STD_BILLING_HOUR, BILLING_TZ);
+            }
+            account.setSubscriptionFee(calculateSubscriptionFee(account, account.getType()));
+            bundle.addLog(new AccountLog.Builder(account)
+                    .userUid(userUid)
+                    .accountLogType(AccountLogType.BILLING_CYCLE_CHANGED)
+                    .description(billingCycle.name()).build());
+        }
+
+        logsAndNotificationsBroker.storeBundle(bundle);
+
     }
 
     @Override

@@ -29,6 +29,9 @@ public interface AccountBroker {
     void enableAccount(String userUid, String accountUid, String ongoingPaymentRef, AccountPaymentType paymentType,
                        boolean ensureUserAddedToAdmin, boolean setBillingUser);
 
+    void updateAccountPaymentCycleAndMethod(String userUid, String accountUid, AccountPaymentType paymentType,
+                                            AccountBillingCycle billingCycle, boolean adjustNextBillingDate);
+
     @PreAuthorize("hasAnyRole('ROLE_ACCOUNT_ADMIN, ROLE_SYSTEM_ADMIN')")
     void setAccountPrimary(String userUid, String accountUid);
 

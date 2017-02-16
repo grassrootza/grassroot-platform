@@ -14,7 +14,7 @@ public interface AccountSponsorshipBroker {
 
     void openSponsorshipRequest(String openingUserUid, String accountUid, String destinationUserUid, String messageToUser);
 
-    void markRequestAsResponded(String requestUid);
+    void markRequestAsViewed(String requestUid);
 
     void denySponsorshipRequest(String requestUid);
 

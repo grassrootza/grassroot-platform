@@ -13,13 +13,17 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.association.AccountSponsorshipRequest;
+import za.org.grassroot.core.enums.AccountBillingCycle;
+import za.org.grassroot.core.enums.AccountPaymentType;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.payments.PaymentMethod;
+import za.org.grassroot.services.account.AccountBillingBroker;
 import za.org.grassroot.services.account.AccountBroker;
 import za.org.grassroot.services.account.AccountSponsorshipBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 
 import javax.servlet.http.HttpServletRequest;
+import java.text.DecimalFormat;
 
 /**
  * Created by luke on 2017/02/07.
@@ -32,10 +36,13 @@ public class AccountSponsorshipController extends BaseController {
 
     private final AccountBroker accountBroker;
     private final AccountSponsorshipBroker sponsorshipBroker;
+    private final AccountBillingBroker billingBroker;
 
-    public AccountSponsorshipController(AccountBroker accountBroker, AccountSponsorshipBroker sponsorshipBroker) {
+    public AccountSponsorshipController(AccountBroker accountBroker, AccountSponsorshipBroker sponsorshipBroker,
+                                        AccountBillingBroker billingBroker) {
         this.accountBroker = accountBroker;
         this.sponsorshipBroker = sponsorshipBroker;
+        this.billingBroker = billingBroker;
     }
 
     @RequestMapping(value = "/request", method = RequestMethod.GET)
@@ -81,6 +88,7 @@ public class AccountSponsorshipController extends BaseController {
                                              String accountUid, String displayName, String phoneNumber, String emailAddress, String messageToSponsor) {
         Account account = accountBroker.loadAccount(accountUid);
         model.addAttribute("account", account);
+        model.addAttribute("resendExisting", false);
         model.addAttribute("displayName", displayName);
         model.addAttribute("phoneNumber", phoneNumber);
         model.addAttribute("emailAddress", emailAddress);
@@ -100,9 +108,42 @@ public class AccountSponsorshipController extends BaseController {
         }
 
         model.addAttribute("request", request);
-        model.addAttribute("method", PaymentMethod.makeEmpty());
-        sponsorshipBroker.markRequestAsResponded(requestUid);
+        model.addAttribute("amount", "R" + new DecimalFormat("#,###.##")
+                .format(Math.round((double) accountBroker.getAccountTypeFees().get(request.getRequestor().getType()) / 100)));
+
+        sponsorshipBroker.markRequestAsViewed(requestUid);
         return "account/sponsor_respond";
+    }
+
+    @RequestMapping(value = "/respond/payment", method = RequestMethod.GET)
+    public String payForSponsorRequest(Model model, @RequestParam String requestUid, @RequestParam AccountPaymentType type,
+                                       @RequestParam AccountBillingCycle cycle, RedirectAttributes attributes) {
+
+        AccountSponsorshipRequest request = sponsorshipBroker.load(requestUid);
+        User user = userManagementService.load(getUserProfile().getUid());
+
+        if (!request.getDestination().equals(user)) {
+            throw new AccessDeniedException("Error! Only the user asked to sponsor can respond to the request");
+        }
+
+        // note : this is updated even if it doesn't succeed, but just gets reset by a future sponsor (or user paying themselves)
+        Account requestAccount = request.getRequestor(); // for Hibernate loading
+        accountBroker.updateAccountPaymentCycleAndMethod(user.getUid(), requestAccount.getUid(), type, cycle, true);
+        Account updatedAccount = accountBroker.loadAccount(requestAccount.getUid());
+
+        if (type.equals(AccountPaymentType.DIRECT_DEPOSIT)) {
+            // todo : probably a better way is to turn this into a fragment and load from here, with a back button, but for moment ...
+            attributes.addAttribute("accountUid", updatedAccount.getUid());
+            attributes.addAttribute("requestUid", request.getUid());
+            return "redirect:/account/payment/deposit";
+        } else {
+            model.addAttribute("account", updatedAccount);
+            model.addAttribute("method", PaymentMethod.makeEmpty());
+            model.addAttribute("billingAmount", "R" + (new DecimalFormat("#,###.##")
+                    .format(Math.round((double) updatedAccount.calculatePeriodCost() / 100))));
+
+            return "account/sponsor_payment";
+        }
     }
 
     @RequestMapping(value = "/respond/deny", method = RequestMethod.GET)

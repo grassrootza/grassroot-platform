@@ -148,7 +148,7 @@ public class AccountSponsorshipBrokerImpl implements AccountSponsorshipBroker {
 
     @Override
     @Transactional
-    public void markRequestAsResponded(String requestUid) {
+    public void markRequestAsViewed(String requestUid) {
         Objects.requireNonNull(requestUid);
         DebugUtil.transactionRequired("");
 
