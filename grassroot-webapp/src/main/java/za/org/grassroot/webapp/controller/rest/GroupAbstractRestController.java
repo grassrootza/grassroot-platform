@@ -3,7 +3,7 @@ package za.org.grassroot.webapp.controller.rest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.services.*;
+import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.group.GroupQueryBroker;
 import za.org.grassroot.services.task.EventBroker;
@@ -35,11 +35,10 @@ public class GroupAbstractRestController {
         Role role = group.getMembership(caller).getRole();
         Event event = eventBroker.getMostRecentEvent(group.getUid());
         GroupLog groupLog = groupQueryBroker.getMostRecentLog(group);
-
         boolean hasTask = event != null;
-        GroupResponseWrapper responseWrapper = hasTask && event.getEventStartDateTime().isAfter(groupLog.getCreatedDateTime()) ?
+
+        return hasTask && event.getEventStartDateTime().isAfter(groupLog.getCreatedDateTime()) ?
                 new GroupResponseWrapper(group, event, role, true) : new GroupResponseWrapper(group, groupLog, role, hasTask);
-        return responseWrapper;
     }
 
 }

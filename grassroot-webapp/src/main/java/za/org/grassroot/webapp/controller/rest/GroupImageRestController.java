@@ -14,8 +14,6 @@ import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.services.group.GroupImageBroker;
-import za.org.grassroot.services.PermissionBroker;
-import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
@@ -37,13 +35,7 @@ public class GroupImageRestController extends GroupAbstractRestController {
     private static final Logger log = LoggerFactory.getLogger(GroupImageRestController.class);
 
     @Autowired
-    private UserManagementService userManagementService;
-
-    @Autowired
     private GroupImageBroker groupImageBroker;
-
-    @Autowired
-    private PermissionBroker permissionBroker;
 
     @RequestMapping(value = "/image/default/{phoneNumber}/{code}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> changeGroupDefault(@PathVariable String phoneNumber, @PathVariable String code,
@@ -67,7 +59,6 @@ public class GroupImageRestController extends GroupAbstractRestController {
         Group group = groupBroker.load(groupUid);
         permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
 
-        // todo : extra compression / checks
         ResponseEntity<ResponseWrapper> responseEntity;
         if (file != null) {
             try {

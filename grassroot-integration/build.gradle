@@ -1,5 +1,4 @@
-description = 'GrassRoot Integration'
-
+description = 'Grassroot Integration'
 
 dependencies {
     compile project(':grassroot-core')
@@ -26,10 +25,10 @@ dependencies {
     compile group: 'org.igniterealtime.smack', name: 'smack-extensions', version: libs.smackVersion
     compile group: 'org.igniterealtime.smack', name: 'smack-java7', version: libs.smackVersion
 
-    // compile group: 'com.fasterxml.jackson.datatype', name: 'jackson-datatype-jsr310', version: '2.8.5'
-
     compile group: 'org.apache.poi', name: 'poi', version: '3.15'
     compile group: 'org.apache.poi', name: 'poi-ooxml', version: '3.15'
+
+    compile group: 'com.amazonaws', name: 'aws-java-sdk-s3', version: '1.11.93'
 
     compile group: 'com.itextpdf', name: 'itextpdf', version: '5.5.10'
 }
