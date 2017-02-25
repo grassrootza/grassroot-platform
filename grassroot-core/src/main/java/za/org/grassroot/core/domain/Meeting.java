@@ -19,6 +19,11 @@ public class Meeting extends Event<MeetingContainer> implements VoteContainer {
 	@Enumerated(EnumType.STRING)
 	private MeetingImportance importance;
 
+	// note : for the moment we only have this in meeting, since meeting request has no need (public is only asked after
+	// the meeting is confirmed & done, and vote has no public -- so column is just redundant and false on others)
+	@Column(name="public")
+	private boolean publicMtg;
+
 	private Meeting() {
 		// for JPA
 	}
@@ -71,6 +76,14 @@ public class Meeting extends Event<MeetingContainer> implements VoteContainer {
 	}
 
 	public void setImportance(MeetingImportance importance) { this.importance = importance; }
+
+	public boolean isPublicMtg() {
+		return publicMtg;
+	}
+
+	public void setPublicMtg(boolean publicMtg) {
+		this.publicMtg = publicMtg;
+	}
 
 	public MeetingContainer getParent() {
 		if (parentGroup != null) {

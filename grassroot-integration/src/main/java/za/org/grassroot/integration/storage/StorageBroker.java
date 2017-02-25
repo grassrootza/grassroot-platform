@@ -1,6 +1,7 @@
 package za.org.grassroot.integration.storage;
 
 import org.springframework.web.multipart.MultipartFile;
+import za.org.grassroot.core.domain.ImageRecord;
 import za.org.grassroot.core.enums.ActionLogType;
 
 import java.io.File;
@@ -12,6 +13,8 @@ public interface StorageBroker {
 
     boolean storeImage(ActionLogType actionLogType, String actionLogUid, MultipartFile image);
 
-    File retrieveImage(String key);
+    ImageRecord fetchLogImageDetails(String actionLogUid, ActionLogType actionLogType);
+
+    byte[] fetchImage(String uid, ActionLogType type);
 
 }

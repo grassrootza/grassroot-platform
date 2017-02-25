@@ -24,10 +24,14 @@ import java.io.IOException;
 @RequestMapping("/image/")
 public class ImageController {
 
-    private Logger log = LoggerFactory.getLogger(ImageController.class);
+    private static final Logger log = LoggerFactory.getLogger(ImageController.class);
+
+    private final GroupImageBroker groupImageBroker;
 
     @Autowired
-    private GroupImageBroker groupImageBroker;
+    public ImageController(GroupImageBroker groupImageBroker) {
+        this.groupImageBroker = groupImageBroker;
+    }
 
     @RequestMapping(value = "get", method = RequestMethod.GET)
     public ResponseEntity<?> getImage(@RequestParam String imageId, HttpServletRequest request) throws IOException {

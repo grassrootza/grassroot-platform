@@ -50,6 +50,8 @@ public class ImageRecord {
     @Column(name = "md5_hash", length = 24)
     private String md5;
 
+    // private GeoLocation geoLocation;
+
     // may need a bit more of this later, but for now, a place holder for, e.g., recording how many people included
     @Column(name = "auxiliary", length = 255)
     private String auxiliaryText;

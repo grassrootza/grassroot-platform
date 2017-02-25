@@ -1,6 +1,7 @@
 package za.org.grassroot.core.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.EventLog;
 import za.org.grassroot.core.domain.User;
@@ -8,7 +9,7 @@ import za.org.grassroot.core.enums.EventLogType;
 
 import java.util.List;
 
-public interface EventLogRepository extends JpaRepository<EventLog, Long> {
+public interface EventLogRepository extends JpaRepository<EventLog, Long>, JpaSpecificationExecutor<EventLog> {
 
     EventLog findFirstByEventAndEventLogTypeOrderByCreatedDateTimeDesc(Event event, EventLogType eventLogType);
 

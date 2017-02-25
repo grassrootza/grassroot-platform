@@ -1,14 +1,17 @@
 package za.org.grassroot.integration.storage;
 
 import com.amazonaws.AmazonServiceException;
+import com.amazonaws.SdkClientException;
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.transfer.Download;
+import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.transfer.TransferManager;
 import com.amazonaws.services.s3.transfer.TransferManagerBuilder;
 import com.amazonaws.services.s3.transfer.Upload;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.poi.util.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,11 +22,16 @@ import org.springframework.web.multipart.MultipartFile;
 import za.org.grassroot.core.domain.ImageRecord;
 import za.org.grassroot.core.enums.ActionLogType;
 import za.org.grassroot.core.repository.ImageRecordRepository;
+import za.org.grassroot.integration.exception.ImageRetrievalFailure;
 
-import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.time.Instant;
 import java.util.Objects;
+
+import static org.springframework.data.jpa.domain.Specifications.where;
+import static za.org.grassroot.core.specifications.ImageRecordSpecifications.actionLogType;
+import static za.org.grassroot.core.specifications.ImageRecordSpecifications.actionLogUid;
 
 /**
  * Created by luke on 2017/02/21.
@@ -93,20 +101,22 @@ public class StorageBrokerImpl implements StorageBroker {
     }
 
     @Override
-    public File retrieveImage(String key) {
-        AmazonS3 s3 = s3ClientFactory.createClient();
-        TransferManager transferManager = TransferManagerBuilder.standard().withS3Client(s3).build();
+    public ImageRecord fetchLogImageDetails(String actionLogUid, ActionLogType actionLogType) {
+        return imageRecordRepository.findOne(where(actionLogUid(actionLogUid)).and(actionLogType(actionLogType)));
+    }
 
-        File f = new File("temp");
+    @Override
+    public byte[] fetchImage(String uid, ActionLogType type) {
         try {
-            Download download = transferManager.download("bucket", key, f);
-            download.waitForCompletion();
-        } catch (AmazonServiceException|InterruptedException e) {
-            logger.error("Error downloading file: {}", e.toString());
+            AmazonS3 s3Client = s3ClientFactory.createClient();
+            S3Object s3Image = s3Client.getObject(new GetObjectRequest(mapLogToBucket(type), uid));
+            InputStream imageData = s3Image.getObjectContent();
+            byte[] image = IOUtils.toByteArray(imageData);
+            imageData.close();
+            return image;
+        } catch (SdkClientException|IOException e) {
+            throw new ImageRetrievalFailure();
         }
-
-        transferManager.shutdownNow();
-        return f;
     }
 
     private String mapLogToBucket(ActionLogType type) {

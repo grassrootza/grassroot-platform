@@ -50,6 +50,9 @@ public class TodoLog implements ActionLog {
 		this.createdDateTime = Instant.now();
 	}
 
+	// temp until get round to proper refactor here
+	public String getUid() { return ""; }
+
 	public TodoLogType getType() {
 		return type;
 	}

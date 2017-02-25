@@ -266,8 +266,8 @@ public class EventBrokerImpl implements EventBroker {
 			throw new IllegalStateException("Meeting is canceled: " + meeting);
 		}
 
-		if (!meeting.getCreatedByUser().equals(user) ||
-				permissionBroker.isGroupPermissionAvailable(user, meeting.getAncestorGroup(), Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS)) {
+		if (!meeting.getCreatedByUser().equals(user) &&
+				!permissionBroker.isGroupPermissionAvailable(user, meeting.getAncestorGroup(), Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS)) {
 			throw new AccessDeniedException("Error! Only meeting caller or group organizer can change meeting");
 		}
 
