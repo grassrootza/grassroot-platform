@@ -215,7 +215,7 @@ public class AccountAdminController extends BaseController {
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping(value = "/reset/payments", method = RequestMethod.GET)
-    public String triggerPayments(@RequestParam RedirectAttributes attributes, @RequestParam HttpServletRequest request) {
+    public String triggerPayments(RedirectAttributes attributes, HttpServletRequest request) {
         if (!environment.acceptsProfiles("production") && paymentBroker != null) {
             billingBroker.processBillsDueForPayment();
             addMessage(attributes, MessageType.INFO, "admin.accounts.payments.done", request);

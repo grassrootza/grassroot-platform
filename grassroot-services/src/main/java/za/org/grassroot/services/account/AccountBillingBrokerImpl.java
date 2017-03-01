@@ -15,7 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.notification.AccountBillingNotification;
-import za.org.grassroot.core.enums.AccountBillingCycle;
 import za.org.grassroot.core.enums.AccountLogType;
 import za.org.grassroot.core.enums.AccountPaymentType;
 import za.org.grassroot.core.repository.AccountBillingRecordRepository;
@@ -26,7 +25,6 @@ import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.integration.email.EmailSendingBroker;
 import za.org.grassroot.integration.email.GrassrootEmail;
 import za.org.grassroot.integration.payments.PaymentBroker;
-import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
@@ -65,7 +63,7 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
 
     private final AccountBillingRecordRepository billingRepository;
     private final LogsAndNotificationsBroker logsAndNotificationsBroker;
-    private final MessageAssemblingService messageAssemblingService;
+    private final AccountEmailService accountEmailService;
     private final ApplicationEventPublisher eventPublisher;
 
     private final PaymentBroker paymentBroker;
@@ -74,11 +72,11 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
     @Autowired
     public AccountBillingBrokerImpl(AccountRepository accountRepository, AccountBillingRecordRepository billingRepository,
                                     PaymentBroker paymentBroker, EmailSendingBroker emailSendingBroker, ApplicationEventPublisher eventPublisher,
-                                    LogsAndNotificationsBroker logsAndNotificationsBroker, MessageAssemblingService messageAssemblingService) {
+                                    LogsAndNotificationsBroker logsAndNotificationsBroker, AccountEmailService accountEmailService) {
         this.accountRepository = accountRepository;
         this.billingRepository = billingRepository;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
-        this.messageAssemblingService = messageAssemblingService;
+        this.accountEmailService = accountEmailService;
         this.eventPublisher = eventPublisher;
         this.emailSendingBroker = emailSendingBroker;
         this.paymentBroker = paymentBroker;
@@ -182,8 +180,9 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
         if (sendEmail && !StringUtils.isEmpty(emailAddress)) {
             List<AccountBillingRecord> records = findRecordsToIncludeInStatement(account,
                     generatingBill.getStatementDateTime().plus(1, ChronoUnit.MINUTES)); // just in case cutting it too fine excludes this one
-            final String emailSubject = messageAssemblingService.createAccountStatementSubject(generatingBill);
-            final String emailBody = messageAssemblingService.createAccountStatementEmail(generatingBill);
+            final String emailSubject = accountEmailService.createAccountStatementSubject(generatingBill);
+            final String emailBody = accountEmailService.createAccountStatementEmail(generatingBill);
+
             emailSendingBroker.generateAndSendBillingEmail(emailAddress, emailSubject, emailBody,
                     records.stream().map(AccountBillingRecord::getUid).collect(Collectors.toList()));
         }
@@ -544,7 +543,7 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
         Set<Notification> notifications = new HashSet<>();
         for (User user : billingRecord.getAccount().getAdministrators()) {
             AccountBillingNotification notification = new AccountBillingNotification(user,
-                    messageAssemblingService.createAccountBillingNotification(billingRecord),
+                    accountEmailService.createAccountBillingNotification(billingRecord),
                     billingRecord.getAccountLog());
             notifications.add(notification);
         }
@@ -555,7 +554,7 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
         Set<Notification> notifications = new HashSet<>();
 
         account.getAdministrators().forEach(user -> notifications.add(new AccountBillingNotification(user,
-                    messageAssemblingService.createEndOfTrialNotification(account),
+                    accountEmailService.createEndOfTrialNotification(account),
                     bill.getAccountLog()))
         );
 
@@ -563,7 +562,7 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
     }
 
     private void sendTrialExpiredEmails(Account account) {
-        GrassrootEmail.EmailBuilder builder = new GrassrootEmail.EmailBuilder(messageAssemblingService.createEndOfTrialEmailSubject());
+        GrassrootEmail.EmailBuilder builder = new GrassrootEmail.EmailBuilder(accountEmailService.createEndOfTrialEmailSubject());
 
         // todo : make the email pretty & have multiple types (e.g., with direct deposit) [and also campaign tracking etc]
         final String formedPaymentLink = accountPaymentLink + "?accountUid=" + account.getUid();
@@ -571,7 +570,7 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
                 .stream()
                 .filter(User::hasEmailAddress)
                 .forEach(u -> emailSendingBroker.sendMail(builder.address(u.getEmailAddress())
-                    .content(messageAssemblingService.createEndOfTrialEmailBody(account, u, formedPaymentLink)).build()));
+                    .content(accountEmailService.createEndOfTrialEmailBody(account, u, formedPaymentLink)).build()));
     }
 
     private Set<Notification> accountDisabledNotification(Account account, AccountBillingRecord bill) {
@@ -585,13 +584,13 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
     private void sendDisabledEmails(Account account) {
         // todo : as above, make emails pretty, etc
 
-        GrassrootEmail.EmailBuilder builder = new GrassrootEmail.EmailBuilder(messageAssemblingService.createDisabledEmailSubject());
+        GrassrootEmail.EmailBuilder builder = new GrassrootEmail.EmailBuilder(accountEmailService.createDisabledEmailSubject());
         final String formedPaymentLink = accountPaymentLink + "?accountUid=" + account.getUid();
         account.getAdministrators()
                 .stream()
                 .filter(User::hasEmailAddress)
                 .forEach(u -> emailSendingBroker.sendMail(builder.address(u.getEmailAddress())
-                        .content(messageAssemblingService.createDisabledEmailBody(u, formedPaymentLink)).build()));
+                        .content(accountEmailService.createDisabledEmailBody(u, formedPaymentLink)).build()));
     }
 
     private Instant getPeriodStart(Account account, AccountBillingRecord lastBill) {

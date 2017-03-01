@@ -55,7 +55,7 @@ public interface AccountBroker {
                                   int maxDepth, int messagesPerMonth, int todosPerMonth);
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
-    void updateAccountPaymentReference(String userUid, String accountUid, String paymentRef);
+    void updateAccountCardPaymentReference(String userUid, String accountUid, String paymentRef);
 
     /* Methods to work out some limits left on account */
 

@@ -1,5 +1,7 @@
 package za.org.grassroot.integration.email;
 
+import org.springframework.util.StringUtils;
+
 import java.io.File;
 
 /**
@@ -11,6 +13,7 @@ public class GrassrootEmail {
     private final String address;
     private final String subject;
     private final String content;
+    private final String htmlContent;
 
     private File attachment;
     private String attachmentName;
@@ -20,6 +23,7 @@ public class GrassrootEmail {
         private String from;
         private String subject;
         private String content;
+        private String htmlContent;
         private File attachment;
         private String attachmentName;
 
@@ -49,7 +53,7 @@ public class GrassrootEmail {
         }
 
         public GrassrootEmail build() {
-            GrassrootEmail email = new GrassrootEmail(this.from, this.address, this.subject, this.content);
+            GrassrootEmail email = new GrassrootEmail(this.from, this.address, this.subject, this.content, this.htmlContent);
             if (this.attachment != null) {
                 email.attachment = this.attachment;
                 email.attachmentName = this.attachmentName;
@@ -58,11 +62,12 @@ public class GrassrootEmail {
         }
     }
 
-    private GrassrootEmail(String from, String address, String subject, String content) {
+    private GrassrootEmail(String from, String address, String subject, String content, String htmlContent) {
         this.from = from;
         this.address = address;
         this.subject = subject;
         this.content = content;
+        this.htmlContent = htmlContent;
     }
 
     public String getFrom() {
@@ -80,6 +85,10 @@ public class GrassrootEmail {
     public String getContent() {
         return content;
     }
+
+    public String getHtmlContent() { return htmlContent; }
+
+    public boolean hasHtmlContent() { return !StringUtils.isEmpty(htmlContent); }
 
     public File getAttachment() { return attachment; }
 

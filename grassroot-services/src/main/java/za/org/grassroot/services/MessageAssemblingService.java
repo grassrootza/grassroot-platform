@@ -6,7 +6,6 @@ import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 
 import java.util.List;
-import java.util.Locale;
 
 /**
  * Created by aakilomar on 8/24/15.
@@ -65,31 +64,7 @@ public interface MessageAssemblingService {
      */
     String createGroupJoinCodeUseMessage(User user, String groupName, int numberJoined, List<String> namesJoined);
 
-    Locale getUserLocale(User user);
-
     String[] populateEventFields(Event event, double yes, double no, double abstain, double noReply);
 
     String createAndroidLinkSms(User user);
-
-    /*
-    Account billing email and notification message generator
-     */
-
-    String createAccountBillingNotification(AccountBillingRecord record);
-
-    String createAccountStatementSubject(AccountBillingRecord generatingRecord);
-
-    String createAccountStatementEmail(AccountBillingRecord generatingRecord);
-
-    String createEndOfTrialNotification(Account account);
-
-    String createEndOfTrialEmailSubject();
-
-    String createEndOfTrialEmailBody(Account account, User adminToEmail, String paymentLink);
-
-    String createDisabledNotification(Account account);
-
-    String createDisabledEmailSubject();
-
-    String createDisabledEmailBody(User adminToEmail, String paymentLink);
 }

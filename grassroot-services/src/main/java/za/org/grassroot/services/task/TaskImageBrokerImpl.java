@@ -104,6 +104,15 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
     }
 
     @Override
+    public long countImagesForTask(String userUid, String taskUid, TaskType taskType) {
+        boolean isTodo = TaskType.TODO.equals(taskType);
+        Task task = isTodo ? todoRepository.findOneByUid(taskUid) : eventRepository.findOneByUid(taskUid);
+        return isTodo ?
+                todoLogRepository.count(where(forTodo((Todo) task)).and(ofType(TodoLogType.IMAGE_RECORDED))) :
+                eventLogRepository.count(where(forEvent((Event) task)).and(ofType(EventLogType.IMAGE_RECORDED)));
+    }
+
+    @Override
     public byte[] fetchImageForTask(String userUid, TaskType taskType, String logUid) {
         // consider adding a membership check in future, hence keeping this method as intermediary (but also need this to be fast ...)
         Objects.requireNonNull(taskType);

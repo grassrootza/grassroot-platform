@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.association.GroupJoinRequest;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
@@ -15,14 +14,13 @@ import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.MeetingImportance;
 import za.org.grassroot.core.util.FormatUtil;
 
-import java.text.DecimalFormat;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
-import static za.org.grassroot.core.util.DateTimeUtil.formatAtSAST;
+import static za.org.grassroot.services.util.MessageUtils.getUserLocale;
+import static za.org.grassroot.services.util.MessageUtils.shortDateFormatter;
 
 /**
  * Created by aakilomar on 8/24/15.
@@ -33,10 +31,6 @@ public class MessageAssemblingManager implements MessageAssemblingService {
     private Logger log = LoggerFactory.getLogger(MessageAssemblingManager.class);
 
     private final MessageSourceAccessor messageSourceAccessor;
-
-    // major todo : consolidate & externalize all the date formatters
-    private static final DateTimeFormatter shortDateFormatter = DateTimeFormatter.ofPattern("EEE, d/M");
-    private static final DecimalFormat billFormat = new DecimalFormat("#.##");
 
     @Autowired
     public MessageAssemblingManager(@Qualifier("servicesMessageSourceAccessor") MessageSourceAccessor messageSourceAccessor) {
@@ -164,7 +158,7 @@ public class MessageAssemblingManager implements MessageAssemblingService {
                 user.getLastName(),
                 user.getPhoneNumber()
         };
-        return messageSourceAccessor.getMessage(messageId, welcomeFields, getUserLocale(user.getLanguageCode()));
+        return messageSourceAccessor.getMessage(messageId, welcomeFields, getUserLocale(user));
     }
 
     @Override
@@ -269,88 +263,6 @@ public class MessageAssemblingManager implements MessageAssemblingService {
     @Override
     public String createAndroidLinkSms(User user) {
         return messageSourceAccessor.getMessage("sms.link.android", getUserLocale(user));
-
-    }
-
-    @Override
-    public String createAccountBillingNotification(AccountBillingRecord record) {
-        return messageSourceAccessor.getMessage("sms.statement.notification", new String[] {
-                billFormat.format((double) record.getTotalAmountToPay() / 100), formatAtSAST(record.getNextPaymentDate(), shortDateFormatter)
-        }, getUserLocale(record.getAccount().getBillingUser()));
-    }
-
-    @Override
-    public String createAccountStatementSubject(AccountBillingRecord generatingRecord) {
-        return messageSourceAccessor.getMessage("email.statement.subject", getUserLocale(generatingRecord.getAccount().getBillingUser()));
-    }
-
-    @Override
-    public String createAccountStatementEmail(AccountBillingRecord generatingRecord) {
-        final User billedUser = generatingRecord.getAccount().getBillingUser();
-        final String salutation = messageSourceAccessor.getMessage("email.statement.salutation",
-                new String[] { StringUtils.isEmpty(billedUser.getFirstName()) ? billedUser.getFirstName() : billedUser.nameToDisplay() },
-                getUserLocale(billedUser));
-
-        if (generatingRecord.getNextPaymentDate() == null) {
-            throw new IllegalArgumentException("Error! Statement emails can only be generated for bill requiring payment");
-        }
-
-        final String body = messageSourceAccessor.getMessage("email.statement.body",
-                new String[] { billFormat.format((double) generatingRecord.getTotalAmountToPay() / 100),
-                        formatAtSAST(generatingRecord.getNextPaymentDate(), shortDateFormatter) }, getUserLocale(billedUser));
-
-        final String closing = messageSourceAccessor.getMessage("email.statement.closing", getUserLocale(billedUser));
-
-        return String.join("\n\n", Arrays.asList(salutation, body, closing));
-    }
-
-    @Override
-    public String createEndOfTrialNotification(Account account) {
-        return messageSourceAccessor.getMessage("notification.account.trial.ended");
-    }
-
-    @Override
-    public String createEndOfTrialEmailSubject() {
-        return messageSourceAccessor.getMessage("email.account.trial.ended.subject");
-    }
-
-    @Override
-    public String createEndOfTrialEmailBody(Account account, User adminToEmail, String paymentLink) {
-        String[] emailFields = new String[] {
-                adminToEmail.getName(),
-                paymentLink
-        };
-
-        return messageSourceAccessor.getMessage("email.account.trial.ended.body", emailFields);
-    }
-
-    @Override
-    public String createDisabledNotification(Account account) {
-        return messageSourceAccessor.getMessage("notification.account.disabled");
-    }
-
-    @Override
-    public String createDisabledEmailSubject() {
-        return messageSourceAccessor.getMessage("email.account.disabled.subject");
-    }
-
-    @Override
-    public String createDisabledEmailBody(User adminToEmail, String paymentLink) {
-        return messageSourceAccessor.getMessage("email.account.disabled.subject");
-    }
-
-
-    public Locale getUserLocale(User user) {
-        return getUserLocale(user.getLanguageCode());
-    }
-
-    private Locale getUserLocale(String languageCode) {
-        if (languageCode == null || languageCode.trim().equals("")) {
-            return Locale.ENGLISH;
-        } else {
-            return new Locale(languageCode);
-        }
-
     }
 
     private String[] populateEventFields(Event event) {

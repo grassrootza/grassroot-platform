@@ -59,8 +59,7 @@ public class TaskImageRestController {
     }
 
     @RequestMapping(value = "/list/{phoneNumber}/{code}/{taskType}/{taskUid}", method = RequestMethod.GET)
-    public ResponseEntity<ResponseWrapper> fetchImageRecords(@PathVariable String phoneNumber, @PathVariable String taskUid,
-                                                               @PathVariable TaskType taskType) {
+    public ResponseEntity<ResponseWrapper> fetchImageRecords(@PathVariable String phoneNumber, @PathVariable TaskType taskType, @PathVariable String taskUid) {
         User user = userManagementService.findByInputNumber(phoneNumber);
         logger.info("finding images for task of type {} and UID {}", taskType, taskUid);
         List<ImageRecordDTO> records = taskImageBroker.fetchImagesForTask(user.getUid(), taskUid, taskType)
@@ -69,6 +68,14 @@ public class TaskImageRestController {
                 .collect(Collectors.toList());
         return RestUtil.okayResponseWithData(records.isEmpty() ? RestMessage.TASK_NO_IMAGES : RestMessage.TASK_IMAGES_FOUND,
                 records);
+    }
+
+    @RequestMapping(value = "/count/{phoneNumber}/{code}/{taskType}/{taskUid}", method = RequestMethod.GET)
+    public ResponseEntity<ResponseWrapper> countImageRecords(@PathVariable String phoneNumber, @PathVariable TaskType taskType,
+                                                             @PathVariable String taskUid) {
+        User user = userManagementService.findByInputNumber(phoneNumber);
+        return RestUtil.okayResponseWithData(RestMessage.TASK_IMAGE_COUNT,
+                taskImageBroker.countImagesForTask(user.getUid(), taskUid, taskType));
     }
 
     @RequestMapping(value = "/fetch/{phoneNumber}/{code}/{taskType}/{logUid}", method = RequestMethod.GET)

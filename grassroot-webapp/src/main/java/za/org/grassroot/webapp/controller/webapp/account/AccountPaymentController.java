@@ -226,7 +226,7 @@ public class AccountPaymentController extends BaseController {
             sponsorshipBroker.closeRequestsAndMarkApproved(getUserProfile().getUid(), account.getUid());
             addMessage(attributes, MessageType.SUCCESS, "account.signup.payment.done", request);
         } else if (enableOrUpdateAccount == UPDATE) {
-            accountBroker.updateAccountPaymentReference(getUserProfile().getUid(), account.getUid(), paymentRef);
+            accountBroker.updateAccountCardPaymentReference(getUserProfile().getUid(), account.getUid(), paymentRef);
             addMessage(attributes, MessageType.SUCCESS, "account.payment.changed", request);
         }
 

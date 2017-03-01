@@ -3,9 +3,7 @@ package za.org.grassroot.services.account;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,9 +20,7 @@ import za.org.grassroot.core.repository.AssociationRequestEventRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.integration.email.EmailSendingBroker;
-import za.org.grassroot.integration.email.GrassrootEmail;
 
-import java.text.DecimalFormat;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -51,19 +47,19 @@ public class AccountSponsorshipBrokerImpl implements AccountSponsorshipBroker {
     private final AccountRepository accountRepository;
     private final AccountSponsorshipRequestRepository requestRepository;
     private final AssociationRequestEventRepository requestEventRepository;
-    private final MessageSourceAccessor messageSource;
+    private final AccountEmailService accountEmailService;
     private final EmailSendingBroker emailSendingBroker;
 
     @Autowired
     public AccountSponsorshipBrokerImpl(UserRepository userRepository, AccountRepository accountRepository,
                                         AccountSponsorshipRequestRepository requestRepository, AssociationRequestEventRepository requestEventRepository,
-                                        @Qualifier("servicesMessageSourceAccessor") MessageSourceAccessor messageSource, EmailSendingBroker emailSendingBroker) {
+                                        AccountEmailService emailService, EmailSendingBroker emailSendingBroker) {
         this.userRepository = userRepository;
         this.accountRepository = accountRepository;
         this.requestRepository = requestRepository;
         this.requestEventRepository = requestEventRepository;
         this.emailSendingBroker = emailSendingBroker;
-        this.messageSource = messageSource;
+        this.accountEmailService = emailService;
     }
 
     @Override
@@ -88,7 +84,6 @@ public class AccountSponsorshipBrokerImpl implements AccountSponsorshipBroker {
         }
 
         boolean priorRequestExists;
-        String subjectKey, bodyKey;
         AccountSponsorshipRequest request;
 
         if (hasUserBeenAskedToSponsor(destinationUserUid, accountUid)) {
@@ -102,48 +97,20 @@ public class AccountSponsorshipBrokerImpl implements AccountSponsorshipBroker {
             event.setAuxDescription(request.getDescription()); // to store/log prior message (possibly useful for analytics in future)
             request.setDescription(messageToUser);
 
-            subjectKey = "email.sponsorship.reminder.subject";
-            bodyKey = "email.sponsorship.reminder.body";
         } else {
             logger.info("Opening new sponsorship request ...");
             priorRequestExists = false;
-
             request = new AccountSponsorshipRequest(account, requestedUser, messageToUser);
             requestRepository.save(request);
             requestEventRepository.save(new AssociationRequestEvent(AssocRequestEventType.OPENED, request, openingUser, Instant.now()));
-
-            subjectKey = "email.sponsorship.subject";
-            bodyKey = "email.sponsorship.request";
         }
 
         final String requestLink = urlForResponse + "?requestUid=" + request.getUid();
-        final String subject = messageSource.getMessage(subjectKey, new String[]{account.getName()});
-        final String amount = "R" + (new DecimalFormat("#,###.##").format(account.calculatePeriodCost() / 100));
-        final String body = messageSource.getMessage(bodyKey, new String[]{requestedUser.getName(),
-                account.getName(), amount, requestLink});
-        final String message = messageSource.getMessage("email.sponsorship.message", new String[]{openingUser.getName(), messageToUser});
-        final String ending = messageSource.getMessage("email.sponsorship.ending");
-
-        GrassrootEmail.EmailBuilder builder = new GrassrootEmail.EmailBuilder(subject)
-                .address(requestedUser.getEmailAddress())
-                .content(body + message + ending);
-
-        emailSendingBroker.sendMail(builder.build());
+        emailSendingBroker.sendMail(accountEmailService.createSponsorshipRequestMail(request, openingUser, messageToUser, priorRequestExists));
 
         if (!StringUtils.isEmpty(openingUser.getEmailAddress())) {
-            notifyOpeningUser(priorRequestExists, requestLink, requestedUser.getName(), openingUser);
+            emailSendingBroker.sendMail(accountEmailService.openingUserEmail(priorRequestExists, requestLink, requestedUser.getName(), openingUser));
         }
-    }
-
-    private void notifyOpeningUser(boolean alreadyOpen, final String requestLink, final String destinationName, final User openingUser) {
-        final String subject = messageSource.getMessage("email.sponsorship.requested.subject");
-        final String body = messageSource.getMessage(alreadyOpen ? "email.sponsorship.reminded.body" : "email.sponsorship.requested.body",
-                new String[] { openingUser.getName(), destinationName, requestLink});
-
-        emailSendingBroker.sendMail(new GrassrootEmail.EmailBuilder(subject)
-                .address(openingUser.getEmailAddress())
-                .content(body)
-                .build());
     }
 
     @Override
@@ -171,15 +138,7 @@ public class AccountSponsorshipBrokerImpl implements AccountSponsorshipBroker {
         requestEventRepository.save(new AssociationRequestEvent(AssocRequestEventType.DECLINED, request,
                 request.getDestination(), Instant.now()));
 
-        final String subject = messageSource.getMessage("email.sponsorship.denied.subject");
-        // note : since the sponsorship was not approved, the billing user will still be the one that opened the account
-        final String[] fields = { request.getRequestor().getBillingUser().getName(), request.getDestination().getName(),
-                urlForRequest + "?accountUid=" + request.getRequestor().getUid() };
-
-        emailSendingBroker.sendMail(new GrassrootEmail.EmailBuilder(subject)
-                .address(request.getRequestor().getBillingUser().getEmailAddress())
-                .content(messageSource.getMessage("email.sponsorship.denied.body", fields))
-                .build());
+        emailSendingBroker.sendMail(accountEmailService.sponsorshipDeniedEmail(request));
     }
 
     @Override
@@ -209,7 +168,7 @@ public class AccountSponsorshipBrokerImpl implements AccountSponsorshipBroker {
         AccountSponsorshipRequest approvedRequest = closeRequests(true, user, requests);
 
         if (approvedRequest != null) {
-            sendApprovedEmails(approvedRequest);
+            emailSendingBroker.sendMail(accountEmailService.sponsorshipApprovedEmail(approvedRequest));
         }
     }
 
@@ -250,27 +209,10 @@ public class AccountSponsorshipBrokerImpl implements AccountSponsorshipBroker {
         requestEventRepository.save(new AssociationRequestEvent(AssocRequestEventType.ABORTED, request,
                 request.getDestination(), Instant.now()));
 
-        final String subject = messageSource.getMessage("email.sponsorship.aborted.subject");
-        final String fieldsDest[] = { request.getDestination().getName(), request.getRequestor().getName(),
-                urlForResponse + "?requestUid=" + request.getUid() };
-        final String fieldsReq[] = new String[3];
-        fieldsReq[1] = request.getDestination().getName();
+        emailSendingBroker.sendMail(accountEmailService.sponsorshipReminderEmailSponsor(request));
 
-        emailSendingBroker.sendMail(new GrassrootEmail.EmailBuilder(subject)
-                .address(request.getDestination().getEmailAddress())
-                .content(messageSource.getMessage("email.sponsorship.aborted.body.dest", fieldsDest))
-                .build());
-
-        request.getRequestor().getAdministrators()
-                .stream()
-                .filter(u -> !StringUtils.isEmpty(u.getEmailAddress()))
-                .forEach(u -> {
-                    fieldsReq[0] = u.getName();
-                    emailSendingBroker.sendMail(new GrassrootEmail.EmailBuilder(subject)
-                            .address(u.getEmailAddress())
-                            .content(messageSource.getMessage("email.sponsorship.aborted.body.req", fieldsReq))
-                            .build());
-                });
+        accountEmailService.sponsorshipReminderEmailRequestor(request)
+                .forEach(emailSendingBroker::sendMail);
     }
 
     @Override
@@ -300,22 +242,6 @@ public class AccountSponsorshipBrokerImpl implements AccountSponsorshipBroker {
 
         requestEventRepository.save(events);
         return approvedRequest;
-    }
-
-    private void sendApprovedEmails(AccountSponsorshipRequest request) {
-        final String subject = messageSource.getMessage("email.sponsorship.approved.subject");
-        final String[] fields = new String[2];
-        // fields[1] = "https://app.grassroot.org.za/send a thank you";
-        request.getRequestor().getAdministrators()
-                .stream()
-                .filter(u -> !StringUtils.isEmpty(u.getEmailAddress()) && !u.equals(request.getDestination()))
-                .forEach(u -> {
-                    fields[0] = u.getName();
-                    emailSendingBroker.sendMail(new GrassrootEmail.EmailBuilder(subject)
-                            .address(u.getEmailAddress())
-                            .content(messageSource.getMessage("email.sponsorship.approved.body", fields))
-                            .build());
-                });
     }
 
 }

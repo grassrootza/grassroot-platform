@@ -454,7 +454,7 @@ public class AccountBrokerImpl implements AccountBroker {
 
     @Override
     @Transactional
-    public void updateAccountPaymentReference(String userUid, String accountUid, String paymentRef) {
+    public void updateAccountCardPaymentReference(String userUid, String accountUid, String paymentRef) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(accountUid);
         Objects.requireNonNull(paymentRef);
@@ -464,6 +464,7 @@ public class AccountBrokerImpl implements AccountBroker {
         validateAdmin(user, account);
 
         account.setPaymentRef(paymentRef);
+        account.setDefaultPaymentType(AccountPaymentType.CARD_PAYMENT);
 
         createAndStoreSingleAccountLog(new AccountLog.Builder(account)
                 .userUid(userUid)

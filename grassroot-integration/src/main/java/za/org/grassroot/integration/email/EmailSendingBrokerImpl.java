@@ -20,7 +20,6 @@ import java.io.UnsupportedEncodingException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Created by luke on 2016/10/24.
@@ -79,7 +78,6 @@ public class EmailSendingBrokerImpl implements EmailSendingBroker {
         try {
             logger.info("Sending system email to: {}", systemEmailAddress);
             mailSender.send(mail);
-            logger.info("System stats mail has been sent");
         } catch (MailException e) {
             logger.warn("Error sending system mail! Exception : " + e.toString());
         }
@@ -90,11 +88,18 @@ public class EmailSendingBrokerImpl implements EmailSendingBroker {
     public void sendMail(GrassrootEmail email) {
         MimeMessage mail = mailSender.createMimeMessage();
         try {
-            MimeMessageHelper helper = new MimeMessageHelper(mail, email.hasAttachment());
+            MimeMessageHelper helper = new MimeMessageHelper(mail, email.hasAttachment() || email.hasHtmlContent());
             helper.setFrom(emailFromAddress, emailFromName);
             helper.setTo(email.getAddress());
             helper.setSubject(email.getSubject());
-            helper.setText(email.getContent());
+
+            if (email.hasHtmlContent()) {
+                logger.info("email has html content: {}", email.getHtmlContent());
+                helper.setText(email.getContent(), email.getHtmlContent());
+            }  else {
+                logger.info("email has no html content ...");
+                helper.setText(email.getContent());
+            }
 
             if (email.hasAttachment()) {
                 helper.addAttachment(email.getAttachmentName(), email.getAttachment());

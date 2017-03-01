@@ -16,6 +16,8 @@ public interface TaskImageBroker {
 
     List<ImageRecord> fetchImagesForTask(String userUid, String taskUid, TaskType taskType);
 
+    long countImagesForTask(String userUid, String taskUid, TaskType taskType);
+
     byte[] fetchImageForTask(String userUid, TaskType taskType, String logUid);
 
 }
