@@ -19,7 +19,7 @@ dependencies {
     }
 
     compile group: 'com.h2database', name: 'h2', version:'1.4.192'
-    compile group: 'org.apache.tomcat', name: 'tomcat-jdbc', version:'8.5.5'
+    compile group: 'org.apache.tomcat', name: 'tomcat-jdbc', version:'8.5.11'
 
     compile group: 'com.fasterxml.jackson.core', name: 'jackson-core', version:libs.jacksonVersion
     compile group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version:libs.jacksonVersion

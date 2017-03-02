@@ -6,12 +6,17 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
+import org.thymeleaf.exceptions.TemplateInputException;
 import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.AccountBillingRecord;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.association.AccountSponsorshipRequest;
 import za.org.grassroot.integration.email.GrassrootEmail;
 
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -30,6 +35,7 @@ import static za.org.grassroot.services.util.MessageUtils.shortDateFormatter;
 public class AccountEmailServiceImpl implements AccountEmailService {
 
     private final MessageSourceAccessor messageSourceAccessor;
+    private final TemplateEngine templateEngine;
 
     @Value("${grassroot.sponsorship.response.url:http://localhost:8080/account/sponsor/respond}")
     private String sponsorshipResponseUrl;
@@ -40,8 +46,10 @@ public class AccountEmailServiceImpl implements AccountEmailService {
     private static final DecimalFormat billFormat = new DecimalFormat("#.##");
 
     @Autowired
-    public AccountEmailServiceImpl(@Qualifier("servicesMessageSourceAccessor") MessageSourceAccessor messageSourceAccessor) {
+    public AccountEmailServiceImpl(@Qualifier("servicesMessageSourceAccessor") MessageSourceAccessor messageSourceAccessor,
+                                   @Qualifier("emailTemplateEngine") TemplateEngine templateEngine) {
         this.messageSourceAccessor = messageSourceAccessor;
+        this.templateEngine = templateEngine;
     }
 
     @Override
@@ -126,11 +134,23 @@ public class AccountEmailServiceImpl implements AccountEmailService {
                 new String[]{requestingUser.getName(), messageFromUser});
         final String ending = messageSourceAccessor.getMessage("email.sponsorship.ending");
 
-        GrassrootEmail.EmailBuilder builder = new GrassrootEmail.EmailBuilder(subject)
-                .address(request.getDestination().getEmailAddress())
-                .content(body + message + ending);
-
-        return builder.build();
+        final Context ctx = new Context();
+        try {
+            final String htmlContent = templateEngine.process("html/sponsor_request", ctx);
+            GrassrootEmail.EmailBuilder builder = new GrassrootEmail.EmailBuilder(subject)
+                    .address(request.getDestination().getEmailAddress())
+                    .content(body + message + ending)
+                    .htmlContent(htmlContent);
+            return builder.build();
+        } catch (TemplateInputException e) {
+            e.printStackTrace();
+            ClassLoader cl = ClassLoader.getSystemClassLoader();
+            URL[] urls = ((URLClassLoader)cl).getURLs();
+            for(URL url: urls){
+                System.out.println(url.getFile());
+            }
+            throw e;
+        }
     }
 
     @Override

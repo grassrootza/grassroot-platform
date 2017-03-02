@@ -41,6 +41,11 @@ public class GrassrootEmail {
             return this;
         }
 
+        public EmailBuilder htmlContent(String htmlContent) {
+            this.htmlContent = htmlContent;
+            return this;
+        }
+
         public EmailBuilder address(String address) {
             this.address = address;
             return this;

@@ -13,6 +13,9 @@ dependencies {
   compile group: 'org.quartz-scheduler', name: 'quartz', version:'2.2.3'
   compile group: 'net.sf.ehcache', name: 'ehcache-core', version:'2.6.11'
 
+  compile group: 'org.thymeleaf', name: 'thymeleaf', version: libs.thymeleafVersion
+  compile group: 'org.thymeleaf', name: 'thymeleaf-spring4', version: libs.thymeleafVersion
+
   testCompile group: 'org.springframework', name: 'spring-orm', version:libs.springVersion // else tests can fail on dependency issues
   testCompile group: 'org.springframework.security', name: 'spring-security-test', version:libs.springSecurityVersion
   testCompile(group: 'org.springframework.boot', name: 'spring-boot-starter-test', version:libs.springBootVersion) {

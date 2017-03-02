@@ -94,10 +94,8 @@ public class EmailSendingBrokerImpl implements EmailSendingBroker {
             helper.setSubject(email.getSubject());
 
             if (email.hasHtmlContent()) {
-                logger.info("email has html content: {}", email.getHtmlContent());
                 helper.setText(email.getContent(), email.getHtmlContent());
             }  else {
-                logger.info("email has no html content ...");
                 helper.setText(email.getContent());
             }
 
