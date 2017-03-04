@@ -1,7 +1,5 @@
 package za.org.grassroot.webapp.controller.webapp;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -23,8 +21,6 @@ import java.io.IOException;
 @Controller
 @RequestMapping("/image/")
 public class ImageController {
-
-    private static final Logger log = LoggerFactory.getLogger(ImageController.class);
 
     private final GroupImageBroker groupImageBroker;
 
@@ -59,6 +55,11 @@ public class ImageController {
         }
 
         return ResponseEntity.notFound().build();
+    }
+
+    @RequestMapping(value = "processed", method = RequestMethod.POST)
+    public ResponseEntity<String> processImage(@RequestParam String imageKey) {
+        return ResponseEntity.ok("done");
     }
 
 

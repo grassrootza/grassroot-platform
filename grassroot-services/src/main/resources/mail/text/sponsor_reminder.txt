@@ -1,0 +1,13 @@
+[[ #{sponsorship.reminder.greeting(${toName})} ]]
+
+[[ #{sponsorship.reminder.body(${fromName})} ]]
+
+====================
+
+[[ #{sponsorship.reminder.txt.msg(${fromName}, ${userMessage})} ]]
+
+Click here to respond: [[ ${requestLink} ]]
+
+====================
+
+[[ #{sponsorship.reminder.ending} ]]

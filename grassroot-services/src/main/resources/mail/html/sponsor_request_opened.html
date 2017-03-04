@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{html/fragments :: header}">
+  <link rel="stylesheet" href="mail_styles.css" />
+</head>
+<body>
+  <p th:text="#{sponsorship.requested.greeting(${requestorName})}">
+    Dear Person,
+  </p>
+  <p th:text="#{sponsorship.requested.body(${destinationName})}">
+    This is the rest of the email
+  </p>
+  <p>
+    <a th:href="${requestLink}" th:text="${requestLink}"></a>
+  </p>
+  <p th:text="#{sponsorship.requested.ending}">
+    Cheers, Grassroot
+  </p>
+</body>
+</html>

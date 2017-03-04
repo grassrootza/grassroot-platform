@@ -15,6 +15,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.association.AccountSponsorshipRequest;
 import za.org.grassroot.core.enums.AccountBillingCycle;
 import za.org.grassroot.core.enums.AccountPaymentType;
+import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.payments.PaymentMethod;
 import za.org.grassroot.services.account.AccountBillingBroker;
@@ -65,23 +66,31 @@ public class AccountSponsorshipController extends BaseController {
                                          @RequestParam String messageToSponsor, RedirectAttributes attributes, HttpServletRequest request) {
         String destinationUid;
 
-        if (userManagementService.userExist(PhoneNumberUtil.convertPhoneNumber(phoneNumber))) {
-            User destination = userManagementService.findByInputNumber(phoneNumber);
-            if (!StringUtils.isEmpty(destination.getEmailAddress()) && !emailAddress.equalsIgnoreCase(destination.getEmailAddress())) {
-                return addMessageAndReturnToForm(model, request, "account.sponsorship.email.mismatch", MessageType.ERROR,
-                        accountUid, displayName, phoneNumber, emailAddress, messageToSponsor);
+        try {
+            if (userManagementService.userExist(PhoneNumberUtil.convertPhoneNumber(phoneNumber))) {
+                User destination = userManagementService.findByInputNumber(phoneNumber);
+                if (!StringUtils.isEmpty(destination.getEmailAddress()) && !emailAddress.equalsIgnoreCase(destination.getEmailAddress())) {
+                    return addMessageAndReturnToForm(model, request, "account.sponsorship.email.mismatch", MessageType.ERROR,
+                            accountUid, displayName, phoneNumber, emailAddress, messageToSponsor);
+                } else {
+                    destinationUid = destination.getUid();
+                    userManagementService.updateEmailAddress(destinationUid, emailAddress);
+                }
             } else {
-                destinationUid = destination.getUid();
-                userManagementService.updateEmailAddress(destinationUid, emailAddress);
+                destinationUid = userManagementService.create(phoneNumber, displayName, emailAddress);
             }
-        } else {
-            destinationUid = userManagementService.create(phoneNumber, displayName, emailAddress);
-        }
 
-        sponsorshipBroker.openSponsorshipRequest(getUserProfile().getUid(), accountUid, destinationUid, messageToSponsor);
-        addMessage(attributes, MessageType.SUCCESS, "account.sponsorship.open.done", request);
-        attributes.addAttribute("accountUid", accountUid);
-        return "redirect:/account/view";
+            sponsorshipBroker.openSponsorshipRequest(getUserProfile().getUid(), accountUid, destinationUid, messageToSponsor);
+            addMessage(attributes, MessageType.SUCCESS, "account.sponsorship.open.done", request);
+            attributes.addAttribute("accountUid", accountUid);
+            return "redirect:/account/view";
+        } catch (InvalidPhoneNumberException e) {
+            return addMessageAndReturnToForm(model, request, "account.sponsorship.phone.exception", MessageType.ERROR,
+                    accountUid, displayName, phoneNumber, emailAddress, messageToSponsor);
+        } catch (IllegalArgumentException e) {
+            return addMessageAndReturnToForm(model, request, "account.sponsorship.arg.exception", MessageType.ERROR,
+                    accountUid, displayName, phoneNumber, emailAddress, messageToSponsor);
+        }
     }
 
     private String addMessageAndReturnToForm(Model model, HttpServletRequest request, String messageKey, MessageType messageType,

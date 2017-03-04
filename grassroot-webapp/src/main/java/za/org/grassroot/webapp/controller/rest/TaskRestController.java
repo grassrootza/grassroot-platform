@@ -115,7 +115,7 @@ public class TaskRestController {
 	@SuppressWarnings("unchecked") // the getAssignedMembers has a strange behavior on type check warnings, hence suppressing
     @RequestMapping(value = "/assigned/{phoneNumber}/{code}/{taskUid}/{taskType}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> fetchAssignedMembers(@PathVariable String phoneNumber, @PathVariable String code,
-                                                                       @PathVariable String taskUid, @PathVariable TaskType taskType) {
+																@PathVariable String taskUid, @PathVariable TaskType taskType) {
 	    logger.info("fetching task assigned members, taskType = {}", taskType);
 	    User requestingUser = userManagementService.findByInputNumber(phoneNumber);
 

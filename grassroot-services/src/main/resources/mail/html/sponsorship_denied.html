@@ -5,23 +5,16 @@
   <link rel="stylesheet" href="mail_styles.css" />
 </head>
 <body>
-  <p th:text="#{sponsorship.request.greeting(${toName})}">
+  <p th:text="#{sponsorship.generic.greeting(${request.requestor.billingUser.name})}">
     Dear Person,
   </p>
-  <p th:text="#{sponsorship.request.body(${fromName}, ${amountToPay})}">
+  <p th:text="#{sponsorship.denied.body(${request.destination.name})}">
     This is the rest of the email
   </p>
-  <blockquote>
-    <a href="http://google.com" th:href="${requestLink}" target="_blank">
-      <p th:text="${userMessage}">
-        Here is the user message
-      </p>
-    </a>
-  </blockquote>
   <table border="0" cellpadding="0" cellspacing="0" style="width: 250px; background-color:#207A34; border:1px solid #68B579; border-radius:5px; margin: 20px 0px">
     <tr>
       <td align="center" valign="middle" style="color:#207A34; font-family:Helvetica, Arial, sans-serif; font-size:16px; font-weight:bold; letter-spacing:-.5px; line-height:150%; padding-top:15px; padding-right:30px; padding-bottom:15px; padding-left:30px;">
-        <a th:href="${requestLink}" target="_blank" style="color:#FFFFFF; text-decoration:none;">Sponsor the account</a>
+        <a th:href="${urlForNewRequest}" target="_blank" style="color:#FFFFFF; text-decoration:none;">Ask another sponsor</a>
       </td>
     </tr>
   </table>
@@ -29,9 +22,9 @@
     If the link above does not work, copy this into your browser:
   </p>
   <p>
-    <a th:href="${requestLink}" th:text="${requestLink}"></a>
+    <a th:href="${urlForNewRequest}" th:text="${urlForNewRequest}"></a>
   </p>
-  <p th:text="#{sponsorship.request.ending}">
+  <p th:text="#{sponsorship.denied.ending}">
     Cheers, Grassroot
   </p>
 </body>

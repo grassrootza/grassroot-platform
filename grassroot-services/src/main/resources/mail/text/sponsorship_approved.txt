@@ -1,0 +1,7 @@
+[[ #{sponsorship.approved.greeting} ]]
+
+[[ #{sponsorship.approved.body} ]]
+
+[[ ${accountLink} ]]
+
+[[ #{sponsorship.approved.ending} ]]

@@ -1,0 +1,7 @@
+[[ #{sponsorship.generic.greeting(${requestorName})} ]]
+
+[[ #{sponsorship.reminded.body(${destinationName})} ]]
+
+[[ ${requestLink} ]]
+
+[[ #{sponsorship.reminded.ending} ]]

@@ -1,0 +1,7 @@
+[[ #{sponsorship.requested.greeting(${requestorName})} ]]
+
+[[ #{sponsorship.requested.body(${destinationName})} ]]
+
+[[ ${requestLink} ]]
+
+[[ #{sponsorship.requested.ending} ]]

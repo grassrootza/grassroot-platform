@@ -1,0 +1,7 @@
+[[ #{sponsorship.generic.greeting(${toName})} ]]
+
+[[ #{sponsorship.auto.remind.dest.body(${fromName})} ]]
+
+[[ ${requestLink} ]]
+
+[[ #{sponsorship.generic.ending} ]]

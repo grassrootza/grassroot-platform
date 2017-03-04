@@ -5,23 +5,19 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
-import org.thymeleaf.exceptions.TemplateInputException;
 import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.AccountBillingRecord;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.association.AccountSponsorshipRequest;
 import za.org.grassroot.integration.email.GrassrootEmail;
+import za.org.grassroot.services.util.MessageUtils;
 
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.text.DecimalFormat;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static za.org.grassroot.core.util.DateTimeUtil.formatAtSAST;
@@ -34,7 +30,7 @@ import static za.org.grassroot.services.util.MessageUtils.shortDateFormatter;
 @Service
 public class AccountEmailServiceImpl implements AccountEmailService {
 
-    private final MessageSourceAccessor messageSourceAccessor;
+    private final MessageSourceAccessor messageSource;
     private final TemplateEngine templateEngine;
 
     @Value("${grassroot.sponsorship.response.url:http://localhost:8080/account/sponsor/respond}")
@@ -43,31 +39,34 @@ public class AccountEmailServiceImpl implements AccountEmailService {
     @Value("${grassroot.sponsorship.request.url:http://localhost:8080/account/sponsor/request}")
     private String urlForRequest;
 
+    @Value("${grassroot.account.view.url:http://localhost:8080/account/view?requestUid=}")
+    private String urlToViewAccount;
+
     private static final DecimalFormat billFormat = new DecimalFormat("#.##");
 
     @Autowired
     public AccountEmailServiceImpl(@Qualifier("servicesMessageSourceAccessor") MessageSourceAccessor messageSourceAccessor,
                                    @Qualifier("emailTemplateEngine") TemplateEngine templateEngine) {
-        this.messageSourceAccessor = messageSourceAccessor;
+        this.messageSource = messageSourceAccessor;
         this.templateEngine = templateEngine;
     }
 
     @Override
     public String createAccountBillingNotification(AccountBillingRecord record) {
-        return messageSourceAccessor.getMessage("sms.statement.notification", new String[] {
+        return messageSource.getMessage("sms.statement.notification", new String[] {
                 billFormat.format((double) record.getTotalAmountToPay() / 100), formatAtSAST(record.getNextPaymentDate(), shortDateFormatter)
         }, getUserLocale(record.getAccount().getBillingUser()));
     }
 
     @Override
     public String createAccountStatementSubject(AccountBillingRecord generatingRecord) {
-        return messageSourceAccessor.getMessage("email.statement.subject", getUserLocale(generatingRecord.getAccount().getBillingUser()));
+        return messageSource.getMessage("email.statement.subject", getUserLocale(generatingRecord.getAccount().getBillingUser()));
     }
 
     @Override
     public String createAccountStatementEmail(AccountBillingRecord generatingRecord) {
         final User billedUser = generatingRecord.getAccount().getBillingUser();
-        final String salutation = messageSourceAccessor.getMessage("email.statement.salutation",
+        final String salutation = messageSource.getMessage("email.statement.salutation",
                 new String[] { StringUtils.isEmpty(billedUser.getFirstName()) ? billedUser.getFirstName() : billedUser.nameToDisplay() },
                 getUserLocale(billedUser));
 
@@ -75,23 +74,23 @@ public class AccountEmailServiceImpl implements AccountEmailService {
             throw new IllegalArgumentException("Error! Statement emails can only be generated for bill requiring payment");
         }
 
-        final String body = messageSourceAccessor.getMessage("email.statement.body",
+        final String body = messageSource.getMessage("email.statement.body",
                 new String[] { billFormat.format((double) generatingRecord.getTotalAmountToPay() / 100),
                         formatAtSAST(generatingRecord.getNextPaymentDate(), shortDateFormatter) }, getUserLocale(billedUser));
 
-        final String closing = messageSourceAccessor.getMessage("email.statement.closing", getUserLocale(billedUser));
+        final String closing = messageSource.getMessage("email.statement.closing", getUserLocale(billedUser));
 
         return String.join("\n\n", Arrays.asList(salutation, body, closing));
     }
 
     @Override
     public String createEndOfTrialNotification(Account account) {
-        return messageSourceAccessor.getMessage("notification.account.trial.ended");
+        return messageSource.getMessage("notification.account.trial.ended");
     }
 
     @Override
     public String createEndOfTrialEmailSubject() {
-        return messageSourceAccessor.getMessage("email.account.trial.ended.subject");
+        return messageSource.getMessage("email.account.trial.ended.subject");
     }
 
     @Override
@@ -101,108 +100,123 @@ public class AccountEmailServiceImpl implements AccountEmailService {
                 paymentLink
         };
 
-        return messageSourceAccessor.getMessage("email.account.trial.ended.body", emailFields);
+        return messageSource.getMessage("email.account.trial.ended.body", emailFields);
     }
 
     @Override
     public String createDisabledNotification(Account account) {
-        return messageSourceAccessor.getMessage("notification.account.disabled");
+        return messageSource.getMessage("notification.account.disabled");
     }
 
     @Override
     public String createDisabledEmailSubject() {
-        return messageSourceAccessor.getMessage("email.account.disabled.subject");
+        return messageSource.getMessage("email.account.disabled.subject");
     }
 
     @Override
     public String createDisabledEmailBody(User adminToEmail, String paymentLink) {
-        return messageSourceAccessor.getMessage("email.account.disabled.subject");
+        return messageSource.getMessage("email.account.disabled.subject");
     }
 
     @Override
+    @Transactional(readOnly = true)
     public GrassrootEmail createSponsorshipRequestMail(AccountSponsorshipRequest request, User requestingUser, String messageFromUser, boolean isReminder) {
+        Objects.requireNonNull(request);
+        Objects.requireNonNull(requestingUser);
+
         final Account account = request.getRequestor();
         final String subjectKey = isReminder ? "email.sponsorship.reminder.subject" : "email.sponsorship.subject";
-        final String bodyKey = isReminder ? "email.sponsorship.reminder.body" : "email.sponsorship.request";
 
         final String requestLink = sponsorshipResponseUrl + "?requestUid=" + request.getUid();
-        final String subject = messageSourceAccessor.getMessage(subjectKey, new String[]{account.getName()});
+        final String subject = messageSource.getMessage(subjectKey, new String[]{account.getName()});
         final String amount = "R" + (new DecimalFormat("#,###.##").format(account.calculatePeriodCost() / 100));
-        final String body = messageSourceAccessor.getMessage(bodyKey, new String[]{request.getDestination().getName(),
-                account.getName(), amount, requestLink});
-        final String message = messageSourceAccessor.getMessage("email.sponsorship.message",
-                new String[]{requestingUser.getName(), messageFromUser});
-        final String ending = messageSourceAccessor.getMessage("email.sponsorship.ending");
 
-        final Context ctx = new Context();
-        try {
-            final String htmlContent = templateEngine.process("html/sponsor_request", ctx);
-            GrassrootEmail.EmailBuilder builder = new GrassrootEmail.EmailBuilder(subject)
-                    .address(request.getDestination().getEmailAddress())
-                    .content(body + message + ending)
-                    .htmlContent(htmlContent);
-            return builder.build();
-        } catch (TemplateInputException e) {
-            e.printStackTrace();
-            ClassLoader cl = ClassLoader.getSystemClassLoader();
-            URL[] urls = ((URLClassLoader)cl).getURLs();
-            for(URL url: urls){
-                System.out.println(url.getFile());
-            }
-            throw e;
-        }
+        final Context ctx = new Context(MessageUtils.getUserLocale(request.getDestination()));
+        ctx.setVariable("toName", request.getDestination().getName());
+        ctx.setVariable("fromName", requestingUser.getName());
+        ctx.setVariable("requestLink", requestLink);
+        ctx.setVariable("userMessage", messageFromUser);
+        ctx.setVariable("amountToPay", amount);
+
+        final String templateSuffix = isReminder ? "sponsor_reminder" : "sponsor_request";
+        final String textContent = templateEngine.process("text/" + templateSuffix, ctx);
+        final String htmlContent = templateEngine.process("html/" + templateSuffix, ctx);
+
+        GrassrootEmail.EmailBuilder builder = new GrassrootEmail.EmailBuilder(subject)
+                .address(request.getDestination().getEmailAddress())
+                .content(textContent)
+                .htmlContent(htmlContent);
+        return builder.build();
     }
 
     @Override
     public GrassrootEmail openingUserEmail(boolean alreadyOpen, final String requestLink, final String destinationName, final User openingUser) {
-        final String subject = messageSourceAccessor.getMessage("email.sponsorship.requested.subject");
-        final String body = messageSourceAccessor.getMessage(alreadyOpen ? "email.sponsorship.reminded.body" : "email.sponsorship.requested.body",
-                new String[] { openingUser.getName(), destinationName, requestLink});
+        final Context ctx = new Context(MessageUtils.getUserLocale(openingUser));
+        ctx.setVariable("requestorName", openingUser.getName());
+        ctx.setVariable("destinationName", destinationName);
+        ctx.setVariable("requestLink", requestLink);
+
+        final String templateSuffix = alreadyOpen ? "sponsor_request_opened" : "sponsor_reminder_sent";
+        final String subject = messageSource.getMessage("email.sponsorship.requested.subject");
+        final String body = templateEngine.process("text/" + templateSuffix, ctx);
+        final String htmlBody = templateEngine.process("html/" + templateSuffix, ctx);
 
         return new GrassrootEmail.EmailBuilder(subject)
                 .address(openingUser.getEmailAddress())
                 .content(body)
+                .htmlContent(htmlBody)
                 .build();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public GrassrootEmail sponsorshipDeniedEmail(AccountSponsorshipRequest request) {
-        final String subject = messageSourceAccessor.getMessage("email.sponsorship.denied.subject");
+        final String subject = messageSource.getMessage("email.sponsorship.denied.subject");
         // note : since the sponsorship was not approved, the billing user will still be the one that opened the account
-        final String[] fields = { request.getRequestor().getBillingUser().getName(), request.getDestination().getName(),
-                urlForRequest + "?accountUid=" + request.getRequestor().getUid() };
+
+        final Context ctx = new Context(MessageUtils.getUserLocale(request.getRequestor().getBillingUser()));
+        ctx.setVariable("request", request);
+        ctx.setVariable("urlForNewRequest", urlForRequest + "?accountUid=" + request.getRequestor().getUid());
 
         // todo : should not be billing user ... (or, should be all admin)
         return new GrassrootEmail.EmailBuilder(subject)
                 .address(request.getRequestor().getBillingUser().getEmailAddress())
-                .content(messageSourceAccessor.getMessage("email.sponsorship.denied.body", fields))
+                .content(templateEngine.process("text/sponsorship_denied", ctx))
+                .htmlContent(templateEngine.process("html/sponsorship_denied", ctx))
                 .build();
     }
 
     @Override
     public GrassrootEmail sponsorshipApprovedEmail(AccountSponsorshipRequest request) {
-        final String subject = messageSourceAccessor.getMessage("email.sponsorship.approved.subject");
-        final String[] fields = new String[2];
-        // fields[1] = "https://app.grassroot.org.za/send a thank you";
+        final String subject = messageSource.getMessage("email.sponsorship.approved.subject");
+
+        final Context ctx = new Context();
+        ctx.setVariable("accountLink", urlToViewAccount + request.getRequestor().getUid());
+
         List<String> addresses = request.getRequestor().getAdministrators()
                 .stream()
                 .filter(u -> !StringUtils.isEmpty(u.getEmailAddress()) && !u.equals(request.getDestination()))
                 .map(User::getEmailAddress).collect(Collectors.toList());
+
         return new GrassrootEmail.EmailBuilder(subject)
                 .address(String.join(",", addresses))
-                .content(messageSourceAccessor.getMessage("email.sponsorship.approved.body", fields))
+                .content(templateEngine.process("text/sponsorship_approved", ctx))
+                .htmlContent(templateEngine.process("html/sponsorship_approved", ctx))
                 .build();
     }
 
     @Override
     public GrassrootEmail sponsorshipReminderEmailSponsor(AccountSponsorshipRequest request) {
-        final String subject = messageSourceAccessor.getMessage("email.sponsorship.aborted.subject");
-        final String fieldsDest[] = { request.getDestination().getName(), request.getRequestor().getName(),
-                sponsorshipResponseUrl + "?requestUid=" + request.getUid() };
+        final String subject = messageSource.getMessage("email.sponsorship.aborted.subject");
+        final Context ctx = new Context(MessageUtils.getUserLocale(request.getDestination()));
+        ctx.setVariable("toName", request.getDestination().getName());
+        ctx.setVariable("fromName", request.getRequestor().getName());
+        ctx.setVariable("requestLink", sponsorshipResponseUrl + "?requestUid=" + request.getUid());
 
         return new GrassrootEmail.EmailBuilder(subject)
                 .address(request.getDestination().getEmailAddress())
-                .content(messageSourceAccessor.getMessage("email.sponsorship.aborted.body.dest", fieldsDest))
+                .content(templateEngine.process("text/sponsor_auto_reminder", ctx))
+                .htmlContent(templateEngine.process("html/sponsor_auto_reminder", ctx))
                 .build();
     }
 
@@ -211,18 +225,20 @@ public class AccountEmailServiceImpl implements AccountEmailService {
     public Set<GrassrootEmail> sponsorshipReminderEmailRequestor(AccountSponsorshipRequest request) {
         Set<GrassrootEmail> emailSet = new HashSet<>();
 
-        final String subject = messageSourceAccessor.getMessage("email.sponsorship.aborted.subject");
-        final String fieldsReq[] = new String[3];
-        fieldsReq[1] = request.getDestination().getName();
+        final String subject = messageSource.getMessage("email.sponsorship.aborted.subject");
+        final Context ctx = new Context();
+        ctx.setVariable("destinationName", request.getDestination().getName());
+        ctx.setVariable("requestLink", sponsorshipResponseUrl + "?requestUid=" + request.getUid());
 
         request.getRequestor().getAdministrators()
                 .stream()
                 .filter(u -> !StringUtils.isEmpty(u.getEmailAddress()))
                 .forEach(u -> {
-                    fieldsReq[0] = u.getName();
+                    ctx.setVariable("toName", u.getName());
                     emailSet.add(new GrassrootEmail.EmailBuilder(subject)
                             .address(u.getEmailAddress())
-                            .content(messageSourceAccessor.getMessage("email.sponsorship.aborted.body.req", fieldsReq))
+                            .content(templateEngine.process("text/sponsor_auto_reminder_requestor", ctx))
+                            .htmlContent(templateEngine.process("html/sponsor_auto_reminder_requestor", ctx))
                             .build());
                 });
 

@@ -1,23 +1,14 @@
 <!DOCTYPE html>
 <html lang="en"
       xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{html/fragments :: header}">
-  <link rel="stylesheet" href="mail_styles.css" />
-</head>
+<head th:replace="~{html/fragments :: header}"></head>
 <body>
-  <p th:text="#{sponsorship.request.greeting(${toName})}">
+  <p th:text="#{sponsorship.generic.greeting(${toName})}">
     Dear Person,
   </p>
-  <p th:text="#{sponsorship.request.body(${fromName}, ${amountToPay})}">
+  <p th:text="#{sponsorship.auto.remind.dest.body(${fromName})}">
     This is the rest of the email
   </p>
-  <blockquote>
-    <a href="http://google.com" th:href="${requestLink}" target="_blank">
-      <p th:text="${userMessage}">
-        Here is the user message
-      </p>
-    </a>
-  </blockquote>
   <table border="0" cellpadding="0" cellspacing="0" style="width: 250px; background-color:#207A34; border:1px solid #68B579; border-radius:5px; margin: 20px 0px">
     <tr>
       <td align="center" valign="middle" style="color:#207A34; font-family:Helvetica, Arial, sans-serif; font-size:16px; font-weight:bold; letter-spacing:-.5px; line-height:150%; padding-top:15px; padding-right:30px; padding-bottom:15px; padding-left:30px;">
@@ -31,7 +22,7 @@
   <p>
     <a th:href="${requestLink}" th:text="${requestLink}"></a>
   </p>
-  <p th:text="#{sponsorship.request.ending}">
+  <p th:text="#{sponsorship.generic.ending}">
     Cheers, Grassroot
   </p>
 </body>
