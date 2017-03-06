@@ -1,7 +1,7 @@
-[[ #{sponsorship.generic.greeting(${toName})} ]]
+[[ #{email.generic.greeting(${toName})} ]]
 
 [[ #{sponsorship.auto.remind.req.body(${destinationName})} ]]
 
 [[ ${requestLink} ]]
 
-[[ #{sponsorship.generic.ending} ]]
+[[ #{email.generic.ending} ]]

@@ -49,17 +49,12 @@ public class EmailSendingBrokerImpl implements EmailSendingBroker {
     }
 
     @Override
-    public void generateAndSendBillingEmail(String emailAddress, String emailSubject, String emailBody, List<String> billingRecordUids) {
-        File invoice = pdfGeneratingService.generateInvoice(billingRecordUids);
-
+    public void generateAndSendStatementEmail(GrassrootEmail baseMail, List<String> billingRecordsToIncludeByUid) {
+        File invoice = pdfGeneratingService.generateInvoice(billingRecordsToIncludeByUid);
         String fileName = "GrassrootInvoice-" + DateTimeFormatter.ISO_LOCAL_DATE.format(LocalDateTime.now()) + ".pdf";
-        GrassrootEmail email = new GrassrootEmail.EmailBuilder(emailSubject)
-                .content(emailBody)
-                .address(emailAddress)
-                .attachment(fileName, invoice)
-                .build();
-
-        sendMail(email);
+        baseMail.setAttachment(invoice);
+        baseMail.setAttachmentName(fileName);
+        sendMail(baseMail);
     }
 
     @Override

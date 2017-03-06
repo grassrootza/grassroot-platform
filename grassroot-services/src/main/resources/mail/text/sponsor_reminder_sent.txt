@@ -1,4 +1,4 @@
-[[ #{sponsorship.generic.greeting(${requestorName})} ]]
+[[ #{email.generic.greeting(${requestorName})} ]]
 
 [[ #{sponsorship.reminded.body(${destinationName})} ]]
 

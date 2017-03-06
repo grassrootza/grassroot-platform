@@ -40,6 +40,7 @@ public class ImageController {
         if (serverPort != 80 && serverPort != 443) {
             builder.append(":").append(serverPort);
         }
+
         String imageUrl = builder.append(ImageUtil.getRelativePath())
                 .append(imageId).toString();
 

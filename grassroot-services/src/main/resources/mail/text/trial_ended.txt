@@ -1,0 +1,7 @@
+[[ #{email.generic.greeting(${toName})} ]]
+
+[[ #{account.trial.ended.body} ]]
+
+[[ ${paymentLink} ]]
+
+[[ #{email.generic.ending} ]]

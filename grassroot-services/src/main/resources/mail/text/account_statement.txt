@@ -1,0 +1,7 @@
+[[ #{email.generic.greeting(${toName})} ]]
+
+[[ #{account.disabled.body} ]]
+
+[[ ${paymentLink} ]]
+
+[[ #{email.generic.ending} ]]

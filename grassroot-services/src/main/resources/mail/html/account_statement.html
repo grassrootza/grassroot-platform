@@ -3,16 +3,16 @@
       xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{html/fragments :: header}"></head>
 <body>
-  <p th:text="#{email.generic.greeting(${requestorName})}">
+  <p th:text="#{email.generic.greeting(${toName})}">
     Dear Person,
   </p>
-  <p th:text="#{sponsorship.reminded.body(${destinationName})}">
+  <p th:text="#{account.statement.body(${amountToPay}, ${nextPaymentDate})}">
     This is the rest of the email
   </p>
   <table border="0" cellpadding="0" cellspacing="0" style="width: 250px; background-color:#207A34; border:1px solid #68B579; border-radius:5px; margin: 20px 0px">
     <tr>
       <td align="center" valign="middle" style="color:#207A34; font-family:Helvetica, Arial, sans-serif; font-size:16px; font-weight:bold; letter-spacing:-.5px; line-height:150%; padding-top:15px; padding-right:30px; padding-bottom:15px; padding-left:30px;">
-        <a th:href="${requestLink}" target="_blank" style="color:#FFFFFF; text-decoration:none;">Sponsor the account</a>
+        <a th:href="${viewAccountUrl}" target="_blank" style="color:#FFFFFF; text-decoration:none;">Manage account</a>
       </td>
     </tr>
   </table>
@@ -20,9 +20,9 @@
     If the link above does not work, copy this into your browser:
   </p>
   <p>
-    <a th:href="${requestLink}" th:text="${requestLink}"></a>
+    <a th:href="${viewAccountUrl}" th:text="${viewAccountUrl}"></a>
   </p>
-  <p th:text="#{sponsorship.reminded.ending}">
+  <p th:text="#{email.generic.ending}">
     Cheers, Grassroot
   </p>
 </body>

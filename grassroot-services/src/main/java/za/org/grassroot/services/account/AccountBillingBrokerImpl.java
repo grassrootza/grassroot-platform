@@ -180,10 +180,8 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
         if (sendEmail && !StringUtils.isEmpty(emailAddress)) {
             List<AccountBillingRecord> records = findRecordsToIncludeInStatement(account,
                     generatingBill.getStatementDateTime().plus(1, ChronoUnit.MINUTES)); // just in case cutting it too fine excludes this one
-            final String emailSubject = accountEmailService.createAccountStatementSubject(generatingBill);
-            final String emailBody = accountEmailService.createAccountStatementEmail(generatingBill);
-
-            emailSendingBroker.generateAndSendBillingEmail(emailAddress, emailSubject, emailBody,
+            GrassrootEmail billingEmail = accountEmailService.createAccountStatementEmail(generatingBill);
+            emailSendingBroker.generateAndSendStatementEmail(billingEmail,
                     records.stream().map(AccountBillingRecord::getUid).collect(Collectors.toList()));
         }
     }
@@ -562,15 +560,11 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
     }
 
     private void sendTrialExpiredEmails(Account account) {
-        GrassrootEmail.EmailBuilder builder = new GrassrootEmail.EmailBuilder(accountEmailService.createEndOfTrialEmailSubject());
-
-        // todo : make the email pretty & have multiple types (e.g., with direct deposit) [and also campaign tracking etc]
         final String formedPaymentLink = accountPaymentLink + "?accountUid=" + account.getUid();
         account.getAdministrators()
                 .stream()
                 .filter(User::hasEmailAddress)
-                .forEach(u -> emailSendingBroker.sendMail(builder.address(u.getEmailAddress())
-                    .content(accountEmailService.createEndOfTrialEmailBody(account, u, formedPaymentLink)).build()));
+                .forEach(u -> emailSendingBroker.sendMail(accountEmailService.createEndOfTrailEmail(account, u, formedPaymentLink)));
     }
 
     private Set<Notification> accountDisabledNotification(Account account, AccountBillingRecord bill) {
@@ -582,15 +576,13 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
     }
 
     private void sendDisabledEmails(Account account) {
-        // todo : as above, make emails pretty, etc
-
-        GrassrootEmail.EmailBuilder builder = new GrassrootEmail.EmailBuilder(accountEmailService.createDisabledEmailSubject());
+        // note: if ever becomes a heavy load, turn into one email with multiple addresses, but this is a background scheduled
+        // job and multiple addresses might result in junk mail, so ...
         final String formedPaymentLink = accountPaymentLink + "?accountUid=" + account.getUid();
         account.getAdministrators()
                 .stream()
                 .filter(User::hasEmailAddress)
-                .forEach(u -> emailSendingBroker.sendMail(builder.address(u.getEmailAddress())
-                        .content(accountEmailService.createDisabledEmailBody(u, formedPaymentLink)).build()));
+                .forEach(u -> emailSendingBroker.sendMail(accountEmailService.createDisabledEmail(u, formedPaymentLink)));
     }
 
     private Instant getPeriodStart(Account account, AccountBillingRecord lastBill) {

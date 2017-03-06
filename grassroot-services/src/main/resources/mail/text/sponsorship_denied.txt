@@ -1,4 +1,4 @@
-[[ #{sponsorship.generic.greeting(${request.requestor.billingUser.name})} ]]
+[[ #{email.generic.greeting(${request.requestor.billingUser.name})} ]]
 
 [[ #{sponsorship.denied.body(${request.destination.name})} ]]
 

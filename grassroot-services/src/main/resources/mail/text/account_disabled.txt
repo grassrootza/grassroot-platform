@@ -1,0 +1,7 @@
+[[ #{email.generic.greeting(${toName})} ]]
+
+[[ #{account.statement.body(${amountToPay}, ${nextPaymentDate})} ]]
+
+[[ ${viewAccountUrl} ]]
+
+[[ #{email.generic.ending} ]]

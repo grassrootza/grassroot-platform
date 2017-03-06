@@ -103,6 +103,10 @@ public class GrassrootEmail {
         return attachment != null;
     }
 
+    public void setAttachment(File attachment) { this.attachment = attachment; }
+
+    public void setAttachmentName(String attachmentName) { this.attachmentName = attachmentName; }
+
     @Override
     public String toString() {
         return "GrassrootEmail{" +

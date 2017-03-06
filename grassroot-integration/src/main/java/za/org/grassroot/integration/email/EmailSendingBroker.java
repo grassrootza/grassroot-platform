@@ -7,7 +7,7 @@ import java.util.List;
  */
 public interface EmailSendingBroker {
 
-    void generateAndSendBillingEmail(String emailAddress, String emailSubject, String emailBody, List<String> billingRecordUids);
+    void generateAndSendStatementEmail(GrassrootEmail baseMail, List<String> billingRecordsToIncludeByUid);
 
     void sendSystemStatusMail(GrassrootEmail systemStatsEmail);
 

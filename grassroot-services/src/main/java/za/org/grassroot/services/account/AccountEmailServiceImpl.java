@@ -59,28 +59,29 @@ public class AccountEmailServiceImpl implements AccountEmailService {
     }
 
     @Override
-    public String createAccountStatementSubject(AccountBillingRecord generatingRecord) {
-        return messageSource.getMessage("email.statement.subject", getUserLocale(generatingRecord.getAccount().getBillingUser()));
-    }
+    @Transactional(readOnly = true)
+    public GrassrootEmail createAccountStatementEmail(AccountBillingRecord statement) {
+        Objects.requireNonNull(statement);
 
-    @Override
-    public String createAccountStatementEmail(AccountBillingRecord generatingRecord) {
-        final User billedUser = generatingRecord.getAccount().getBillingUser();
-        final String salutation = messageSource.getMessage("email.statement.salutation",
-                new String[] { StringUtils.isEmpty(billedUser.getFirstName()) ? billedUser.getFirstName() : billedUser.nameToDisplay() },
-                getUserLocale(billedUser));
+        final User billedUser = statement.getAccount().getBillingUser();
+        final String subject = messageSource.getMessage("email.statement.subject");
+        GrassrootEmail.EmailBuilder builder = new GrassrootEmail.EmailBuilder(subject);
 
-        if (generatingRecord.getNextPaymentDate() == null) {
+        if (statement.getNextPaymentDate() == null) {
             throw new IllegalArgumentException("Error! Statement emails can only be generated for bill requiring payment");
         }
 
-        final String body = messageSource.getMessage("email.statement.body",
-                new String[] { billFormat.format((double) generatingRecord.getTotalAmountToPay() / 100),
-                        formatAtSAST(generatingRecord.getNextPaymentDate(), shortDateFormatter) }, getUserLocale(billedUser));
+        final Context ctx = new Context(getUserLocale(billedUser));
+        ctx.setVariable("toName", StringUtils.isEmpty(billedUser.getFirstName()) ? billedUser.getFirstName() : billedUser.nameToDisplay());
+        ctx.setVariable("amountToPay", billFormat.format((double) statement.getTotalAmountToPay() / 100));
+        ctx.setVariable("nextPaymentDate", formatAtSAST(statement.getNextPaymentDate(), shortDateFormatter));
+        ctx.setVariable("viewAccountUrl", urlToViewAccount + statement.getAccount().getUid());
 
-        final String closing = messageSource.getMessage("email.statement.closing", getUserLocale(billedUser));
-
-        return String.join("\n\n", Arrays.asList(salutation, body, closing));
+        final String template = "account_statement";
+        return builder.address(billedUser.getEmailAddress())
+                .content(templateEngine.process("text/" + template, ctx))
+                .htmlContent(templateEngine.process("html/" + template, ctx))
+                .build();
     }
 
     @Override
@@ -89,18 +90,23 @@ public class AccountEmailServiceImpl implements AccountEmailService {
     }
 
     @Override
-    public String createEndOfTrialEmailSubject() {
-        return messageSource.getMessage("email.account.trial.ended.subject");
-    }
+    public GrassrootEmail createEndOfTrailEmail(Account account, User adminToEmail, String paymentLink) {
+        Objects.requireNonNull(account);
+        Objects.requireNonNull(adminToEmail);
+        Objects.requireNonNull(paymentLink);
 
-    @Override
-    public String createEndOfTrialEmailBody(Account account, User adminToEmail, String paymentLink) {
-        String[] emailFields = new String[] {
-                adminToEmail.getName(),
-                paymentLink
-        };
+        // todo : have multiple links/types (e.g., with direct deposit) [and also campaign tracking etc]
 
-        return messageSource.getMessage("email.account.trial.ended.body", emailFields);
+        final String template = "trial_ended";
+        final Context ctx = new Context(MessageUtils.getUserLocale(adminToEmail));
+        ctx.setVariable("toName", adminToEmail.getName());
+        ctx.setVariable("paymentLink", paymentLink);
+
+        return new GrassrootEmail.EmailBuilder(messageSource.getMessage("email.account.trial.ended.subject"))
+                .address(adminToEmail.getEmailAddress())
+                .content(templateEngine.process("text/" + template, ctx))
+                .htmlContent(templateEngine.process("html/" + template, ctx))
+                .build();
     }
 
     @Override
@@ -109,13 +115,21 @@ public class AccountEmailServiceImpl implements AccountEmailService {
     }
 
     @Override
-    public String createDisabledEmailSubject() {
-        return messageSource.getMessage("email.account.disabled.subject");
-    }
+    public GrassrootEmail createDisabledEmail(User adminToEmail, String paymentLink) {
+        Objects.requireNonNull(adminToEmail);
+        Objects.requireNonNull(paymentLink);
 
-    @Override
-    public String createDisabledEmailBody(User adminToEmail, String paymentLink) {
-        return messageSource.getMessage("email.account.disabled.subject");
+        final String template = "account_disabled";
+        final Context ctx = new Context(MessageUtils.getUserLocale(adminToEmail));
+
+        ctx.setVariable("toName", adminToEmail.getName());
+        ctx.setVariable("paymentLink", paymentLink);
+
+        return new GrassrootEmail.EmailBuilder(messageSource.getMessage("email.account.disabled.subject"))
+                .address(adminToEmail.getEmailAddress())
+                .content(templateEngine.process("text/" + template, ctx))
+                .htmlContent(templateEngine.process("html/" + template, ctx))
+                .build();
     }
 
     @Override

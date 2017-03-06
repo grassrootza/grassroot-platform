@@ -15,21 +15,15 @@ public interface AccountEmailService {
 
     String createAccountBillingNotification(AccountBillingRecord record);
 
-    String createAccountStatementSubject(AccountBillingRecord generatingRecord);
-
-    String createAccountStatementEmail(AccountBillingRecord generatingRecord);
+    GrassrootEmail createAccountStatementEmail(AccountBillingRecord statement);
 
     String createEndOfTrialNotification(Account account);
 
-    String createEndOfTrialEmailSubject();
-
-    String createEndOfTrialEmailBody(Account account, User adminToEmail, String paymentLink);
+    GrassrootEmail createEndOfTrailEmail(Account account, User adminToEmail, String paymentLink);
 
     String createDisabledNotification(Account account);
 
-    String createDisabledEmailSubject();
-
-    String createDisabledEmailBody(User adminToEmail, String paymentLink);
+    GrassrootEmail createDisabledEmail(User adminToEmail, String paymentLink);
 
     /*
     Sponsorship emails, next

@@ -5,7 +5,7 @@
   <link rel="stylesheet" href="mail_styles.css" />
 </head>
 <body>
-  <p th:text="#{sponsorship.generic.greeting(${request.requestor.billingUser.name})}">
+  <p th:text="#{email.generic.greeting(${request.requestor.billingUser.name})}">
     Dear Person,
   </p>
   <p th:text="#{sponsorship.denied.body(${request.destination.name})}">
