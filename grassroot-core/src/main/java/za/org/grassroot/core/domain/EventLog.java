@@ -4,17 +4,19 @@ package za.org.grassroot.core.domain;
  * Created by luke on 2015/07/16.
  * */
 
+import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
+import javax.validation.constraints.AssertTrue;
 import java.time.Instant;
 import java.util.Objects;
 
 @Entity
 @Table(name="event_log")
-public class EventLog implements ActionLog {
+public class EventLog implements TaskLog {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -45,6 +47,13 @@ public class EventLog implements ActionLog {
 
     @Column(name = "start_time_changed")
     private Boolean startTimeChanged; // intended only for logs of type CHANGED
+
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name="latitude", column = @Column(nullable = true)),
+            @AttributeOverride(name="longitude", column = @Column(nullable = true))
+    })
+    private GeoLocation location;
 
     /*
     Constructors
@@ -86,6 +95,11 @@ public class EventLog implements ActionLog {
         return user;
     }
 
+    @Override
+    public Task getTask() {
+        return event;
+    }
+
     public Event getEvent() {
         return event;
     }
@@ -108,6 +122,14 @@ public class EventLog implements ActionLog {
 
     public void setResponse(EventRSVPResponse response) {
         this.response = response;
+    }
+
+    public GeoLocation getLocation() {
+        return location;
+    }
+
+    public void setLocation(GeoLocation location) {
+        this.location = location;
     }
 
     @Override

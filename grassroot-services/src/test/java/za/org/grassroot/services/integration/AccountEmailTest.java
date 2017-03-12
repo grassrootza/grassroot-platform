@@ -113,7 +113,6 @@ public class AccountEmailTest {
 
         runStandardAssertions(initialEmail, sponsorUser.getEmailAddress());
         runStandardAssertions(reminderEmail, sponsorUser.getEmailAddress());
-
     }
 
     @Test

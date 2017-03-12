@@ -165,6 +165,8 @@ public class AccountBrokerImpl implements AccountBroker {
                     .userUid(userUid)
                     .description("account enabled for free trial, at creation")
                     .build());
+
+            creatingUser.setHasUsedFreeTrial(true);
         }
 
         AfterTxCommitTask afterTxCommitTask = () -> logsAndNotificationsBroker.asyncStoreBundle(bundle);

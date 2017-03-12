@@ -1,5 +1,6 @@
 package za.org.grassroot.core.domain;
 
+import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.enums.ActionLogType;
 
 import javax.persistence.*;
@@ -50,8 +51,6 @@ public class ImageRecord {
     @Column(name = "md5_hash", length = 24)
     private String md5;
 
-    // private GeoLocation geoLocation;
-
     // may need a bit more of this later, but for now, a place holder for, e.g., recording how many people included
     @Column(name = "auxiliary", length = 255)
     private String auxiliaryText;
@@ -62,6 +61,7 @@ public class ImageRecord {
         private String bucket;
         private String md5;
         private String auxiliaryText;
+        private GeoLocation location;
 
         public Builder actionLogType(ActionLogType actionLogType) {
             this.actionLogType = actionLogType;

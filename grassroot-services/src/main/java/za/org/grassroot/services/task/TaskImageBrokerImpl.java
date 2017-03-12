@@ -6,15 +6,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.enums.ActionLogType;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.enums.TodoLogType;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.util.DebugUtil;
+import za.org.grassroot.integration.storage.ImageSize;
 import za.org.grassroot.integration.storage.StorageBroker;
 
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -53,7 +54,7 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
 
     @Override
     @Transactional
-    public String storeImageForTask(String userUid, String taskUid, TaskType taskType, MultipartFile file) {
+    public String storeImageForTask(String userUid, String taskUid, TaskType taskType, MultipartFile file, Double latitude, Double longitude) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(taskUid);
         Objects.requireNonNull(taskType);
@@ -61,13 +62,14 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
         DebugUtil.transactionRequired("");
 
         User user = userRepository.findOneByUid(userUid);
+        GeoLocation location = latitude == null ? null : new GeoLocation(latitude, longitude);
 
         switch (taskType) {
             case MEETING:
-                return storeImageForMeeting(user, taskUid, file);
+                return storeImageForMeeting(user, taskUid, location, file);
             case TODO:
-            //    break;
-            default:
+                return storeImageForTodo(user, taskUid, location, file);
+            default: // throw an exception
                 return null;
         }
     }
@@ -87,7 +89,6 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
             throw new AccessDeniedException("Error! Only a member of a task can fetch its images");
         }
 
-        List<ImageRecord> imageRecords = new ArrayList<>();
         ActionLogType logType = isTodo ? ActionLogType.TODO_LOG : ActionLogType.EVENT_LOG;
         List<String> imageLogUids = isTodo ?
                 todoLogRepository.findAll(where(forTodo((Todo) task)).and(ofType(TodoLogType.IMAGE_RECORDED)))
@@ -101,6 +102,14 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
                 .filter(Objects::nonNull)
                 .sorted(Comparator.comparing(ImageRecord::getCreationTime))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public TaskLog fetchLogForImage(String logUid, TaskType taskType) {
+        return TaskType.TODO.equals(taskType) ?
+                todoLogRepository.findOneByUid(logUid):
+                eventLogRepository.findOneByUid(logUid);
     }
 
     @Override
@@ -118,10 +127,19 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
         Objects.requireNonNull(taskType);
         Objects.requireNonNull(logUid);
 
-        return storageBroker.fetchImage(logUid, TaskType.TODO.equals(taskType) ? ActionLogType.TODO_LOG : ActionLogType.EVENT_LOG);
+        return storageBroker.fetchImage(logUid, ImageSize.FULL_SIZE);
     }
 
-    private String storeImageForMeeting(User user, String meetingUid, MultipartFile file) {
+    @Override
+    public byte[] fetchMicroThumbnailForTask(String userUid, TaskType taskType, String logUid) {
+        Objects.requireNonNull(taskType);
+        Objects.requireNonNull(logUid);
+
+        // as above, add a membership check in the future
+        return storageBroker.fetchImage(logUid, ImageSize.MICRO);
+    }
+
+    private String storeImageForMeeting(User user, String meetingUid, GeoLocation location, MultipartFile file) {
         DebugUtil.transactionRequired("");
 
         Meeting meeting = (Meeting) eventRepository.findOneByUid(meetingUid);
@@ -132,12 +150,38 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
 
         EventLog eventLog = new EventLog(user, meeting, EventLogType.IMAGE_RECORDED);
 
+        if (location != null) {
+            eventLog.setLocation(location);
+        }
+
         boolean uploadCompleted = storageBroker.storeImage(ActionLogType.EVENT_LOG, eventLog.getUid(), file);
         if (uploadCompleted) {
             eventLogRepository.save(eventLog);
             return eventLog.getUid();
         } else {
-            // todo : try again?
+            // todo : try again or throw an exception
+            return null;
+        }
+    }
+
+    private String storeImageForTodo(User user, String todoUid, GeoLocation location, MultipartFile file) {
+        DebugUtil.transactionRequired("");
+
+        Todo todo = todoRepository.findOneByUid(todoUid);
+        if (!todo.getAncestorGroup().getMembers().contains(user)) {
+            throw new AccessDeniedException("Error! Only group members can add a photo for a todo");
+        }
+
+        TodoLog todoLog = new TodoLog(TodoLogType.IMAGE_RECORDED, user, todo, "Photo recorded");
+        if (location != null) {
+            todoLog.setLocation(location);
+        }
+
+        boolean uploadCompleted = storageBroker.storeImage(ActionLogType.TODO_LOG, todoLog.getUid(), file);
+        if (uploadCompleted) {
+            todoLogRepository.save(todoLog);
+            return todoLog.getUid();
+        } else { // as above
             return null;
         }
     }

@@ -36,14 +36,13 @@
     </div>
   </section>
 
-  <!-- todo : add some icons in buttons -->
   <section class="no-group-buttons">
     <div class="container">
 
       <div class="row" th:if="${canAddAnyGroups and canAddAllGroups and groupsCanAdd.size() > 1}">
         <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
           <button data-toggle="modal" data-target="#addAllConfirmModal" class="btn default-button full-width-button text-center">
-            Add all groups
+            <i class="fa fa-arrow-circle-right" aria-hidden="true"></i>Add all groups
           </button>
         </div>
       </div>
@@ -51,7 +50,7 @@
       <div class="row" th:if="${canAddAnyGroups}">
         <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
           <a th:href="@{/group/create}" class="btn default-button full-width-button word-wrap-button text-center">
-            Create group
+            <i class="fa fa-plus-circle" aria-hidden="true"></i>Create group
           </a>
         </div>
       </div>
@@ -59,7 +58,7 @@
       <div class="row" th:if="${canAddAnyGroups and groupsCanAdd.size() > 0}">
         <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
           <button data-toggle="modal" data-target="#addGroupModal" class="btn default-button full-width-button text-center">
-            Select groups
+            <i class="fa fa-arrow-right" aria-hidden="true"></i>Select groups
           </button>
         </div>
       </div>
@@ -67,7 +66,7 @@
       <div class="row">
         <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
           <a th:href="@{/messaging/freeform}" class="btn default-button full-width-button text-center">
-            Send custom message
+            <i class="fa fa-envelope" aria-hidden="true"></i>Send custom message
           </a>
         </div>
       </div>
@@ -75,7 +74,7 @@
       <div class="row">
         <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
           <a th:href="@{/account/sponsor/request(accountUid=${account.uid})}" class="btn default-button full-width-button text-center">
-            Request sponsorship
+            <i class="fa fa-handshake-o" aria-hidden="true"></i>Request sponsorship
           </a>
         </div>
       </div>

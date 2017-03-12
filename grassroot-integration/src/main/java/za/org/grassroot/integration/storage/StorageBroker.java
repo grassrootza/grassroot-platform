@@ -13,6 +13,6 @@ public interface StorageBroker {
 
     ImageRecord fetchLogImageDetails(String actionLogUid, ActionLogType actionLogType);
 
-    byte[] fetchImage(String uid, ActionLogType type);
+    byte[] fetchImage(String uid, ImageSize imageSize);
 
 }

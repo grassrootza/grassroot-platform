@@ -1,6 +1,8 @@
 package za.org.grassroot.core.domain;
 
+import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.enums.TodoLogType;
+import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
 import java.time.Instant;
@@ -12,12 +14,15 @@ import java.util.Objects;
 @Entity
 @Table(name = "action_todo_log",
 		indexes = {@Index(name = "idx_action_todo_log_actiontodo_id", columnList = "action_todo_id")})
-public class TodoLog implements ActionLog {
+public class TodoLog implements TaskLog {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(name = "id", nullable = false)
 	private Long id;
+
+	@Column(name = "uid", nullable = false, unique = true)
+	private String uid;
 
 	@Basic
 	@Column(name = "created_date_time", nullable = false, updatable = false)
@@ -38,11 +43,19 @@ public class TodoLog implements ActionLog {
 	@Column(name="type", nullable = false, length = 50)
  	private TodoLogType type;
 
+	@Embedded
+	@AttributeOverrides({
+			@AttributeOverride(name="latitude", column = @Column(nullable = true)),
+			@AttributeOverride(name="longitude", column = @Column(nullable = true))
+	})
+	private GeoLocation location;
+
 	private TodoLog() {
 		// for JPA only
 	}
 
 	public TodoLog(TodoLogType type, User user, Todo todo, String message) {
+		this.uid = UIDGenerator.generateId();
 		this.type = Objects.requireNonNull(type);
 		this.todo = Objects.requireNonNull(todo);
 		this.message = message;
@@ -50,8 +63,7 @@ public class TodoLog implements ActionLog {
 		this.createdDateTime = Instant.now();
 	}
 
-	// temp until get round to proper refactor here
-	public String getUid() { return ""; }
+	public String getUid() { return uid; }
 
 	public TodoLogType getType() {
 		return type;
@@ -73,8 +85,21 @@ public class TodoLog implements ActionLog {
 		return user;
 	}
 
+	@Override
+	public Task getTask() {
+		return todo;
+	}
+
 	public String getMessage() {
 		return message;
+	}
+
+	public GeoLocation getLocation() {
+		return location;
+	}
+
+	public void setLocation(GeoLocation location) {
+		this.location = location;
 	}
 
 	@Override

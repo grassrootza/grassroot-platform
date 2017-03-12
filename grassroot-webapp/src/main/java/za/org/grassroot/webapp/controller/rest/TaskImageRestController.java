@@ -14,6 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.integration.exception.ImageRetrievalFailure;
+import za.org.grassroot.integration.exception.NoMicroVersionException;
 import za.org.grassroot.services.task.TaskImageBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.enums.RestMessage;
@@ -21,6 +22,7 @@ import za.org.grassroot.webapp.model.rest.ImageRecordDTO;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -43,13 +45,16 @@ public class TaskImageRestController {
     }
 
     @RequestMapping(value = "/upload/{phoneNumber}/{code}/{taskType}/{taskUid}", method = RequestMethod.POST)
-    public ResponseEntity<ResponseWrapper> uploadTaskImage(@PathVariable String phoneNumber, @PathVariable String taskUid,
-                                                           @PathVariable TaskType taskType, @RequestParam("image") MultipartFile file) {
+    public ResponseEntity<ResponseWrapper> uploadTaskImage(@PathVariable String phoneNumber, @PathVariable String taskUid, @PathVariable TaskType taskType,
+                                                           @RequestParam(required = false) Double longitude, @RequestParam(required = false) Double latitude,
+                                                           @RequestParam("image") MultipartFile file, HttpServletRequest request) {
 
         User user = userManagementService.findByInputNumber(phoneNumber);
 
+        logger.info("uploading an image with long={}, lat={}", longitude, latitude);
+
         try {
-            String actionLogUid = taskImageBroker.storeImageForTask(user.getUid(), taskUid, taskType, file);
+            String actionLogUid = taskImageBroker.storeImageForTask(user.getUid(), taskUid, taskType, file, longitude, latitude);
             return !StringUtils.isEmpty(actionLogUid) ?
                     RestUtil.okayResponseWithData(RestMessage.MEETING_IMAGE_ADDED, actionLogUid) :
                     RestUtil.errorResponse(RestMessage.MEETING_IMAGE_ERROR);
@@ -59,12 +64,13 @@ public class TaskImageRestController {
     }
 
     @RequestMapping(value = "/list/{phoneNumber}/{code}/{taskType}/{taskUid}", method = RequestMethod.GET)
-    public ResponseEntity<ResponseWrapper> fetchImageRecords(@PathVariable String phoneNumber, @PathVariable TaskType taskType, @PathVariable String taskUid) {
+    public ResponseEntity<ResponseWrapper> fetchImageRecords(@PathVariable String phoneNumber, @PathVariable TaskType taskType,
+                                                             @PathVariable String taskUid) {
         User user = userManagementService.findByInputNumber(phoneNumber);
         logger.info("finding images for task of type {} and UID {}", taskType, taskUid);
         List<ImageRecordDTO> records = taskImageBroker.fetchImagesForTask(user.getUid(), taskUid, taskType)
                 .stream()
-                .map(i -> new ImageRecordDTO(taskUid, i))
+                .map(i -> new ImageRecordDTO(taskImageBroker.fetchLogForImage(i.getActionLogUid(), taskType), i))
                 .collect(Collectors.toList());
         return RestUtil.okayResponseWithData(records.isEmpty() ? RestMessage.TASK_NO_IMAGES : RestMessage.TASK_IMAGES_FOUND,
                 records);
@@ -91,6 +97,22 @@ public class TaskImageRestController {
                     .body(image);
         } catch (ImageRetrievalFailure e) {
             return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.TASK_IMAGE_ERROR);
+        }
+    }
+
+    @RequestMapping(value = "/fetch/micro/{phoneNumber}/{code}/{taskType}/{logUid}", method = RequestMethod.GET)
+    public ResponseEntity<?> fetchTaskThumbnail(@PathVariable TaskType taskType, @PathVariable String logUid) {
+        try {
+            logger.info("trying to fetch a thumbnail ...");
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.IMAGE_JPEG);
+            byte[] image = taskImageBroker.fetchMicroThumbnailForTask(null, taskType, logUid);
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(image);
+        } catch (NoMicroVersionException e) {
+            logger.info("failed, going for the full image ...");
+            return fetchTaskImage(taskType, logUid);
         }
     }
 

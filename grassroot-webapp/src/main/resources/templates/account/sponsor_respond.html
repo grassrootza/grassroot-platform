@@ -32,18 +32,20 @@
             </p>
           </div>
 
-          <div class="form-group">
-            <a th:href="@{respond/payment(requestUid=${request.uid}, type='CARD_PAYMENT', cycle='ANNUAL')}" class="btn default-button full-width-button btn-neutral btn-xl">
-              Annually by card
+          <div class="form-group top-buffer">
+            <a th:href="@{respond/payment(requestUid=${request.uid}, type='CARD_PAYMENT', cycle='ANNUAL')}" class="btn default-button full-width-button btn-xl">
+              <i class="fa fa-credit-card" aria-hidden="true"></i>Annually by card
             </a>
           </div>
 
           <div class="form-group">
-            <a th:href="@{respond/payment(requestUid=${request.uid}, type='CARD_PAYMENT', cycle='MONTHLY')}" class="btn default-button full-width-button btn-neutral btn-xl">Monthly by card</a>
+            <a th:href="@{respond/payment(requestUid=${request.uid}, type='CARD_PAYMENT', cycle='MONTHLY')}" class="btn default-button full-width-button btn-xl">
+              <i class="fa fa-credit-card" aria-hidden="true"></i>Monthly by card</a>
           </div>
 
           <div class="form-group">
-            <a th:href="@{respond/payment(requestUid=${request.uid}, type='DIRECT_DEPOSIT', cycle='ANNUAL')}" class="btn default-button full-width-button btn-neutral btn-xl">Annual ETF</a>
+            <a th:href="@{respond/payment(requestUid=${request.uid}, type='DIRECT_DEPOSIT', cycle='ANNUAL')}" class="btn default-button full-width-button btn-xl">
+              <i class="fa fa-handshake-o" aria-hidden="true"></i>Annual ETF</a>
           </div>
 
           <div class="form-group">

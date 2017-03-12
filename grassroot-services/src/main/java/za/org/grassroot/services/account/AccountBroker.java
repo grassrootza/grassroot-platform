@@ -29,6 +29,7 @@ public interface AccountBroker {
     void enableAccount(String userUid, String accountUid, String ongoingPaymentRef, AccountPaymentType paymentType,
                        boolean ensureUserAddedToAdmin, boolean setBillingUser);
 
+    // note: should only adjust billing date if this is called at end of successful payment cycle
     void updateAccountPaymentCycleAndMethod(String userUid, String accountUid, AccountPaymentType paymentType,
                                             AccountBillingCycle billingCycle, boolean adjustNextBillingDate);
 

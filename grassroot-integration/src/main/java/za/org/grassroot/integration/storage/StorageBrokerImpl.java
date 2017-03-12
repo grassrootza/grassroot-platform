@@ -23,6 +23,7 @@ import za.org.grassroot.core.domain.ImageRecord;
 import za.org.grassroot.core.enums.ActionLogType;
 import za.org.grassroot.core.repository.ImageRecordRepository;
 import za.org.grassroot.integration.exception.ImageRetrievalFailure;
+import za.org.grassroot.integration.exception.NoMicroVersionException;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,11 +42,11 @@ public class StorageBrokerImpl implements StorageBroker {
 
     private static final Logger logger = LoggerFactory.getLogger(StorageBrokerImpl.class);
 
-    @Value("${grassroot.event.images.bucket:null}")
-    private String eventImagesBucket;
+    @Value("${grassroot.task.images.bucket:null}")
+    private String taskImagesBucket;
 
-    @Value("${grassroot.todo.images.bucket:null}")
-    private String todoImagesBucket;
+    @Value("${grassroot.task.images.resized.bucket:null}")
+    private String taskImagesResizedBucket;
 
     private final S3ClientFactory s3ClientFactory;
     private final ImageRecordRepository imageRecordRepository;
@@ -65,9 +66,8 @@ public class StorageBrokerImpl implements StorageBroker {
 
         final AmazonS3 s3 = s3ClientFactory.createClient();
         final TransferManager transferManager = TransferManagerBuilder.standard().withS3Client(s3).build();
-        final String bucket = mapLogToBucket(actionLogType);
 
-        logger.info("storing image in bucket: {}", bucket);
+        logger.info("storing image in bucket: {}", taskImagesBucket);
 
         boolean completed;
 
@@ -84,10 +84,10 @@ public class StorageBrokerImpl implements StorageBroker {
                     .actionLogType(actionLogType)
                     .actionLogUid(actionLogUid)
                     .md5(streamMD5)
-                    .bucket(bucket)
+                    .bucket(taskImagesBucket)
                     .build());
 
-            Upload upload = transferManager.upload(bucket, actionLogUid, image.getInputStream(), metadata);
+            Upload upload = transferManager.upload(taskImagesBucket, actionLogUid, image.getInputStream(), metadata);
             upload.waitForCompletion();
             imageRecord.setStoredTime(Instant.now());
             completed = true;
@@ -106,27 +106,41 @@ public class StorageBrokerImpl implements StorageBroker {
     }
 
     @Override
-    public byte[] fetchImage(String uid, ActionLogType type) {
+    public byte[] fetchImage(String uid, ImageSize imageSize) {
+        Objects.requireNonNull(uid);
+        Objects.requireNonNull(imageSize);
+
         try {
+            // todo : optimize this (see SDK JavaDocs on possible performance issues)
             AmazonS3 s3Client = s3ClientFactory.createClient();
-            S3Object s3Image = s3Client.getObject(new GetObjectRequest(mapLogToBucket(type), uid));
+            S3Object s3Image = s3Client.getObject(new GetObjectRequest(selectBucket(imageSize), composeKey(uid, imageSize)));
             InputStream imageData = s3Image.getObjectContent();
             byte[] image = IOUtils.toByteArray(imageData);
             imageData.close();
             return image;
-        } catch (SdkClientException|IOException e) {
+        } catch (SdkClientException e) {
+            // todo: try add a check if it's something other than file not found on the bucket, and use that to discriminate error type
+            logger.info("error in retrieving file: {}", e.getMessage());
+            throw ImageSize.MICRO.equals(imageSize) ? new NoMicroVersionException() : new ImageRetrievalFailure();
+        } catch (IOException e) {
             throw new ImageRetrievalFailure();
         }
     }
 
-    private String mapLogToBucket(ActionLogType type) {
-        switch (type) {
-            case EVENT_LOG:
-                return eventImagesBucket;
-            case TODO_LOG:
-                return todoImagesBucket;
+    private String selectBucket(ImageSize size) {
+        return ImageSize.FULL_SIZE.equals(size) ? taskImagesBucket : taskImagesResizedBucket;
+    }
+
+    private String composeKey(String uid, ImageSize size) {
+        switch (size) {
+            case LARGE_THUMBNAIL:
+                return "midsize/" + uid;
+            case MICRO:
+                return "micro/" + uid;
+            case FULL_SIZE:
             default:
-                return "null";
+                return uid;
         }
     }
+
 }

@@ -3,7 +3,7 @@ package za.org.grassroot.webapp.model.rest;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import za.org.grassroot.core.domain.ImageRecord;
-import za.org.grassroot.core.domain.Task;
+import za.org.grassroot.core.domain.TaskLog;
 import za.org.grassroot.core.enums.ActionLogType;
 
 /**
@@ -19,15 +19,21 @@ public class ImageRecordDTO {
     private Long creationTime;
     private Long storageTime;
     private String md5;
+    private String userDisplayName;
+    private Double latitude;
+    private Double longitude;
 
-    public ImageRecordDTO(String taskUid, ImageRecord imageRecord) {
+    public ImageRecordDTO(TaskLog taskLog, ImageRecord imageRecord) {
         this.actionLogUid = imageRecord.getActionLogUid();
         this.actionLogType = imageRecord.getActionLogType();
-        this.taskUid = taskUid;
+        this.taskUid = taskLog.getTask().getUid();
         this.bucket = imageRecord.getBucket();
         this.creationTime = imageRecord.getCreationTime().toEpochMilli();
         this.storageTime = imageRecord.getStoredTime() != null ? imageRecord.getStoredTime().toEpochMilli() : null;
         this.md5 = imageRecord.getMd5();
+        this.latitude = taskLog.getLocation() != null ? taskLog.getLocation().getLatitude() : null;
+        this.longitude = taskLog.getLocation() != null ? taskLog.getLocation().getLongitude() : null;
+        this.userDisplayName = taskLog.getUser().getName();
     }
 
     @JsonProperty("key")
@@ -58,4 +64,10 @@ public class ImageRecordDTO {
     public String getMd5() {
         return md5;
     }
+
+    public Double getLatitude() { return latitude; }
+
+    public Double getLongitude() { return longitude; }
+
+    public String getUserDisplayName() { return userDisplayName; }
 }

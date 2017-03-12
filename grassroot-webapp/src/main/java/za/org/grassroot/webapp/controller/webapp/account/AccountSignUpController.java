@@ -70,8 +70,8 @@ public class AccountSignUpController extends BaseController {
                 model.addAttribute("defaultType", AccountType.STANDARD);
             }
 
-            model.addAttribute("showBillingOptions", false); // in future, use some promotional logic here
-            model.addAttribute("showFreeTrialText", true);
+            model.addAttribute("showBillingOptions", user.isHasUsedFreeTrial()); // in future, also use some promotional logic here
+            model.addAttribute("showFreeTrialText", !user.isHasUsedFreeTrial());
 
             return "account/signup";
         }
@@ -84,10 +84,12 @@ public class AccountSignUpController extends BaseController {
                                       @RequestParam(required = false) AccountBillingCycle billingCycle,
                                       @RequestParam(required = false) AccountPaymentType paymentType) {
 
+        final boolean isFreeTrial = !userManagementService.load(getUserProfile().getUid()).isHasUsedFreeTrial();
+
         final String nameToUse = StringUtils.isEmpty(accountName) ? getUserProfile().nameToDisplay() : accountName;
         final String accountUid = accountBroker.createAccount(getUserProfile().getUid(), nameToUse, getUserProfile().getUid(), accountType,
                 paymentType == null ? AccountPaymentType.CARD_PAYMENT : paymentType,
-                billingCycle == null ? AccountBillingCycle.MONTHLY : billingCycle, true);
+                billingCycle == null ? AccountBillingCycle.MONTHLY : billingCycle, isFreeTrial);
 
         if (!StringUtils.isEmpty(emailAddress) && EmailValidator.getInstance(false).isValid(emailAddress)) {
             userManagementService.updateEmailAddress(getUserProfile().getUid(), emailAddress);
@@ -96,8 +98,13 @@ public class AccountSignUpController extends BaseController {
         refreshAuthorities();
 
         attributes.addAttribute("accountUid", accountUid);
-        addMessage(attributes, MessageType.SUCCESS, "account.trial.started", request);
-        return "redirect:/account/trial";
+        if (isFreeTrial) {
+            addMessage(attributes, MessageType.SUCCESS, "account.trial.started", request);
+            return "redirect:/account/trial";
+        } else {
+            addMessage(attributes, MessageType.INFO, "account.trial.exhausted", request);
+            return "redirect:/account/payment/start";
+        }
     }
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")

@@ -15,6 +15,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.AccountBillingRecord;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.AccountBillingCycle;
 import za.org.grassroot.core.enums.AccountPaymentType;
 import za.org.grassroot.integration.exception.PaymentMethodFailedException;
 import za.org.grassroot.integration.payments.PaymentBroker;
@@ -25,10 +26,18 @@ import za.org.grassroot.services.account.AccountBillingBroker;
 import za.org.grassroot.services.account.AccountBroker;
 import za.org.grassroot.services.account.AccountSponsorshipBroker;
 import za.org.grassroot.webapp.controller.BaseController;
+import za.org.grassroot.webapp.enums.CombinedPaymentOption;
 
 import javax.servlet.http.HttpServletRequest;
 import java.text.DecimalFormat;
 import java.util.Map;
+
+import static za.org.grassroot.core.enums.AccountBillingCycle.ANNUAL;
+import static za.org.grassroot.core.enums.AccountBillingCycle.MONTHLY;
+import static za.org.grassroot.core.enums.AccountPaymentType.CARD_PAYMENT;
+import static za.org.grassroot.core.enums.AccountPaymentType.DIRECT_DEPOSIT;
+import static za.org.grassroot.webapp.enums.CombinedPaymentOption.ANNUAL_DEPOSIT;
+import static za.org.grassroot.webapp.enums.CombinedPaymentOption.MONTHLY_CARD;
 
 /**
  * Created by luke on 2016/11/25.
@@ -76,7 +85,7 @@ public class AccountPaymentController extends BaseController {
             throw new AccessDeniedException("Error! Only an administrator of the account can pay for it, except via sponsorship request");
         }
 
-        return AccountPaymentType.DIRECT_DEPOSIT.equals(paymentType)
+        return DIRECT_DEPOSIT.equals(paymentType)
                 ? loadDebitInstruction(model, account)
                 : loadCreditCardForm(model, account, true);
     }
@@ -120,8 +129,9 @@ public class AccountPaymentController extends BaseController {
     }
 
     @RequestMapping(value = "retry", method = RequestMethod.GET)
-    public String retryAccountPayment(Model model, @RequestParam(required = false) String errorDescription,
-                                      @RequestParam(required = false) AccountPaymentType paymentType) {
+    public String retryAccountPayment(Model model,
+                                      @RequestParam(required = false) String errorDescription,
+                                      @RequestParam(required = false) CombinedPaymentOption combinedPaymentOption) {
         User user = userManagementService.load(getUserProfile().getUid());
         Account account = user.getPrimaryAccount();
 
@@ -129,7 +139,16 @@ public class AccountPaymentController extends BaseController {
             throw new AccessDeniedException("Must have an account before trying to retry payment");
         }
 
-        if (AccountPaymentType.DIRECT_DEPOSIT.equals(paymentType)) {
+        AccountPaymentType paymentType = combinedPaymentOption == null ? account.getDefaultPaymentType() :
+                ANNUAL_DEPOSIT.equals(combinedPaymentOption) ? DIRECT_DEPOSIT : CARD_PAYMENT;
+        AccountBillingCycle billingCycle = combinedPaymentOption == null ? account.getBillingCycle() :
+                MONTHLY_CARD.equals(combinedPaymentOption) ? MONTHLY : ANNUAL;
+
+        if (!paymentType.equals(account.getDefaultPaymentType()) || !billingCycle.equals(account.getBillingCycle())) {
+            accountBroker.updateAccountPaymentCycleAndMethod(user.getUid(), account.getUid(), paymentType, billingCycle, false);
+        }
+
+        if (DIRECT_DEPOSIT.equals(paymentType)) {
             return loadDebitInstruction(model, account);
         } else {
             if (!StringUtils.isEmpty(errorDescription)) {
@@ -222,7 +241,7 @@ public class AccountPaymentController extends BaseController {
         AccountBillingRecord record = accountBillingBroker.fetchRecordByPayment(paymentId);
         Account account = record.getAccount();
         if (enableOrUpdateAccount == ENABLE) {
-            accountBroker.enableAccount(getUserProfile().getUid(), account.getUid(), paymentRef, AccountPaymentType.CARD_PAYMENT, true, true);
+            accountBroker.enableAccount(getUserProfile().getUid(), account.getUid(), paymentRef, CARD_PAYMENT, true, true);
             sponsorshipBroker.closeRequestsAndMarkApproved(getUserProfile().getUid(), account.getUid());
             addMessage(attributes, MessageType.SUCCESS, "account.signup.payment.done", request);
         } else if (enableOrUpdateAccount == UPDATE) {

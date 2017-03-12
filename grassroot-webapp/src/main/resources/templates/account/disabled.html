@@ -41,30 +41,21 @@
     </div>
   </section>
 
-  <!-- todo : add some icons in buttons -->
   <section class="no-group-buttons">
     <div class="container">
 
       <div class="row">
         <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
-          <a th:href="@{/account/payment/retry}" class="btn default-button full-width-button text-center">
-            Pay by card
-          </a>
-        </div>
-      </div>
-
-      <div class="row" th:if="${account.billingCycle.name() == 'ANNUAL'}">
-        <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
-          <a th:href="@{/account/payment/retry(paymentType='DIRECT_DEPOSIT')}" class="btn default-button full-width-button text-center">
-            Pay by deposit
-          </a>
+          <button data-toggle="modal" data-target="#payNowModal" class="btn default-button full-width-button text-center">
+            <i class="fa fa-credit-card" aria-hidden="true"></i> Pay now
+          </button>
         </div>
       </div>
 
       <div class="row">
         <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
           <a th:href="@{/account/sponsor/request(accountUid=${account.uid})}" class="btn default-button full-width-button text-center">
-            Request sponsorship
+            <i class="fa fa-handshake-o" aria-hidden="true"></i> Request sponsorship
           </a>
         </div>
       </div>
@@ -72,7 +63,7 @@
       <div class="row">
         <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
           <button data-toggle="modal" data-target="#contactModal" class="default-button full-width-button text-center">
-            Contact us</button>
+            <i class="fa fa-envelope" aria-hidden="true"></i> Contact us</button>
         </div>
       </div>
 
@@ -85,6 +76,33 @@
 
     </div>
   </section>
+
+  <div class="modal fade" id="payNowModal" tabindex="-1" role="dialog" aria-labelledby="payNowModalLabel">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title" id="payNowModalLabel">Choose payment method</h4>
+        </div>
+        <form th:action="@{/account/payment/retry}" method="get">
+          <div class="modal-body">
+            <div class="form-group">
+              <p>Please select how you want to pay for the account:</p>
+            </div>
+            <select id="combinedPaymentOption" name="combinedPaymentOption" class="form-control input-lg">
+              <option th:each="type: ${T(za.org.grassroot.webapp.enums.CombinedPaymentOption).values()}"
+                      th:text="#{web.account.payment.combined.__${type}__}"
+                      th:value="${type}"></option>
+            </select>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default btn-lg default-button btn-neutral" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary btn-lg default-button btn-positive">Next</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
 
   <div class="modal fade" id="sponsorRequestModal" tabindex="-1" role="dialog" aria-labelledby="sponsorRequestModalLabel">
     <div class="modal-dialog" role="document">

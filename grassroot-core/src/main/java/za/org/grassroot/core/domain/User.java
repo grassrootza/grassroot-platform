@@ -107,6 +107,9 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
     @JoinColumn(name = "primary_account")
     private Account primaryAccount;
 
+    @Column(name = "free_trial_used")
+    private boolean hasUsedFreeTrial;
+
     // note: keep an eye on this in profiling, make sure it is super lazy (i.e., join table not hit at all), else drop on this side
     @ManyToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "administrators")
     private Set<Account> accountsAdministered = new HashSet<>();
@@ -128,6 +131,7 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
         this.messagingPreference = UserMessagingPreference.SMS; // as default
         this.createdDateTime = Instant.now();
         this.alertPreference = AlertPreference.NOTIFY_NEW_AND_REMINDERS;
+        this.hasUsedFreeTrial = false;
     }
 
     /**
@@ -389,6 +393,14 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
 
     public boolean hasMultipleAccounts() {
         return accountsAdministered != null && accountsAdministered.size() > 1;
+    }
+
+    public boolean isHasUsedFreeTrial() {
+        return hasUsedFreeTrial;
+    }
+
+    public void setHasUsedFreeTrial(boolean hasUsedFreeTrial) {
+        this.hasUsedFreeTrial = hasUsedFreeTrial;
     }
 
     /*
