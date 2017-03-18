@@ -6,6 +6,7 @@ import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -22,12 +23,10 @@ import za.org.grassroot.integration.xmpp.InboundGcmMessageHandler;
 @RunWith(SpringRunner.class) // todo : clean up config in the next
 @ContextConfiguration(classes = {TestContextConfig.class, InboundGcmMessageHandler.class, })
 @ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
+@ConditionalOnProperty(name = "gcm.connection.enabled", havingValue = "true",  matchIfMissing = false)
 public class IncomingGcmHandlerTest {
 
     private static final Logger log = LoggerFactory.getLogger(IncomingGcmHandlerTest.class);
-
-    @Autowired
-    private InboundGcmMessageHandler messageHandler;
 
     @Autowired
     private UserRepository userRepository;

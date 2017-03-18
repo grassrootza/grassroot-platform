@@ -103,7 +103,6 @@ public class TaskImageRestController {
     @RequestMapping(value = "/fetch/micro/{phoneNumber}/{code}/{taskType}/{logUid}", method = RequestMethod.GET)
     public ResponseEntity<?> fetchTaskThumbnail(@PathVariable TaskType taskType, @PathVariable String logUid) {
         try {
-            logger.info("trying to fetch a thumbnail ...");
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.IMAGE_JPEG);
             byte[] image = taskImageBroker.fetchMicroThumbnailForTask(null, taskType, logUid);

@@ -43,14 +43,19 @@ public class AccountSignUpController extends BaseController {
     private final AccountBroker accountBroker;
     private final AccountBillingBroker billingBroker;
     private final AccountGroupBroker accountGroupBroker;
-    private final EmailSendingBroker emailSendingBroker;
+
+    private EmailSendingBroker emailSendingBroker;
 
     @Autowired
     public AccountSignUpController(AccountBroker accountBroker, AccountBillingBroker billingBroker,
-                                   AccountGroupBroker accountGroupBroker, EmailSendingBroker emailSendingBroker) {
+                                   AccountGroupBroker accountGroupBroker) {
         this.accountBroker = accountBroker;
         this.billingBroker = billingBroker;
         this.accountGroupBroker = accountGroupBroker;
+    }
+
+    @Autowired(required = false)
+    public void setEmailSendingBroker(EmailSendingBroker emailSendingBroker) {
         this.emailSendingBroker = emailSendingBroker;
     }
 

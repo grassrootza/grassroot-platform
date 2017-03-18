@@ -24,7 +24,6 @@ import za.org.grassroot.core.repository.UserRequestRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.sms.SmsSendingService;
-import za.org.grassroot.integration.xmpp.GcmService;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.exception.InvalidTokenException;
@@ -74,8 +73,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
     private LogsAndNotificationsBroker logsAndNotificationsBroker;
     @Autowired
     private MessageAssemblingService messageAssemblingService;
-    @Autowired
-    private GcmService gcmService;
     @Autowired
     private SmsSendingService smsSendingService;
 

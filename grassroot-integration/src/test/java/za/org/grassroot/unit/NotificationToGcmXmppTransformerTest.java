@@ -5,6 +5,7 @@ import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -18,11 +19,12 @@ import za.org.grassroot.integration.xmpp.NotificationToGcmXmppTransformer;
 @RunWith(SpringRunner.class)
 @ContextConfiguration(classes = {NotificationToGcmXmppTransformer.class,TestContextConfig.class})
 @ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
+@ConditionalOnProperty(name = "gcm.connection.enabled", havingValue = "true",  matchIfMissing = false)
 public class NotificationToGcmXmppTransformerTest {
 
     private Logger log = LoggerFactory.getLogger(NotificationToGcmXmppTransformerTest.class);
 
-    @Autowired
+    @Autowired(required = false)
     private NotificationToGcmXmppTransformer notificationToGcmXmppTransformer;
 
 

@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.integration.mqtt.support.MqttHeaders;
@@ -43,6 +44,7 @@ import java.util.*;
  * Created by paballo on 2016/09/08.
  */
 @Service
+@ConditionalOnProperty(name = "mqtt.connection.enabled", havingValue = "true",  matchIfMissing = false)
 public class GroupChatManager implements GroupChatService {
 
     private static final Logger logger = LoggerFactory.getLogger(GroupChatManager.class);

@@ -43,9 +43,8 @@ public class GroupRestController extends GroupAbstractRestController {
 
     private static final Logger log = LoggerFactory.getLogger(GroupRestController.class);
 
-    private final GroupChatService groupChatSettingsService;
-
-    private final GcmService gcmService;
+    private GroupChatService groupChatService;
+    private GcmService gcmService;
 
     protected final MessageSourceAccessor messageSourceAccessor;
 
@@ -58,11 +57,18 @@ public class GroupRestController extends GroupAbstractRestController {
             Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
 
     @Autowired
-    public GroupRestController(GroupChatService groupChatSettingsService, GcmService gcmService,
-                               @Qualifier("messageSourceAccessor") MessageSourceAccessor messageSourceAccessor) {
-        this.groupChatSettingsService = groupChatSettingsService;
-        this.gcmService = gcmService;
+    public GroupRestController(@Qualifier("messageSourceAccessor") MessageSourceAccessor messageSourceAccessor) {
         this.messageSourceAccessor = messageSourceAccessor;
+    }
+
+    @Autowired(required = false)
+    public void setGcmService(GcmService gcmService) {
+        this.gcmService = gcmService;
+    }
+
+    @Autowired(required = false)
+    public void setGroupChatService(GroupChatService groupChatService) {
+        this.groupChatService = groupChatService;
     }
 
     @RequestMapping(value = "/create/{phoneNumber}/{code}/{groupName}/{description:.+}", method = RequestMethod.POST)
@@ -349,7 +355,7 @@ public class GroupRestController extends GroupAbstractRestController {
             Group group = groupBroker.load(groupUid);
             permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_MUTE_MEMBER);
         }
-        groupChatSettingsService.updateActivityStatus(userSettingTobeUpdated, groupUid, active, userInitiated);
+        groupChatService.updateActivityStatus(userSettingTobeUpdated, groupUid, active, userInitiated);
         if (userInitiated && gcmService.hasGcmKey(user)) {
             String registrationId = gcmService.getGcmKey(user);
             if (active) {
@@ -380,9 +386,9 @@ public class GroupRestController extends GroupAbstractRestController {
                                                                             @PathVariable("groupUid") String groupUid, @RequestParam(value = "userUid", required = false) String userUid) throws GroupChatSettingNotFoundException {
 
         User user = userManagementService.findByInputNumber(phoneNumber);
-        GroupChatSettings groupChatSettings = userUid != null ? groupChatSettingsService.load(userUid, groupUid)
-                : groupChatSettingsService.load(user.getUid(), groupUid);
-        List<String> mutedUsers = groupChatSettingsService.usersMutedInGroup(groupUid);
+        GroupChatSettings groupChatSettings = userUid != null ? groupChatService.load(userUid, groupUid)
+                : groupChatService.load(user.getUid(), groupUid);
+        List<String> mutedUsers = groupChatService.usersMutedInGroup(groupUid);
         return new ResponseEntity<>(new GroupChatSettingsDTO(groupChatSettings, mutedUsers), HttpStatus.OK);
 
     }
@@ -391,8 +397,8 @@ public class GroupRestController extends GroupAbstractRestController {
     public ResponseEntity<ResponseWrapper> marksAsRead(@PathVariable String phoneNumber, @PathVariable String code, @PathVariable String groupUid, @RequestParam Set<String> messageUids) {
         User user = userManagementService.findByInputNumber(phoneNumber);
         Group group = groupBroker.load(groupUid);
-        if (groupChatSettingsService.isCanSend(user.getUid(), groupUid)) {
-            groupChatSettingsService.markMessagesAsRead(groupUid, group.getGroupName(), messageUids);
+        if (groupChatService.isCanSend(user.getUid(), groupUid)) {
+            groupChatService.markMessagesAsRead(groupUid, group.getGroupName(), messageUids);
         }
         return RestUtil.messageOkayResponse(RestMessage.CHATS_MARKED_AS_READ);
     }

@@ -70,9 +70,9 @@ public class GroupBrokerImpl implements GroupBroker {
     private final TokenGeneratorService tokenGeneratorService;
     private final MessageAssemblingService messageAssemblingService;
 
-    // todo : consolidate these to cut down all these dependencies
-    private final GroupChatService groupChatService;
-    private final GcmService gcmService;
+    // todo : consolidate these to cut down all these dependencies & do null checks so they don't break methods
+    private GroupChatService groupChatService;
+    private GcmService gcmService;
     private MqttSubscriptionService mqttSubscriptionService;
 
     private final AccountGroupBroker accountGroupBroker;
@@ -82,7 +82,7 @@ public class GroupBrokerImpl implements GroupBroker {
                            GroupLogRepository groupLogRepository, PermissionBroker permissionBroker,
                            ApplicationEventPublisher applicationEventPublisher, LogsAndNotificationsBroker logsAndNotificationsBroker,
                            TokenGeneratorService tokenGeneratorService, MessageAssemblingService messageAssemblingService,
-                           GroupChatService groupChatService, GcmService gcmService, AccountGroupBroker accountGroupBroker) {
+                           AccountGroupBroker accountGroupBroker) {
         this.groupRepository = groupRepository;
         this.environment = environment;
         this.userRepository = userRepository;
@@ -92,9 +92,17 @@ public class GroupBrokerImpl implements GroupBroker {
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
         this.tokenGeneratorService = tokenGeneratorService;
         this.messageAssemblingService = messageAssemblingService;
-        this.groupChatService = groupChatService;
-        this.gcmService = gcmService;
         this.accountGroupBroker = accountGroupBroker;
+    }
+
+    @Autowired(required = false)
+    public void setGcmService(GcmService gcmService) {
+        this.gcmService = gcmService;
+    }
+
+    @Autowired(required = false)
+    public void setGroupChatService(GroupChatService groupChatService) {
+        this.groupChatService = groupChatService;
     }
 
     @Autowired(required = false)

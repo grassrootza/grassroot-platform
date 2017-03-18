@@ -39,13 +39,13 @@ public class AccountAdminController extends BaseController {
 
     private final AccountBroker accountBroker;
     private final AccountBillingBroker billingBroker;
-    private final EmailSendingBroker emailSendingBroker;
     private final Environment environment;
 
     private PaymentBroker paymentBroker;
+    private EmailSendingBroker emailSendingBroker;
 
     @Autowired
-    public AccountAdminController(AccountBroker accountBroker, AccountBillingBroker billingBroker, EmailSendingBroker emailSendingBroker, Environment environment) {
+    public AccountAdminController(AccountBroker accountBroker, AccountBillingBroker billingBroker, Environment environment) {
         this.accountBroker = accountBroker;
         this.billingBroker = billingBroker;
         this.emailSendingBroker = emailSendingBroker;
@@ -55,6 +55,11 @@ public class AccountAdminController extends BaseController {
     @Autowired(required = false)
     public void setPaymentBroker(PaymentBroker paymentBroker) {
         this.paymentBroker = paymentBroker;
+    }
+
+    @Autowired(required = false)
+    public void setEmailSendingBroker(EmailSendingBroker emailSendingBroker) {
+        this.emailSendingBroker = emailSendingBroker;
     }
 
     /**

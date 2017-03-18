@@ -32,6 +32,7 @@ import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
 
 /**
  * Created by aakilomar on 10/5/15.
+ * todo : clean up dependency mess in here
  */
 @Component
 public class ScheduledTasks {
@@ -71,8 +72,8 @@ public class ScheduledTasks {
     @Autowired
     private GroupRepository groupRepository;
 
-    @Autowired
-    private GroupChatService groupChatSettingsService;
+    @Autowired(required = false)
+    private GroupChatService groupChatService;
 
     @Autowired
     private SafetyEventRepository safetyEventRepository;
@@ -177,16 +178,18 @@ public class ScheduledTasks {
         }
     }
 
-    @Scheduled(fixedRate= 300000)
+    @Scheduled(fixedRate = 300000)
     public void reactivateMutedUsers() throws Exception {
-        List<GroupChatSettings> groupChatSettingses = groupChatSettingsService.loadUsersToBeUnmuted();
-        for(GroupChatSettings messengerSetting: groupChatSettingses){
-            String userUid = messengerSetting.getUser().getUid();
-            String groupUid = messengerSetting.getGroup().getUid();
-            try {
-                groupChatSettingsService.updateActivityStatus(userUid,groupUid,true,false);
-            } catch (GroupChatSettingNotFoundException e) {
-                logger.error("Error while trying unmute user with " + userUid);
+        if (groupChatService != null) {
+            List<GroupChatSettings> groupChatSettingses = groupChatService.loadUsersToBeUnmuted();
+            for (GroupChatSettings messengerSetting : groupChatSettingses) {
+                String userUid = messengerSetting.getUser().getUid();
+                String groupUid = messengerSetting.getGroup().getUid();
+                try {
+                    groupChatService.updateActivityStatus(userUid, groupUid, true, false);
+                } catch (GroupChatSettingNotFoundException e) {
+                    logger.error("Error while trying unmute user with " + userUid);
+                }
             }
         }
     }

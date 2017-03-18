@@ -48,18 +48,22 @@ public class AccountSponsorshipBrokerImpl implements AccountSponsorshipBroker {
     private final AccountSponsorshipRequestRepository requestRepository;
     private final AssociationRequestEventRepository requestEventRepository;
     private final AccountEmailService accountEmailService;
-    private final EmailSendingBroker emailSendingBroker;
+    private EmailSendingBroker emailSendingBroker;
 
     @Autowired
     public AccountSponsorshipBrokerImpl(UserRepository userRepository, AccountRepository accountRepository,
                                         AccountSponsorshipRequestRepository requestRepository, AssociationRequestEventRepository requestEventRepository,
-                                        AccountEmailService emailService, EmailSendingBroker emailSendingBroker) {
+                                        AccountEmailService emailService) {
         this.userRepository = userRepository;
         this.accountRepository = accountRepository;
         this.requestRepository = requestRepository;
         this.requestEventRepository = requestEventRepository;
-        this.emailSendingBroker = emailSendingBroker;
         this.accountEmailService = emailService;
+    }
+
+    @Autowired(required = false)
+    public void setEmailSendingBroker(EmailSendingBroker emailSendingBroker) {
+        this.emailSendingBroker = emailSendingBroker;
     }
 
     @Override

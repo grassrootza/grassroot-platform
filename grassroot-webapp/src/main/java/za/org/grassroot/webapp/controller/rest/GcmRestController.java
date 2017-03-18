@@ -3,6 +3,7 @@ package za.org.grassroot.webapp.controller.rest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,15 +22,19 @@ import za.org.grassroot.webapp.util.RestUtil;
 
 @RestController
 @RequestMapping(value = "/api/gcm")
+@ConditionalOnProperty(name = "gcm.connection.enabled", havingValue = "true",  matchIfMissing = false)
 public class GcmRestController {
 
     private static final Logger logger = LoggerFactory.getLogger(GcmRestController.class);
 
-    @Autowired
-    private UserManagementService userManagementService;
+    private final UserManagementService userManagementService;
+    private final GcmService gcmService;
 
     @Autowired
-    private GcmService gcmService;
+    public GcmRestController(UserManagementService userManagementService, GcmService gcmService) {
+        this.userManagementService = userManagementService;
+        this.gcmService = gcmService;
+    }
 
 
     @RequestMapping(value = "/register/{phoneNumber}/{code}", method = RequestMethod.POST)

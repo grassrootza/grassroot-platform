@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.integration.annotation.Transformer;
 import org.springframework.messaging.Message;
 import org.springframework.stereotype.Component;
@@ -25,16 +26,21 @@ import java.util.regex.Pattern;
  * Uses za.org.grassroot.integration.xmpp.GcmXmppMessageCodec to create GCM XMPP message from Notification entity.
  */
 @Component
+@ConditionalOnProperty(name = "gcm.connection.enabled", havingValue = "true",  matchIfMissing = false)
 public class NotificationToGcmXmppTransformer {
 
     private static final Logger log = LoggerFactory.getLogger(NotificationToGcmXmppTransformer.class);
 
 	private static final String TOPICS = "/topics/";
 
-    @Autowired
-    private GcmRegistrationRepository gcmRegistrationRepository;
+    private final GcmRegistrationRepository gcmRegistrationRepository;
 
-    @Transformer(inputChannel = "gcmOutboundChannel", outputChannel = "gcmXmppOutboundChannel")
+	@Autowired
+	public NotificationToGcmXmppTransformer(GcmRegistrationRepository gcmRegistrationRepository) {
+		this.gcmRegistrationRepository = gcmRegistrationRepository;
+	}
+
+	@Transformer(inputChannel = "gcmOutboundChannel", outputChannel = "gcmXmppOutboundChannel")
     public Message<org.jivesoftware.smack.packet.Message> transform(Message<Object> message) throws Exception {
 
 		Message<org.jivesoftware.smack.packet.Message> gcmMessage;

@@ -46,7 +46,7 @@ public class PaymentBrokerImpl implements PaymentBroker {
 
     private static final String PRE_AUTH = "PA";
     private static final String DEBIT = "DB";
-    private static final String RECURRING = "PA";
+    private static final String RECURRING = "DB";
 
     private static final String INITIAL = "INITIAL";
     private static final String REPEAT = "REPEATED";
@@ -75,7 +75,7 @@ public class PaymentBrokerImpl implements PaymentBroker {
 
     @Value("${grassroot.payments.initial.path:/paytest}")
     private String initialPaymentRestPath;
-    @Value("${grassroot.payments.recurring.path:/paytset}")
+    @Value("${grassroot.payments.recurring.path:/paytest}")
     private String recurringPaymentRestPath; // make a format string so can include registration ID appropriately
 
     @Value("${grassroot.payments.params.amount:amount}")

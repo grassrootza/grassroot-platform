@@ -67,19 +67,23 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
     private final ApplicationEventPublisher eventPublisher;
 
     private final PaymentBroker paymentBroker;
-    private final EmailSendingBroker emailSendingBroker;
+    private EmailSendingBroker emailSendingBroker;
 
     @Autowired
     public AccountBillingBrokerImpl(AccountRepository accountRepository, AccountBillingRecordRepository billingRepository,
-                                    PaymentBroker paymentBroker, EmailSendingBroker emailSendingBroker, ApplicationEventPublisher eventPublisher,
+                                    PaymentBroker paymentBroker, ApplicationEventPublisher eventPublisher,
                                     LogsAndNotificationsBroker logsAndNotificationsBroker, AccountEmailService accountEmailService) {
         this.accountRepository = accountRepository;
         this.billingRepository = billingRepository;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
         this.accountEmailService = accountEmailService;
         this.eventPublisher = eventPublisher;
-        this.emailSendingBroker = emailSendingBroker;
         this.paymentBroker = paymentBroker;
+    }
+
+    @Autowired(required = false)
+    public void setEmailSendingBroker(EmailSendingBroker emailSendingBroker) {
+        this.emailSendingBroker = emailSendingBroker;
     }
 
     @Override

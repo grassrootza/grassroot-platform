@@ -4,6 +4,7 @@ import org.jivesoftware.smack.packet.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.integration.annotation.ServiceActivator;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.stereotype.Component;
@@ -21,27 +22,27 @@ import za.org.grassroot.integration.domain.GcmUpstreamMessage;
  * major todo: more intelligent handling of GCM return messages (e.g., unregister if not registered, etc)
  */
 @Component
+@ConditionalOnProperty(name = "gcm.connection.enabled", havingValue = "true",  matchIfMissing = false)
 public class InboundGcmMessageHandler {
 
     private Logger log = LoggerFactory.getLogger(InboundGcmMessageHandler.class);
 
-    @Autowired
-    private NotificationService notificationService;
-
-    @Autowired
-    private MessageSendingService messageSendingService;
-
-    @Autowired
-    private GcmService gcmService;
-
-    @Autowired
-    private MessageChannel gcmXmppOutboundChannel;
-
-    @Autowired
-    private UserRepository userRepository;
-
+    private final NotificationService notificationService;
+    private final MessageSendingService messageSendingService;
+    private final GcmService gcmService;
+    private final MessageChannel gcmXmppOutboundChannel;
+    private final UserRepository userRepository;
 
     private static final String ORIGINAL_MESSAGE_ID = "original_message_id";
+
+    @Autowired
+    public InboundGcmMessageHandler(NotificationService notificationService, MessageSendingService messageSendingService, GcmService gcmService, MessageChannel gcmXmppOutboundChannel, UserRepository userRepository) {
+        this.notificationService = notificationService;
+        this.messageSendingService = messageSendingService;
+        this.gcmService = gcmService;
+        this.gcmXmppOutboundChannel = gcmXmppOutboundChannel;
+        this.userRepository = userRepository;
+    }
 
     @ServiceActivator(inputChannel = "gcmInboundChannel")
     public void handleUpstreamMessage(GcmUpstreamMessage message) throws Exception {
