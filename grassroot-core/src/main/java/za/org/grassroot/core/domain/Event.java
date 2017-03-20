@@ -32,7 +32,7 @@ public abstract class Event<P extends UidIdentifiable> extends AbstractEventEnti
 	private Integer version;
 
 	/*
-	Used to see if reminders have allready been sent for the event. It is not the number of messages
+	Used to see if reminders have already been sent for the event. It is not the number of messages
 	sent but rather how many times we have sent reminders to participants.
 	At the moment we only send once but thought in the future we might send more than once
 	therefore the number rather than a boolean.
