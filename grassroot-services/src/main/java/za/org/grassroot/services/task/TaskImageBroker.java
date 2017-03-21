@@ -16,12 +16,15 @@ public interface TaskImageBroker {
 
     List<ImageRecord> fetchImagesForTask(String userUid, String taskUid, TaskType taskType);
 
-    // replace with getter once have embedded new TaskLog interface
-    TaskLog fetchLogForImage(String logUid, TaskType taskType);
+    ImageRecord fetchImageRecord(String logUid, TaskType taskType);
+
+    TaskLog fetchLogForImage(String logUid, TaskType taskType); // replace with getter once have embedded new TaskLog interface
+
+    void updateImageFaceCount(String userUid, String logUid, TaskType taskType, int faceCount);
 
     long countImagesForTask(String userUid, String taskUid, TaskType taskType);
 
-    byte[] fetchImageForTask(String userUid, TaskType taskType, String logUid);
+    byte[] fetchImageForTask(String userUid, TaskType taskType, String logUid, boolean checkAnalyzed);
 
     byte[] fetchMicroThumbnailForTask(String userUid, TaskType taskType, String logUid);
 

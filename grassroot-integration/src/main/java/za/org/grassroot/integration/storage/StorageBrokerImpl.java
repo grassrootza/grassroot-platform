@@ -45,6 +45,9 @@ public class StorageBrokerImpl implements StorageBroker {
     @Value("${grassroot.task.images.bucket:null}")
     private String taskImagesBucket;
 
+    @Value("${grassroot.task.images.analyzed.bucket:null}")
+    private String taskImagesAnalyzedBucket;
+
     @Value("${grassroot.task.images.resized.bucket:null}")
     private String taskImagesResizedBucket;
 
@@ -54,7 +57,7 @@ public class StorageBrokerImpl implements StorageBroker {
     @Autowired
     public StorageBrokerImpl(ImageRecordRepository imageRecordRepository) {
         this.imageRecordRepository = imageRecordRepository;
-        s3ClientFactory = new S3ClientFactory();
+        this.s3ClientFactory = new S3ClientFactory();
     }
 
     @Override
@@ -101,19 +104,14 @@ public class StorageBrokerImpl implements StorageBroker {
     }
 
     @Override
-    public ImageRecord fetchLogImageDetails(String actionLogUid, ActionLogType actionLogType) {
-        return imageRecordRepository.findOne(where(actionLogUid(actionLogUid)).and(actionLogType(actionLogType)));
-    }
-
-    @Override
-    public byte[] fetchImage(String uid, ImageSize imageSize) {
+    public byte[] fetchImage(String uid, ImageType imageType) {
         Objects.requireNonNull(uid);
-        Objects.requireNonNull(imageSize);
+        Objects.requireNonNull(imageType);
 
         try {
             // todo : optimize this (see SDK JavaDocs on possible performance issues)
             AmazonS3 s3Client = s3ClientFactory.createClient();
-            S3Object s3Image = s3Client.getObject(new GetObjectRequest(selectBucket(imageSize), composeKey(uid, imageSize)));
+            S3Object s3Image = s3Client.getObject(new GetObjectRequest(selectBucket(imageType), composeKey(uid, imageType)));
             InputStream imageData = s3Image.getObjectContent();
             byte[] image = IOUtils.toByteArray(imageData);
             imageData.close();
@@ -121,17 +119,26 @@ public class StorageBrokerImpl implements StorageBroker {
         } catch (SdkClientException e) {
             // todo: try add a check if it's something other than file not found on the bucket, and use that to discriminate error type
             logger.info("error in retrieving file: {}", e.getMessage());
-            throw ImageSize.MICRO.equals(imageSize) ? new NoMicroVersionException() : new ImageRetrievalFailure();
+            throw ImageType.MICRO.equals(imageType) ? new NoMicroVersionException() : new ImageRetrievalFailure();
         } catch (IOException e) {
             throw new ImageRetrievalFailure();
         }
     }
 
-    private String selectBucket(ImageSize size) {
-        return ImageSize.FULL_SIZE.equals(size) ? taskImagesBucket : taskImagesResizedBucket;
+    @Override
+    public boolean doesImageExist(String uid, ImageType imageType) {
+        AmazonS3 s3client = s3ClientFactory.createClient();
+        logger.info("trying to find key in bucket: {}", selectBucket(imageType));
+        return s3client.doesObjectExist(selectBucket(imageType), composeKey(uid, imageType));
     }
 
-    private String composeKey(String uid, ImageSize size) {
+    private String selectBucket(ImageType size) {
+        return ImageType.ANALYZED.equals(size) ? taskImagesAnalyzedBucket :
+                ImageType.FULL_SIZE.equals(size) ? taskImagesBucket :
+                        taskImagesResizedBucket;
+    }
+
+    private String composeKey(String uid, ImageType size) {
         switch (size) {
             case LARGE_THUMBNAIL:
                 return "midsize/" + uid;

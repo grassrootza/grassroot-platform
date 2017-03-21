@@ -22,6 +22,8 @@ public class ImageRecordDTO {
     private String userDisplayName;
     private Double latitude;
     private Double longitude;
+    private boolean analyzed;
+    private Integer numberFaces;
 
     public ImageRecordDTO(TaskLog taskLog, ImageRecord imageRecord) {
         this.actionLogUid = imageRecord.getActionLogUid();
@@ -34,6 +36,8 @@ public class ImageRecordDTO {
         this.latitude = taskLog.getLocation() != null ? taskLog.getLocation().getLatitude() : null;
         this.longitude = taskLog.getLocation() != null ? taskLog.getLocation().getLongitude() : null;
         this.userDisplayName = taskLog.getUser().getName();
+        this.analyzed = imageRecord.isAnalyzed();
+        this.numberFaces = imageRecord.getNumberFaces();
     }
 
     @JsonProperty("key")
@@ -70,4 +74,8 @@ public class ImageRecordDTO {
     public Double getLongitude() { return longitude; }
 
     public String getUserDisplayName() { return userDisplayName; }
+
+    public boolean isAnalyzed() { return analyzed; }
+
+    public Integer getNumberFaces() { return numberFaces; }
 }
