@@ -3,6 +3,7 @@ package za.org.grassroot.integration.storage;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.SdkClientException;
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3Object;
@@ -16,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -29,10 +31,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
 import java.util.Objects;
-
-import static org.springframework.data.jpa.domain.Specifications.where;
-import static za.org.grassroot.core.specifications.ImageRecordSpecifications.actionLogType;
-import static za.org.grassroot.core.specifications.ImageRecordSpecifications.actionLogUid;
+import java.util.stream.Stream;
 
 /**
  * Created by luke on 2017/02/21.
@@ -108,10 +107,13 @@ public class StorageBrokerImpl implements StorageBroker {
         Objects.requireNonNull(uid);
         Objects.requireNonNull(imageType);
 
+        final String bucket = selectBucket(imageType);
+        logger.info("for imageType {}, selected bucket {}", imageType, bucket);
+
         try {
             // todo : optimize this (see SDK JavaDocs on possible performance issues)
             AmazonS3 s3Client = s3ClientFactory.createClient();
-            S3Object s3Image = s3Client.getObject(new GetObjectRequest(selectBucket(imageType), composeKey(uid, imageType)));
+            S3Object s3Image = s3Client.getObject(new GetObjectRequest(bucket, composeKey(uid, imageType)));
             InputStream imageData = s3Image.getObjectContent();
             byte[] image = IOUtils.toByteArray(imageData);
             imageData.close();
@@ -129,7 +131,28 @@ public class StorageBrokerImpl implements StorageBroker {
     public boolean doesImageExist(String uid, ImageType imageType) {
         AmazonS3 s3client = s3ClientFactory.createClient();
         logger.info("trying to find key in bucket: {}", selectBucket(imageType));
-        return s3client.doesObjectExist(selectBucket(imageType), composeKey(uid, imageType));
+        try {
+            return s3client.doesObjectExist(selectBucket(imageType), composeKey(uid, imageType));
+        } catch (AmazonS3Exception e) {
+            logger.error("S3 exception, of code: {}, for bucket: {}, with key: {}", e.getErrorCode(),
+                    selectBucket(imageType), composeKey(uid, imageType));
+            return false;
+        }
+    }
+
+    @Async
+    @Override
+    public boolean deleteImage(String uid) {
+        AmazonS3 s3client = s3ClientFactory.createClient();
+        try {
+            Stream.of(ImageType.values())
+                    .filter(t -> s3client.doesObjectExist(selectBucket(t), composeKey(uid, t)))
+                    .forEach(t -> s3client.deleteObject(selectBucket(t), composeKey(uid, t)));
+            return true;
+        } catch (AmazonS3Exception e) {
+            logger.error("Error deleting objects! Error: {}", e.getErrorCode());
+            return false;
+        }
     }
 
     private String selectBucket(ImageType size) {

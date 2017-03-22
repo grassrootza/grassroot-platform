@@ -126,12 +126,25 @@ public class TaskImageRestController {
     }
 
     @RequestMapping(value = "/update/faces/{phoneNumber}/{code}/{taskType}/{logUid}", method = RequestMethod.GET)
-    public ResponseEntity<ResponseWrapper> updateFaceFounct(@PathVariable String phoneNumber, @PathVariable TaskType taskType,
-                                                            @PathVariable String logUid, @RequestParam int numberFaces) {
+    public ResponseEntity<ResponseWrapper> updateFaceCount(@PathVariable String phoneNumber, @PathVariable TaskType taskType,
+                                                           @PathVariable String logUid, @RequestParam int numberFaces) {
         User user = userManagementService.findByInputNumber(phoneNumber);
         try {
             taskImageBroker.updateImageFaceCount(user.getUid(), logUid, taskType, numberFaces);
             return RestUtil.messageOkayResponse(RestMessage.IMAGE_FACES_UPDATED);
+        } catch (AccessDeniedException e) {
+            return RestUtil.accessDeniedResponse();
+        }
+    }
+
+    @RequestMapping(value = "/delete/{phoneNumber}/{code}")
+    public ResponseEntity<ResponseWrapper> removeTaskImage(@PathVariable String phoneNumber, @RequestParam TaskType taskType,
+                                                           @RequestParam String logUid,
+                                                           @RequestParam(required = false) Boolean leaveStored) {
+        try {
+            User user = userManagementService.findByInputNumber(phoneNumber);
+            String removalLogUid =  taskImageBroker.removeTaskImageRecord(user.getUid(), taskType, logUid, leaveStored == null || !leaveStored);
+            return RestUtil.okayResponseWithData(RestMessage.IMAGE_RECORD_REMOVED, removalLogUid);
         } catch (AccessDeniedException e) {
             return RestUtil.accessDeniedResponse();
         }

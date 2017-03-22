@@ -28,4 +28,6 @@ public interface TaskImageBroker {
 
     byte[] fetchMicroThumbnailForTask(String userUid, TaskType taskType, String logUid);
 
+    String removeTaskImageRecord(String userUid, TaskType taskType, String logUid, boolean removeFromStorage);
+
 }
