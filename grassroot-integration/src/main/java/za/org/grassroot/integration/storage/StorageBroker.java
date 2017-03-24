@@ -15,6 +15,6 @@ public interface StorageBroker {
 
     boolean doesImageExist(String uid, ImageType imageType);
 
-    boolean deleteImage(String uid);
+    void deleteImage(String uid);
 
 }

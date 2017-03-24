@@ -38,6 +38,8 @@ public interface GroupBroker {
 
     boolean canAddMember(String groupUid);
 
+    int numberMembersBeforeLimit(String groupUid);
+
     void addMembers(String userUid, String groupUid, Set<MembershipInfo> membershipInfos, boolean adminUserCalling);
 
     void copyMembersIntoGroup(String userUid, String groupUid, Set<String> memberUids);

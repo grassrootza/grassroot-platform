@@ -26,16 +26,21 @@ import java.util.Random;
 @Service
 public class PasswordTokenManager implements PasswordTokenService {
 
-    public static final int TOKEN_LIFE_SPAN_MINUTES = 5;
-    public static final int TOKEN_LIFE_SPAN_DAYS = 10;
+    private static final int TOKEN_LIFE_SPAN_MINUTES = 5;
+    private static final int TOKEN_LIFE_SPAN_DAYS = 30;
+    private static final int REFRESH_WINDOW_DAYS = 5;
 
     private static final Logger log = LoggerFactory.getLogger(PasswordTokenManager.class);
 
-    @Autowired
-    private VerificationTokenCodeRepository verificationTokenCodeRepository;
+    private final VerificationTokenCodeRepository verificationTokenCodeRepository;
+
+    private final UserRepository userRepository;
 
     @Autowired
-    private UserRepository userRepository;
+    public PasswordTokenManager(VerificationTokenCodeRepository verificationTokenCodeRepository, UserRepository userRepository) {
+        this.verificationTokenCodeRepository = verificationTokenCodeRepository;
+        this.userRepository = userRepository;
+    }
 
     @Override
     @Transactional
@@ -103,6 +108,22 @@ public class PasswordTokenManager implements PasswordTokenService {
     }
 
     @Override
+    @Transactional
+    public boolean extendAuthCodeIfExpiring(String phoneNumber, String code) {
+        Objects.requireNonNull(phoneNumber);
+        Objects.requireNonNull(code);
+
+        VerificationTokenCode token = verificationTokenCodeRepository.findByUsernameAndType(phoneNumber, VerificationCodeType.LONG_AUTH);
+        if (token != null && Instant.now().plus(REFRESH_WINDOW_DAYS, ChronoUnit.DAYS).isAfter(token.getExpiryDateTime())) {
+            Instant oldExpiry = token.getExpiryDateTime();
+            token.setExpiryDateTime(oldExpiry.plus(TOKEN_LIFE_SPAN_DAYS, ChronoUnit.DAYS));
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public boolean isShortLivedOtpValid(String phoneNumber, String code) {
         if (phoneNumber == null || code == null) {
@@ -128,6 +149,7 @@ public class PasswordTokenManager implements PasswordTokenService {
         }
 
         VerificationTokenCode token = verificationTokenCodeRepository.findByUsernameAndType(user.getUsername(), VerificationCodeType.LONG_AUTH);
+        log.debug("found token for user: {}", token);
         return token != null && code.equals(token.getCode()) && Instant.now().isBefore(token.getExpiryDateTime());
     }
 

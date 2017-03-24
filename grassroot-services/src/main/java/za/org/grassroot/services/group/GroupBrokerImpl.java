@@ -870,6 +870,13 @@ public class GroupBrokerImpl implements GroupBroker {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public int numberMembersBeforeLimit(String groupUid) {
+        Group group = groupRepository.findOneByUid(groupUid);
+        return membersLeftForGroup(group);
+    }
+
+    @Override
     @Transactional
     public String openJoinToken(String userUid, String groupUid, LocalDateTime expiryDateTime) {
         Objects.requireNonNull(userUid);
@@ -1021,19 +1028,15 @@ public class GroupBrokerImpl implements GroupBroker {
     }
 
     private boolean checkGroupSizeLimit(Group group, int numberOfMembersAdding) {
-        if (limitGroupSize) {
-            final int newSize = group.getMemberships().size() + numberOfMembersAdding;
-            Account account = accountGroupBroker.findAccountForGroup(group.getUid());
-            if (account == null && newSize > freeGroupSizeLimit) {
-                return false;
-            } else if (account != null && newSize > account.getMaxSizePerGroup()) {
-                return false;
-            } else {
-                return true;
-            }
-        } else {
-            return true;
-        }
+        return membersLeftForGroup(group) > numberOfMembersAdding;
+    }
+
+    private int membersLeftForGroup(Group group) {
+        Account account = accountGroupBroker.findAccountForGroup(group.getUid());
+        int currentMembers = group.getMemberships().size();
+        return !limitGroupSize ? 99999 :
+                account == null ? Math.max(0, freeGroupSizeLimit - currentMembers) :
+                        Math.max(0, account.getMaxSizePerGroup() - currentMembers);
     }
 
 }

@@ -142,18 +142,19 @@ public class StorageBrokerImpl implements StorageBroker {
 
     @Async
     @Override
-    public boolean deleteImage(String uid) {
+    public void deleteImage(String uid) {
         AmazonS3 s3client = s3ClientFactory.createClient();
-        try {
-            Stream.of(ImageType.values())
-                    .filter(t -> s3client.doesObjectExist(selectBucket(t), composeKey(uid, t)))
-                    .forEach(t -> s3client.deleteObject(selectBucket(t), composeKey(uid, t)));
-            return true;
-        } catch (AmazonS3Exception e) {
-            logger.error("Error deleting objects! Error: {}", e.getErrorCode());
-            return false;
+        Stream.of(ImageType.values())
+                .filter(t -> s3client.doesObjectExist(selectBucket(t), composeKey(uid, t)))
+                .forEach(t -> {
+                    try {
+                        s3client.deleteObject(selectBucket(t), composeKey(uid, t));
+                        logger.info("Deleted S3 object, with key: {}", composeKey(uid, t));
+                    } catch (AmazonS3Exception e) {
+                        logger.error("Error deleting objects! Error: {}", e.getErrorCode());
+                    }
+                });
         }
-    }
 
     private String selectBucket(ImageType size) {
         return ImageType.ANALYZED.equals(size) ? taskImagesAnalyzedBucket :

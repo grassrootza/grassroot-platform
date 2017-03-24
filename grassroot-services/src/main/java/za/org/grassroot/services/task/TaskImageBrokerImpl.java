@@ -142,12 +142,23 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public long countImagesForTask(String userUid, String taskUid, TaskType taskType) {
         boolean isTodo = TaskType.TODO.equals(taskType);
         Task task = isTodo ? todoRepository.findOneByUid(taskUid) : eventRepository.findOneByUid(taskUid);
-        return isTodo ?
-                todoLogRepository.count(where(forTodo((Todo) task)).and(ofType(TodoLogType.IMAGE_RECORDED))) :
-                eventLogRepository.count(where(forEvent((Event) task)).and(ofType(EventLogType.IMAGE_RECORDED)));
+        return isTodo ? countTodoImages((Todo) task) : countEventImages((Event) task);
+    }
+
+    // note: the alternative is to get the list of UIDs and count for image records with loguids in the set, but this
+    // works as long as we have confidence in the remove method, and is a lot lot simpler, so using it for now
+    private long countTodoImages(Todo todo) {
+        return todoLogRepository.count(where(forTodo(todo)).and(ofType(TodoLogType.IMAGE_RECORDED))) -
+                todoLogRepository.count(where(forTodo(todo)).and(ofType(TodoLogType.IMAGE_REMOVED)));
+    }
+
+    private long countEventImages(Event event) {
+        return eventLogRepository.count(where(forEvent(event)).and(ofType(EventLogType.IMAGE_RECORDED)))
+                - eventLogRepository.count(where(forEvent(event)).and(ofType(EventLogType.IMAGE_REMOVED)));
     }
 
     @Override

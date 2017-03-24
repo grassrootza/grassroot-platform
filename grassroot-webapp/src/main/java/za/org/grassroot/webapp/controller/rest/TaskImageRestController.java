@@ -131,7 +131,9 @@ public class TaskImageRestController {
         User user = userManagementService.findByInputNumber(phoneNumber);
         try {
             taskImageBroker.updateImageFaceCount(user.getUid(), logUid, taskType, numberFaces);
-            return RestUtil.messageOkayResponse(RestMessage.IMAGE_FACES_UPDATED);
+            ImageRecordDTO updatedImage = new ImageRecordDTO(taskImageBroker.fetchLogForImage(logUid, taskType),
+                    taskImageBroker.fetchImageRecord(logUid, taskType));
+            return RestUtil.okayResponseWithData(RestMessage.IMAGE_FACES_UPDATED, updatedImage);
         } catch (AccessDeniedException e) {
             return RestUtil.accessDeniedResponse();
         }
