@@ -1,0 +1,100 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      data-layout-decorate="~{layout}">
+<head>
+  <title>Locations Map</title>
+  <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css"/>
+  <script src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+
+  <style>
+    #map {
+      height: 80%;
+      width: 60%
+    }
+  </style>
+</head>
+<body>
+
+<section layout:fragment="header" class="top-container">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
+        <h2 class="text-center">Locations Map</h2>
+
+        <div id="map"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<script>
+  // initialize the map
+  //  var lat = -33.9249;
+  //  var long = 18.4241;
+  var lat = 42.35;
+  var long = -71.08;
+  var zoom = 13;
+
+  var map = L.map('map').setView([lat, long], zoom);
+
+  // load a tile layer
+  L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+    maxZoom: 18,
+    attributionControl: false
+  }).addTo(map);
+
+  // load GeoJSON from an external file
+  $.getJSON("meetings.geojson", function (data) {
+    // add GeoJSON layer to the map once the file is loaded
+    L.geoJson(data).addTo(map);
+  });
+
+
+</script>
+</body>
+</html>
+
+
+<!--<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"-->
+<!--xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"-->
+<!--data-layout-decorate="~{layout}">-->
+<!--<head>-->
+<!--<title>Locations - Map</title>-->
+<!--<link rel="stylesheet" type="text/css" th:href="@{/css/leaflet.css}"/>-->
+
+<!--</head>-->
+<!--<body>-->
+
+<!--<section layout:fragment="header" class="top-container">-->
+<!--<div class="container">-->
+<!--<div class="row">-->
+<!--<div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">-->
+<!--<h2 class="text-center">Test Map</h2>-->
+<!--<div id="mapid"></div>-->
+<!--</div>-->
+<!--</div>-->
+<!--</div>-->
+<!--</section>-->
+
+
+<!--<div class="header-container" layout:fragment="script-container">-->
+<!--<script th:src="@{/js/lib/leaflet.js}"></script>-->
+<!--<script th:src="@{/js/location_map.js}"></script>-->
+<!--</div>-->
+
+<!--<main layout:fragment="content">-->
+<!--<section layout:fragment="script-container">-->
+
+<!--<script>-->
+<!--$(document).ready(function() {-->
+<!--$('[data-toggle="tooltip"]').tooltip();-->
+<!--});-->
+<!--</script>-->
+
+<!--</section>-->
+<!--</main>-->
+
+</body>
+</html>

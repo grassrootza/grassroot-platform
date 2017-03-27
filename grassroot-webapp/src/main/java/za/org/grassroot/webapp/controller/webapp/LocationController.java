@@ -48,7 +48,7 @@ public class LocationController extends BaseController {
         model.addAttribute("user", user);
         model.addAttribute("userLocation", lastUserLocation);
 
-        return "location/list";
+        return "location/map";
     }
 
 }
