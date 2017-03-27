@@ -3,6 +3,7 @@ package za.org.grassroot.integration.storage;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.SdkClientException;
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3Object;
@@ -16,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -29,10 +31,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
 import java.util.Objects;
-
-import static org.springframework.data.jpa.domain.Specifications.where;
-import static za.org.grassroot.core.specifications.ImageRecordSpecifications.actionLogType;
-import static za.org.grassroot.core.specifications.ImageRecordSpecifications.actionLogUid;
+import java.util.stream.Stream;
 
 /**
  * Created by luke on 2017/02/21.
@@ -45,6 +44,9 @@ public class StorageBrokerImpl implements StorageBroker {
     @Value("${grassroot.task.images.bucket:null}")
     private String taskImagesBucket;
 
+    @Value("${grassroot.task.images.analyzed.bucket:null}")
+    private String taskImagesAnalyzedBucket;
+
     @Value("${grassroot.task.images.resized.bucket:null}")
     private String taskImagesResizedBucket;
 
@@ -54,7 +56,7 @@ public class StorageBrokerImpl implements StorageBroker {
     @Autowired
     public StorageBrokerImpl(ImageRecordRepository imageRecordRepository) {
         this.imageRecordRepository = imageRecordRepository;
-        s3ClientFactory = new S3ClientFactory();
+        this.s3ClientFactory = new S3ClientFactory();
     }
 
     @Override
@@ -101,19 +103,17 @@ public class StorageBrokerImpl implements StorageBroker {
     }
 
     @Override
-    public ImageRecord fetchLogImageDetails(String actionLogUid, ActionLogType actionLogType) {
-        return imageRecordRepository.findOne(where(actionLogUid(actionLogUid)).and(actionLogType(actionLogType)));
-    }
-
-    @Override
-    public byte[] fetchImage(String uid, ImageSize imageSize) {
+    public byte[] fetchImage(String uid, ImageType imageType) {
         Objects.requireNonNull(uid);
-        Objects.requireNonNull(imageSize);
+        Objects.requireNonNull(imageType);
+
+        final String bucket = selectBucket(imageType);
+        logger.info("for imageType {}, selected bucket {}", imageType, bucket);
 
         try {
             // todo : optimize this (see SDK JavaDocs on possible performance issues)
             AmazonS3 s3Client = s3ClientFactory.createClient();
-            S3Object s3Image = s3Client.getObject(new GetObjectRequest(selectBucket(imageSize), composeKey(uid, imageSize)));
+            S3Object s3Image = s3Client.getObject(new GetObjectRequest(bucket, composeKey(uid, imageType)));
             InputStream imageData = s3Image.getObjectContent();
             byte[] image = IOUtils.toByteArray(imageData);
             imageData.close();
@@ -121,17 +121,48 @@ public class StorageBrokerImpl implements StorageBroker {
         } catch (SdkClientException e) {
             // todo: try add a check if it's something other than file not found on the bucket, and use that to discriminate error type
             logger.info("error in retrieving file: {}", e.getMessage());
-            throw ImageSize.MICRO.equals(imageSize) ? new NoMicroVersionException() : new ImageRetrievalFailure();
+            throw ImageType.MICRO.equals(imageType) ? new NoMicroVersionException() : new ImageRetrievalFailure();
         } catch (IOException e) {
             throw new ImageRetrievalFailure();
         }
     }
 
-    private String selectBucket(ImageSize size) {
-        return ImageSize.FULL_SIZE.equals(size) ? taskImagesBucket : taskImagesResizedBucket;
+    @Override
+    public boolean doesImageExist(String uid, ImageType imageType) {
+        AmazonS3 s3client = s3ClientFactory.createClient();
+        logger.info("trying to find key in bucket: {}", selectBucket(imageType));
+        try {
+            return s3client.doesObjectExist(selectBucket(imageType), composeKey(uid, imageType));
+        } catch (AmazonS3Exception e) {
+            logger.error("S3 exception, of code: {}, for bucket: {}, with key: {}", e.getErrorCode(),
+                    selectBucket(imageType), composeKey(uid, imageType));
+            return false;
+        }
     }
 
-    private String composeKey(String uid, ImageSize size) {
+    @Async
+    @Override
+    public void deleteImage(String uid) {
+        AmazonS3 s3client = s3ClientFactory.createClient();
+        Stream.of(ImageType.values())
+                .filter(t -> s3client.doesObjectExist(selectBucket(t), composeKey(uid, t)))
+                .forEach(t -> {
+                    try {
+                        s3client.deleteObject(selectBucket(t), composeKey(uid, t));
+                        logger.info("Deleted S3 object, with key: {}", composeKey(uid, t));
+                    } catch (AmazonS3Exception e) {
+                        logger.error("Error deleting objects! Error: {}", e.getErrorCode());
+                    }
+                });
+        }
+
+    private String selectBucket(ImageType size) {
+        return ImageType.ANALYZED.equals(size) ? taskImagesAnalyzedBucket :
+                ImageType.FULL_SIZE.equals(size) ? taskImagesBucket :
+                        taskImagesResizedBucket;
+    }
+
+    private String composeKey(String uid, ImageType size) {
         switch (size) {
             case LARGE_THUMBNAIL:
                 return "midsize/" + uid;

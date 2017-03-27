@@ -84,13 +84,23 @@ public class TaskImageRestController {
                 taskImageBroker.countImagesForTask(user.getUid(), taskUid, taskType));
     }
 
+    @RequestMapping(value = "/record/{phoneNumber}/{code}/{taskType}/{logUid}", method = RequestMethod.GET)
+    public ResponseEntity<?> fetchTaskImageRecord(@PathVariable String phoneNumber, @PathVariable TaskType taskType,
+                                                  @PathVariable String logUid) {
+        ImageRecordDTO record = new ImageRecordDTO(
+                taskImageBroker.fetchLogForImage(logUid, taskType),
+                taskImageBroker.fetchImageRecord(logUid, taskType)
+        );
+        return RestUtil.okayResponseWithData(RestMessage.TASK_IMAGE_RECORD, record);
+    }
+
     @RequestMapping(value = "/fetch/{phoneNumber}/{code}/{taskType}/{logUid}", method = RequestMethod.GET)
     public ResponseEntity<?> fetchTaskImage(@PathVariable TaskType taskType, @PathVariable String logUid) {
         // will add a check for user/event membership in future, maybe, hence parameter, but for now minimizing calls
         try {
             HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.IMAGE_JPEG); // may want to bring in flexibility on this
-            byte[] image = taskImageBroker.fetchImageForTask(null, taskType, logUid);
+            headers.setContentType(MediaType.IMAGE_JPEG);
+            byte[] image = taskImageBroker.fetchImageForTask(null, taskType, logUid, true);
             return ResponseEntity.ok()
                     .lastModified(24000)
                     .headers(headers)
@@ -112,6 +122,33 @@ public class TaskImageRestController {
         } catch (NoMicroVersionException e) {
             logger.info("failed, going for the full image ...");
             return fetchTaskImage(taskType, logUid);
+        }
+    }
+
+    @RequestMapping(value = "/update/faces/{phoneNumber}/{code}/{taskType}/{logUid}", method = RequestMethod.GET)
+    public ResponseEntity<ResponseWrapper> updateFaceCount(@PathVariable String phoneNumber, @PathVariable TaskType taskType,
+                                                           @PathVariable String logUid, @RequestParam int numberFaces) {
+        User user = userManagementService.findByInputNumber(phoneNumber);
+        try {
+            taskImageBroker.updateImageFaceCount(user.getUid(), logUid, taskType, numberFaces);
+            ImageRecordDTO updatedImage = new ImageRecordDTO(taskImageBroker.fetchLogForImage(logUid, taskType),
+                    taskImageBroker.fetchImageRecord(logUid, taskType));
+            return RestUtil.okayResponseWithData(RestMessage.IMAGE_FACES_UPDATED, updatedImage);
+        } catch (AccessDeniedException e) {
+            return RestUtil.accessDeniedResponse();
+        }
+    }
+
+    @RequestMapping(value = "/delete/{phoneNumber}/{code}")
+    public ResponseEntity<ResponseWrapper> removeTaskImage(@PathVariable String phoneNumber, @RequestParam TaskType taskType,
+                                                           @RequestParam String logUid,
+                                                           @RequestParam(required = false) Boolean leaveStored) {
+        try {
+            User user = userManagementService.findByInputNumber(phoneNumber);
+            String removalLogUid =  taskImageBroker.removeTaskImageRecord(user.getUid(), taskType, logUid, leaveStored == null || !leaveStored);
+            return RestUtil.okayResponseWithData(RestMessage.IMAGE_RECORD_REMOVED, removalLogUid);
+        } catch (AccessDeniedException e) {
+            return RestUtil.accessDeniedResponse();
         }
     }
 

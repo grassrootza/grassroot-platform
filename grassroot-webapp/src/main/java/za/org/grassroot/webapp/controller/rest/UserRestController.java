@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.VerificationTokenCode;
@@ -54,7 +55,9 @@ public class UserRestController {
     private final Environment environment;
 
     @Autowired
-    public UserRestController(UserManagementService userManagementService, PasswordTokenService passwordTokenService, GeoLocationBroker geoLocationBroker, SmsSendingService smsSendingService, NotificationService notificationService, PermissionBroker permissionBroker, Environment environment) {
+    public UserRestController(UserManagementService userManagementService, PasswordTokenService passwordTokenService,
+                              GeoLocationBroker geoLocationBroker, SmsSendingService smsSendingService, NotificationService notificationService,
+                              PermissionBroker permissionBroker, Environment environment) {
         this.userManagementService = userManagementService;
         this.passwordTokenService = passwordTokenService;
         this.geoLocationBroker = geoLocationBroker;
@@ -162,6 +165,19 @@ public class UserRestController {
         User user = userManagementService.findByInputNumber(phoneNumber);
         log.info("reconnected user : " + user.getPhoneNumber());
         return RestUtil.messageOkayResponse(RestMessage.USER_OKAY);
+    }
+
+    @RequestMapping(value = "/auth/extend/{phoneNumber}/{code}", method = RequestMethod.GET)
+    public ResponseEntity<ResponseWrapper> extendToken(@PathVariable String phoneNumber, @PathVariable String code) {
+        try {
+            boolean tokenRefreshed = passwordTokenService.extendAuthCodeIfExpiring(phoneNumber, code);
+            return RestUtil.messageOkayResponse(tokenRefreshed ? RestMessage.TOKEN_EXTENDED : RestMessage.TOKEN_STILL_VALID);
+        } catch (NullPointerException e) {
+            log.error("Error extending token: {}", e.getMessage());
+            return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.BAD_TOKEN_UPDATE);
+        } catch (AccessDeniedException e) {
+            return RestUtil.accessDeniedResponse();
+        }
     }
 
     @RequestMapping(value = "/logout/{phoneNumber}/{code}", method = RequestMethod.GET)

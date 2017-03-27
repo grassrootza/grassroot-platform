@@ -248,6 +248,7 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
 
         account.setEnabled(false);
         account.setDisabledDateTime(Instant.now());
+        account.setNextBillingDate(Instant.now().plus(7L, ChronoUnit.DAYS)); // just to avoid overly annoying them
         // note: do not detach the paid groups from the account, since once the account is paid, will want to re-enable;
         // also, leave it as 'active', else can't distinguish when re-enabling (should maybe rename that field ...)
         log.info("suspending paid groups at end of free trial ... ");

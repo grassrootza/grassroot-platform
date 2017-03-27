@@ -11,8 +11,10 @@ public interface StorageBroker {
 
     boolean storeImage(ActionLogType actionLogType, String actionLogUid, MultipartFile image);
 
-    ImageRecord fetchLogImageDetails(String actionLogUid, ActionLogType actionLogType);
+    byte[] fetchImage(String uid, ImageType imageType);
 
-    byte[] fetchImage(String uid, ImageSize imageSize);
+    boolean doesImageExist(String uid, ImageType imageType);
+
+    void deleteImage(String uid);
 
 }

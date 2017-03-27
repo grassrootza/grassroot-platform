@@ -135,4 +135,13 @@ public class VerificationTokenCode {
         result = 31 * result + id.hashCode();
         return result;
     }
+
+    @Override
+    public String toString() {
+        return "VerificationTokenCode{" +
+                "username='" + username + '\'' +
+                ", code='" + code + '\'' +
+                ", expiryDateTime=" + expiryDateTime +
+                '}';
+    }
 }

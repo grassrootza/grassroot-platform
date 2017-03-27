@@ -14,6 +14,8 @@ public interface PasswordTokenService {
 
     VerificationTokenCode fetchLongLivedAuthCode(String phoneNumber);
 
+    boolean extendAuthCodeIfExpiring(String phoneNumber, String code);
+
     boolean isShortLivedOtpValid(String phoneNumber, String code);
 
     boolean isLongLiveAuthValid(String phoneNumber, String code);

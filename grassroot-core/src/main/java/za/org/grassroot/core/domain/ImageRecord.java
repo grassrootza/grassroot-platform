@@ -54,7 +54,13 @@ public class ImageRecord {
     private boolean analyzed;
 
     @Column(name = "number_faces", nullable = true)
-    private Integer numberFaces;
+    private Integer analyzedFaces;
+
+    @Column(name = "count_modified")
+    private boolean countModified;
+
+    @Column(name = "revised_faces", nullable = true)
+    private Integer revisedFaces;
 
     // may need a bit more of this later, but for now, a place holder for, e.g., recording how many people included
     @Column(name = "auxiliary", length = 255)
@@ -154,12 +160,28 @@ public class ImageRecord {
         return analyzed;
     }
 
-    public Integer getNumberFaces() {
-        return numberFaces;
+    public Integer getAnalyzedFaces() {
+        return analyzedFaces;
     }
 
-    public void setNumberFaces(Integer numberFaces) {
-        this.numberFaces = numberFaces;
+    public void setAnalyzedFaces(Integer analyzedFaces) {
+        this.analyzedFaces = analyzedFaces;
+    }
+
+    public boolean isCountModified() {
+        return countModified;
+    }
+
+    public Integer getRevisedFaces() {
+        return revisedFaces;
+    }
+
+    public void setCountModified(boolean countModified) {
+        this.countModified = countModified;
+    }
+
+    public void setRevisedFaces(Integer revisedFaces) {
+        this.revisedFaces = revisedFaces;
     }
 
     @Override

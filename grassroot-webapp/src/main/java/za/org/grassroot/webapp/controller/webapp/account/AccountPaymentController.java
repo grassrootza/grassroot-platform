@@ -128,6 +128,27 @@ public class AccountPaymentController extends BaseController {
         }
     }
 
+    @RequestMapping(value = "trial", method = RequestMethod.GET)
+    public String payForTrialAccountBeforeExpiry(Model model, @RequestParam String accountUid,
+                                                 @RequestParam CombinedPaymentOption combinedPaymentOption,
+                                                 @RequestParam(required = false) String errorDescription) {
+        User user = userManagementService.load(getUserProfile().getUid());
+        Account account = accountBroker.loadAccount(accountUid);
+
+        if (!account.getAdministrators().contains(user)) {
+            throw new AccessDeniedException("Only users administering account can pay prior to trial expiry");
+        }
+
+        AccountBillingCycle billingCycle = combinedPaymentOption == null ? account.getBillingCycle() :
+                MONTHLY_CARD.equals(combinedPaymentOption) ? MONTHLY : ANNUAL;
+
+        // make sure to pass null to payment type otherwise this will end the free trial even if something goes wrong
+        accountBroker.updateAccountPaymentCycleAndMethod(user.getUid(), accountUid, null, billingCycle, false);
+
+        return  loadAppropriatePaymentForm(model, combinedPaymentOption, account, errorDescription);
+    }
+
+    // for disabled accounts
     @RequestMapping(value = "retry", method = RequestMethod.GET)
     public String retryAccountPayment(Model model,
                                       @RequestParam(required = false) String errorDescription,
@@ -148,7 +169,11 @@ public class AccountPaymentController extends BaseController {
             accountBroker.updateAccountPaymentCycleAndMethod(user.getUid(), account.getUid(), paymentType, billingCycle, false);
         }
 
-        if (DIRECT_DEPOSIT.equals(paymentType)) {
+        return  loadAppropriatePaymentForm(model, combinedPaymentOption, account, errorDescription);
+    }
+
+    private String loadAppropriatePaymentForm(Model model, CombinedPaymentOption combinedPaymentOption, Account account, String errorDescription) {
+        if (ANNUAL_DEPOSIT.equals(combinedPaymentOption)) {
             return loadDebitInstruction(model, account);
         } else {
             if (!StringUtils.isEmpty(errorDescription)) {

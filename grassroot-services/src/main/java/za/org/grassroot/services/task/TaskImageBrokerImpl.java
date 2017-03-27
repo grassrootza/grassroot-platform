@@ -13,7 +13,7 @@ import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.enums.TodoLogType;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.util.DebugUtil;
-import za.org.grassroot.integration.storage.ImageSize;
+import za.org.grassroot.integration.storage.ImageType;
 import za.org.grassroot.integration.storage.StorageBroker;
 
 import java.util.Comparator;
@@ -22,8 +22,11 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static org.springframework.data.jpa.domain.Specifications.where;
+import static za.org.grassroot.core.enums.ActionLogType.TODO_LOG;
 import static za.org.grassroot.core.specifications.EventLogSpecifications.forEvent;
 import static za.org.grassroot.core.specifications.EventLogSpecifications.ofType;
+import static za.org.grassroot.core.specifications.ImageRecordSpecifications.actionLogType;
+import static za.org.grassroot.core.specifications.ImageRecordSpecifications.actionLogUid;
 import static za.org.grassroot.core.specifications.TodoLogSpecifications.forTodo;
 import static za.org.grassroot.core.specifications.TodoLogSpecifications.ofType;
 
@@ -33,22 +36,25 @@ import static za.org.grassroot.core.specifications.TodoLogSpecifications.ofType;
 @Service
 public class TaskImageBrokerImpl implements TaskImageBroker {
 
-    private UserRepository userRepository;
-    private EventRepository eventRepository;
-    private EventLogRepository eventLogRepository;
-    private TodoRepository todoRepository;
-    private TodoLogRepository todoLogRepository;
+    private final UserRepository userRepository;
+    private final EventRepository eventRepository;
+    private final EventLogRepository eventLogRepository;
+    private final TodoRepository todoRepository;
+    private final TodoLogRepository todoLogRepository;
+    private final ImageRecordRepository imageRecordRepository;
 
-    private StorageBroker storageBroker;
+    private final StorageBroker storageBroker;
 
     @Autowired
     public TaskImageBrokerImpl(UserRepository userRepository, EventRepository eventRepository, EventLogRepository eventLogRepository,
-                               TodoRepository todoRepository, TodoLogRepository todoLogRepository, StorageBroker storageBroker) {
+                               TodoRepository todoRepository, TodoLogRepository todoLogRepository, ImageRecordRepository imageRecordRepository,
+                               StorageBroker storageBroker) {
         this.userRepository = userRepository;
         this.eventRepository = eventRepository;
         this.eventLogRepository = eventLogRepository;
         this.todoRepository = todoRepository;
         this.todoLogRepository = todoLogRepository;
+        this.imageRecordRepository = imageRecordRepository;
         this.storageBroker = storageBroker;
     }
 
@@ -89,7 +95,7 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
             throw new AccessDeniedException("Error! Only a member of a task can fetch its images");
         }
 
-        ActionLogType logType = isTodo ? ActionLogType.TODO_LOG : ActionLogType.EVENT_LOG;
+        ActionLogType logType = isTodo ? TODO_LOG : ActionLogType.EVENT_LOG;
         List<String> imageLogUids = isTodo ?
                 todoLogRepository.findAll(where(forTodo((Todo) task)).and(ofType(TodoLogType.IMAGE_RECORDED)))
                         .stream().map(TodoLog::getUid).collect(Collectors.toList()) :
@@ -98,10 +104,15 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
 
         return imageLogUids
                 .stream()
-                .map(uid -> storageBroker.fetchLogImageDetails(uid, logType)) // in future we may have a log without a record, if image deleted
+                .map(uid -> fetchLogImageDetails(uid, logType)) // in future we may have a log without a record, if image deleted
                 .filter(Objects::nonNull)
                 .sorted(Comparator.comparing(ImageRecord::getCreationTime))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public ImageRecord fetchImageRecord(String logUid, TaskType taskType) {
+        return fetchLogImageDetails(logUid, TaskType.TODO.equals(taskType) ? TODO_LOG : ActionLogType.EVENT_LOG);
     }
 
     @Override
@@ -113,21 +124,52 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
     }
 
     @Override
-    public long countImagesForTask(String userUid, String taskUid, TaskType taskType) {
-        boolean isTodo = TaskType.TODO.equals(taskType);
-        Task task = isTodo ? todoRepository.findOneByUid(taskUid) : eventRepository.findOneByUid(taskUid);
-        return isTodo ?
-                todoLogRepository.count(where(forTodo((Todo) task)).and(ofType(TodoLogType.IMAGE_RECORDED))) :
-                eventLogRepository.count(where(forEvent((Event) task)).and(ofType(EventLogType.IMAGE_RECORDED)));
+    @Transactional
+    public void updateImageFaceCount(String userUid, String logUid, TaskType taskType, int faceCount) {
+        User user = userRepository.findOneByUid(userUid);
+        TaskLog log = fetchLogForImage(logUid, taskType);
+        if (!user.equals(log.getUser())) {
+            throw new AccessDeniedException("Only the user that took the photo can update its count");
+        }
+        ImageRecord record = fetchImageRecord(logUid, taskType);
+        record.setCountModified(true);
+        record.setRevisedFaces(faceCount);
+
+        if (TaskType.MEETING.equals(taskType)) {
+            EventLog eventLog = new EventLog(user, (Event) log.getTask(), EventLogType.IMAGE_COUNT_CHANGED);
+            eventLogRepository.save(eventLog);
+        }
     }
 
     @Override
-    public byte[] fetchImageForTask(String userUid, TaskType taskType, String logUid) {
+    @Transactional(readOnly = true)
+    public long countImagesForTask(String userUid, String taskUid, TaskType taskType) {
+        boolean isTodo = TaskType.TODO.equals(taskType);
+        Task task = isTodo ? todoRepository.findOneByUid(taskUid) : eventRepository.findOneByUid(taskUid);
+        return isTodo ? countTodoImages((Todo) task) : countEventImages((Event) task);
+    }
+
+    // note: the alternative is to get the list of UIDs and count for image records with loguids in the set, but this
+    // works as long as we have confidence in the remove method, and is a lot lot simpler, so using it for now
+    private long countTodoImages(Todo todo) {
+        return todoLogRepository.count(where(forTodo(todo)).and(ofType(TodoLogType.IMAGE_RECORDED))) -
+                todoLogRepository.count(where(forTodo(todo)).and(ofType(TodoLogType.IMAGE_REMOVED)));
+    }
+
+    private long countEventImages(Event event) {
+        return eventLogRepository.count(where(forEvent(event)).and(ofType(EventLogType.IMAGE_RECORDED)))
+                - eventLogRepository.count(where(forEvent(event)).and(ofType(EventLogType.IMAGE_REMOVED)));
+    }
+
+    @Override
+    public byte[] fetchImageForTask(String userUid, TaskType taskType, String logUid, boolean checkAnalyzed) {
         // consider adding a membership check in future, hence keeping this method as intermediary (but also need this to be fast ...)
         Objects.requireNonNull(taskType);
         Objects.requireNonNull(logUid);
 
-        return storageBroker.fetchImage(logUid, ImageSize.FULL_SIZE);
+        ImageType imageType = checkAnalyzed && storageBroker.doesImageExist(logUid, ImageType.ANALYZED) ?
+                ImageType.ANALYZED : ImageType.FULL_SIZE;
+        return storageBroker.fetchImage(logUid, imageType);
     }
 
     @Override
@@ -136,7 +178,46 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
         Objects.requireNonNull(logUid);
 
         // as above, add a membership check in the future
-        return storageBroker.fetchImage(logUid, ImageSize.MICRO);
+        return storageBroker.fetchImage(logUid, ImageType.MICRO);
+    }
+
+    @Override
+    @Transactional
+    public String removeTaskImageRecord(String userUid, TaskType taskType, String logUid, boolean removeFromStorage) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(taskType);
+        Objects.requireNonNull(logUid);
+
+        User user = userRepository.findOneByUid(userUid);
+        ImageRecord record = fetchImageRecord(logUid, taskType);
+        TaskLog taskLog = fetchLogForImage(logUid, taskType);
+
+        if (!taskLog.getUser().equals(user)) {
+            throw new AccessDeniedException("Only the user that added an image can delete it");
+        }
+
+        String removedLogUid;
+        if (taskType.equals(TaskType.TODO)) {
+            TodoLog todoLog = new TodoLog(TodoLogType.IMAGE_REMOVED, user, (Todo) taskLog.getTask(), "image removed");
+            todoLogRepository.save(todoLog);
+            removedLogUid = todoLog.getUid();
+        } else {
+            EventLog eventLog = new EventLog(user, (Event) taskLog.getTask(), EventLogType.IMAGE_REMOVED);
+            eventLogRepository.save(eventLog);
+            removedLogUid = eventLog.getUid();
+        }
+
+        imageRecordRepository.delete(record);
+
+        if (removeFromStorage) {
+            storageBroker.deleteImage(logUid);
+        }
+
+        return removedLogUid;
+    }
+
+    private ImageRecord fetchLogImageDetails(String actionLogUid, ActionLogType actionLogType) {
+        return imageRecordRepository.findOne(where(actionLogUid(actionLogUid)).and(actionLogType(actionLogType)));
     }
 
     private String storeImageForMeeting(User user, String meetingUid, GeoLocation location, MultipartFile file) {
@@ -177,7 +258,7 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
             todoLog.setLocation(location);
         }
 
-        boolean uploadCompleted = storageBroker.storeImage(ActionLogType.TODO_LOG, todoLog.getUid(), file);
+        boolean uploadCompleted = storageBroker.storeImage(TODO_LOG, todoLog.getUid(), file);
         if (uploadCompleted) {
             todoLogRepository.save(todoLog);
             return todoLog.getUid();

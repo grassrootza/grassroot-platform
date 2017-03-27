@@ -46,7 +46,7 @@ public class GroupRestController extends GroupAbstractRestController {
     private GroupChatService groupChatService;
     private GcmService gcmService;
 
-    protected final MessageSourceAccessor messageSourceAccessor;
+    private final MessageSourceAccessor messageSourceAccessor;
 
     private final static Set<Permission> permissionsDisplayed = Sets.newHashSet(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS,
             Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING,
@@ -75,14 +75,12 @@ public class GroupRestController extends GroupAbstractRestController {
     public ResponseEntity<ResponseWrapper> createGroupWithDescription(@PathVariable String phoneNumber, @PathVariable String code,
                                                                       @PathVariable String groupName, @PathVariable String description,
                                                                       @RequestBody Set<MembershipInfo> membersToAdd) {
-        log.info("creating group with description ... name : {}", groupName);
         return createGroup(phoneNumber, groupName, description, membersToAdd);
     }
 
     @RequestMapping(value = "/create/{phoneNumber}/{code}/{groupName:.+}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> createGroupWithoutDescription(@PathVariable String phoneNumber, @PathVariable String code,
                                                                          @PathVariable String groupName, @RequestBody Set<MembershipInfo> membersToAdd) {
-        log.info("creating group without description ... name : {}", groupName);
         return createGroup(phoneNumber, groupName, null, membersToAdd);
     }
 
@@ -119,6 +117,11 @@ public class GroupRestController extends GroupAbstractRestController {
             e.printStackTrace();
             return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.GROUP_NOT_CREATED);
         }
+    }
+
+    @RequestMapping(value = "members/left/{phoneNumber}/{code}/{groupUid}", method = RequestMethod.GET)
+    public ResponseEntity<ResponseWrapper> numberMembersLeftForGroup(@PathVariable String groupUid) {
+        return RestUtil.okayResponseWithData(RestMessage.GROUP_SIZE_LIMIT, groupBroker.numberMembersBeforeLimit(groupUid));
     }
 
     @RequestMapping(value = "/members/add/{phoneNumber}/{code}/{uid}", method = RequestMethod.POST)

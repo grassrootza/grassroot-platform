@@ -20,8 +20,13 @@ public class ImageRecordDTO {
     private Long storageTime;
     private String md5;
     private String userDisplayName;
+    private String userPhoneNumber;
     private Double latitude;
     private Double longitude;
+    private boolean analyzed;
+    private Integer numberFaces;
+    private boolean countModified;
+    private Integer revisedFaces;
 
     public ImageRecordDTO(TaskLog taskLog, ImageRecord imageRecord) {
         this.actionLogUid = imageRecord.getActionLogUid();
@@ -34,6 +39,11 @@ public class ImageRecordDTO {
         this.latitude = taskLog.getLocation() != null ? taskLog.getLocation().getLatitude() : null;
         this.longitude = taskLog.getLocation() != null ? taskLog.getLocation().getLongitude() : null;
         this.userDisplayName = taskLog.getUser().getName();
+        this.userPhoneNumber = taskLog.getUser().getPhoneNumber();
+        this.analyzed = imageRecord.isAnalyzed();
+        this.numberFaces = imageRecord.getAnalyzedFaces();
+        this.countModified = imageRecord.isCountModified();
+        this.revisedFaces = imageRecord.getRevisedFaces();
     }
 
     @JsonProperty("key")
@@ -70,4 +80,18 @@ public class ImageRecordDTO {
     public Double getLongitude() { return longitude; }
 
     public String getUserDisplayName() { return userDisplayName; }
+
+    public String getUserPhoneNumber() { return userPhoneNumber; }
+
+    public boolean isAnalyzed() { return analyzed; }
+
+    public Integer getNumberFaces() { return numberFaces; }
+
+    public boolean isCountModified() {
+        return countModified;
+    }
+
+    public Integer getRevisedFaces() {
+        return revisedFaces;
+    }
 }
