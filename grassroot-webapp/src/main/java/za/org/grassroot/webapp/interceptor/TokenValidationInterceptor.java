@@ -23,19 +23,23 @@ import java.util.Map;
 
 public class TokenValidationInterceptor extends HandlerInterceptorAdapter {
 
-    @Autowired
-    private PasswordTokenService passwordTokenService;
+    private final PasswordTokenService passwordTokenService;
 
     // private static final Logger log = LoggerFactory.getLogger(TokenValidationInterceptor.class);
 
     private static final String contentType = "application/json";
 
+    @Autowired
+    public TokenValidationInterceptor(PasswordTokenService passwordTokenService) {
+        this.passwordTokenService = passwordTokenService;
+    }
+
     @Override
     public boolean preHandle(HttpServletRequest request,
                              HttpServletResponse response, Object handler) throws Exception {
 
-        Map pathVariables = (Map) request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
 
+        Map pathVariables = (Map) request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
         String phoneNumber = String.valueOf(pathVariables.get("phoneNumber")).trim();
         String code = String.valueOf(pathVariables.get("code")).trim();
 

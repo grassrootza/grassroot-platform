@@ -1,4 +1,4 @@
-package za.org.grassroot.webapp.controller.rest;
+package za.org.grassroot.webapp.controller.rest.android;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

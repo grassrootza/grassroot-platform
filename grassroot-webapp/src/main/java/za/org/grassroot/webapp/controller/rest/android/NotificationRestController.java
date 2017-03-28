@@ -1,4 +1,4 @@
-package za.org.grassroot.webapp.controller.rest;
+package za.org.grassroot.webapp.controller.rest.android;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,12 +37,15 @@ public class NotificationRestController {
 
     private static final int pageLength = 20;
 
-    @Autowired
-    private NotificationService notificationService;
+    private final NotificationService notificationService;
+
+    private final UserManagementService userManagementService;
 
     @Autowired
-    private UserManagementService userManagementService;
-
+    public NotificationRestController(NotificationService notificationService, UserManagementService userManagementService) {
+        this.notificationService = notificationService;
+        this.userManagementService = userManagementService;
+    }
 
     @RequestMapping(value = "/list/{phoneNumber}/{code}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> getNotifications(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String code,
