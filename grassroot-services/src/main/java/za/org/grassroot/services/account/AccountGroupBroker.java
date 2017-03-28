@@ -44,4 +44,6 @@ public interface AccountGroupBroker {
     int numberTodosLeftForGroup(String groupUid);
 
     int numberMessagesLeft(String accountUid);
+
+    int numberEventsLeftForGroup(String groupUid);
 }

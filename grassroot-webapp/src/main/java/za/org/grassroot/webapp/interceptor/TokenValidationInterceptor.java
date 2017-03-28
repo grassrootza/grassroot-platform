@@ -23,14 +23,14 @@ import java.util.Map;
 
 public class TokenValidationInterceptor extends HandlerInterceptorAdapter {
 
-    private final PasswordTokenService passwordTokenService;
+    private PasswordTokenService passwordTokenService;
 
     // private static final Logger log = LoggerFactory.getLogger(TokenValidationInterceptor.class);
 
     private static final String contentType = "application/json";
 
     @Autowired
-    public TokenValidationInterceptor(PasswordTokenService passwordTokenService) {
+    public void setPasswordTokenService(PasswordTokenService passwordTokenService) {
         this.passwordTokenService = passwordTokenService;
     }
 

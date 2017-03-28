@@ -17,6 +17,7 @@ import za.org.grassroot.core.specifications.GroupSpecifications;
 import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.*;
+import za.org.grassroot.services.specifications.EventSpecifications;
 import za.org.grassroot.services.util.FullTextSearchUtils;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
@@ -46,6 +47,9 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
     @Value("${accounts.todos.monthly.free:4}")
     private int FREE_TODOS_PER_MONTH;
 
+    @Value("${accounts.events.monthly.free:4}")
+    private int FREE_EVENTS_PER_MONTH;
+
     private static final String addedDescription = "Group added to Grassroot Extra";
     private static final String removedDescription = "Group removed from Grassroot Extra";
 
@@ -53,17 +57,20 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
     private GroupRepository groupRepository;
     private PermissionBroker permissionBroker;
     private TodoRepository todoRepository;
+    private EventRepository eventRepository;
+
     private AccountRepository accountRepository;
     private PaidGroupRepository paidGroupRepository;
     private LogsAndNotificationsBroker logsAndNotificationsBroker;
 
     @Autowired
     public AccountGroupBrokerImpl(UserRepository userRepository, GroupRepository groupRepository, TodoRepository todoRepository,
-                                  PermissionBroker permissionBroker, AccountRepository accountRepository,
+                                  EventRepository eventRepository, PermissionBroker permissionBroker, AccountRepository accountRepository,
                                   PaidGroupRepository paidGroupRepository, LogsAndNotificationsBroker logsAndNotificationsBroker) {
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
         this.todoRepository = todoRepository;
+        this.eventRepository = eventRepository;
         this.permissionBroker = permissionBroker;
         this.accountRepository = accountRepository;
         this.paidGroupRepository = paidGroupRepository;
@@ -394,6 +401,28 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
         }
 
         return monthlyLimit - todosThisMonth;
+    }
+
+    @Override
+    public int numberEventsLeftForGroup(String groupUid) {
+        Group group = groupRepository.findOneByUid(groupUid);
+
+        int eventsThisMonth = (int) eventRepository.count(where(EventSpecifications.hasGroupAsAncestor(group))
+                .and(EventSpecifications.createdDateTimeBetween(LocalDateTime.now().withDayOfMonth(1).withHour(0).toInstant(ZoneOffset.UTC), Instant.now())));
+        int monthlyLimit;
+        if (!group.isPaidFor()) {
+            monthlyLimit = FREE_EVENTS_PER_MONTH;
+        } else {
+            try {
+                Account account = paidGroupRepository.findTopByGroupOrderByExpireDateTimeDesc(group).getAccount();
+                monthlyLimit = account.getEventsPerGroupPerMonth();
+            } catch (NullPointerException e) {
+                logger.warn("Error! Group is marked as paid for but has no paid group record associated to it");
+                monthlyLimit = FREE_EVENTS_PER_MONTH;
+            }
+        }
+
+        return eventsThisMonth - monthlyLimit;
     }
 
     @Override

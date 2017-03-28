@@ -46,6 +46,10 @@ public class LocationRestController {
         this.geoLocationBroker = geoLocationBroker;
     }
 
+    public void listPublicEntitiesNearLocation(@RequestParam long longitude, @RequestParam long latitude) {
+
+    }
+
     @RequestMapping(value = "/{phoneNumber}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> search (@PathVariable("phoneNumber") String phoneNumber,
                                                    @RequestParam(value = "radius", required = false) Integer radius) {

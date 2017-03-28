@@ -22,7 +22,9 @@ import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.PermissionBroker;
+import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.services.enums.EventListTimeType;
+import za.org.grassroot.services.exception.AccountLimitExceededException;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.services.exception.TaskNameTooLongException;
 import za.org.grassroot.services.specifications.EventSpecifications;
@@ -47,30 +49,36 @@ import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
 public class EventBrokerImpl implements EventBroker {
 	private final Logger logger = LoggerFactory.getLogger(EventBrokerImpl.class);
 
-	@Autowired
-	private EventLogBroker eventLogBroker;
-	@Autowired
-	private EventRepository eventRepository;
-	@Autowired
-	private VoteRepository voteRepository;
-	@Autowired
-	private MeetingRepository meetingRepository;
-	@Autowired
-	private UidIdentifiableRepository uidIdentifiableRepository;
-	@Autowired
-	private UserRepository userRepository;
-	@Autowired
-	private GroupRepository groupRepository;
-	@Autowired
-	private PermissionBroker permissionBroker;
-	@Autowired
-	private LogsAndNotificationsBroker logsAndNotificationsBroker;
-	@Autowired
-	private CacheUtilService cacheUtilService;
-	@Autowired
-	private MessageAssemblingService messageAssemblingService;
+	private final EventLogBroker eventLogBroker;
+	private final EventRepository eventRepository;
+	private final VoteRepository voteRepository;
+	private final MeetingRepository meetingRepository;
+	private final UidIdentifiableRepository uidIdentifiableRepository;
+	private final UserRepository userRepository;
+	private final GroupRepository groupRepository;
+	private final PermissionBroker permissionBroker;
+	private final LogsAndNotificationsBroker logsAndNotificationsBroker;
+	private final CacheUtilService cacheUtilService;
+	private final MessageAssemblingService messageAssemblingService;
+	private final AccountGroupBroker accountGroupBroker;
 
-    @Override
+	@Autowired
+	public EventBrokerImpl(MeetingRepository meetingRepository, EventLogBroker eventLogBroker, EventRepository eventRepository, VoteRepository voteRepository, UidIdentifiableRepository uidIdentifiableRepository, UserRepository userRepository, AccountGroupBroker accountGroupBroker, GroupRepository groupRepository, PermissionBroker permissionBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, CacheUtilService cacheUtilService, MessageAssemblingService messageAssemblingService) {
+		this.meetingRepository = meetingRepository;
+		this.eventLogBroker = eventLogBroker;
+		this.eventRepository = eventRepository;
+		this.voteRepository = voteRepository;
+		this.uidIdentifiableRepository = uidIdentifiableRepository;
+		this.userRepository = userRepository;
+		this.accountGroupBroker = accountGroupBroker;
+		this.groupRepository = groupRepository;
+		this.permissionBroker = permissionBroker;
+		this.logsAndNotificationsBroker = logsAndNotificationsBroker;
+		this.cacheUtilService = cacheUtilService;
+		this.messageAssemblingService = messageAssemblingService;
+	}
+
+	@Override
 	public Event load(String eventUid) {
 		Objects.requireNonNull(eventUid);
 		return eventRepository.findOneByUid(eventUid);
@@ -100,14 +108,18 @@ public class EventBrokerImpl implements EventBroker {
 		// todo : implement for generic parent types, once have migrated to jpa specifications
 		if (parentType.equals(JpaEntityType.GROUP)) {
 			Event possibleDuplicate = checkForDuplicate(userUid, parentUid, name, eventStartDateTimeInSystem);
-			if (possibleDuplicate != null && possibleDuplicate.getEventType().equals(EventType.MEETING)) {
-				// todo : hand over to update meeting if anything different in parameters
+			if (possibleDuplicate != null && possibleDuplicate.getEventType().equals(EventType.MEETING)) { // todo : hand over to update meeting if anything different in parameters
 				logger.info("Detected duplicate meeting creation, returning the already-created one ... ");
 				return (Meeting) possibleDuplicate;
+			}
+
+			if (accountGroupBroker.numberEventsLeftForGroup(parentUid) < 1) {
+				throw new AccountLimitExceededException();
 			}
 		}
 
 		permissionBroker.validateGroupPermission(user, parent.getThisOrAncestorGroup(), Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING);
+
 
 		if (name.length() > 40) {
 			throw new TaskNameTooLongException();
@@ -351,6 +363,10 @@ public class EventBrokerImpl implements EventBroker {
 			if (possibleDuplicate != null && possibleDuplicate.getEventType().equals(EventType.VOTE)) {
 				logger.info("Detected duplicate vote creation, returning the already-created one ... ");
 				return (Vote) possibleDuplicate;
+			}
+
+			if (accountGroupBroker.numberEventsLeftForGroup(parentUid) < 1) {
+				throw new AccountLimitExceededException();
 			}
 		}
 

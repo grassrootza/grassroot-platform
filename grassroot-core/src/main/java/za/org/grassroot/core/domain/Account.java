@@ -1,5 +1,6 @@
 package za.org.grassroot.core.domain;
 
+import org.springframework.stereotype.Controller;
 import za.org.grassroot.core.enums.AccountBillingCycle;
 import za.org.grassroot.core.enums.AccountPaymentType;
 import za.org.grassroot.core.enums.AccountType;
@@ -108,6 +109,10 @@ public class Account implements GrassrootEntity {
     @Basic
     @Column(name = "todos_per_month")
     private int todosPerGroupPerMonth;
+
+    @Basic
+    @Column(name = "events_per_month")
+    private int eventsPerGroupPerMonth;
 
     @Basic
     @Column(name="free_form_per_month")
@@ -438,6 +443,14 @@ public class Account implements GrassrootEntity {
 
     public void setTodosPerGroupPerMonth(int todosPerGroupPerMonth) {
         this.todosPerGroupPerMonth = todosPerGroupPerMonth;
+    }
+
+    public int getEventsPerGroupPerMonth() {
+        return eventsPerGroupPerMonth;
+    }
+
+    public void setEventsPerGroupPerMonth(int eventsPerGroupPerMonth) {
+        this.eventsPerGroupPerMonth = eventsPerGroupPerMonth;
     }
 
     public boolean isBillingActive() { return nextBillingDate != null; }

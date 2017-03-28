@@ -2,7 +2,6 @@ package za.org.grassroot.services.specifications;
 
 import org.springframework.data.jpa.domain.Specification;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.enums.EventType;
 
 import javax.persistence.criteria.Join;
 import java.time.Instant;
@@ -13,12 +12,20 @@ import java.time.Instant;
  */
 public final class EventSpecifications {
 
+    public static Specification<Event> hasGroupAsAncestor(Group group) {
+        return (root, query, cb) -> cb.equal(root.get(Event_.ancestorGroup), group);
+    }
+
     public static Specification<Event> hasGroupAsParent(Group group) {
         return (root, query, cb) -> cb.equal(root.get(AbstractEventEntity_.parentGroup), group);
     }
 
     public static Specification<Event> startDateTimeBetween(Instant start, Instant end) {
         return (root, query, cb) -> cb.between(root.get(AbstractEventEntity_.eventStartDateTime), start, end);
+    }
+
+    public static Specification<Event> createdDateTimeBetween(Instant start, Instant end) {
+        return (root, query, cb) -> cb.between(root.get(AbstractEventEntity_.createdDateTime), start, end);
     }
 
     public static Specification<Event> notCancelled() {
