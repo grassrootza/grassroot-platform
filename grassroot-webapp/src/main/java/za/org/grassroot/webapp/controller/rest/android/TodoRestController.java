@@ -1,4 +1,4 @@
-package za.org.grassroot.webapp.controller.rest;
+package za.org.grassroot.webapp.controller.rest.android;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,14 +35,18 @@ public class TodoRestController {
 
     private static final Logger log = LoggerFactory.getLogger(TodoRestController.class);
 
-    @Autowired
-    private UserManagementService userManagementService;
+    private final UserManagementService userManagementService;
+
+    private final TodoBroker todoBroker;
+
+    private final TaskBroker taskBroker;
 
     @Autowired
-    private TodoBroker todoBroker;
-
-    @Autowired
-    private TaskBroker taskBroker;
+    public TodoRestController(UserManagementService userManagementService, TodoBroker todoBroker, TaskBroker taskBroker) {
+        this.userManagementService = userManagementService;
+        this.todoBroker = todoBroker;
+        this.taskBroker = taskBroker;
+    }
 
     @InitBinder
     public void initBinder(ServletRequestDataBinder binder) {

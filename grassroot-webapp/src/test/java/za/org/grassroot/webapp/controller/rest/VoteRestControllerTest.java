@@ -12,6 +12,7 @@ import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
+import za.org.grassroot.webapp.controller.rest.android.VoteRestController;
 
 import java.util.Collections;
 

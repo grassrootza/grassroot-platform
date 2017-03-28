@@ -1,4 +1,4 @@
-package za.org.grassroot.webapp.controller.rest;
+package za.org.grassroot.webapp.controller.rest.android;
 
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
@@ -43,23 +43,27 @@ public class VoteRestController {
 
     private static final Logger log = LoggerFactory.getLogger(VoteRestController.class);
 
-    @Autowired
-    private UserManagementService userManagementService;
+    private final UserManagementService userManagementService;
+
+    private final EventLogBroker eventLogBroker;
+
+    private final EventBroker eventBroker;
+
+    private final TaskBroker taskBroker;
+
+    private final PermissionBroker permissionBroker;
+
+    private final EventLogRepository eventLogRepository;
 
     @Autowired
-    private EventLogBroker eventLogBroker;
-
-    @Autowired
-    private EventBroker eventBroker;
-
-    @Autowired
-    private TaskBroker taskBroker;
-
-    @Autowired
-    private PermissionBroker permissionBroker;
-
-    @Autowired
-    private EventLogRepository eventLogRepository;
+    public VoteRestController(UserManagementService userManagementService, EventLogBroker eventLogBroker, EventBroker eventBroker, TaskBroker taskBroker, PermissionBroker permissionBroker, EventLogRepository eventLogRepository) {
+        this.userManagementService = userManagementService;
+        this.eventLogBroker = eventLogBroker;
+        this.eventBroker = eventBroker;
+        this.taskBroker = taskBroker;
+        this.permissionBroker = permissionBroker;
+        this.eventLogRepository = eventLogRepository;
+    }
 
     @RequestMapping(value = "/create/{id}/{phoneNumber}/{code}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> createVote(@PathVariable("phoneNumber") String phoneNumber,

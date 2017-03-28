@@ -1,4 +1,4 @@
-package za.org.grassroot.webapp.controller.rest;
+package za.org.grassroot.webapp.controller.rest.android;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
