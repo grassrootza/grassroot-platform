@@ -3,6 +3,7 @@ package za.org.grassroot.services.task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -47,7 +48,11 @@ import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
 
 @Service
 public class EventBrokerImpl implements EventBroker {
+
 	private final Logger logger = LoggerFactory.getLogger(EventBrokerImpl.class);
+
+	@Value("${grassroot.events.limit.enabled:false}")
+	private boolean eventMonthlyLimitActive;
 
 	private final EventLogBroker eventLogBroker;
 	private final EventRepository eventRepository;
@@ -113,7 +118,8 @@ public class EventBrokerImpl implements EventBroker {
 				return (Meeting) possibleDuplicate;
 			}
 
-			if (accountGroupBroker.numberEventsLeftForGroup(parentUid) < 1) {
+			logger.info("Event limits enabled? {}", eventMonthlyLimitActive);
+			if (eventMonthlyLimitActive && accountGroupBroker.numberEventsLeftForGroup(parentUid) < 1) {
 				throw new AccountLimitExceededException();
 			}
 		}
@@ -365,7 +371,7 @@ public class EventBrokerImpl implements EventBroker {
 				return (Vote) possibleDuplicate;
 			}
 
-			if (accountGroupBroker.numberEventsLeftForGroup(parentUid) < 1) {
+			if (eventMonthlyLimitActive && accountGroupBroker.numberEventsLeftForGroup(parentUid) < 1) {
 				throw new AccountLimitExceededException();
 			}
 		}

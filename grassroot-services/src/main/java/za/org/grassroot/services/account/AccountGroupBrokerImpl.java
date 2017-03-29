@@ -422,7 +422,8 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
             }
         }
 
-        return eventsThisMonth - monthlyLimit;
+        logger.info("Counting events left, limit: {}, this month: {}", monthlyLimit, eventsThisMonth);
+        return monthlyLimit - eventsThisMonth;
     }
 
     @Override

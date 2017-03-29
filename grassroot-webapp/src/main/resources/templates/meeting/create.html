@@ -90,7 +90,8 @@
                 </div>
               </div>
 
-              <div class="form-group" th:if="${thisGroupPaidFor or not groupSpecified}">
+              <!-- todo : restore check on groupSpecified later once found bug source -->
+              <div class="form-group" th:if="${thisGroupPaidFor}">
                 <label class="control-label">Importance:</label>
                 <select th:field="*{importance}" class="form-control input-lg" id="importance">
                   <option th:each="option : ${T(za.org.grassroot.core.enums.MeetingImportance).values()}"
