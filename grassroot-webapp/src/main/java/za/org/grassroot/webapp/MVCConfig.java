@@ -55,7 +55,7 @@ public class MVCConfig extends WebMvcConfigurerAdapter {
 
     @Bean
     public TokenValidationInterceptor tokenValidationInterceptor() {
-        return new TokenValidationInterceptor(passwordTokenService);
+        return new TokenValidationInterceptor();
     }
 
     @Autowired
