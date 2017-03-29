@@ -29,16 +29,13 @@ public class LocationController extends BaseController {
     private final ObjectLocationBroker objectLocationBroker;
 
     @Autowired
-    public LocationController (GeoLocationBroker geoLocationBroker,
-                               ObjectLocationBroker objectLocationBroker) {
+    public LocationController (GeoLocationBroker geoLocationBroker, ObjectLocationBroker objectLocationBroker) {
         this.geoLocationBroker = geoLocationBroker;
         this.objectLocationBroker = objectLocationBroker;
     }
 
     @RequestMapping(value = "/location/", method = RequestMethod.GET)
-    public String search (@RequestParam(required = false) Integer radius,
-                          Model model,
-                          RedirectAttributes attributes,
+    public String search (@RequestParam(required = false) Integer radius, Model model, RedirectAttributes attributes,
                           HttpServletRequest request) {
 
         // Check radius
