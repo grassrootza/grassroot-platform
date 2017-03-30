@@ -4,13 +4,14 @@
       data-layout-decorate="~{layout}">
 <head>
   <title>Locations Map</title>
-  <!--<link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css"/>-->
-  <!--<script type="text/javascript" src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>-->
-  <!--<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>-->
+  <!-- To debug without the full app -->
+  <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css"/>
+  <script type="text/javascript" src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>
+  <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
 
-  <link rel="stylesheet" th:href="@{/css/leaflet.css}"/>
-  <script th:src="@{/js/lib/jquery-2.2.4.min.js}"></script>
-  <script th:src="@{/js/lib/leaflet.js}"></script>
+  <!--<link rel="stylesheet" th:href="@{/css/leaflet.css}"/>-->
+  <!--<script th:src="@{/js/lib/jquery-2.2.4.min.js}"></script>-->
+  <!--<script th:src="@{/js/lib/leaflet.js}"></script>-->
 </head>
 <body>
 
@@ -25,8 +26,8 @@
   <script type='text/javascript'>
     /*<![CDATA[*/
     console.log("s");
-    var lat = 42.35;
-    var long = -71.08;
+    var lat = -33.9249;
+    var long = 18.4241;
     var zoom = 13;
     var map = L.map('map').setView([lat, long], zoom);
 
@@ -35,11 +36,34 @@
       attributionControl: false
     }).addTo(map);
 
-    // load GeoJSON from an external file
-    //  $.getJSON("meetings.geojson", function (data) {
-    //    add GeoJSON layer to the map once the file is loaded
-    //    L.geoJson(data).addTo(map);
-    //  });
+    markers = [
+      {
+        "name": "Meeting 1",
+        "url": "/meeting1",
+        "lat": -33.9249,
+        "lng": 18.4241
+      },
+      {
+        "name": "Meeting 2",
+        "url": "/meeting2",
+        "lat": -33.9289,
+        "lng": 18.4391
+      },
+      {
+        "name": "Meeting 3",
+        "url": "/meeting3",
+        "lat": -33.9389,
+        "lng": 18.4591
+      }
+    ];
+
+    for ( var i=0; i < markers.length; ++i )
+    {
+      L.marker( [markers[i].lat, markers[i].lng] )
+          .bindPopup( '<a href="' + markers[i].url + '" target="_blank">' + markers[i].name + '</a> <br><br>Some Description' )
+          .addTo( map );
+    }
+
     console.log("e");
     /*]]>*/
   </script>
