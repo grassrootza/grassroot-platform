@@ -34,29 +34,29 @@ public class LocationController extends BaseController {
         this.objectLocationBroker = objectLocationBroker;
     }
 
-    @RequestMapping(value = "/location/", method = RequestMethod.GET)
+    @RequestMapping(value = "/location", method = RequestMethod.GET)
     public String search (@RequestParam(required = false) Integer radius, Model model, RedirectAttributes attributes,
                           HttpServletRequest request) {
 
-        // Check radius
-        Integer searchRadius = (radius == null ? DEFAULT_RADIUS : radius);
+//        // Check radius
+//        Integer searchRadius = (radius == null ? DEFAULT_RADIUS : radius);
+//
+//        // Get user
+//        final User user = getUserProfile();
+//        log.info("the user {} and radius {}", user, radius);
+//
+//        // Get last user position
+//        PreviousPeriodUserLocation lastUserLocation = geoLocationBroker.fetchUserLocation(user.getUid());
+//        log.info("here is the user location: " + lastUserLocation);
+//
+//        // Load objects
+//        List<ObjectLocation> groupsToReturn = objectLocationBroker.fetchGroupLocations(lastUserLocation.getLocation(), radius);
+//
+//        // Send response
+//        model.addAttribute("user", user);
+//        model.addAttribute("userLocation", lastUserLocation);
+//        model.addAttribute("groups", groupsToReturn);
 
-        // Get user
-        final User user = getUserProfile();
-        log.info("the user {} and radius {}", user, radius);
-
-        // Get last user position
-        PreviousPeriodUserLocation lastUserLocation = geoLocationBroker.fetchUserLocation(user.getUid());
-        log.info("here is the user location: " + lastUserLocation);
-
-        // Load objects
-        List<ObjectLocation> groupsToReturn = objectLocationBroker.fetchGroupLocations(lastUserLocation.getLocation(), radius);
-
-        // Send response
-        model.addAttribute("user", user);
-        model.addAttribute("userLocation", lastUserLocation);
-        model.addAttribute("groups", groupsToReturn);
-
-        return "location/list";
+        return "location/map";
     }
 }
