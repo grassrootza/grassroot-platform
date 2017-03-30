@@ -16,75 +16,79 @@ import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
-import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 /**
- * /api/location/list?latlng=30.5595,22.9375&radius=120.44&token=b9998dda-380e-4998-af5f-fa45bc071408
+ * TODO: Remove logger.debugs
  */
 @RestController
 @RequestMapping(value = "/api/location", produces = MediaType.APPLICATION_JSON_VALUE)
 public class LocationRestController {
-	private static final Logger log = LoggerFactory.getLogger(LocationRestController.class);
+    private static int DEFAULT_RADIUS = 5;
+    private static final Logger log = LoggerFactory.getLogger(LocationRestController.class);
+    private final GeoLocationBroker geoLocationBroker;
+    private final ObjectLocationBroker objectLocationBroker;
 
-	private final GeoLocationBroker geoLocationBroker;
-	private final ObjectLocationBroker objectLocationBroker;
+    @Autowired
+    public LocationRestController (ObjectLocationBroker objectLocationBroker, GeoLocationBroker geoLocationBroker) {
+        this.objectLocationBroker = objectLocationBroker;
+        this.geoLocationBroker = geoLocationBroker;
+    }
 
-	@Autowired
-	public LocationRestController(ObjectLocationBroker objectLocationBroker, GeoLocationBroker geoLocationBroker) {
-		this.objectLocationBroker = objectLocationBroker;
-		this.geoLocationBroker = geoLocationBroker;
-	}
+    @RequestMapping(value = "/list", method = RequestMethod.GET)
+    public ResponseEntity<ResponseWrapper> search (@RequestParam(value = "latitude", required = true) Double latitude,
+                                                   @RequestParam(value = "longitude", required = true) Double longitude,
+                                                   @RequestParam(value = "token", required = true) String token,
+                                                   @RequestParam(value = "radius", required = false) Integer radius) {
 
-	@RequestMapping(value = "/list", method = RequestMethod.GET)
-	public ResponseEntity<ResponseWrapper> search(@RequestParam(value = "latitude", required = true) Double latitude,
-	                                              @RequestParam(value = "longitude", required = true) Double longitude,
-	                                              @RequestParam(value = "token", required = true) String token,
-	                                              @RequestParam(value = "radius", required = false) Integer radius) {
-		// Check radius
-		Integer searchRadius = (radius == null ? 5 : radius);
+        log.debug("Attempting to list events locations...");
 
-		// Create location
-		GeoLocation location = new GeoLocation(latitude, longitude);
-		log.info("here is the location: " + location);
+        // Check radius
+        Integer searchRadius = (radius == null ? DEFAULT_RADIUS : radius);
 
-		// Mount filter
-		ResponseEntity<ResponseWrapper> responseEntity;
-		GroupLocationFilter filter = (location != null ? new GroupLocationFilter(location, searchRadius, false) : null);
-		log.info("searching for groups and with location filter = {}", filter);
+        // Create location
+        GeoLocation location = new GeoLocation(latitude, longitude);
+        log.debug("Location: " + location);
 
-		// Returns list
-		List<ObjectLocation> objectsToReturn = new ArrayList<ObjectLocation>();
+        // Mount filter
+        ResponseEntity<ResponseWrapper> responseEntity;
+        GroupLocationFilter filter = new GroupLocationFilter(location, searchRadius, false);
+        log.debug("Searching for groups and with location filter = {}", filter);
 
-		// Load groups
-		List<ObjectLocation> groups = objectLocationBroker.fetchGroupLocations(location, radius);
+        // Returns list
+        List<ObjectLocation> objectsToReturn = new ArrayList<>();
 
-		// Save groups
-		objectsToReturn.addAll(groups);
+        // Load groups
+        List<ObjectLocation> groups = objectLocationBroker.fetchGroupLocations(location, radius);
 
-		// Load meetings
-		if (false) {
-			for (ObjectLocation group : groups) {
-				// Get meetings
-				List<ObjectLocation> meetings = objectLocationBroker.fetchMeetingLocationsByGroup(group, location, radius);
-				// Concat the results
-				objectsToReturn.addAll(meetings);
-			}
-		} else {
-			List<ObjectLocation> meetings = objectLocationBroker.fetchMeetingLocations(location, radius);
-			// Concat the results
-			objectsToReturn.addAll(meetings);
-		}
+        // Save groups
+        objectsToReturn.addAll(groups);
 
-		// Check results
-		if (objectsToReturn == null || objectsToReturn.isEmpty()) {
-			log.info("found no objects ... returning empty ...");
-			responseEntity = RestUtil.okayResponseWithData(RestMessage.NO_GROUP_MATCHING_TERM_FOUND, Collections.emptyList());
-		} else {
-			responseEntity = RestUtil.okayResponseWithData(RestMessage.POSSIBLE_GROUP_MATCHES, objectsToReturn);
-		}
-		return responseEntity;
-	}
+        // Load meetings
+        if (false) { //TODO
+            for (ObjectLocation group : groups) {
+                // Get meetings
+                List<ObjectLocation> meetings = objectLocationBroker.fetchMeetingLocationsByGroup(group, location, radius);
+
+                // Concat the results
+                objectsToReturn.addAll(meetings);
+            }
+        } else {
+            List<ObjectLocation> meetings = objectLocationBroker.fetchMeetingLocations(location, radius);
+            
+            // Concat the results
+            objectsToReturn.addAll(meetings);
+        }
+
+        // Check results
+        if (objectsToReturn.isEmpty()) {
+            log.debug("found no objects ... returning empty ...");
+            responseEntity = RestUtil.okayResponseWithData(RestMessage.NO_GROUP_MATCHING_TERM_FOUND, Collections.emptyList());
+        } else {
+            responseEntity = RestUtil.okayResponseWithData(RestMessage.POSSIBLE_GROUP_MATCHES, objectsToReturn);
+        }
+        return responseEntity;
+    }
 }
