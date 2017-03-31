@@ -37,6 +37,7 @@ public class LocationRestController {
         this.geoLocationBroker = geoLocationBroker;
     }
 
+    //TODO: token
     @RequestMapping(value = "/list", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> search (@RequestParam(value = "latitude", required = true) Double latitude,
                                                    @RequestParam(value = "longitude", required = true) Double longitude,
@@ -77,7 +78,7 @@ public class LocationRestController {
             }
         } else {
             List<ObjectLocation> meetings = objectLocationBroker.fetchMeetingLocations(location, radius);
-            
+
             // Concat the results
             objectsToReturn.addAll(meetings);
         }
