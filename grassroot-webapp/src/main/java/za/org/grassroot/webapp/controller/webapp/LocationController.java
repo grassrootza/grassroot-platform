@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.ObjectLocation;
 import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
 import za.org.grassroot.services.geo.GeoLocationBroker;
@@ -36,7 +37,10 @@ public class LocationController extends BaseController {
     }
 
     @RequestMapping(value = "/location", method = RequestMethod.GET)
-    public String search (@RequestParam(required = false) Integer radius, Model model, RedirectAttributes attributes,
+    public String search (@RequestParam(required = false) Integer radius,
+                          @RequestParam(required = false) Double latitude,
+                          @RequestParam(required = false) Double lontitude,
+                          Model model, RedirectAttributes attributes,
                           HttpServletRequest request) {
 
         // Check radius
@@ -47,36 +51,44 @@ public class LocationController extends BaseController {
         log.info("the user {} and radius {}", user, radius);
 
         // Get last user position
-        PreviousPeriodUserLocation lastUserLocation = geoLocationBroker.fetchUserLocation(user.getUid());
-        log.info("here is the user location: " + lastUserLocation);
+        GeoLocation location;
+        if (latitude != null && lontitude != null) {
+            location = new GeoLocation(latitude, lontitude);
+            log.info("here is the location: " + location);
+        } else {
+            PreviousPeriodUserLocation lastUserLocation = geoLocationBroker.fetchUserLocation(user.getUid());
+            log.info("here is the user location: " + lastUserLocation);
+            location = lastUserLocation.getLocation();
+        }
 
         // Returns list
         List<ObjectLocation> objectsToReturn = new ArrayList<>();
 
         // Load groups
-        List<ObjectLocation> groups = objectLocationBroker.fetchGroupLocations(lastUserLocation.getLocation(), searchRadius);
+        List<ObjectLocation> groups = objectLocationBroker.fetchGroupLocations(location, searchRadius);
 
         // Save groups
         objectsToReturn.addAll(groups);
 
         // Load meetings
-        if (false) { //TODO
+        if (true) { //TODO: Use the new table [meeting_location]
             for (ObjectLocation group : groups) {
                 // Get meetings
-                List<ObjectLocation> meetings = objectLocationBroker.fetchMeetingLocationsByGroup(group, lastUserLocation.getLocation(), searchRadius);
+                List<ObjectLocation> meetings = objectLocationBroker.fetchMeetingLocationsByGroup(group, location, searchRadius);
 
                 // Concat the results
                 objectsToReturn.addAll(meetings);
             }
         } else {
-            List<ObjectLocation> meetings = objectLocationBroker.fetchMeetingLocations(lastUserLocation.getLocation(), searchRadius);
+            List<ObjectLocation> meetings = objectLocationBroker.fetchMeetingLocations(location, searchRadius);
 
             // Concat the results
             objectsToReturn.addAll(meetings);
         }
+
         // Send response
         model.addAttribute("user", user);
-        model.addAttribute("userLocation", lastUserLocation);
+        model.addAttribute("location", location);
         model.addAttribute("radius", searchRadius);
         model.addAttribute("data", objectsToReturn);
 

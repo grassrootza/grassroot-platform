@@ -18,6 +18,8 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
     @Override
     public List<ObjectLocation> fetchGroupLocations(GeoLocation geoLocation, Integer radius) {
 
+        // TODO: 1) Use the user restrictions and search for public groups
+        // TODO: 2) Use the radius to search
         List<ObjectLocation> list = entityManager.createQuery(
                 "select NEW za.org.grassroot.core.domain.geo.ObjectLocation("
                         + " g.uid"
@@ -40,17 +42,19 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
 
     @Override
     public List<ObjectLocation> fetchMeetingLocations(GeoLocation geoLocation, Integer radius) {
+        // TODO: 1) Use the user restrictions and search for public groups/meetings
+        // TODO: 2) Use the radius to search
         List<ObjectLocation> list = entityManager.createQuery(
                     "select NEW za.org.grassroot.core.domain.geo.ObjectLocation("
-                        + " g.uid as uid"
-                        + ",g.groupName as name"
-                        + ",l.location.latitude as latitude"
-                        + ",l.location.longitude as longitude"
-                        + ",l.score as score"
-                        + ",'MEETING' as type"
+                        + " m.uid"
+                        + ",m.name"
+                        + ",l.location.latitude"
+                        + ",l.location.longitude"
+                        + ",l.score"
+                        + ",'MEETING'"
                         + ")"
-                        + " from GroupLocation l"
-                        + " inner join l.group g"
+                        + " from MeetingLocation l"
+                        + " inner join l.meeting m"
                         + " where l.localDate <= :date",
                    ObjectLocation.class
                 )
@@ -62,19 +66,22 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
 
     @Override
     public List<ObjectLocation> fetchMeetingLocationsByGroup(ObjectLocation group, GeoLocation geoLocation, Integer radius) {
+        // TODO: 1) Use the user restrictions and search for public groups/meetings
+        // TODO: 2) Use the radius to search
         List<ObjectLocation> list = entityManager.createQuery(
                 "select NEW za.org.grassroot.core.domain.geo.ObjectLocation("
-                        + " g.uid as uid"
-                        + ",g.groupName as name"
-                        + ",l.location.latitude as latitude"
-                        + ",l.location.longitude as longitude"
-                        + ",l.score as score"
-                        + ",'MEETING' as type"
+                        + " m.uid"
+                        + ",m.name"
+                        + ",l.location.latitude"
+                        + ",l.location.longitude"
+                        + ",l.score"
+                        + ",'MEETING'"
                         + ")"
                         + " from Meeting m"
-                        + " inner m.ancestorGroup l"
-                        + " inner join l.group g"
+                        + " inner join m.parentGroup g"
+                        + ",GroupLocation l"
                         + " where l.localDate <= :date"
+                        + " and l.group = g"
                         + " and g.uid = :guid",
                     ObjectLocation.class
                 )

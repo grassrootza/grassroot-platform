@@ -4,6 +4,13 @@
       data-layout-decorate="~{layout}">
 <head>
   <title>Locations Map</title>
+  <meta property="og:title" content="grassroot.org.za"/>
+  <meta property="og:image" content="/img/horizontal-logo.png"/>
+  <meta property="og:description" content="The Grassroot Platform"/>
+
+  <meta name="_csrf" th:content="${_csrf.token}"/>
+  <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+
   <!-- To debug without the full app -->
   <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css"/>
   <script type="text/javascript" src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>
@@ -26,10 +33,12 @@
   <script type='text/javascript'>
     /*<![CDATA[*/
     console.log("s");
-    var lat = -33.9249;
-    var long = 18.4241;
+    var latitude = -33.9249;
+    var longitude = 18.4241;
+    //var latitude = [[${location.latitude}]];
+    //var longitude = [[${location.longitude}]];
     var zoom = 13;
-    var map = L.map('map').setView([lat, long], zoom);
+    var map = L.map('map').setView([latitude, longitude], zoom);
 
     L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
       maxZoom: 18,
@@ -40,27 +49,29 @@
       {
         "name": "Meeting 1",
         "url": "/meeting1",
-        "lat": -33.9249,
-        "lng": 18.4241
+        "latitude": -33.9249,
+        "longitude": 18.4241
       },
       {
         "name": "Meeting 2",
         "url": "/meeting2",
-        "lat": -33.9289,
-        "lng": 18.4391
+        "latitude": -33.9289,
+        "longitude": 18.4391
       },
       {
         "name": "Meeting 3",
         "url": "/meeting3",
-        "lat": -33.9389,
-        "lng": 18.4591
+        "latitude": -33.9389,
+        "longitude": 18.4591
       }
     ];
 
+    //var markers = [[${data}]];
     for ( var i=0; i < markers.length; ++i )
     {
-      L.marker( [markers[i].lat, markers[i].lng] )
-          .bindPopup( '<a href="' + markers[i].url + '" target="_blank">' + markers[i].name + '</a> <br><br>Some Description' )
+      var m = markers[i];
+      L.marker( [m.latitude, m.longitude] )
+          .bindPopup( '<a href="' + m.url + '" target="_blank">' + m.name + '</a> <br><br>' + m.description )
           .addTo( map );
     }
 

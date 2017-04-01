@@ -68,7 +68,7 @@ public class LocationRestController {
         objectsToReturn.addAll(groups);
 
         // Load meetings
-        if (false) { //TODO
+        if (true) { //TODO: Use the new table [meeting_location]
             for (ObjectLocation group : groups) {
                 // Get meetings
                 List<ObjectLocation> meetings = objectLocationBroker.fetchMeetingLocationsByGroup(group, location, radius);
