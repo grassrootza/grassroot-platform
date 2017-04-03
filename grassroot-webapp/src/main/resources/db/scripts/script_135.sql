@@ -1,4 +1,4 @@
-create table event_location (
+create table meeting_location (
   id  bigserial not null,
   calculated_time timestamp not null,
   latitude float8 not null,
@@ -9,8 +9,8 @@ create table event_location (
   primary key (id)
 );
 
-alter table event_location add constraint uk_event_location_event_date unique (event_id, calculated_time);
-alter table event_location add constraint fk_event_location_event foreign key (event_id) references event;
+alter table meeting_location add constraint uk_meeting_location_event_date unique (event_id, calculated_time);
+alter table meeting_location add constraint fk_meeting_location_event foreign key (event_id) references event;
 
 alter table paid_account add column events_per_month integer;
 update paid_account set events_per_month = 8 where account_type = 'LIGHT';
