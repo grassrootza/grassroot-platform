@@ -12,8 +12,12 @@ import java.util.List;
 
 @Service
 public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
+    private final EntityManager entityManager;
+
     @Autowired
-    private EntityManager entityManager;
+    public ObjectLocationBrokerImpl(EntityManager entityManager) {
+        this.entityManager = entityManager;
+    }
 
     @Override
     public List<ObjectLocation> fetchGroupLocations(GeoLocation geoLocation, Integer radius) {
@@ -31,7 +35,8 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
                         + ")"
                         + " from GroupLocation l"
                         + " inner join l.group g"
-                        + " where l.localDate <= :date",
+                        + " where l.localDate <= :date and"
+                        + " l.localDate = (select max(ll.localDate) from GroupLocation ll where ll.group = l.group)",
                 ObjectLocation.class
                 )
                 .setParameter("date", LocalDate.now())
@@ -55,7 +60,8 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
                         + ")"
                         + " from MeetingLocation l"
                         + " inner join l.meeting m"
-                        + " where l.localDate <= :date",
+                        + " where l.localDate <= :date"
+                        + " and l.localDate = (select max(ll.localDate) from MeetingLocation ll where ll.meeting = l.meeting)",
                    ObjectLocation.class
                 )
                 .setParameter("date", LocalDate.now())
@@ -82,7 +88,8 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
                         + ",GroupLocation l"
                         + " where l.localDate <= :date"
                         + " and l.group = g"
-                        + " and g.uid = :guid",
+                        + " and g.uid = :guid"
+                        + " and l.localDate = (select max(ll.localDate) from GroupLocation ll where ll.group = l.group)",
                     ObjectLocation.class
                 )
                 .setParameter("date", LocalDate.now())
