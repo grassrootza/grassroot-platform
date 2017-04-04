@@ -48,7 +48,6 @@ public class AccountAdminController extends BaseController {
     public AccountAdminController(AccountBroker accountBroker, AccountBillingBroker billingBroker, Environment environment) {
         this.accountBroker = accountBroker;
         this.billingBroker = billingBroker;
-        this.emailSendingBroker = emailSendingBroker;
         this.environment = environment;
     }
 

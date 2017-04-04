@@ -443,6 +443,7 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
                 .amountBilled(amountToBill)
                 .billedPeriodStart(Instant.now())
                 .billedPeriodEnd(Instant.now())
+                .paymentType(account.getDefaultPaymentType())
                 .build();
 
         if (addToAccountBalance) {
@@ -487,6 +488,7 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
                 .amountBilled(billForPeriod)
                 .billedPeriodStart(periodStart)
                 .billedPeriodEnd(Instant.now())
+                .paymentType(account.getDefaultPaymentType())
                 .build();
 
         account.addToBalance(billForPeriod);
@@ -594,4 +596,5 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
         return lastBill != null ? lastBill.getBilledPeriodEnd() :
                 account.getEnabledDateTime().isBefore(Instant.now()) ? account.getEnabledDateTime() : Instant.now();
     }
+
 }
