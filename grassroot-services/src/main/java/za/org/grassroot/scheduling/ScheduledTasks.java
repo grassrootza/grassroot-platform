@@ -14,7 +14,6 @@ import za.org.grassroot.integration.MessageSendingService;
 import za.org.grassroot.integration.exception.GroupChatSettingNotFoundException;
 import za.org.grassroot.integration.mqtt.MqttSubscriptionService;
 import za.org.grassroot.services.SafetyEventBroker;
-import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.specifications.TodoSpecifications;
 import za.org.grassroot.services.task.EventBroker;
@@ -65,12 +64,6 @@ public class ScheduledTasks {
 
     @Autowired
     private TodoRepository todoRepository;
-
-    @Autowired
-    private GeoLocationBroker geoLocationBroker;
-
-    @Autowired
-    private GroupRepository groupRepository;
 
     @Autowired(required = false)
     private GroupChatService groupChatService;
@@ -191,23 +184,6 @@ public class ScheduledTasks {
                     logger.error("Error while trying unmute user with " + userUid);
                 }
             }
-        }
-    }
-
-    @Scheduled(cron = "0 0 3 * * *") // runs at 3am every day
-    public void calculateAggregateLocations() {
-        // we had put few types of calculations here in sequence because one depends on
-        // other being executed in order...
-
-        LocalDate today = LocalDate.now();
-        geoLocationBroker.calculatePreviousPeriodUserLocations(today);
-
-        logger.info("Calculating group locations for date {}", today);
-        List<Group> groups = groupRepository.findAll();
-        for (Group group : groups) {
-            // we don't want one big TX for all groups, so we separate each group location
-            // calculation into its own transaction
-            geoLocationBroker.calculateGroupLocation(group.getUid(), today);
         }
     }
 

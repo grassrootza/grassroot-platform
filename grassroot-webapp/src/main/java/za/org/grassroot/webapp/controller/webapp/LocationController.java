@@ -38,9 +38,9 @@ public class LocationController extends BaseController {
     @RequestMapping(value = "/location", method = RequestMethod.GET)
     public String search (@RequestParam(required = false) Integer radius,
                           @RequestParam(required = false) Double latitude,
-                          @RequestParam(required = false) Double lontitude,
-                          Model model, RedirectAttributes attributes,
-                          HttpServletRequest request) {
+                          @RequestParam(required = false) Double longitude,
+                          @RequestParam(required = false) Boolean useMeetingLocation,
+                          Model model) {
 
         // Check radius
         Integer searchRadius = (radius == null ? DEFAULT_RADIUS : radius);
@@ -51,8 +51,8 @@ public class LocationController extends BaseController {
 
         // Get last user position
         GeoLocation location;
-        if (latitude != null && lontitude != null) {
-            location = new GeoLocation(latitude, lontitude);
+        if (latitude != null && longitude != null) {
+            location = new GeoLocation(latitude, longitude);
             log.info("here is the location: " + location);
         } else {
             PreviousPeriodUserLocation lastUserLocation = geoLocationBroker.fetchUserLocation(user.getUid());
@@ -71,18 +71,11 @@ public class LocationController extends BaseController {
         objectsToReturn.addAll(groups);
 
         // Load meetings
-        if (true) { //TODO: Use the new table [meeting_location]
-            for (ObjectLocation group : groups) {
-                // Get meetings
-                List<ObjectLocation> meetings = objectLocationBroker.fetchMeetingLocationsByGroup(group, location, searchRadius);
-                // Concat the results
-                objectsToReturn.addAll(meetings);
-            }
+        if (!useMeetingLocation) {
+            groups.forEach(g -> objectsToReturn.addAll(
+                    objectLocationBroker.fetchMeetingLocationsByGroup(g, location, searchRadius)));
         } else {
-            List<ObjectLocation> meetings = objectLocationBroker.fetchMeetingLocations(location, searchRadius);
-
-            // Concat the results
-            objectsToReturn.addAll(meetings);
+            objectsToReturn.addAll(objectLocationBroker.fetchMeetingLocations(location, searchRadius));
         }
 
         // Send response

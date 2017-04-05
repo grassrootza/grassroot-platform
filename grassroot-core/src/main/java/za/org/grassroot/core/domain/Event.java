@@ -63,6 +63,12 @@ public abstract class Event<P extends UidIdentifiable> extends AbstractEventEnti
 	@JoinColumn(name = "ancestor_group_id", nullable = false)
 	private Group ancestorGroup;
 
+	// note : cannot call this "public" (reserved), cannot be set on a request entity, and is always false on
+	// a vote, but need to use it on event specifications, hence defining here
+	@Column(name="public")
+	private boolean isPublic;
+
+
 	public abstract EventType getEventType();
 
 	protected Event() {
@@ -73,6 +79,7 @@ public abstract class Event<P extends UidIdentifiable> extends AbstractEventEnti
 					EventReminderType reminderType, int customReminderMinutes, String description, boolean rsvpRequired, boolean relayable) {
 		super(name, eventStartDateTime, user, includeSubGroups, rsvpRequired, relayable, reminderType, customReminderMinutes, description);
 		this.canceled = false;
+		this.isPublic = false;
 		this.noRemindersSent = 0;
 
 		this.ancestorGroup = parent.getThisOrAncestorGroup();
@@ -103,6 +110,14 @@ public abstract class Event<P extends UidIdentifiable> extends AbstractEventEnti
 
 	public boolean isCanceled() {
 		return canceled;
+	}
+
+	public boolean isPublic() {
+		return isPublic;
+	}
+
+	public void setPublic(boolean aPublic) {
+		isPublic = aPublic;
 	}
 
 	public Instant getScheduledReminderTime() {

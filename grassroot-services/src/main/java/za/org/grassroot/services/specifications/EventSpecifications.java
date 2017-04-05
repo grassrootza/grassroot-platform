@@ -32,6 +32,10 @@ public final class EventSpecifications {
         return (root, query, cb) -> cb.equal(root.get(Event_.canceled), false);
     }
 
+    public static Specification<Event> isPublic() {
+        return (root, query, cb) -> cb.equal(root.get(Event_.isPublic), true);
+    }
+
     public static Specification<Event> userPartOfGroup(User user) {
         return (root, query, cb) -> {
             Join<Event, Group> groups = root.join(AbstractEventEntity_.parentGroup);
