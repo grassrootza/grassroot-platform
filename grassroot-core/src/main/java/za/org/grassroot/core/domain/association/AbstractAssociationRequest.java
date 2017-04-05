@@ -17,7 +17,7 @@ import java.time.Instant;
  * view details & approve or not), (b) each such entity will join on either side, but that's it, i.e., not much
  * need to have many joins, overcoming key disadvantage of normalizing, and (c) having one big join_request table
  * would require additional enums & columns to keep track of entity types, then indexes on those discriminator columns.
- * Note: can always revisit this later, depending on voume.
+ * Note: can always revisit this later, depending on volume.
  *
  */
 @MappedSuperclass
