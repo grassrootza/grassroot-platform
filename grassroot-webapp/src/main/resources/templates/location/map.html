@@ -22,20 +22,29 @@
 </head>
 <body>
 
-<div layout:fragment="header">
-  <h2>Under construction</h2>
-</div>
+<section layout:fragment="header" class="top-container">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
+        <h2 class="text-center header-content-title">
+          Public groups and meetings
+        </h2>
+      </div>
+    </div>
+  </div>
+</section>
+
 
 <div layout:fragment="content">
   <div id="map" style="height: 60%; width: 60%; position: absolute; border: 2px solid #AAA;"></div>
-  <script type='text/javascript'>
+  <script type='text/javascript' th:inline="javascript">
     /*<![CDATA[*/
-    console.log("s");
-    var latitude = -33.9249;
-    var longitude = 18.4241;
-    //var latitude = [[${location.latitude}]];
-    //var longitude = [[${location.longitude}]];
-    var zoom = 13;
+    var latitude = [[${location.latitude}]];
+    var longitude = [[${location.longitude}]];
+
+    console.log("latitude : " + latitude + ", longitude: " + longitude);
+
+    var zoom = [[${zoom}]];
     var map = L.map('map').setView([latitude, longitude], zoom);
 
     L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
@@ -43,28 +52,8 @@
       attributionControl: false
     }).addTo(map);
 
-    markers = [
-      {
-        "name": "Meeting 1",
-        "url": "/meeting1",
-        "latitude": -33.9249,
-        "longitude": 18.4241
-      },
-      {
-        "name": "Meeting 2",
-        "url": "/meeting2",
-        "latitude": -33.9289,
-        "longitude": 18.4391
-      },
-      {
-        "name": "Meeting 3",
-        "url": "/meeting3",
-        "latitude": -33.9389,
-        "longitude": 18.4591
-      }
-    ];
+    var markers = [[${data}]];
 
-    //var markers = [[${data}]];
     for ( var i=0; i < markers.length; ++i )
     {
       var m = markers[i];

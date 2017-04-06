@@ -8,7 +8,7 @@ import java.util.Objects;
 
 @Entity
 @Table(name = "prev_period_user_location")
-public class PreviousPeriodUserLocation {
+public class PreviousPeriodUserLocation implements LocationHolder {
 	@EmbeddedId
 	private UserAndLocalDateKey key;
 
@@ -37,6 +37,8 @@ public class PreviousPeriodUserLocation {
 	public GeoLocation getLocation() {
 		return location;
 	}
+
+	public boolean hasLocation() { return true; }
 
 	public int getLogCount() {
 		return logCount;

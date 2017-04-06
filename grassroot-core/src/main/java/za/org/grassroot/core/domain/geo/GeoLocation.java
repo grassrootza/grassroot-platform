@@ -20,6 +20,12 @@ public class GeoLocation {
 		this.longitude = longitude;
 	}
 
+	// strip down an object location for use in calculations
+	public GeoLocation(ObjectLocation objectLocation) {
+		this.latitude = objectLocation.getLatitude();
+		this.longitude = objectLocation.getLongitude();
+	}
+
 	public double getLatitude() {
 		return latitude;
 	}

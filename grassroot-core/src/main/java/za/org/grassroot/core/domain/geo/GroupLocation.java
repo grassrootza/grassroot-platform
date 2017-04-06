@@ -9,7 +9,7 @@ import java.util.Objects;
 @Entity
 @Table(name = "group_location",
 		uniqueConstraints = @UniqueConstraint(name = "uk_group_location_group_date", columnNames = {"group_id", "local_date"}))
-public class GroupLocation {
+public class GroupLocation implements LocationHolder {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(name = "id", nullable = false)
@@ -57,6 +57,8 @@ public class GroupLocation {
 	public GeoLocation getLocation() {
 		return location;
 	}
+
+	public boolean hasLocation() { return true; }
 
 	public float getScore() {
 		return score;

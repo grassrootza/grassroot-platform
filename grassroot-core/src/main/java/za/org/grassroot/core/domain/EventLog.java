@@ -5,6 +5,7 @@ package za.org.grassroot.core.domain;
  * */
 
 import za.org.grassroot.core.domain.geo.GeoLocation;
+import za.org.grassroot.core.domain.geo.LocationHolder;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.util.UIDGenerator;
@@ -16,7 +17,7 @@ import java.util.Objects;
 
 @Entity
 @Table(name="event_log")
-public class EventLog implements TaskLog {
+public class EventLog implements TaskLog, LocationHolder {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -131,6 +132,8 @@ public class EventLog implements TaskLog {
     public void setLocation(GeoLocation location) {
         this.location = location;
     }
+
+    public boolean hasLocation() { return location != null; }
 
     @Override
     public String toString() {

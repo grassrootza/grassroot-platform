@@ -127,7 +127,6 @@ public class UserRepositoryTest {
         User firstUserToCreate = new User("12345");
         firstUserToCreate = userRepository.save(firstUserToCreate);
 
-
         User userFromDb = userRepository.findAll().iterator().next();
         assertThat(userFromDb.getId(), is(firstUserToCreate.getId()));
         assertThat(userFromDb.getPhoneNumber(), is("12345"));

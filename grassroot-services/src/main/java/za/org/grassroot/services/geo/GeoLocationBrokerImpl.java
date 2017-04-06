@@ -3,12 +3,14 @@ package za.org.grassroot.services.geo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.geo.*;
+import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.*;
+import za.org.grassroot.core.specifications.EventLogSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
 
 import javax.persistence.EntityManager;
@@ -35,6 +37,15 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 
 	@Autowired
 	private GroupLocationRepository groupLocationRepository;
+
+	@Autowired
+	private EventRepository eventRepository;
+
+	@Autowired
+	private EventLogRepository eventLogRepository;
+
+	@Autowired
+	private MeetingLocationRepository meetingLocationRepository;
 
 	@Autowired
 	private EntityManager entityManager;
@@ -104,7 +115,7 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 		CenterCalculationResult result = calculateCenter(memberUids, localDate);
 		if (result.isDefined()) {
 			// for now, score is simply ratio of found member locations to total member count
-			float score = result.getUserCount() / (float) memberUids.size();
+			float score = result.getEntityCount() / (float) memberUids.size();
 			GroupLocation groupLocation = new GroupLocation(group, localDate, result.getCenter(), score);
 			groupLocationRepository.save(groupLocation);
 		} else {
@@ -113,9 +124,39 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 	}
 
     @Override
+	@Transactional
     public void calculateMeetingLocation(String eventUid, LocalDate localDate) {
-        // todo : implement sensibly
+        Event event = eventRepository.findOneByUid(eventUid);
+		if (!EventType.MEETING.equals(event.getEventType())) {
+			throw new IllegalArgumentException("Cannot calculate a location for a vote");
+		}
 
+		List<EventLog> logsWithLocation = eventLogRepository.findAll(
+				Specifications.where(EventLogSpecifications.forEvent(event))
+				.and(EventLogSpecifications.hasLocation()));
+
+		MeetingLocation meetingLocation;
+		if (logsWithLocation != null && !logsWithLocation.isEmpty()) {
+			CenterCalculationResult center = calculateCenter(logsWithLocation);
+			float score = (float) 1.0; // since a related log with a GPS is best possible, but may return to this
+			meetingLocation = new MeetingLocation((Meeting) event, center.getCenter(), score,
+					EventType.MEETING);
+		} else {
+			Group parent = event.getParent().getThisOrAncestorGroup();
+			GroupLocation parentLocation = fetchGroupLocationWithScoreAbove(parent.getUid(),
+					localDate, 0);
+			if (parentLocation != null) {
+				meetingLocation = new MeetingLocation((Meeting) event, parentLocation.getLocation(),
+						parentLocation.getScore(), EventType.MEETING);
+			} else {
+				logger.debug("No event logs or group with location data for meeting");
+				meetingLocation = null;
+			}
+		}
+
+		if (meetingLocation != null) {
+			meetingLocationRepository.save(meetingLocation);
+		}
     }
 
     @Override
@@ -130,11 +171,14 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 //		LocalDate previousPeriodLocationLocalDate = findFirstLocalDateInPreviousPeriodLocationsAfterOrEqualsDate(date);
 		List<PreviousPeriodUserLocation> previousPeriodLocations = previousPeriodUserLocationRepository.findByKeyLocalDateAndKeyUserUidIn(date, userUids);
 
-		List<GeoLocation> locations = previousPeriodLocations.stream().map(PreviousPeriodUserLocation::getLocation).collect(Collectors.toList());
+		// note: number of records is same as user count, since a record is per user-time key
+		return calculateCenter(previousPeriodLocations);
+	}
 
-		int userCount = locations.size(); // number of records is same as user count, since a record is per user-time key
-		GeoLocation center = GeoLocationUtils.centralLocation(locations);
-		return new CenterCalculationResult(userCount, center);
+	private CenterCalculationResult calculateCenter(List<? extends LocationHolder> locationHolders) {
+		List<GeoLocation> locations = locationHolders.stream().map(LocationHolder::getLocation)
+				.collect(Collectors.toList());
+		return new CenterCalculationResult(locations.size(), GeoLocationUtils.centralLocation(locations));
 	}
 
 	@Override

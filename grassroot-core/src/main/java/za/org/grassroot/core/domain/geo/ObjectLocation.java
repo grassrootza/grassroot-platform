@@ -2,7 +2,8 @@ package za.org.grassroot.core.domain.geo;
 
 import za.org.grassroot.core.domain.JpaEntityType;
 
-import javax.persistence.*;
+import javax.persistence.Column;
+import javax.persistence.Embeddable;
 
 @Embeddable
 public class ObjectLocation {
@@ -98,13 +99,10 @@ public class ObjectLocation {
 		this.longitude = longitude;
 		this.score = score;
 		this.type = type;
-		// Create links for descriptions:
-		// http://localhost:8080/group/view?groupUid=241fc132-ea25-4511-875f-d45dbed263fa
-		// http://localhost:8080/meeting/view?eventUid=bc1fdd33-4587-47d5-9b25-b87b4ade6a9b&source=GROUP
 		if (JpaEntityType.GROUP.toString().equals(type))
-			this.url = "/group/view?groupUid=" + uid;
+			this.url = "/group/public/view?groupUid=" + uid;
 		else
-			this.url = "/meeting/view?eventUid=" + uid + "&source=GROUP";
+			this.url = "/meeting/public/view?eventUid=" + uid;
 		this.description = "Some description.";
 	}
 

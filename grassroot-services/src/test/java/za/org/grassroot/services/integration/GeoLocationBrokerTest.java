@@ -7,9 +7,7 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.junit4.SpringRunner;
-import za.org.grassroot.GrassrootServicesConfig;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
@@ -70,7 +68,7 @@ public class GeoLocationBrokerTest {
 		Assert.assertEquals(0, list3.size());
 
 		CenterCalculationResult result1 = geoLocationBroker.calculateCenter(userUids, LocalDate.of(2016, 4, 6));
-		Assert.assertEquals(2, result1.getUserCount());
+		Assert.assertEquals(2, result1.getEntityCount());
 		GeoLocation center1 = result1.getCenter();
 		Assert.assertEquals(55, center1.getLatitude(), 0.001);
 		Assert.assertEquals(40, center1.getLongitude(), 0.001);

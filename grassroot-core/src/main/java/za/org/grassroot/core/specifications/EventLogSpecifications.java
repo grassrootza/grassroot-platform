@@ -19,4 +19,8 @@ public final class EventLogSpecifications {
         return (root, query, cb) -> cb.equal(root.get(EventLog_.eventLogType), type);
     }
 
+    public static Specification<EventLog> hasLocation() {
+        return (root, query, cb) -> cb.isNotNull(root.get(EventLog_.location));
+    }
+
 }
