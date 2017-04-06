@@ -18,10 +18,8 @@ import za.org.grassroot.core.enums.EventRSVPResponse;
 
 import javax.transaction.Transactional;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
@@ -54,6 +52,57 @@ public class UserRepositoryTest {
     private RoleRepository roleRepository;
 
     private static final String number = "0821234560";
+
+    /* Gaven below     */
+    @Test
+    public void checkTrialStatus() throws Exception {
+        assertThat(userRepository.count(), is(0L));
+
+        User entity = new User("07515757537");
+        assertNull(entity.getId());
+        assertNotNull(entity.getUid());
+        userRepository.save(entity);
+
+        assertThat(userRepository.count(), is(1L));
+        User db = userRepository.findAll().iterator().next();
+        assertNotNull(db.getId());
+        assertThat(db.getPhoneNumber(), is("07515757537"));
+        assertNotNull(db.getCreatedDateTime());
+        assertFalse(db.isHasUsedFreeTrial());
+
+    }
+
+    @Test
+    public void changeTrialStatus() throws Exception {
+        assertThat(userRepository.count(), is(0L));
+
+        User ToCreate = new User("07515757537");
+        userRepository.save(ToCreate);
+
+        User retrieve = userRepository.findAll().iterator().next();
+        assertNotNull(retrieve.getId());
+        assertThat(retrieve.getPhoneNumber(), is("07515757537"));
+        assertFalse(retrieve.isHasUsedFreeTrial());
+        retrieve.setHasUsedFreeTrial(true);
+        userRepository.save(retrieve);
+
+    }
+
+    @Test
+    public void checkOriginalTrialStatus() throws Exception {
+        assertThat(userRepository.count(), is(0L));
+
+        User dbz = new User("07515757537");
+        userRepository.save(dbz);
+
+        User check = userRepository.findAll().iterator().next();
+        assertNotNull(check.getId());
+        assertThat(check.getPhoneNumber(), is("07515757537"));
+        assertFalse(check.isHasUsedFreeTrial());
+
+
+    }
+
 
     @Test
     public void shouldSaveAndRetrieveUserData() throws Exception {

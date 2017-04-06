@@ -59,6 +59,9 @@ schema-export-create.sql
 # Hibernate metamodel
 **/generated/
 
+# Mac generated files
+**/.DS_Store
+
 # Include the Gradle Wrapper
 !gradle-wrapper.jar
 !gradlew
