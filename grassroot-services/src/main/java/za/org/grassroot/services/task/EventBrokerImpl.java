@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.geo.GeoLocation;
+import za.org.grassroot.core.domain.geo.MeetingLocation;
 import za.org.grassroot.core.domain.notification.*;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventLogType;
@@ -43,6 +45,7 @@ import java.util.stream.Collectors;
 
 import static za.org.grassroot.core.domain.EventReminderType.CUSTOM;
 import static za.org.grassroot.core.domain.EventReminderType.DISABLED;
+import static za.org.grassroot.core.enums.EventLogType.*;
 import static za.org.grassroot.core.util.DateTimeUtil.convertToSystemTime;
 import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
 
@@ -66,9 +69,10 @@ public class EventBrokerImpl implements EventBroker {
 	private final CacheUtilService cacheUtilService;
 	private final MessageAssemblingService messageAssemblingService;
 	private final AccountGroupBroker accountGroupBroker;
+	private final MeetingLocationRepository meetingLocationRepository;
 
 	@Autowired
-	public EventBrokerImpl(MeetingRepository meetingRepository, EventLogBroker eventLogBroker, EventRepository eventRepository, VoteRepository voteRepository, UidIdentifiableRepository uidIdentifiableRepository, UserRepository userRepository, AccountGroupBroker accountGroupBroker, GroupRepository groupRepository, PermissionBroker permissionBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, CacheUtilService cacheUtilService, MessageAssemblingService messageAssemblingService) {
+	public EventBrokerImpl(MeetingRepository meetingRepository, EventLogBroker eventLogBroker, EventRepository eventRepository, VoteRepository voteRepository, UidIdentifiableRepository uidIdentifiableRepository, UserRepository userRepository, AccountGroupBroker accountGroupBroker, GroupRepository groupRepository, PermissionBroker permissionBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, CacheUtilService cacheUtilService, MessageAssemblingService messageAssemblingService, MeetingLocationRepository meetingLocationRepository) {
 		this.meetingRepository = meetingRepository;
 		this.eventLogBroker = eventLogBroker;
 		this.eventRepository = eventRepository;
@@ -81,6 +85,7 @@ public class EventBrokerImpl implements EventBroker {
 		this.logsAndNotificationsBroker = logsAndNotificationsBroker;
 		this.cacheUtilService = cacheUtilService;
 		this.messageAssemblingService = messageAssemblingService;
+		this.meetingLocationRepository = meetingLocationRepository;
 	}
 
 	@Override
@@ -154,7 +159,7 @@ public class EventBrokerImpl implements EventBroker {
 
 		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
-		EventLog eventLog = new EventLog(user, meeting, EventLogType.CREATED);
+		EventLog eventLog = new EventLog(user, meeting, CREATED);
 		bundle.addLog(eventLog);
 
 		Set<Notification> notifications = constructEventInfoNotifications(meeting, eventLog, meeting.getMembers());
@@ -254,7 +259,7 @@ public class EventBrokerImpl implements EventBroker {
 		if (meetingChanged) {
 			LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
-			EventLog eventLog = new EventLog(user, meeting, EventLogType.CHANGE, null, startTimeChanged);
+			EventLog eventLog = new EventLog(user, meeting, CHANGE, null, startTimeChanged);
 			bundle.addLog(eventLog);
 
 			Set<Notification> notifications = constructEventChangedNotifications(meeting, eventLog, startTimeChanged);
@@ -328,7 +333,7 @@ public class EventBrokerImpl implements EventBroker {
 
 		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
-		EventLog eventLog = new EventLog(user, meeting, EventLogType.CHANGE, null, startTimeChanged);
+		EventLog eventLog = new EventLog(user, meeting, CHANGE, null, startTimeChanged);
 		bundle.addLog(eventLog);
 
 		Set<Notification> notifications = constructEventChangedNotifications(meeting, eventLog, startTimeChanged);
@@ -390,7 +395,7 @@ public class EventBrokerImpl implements EventBroker {
 
 		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
-		EventLog eventLog = new EventLog(user, vote, EventLogType.CREATED);
+		EventLog eventLog = new EventLog(user, vote, CREATED);
 		bundle.addLog(eventLog);
 
 		Set<Notification> notifications = constructEventInfoNotifications(vote, eventLog, vote.getMembers());
@@ -435,7 +440,7 @@ public class EventBrokerImpl implements EventBroker {
 
 		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
-		EventLog eventLog = new EventLog(user, vote, EventLogType.CHANGE, null, startTimeChanged);
+		EventLog eventLog = new EventLog(user, vote, CHANGE, null, startTimeChanged);
 		bundle.addLog(eventLog);
 
 		logsAndNotificationsBroker.storeBundle(bundle);
@@ -539,7 +544,7 @@ public class EventBrokerImpl implements EventBroker {
 
 		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
-		EventLog eventLog = new EventLog(user, event, EventLogType.CANCELLED);
+		EventLog eventLog = new EventLog(user, event, CANCELLED);
 		bundle.addLog(eventLog);
 
 		List<User> rsvpWithNoMembers = userRepository.findUsersThatRSVPNoForEvent(event);
@@ -575,7 +580,7 @@ public class EventBrokerImpl implements EventBroker {
 		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
 		// we set null for user here, because initiator is the app itself!
-		EventLog eventLog = new EventLog(null, event, EventLogType.REMINDER);
+		EventLog eventLog = new EventLog(null, event, REMINDER);
 
 		Set<User> excludedMembers = findEventReminderExcludedMembers(event);
 		List<User> eventReminderNotificationSentMembers = userRepository.findNotificationTargetsForEvent(
@@ -622,7 +627,7 @@ public class EventBrokerImpl implements EventBroker {
 	private LogsAndNotificationsBundle constructMeetingRsvpTotalsBundle(Meeting meeting) {
 		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
-		EventLog eventLog = new EventLog(null, meeting, EventLogType.RSVP_TOTAL_MESSAGE);
+		EventLog eventLog = new EventLog(null, meeting, RSVP_TOTAL_MESSAGE);
 		bundle.addLog(eventLog);
 
 		ResponseTotalsDTO responseTotalsDTO = eventLogBroker.getResponseCountForEvent(meeting);
@@ -652,7 +657,7 @@ public class EventBrokerImpl implements EventBroker {
 
 		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
-		EventLog eventLog = new EventLog(user, event, EventLogType.MANUAL_REMINDER);
+		EventLog eventLog = new EventLog(user, event, MANUAL_REMINDER);
 		bundle.addLog(eventLog);
 
 		Set<User> excludedMembers = findEventReminderExcludedMembers(event);
@@ -700,7 +705,7 @@ public class EventBrokerImpl implements EventBroker {
 
 		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
-		EventLog eventLog = new EventLog(null, meeting, EventLogType.THANK_YOU_MESSAGE);
+		EventLog eventLog = new EventLog(null, meeting, THANK_YOU_MESSAGE);
 
 		Set<User> tankYouNotificationSentMembers = new HashSet<>(
 				userRepository.findNotificationTargetsForEvent(meeting, MeetingThankYouNotification.class));
@@ -732,7 +737,7 @@ public class EventBrokerImpl implements EventBroker {
 
 		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
-		EventLog eventLog = new EventLog(null, vote, EventLogType.RESULT);
+		EventLog eventLog = new EventLog(null, vote, RESULT);
 
 		ResponseTotalsDTO responseTotalsDTO = eventLogBroker.getResponseCountForEvent(vote);
 		Set<User> voteResultsNotificationSentMembers = new HashSet<>(userRepository.findNotificationTargetsForEvent(
@@ -781,7 +786,7 @@ public class EventBrokerImpl implements EventBroker {
 		addedMembers.removeAll(priorMembers);
 
 		if (!addedMembers.isEmpty()) {
-			EventLog newLog = new EventLog(user, event, EventLogType.ASSIGNED_ADDED);
+			EventLog newLog = new EventLog(user, event, ASSIGNED_ADDED);
 			Set<Notification> notifications = constructEventInfoNotifications(event, newLog, addedMembers);
 			logsAndNotificationsBroker.storeBundle(new LogsAndNotificationsBundle(Collections.singleton(newLog), notifications));
 		}
@@ -808,10 +813,35 @@ public class EventBrokerImpl implements EventBroker {
 		Set<User> finishedMembers = (Set<User>) event.getMembers();
 		membersRemoved.removeAll(finishedMembers);
 		if (!membersRemoved.isEmpty()) {
-			EventLog newLog = new EventLog(user, event, EventLogType.ASSIGNED_REMOVED);
+			EventLog newLog = new EventLog(user, event, ASSIGNED_REMOVED);
 			logsAndNotificationsBroker.storeBundle(new LogsAndNotificationsBundle(Collections.singleton(newLog), Collections.emptySet()));
 		}
 	}
+
+    @Override
+	@Transactional
+    public void updateMeetingPublicStatus(String userUid, String meetingUid, boolean isPublic, GeoLocation location) {
+        Objects.requireNonNull(meetingUid);
+
+        User user = userRepository.findOneByUid(userUid);
+        Meeting meeting = meetingRepository.findOneByUid(meetingUid);
+
+        if (!meeting.getCreatedByUser().equals(user)) {
+        	throw new AccessDeniedException("Only the user that called a meeting can change whether it's public");
+		}
+
+		meeting.setPublic(isPublic);
+		EventLog newLog = new EventLog(user, meeting, isPublic ? MADE_PUBLIC : MADE_PRIVATE);
+
+		if (location != null) {
+			// todo : create a user log location too, so this helps make that more accurate
+			newLog.setLocation(location);
+			MeetingLocation mtgLocation = new MeetingLocation(meeting, location, (float) 1.0, EventType.MEETING);
+			meetingLocationRepository.save(mtgLocation);
+		}
+
+		logsAndNotificationsBroker.storeBundle(new LogsAndNotificationsBundle(Collections.singleton(newLog), Collections.emptySet()));
+    }
 
 	/*
 	SECTION starts here for reading & retrieving user events

@@ -2,6 +2,7 @@ package za.org.grassroot.services.task;
 
 import org.springframework.data.domain.Page;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.MeetingImportance;
@@ -73,6 +74,8 @@ public interface EventBroker {
 	void assignMembers(String userUid, String eventUid, Set<String> assignMemberUids);
 
 	void removeAssignedMembers(String userUid, String eventUid, Set<String> memberUids);
+
+	void updateMeetingPublicStatus(String userUid, String meetingUid, boolean isPublic, GeoLocation location);
 
 	/*
 	Methods for retrieving lists of upcoming events (all read only)

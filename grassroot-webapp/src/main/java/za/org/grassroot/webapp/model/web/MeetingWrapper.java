@@ -2,6 +2,7 @@ package za.org.grassroot.webapp.model.web;
 
 import za.org.grassroot.core.domain.EventReminderType;
 import za.org.grassroot.core.enums.MeetingImportance;
+import za.org.grassroot.webapp.enums.EntityPublicOption;
 
 /**
  * Created by luke on 2016/04/06.
@@ -10,6 +11,9 @@ public class MeetingWrapper extends EventWrapper {
 
     private String location;
     private MeetingImportance importance;
+    private EntityPublicOption publicOption;
+    private Double latitude;
+    private Double longitude;
 
     private MeetingWrapper() {
     }
@@ -19,6 +23,7 @@ public class MeetingWrapper extends EventWrapper {
         meetingWrapper.reminderType = reminderType;
         meetingWrapper.customReminderMinutes = customReminderMinutes;
         meetingWrapper.importance = MeetingImportance.ORDINARY;
+        meetingWrapper.publicOption = EntityPublicOption.PRIVATE;
         return meetingWrapper;
     }
 
@@ -37,6 +42,32 @@ public class MeetingWrapper extends EventWrapper {
     public void setImportance(MeetingImportance importance) {
         this.importance = importance;
     }
+
+    public EntityPublicOption getPublicOption() {
+        return publicOption;
+    }
+
+    public void setPublicOption(EntityPublicOption publicOption) {
+        this.publicOption = publicOption;
+    }
+
+    public Double getLatitude() {
+        return latitude;
+    }
+
+    public void setLatitude(Double latitude) {
+        this.latitude = latitude;
+    }
+
+    public Double getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(Double longitude) {
+        this.longitude = longitude;
+    }
+
+    public boolean hasLongLat() { return latitude != null && longitude != null; }
 
     @Override
     public String toString() {

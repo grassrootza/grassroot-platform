@@ -64,6 +64,18 @@
             </div>
 
             <div class="form-group">
+              <label for="public" class="control-label">Make it public?</label>
+              <select th:field="*{publicOption}" class="form-control input-lg" id="public">
+                  <option th:each="option : ${T(za.org.grassroot.webapp.enums.EntityPublicOption).values()}"
+                          th:value="${option}"
+                          th:text="#{web.meeting.public.__${option}__}">
+                  </option>
+                </select>
+              <input type="hidden" th:field="*{latitude}" id="latitude">
+              <input type="hidden" th:field="*{longitude}" id="longitude">
+            </div>
+
+            <div class="form-group">
               <a data-toggle="collapse" href="#advanced" class="collapse-label">
                 Advanced options <i class="fa fa-caret-down" aria-hidden="true"></i>
               </a>
@@ -137,6 +149,7 @@
 
       var groupSelect = $("#groupSelect");
       var importanceSel = $("#importance");
+      var publicSel = $("#public");
 
       $(document).ready(function() {
 
@@ -167,11 +180,26 @@
           toggleImportanceSelect()
         });
 
+        publicSel.change(function() {
+            if (publicSel.val() === "PUBLIC_GET_GPS") {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(function(position) {
+                        console.log("latitude: " + position.coords.latitude);
+                        console.log("longitude: " + position.coords.longitude);
+                        $("#latitude").val(position.coords.latitude);
+                        $("#longitude").val(position.coords.longitude);
+                    });
+                } else {
+                    console.log("Geolocation is not supported");
+                }
+            }
+        });
+
         customReminder.hide();
         reminderSelector.change(function() {
           var selected = $("#reminderType option:selected").val();
           console.log("Selected option: " + selected);
-          if (selected == "CUSTOM") {
+          if (selected === "CUSTOM") {
             customReminder.show();
           } else {
             customReminder.hide();

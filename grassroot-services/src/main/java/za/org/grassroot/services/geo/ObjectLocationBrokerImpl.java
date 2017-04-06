@@ -1,17 +1,23 @@
 package za.org.grassroot.services.geo;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.ObjectLocation;
 
 import javax.persistence.EntityManager;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
 @Service
 public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
+
+    private static final Logger logger = LoggerFactory.getLogger(ObjectLocationBroker.class);
+
     private final EntityManager entityManager;
 
     @Autowired
@@ -49,6 +55,7 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
     public List<ObjectLocation> fetchMeetingLocations(GeoLocation geoLocation, Integer radius) {
         // TODO: 1) Use the user restrictions and search for public groups/meetings
         // TODO: 2) Use the radius to search
+        logger.info("looking for meeting locations ...");
         List<ObjectLocation> list = entityManager.createQuery(
                     "select NEW za.org.grassroot.core.domain.geo.ObjectLocation("
                         + " m.uid"
@@ -60,11 +67,11 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
                         + ")"
                         + " from MeetingLocation l"
                         + " inner join l.meeting m"
-                        + " where l.localDate <= :date"
-                        + " and l.localDate = (select max(ll.localDate) from MeetingLocation ll where ll.meeting = l.meeting)",
+                        + " where l.calculatedDateTime <= :date"
+                        + " and l.calculatedDateTime = (select max(ll.calculatedDateTime) from MeetingLocation ll where ll.meeting = l.meeting)",
                    ObjectLocation.class
                 )
-                .setParameter("date", LocalDate.now())
+                .setParameter("date", Instant.now())
                 .getResultList();
 
         return (list.isEmpty() ? new ArrayList<>() : list);

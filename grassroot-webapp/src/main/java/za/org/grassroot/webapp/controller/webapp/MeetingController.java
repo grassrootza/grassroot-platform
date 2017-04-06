@@ -11,6 +11,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.util.DateTimeUtil;
@@ -20,6 +21,7 @@ import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.EventLogBroker;
 import za.org.grassroot.webapp.controller.BaseController;
+import za.org.grassroot.webapp.enums.EntityPublicOption;
 import za.org.grassroot.webapp.model.web.MeetingWrapper;
 import za.org.grassroot.webapp.model.web.MemberPicker;
 
@@ -104,7 +106,9 @@ public class MeetingController extends BaseController {
 
         // todo: move parent selection into MeetingWrapper when implement non-group meetings
 
-        log.info("The meeting wrapper as passed back to us: " + meeting.toString());
+        log.debug("The meeting wrapper as passed back to us: " + meeting.toString());
+        log.info("Meeting long: {}, lat: {}, public option: {}", meeting.getLongitude(), meeting.getLatitude(),
+                meeting.getPublicOption());
 
         try {
             Set<String> invitedMemberUids = "members".equalsIgnoreCase(meeting.getAssignmentType()) ?
@@ -114,10 +118,14 @@ public class MeetingController extends BaseController {
                 invitedMemberUids.add(getUserProfile().getUid()); // in future ask if they're sure
             }
 
-            eventBroker.createMeeting(getUserProfile().getUid(), selectedGroupUid, JpaEntityType.GROUP,
+            Meeting createdMeeting = eventBroker.createMeeting(getUserProfile().getUid(), selectedGroupUid, JpaEntityType.GROUP,
                     meeting.getTitle(), meeting.getEventDateTime(), meeting.getLocation(),
                     meeting.isIncludeSubGroups(), meeting.getReminderType(), meeting.getCustomReminderMinutes(),
                     meeting.getDescription(), invitedMemberUids, meeting.getImportance());
+
+            if (!EntityPublicOption.PRIVATE.equals(meeting.getPublicOption())) {
+                makeMeetingPublic(meeting, createdMeeting);
+            }
 
             addMessage(redirectAttributes, MessageType.SUCCESS, "meeting.creation.success", request);
             redirectAttributes.addAttribute("groupUid", selectedGroupUid);
@@ -129,6 +137,19 @@ public class MeetingController extends BaseController {
             model.addAttribute("reminderOptions", reminderMinuteOptions(false));
             return "meeting/create";
         }
+    }
+
+    // todo : shift to async?
+    private void makeMeetingPublic(MeetingWrapper meetingWrapper, Meeting createdMeeting) {
+        log.info("marking meeting public ... option: {}", meetingWrapper.getPublicOption());
+        if (EntityPublicOption.PUBLIC_GET_GPS.equals(meetingWrapper.getPublicOption()) &&
+                meetingWrapper.hasLongLat()) {
+            eventBroker.updateMeetingPublicStatus(getUserProfile().getUid(), createdMeeting.getUid(),
+                    true, new GeoLocation(meetingWrapper.getLatitude(), meetingWrapper.getLongitude()));
+        } else {
+            eventBroker.updateMeetingPublicStatus(getUserProfile().getUid(), createdMeeting.getUid(), true, null);
+        }
+
     }
 
     /**
