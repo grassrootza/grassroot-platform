@@ -112,7 +112,13 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 		}
 	}
 
-	@Override
+    @Override
+    public void calculateMeetingLocation(String eventUid, LocalDate localDate) {
+        // todo : implement sensibly
+
+    }
+
+    @Override
 	@Transactional
 	public CenterCalculationResult calculateCenter(Set<String> userUids, LocalDate date) {
 		Objects.requireNonNull(userUids);
