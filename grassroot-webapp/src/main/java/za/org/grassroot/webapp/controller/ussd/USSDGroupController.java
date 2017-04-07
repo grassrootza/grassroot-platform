@@ -308,7 +308,7 @@ public class USSDGroupController extends USSDController {
         if (!interrupted) groupBroker.updateName(user.getUid(), groupUid, newName);
 
         USSDMenu thisMenu = new USSDMenu(getMessage(thisSection, renameGroupPrompt + doSuffix, promptKey, newName, user),
-                optionsHomeExit(user));
+                optionsHomeExit(user, false));
 
         return menuBuilder(thisMenu);
     }
@@ -398,7 +398,7 @@ public class USSDGroupController extends USSDController {
         LocalDateTime tokenExpiryDateTime = (daysValid == 0) ? null : LocalDateTime.now().plusDays(daysValid);
         String token = groupBroker.openJoinToken(user.getUid(), groupUid, tokenExpiryDateTime);
         return menuBuilder(new USSDMenu(getMessage(thisSection, groupTokenMenu, "created", token, user),
-                optionsHomeExit(user)));
+                optionsHomeExit(user, false)));
     }
 
     @RequestMapping(value = groupPath + groupTokenMenu + "-extend")
@@ -426,7 +426,7 @@ public class USSDGroupController extends USSDController {
             groupBroker.openJoinToken(sessionUser.getUid(), sessionGroup.getUid(), newExpiry);
             String date = newExpiry.format(dateFormat);
             promptMenu = new USSDMenu(getMessage(thisSection, groupTokenMenu, promptKey + ".extend.done", date, sessionUser),
-                    optionsHomeExit(sessionUser));
+                    optionsHomeExit(sessionUser, false));
         }
         return menuBuilder(promptMenu);
     }
@@ -449,10 +449,10 @@ public class USSDGroupController extends USSDController {
             user = userManager.findByInputNumber(inputNumber, null);
             groupBroker.closeJoinToken(user.getUid(), groupUid);
             thisMenu = new USSDMenu(getMessage(thisSection, groupTokenMenu, promptKey + ".close-done", user),
-                    optionsHomeExit(user));
+                    optionsHomeExit(user, false));
         } else {
             user = userManager.findByInputNumber(inputNumber, null);
-            thisMenu = new USSDMenu("Okay, cancelled", optionsHomeExit(user));
+            thisMenu = new USSDMenu("Okay, cancelled", optionsHomeExit(user, false));
         }
 
         return menuBuilder(thisMenu);
@@ -491,7 +491,7 @@ public class USSDGroupController extends USSDController {
 
         User sessionUser = userManager.findByInputNumber(inputNumber, null);
         USSDMenu thisMenu = (numberToAdd.trim().equals("0")) ?
-                new USSDMenu(getMessage(thisSection, addMemberPrompt + doSuffix, promptKey, sessionUser), optionsHomeExit(sessionUser)) :
+                new USSDMenu(getMessage(thisSection, addMemberPrompt + doSuffix, promptKey, sessionUser), optionsHomeExit(sessionUser, false)) :
                 ussdGroupUtil.addNumbersToExistingGroup(sessionUser, groupUid, thisSection, numberToAdd, addMemberPrompt + doSuffix);
 
         return menuBuilder(thisMenu);
@@ -526,7 +526,7 @@ public class USSDGroupController extends USSDController {
         // someone would have to somehow fake the network call to the gateway
         groupBroker.unsubscribeMember(sessionUser.getUid(), groupUid);
         String returnMessage = getMessage(thisSection, unsubscribePrompt + doSuffix, promptKey, sessionUser);
-        return menuBuilder(new USSDMenu(returnMessage, optionsHomeExit(sessionUser)));
+        return menuBuilder(new USSDMenu(returnMessage, optionsHomeExit(sessionUser, false)));
     }
 
     /**
@@ -548,7 +548,7 @@ public class USSDGroupController extends USSDController {
             menu = new USSDMenu(getMessage(thisSection, mergeGroupMenu, promptKey + ".error", user));
             menu.addMenuOption(groupMenuWithId(existingGroupMenu, groupUid),
                     getMessage(thisSection, mergeGroupMenu, optionsKey + "back", user));
-            menu.addMenuOptions(optionsHomeExit(user));
+            menu.addMenuOptions(optionsHomeExit(user, false));
         } else {
             menu = new USSDMenu(getMessage(thisSection, mergeGroupMenu, promptKey, user));
             menu = ussdGroupUtil.addGroupsToMenu(menu, groupMenus + mergeGroupMenu + "-confirm?firstGroupSelected=" + groupUid,
@@ -626,7 +626,7 @@ public class USSDGroupController extends USSDController {
 
         menu.addMenuOption(groupMenuWithId(existingGroupMenu, resultGroup.getUid()),
                 getMessage(thisSection, mergeGroupMenu + doSuffix, optionsKey + "group", user));
-        menu.addMenuOptions(optionsHomeExit(user));
+        menu.addMenuOptions(optionsHomeExit(user, false));
 
         return menuBuilder(menu);
     }
@@ -657,9 +657,9 @@ public class USSDGroupController extends USSDController {
 
         try {
             groupBroker.deactivate(user.getUid(), groupUid, true);
-            menu = new USSDMenu(getMessage(thisSection, inactiveMenu + doSuffix, promptKey + ".success", user), optionsHomeExit(user));
+            menu = new USSDMenu(getMessage(thisSection, inactiveMenu + doSuffix, promptKey + ".success", user), optionsHomeExit(user, false));
         } catch (GroupDeactivationNotAvailableException e) {
-            menu = new USSDMenu(getMessage(thisSection, inactiveMenu + doSuffix, errorPromptKey, user), optionsHomeExit(user));
+            menu = new USSDMenu(getMessage(thisSection, inactiveMenu + doSuffix, errorPromptKey, user), optionsHomeExit(user, false));
         }
 
         return menuBuilder(menu);

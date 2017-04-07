@@ -14,10 +14,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.geo.GeoLocation;
-import za.org.grassroot.core.domain.geo.MeetingLocation;
 import za.org.grassroot.core.domain.notification.*;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
-import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.MeetingImportance;
@@ -30,6 +28,7 @@ import za.org.grassroot.services.enums.EventListTimeType;
 import za.org.grassroot.services.exception.AccountLimitExceededException;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.services.exception.TaskNameTooLongException;
+import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.specifications.EventSpecifications;
 import za.org.grassroot.services.util.CacheUtilService;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
@@ -69,10 +68,10 @@ public class EventBrokerImpl implements EventBroker {
 	private final CacheUtilService cacheUtilService;
 	private final MessageAssemblingService messageAssemblingService;
 	private final AccountGroupBroker accountGroupBroker;
-	private final MeetingLocationRepository meetingLocationRepository;
+	private final GeoLocationBroker geoLocationBroker;
 
 	@Autowired
-	public EventBrokerImpl(MeetingRepository meetingRepository, EventLogBroker eventLogBroker, EventRepository eventRepository, VoteRepository voteRepository, UidIdentifiableRepository uidIdentifiableRepository, UserRepository userRepository, AccountGroupBroker accountGroupBroker, GroupRepository groupRepository, PermissionBroker permissionBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, CacheUtilService cacheUtilService, MessageAssemblingService messageAssemblingService, MeetingLocationRepository meetingLocationRepository) {
+	public EventBrokerImpl(MeetingRepository meetingRepository, EventLogBroker eventLogBroker, EventRepository eventRepository, VoteRepository voteRepository, UidIdentifiableRepository uidIdentifiableRepository, UserRepository userRepository, AccountGroupBroker accountGroupBroker, GroupRepository groupRepository, PermissionBroker permissionBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, CacheUtilService cacheUtilService, MessageAssemblingService messageAssemblingService, MeetingLocationRepository meetingLocationRepository, GeoLocationBroker geoLocationBroker) {
 		this.meetingRepository = meetingRepository;
 		this.eventLogBroker = eventLogBroker;
 		this.eventRepository = eventRepository;
@@ -85,7 +84,7 @@ public class EventBrokerImpl implements EventBroker {
 		this.logsAndNotificationsBroker = logsAndNotificationsBroker;
 		this.cacheUtilService = cacheUtilService;
 		this.messageAssemblingService = messageAssemblingService;
-		this.meetingLocationRepository = meetingLocationRepository;
+		this.geoLocationBroker = geoLocationBroker;
 	}
 
 	@Override
@@ -831,13 +830,16 @@ public class EventBrokerImpl implements EventBroker {
 		}
 
 		meeting.setPublic(isPublic);
-		EventLog newLog = new EventLog(user, meeting, isPublic ? MADE_PUBLIC : MADE_PRIVATE);
 
-		if (location != null) {
-			// todo : create a user log location too, so this helps make that more accurate
+        EventLog newLog = new EventLog(user, meeting, isPublic ? MADE_PUBLIC : MADE_PRIVATE);
+
+        if (location != null) {
 			newLog.setLocation(location);
-			MeetingLocation mtgLocation = new MeetingLocation(meeting, location, (float) 1.0, EventType.MEETING);
-			meetingLocationRepository.save(mtgLocation);
+			geoLocationBroker.logUserLocation(userUid, location.getLatitude(), location.getLongitude(), Instant.now());
+		}
+
+		if (isPublic) {
+			geoLocationBroker.calculateMeetingLocationInstant(meetingUid, location);
 		}
 
 		logsAndNotificationsBroker.storeBundle(new LogsAndNotificationsBundle(Collections.singleton(newLog), Collections.emptySet()));

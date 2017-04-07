@@ -41,6 +41,7 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
     @JoinColumn(name = "created_by_user", nullable = false, updatable = false)
     private User createdByUser;
 
+    // todo : add @LazyCollection(LazyCollectionOption.EXTRA) [needs a lot of testing...]
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "group", orphanRemoval = true)
     private Set<Membership> memberships = new HashSet<>();
 

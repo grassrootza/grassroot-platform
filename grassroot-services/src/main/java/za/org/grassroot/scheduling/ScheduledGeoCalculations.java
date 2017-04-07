@@ -72,7 +72,7 @@ public class ScheduledGeoCalculations {
         logger.info("Calculating meeting locations for {} public meetings", publicMeetings.size());
         // as above: do this in separate TX rather than all as one
         publicMeetings.forEach(event -> {
-            geoLocationBroker.calculateMeetingLocation(event.getUid(), today);
+            geoLocationBroker.calculateMeetingLocationScheduled(event.getUid(), today);
         });
     }
 

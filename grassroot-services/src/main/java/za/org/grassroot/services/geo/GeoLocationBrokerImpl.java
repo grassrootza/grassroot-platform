@@ -113,6 +113,7 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 
 		Set<String> memberUids = group.getMembers().stream().map(User::getUid).collect(Collectors.toSet());
 		CenterCalculationResult result = calculateCenter(memberUids, localDate);
+		logger.info("in group location, center result: {}", result);
 		if (result.isDefined()) {
 			// for now, score is simply ratio of found member locations to total member count
 			float score = result.getEntityCount() / (float) memberUids.size();
@@ -123,9 +124,9 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 		}
 	}
 
-    @Override
+	@Override
 	@Transactional
-    public void calculateMeetingLocation(String eventUid, LocalDate localDate) {
+    public void calculateMeetingLocationScheduled(String eventUid, LocalDate localDate) {
         Event event = eventRepository.findOneByUid(eventUid);
 		if (!EventType.MEETING.equals(event.getEventType())) {
 			throw new IllegalArgumentException("Cannot calculate a location for a vote");
@@ -156,6 +157,25 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 
 		if (meetingLocation != null) {
 			meetingLocationRepository.save(meetingLocation);
+		}
+    }
+
+    @Override
+	@Transactional
+    public void calculateMeetingLocationInstant(String eventUid, GeoLocation location) {
+		Meeting meeting = (Meeting) eventRepository.findOneByUid(eventUid);
+		logger.info("Calculating a meeting location ...");
+		if (location != null) {
+			MeetingLocation mtgLocation = new MeetingLocation(meeting, location, (float) 1.0, EventType.MEETING);
+			meetingLocationRepository.save(mtgLocation);
+		} else {
+			LocalDate inLastMonth = LocalDate.now().minusMonths(1L);
+			Group ancestor = meeting.getAncestorGroup();
+			if (groupLocationRepository.countByGroupAndLocalDateGreaterThan(ancestor, inLastMonth) == 0) {
+				logger.info("from meeting, triggering a group location calculation ...");
+				calculateGroupLocation(ancestor.getUid(), LocalDate.now());
+			}
+			calculateMeetingLocationScheduled(eventUid, LocalDate.now());
 		}
     }
 
@@ -270,16 +290,6 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 		}
 
 		return returnList;
-	}
-
-	private LocalDate findFirstDateWithAvgLocationBefore(LocalDate date) {
-
-		List list = entityManager.createQuery("select l.key.localDate from PreviousPeriodUserLocation l where l.key.localDate <= :date order by l.key.localDate desc")
-				.setParameter("date", date)
-				.setMaxResults(1) // limit to first only
-				.getResultList();
-
-		return (list.isEmpty()) ? null : (LocalDate) list.get(0);
 	}
 
 	private LocalDate findFirstDateWithAvgLocationForUserBefore(LocalDate date, String userUid) {

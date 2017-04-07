@@ -2,6 +2,7 @@ package za.org.grassroot.services.geo;
 
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.GroupLocation;
 import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
 
@@ -17,7 +18,11 @@ public interface GeoLocationBroker {
 
 	void calculateGroupLocation(String groupUid, LocalDate localDate);
 
-	void calculateMeetingLocation(String eventUid, LocalDate localDate);
+	// used for recalculating / improving existing meetings
+	void calculateMeetingLocationScheduled(String eventUid, LocalDate localDate);
+
+	// used for a meeting that has just been called
+	void calculateMeetingLocationInstant(String eventUid, GeoLocation location);
 
 	CenterCalculationResult calculateCenter(Set<String> userUids, LocalDate date);
 

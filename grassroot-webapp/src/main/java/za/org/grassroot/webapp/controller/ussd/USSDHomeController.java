@@ -401,7 +401,7 @@ public class USSDHomeController extends USSDController {
     private USSDMenu assembleSendMeAndroidLinkMenu(User user) {
         userManager.sendAndroidLinkSms(user.getUid());
         String message = getMessage(thisSection, "link.android", promptKey, user);
-        return new USSDMenu(message, optionsHomeExit(user));
+        return new USSDMenu(message, optionsHomeExit(user, false));
     }
 
     /*
@@ -426,7 +426,7 @@ public class USSDHomeController extends USSDController {
             welcomeKey = String.join(".", Arrays.asList(homeKey, startMenu, promptKey, "rsvp-no"));
         }
 
-        return menuBuilder(new USSDMenu(getMessage(welcomeKey, user), optionsHomeExit(user)));
+        return menuBuilder(new USSDMenu(getMessage(welcomeKey, user), optionsHomeExit(user, false)));
 
     }
 
@@ -439,7 +439,7 @@ public class USSDHomeController extends USSDController {
         User user = userManager.findByInputNumber(inputNumber);
         eventLogBroker.rsvpForEvent(voteUid, user.getUid(), EventRSVPResponse.fromString(response));
         String prompt = getMessage(thisSection, startMenu, promptKey + ".vote-recorded", user);
-        return menuBuilder(new USSDMenu(prompt, optionsHomeExit(user)));
+        return menuBuilder(new USSDMenu(prompt, optionsHomeExit(user, false)));
     }
 
     @RequestMapping(value = path + "todo-complete")
@@ -578,7 +578,7 @@ public class USSDHomeController extends USSDController {
     @ResponseBody
     public Request notBuilt(@RequestParam(value = phoneNumber) String inputNumber) throws URISyntaxException {
         String errorMessage = messageSource.getMessage("ussd.error", null, new Locale("en"));
-        return menuBuilder(new USSDMenu(errorMessage, optionsHomeExit(userManager.findByInputNumber(inputNumber))));
+        return menuBuilder(new USSDMenu(errorMessage, optionsHomeExit(userManager.findByInputNumber(inputNumber), false)));
     }
 
     @RequestMapping(value = path + "exit")

@@ -130,10 +130,10 @@ public class USSDController {
      * Some default menu returns and some frequently used sets of menu options
      */
 
-    protected Map<String, String> optionsHomeExit(User sessionUser) {
+    protected Map<String, String> optionsHomeExit(User user, boolean shortForm) {
         return ImmutableMap.<String, String>builder().
-                put("start_force", getMessage(startMenu, sessionUser)).
-                put("exit", getMessage("exit.option", sessionUser)).build();
+                put("start_force", getMessage(startMenu + (shortForm ? ".short" : ""), user)).
+                put("exit", getMessage("exit.option" + (shortForm ? ".short" : ""), user)).build();
     }
 
     protected Map<String, String> optionsYesNo(User sessionUser, String yesUri, String noUri) {

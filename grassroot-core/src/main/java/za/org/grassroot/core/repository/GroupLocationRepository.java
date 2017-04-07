@@ -11,7 +11,10 @@ import java.util.Set;
 
 public interface GroupLocationRepository extends JpaRepository<GroupLocation, Long> {
 	void deleteByGroupAndLocalDate(Group group, LocalDate localDate);
+
 	GroupLocation findOneByGroupAndLocalDate(Group group, LocalDate localDate);
+
+	int countByGroupAndLocalDateGreaterThan(Group group, LocalDate localDate);
 
 	List<GroupLocation> findByGroupInAndLocalDateAndScoreGreaterThan(Set<Group> groups, LocalDate localDate, float score);
 

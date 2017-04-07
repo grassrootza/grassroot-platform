@@ -41,17 +41,11 @@ public class UserRestController {
     private static final Logger log = LoggerFactory.getLogger(UserRestController.class);
 
     private final UserManagementService userManagementService;
-
     private final PasswordTokenService passwordTokenService;
-
     private final GeoLocationBroker geoLocationBroker;
-
     private final SmsSendingService smsSendingService;
-
     private final NotificationService notificationService;
-
     private final PermissionBroker permissionBroker;
-
     private final Environment environment;
 
     @Autowired

@@ -50,6 +50,10 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
     @Value("${accounts.events.monthly.free:4}")
     private int FREE_EVENTS_PER_MONTH;
 
+    @Value("${grassroot.events.limit.threshold:100}")
+    private int eventMonthlyLimitThreshold;
+    private static final int LARGE_EVENT_LIMIT = 99;
+
     private static final String addedDescription = "Group added to Grassroot Extra";
     private static final String removedDescription = "Group removed from Grassroot Extra";
 
@@ -404,26 +408,40 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public int numberEventsLeftForGroup(String groupUid) {
         Group group = groupRepository.findOneByUid(groupUid);
 
-        int eventsThisMonth = (int) eventRepository.count(where(EventSpecifications.hasGroupAsAncestor(group))
-                .and(EventSpecifications.createdDateTimeBetween(LocalDateTime.now().withDayOfMonth(1).withHour(0).toInstant(ZoneOffset.UTC), Instant.now())));
-        int monthlyLimit;
-        if (!group.isPaidFor()) {
-            monthlyLimit = FREE_EVENTS_PER_MONTH;
+        if (group.getMemberships().size() < eventMonthlyLimitThreshold) {
+            return LARGE_EVENT_LIMIT;
         } else {
-            try {
-                Account account = paidGroupRepository.findTopByGroupOrderByExpireDateTimeDesc(group).getAccount();
-                monthlyLimit = account.getEventsPerGroupPerMonth();
-            } catch (NullPointerException e) {
-                logger.warn("Error! Group is marked as paid for but has no paid group record associated to it");
-                monthlyLimit = FREE_EVENTS_PER_MONTH;
-            }
-        }
 
-        logger.info("Counting events left, limit: {}, this month: {}", monthlyLimit, eventsThisMonth);
-        return monthlyLimit - eventsThisMonth;
+            int eventsThisMonth = (int) eventRepository.count(where(EventSpecifications.hasGroupAsAncestor(group))
+                    .and(EventSpecifications.createdDateTimeBetween(LocalDateTime.now().withDayOfMonth(1).withHour(0).toInstant(ZoneOffset.UTC), Instant.now())));
+            int monthlyLimit;
+
+            if (!group.isPaidFor()) {
+                monthlyLimit = FREE_EVENTS_PER_MONTH;
+            } else {
+                try {
+                    Account account = paidGroupRepository.findTopByGroupOrderByExpireDateTimeDesc(group).getAccount();
+                    monthlyLimit = account.getEventsPerGroupPerMonth();
+                } catch (NullPointerException e) {
+                    logger.warn("Error! Group is marked as paid for but has no paid group record associated to it");
+                    monthlyLimit = FREE_EVENTS_PER_MONTH;
+                }
+            }
+
+            logger.info("Counting events left, limit: {}, this month: {}", monthlyLimit, eventsThisMonth);
+            return monthlyLimit - eventsThisMonth;
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public int numberEventsLeftForParent(String eventUid) {
+        Event event = eventRepository.findOneByUid(eventUid);
+        return numberEventsLeftForGroup(event.getAncestorGroup().getUid());
     }
 
     @Override

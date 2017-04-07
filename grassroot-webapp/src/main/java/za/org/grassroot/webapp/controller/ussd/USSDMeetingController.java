@@ -4,6 +4,7 @@ import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -11,18 +12,20 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.integration.exception.SeloParseDateTimeFailure;
+import za.org.grassroot.services.account.AccountGroupBroker;
+import za.org.grassroot.services.enums.EventListTimeType;
+import za.org.grassroot.services.exception.AccountLimitExceededException;
+import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
+import za.org.grassroot.services.group.GroupPermissionTemplate;
 import za.org.grassroot.services.task.EventLogBroker;
 import za.org.grassroot.services.task.EventRequestBroker;
-import za.org.grassroot.core.dto.MembershipInfo;
-import za.org.grassroot.services.enums.EventListTimeType;
-import za.org.grassroot.services.group.GroupPermissionTemplate;
-import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
@@ -49,18 +52,16 @@ import static za.org.grassroot.webapp.util.USSDUrlUtil.*;
 @RestController
 public class USSDMeetingController extends USSDController {
 
+    @Value("${grassroot.events.limit.enabled:false}")
+    private boolean eventMonthlyLimitActive;
 
-    @Autowired
+    private static final int EVENT_LIMIT_WARNING_THRESHOLD = 6; // only warn when below this
+
     private USSDEventUtil eventUtil;
-
-    @Autowired
-    private EventRequestBroker eventRequestBroker;
-
-    @Autowired
-    private EventLogBroker eventLogBroker;
-
-    @Autowired
-    private EventLogRepository eventLogRepository;
+    private final EventRequestBroker eventRequestBroker;
+    private final EventLogBroker eventLogBroker;
+    private final EventLogRepository eventLogRepository;
+    private final AccountGroupBroker accountGroupBroker;
 
     private Logger log = LoggerFactory.getLogger(getClass());
     private static final String path = homePath + meetingMenus;
@@ -96,7 +97,16 @@ public class USSDMeetingController extends USSDController {
         return menuSequence.get(menuSequence.indexOf(currentMenu) + 1);
     }
 
+    @Autowired
+    public USSDMeetingController(EventRequestBroker eventRequestBroker, EventLogBroker eventLogBroker, EventLogRepository eventLogRepository, AccountGroupBroker accountGroupBroker) {
+        this.eventRequestBroker = eventRequestBroker;
+        this.eventLogBroker = eventLogBroker;
+        this.eventLogRepository = eventLogRepository;
+        this.accountGroupBroker = accountGroupBroker;
+    }
+
     // for stubbing with Mockito ...
+    @Autowired
     public void setEventUtil(USSDEventUtil eventUtil) {
         this.eventUtil = eventUtil;
     }
@@ -222,21 +232,42 @@ public class USSDMeetingController extends USSDController {
                               @RequestParam(value = "revising", required = false) boolean revising) throws URISyntaxException {
 
         User sessionUser = userManager.findByInputNumber(inputNumber);
+        int eventsLeft = eventMonthlyLimitActive ? accountGroupBroker.numberEventsLeftForGroup(groupUid) : 99;
 
         String mtgRequestUid;
-        if (!interrupted && !revising) {
-            // i.e., generate request UID if it exists
-            MeetingRequest meetingRequest = eventRequestBroker.createEmptyMeetingRequest(sessionUser.getUid(), groupUid);
-            mtgRequestUid = meetingRequest.getUid();
-        } else {
-            // i.e., reuse the one that we are passed
-            mtgRequestUid = passedRequestUid;
-        }
 
-        cacheManager.putUssdMenuForUser(inputNumber, saveMeetingMenu(subjectMenu, mtgRequestUid, revising));
-        String promptMessage = getMessage(thisSection, subjectMenu, promptKey, sessionUser);
-        String nextUrl = (!revising) ? nextUrl(subjectMenu, mtgRequestUid) : confirmUrl(subjectMenu, mtgRequestUid);
-        return menuBuilder(new USSDMenu(promptMessage, nextUrl));
+        if (eventMonthlyLimitActive && eventsLeft == 0) {
+            return menuBuilder(outOfEventsMenu(sessionUser));
+        } else {
+            if (!interrupted && !revising) {
+                MeetingRequest meetingRequest = eventRequestBroker.createEmptyMeetingRequest(sessionUser.getUid(), groupUid);
+                mtgRequestUid = meetingRequest.getUid();
+            } else {
+                // i.e., reuse the one that we are passed
+                mtgRequestUid = passedRequestUid;
+            }
+
+            cacheManager.putUssdMenuForUser(inputNumber, saveMeetingMenu(subjectMenu, mtgRequestUid, revising));
+            String promptMessage = getSubjectPromptWithLimit(sessionUser, eventsLeft, revising);
+            String nextUrl = (!revising) ? nextUrl(subjectMenu, mtgRequestUid) : confirmUrl(subjectMenu, mtgRequestUid);
+            return menuBuilder(new USSDMenu(promptMessage, nextUrl));
+        }
+    }
+
+    private String getSubjectPromptWithLimit(User user, int eventsLeft, boolean revising) {
+        if (revising || !eventMonthlyLimitActive || eventsLeft > EVENT_LIMIT_WARNING_THRESHOLD) {
+            return getMessage(thisSection, subjectMenu, promptKey, user);
+        } else {
+            return getMessage(thisSection, subjectMenu, promptKey + ".limit", String.valueOf(eventsLeft), user);
+        }
+    }
+
+    private USSDMenu outOfEventsMenu(User user) {
+        USSDMenu menu = new USSDMenu(getMessage(thisSection, "limit", promptKey, user));
+        menu.addMenuOption(meetingMenus + startMenu + "?newMtg=true",
+                getMessage(thisSection, "limit", optionsKey + "back", user));
+        menu.addMenuOptions(optionsHomeExit(user, false));
+        return menu;
     }
 
     @RequestMapping(value = path + placeMenu)
@@ -373,10 +404,29 @@ public class USSDMeetingController extends USSDController {
 
         User user = userManager.findByInputNumber(inputNumber, null);
         try {
-            eventRequestBroker.finish(user.getUid(), mtgRequestUid, true);
-            return menuBuilder(new USSDMenu(getMessage(thisSection, send, promptKey, user), optionsHomeExit(user)));
+            String eventUid = eventRequestBroker.finish(user.getUid(), mtgRequestUid, true);
+            USSDMenu menu = new USSDMenu(chooseSendPrompt(eventUid, user));
+            menu.addMenuOption(meetingMenus + "public" + entityUidUrlSuffix + eventUid,
+                    getMessage(thisSection, send, optionsKey + "public", user));
+            menu.addMenuOption(meetingMenus + "private" + entityUidUrlSuffix + eventUid,
+                    getMessage(thisSection, send, optionsKey + "private", user));
+            menu.addMenuOptions(optionsHomeExit(user, true));
+            return menuBuilder(menu);
         } catch (EventStartTimeNotInFutureException e) {
             return handleDateTimeNotInFuture(user, mtgRequestUid);
+        } catch (AccountLimitExceededException e) {
+            log.error("Out of events on finishing menu, should not have reached this far except in rare circumstance...");
+            return menuBuilder(outOfEventsMenu(user));
+        }
+    }
+
+    private String chooseSendPrompt(String eventUid, User user) {
+        if (!eventMonthlyLimitActive) {
+            return getMessage(thisSection, send, promptKey, user);
+        } else {
+            int numberEventsLeft = accountGroupBroker.numberEventsLeftForParent(eventUid);
+            return numberEventsLeft < EVENT_LIMIT_WARNING_THRESHOLD ? getMessage(thisSection, send, promptKey, user) :
+                    getMessage(thisSection, send, promptKey + ".limit", String.valueOf(numberEventsLeft), user);
         }
     }
 
@@ -385,6 +435,36 @@ public class USSDMeetingController extends USSDController {
         menu.setFreeText(true);
         menu.setNextURI(mtgMenu(confirmMenu, mtgRequestUid) + "&" + previousMenu + "=" + timeMenu);
         return menuBuilder(menu);
+    }
+
+    @RequestMapping(value = path + "public")
+    public Request makeMtgPublic(@RequestParam(value = phoneNumber) String inputNumber,
+                                 @RequestParam(value = entityUidParam) String mtgUid) throws URISyntaxException {
+        User user = userManager.findByInputNumber(inputNumber);
+        try {
+            eventBroker.updateMeetingPublicStatus(user.getUid(), mtgUid, true, null);
+            USSDMenu menu = new USSDMenu(getMessage(thisSection, "public", promptKey + ".done", user));
+            menu.addMenuOptions(optionsHomeExit(user, false));
+            return menuBuilder(menu);
+        } catch (AccessDeniedException e) {
+            USSDMenu menu = new USSDMenu(getMessage(thisSection, "public", promptKey + ".access", user));
+            menu.addMenuOptions(optionsHomeExit(user, false));
+            return menuBuilder(menu);
+        }
+    }
+
+    @RequestMapping(value = path + "private")
+    public Request makeMtgPrivate(@RequestParam(value = phoneNumber) String inputNumber,
+                                  @RequestParam(value = entityUidParam) String mtgUid) throws URISyntaxException {
+        User user = userManager.findByInputNumber(inputNumber);
+        String menuPrompt;
+        try {
+            eventBroker.updateMeetingPublicStatus(user.getUid(), mtgUid, false, null);
+            menuPrompt = getMessage(thisSection, "private", promptKey + ".done", user);
+        } catch (AccessDeniedException e) {
+            menuPrompt = getMessage(thisSection, "public", promptKey + ".access", user);
+        }
+        return menuBuilder(new USSDMenu(menuPrompt, optionsHomeExit(user, false)));
     }
 
     /*
@@ -417,6 +497,7 @@ public class USSDMeetingController extends USSDController {
         final String eventSuffix = entityUidUrlSuffix + eventUid;
         USSDMenu menu = new USSDMenu(getMessage(thisSection, manageMeetingMenu, promptKey, user));
 
+        // todo : add a "make public option"
         menu.addMenuOption(meetingMenus + viewMeetingDetails + eventSuffix, getMessage(thisSection, viewMeetingDetails, "option", user));
         menu.addMenuOption(meetingMenus + newTime + eventSuffix, getMessage(thisSection, "change_" + timeOnly, "option", user));
         menu.addMenuOption(meetingMenus + newDate + eventSuffix, getMessage(thisSection, "change_" + dateOnly, "option", user));
@@ -571,7 +652,7 @@ public class USSDMeetingController extends USSDController {
         try {
             String menuPrompt = getMessage(thisSection, modifyConfirm, promptKey + ".done", user);
             eventRequestBroker.finishEdit(user.getUid(), eventUid, requestUid);
-            return menuBuilder(new USSDMenu(menuPrompt, optionsHomeExit(user)));
+            return menuBuilder(new USSDMenu(menuPrompt, optionsHomeExit(user, false)));
         } catch (EventStartTimeNotInFutureException e) {
             // given structure of UI above, this shouldn't happen, but just in case ...
             USSDMenu menu = new USSDMenu(getMessage(thisSection, modifyConfirm, promptKey + ".err.past", user));
@@ -600,7 +681,7 @@ public class USSDMeetingController extends USSDController {
         User sessionUser = userManager.findByInputNumber(inputNumber, null);
         String menuPrompt = getMessage(thisSection, modifyConfirm, "cancel.done", sessionUser);
         eventBroker.cancel(sessionUser.getUid(), eventUid);
-        return menuBuilder(new USSDMenu(menuPrompt, optionsHomeExit(sessionUser)));
+        return menuBuilder(new USSDMenu(menuPrompt, optionsHomeExit(sessionUser, false)));
     }
 
     /*
@@ -655,7 +736,7 @@ public class USSDMeetingController extends USSDController {
 
         USSDMenu menu = new USSDMenu(getMessage(thisSection, key, promptKey, user));
         menu.addMenuOption(meetingMenus + manageMeetingMenu + suffix, getMessage(thisSection, key, optionsKey + "back", user));
-        menu.addMenuOptions(optionsHomeExit(user));
+        menu.addMenuOptions(optionsHomeExit(user, false));
 
         return menuBuilder(menu);
     }

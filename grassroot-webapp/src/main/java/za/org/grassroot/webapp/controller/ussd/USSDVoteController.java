@@ -260,7 +260,7 @@ public class USSDVoteController extends USSDController {
             String createdUid = eventRequestBroker.finish(user.getUid(), requestUid, true);
             Event vote = eventBroker.load(createdUid);
             log.info("Vote details confirmed! Closing date and time: " + vote.getEventDateTimeAtSAST().format(dateTimeFormat));
-            menu = new USSDMenu(getMessage(thisSection, "send", promptKey, user), optionsHomeExit(user));
+            menu = new USSDMenu(getMessage(thisSection, "send", promptKey, user), optionsHomeExit(user, false));
             return menuBuilder(menu);
         } catch (EventStartTimeNotInFutureException e) {
             final String messageKey = USSDSection.VOTES.toKey() + "send.err.past.";
@@ -278,7 +278,7 @@ public class USSDVoteController extends USSDController {
         User user = userManager.findByInputNumber(inputNumber, null);
         setStandardTime(requestUid, "instant", user);
         eventRequestBroker.finish(user.getUid(), requestUid, true);
-        return menuBuilder(new USSDMenu(getMessage(thisSection, "send", promptKey, user), optionsHomeExit(user)));
+        return menuBuilder(new USSDMenu(getMessage(thisSection, "send", promptKey, user), optionsHomeExit(user, false)));
     }
 
     /**
@@ -389,7 +389,7 @@ public class USSDVoteController extends USSDController {
 
         menu.addMenuOption(voteMenus + "details" + entityUidUrlSuffix + eventUid + "&back=open",
                            getMessage(thisSection, "change", optionsKey + "back", user));
-        menu.addMenuOptions(optionsHomeExit(user));
+        menu.addMenuOptions(optionsHomeExit(user, false));
 
         return menuBuilder(menu);
     }
@@ -416,7 +416,7 @@ public class USSDVoteController extends USSDController {
         // use meeting reminder functions
         User user = userManager.findByInputNumber(inputNumber, null);
         eventBroker.sendManualReminder(user.getUid(), eventUid);
-        return menuBuilder(new USSDMenu(getMessage(thisSection, "reminder-do", promptKey, user), optionsHomeExit(user)));
+        return menuBuilder(new USSDMenu(getMessage(thisSection, "reminder-do", promptKey, user), optionsHomeExit(user, false)));
     }
 
     private String[] setCustomTime(String requestUid, String userInput, User user) {

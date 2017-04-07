@@ -15,7 +15,9 @@ import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.integration.storage.ImageType;
 import za.org.grassroot.integration.storage.StorageBroker;
+import za.org.grassroot.services.geo.GeoLocationBroker;
 
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -44,11 +46,12 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
     private final ImageRecordRepository imageRecordRepository;
 
     private final StorageBroker storageBroker;
+    private final GeoLocationBroker geoLocationBroker;
 
     @Autowired
     public TaskImageBrokerImpl(UserRepository userRepository, EventRepository eventRepository, EventLogRepository eventLogRepository,
                                TodoRepository todoRepository, TodoLogRepository todoLogRepository, ImageRecordRepository imageRecordRepository,
-                               StorageBroker storageBroker) {
+                               StorageBroker storageBroker, GeoLocationBroker geoLocationBroker) {
         this.userRepository = userRepository;
         this.eventRepository = eventRepository;
         this.eventLogRepository = eventLogRepository;
@@ -56,6 +59,7 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
         this.todoLogRepository = todoLogRepository;
         this.imageRecordRepository = imageRecordRepository;
         this.storageBroker = storageBroker;
+        this.geoLocationBroker = geoLocationBroker;
     }
 
     @Override
@@ -69,6 +73,10 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
 
         User user = userRepository.findOneByUid(userUid);
         GeoLocation location = latitude == null ? null : new GeoLocation(latitude, longitude);
+
+        if (location != null) {
+            geoLocationBroker.logUserLocation(userUid, latitude, longitude, Instant.now());
+        }
 
         switch (taskType) {
             case MEETING:

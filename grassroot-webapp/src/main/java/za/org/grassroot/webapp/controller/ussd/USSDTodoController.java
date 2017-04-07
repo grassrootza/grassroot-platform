@@ -188,7 +188,7 @@ public class USSDTodoController extends USSDController {
         } catch (AccountLimitExceededException e) {
             final String newPrompt = getMessage(thisSection, "new", promptKey + ".exceeded", user);
             cacheManager.clearUssdMenuForUser(user.getPhoneNumber());
-            return new USSDMenu(newPrompt, optionsHomeExit(user));
+            return new USSDMenu(newPrompt, optionsHomeExit(user, false));
         }
     }
 
@@ -285,7 +285,7 @@ public class USSDTodoController extends USSDController {
 
         User user = userManager.findByInputNumber(inputNumber, null);
         todoRequestBroker.finish(todoUid);
-        return menuBuilder(new USSDMenu(menuPrompt(send + (isInstant ? ("." + instantMenu) : ""), user), optionsHomeExit(user)));
+        return menuBuilder(new USSDMenu(menuPrompt(send + (isInstant ? ("." + instantMenu) : ""), user), optionsHomeExit(user, false)));
     }
 
     /**
@@ -342,7 +342,7 @@ public class USSDTodoController extends USSDController {
                 menu.addMenuOption(todoMenus + subjectMenu + groupUidUrlSuffix + groupUid, getMessage(thisSection, listEntriesMenu, optionsKey + "create", user));
             }
             menu.addMenuOption(backUrl, getMessage(thisSection, listEntriesMenu, optionsKey + "back", user));
-            menu.addMenuOptions(optionsHomeExit(user));
+            menu.addMenuOptions(optionsHomeExit(user, false));
         } else {
             menu = new USSDMenu(getMessage(thisSection, listEntriesMenu, promptKey, user));
             entries.forEach(t -> menu.addMenuOption(urlBase + t.getUid() + urlSuffix, truncateEntryDescription(t, user)));
@@ -454,7 +454,7 @@ public class USSDTodoController extends USSDController {
         if (todoBroker.userHasIncompleteActionsToView(user.getUid())) {
             menu.addMenuOption(todoMenus + "incomplete?pageNumber=0", getMessage(thisSection, setCompleteMenu, optionsKey + "listinc", user));
         }
-        menu.addMenuOptions(optionsHomeExit(user));
+        menu.addMenuOptions(optionsHomeExit(user, false));
         return menuBuilder(menu);
     }
 
@@ -487,7 +487,7 @@ public class USSDTodoController extends USSDController {
         USSDMenu menu = new USSDMenu(getMessage(thisSection, viewAssignment, promptKey,
                 new String[] { sb.toString(), shortDateFormat.format(todo.getActionByDateAtSAST()) }, user));
         menu.addMenuOption(todoMenus + viewEntryMenu + todoUrlSuffix + todoUid, getMessage(optionsKey + "back", user));
-        menu.addMenuOptions(optionsHomeExit(user));
+        menu.addMenuOptions(optionsHomeExit(user, false));
         return menuBuilder(menu);
     }
 

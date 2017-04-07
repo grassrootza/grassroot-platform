@@ -40,7 +40,6 @@ public class LocationController extends BaseController {
     public String search (@RequestParam(required = false) Integer radius,
                           @RequestParam(required = false) Double latitude,
                           @RequestParam(required = false) Double longitude,
-                          @RequestParam(required = false) Boolean useMeetingLocation,
                           Model model) {
 
         // Check radius
@@ -78,14 +77,7 @@ public class LocationController extends BaseController {
         objectsToReturn.addAll(groups);
 
         // Load meetings
-        if (useMeetingLocation == null || !useMeetingLocation) {
-            groups.forEach(g -> objectsToReturn.addAll(
-                    objectLocationBroker.fetchMeetingLocationsByGroup(g, location, searchRadius)));
-        } else {
-            objectsToReturn.addAll(objectLocationBroker.fetchMeetingLocations(location, searchRadius));
-        }
-
-        log.info("objects: {}", objectsToReturn);
+        objectsToReturn.addAll(objectLocationBroker.fetchMeetingLocations(location, searchRadius));
 
         // Send response
         model.addAttribute("user", user);

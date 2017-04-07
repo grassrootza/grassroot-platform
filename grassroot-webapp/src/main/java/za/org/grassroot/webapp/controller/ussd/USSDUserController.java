@@ -81,7 +81,7 @@ public class USSDUserController extends USSDController {
         User sessionUser = userManager.findByInputNumber(inputNumber);
         userManager.updateDisplayName(sessionUser.getUid(), newName);
 
-        return menuBuilder(new USSDMenu(getMessage(thisSection, keyName + doSuffix, promptKey, sessionUser), optionsHomeExit(sessionUser)));
+        return menuBuilder(new USSDMenu(getMessage(thisSection, keyName + doSuffix, promptKey, sessionUser), optionsHomeExit(sessionUser, false)));
     }
 
     @RequestMapping(value = homePath + userMenus + keyLanguage)
@@ -110,7 +110,7 @@ public class USSDUserController extends USSDController {
         user.setLanguageCode(language); // so next prompt shows up without needing repeat DB query
         userManager.updateUserLanguage(user.getUid(), new Locale(language));
 
-        return menuBuilder(new USSDMenu(getMessage(thisSection, keyLanguage + doSuffix, promptKey, user), optionsHomeExit(user)));
+        return menuBuilder(new USSDMenu(getMessage(thisSection, keyLanguage + doSuffix, promptKey, user), optionsHomeExit(user, false)));
     }
     @RequestMapping(value = homePath + userMenus + "link" + doSuffix)
     @ResponseBody
@@ -123,7 +123,7 @@ public class USSDUserController extends USSDController {
         }
         catch (NoSuchElementException e) { return noUserError; }
         return menuBuilder(new USSDMenu(getMessage(thisSection, keyLink + doSuffix, promptKey, sessionUser),
-                optionsHomeExit(sessionUser)));
+                optionsHomeExit(sessionUser, false)));
     }
 
 }

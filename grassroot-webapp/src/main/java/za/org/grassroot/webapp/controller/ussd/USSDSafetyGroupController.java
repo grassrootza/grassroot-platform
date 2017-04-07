@@ -128,7 +128,7 @@ public class USSDSafetyGroupController extends USSDController {
         safetyEventBroker.setSafetyGroup(user.getUid(), groupUid);
         cacheManager.clearUssdMenuForUser(user.getPhoneNumber());
         String prompt = getMessage(thisSection, pickGroup, promptKey + ".done", new String[] { group.getGroupName(), safetyTriggerString }, user);
-        USSDMenu menu = new USSDMenu(prompt, optionsHomeExit(user));
+        USSDMenu menu = new USSDMenu(prompt, optionsHomeExit(user, false));
         return menuBuilder(menu);
     }
 
@@ -201,7 +201,7 @@ public class USSDSafetyGroupController extends USSDController {
             if (!addressBroker.hasAddress(user.getUid())) {
                 menu.addMenuOption(safetyMenus + addAddress, getMessage(thisSection, addRespondents, optionsKey + "address", user));
             }
-            menu.addMenuOptions(optionsHomeExit(user));
+            menu.addMenuOptions(optionsHomeExit(user, false));
             cacheManager.clearUssdMenuForUser(inputNumber);
         }
         return menuBuilder(menu);
@@ -387,7 +387,7 @@ public class USSDSafetyGroupController extends USSDController {
             menu.addMenuOption(thisSection.toPath() + "record-validity-do?entityUid=" + safetyEventUid + "&response=0",
                     getMessage(thisSection, "response", "option.invalid", user));
         } else {
-            menu.addMenuOptions(optionsHomeExit(user));
+            menu.addMenuOptions(optionsHomeExit(user, false));
         }
         return menuBuilder(menu);
 
@@ -403,7 +403,7 @@ public class USSDSafetyGroupController extends USSDController {
         safetyEventBroker.recordResponse(user.getUid(), safetyEventUid, validity);
         String prompt = getMessage(thisSection, "response", promptKey + ".thanks", user);
         USSDMenu menu = new USSDMenu(prompt);
-        menu.addMenuOptions(optionsHomeExit(user));
+        menu.addMenuOptions(optionsHomeExit(user, false));
         return menuBuilder(menu);
     }
 
