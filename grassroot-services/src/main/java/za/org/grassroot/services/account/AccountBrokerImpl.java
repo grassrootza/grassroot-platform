@@ -417,7 +417,7 @@ public class AccountBrokerImpl implements AccountBroker {
 
     @Override
     @Transactional
-    public void updateAccountGroupLimits(String userUid, String accountUid, int maxGroups, int maxSizePerGroup, int maxDepth, int messagesPerMonth, int todosPerMonth) {
+    public void updateAccountGroupLimits(String userUid, String accountUid, int maxGroups, int maxSizePerGroup, int maxDepth, int messagesPerMonth, int todosPerMonth, int eventsPerMonth) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(accountUid);
 
@@ -450,6 +450,11 @@ public class AccountBrokerImpl implements AccountBroker {
         if (account.getTodosPerGroupPerMonth() != todosPerMonth) {
             account.setTodosPerGroupPerMonth(todosPerMonth);
             sb.append("Todos per month: ").append(todosPerMonth).append(";");
+        }
+
+        if (account.getEventsPerGroupPerMonth() != eventsPerMonth) {
+            account.setEventsPerGroupPerMonth(eventsPerMonth);
+            sb.append("Events per month: ").append(eventsPerMonth).append(";");
         }
 
         createAndStoreSingleAccountLog(new AccountLog.Builder(account)

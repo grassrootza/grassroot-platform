@@ -79,6 +79,9 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Value("${grassroot.todos.completion.threshold:20}") // defaults to 20 percent
     private double COMPLETION_PERCENTAGE_BOUNDARY;
 
+    @Value("${grassroot.welcome.messages.enabled:false}")
+    private boolean welcomeMessageEnabled;
+
     @Override
     public User load(String userUid) {
         return userRepository.findOneByUid(userUid);
@@ -415,19 +418,22 @@ public class UserManager implements UserManagementService, UserDetailsService {
         UserLog userLog = new UserLog(sessionUser.getUid(), UserLogType.INITIATED_USSD, "First USSD active session", UserInterfaceType.UNKNOWN);
         bundle.addLog(userLog);
 
-        String[] welcomeMessageIds = new String[]{
-                "sms.welcome.1",
-                "sms.welcome.2",
-                "sms.welcome.3"
-        };
-        for (String welcomeMessageId : welcomeMessageIds) {
-            String message = messageAssemblingService.createWelcomeMessage(welcomeMessageId, sessionUser);
-            WelcomeNotification notification = new WelcomeNotification(sessionUser, message, userLog);
-            // notification sending delay of 2days
-            ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(Instant.now().plus(48, ChronoUnit.HOURS),TimeZone.getTimeZone("Africa/Johannesburg").toZoneId());
-            notification.setNextAttemptTime(DateTimeUtil.restrictToDaytime(zonedDateTime.toInstant(), null, DateTimeUtil.getSAST()));
-            log.info("time for welcome notice" + notification.getNextAttemptTime());
-            bundle.addNotification(notification);
+        if (welcomeMessageEnabled) {
+
+            String[] welcomeMessageIds = new String[]{
+                    "sms.welcome.1",
+                    "sms.welcome.2",
+                    "sms.welcome.3"
+            };
+
+            for (String welcomeMessageId : welcomeMessageIds) {
+                String message = messageAssemblingService.createWelcomeMessage(welcomeMessageId, sessionUser);
+                WelcomeNotification notification = new WelcomeNotification(sessionUser, message, userLog);
+                // notification sending delay of 2days
+                ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(Instant.now().plus(48, ChronoUnit.HOURS), TimeZone.getTimeZone("Africa/Johannesburg").toZoneId());
+                notification.setNextAttemptTime(DateTimeUtil.restrictToDaytime(zonedDateTime.toInstant(), null, DateTimeUtil.getSAST()));
+                bundle.addNotification(notification);
+            }
         }
 
         logsAndNotificationsBroker.storeBundle(bundle);

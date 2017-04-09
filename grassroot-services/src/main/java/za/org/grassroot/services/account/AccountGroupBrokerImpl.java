@@ -456,7 +456,7 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
                 }
             }
 
-            logger.debug("Counting events left, limit: {}, this month: {}", monthlyLimit, eventsThisMonth);
+            logger.info("Counting events left, limit: {}, this month: {}", monthlyLimit, eventsThisMonth);
             return Math.max(0, monthlyLimit - eventsThisMonth);
         }
     }

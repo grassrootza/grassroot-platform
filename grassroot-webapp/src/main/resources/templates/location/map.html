@@ -11,14 +11,13 @@
   <meta name="_csrf" th:content="${_csrf.token}"/>
   <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
 
-  <!-- To debug without the full app -->
-  <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css"/>
+  <!-- Changed to local because of mixed active content issues over https (including for cdn) -->
+  <!-- <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css"/>
   <script type="text/javascript" src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>
-  <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script> -->
 
-  <!--<link rel="stylesheet" th:href="@{/css/leaflet.css}"/>-->
-  <!--<script th:src="@{/js/lib/jquery-2.2.4.min.js}"></script>-->
-  <!--<script th:src="@{/js/lib/leaflet.js}"></script>-->
+  <link rel="stylesheet" th:href="@{/css/leaflet.css}"/>
+  <script th:src="@{/js/lib/leaflet.js}"></script>
 </head>
 <body>
 

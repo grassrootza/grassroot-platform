@@ -51,6 +51,11 @@
               <input name="todosPerMonth" type="number" class="form-control input-lg" id="todosPerMonth" th:value="${account.todosPerGroupPerMonth}"/>
             </div>
 
+            <div class="form-group">
+              <label for="eventsPerMonth" class="control-label">Events per group per month</label>
+              <input name="eventsPerMonth" type="number" class="form-control input-lg" id="eventsPerMonth" th:value="${account.eventsPerGroupPerMonth}"/>
+            </div>
+
             <div class="form-group pull-right top-buffer">
               <a th:href="@{home}" role="button" class="btn default-button btn-neutral">Cancel</a>
               <button type="submit" class="btn default-button">Submit</button>

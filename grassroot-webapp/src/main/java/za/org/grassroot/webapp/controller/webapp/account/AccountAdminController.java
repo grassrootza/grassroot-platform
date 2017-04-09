@@ -241,10 +241,11 @@ public class AccountAdminController extends BaseController {
     public String resetGroupLimits(RedirectAttributes attributes, HttpServletRequest request, @RequestParam String accountUid,
                                    @RequestParam int numberGroups, @RequestParam int sizePerGroup,
                                    @RequestParam int subGroupDepth, @RequestParam int messagesPerMonth,
-                                   @RequestParam int todosPerMonth) {
+                                   @RequestParam int todosPerMonth, @RequestParam int eventsPerMonth) {
         try {
+            log.info("events per month in controller: {}", eventsPerMonth);
             accountBroker.updateAccountGroupLimits(getUserProfile().getUid(), accountUid, numberGroups, sizePerGroup,
-                    subGroupDepth, messagesPerMonth, todosPerMonth);
+                    subGroupDepth, messagesPerMonth, todosPerMonth, eventsPerMonth);
             addMessage(attributes, MessageType.SUCCESS, "admin.accounts.limits.changed", request);
         } catch (Exception e) {
             log.error("Error! Exception thrown updating group limits: {}", e.toString());
