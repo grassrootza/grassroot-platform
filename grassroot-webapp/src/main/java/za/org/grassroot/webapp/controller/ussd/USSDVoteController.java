@@ -3,6 +3,7 @@ package za.org.grassroot.webapp.controller.ussd;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -11,17 +12,18 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
-import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.services.PermissionBroker;
+import za.org.grassroot.services.account.AccountGroupBroker;
+import za.org.grassroot.services.enums.EventListTimeType;
+import za.org.grassroot.services.exception.AccountLimitExceededException;
+import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.services.task.EventLogBroker;
 import za.org.grassroot.services.task.EventRequestBroker;
-import za.org.grassroot.services.PermissionBroker;
-import za.org.grassroot.services.enums.EventListTimeType;
-import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
@@ -49,25 +51,30 @@ public class USSDVoteController extends USSDController {
 
     private static final Logger log = LoggerFactory.getLogger(USSDVoteController.class);
 
-    @Autowired
-    private EventRequestBroker eventRequestBroker;
+    @Value("${grassroot.events.limit.enabled:false}")
+    private boolean eventMonthlyLimitActive;
 
-    @Autowired
-    private EventLogBroker eventLogBroker;
+    private static final int EVENT_LIMIT_WARNING_THRESHOLD = 5; // only warn when below this
 
-    @Autowired
-    private EventLogRepository eventLogRepository;
+    private final EventRequestBroker eventRequestBroker;
+    private final EventLogBroker eventLogBroker;
+    private final PermissionBroker permissionBroker;
+    private final AccountGroupBroker accountGroupBroker;
 
-    @Autowired
-    private PermissionBroker permissionBroker;
-
-    @Autowired
     private USSDEventUtil eventUtil;
 
     private static final String path = homePath + voteMenus;
     private static final USSDSection thisSection = USSDSection.VOTES;
 
-    // for stubbing with Mockito
+    @Autowired
+    public USSDVoteController(EventRequestBroker eventRequestBroker, EventLogBroker eventLogBroker, EventLogRepository eventLogRepository, PermissionBroker permissionBroker, AccountGroupBroker accountGroupBroker) {
+        this.eventRequestBroker = eventRequestBroker;
+        this.eventLogBroker = eventLogBroker;
+        this.permissionBroker = permissionBroker;
+        this.accountGroupBroker = accountGroupBroker;
+    }
+
+    @Autowired
     public void setEventUtil(USSDEventUtil eventUtil) {
         this.eventUtil = eventUtil;
     }
@@ -104,16 +111,12 @@ public class USSDVoteController extends USSDController {
     @ResponseBody
     public Request newVote(@RequestParam(value = phoneNumber) String inputNumber) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber, voteMenus + "new");
-        Long startTime = System.currentTimeMillis();
         USSDMenu menu = initiateNewVote(user);
-        log.info("assembling vote selection menu took {} msecs ", (System.currentTimeMillis() - startTime));
         return menuBuilder(menu);
     }
 
     private USSDMenu initiateNewVote(User user) throws URISyntaxException {
-        long startTime = System.currentTimeMillis();
         int possibleGroups = permissionBroker.countActiveGroupsWithPermission(user, Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE);
-        log.info("counting groups took ... {} msecs", System.currentTimeMillis() - startTime);
         if (possibleGroups == 1) {
             Group group = permissionBroker.getActiveGroupsWithPermission(user, Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE).iterator().next();
             final String prompt = getMessage(thisSection, "issue", promptKey + ".skipped", group.getName(""), user);
@@ -150,7 +153,15 @@ public class USSDVoteController extends USSDController {
             requestUid = interruptedRequestUid;
         }
         cacheManager.putUssdMenuForUser(user.getPhoneNumber(), saveVoteMenu("issue", requestUid));
-        return new USSDMenu(menuPrompt, voteMenus + subsequentMenu + entityUidUrlSuffix + requestUid + paramsToPassForward);
+
+        int eventsLeft = accountGroupBroker.numberEventsLeftForGroup(groupUid);
+        if (eventMonthlyLimitActive && eventsLeft == 0) {
+            return eventUtil.outOfEventsMenu(thisSection, voteMenus + "new", optionsHomeExit(user, true), user);
+        } else {
+            final String prompt = eventsLeft >= EVENT_LIMIT_WARNING_THRESHOLD ? menuPrompt
+                    : getMessage(thisSection, "issue", promptKey + ".limit", String.valueOf(eventsLeft), user);
+            return new USSDMenu(prompt, voteMenus + subsequentMenu + entityUidUrlSuffix + requestUid + paramsToPassForward);
+        }
     }
 
     /*
@@ -259,8 +270,11 @@ public class USSDVoteController extends USSDController {
         try {
             String createdUid = eventRequestBroker.finish(user.getUid(), requestUid, true);
             Event vote = eventBroker.load(createdUid);
-            log.info("Vote details confirmed! Closing date and time: " + vote.getEventDateTimeAtSAST().format(dateTimeFormat));
-            menu = new USSDMenu(getMessage(thisSection, "send", promptKey, user), optionsHomeExit(user, false));
+            int eventsLeft = accountGroupBroker.numberEventsLeftForParent(vote.getUid());
+            final String prompt = eventsLeft < EVENT_LIMIT_WARNING_THRESHOLD ?
+                    getMessage(thisSection, "send", promptKey + ".limit", String.valueOf(eventsLeft), user) :
+                    getMessage(thisSection, "send", promptKey, user);
+            menu = new USSDMenu(prompt, optionsHomeExit(user, false));
             return menuBuilder(menu);
         } catch (EventStartTimeNotInFutureException e) {
             final String messageKey = USSDSection.VOTES.toKey() + "send.err.past.";
@@ -269,6 +283,8 @@ public class USSDVoteController extends USSDController {
             menu.addMenuOption(voteMenus + "send-reset" + entityUidUrlSuffix + requestUid, getMessage(messageKey + "yes", user));
             menu.addMenuOption(backVoteUrl("time", requestUid), getMessage(messageKey + "no", user));
             return menuBuilder(menu);
+        } catch (AccountLimitExceededException e) {
+            return menuBuilder(eventUtil.outOfEventsMenu(thisSection, voteMenus + "new", optionsHomeExit(user, true), user));
         }
     }
 
@@ -318,7 +334,7 @@ public class USSDVoteController extends USSDController {
         USSDMenu menu;
 
         if (futureEvent) {
-            EventLog userResponse = eventLogRepository.findByEventAndUserAndEventLogType(vote, user, EventLogType.RSVP);
+            EventLog userResponse = eventLogBroker.fetchResponseForEvent(vote, user);
 
             String responseText;
             List<String> otherResponses;

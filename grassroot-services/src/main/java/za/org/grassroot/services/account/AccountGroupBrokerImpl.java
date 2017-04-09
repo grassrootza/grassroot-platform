@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Sort;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -22,10 +23,13 @@ import za.org.grassroot.services.util.FullTextSearchUtils;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
+import javax.annotation.PostConstruct;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -52,6 +56,11 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
 
     @Value("${grassroot.events.limit.threshold:100}")
     private int eventMonthlyLimitThreshold;
+
+    @Value("${grassroot.events.limit.started:2017-04-01}")
+    private String eventLimitStartString;
+    private Instant eventLimitStart;
+
     private static final int LARGE_EVENT_LIMIT = 99;
 
     private static final String addedDescription = "Group added to Grassroot Extra";
@@ -79,6 +88,18 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
         this.accountRepository = accountRepository;
         this.paidGroupRepository = paidGroupRepository;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
+    }
+
+    @PostConstruct
+    public void init() {
+        LocalDate ldEventLimitStart;
+        try {
+            ldEventLimitStart = LocalDate.parse(eventLimitStartString, DateTimeFormatter.ISO_LOCAL_DATE);
+        } catch (DateTimeParseException e) {
+            logger.error("Error parsing! {}", e);
+            ldEventLimitStart = LocalDate.of(2017, 04, 01);
+        }
+        eventLimitStart = ldEventLimitStart.atStartOfDay().toInstant(ZoneOffset.UTC);
     }
 
     private void validateAdmin(User user, Account account) {
@@ -416,8 +437,11 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
             return LARGE_EVENT_LIMIT;
         } else {
 
+            Instant startOfMonth = LocalDate.now().withDayOfMonth(1).atStartOfDay().toInstant(ZoneOffset.UTC);
+            Instant startOfCheck = startOfMonth.isAfter(eventLimitStart) ? startOfMonth : eventLimitStart;
+
             int eventsThisMonth = (int) eventRepository.count(where(EventSpecifications.hasGroupAsAncestor(group))
-                    .and(EventSpecifications.createdDateTimeBetween(LocalDateTime.now().withDayOfMonth(1).withHour(0).toInstant(ZoneOffset.UTC), Instant.now())));
+                    .and(EventSpecifications.createdDateTimeBetween(startOfCheck, Instant.now())));
             int monthlyLimit;
 
             if (!group.isPaidFor()) {
@@ -432,8 +456,8 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
                 }
             }
 
-            logger.info("Counting events left, limit: {}, this month: {}", monthlyLimit, eventsThisMonth);
-            return monthlyLimit - eventsThisMonth;
+            logger.debug("Counting events left, limit: {}, this month: {}", monthlyLimit, eventsThisMonth);
+            return Math.max(0, monthlyLimit - eventsThisMonth);
         }
     }
 

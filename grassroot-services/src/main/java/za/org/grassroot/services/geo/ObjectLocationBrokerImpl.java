@@ -4,6 +4,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.ObjectLocation;
 
@@ -26,6 +29,7 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<ObjectLocation> fetchGroupLocations(GeoLocation geoLocation, Integer radius) {
 
         // TODO: 1) Use the user restrictions and search for public groups
@@ -38,10 +42,11 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
                         + ",l.location.longitude"
                         + ",l.score"
                         + ",'GROUP'"
+                        + ",g.description"
                         + ")"
                         + " from GroupLocation l"
                         + " inner join l.group g"
-                        + " where l.localDate <= :date and"
+                        + " where g.discoverable = true and l.localDate <= :date and"
                         + " l.localDate = (select max(ll.localDate) from GroupLocation ll where ll.group = l.group)",
                 ObjectLocation.class
                 )
@@ -52,6 +57,7 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<ObjectLocation> fetchMeetingLocations(GeoLocation geoLocation, Integer radius) {
         // TODO: 1) Use the user restrictions and search for public groups/meetings
         // TODO: 2) Use the radius to search
@@ -67,7 +73,7 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
                         + ")"
                         + " from MeetingLocation l"
                         + " inner join l.meeting m"
-                        + " where l.calculatedDateTime <= :date"
+                        + " where m.isPublic = true and l.calculatedDateTime <= :date"
                         + " and l.calculatedDateTime = (select max(ll.calculatedDateTime) from MeetingLocation ll where ll.meeting = l.meeting)",
                    ObjectLocation.class
                 )

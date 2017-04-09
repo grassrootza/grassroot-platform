@@ -15,7 +15,8 @@ import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.repository.EventLogRepository;
-import za.org.grassroot.services.*;
+import za.org.grassroot.services.PermissionBroker;
+import za.org.grassroot.services.exception.AccountLimitExceededException;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.EventLogBroker;
@@ -97,7 +98,9 @@ public class VoteRestController {
         } catch (AccessDeniedException e) {
             return RestUtil.accessDeniedResponse();
         } catch (EventStartTimeNotInFutureException e) {
-            return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.TIME_CANNOT_BE_IN_THE_PAST);
+            return RestUtil.errorResponse(RestMessage.TIME_CANNOT_BE_IN_THE_PAST);
+        } catch (AccountLimitExceededException e) {
+            return RestUtil.errorResponse(RestMessage.EVENT_LIMIT_REACHED);
         }
     }
 

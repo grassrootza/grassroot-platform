@@ -8,6 +8,7 @@ public enum AccountType {
     FREE,
     LIGHT,
     STANDARD,
+    LARGE,
     HEAVY,
     ENTERPRISE;
 

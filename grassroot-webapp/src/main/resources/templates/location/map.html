@@ -36,7 +36,7 @@
 
 
 <div layout:fragment="content">
-  <div id="map" style="height: 60%; width: 60%; position: absolute; border: 2px solid #AAA;"></div>
+  <div id="map" style="height: 60%; width: 60%; position: fixed; left: 50%; margin-left: -30%; border: none;"></div>
   <script type='text/javascript' th:inline="javascript">
     /*<![CDATA[*/
     var latitude = [[${location.latitude}]];

@@ -97,7 +97,7 @@ public class AnalyticalServiceImpl implements AnalyticalService {
     @Override
     @Transactional(readOnly = true)
     public int countUsersThatHaveWebProfile() {
-        return (int) userRepository.count(hasAndroidProfile());
+        return (int) userRepository.count(hasWebProfile());
     }
 
     @Override

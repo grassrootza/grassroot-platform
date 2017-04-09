@@ -17,7 +17,9 @@ import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.integration.LearningService;
-import za.org.grassroot.services.*;
+import za.org.grassroot.services.PermissionBroker;
+import za.org.grassroot.services.SafetyEventBroker;
+import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.group.GroupJoinRequestService;
@@ -86,6 +88,9 @@ public abstract class USSDAbstractUnitTest {
 
     @Mock
     protected GroupQueryBroker groupQueryBrokerMock;
+
+    @Mock
+    protected AccountGroupBroker accountGroupBrokerMock;
 
     @InjectMocks
     protected USSDGroupUtil ussdGroupUtil;

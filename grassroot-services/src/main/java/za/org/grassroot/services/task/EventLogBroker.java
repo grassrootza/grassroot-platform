@@ -11,6 +11,8 @@ public interface EventLogBroker {
 
     EventLog createEventLog(EventLogType eventLogType, String eventUid, String userUid, EventRSVPResponse message);
 
+    EventLog fetchResponseForEvent(Event event, User user);
+
     void rsvpForEvent(String eventUid, String userUid, EventRSVPResponse rsvpResponse);
 
     boolean hasUserRespondedToEvent(Event event, User user);

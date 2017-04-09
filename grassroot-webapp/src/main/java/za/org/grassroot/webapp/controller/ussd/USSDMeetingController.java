@@ -55,7 +55,7 @@ public class USSDMeetingController extends USSDController {
     @Value("${grassroot.events.limit.enabled:false}")
     private boolean eventMonthlyLimitActive;
 
-    private static final int EVENT_LIMIT_WARNING_THRESHOLD = 6; // only warn when below this
+    private static final int EVENT_LIMIT_WARNING_THRESHOLD = 5; // only warn when below this
 
     private USSDEventUtil eventUtil;
     private final EventRequestBroker eventRequestBroker;
@@ -263,11 +263,8 @@ public class USSDMeetingController extends USSDController {
     }
 
     private USSDMenu outOfEventsMenu(User user) {
-        USSDMenu menu = new USSDMenu(getMessage(thisSection, "limit", promptKey, user));
-        menu.addMenuOption(meetingMenus + startMenu + "?newMtg=true",
-                getMessage(thisSection, "limit", optionsKey + "back", user));
-        menu.addMenuOptions(optionsHomeExit(user, false));
-        return menu;
+        return eventUtil.outOfEventsMenu(thisSection, meetingMenus + startMenu + "?newMtg=true",
+                optionsHomeExit(user, true), user);
     }
 
     @RequestMapping(value = path + placeMenu)

@@ -68,7 +68,6 @@ public abstract class Event<P extends UidIdentifiable> extends AbstractEventEnti
 	@Column(name="public")
 	private boolean isPublic;
 
-
 	public abstract EventType getEventType();
 
 	protected Event() {

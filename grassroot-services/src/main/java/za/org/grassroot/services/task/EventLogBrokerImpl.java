@@ -61,6 +61,12 @@ public class EventLogBrokerImpl implements EventLogBroker {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public EventLog fetchResponseForEvent(Event event, User user) {
+        return eventLogRepository.findByEventAndUserAndEventLogType(event, user, EventLogType.RSVP);
+    }
+
+    @Override
     @Transactional
     public void rsvpForEvent(String eventUid, String userUid, EventRSVPResponse rsvpResponse) {
 

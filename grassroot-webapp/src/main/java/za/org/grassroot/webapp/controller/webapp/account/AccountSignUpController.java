@@ -67,7 +67,7 @@ public class AccountSignUpController extends BaseController {
             return user.getPrimaryAccount().isEnabled() ? "redirect:/account/type" : "redirect:/account";
         } else {
             model.addAttribute("user", user); // may be cached (and not reflect email) if use just getuserprofile
-            model.addAttribute("accountTypes", Arrays.asList(AccountType.LIGHT, AccountType.STANDARD, AccountType.HEAVY));
+            model.addAttribute("accountTypes", Arrays.asList(AccountType.LIGHT, AccountType.STANDARD, AccountType.LARGE));
 
             if (!StringUtils.isEmpty(accountType) && AccountType.contains(accountType)) {
                 model.addAttribute("defaultType", AccountType.valueOf(accountType));
@@ -133,6 +133,7 @@ public class AccountSignUpController extends BaseController {
         Map<AccountType, Integer> messageSize = accountBroker.getNumberMessagesPerType();
         Map<AccountType, Integer> groupSizes = accountBroker.getGroupSizeLimits();
         Map<AccountType, Integer> accountFees = accountBroker.getAccountTypeFees();
+        Map<AccountType, Integer> eventLimits = accountBroker.getEventMonthlyLimits();
 
         Map<String, Object> changeMap = new HashMap<>();
 
@@ -143,6 +144,7 @@ public class AccountSignUpController extends BaseController {
             changeMap.put(type.name() + "-GROUPS-NUMBER", numberGroups.get(type));
             changeMap.put(type.name() + "-GROUPS-SIZE", groupSizes.get(type));
             changeMap.put(type.name() + "-MESSAGES-LIMIT", messageSize.get(type));
+            changeMap.put(type.name() + "-EVENTS-LIMIT", eventLimits.get(type));
 
             int newFee = accountFees.getOrDefault(type, 0);
             changeMap.put(type.name() + "-MONTHLY-FEE", newFee);

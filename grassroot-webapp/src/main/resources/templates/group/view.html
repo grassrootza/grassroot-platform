@@ -92,7 +92,7 @@
         </p>
         <p th:if="${#strings.isEmpty(group.description)}">
           This group has no description. A description helps other people find the group, and members to know what its purpose is.
-          <a href="#descriptionModal" data-toggle="modal" data-target="#descriptionModal">Add a description now?</a>
+          <a th:if="${canAlter}" href="#descriptionModal" data-toggle="modal" data-target="#descriptionModal">Add a description now?</a>
         </p>
       </div>
     </div>

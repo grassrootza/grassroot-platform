@@ -68,6 +68,8 @@ public interface AccountBroker {
 
     Map<AccountType, Integer> getAccountTypeFees();
 
+    Map<AccountType, Integer> getEventMonthlyLimits();
+
     /* Some methods to facilitate testing */
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")

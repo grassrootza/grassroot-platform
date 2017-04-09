@@ -29,24 +29,24 @@
 
         <div class="col-md-8 col-md-offset-2 col-sm-6 col-sm-offset-3 col-xs-12" th:with="current=${account.type.name()}">
 
-          <div class="row" th:classappend="${current == 'HEAVY'} ? highlight : ''">
+          <div class="row" th:classappend="${current == 'LARGE'} ? highlight : ''">
             <div class="col-md-3 col-sm-12 col-xs-12">
-              <label class="grassroot-sidebar">Heavy (R1,000 per month)</label>
+              <label class="grassroot-sidebar">Large (R1,000 per month)</label>
             </div>
             <div class="col-md-6 col-sm-9 col-xs-12 explanatory-text">
               <ul>
                 <li>All core features</li>
-                <li>Up to 50 groups on the account</li>
-                <li>Max group size of 5,000</li>
-                <li>Up to 5 levels of branches, subgroups, etc</li>
-                <li>Up to 50 todos per month</li>
-                <li>Up to 2,000 customizable SMSs per month</li>
+                <li>Max group size of 2,000</li>
+                <li>Up to 10 meetings or votes for large groups per month</li>
+                <li>Up to 10 todos per month</li>
+                <li>Up to 1,000 customizable SMSs per month</li>
+                <li>Up to 15 groups on the account</li>
               </ul>
             </div>
             <div class="col-md-3 col-sm-3 col-xs-12">
-              <button type="button" th:unless="${current == 'HEAVY'}" class="btn default-button"
-                      data-toggle="modal" data-target="#confirmModal" data-type="HEAVY">Select</button>
-              <p th:if="${current == 'HEAVY'}" class="explanatory-text prominent">Your current account type</p>
+              <button type="button" th:unless="${current == 'LARGE'}" class="btn default-button"
+                      data-toggle="modal" data-target="#confirmModal" data-type="LARGE">Select</button>
+              <p th:if="${current == 'LARGE'}" class="explanatory-text prominent">Your current account type</p>
             </div>
           </div>
 
@@ -54,16 +54,16 @@
 
           <div class="row vertical-padding" th:classappend="${current == 'STANDARD'} ? highlight : ''">
             <div class="col-md-3 col-sm-12 col-xs-12">
-              <label class="grassroot-sidebar">Standard (R250 per month)</label>
+              <label class="grassroot-sidebar">Standard (R300 per month)</label>
             </div>
             <div class="col-md-6 col-sm-9 col-xs-12 explanatory-text">
               <ul>
                 <li>All core features</li>
-                <li>Up to 10 groups on the account</li>
                 <li>Max group size of 1,000</li>
-                <li>Up to 2 levels of branches, subgroups, etc</li>
-                <li>Up to 15 todos per month</li>
+                <li>Up to 8 meetings and votes for large groups per month</li>
+                <li>Up to 8 todos per month</li>
                 <li>Up to 500 customizable SMSs per month</li>
+                <li>Up to 10 groups on the account</li>
               </ul>
             </div>
             <div class="col-md-3 col-sm-3 col-xs-12">
@@ -77,16 +77,16 @@
 
           <div class="row vertical-padding" th:classappend="${current == 'LIGHT'} ? highlight : ''">
             <div class="col-md-3 col-sm-12 col-xs-12">
-              <label class="grassroot-sidebar">Light (R100 per month)</label>
+              <label class="grassroot-sidebar">Light (R150 per month)</label>
             </div>
             <div class="col-md-6 col-sm-9 col-xs-12 explanatory-text">
               <ul>
                 <li>All core features</li>
-                <li>Up to 5 groups on the account</li>
                 <li>Max group size of 500</li>
-                <li>One level branches, subgroups, etc</li>
-                <li>Up to 10 todos per month</li>
+                <li>Up to 6 meetings and votes for large groups per month</li>
+                <li>Up to 6 todos per month</li>
                 <li>Up to 200 customizable SMSs per month</li>
+                <li>Up to 5 groups on the account</li>
               </ul>
             </div>
             <div class="col-md-3 col-sm-3 col-xs-12">
@@ -106,7 +106,7 @@
               <ul>
                 <li>Core features</li>
                 <li>Maximum group size of 300</li>
-                <li>No subgroups, etc</li>
+                <li>Maximum 4 meetings or votes of large groups (> 100 people) per month</li>
                 <li>Maximum 4 todos per month</li>
                 <li>No customizable SMSs (only Grassroot default formats)</li>
               </ul>

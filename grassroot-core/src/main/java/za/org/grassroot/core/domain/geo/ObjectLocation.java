@@ -92,29 +92,32 @@ public class ObjectLocation {
 		// for JPA
 	}
 
-	public ObjectLocation(String uid, String name, double latitude, double longitude, float score, String type) {
+	private ObjectLocation(String uid, String type) {
 		this.uid = uid;
-		this.name = name;
-		this.latitude = latitude;
-		this.longitude = longitude;
-		this.score = score;
 		this.type = type;
 		if (JpaEntityType.GROUP.toString().equals(type))
 			this.url = "/group/public/view?groupUid=" + uid;
 		else
 			this.url = "/meeting/public/view?eventUid=" + uid;
-		this.description = "Some description.";
+	}
+
+	public ObjectLocation(String uid, String name, double latitude, double longitude, float score, String type) {
+		this(uid, type);
+		this.name = name;
+		this.latitude = latitude;
+		this.longitude = longitude;
+		this.score = score;
+		this.description = "";
 	}
 
 	public ObjectLocation(String uid, String name, double latitude, double longitude, float score, String type,
-	                      String url, String description) {
-		this.uid = uid;
+	                      String description) {
+		this(uid, type);
 		this.name = name;
 		this.latitude = latitude;
 		this.longitude = longitude;
 		this.score = score;
 		this.type = type;
-		this.url = url;
 		this.description = description;
 	}
 

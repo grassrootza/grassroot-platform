@@ -16,6 +16,7 @@ import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.account.AccountGroupBroker;
+import za.org.grassroot.services.exception.AccountLimitExceededException;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.task.EventBroker;
@@ -78,16 +79,12 @@ public class MeetingController extends BaseController {
         } else {
             if (groupUid != null) {
                 Group group = groupBroker.load(groupUid);
-                model.addAttribute("group", group);
-                model.addAttribute("parentSpecified", true);
-                model.addAttribute("thisGroupPaidFor", accountBroker.isGroupOnAccount(groupUid)); // slightly more robust check than "is paid for"
+                setModelForSelectedGroup(model, group);
                 meeting.setMemberPicker(MemberPicker.create(group, JpaEntityType.GROUP, true));
                 meeting.setParentUid(groupUid);
             } else {
                 User user = userManagementService.load(getUserProfile().getUid()); // refresh user entity, in case permissions changed
-                model.addAttribute("parentSpecified", false);
-                model.addAttribute("thisGroupPaidFor", false); // by definition ... instead taken from group properties
-                model.addAttribute("userGroups", permissionBroker.getActiveGroupsSorted(user, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING));
+                setModelWithoutSelectedGroup(model, user);
             }
 
             meeting.setAssignmentType("group");
@@ -99,6 +96,23 @@ public class MeetingController extends BaseController {
         }
     }
 
+    private void setModelForSelectedGroup(Model model, Group group) {
+        final String groupUid = group.getUid();
+        model.addAttribute("group", group);
+        model.addAttribute("parentSpecified", true);
+        model.addAttribute("thisGroupPaidFor", accountBroker.isGroupOnAccount(groupUid)); // slightly more robust check than "is paid for"
+        model.addAttribute("eventsLeft", accountBroker.numberEventsLeftForGroup(groupUid));
+        model.addAttribute("accountAdmin", getUserProfile().getPrimaryAccount() != null);
+    }
+
+    private void setModelWithoutSelectedGroup(Model model, User user) {
+        model.addAttribute("parentSpecified", false);
+        model.addAttribute("thisGroupPaidFor", false); // by definition ... instead taken from group properties
+        model.addAttribute("userGroups", permissionBroker.getActiveGroupsSorted(user, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING));
+        model.addAttribute("eventsLeft", 99);
+        model.addAttribute("accountAdmin", user.getPrimaryAccount() != null);
+    }
+
     @RequestMapping(value = "create", method = RequestMethod.POST)
     public String createMeeting(Model model, @ModelAttribute("meeting") MeetingWrapper meeting, BindingResult bindingResult,
                                 @RequestParam(value="selectedGroupUid", required=false) String selectedGroupUid,
@@ -106,7 +120,6 @@ public class MeetingController extends BaseController {
 
         // todo: move parent selection into MeetingWrapper when implement non-group meetings
 
-        log.debug("The meeting wrapper as passed back to us: " + meeting.toString());
         log.info("Meeting long: {}, lat: {}, public option: {}", meeting.getLongitude(), meeting.getLatitude(),
                 meeting.getPublicOption());
 
@@ -135,6 +148,11 @@ public class MeetingController extends BaseController {
             Group group = groupBroker.load(selectedGroupUid);
             model.addAttribute("group", group);
             model.addAttribute("reminderOptions", reminderMinuteOptions(false));
+            return "meeting/create";
+        } catch (AccountLimitExceededException e) {
+            addMessage(model, MessageType.ERROR, "meeting.creation.limit.error", request);
+            User user = userManagementService.load(getUserProfile().getUid());
+            setModelWithoutSelectedGroup(model, user);
             return "meeting/create";
         }
     }

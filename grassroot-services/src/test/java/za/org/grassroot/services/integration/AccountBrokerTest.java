@@ -102,6 +102,8 @@ public class AccountBrokerTest {
         maxSubGroupDepth.put(AccountType.STANDARD, 3);
         Map<AccountType, Integer> todosPerMonth = new HashMap<>();
         todosPerMonth.put(AccountType.STANDARD, 16);
+        Map<AccountType, Integer> eventsPerMonth = new HashMap<>();
+        eventsPerMonth.put(AccountType.STANDARD, 16);
 
         ReflectionTestUtils.setField(accountBroker, "accountFees", accountFees);
         ReflectionTestUtils.setField(accountBroker, "freeFormPerMonth", freeFormPerMonth);
@@ -110,6 +112,7 @@ public class AccountBrokerTest {
         ReflectionTestUtils.setField(accountBroker, "maxGroupNumber", maxGroupNumber);
         ReflectionTestUtils.setField(accountBroker, "maxSubGroupDepth", maxSubGroupDepth);
         ReflectionTestUtils.setField(accountBroker, "todosPerMonth", todosPerMonth);
+        ReflectionTestUtils.setField(accountBroker, "eventsPerMonth", eventsPerMonth);
     }
 
     private Account createTestAccount() {

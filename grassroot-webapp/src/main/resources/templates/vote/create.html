@@ -15,12 +15,22 @@
   </div>
 </section>
 
-<div layout:fragment="messages"></div>
-
 <main layout:fragment="content">
 
   <section class="grassroot-form" th:with="groupSpecified=${group != null}">
     <div class="container">
+      <div class="row vertical-padding" th:if="${groupSpecified and eventsLeft < 5}">
+        <div class="alert grassroot-alert alert-warning col-md-8 col-md-offset-2">
+          <p class="alert-lg">
+            Note: this group has only <span th:text="${eventsLeft}">X</span> meetings left this month.
+            <span th:if="${thisGroupPaidFor and accountAdmin}">You can increase the limit by
+              <a th:href="@{/account/type}">upgrading your Grassroot
+                Extra account.</a></span>
+            <span th:if="${not thisGroupPaidFor and accountAdmin}">You can increase the limit by adding this group
+              to <a th:href="@{/account}">your Grassroot Extra account.</a></span>
+          </p>
+        </div>
+      </div>
       <div class="row">
         <div class="col-md-8 col-md-offset-2 col-sm-6 col-sm-offset-3 col-xs-12">
 

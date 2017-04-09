@@ -16,7 +16,8 @@ import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.MeetingImportance;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.repository.EventLogRepository;
-import za.org.grassroot.services.*;
+import za.org.grassroot.services.PermissionBroker;
+import za.org.grassroot.services.exception.AccountLimitExceededException;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.EventLogBroker;
@@ -90,7 +91,6 @@ public class MeetingRestController {
         Set<String> assignedMemberUids = (members == null) ? new HashSet<>() : members;
         EventReminderType reminderType = reminderMinutes == -1 ? EventReminderType.GROUP_CONFIGURED : EventReminderType.CUSTOM;
 
-        // todo : decide what to do with event reminder types
         try {
             Meeting meeting = eventBroker.createMeeting(user.getUid(), parentUid, JpaEntityType.GROUP, title, eventStartDateTime,
                     location, false, reminderType, reminderMinutes, description,
@@ -98,7 +98,9 @@ public class MeetingRestController {
             TaskDTO createdMeeting = taskBroker.load(user.getUid(), meeting.getUid(), TaskType.MEETING);
             return RestUtil.okayResponseWithData(RestMessage.MEETING_CREATED, Collections.singletonList(createdMeeting));
         } catch (EventStartTimeNotInFutureException e) {
-	        return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.TIME_CANNOT_BE_IN_THE_PAST);
+	        return RestUtil.errorResponse(RestMessage.TIME_CANNOT_BE_IN_THE_PAST);
+        } catch (AccountLimitExceededException e) {
+            return RestUtil.errorResponse(RestMessage.EVENT_LIMIT_REACHED);
         }
     }
 

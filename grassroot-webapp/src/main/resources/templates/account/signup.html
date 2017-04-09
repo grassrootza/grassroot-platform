@@ -41,10 +41,10 @@
             <ul class="fa-ul">
               <li class="gr-plain-list"><i class="fa-li fa fa-check-square"></i><span id="groupSize">Up to 1,000 members in a group</span></li>
               <li class="gr-plain-list"><i class="fa-li fa fa-check-square"></i><span id="numberGroups">Up to 10 groups attached to the account</span></li>
-              <li class="gr-plain-list"><i class="fa-li fa fa-check-square"></i><span id="todosPerMonth">Up to 16 actions and todos per month</span></li>
+              <li class="gr-plain-list"><i class="fa-li fa fa-check-square"></i><span id="eventsPerMonth">Up to 8 meetings and votes per month for big groups</span></li>
+              <li class="gr-plain-list"><i class="fa-li fa fa-check-square"></i><span id="todosPerMonth">Up to 8 actions and todos per month</span></li>
               <li class="gr-plain-list"><i class="fa-li fa fa-check-square"></i><span id="fileImport">Advanced member import (e.g., from Excel)</span></li>
-              <li class="gr-plain-list"><i class="fa-li fa fa-check-square"></i><span id="freeFormPerMonth">Up to 800 fully customizable SMSs per month</span></li>
-              <li class="gr-plain-list"><i class="fa-li fa fa-check-square"></i><span id="subgroupTiers">Up to two tiers of subgroups</span></li>
+              <li class="gr-plain-list"><i class="fa-li fa fa-check-square"></i><span id="freeFormPerMonth">Up to 500 fully customizable SMSs per month</span></li>
             </ul>
           </div>
           <div class="form-group" th:if="${#strings.isEmpty(user.emailAddress)}">
@@ -93,46 +93,47 @@
 
         var groupSize = $("#groupSize");
         var numGroups = $("#numberGroups");
+        var eventsLimit = $("#eventsPerMonth");
         var todosLimit = $("#todosPerMonth");
         var freeForm = $("#freeFormPerMonth");
-        var subgroupDepth = $("#subgroupTiers");
 
         // note : file import feature is available across all, so not part of below (add in if that changes)
 
         var groupSizeText = {
           LIGHT: "Up to 500 members in a group",
           STANDARD: "Up to 1,000 members in a group",
-          HEAVY: "Up to 5,000 members in a group"
+          LARGE: "Up to 2,000 members in a group"
         };
 
         var numGroupsText = {
           LIGHT: "Up to 5 groups attached to the account",
           STANDARD: "Up to 10 groups attached to the account",
-          HEAVY: "Up to 50 groups attached to the account"
+          LARGE: "Up to 15 groups attached to the account"
+        };
+
+        var eventLimitText = {
+          LIGHT: "Up to 6 meetings per month for big groups",
+          STANDARD: "Up to 8 meetings per month for big groups",
+          LARGE: "Up to 10 meetings per month for big groups"
         };
 
         var todoLimitText = {
-          LIGHT: "Up to 8 actions and todos per attached group per month",
-          STANDARD: "Up to 16 actions and todos per attached group per month",
-          HEAVY: "Up to 50 actions and todos per attached group per month"
+          LIGHT: "Up to 6 actions and todos per attached group per month",
+          STANDARD: "Up to 8 actions and todos per attached group per month",
+          LARGE: "Up to 10 actions and todos per attached group per month"
         };
 
         var freeFormLimitText = {
           LIGHT: "Up to 400 customizable SMSs per month",
           STANDARD: "Up to 800 customizable SMSs per month",
-          HEAVY: "Up to 1600 customizable SMSs per month"
-        };
-
-        var subGroupLimits = {
-          LIGHT: "Up to one level of subgroup depth",
-          STANDARD: "Up to two levels of subgroups",
-          HEAVY: "Up to five levels of subgroups"
+          LARGE: "Up to 1000 customizable SMSs per month"
         };
 
         $("#account_type").change(function() {
           var type = $(this).val();
           groupSize.text(groupSizeText[type]);
           numGroups.text(numGroupsText[type]);
+          eventsLimit.text(eventLimitText[type]);
           todosLimit.text(todoLimitText[type]);
           freeForm.text(freeFormLimitText[type]);
           subgroupDepth.text(subGroupLimits[type]);
@@ -147,7 +148,7 @@
             payTypeDiv.hide();
 
             $("#billingCycle").change(function () {
-                if ($(this).val() == 'ANNUAL') {
+                if ($(this).val() === 'ANNUAL') {
                     payTypeDiv.show();
                     payTypeSel.prop('disabled', false);
                 } else {

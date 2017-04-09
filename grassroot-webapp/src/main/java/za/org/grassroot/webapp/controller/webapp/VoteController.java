@@ -13,6 +13,8 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
+import za.org.grassroot.services.account.AccountGroupBroker;
+import za.org.grassroot.services.exception.AccountLimitExceededException;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.task.EventBroker;
@@ -42,12 +44,15 @@ public class VoteController extends BaseController {
     private final EventBroker eventBroker;
     private final GroupBroker groupBroker;
     private final EventLogBroker eventLogBroker;
+    private final AccountGroupBroker accountGroupBroker;
 
     @Autowired
-    public VoteController(EventBroker eventBroker, GroupBroker groupBroker, EventLogBroker eventLogBroker) {
+    public VoteController(EventBroker eventBroker, GroupBroker groupBroker, EventLogBroker eventLogBroker,
+                          AccountGroupBroker accountGroupBroker) {
         this.eventBroker = eventBroker;
         this.groupBroker = groupBroker;
         this.eventLogBroker = eventLogBroker;
+        this.accountGroupBroker = accountGroupBroker;
     }
 
     @RequestMapping("create")
@@ -68,7 +73,11 @@ public class VoteController extends BaseController {
             permissionBroker.validateGroupPermission(user, group, GROUP_PERMISSION_CREATE_GROUP_VOTE); // double check, given sensitivity
             voteWrapper.setParentUid(groupUid);
             model.addAttribute("group", group);
+            model.addAttribute("eventsLeft", accountGroupBroker.numberEventsLeftForGroup(groupUid));
+            addFlagsToModel(model, user, group);
         } else {
+            addFlagsToModel(model, user, null);
+            model.addAttribute("eventsLeft", 99);
             model.addAttribute("possibleGroups", permissionBroker.getActiveGroupsSorted(user, GROUP_PERMISSION_CREATE_GROUP_VOTE));
         }
 
@@ -77,18 +86,21 @@ public class VoteController extends BaseController {
         return "vote/create";
     }
 
+    private void addFlagsToModel(Model model, User user, Group group) {
+        model.addAttribute("thisGroupPaidFor", group != null && group.isPaidFor());
+        model.addAttribute("accountAdmin", user.getPrimaryAccount() != null);
+    }
+
     @RequestMapping(value = "create", method = RequestMethod.POST)
     public String createVoteDo(Model model, @ModelAttribute("vote") EventWrapper vote, BindingResult bindingResult,
                                @RequestParam(value = "selectedGroupUid", required = false) String selectedGroupUid,
                                HttpServletRequest request, RedirectAttributes redirectAttributes) {
 
-        log.info("Vote passed back to us: " + vote.toString());
         String groupUid = (selectedGroupUid == null) ? vote.getParentUid() : selectedGroupUid;
 
         try {
             eventBroker.createVote(getUserProfile().getUid(), groupUid, JpaEntityType.GROUP, vote.getTitle(), vote.getEventDateTime(),
                     vote.isIncludeSubGroups(), vote.getDescription(), Collections.emptySet());
-            log.info("Stored vote, at end of creation: " + vote.toString());
             addMessage(redirectAttributes, MessageType.SUCCESS, "vote.creation.success", request);
             redirectAttributes.addAttribute("groupUid", groupUid);
             return "redirect:/group/view";
@@ -97,6 +109,12 @@ public class VoteController extends BaseController {
             Group group = groupBroker.load(groupUid);
             vote.setParentUid(groupUid);
             model.addAttribute("group", group);
+            return "vote/create";
+        } catch (AccountLimitExceededException e) {
+            User user = userManagementService.load(getUserProfile().getUid());
+            addMessage(model, MessageType.ERROR, "vote.creation.limit.error", request);
+            model.addAttribute("possibleGroups", permissionBroker.getActiveGroupsSorted(user, GROUP_PERMISSION_CREATE_GROUP_VOTE));
+            addFlagsToModel(model, user, null);
             return "vote/create";
         }
     }

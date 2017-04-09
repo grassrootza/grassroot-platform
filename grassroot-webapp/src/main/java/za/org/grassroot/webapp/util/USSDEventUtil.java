@@ -3,7 +3,6 @@ package za.org.grassroot.webapp.util;
 import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.Event;
@@ -11,12 +10,12 @@ import za.org.grassroot.core.domain.EventRequest;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.DateTimeUtil;
-import za.org.grassroot.integration.exception.SeloParseDateTimeFailure;
 import za.org.grassroot.integration.LearningService;
-import za.org.grassroot.services.task.EventBroker;
-import za.org.grassroot.services.task.EventRequestBroker;
+import za.org.grassroot.integration.exception.SeloParseDateTimeFailure;
 import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.enums.EventListTimeType;
+import za.org.grassroot.services.task.EventBroker;
+import za.org.grassroot.services.task.EventRequestBroker;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 
@@ -43,17 +42,10 @@ public class USSDEventUtil extends USSDUtil {
 
     private static final Logger log = LoggerFactory.getLogger(USSDEventUtil.class);
 
-    @Autowired
-    private EventBroker eventBroker;
-
-    @Autowired
-    private EventRequestBroker eventRequestBroker;
-
-    @Autowired
-    private AsyncUserLogger userLogger;
-
-    @Autowired
-    private LearningService learningService;
+    private final EventBroker eventBroker;
+    private final EventRequestBroker eventRequestBroker;
+    private final AsyncUserLogger userLogger;
+    private final LearningService learningService;
 
     private static final String entityUidParameter =  "entityUid";
     private static final String entityUidFirstParam = "?" + entityUidParameter + "=";
@@ -73,6 +65,20 @@ public class USSDEventUtil extends USSDUtil {
             ImmutableMap.of(MEETINGS, EventType.MEETING, VOTES, EventType.VOTE);
 
     private static final DateTimeFormatter mtgFormat = DateTimeFormatter.ofPattern("d MMM H:mm");
+
+    public USSDEventUtil(EventBroker eventBroker, EventRequestBroker eventRequestBroker, AsyncUserLogger userLogger, LearningService learningService) {
+        this.eventBroker = eventBroker;
+        this.eventRequestBroker = eventRequestBroker;
+        this.userLogger = userLogger;
+        this.learningService = learningService;
+    }
+
+    public USSDMenu outOfEventsMenu(USSDSection thisSection, String pickGroupUrl, Map<String, String> optionsHomeExit, User user) {
+        USSDMenu menu = new USSDMenu(getMessage(thisSection, "limit", promptKey, user));
+        menu.addMenuOption(pickGroupUrl, getMessage(thisSection, "limit", optionsKey + "back", user));
+        menu.addMenuOptions(optionsHomeExit);
+        return menu;
+    }
 
     public USSDMenu listUpcomingEvents(User user, USSDSection section, String prompt, String nextMenu,
                                        boolean includeNewOption, String newMenu, String newOption) {

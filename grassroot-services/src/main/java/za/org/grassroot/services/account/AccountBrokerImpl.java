@@ -1,5 +1,6 @@
 package za.org.grassroot.services.account;
 
+import org.apache.commons.collections4.map.HashedMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,6 +53,7 @@ public class AccountBrokerImpl implements AccountBroker {
     private Map<AccountType, Integer> maxSubGroupDepth = new HashMap<>();
 
     private Map<AccountType, Integer> todosPerMonth = new HashMap<>();
+    private Map<AccountType, Integer> eventsPerMonth = new HashedMap<>();
 
     private final AccountRepository accountRepository;
     private final UserRepository userRepository;
@@ -92,6 +94,7 @@ public class AccountBrokerImpl implements AccountBroker {
             maxGroupNumber.put(accountType, environment.getProperty("accounts.group.max." + key, Integer.class));
             maxSubGroupDepth.put(accountType, environment.getProperty("accounts.group.subdepth." + key, Integer.class));
             todosPerMonth.put(accountType, environment.getProperty("accounts.todos.monthly." + key, Integer.class));
+            eventsPerMonth.put(accountType, environment.getProperty("accounts.events.monthly." + key, Integer.class));
         }
 
         log.info("Loaded account settings : messages = {}, group depth = {}", freeFormPerMonth, maxGroupNumber);
@@ -183,6 +186,7 @@ public class AccountBrokerImpl implements AccountBroker {
         account.setMaxSubGroupDepth(maxSubGroupDepth.get(accountType));
         account.setMaxNumberGroups(maxGroupNumber.get(accountType));
         account.setTodosPerGroupPerMonth(todosPerMonth.get(accountType));
+        account.setEventsPerGroupPerMonth(eventsPerMonth.get(accountType));
     }
 
     private int calculateSubscriptionFee(Account account, AccountType accountType) {
@@ -373,7 +377,7 @@ public class AccountBrokerImpl implements AccountBroker {
 
         log.info("removing {} administrators", account.getAdministrators().size());
         account.getAdministrators().stream().filter(u -> !u.getUid().equals(userUid))
-                .forEach(a -> removeAdministrator(userUid, accountUid, a.getUid(), true));
+                .forEach(a -> removeAdministrator(userUid, accountUid, a.getUid(), false));
 
         removeAdministrator(userUid, accountUid, userUid, false); // at the end, remove self
     }
@@ -584,6 +588,11 @@ public class AccountBrokerImpl implements AccountBroker {
     @Override
     public Map<AccountType, Integer> getAccountTypeFees() {
         return accountFees;
+    }
+
+    @Override
+    public Map<AccountType, Integer> getEventMonthlyLimits() {
+        return eventsPerMonth;
     }
 
     @Override
