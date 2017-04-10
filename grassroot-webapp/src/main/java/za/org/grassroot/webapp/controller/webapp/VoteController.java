@@ -8,6 +8,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.*;
@@ -53,6 +54,11 @@ public class VoteController extends BaseController {
         this.groupBroker = groupBroker;
         this.eventLogBroker = eventLogBroker;
         this.accountGroupBroker = accountGroupBroker;
+    }
+
+    @InitBinder
+    public void initBinder(WebDataBinder binder) {
+        binder.setAutoGrowCollectionLimit(2048);
     }
 
     @RequestMapping("create")
