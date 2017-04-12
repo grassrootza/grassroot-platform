@@ -10,6 +10,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.ServletRequestDataBinder;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
@@ -84,9 +85,6 @@ public class MeetingRestController {
                                                          @RequestParam String location,
                                                          @RequestParam(value="members", required = false) Set<String> members) {
 
-        log.info("REST : received meeting create request... with local date time: {}, and members: {}",
-                 eventStartDateTime.toString(), members == null ? "null" : members.toString());
-
         User user = userManagementService.findByInputNumber(phoneNumber);
         Set<String> assignedMemberUids = (members == null) ? new HashSet<>() : members;
         EventReminderType reminderType = reminderMinutes == -1 ? EventReminderType.GROUP_CONFIGURED : EventReminderType.CUSTOM;
@@ -101,6 +99,22 @@ public class MeetingRestController {
 	        return RestUtil.errorResponse(RestMessage.TIME_CANNOT_BE_IN_THE_PAST);
         } catch (AccountLimitExceededException e) {
             return RestUtil.errorResponse(RestMessage.EVENT_LIMIT_REACHED);
+        }
+    }
+
+    @RequestMapping(value = "/public/{phoneNumber}/{code}/{meetingUid}", method = RequestMethod.POST)
+    public ResponseEntity<ResponseWrapper> updateMeetingPublic(@PathVariable String phoneNumber, @PathVariable String meetingUid,
+                                                               @RequestParam boolean setPublic,
+                                                               @RequestParam(required = false) Double latitude,
+                                                               @RequestParam(required = false) Double longitude) {
+        User user = userManagementService.findByInputNumber(phoneNumber);
+        try {
+            GeoLocation location = longitude != null && latitude != null ? new GeoLocation(latitude, longitude) : null;
+            eventBroker.updateMeetingPublicStatus(user.getUid(), meetingUid, setPublic, location);
+            return RestUtil.okayResponseWithData(RestMessage.MEETING_PUBLIC_UPDATED,
+                    taskBroker.load(user.getUid(), meetingUid, TaskType.MEETING));
+        } catch (AccessDeniedException e) {
+            return RestUtil.errorResponse(RestMessage.PERMISSION_DENIED);
         }
     }
 
