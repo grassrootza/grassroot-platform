@@ -1,10 +1,12 @@
 package za.org.grassroot.services.geo;
 
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.GroupLocation;
 import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
+import za.org.grassroot.core.enums.TaskType;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -12,17 +14,27 @@ import java.util.List;
 import java.util.Set;
 
 public interface GeoLocationBroker {
+
 	void logUserLocation(String userUid, double latitude, double longitude, Instant time);
+
+	// means user has given us permission to log their location, through some action, so record it, and update entity
+	void logUserUssdPermission(String userUid, String entityToUpdateUid, JpaEntityType entityType);
 
 	void calculatePreviousPeriodUserLocations(LocalDate localDate);
 
 	void calculateGroupLocation(String groupUid, LocalDate localDate);
+
+	void calculateGroupLocationInstant(String groupUid, GeoLocation location);
 
 	// used for recalculating / improving existing meetings
 	void calculateMeetingLocationScheduled(String eventUid, LocalDate localDate);
 
 	// used for a meeting that has just been called
 	void calculateMeetingLocationInstant(String eventUid, GeoLocation location);
+
+	void calculateTodoLocationScheduled(String todoUid, LocalDate localDate);
+
+	void calculateTodoLocationInstant(String todoUid, GeoLocation location);
 
 	CenterCalculationResult calculateCenter(Set<String> userUids, LocalDate date);
 

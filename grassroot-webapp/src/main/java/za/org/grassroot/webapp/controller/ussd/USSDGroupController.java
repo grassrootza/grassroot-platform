@@ -3,18 +3,20 @@ package za.org.grassroot.webapp.controller.ussd;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.util.DateTimeUtil;
-import za.org.grassroot.services.group.GroupQueryBroker;
 import za.org.grassroot.core.dto.MembershipInfo;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.PermissionBroker;
-import za.org.grassroot.services.group.GroupPermissionTemplate;
 import za.org.grassroot.services.exception.GroupDeactivationNotAvailableException;
+import za.org.grassroot.services.geo.GeoLocationBroker;
+import za.org.grassroot.services.group.GroupPermissionTemplate;
+import za.org.grassroot.services.group.GroupQueryBroker;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
@@ -39,11 +41,12 @@ import static za.org.grassroot.webapp.util.USSDUrlUtil.*;
 @RestController
 public class USSDGroupController extends USSDController {
 
-    @Autowired
-    private PermissionBroker permissionBroker;
+    @Value("${grassroot.ussd.location.enabled:false}")
+    private boolean locationRequestEnabled;
 
-    @Autowired
-    private GroupQueryBroker groupQueryBroker;
+    private final PermissionBroker permissionBroker;
+    private final GroupQueryBroker groupQueryBroker;
+    private final GeoLocationBroker geoLocationBroker;
 
     private static final Logger log = LoggerFactory.getLogger(USSDGroupController.class);
 
@@ -72,9 +75,16 @@ public class USSDGroupController extends USSDController {
 
     private static final String groupUidParam = "groupUid";
 
+    @Autowired
+    public USSDGroupController(PermissionBroker permissionBroker, GroupQueryBroker groupQueryBroker, GeoLocationBroker geoLocationBroker) {
+        this.permissionBroker = permissionBroker;
+        this.groupQueryBroker = groupQueryBroker;
+        this.geoLocationBroker = geoLocationBroker;
+    }
+
     /*
-    First menu: display a list of groups, with the option to create a new one
-     */
+        First menu: display a list of groups, with the option to create a new one
+         */
     @RequestMapping(value = groupPath + startMenu)
     @ResponseBody
     public Request groupList(@RequestParam(value = phoneNumber, required = true) String inputNumber,
@@ -153,26 +163,56 @@ public class USSDGroupController extends USSDController {
             if (interrupted) {
                 createdGroup = groupBroker.load(groupUid);
             } else {
-                Long startTime = System.currentTimeMillis();
                 MembershipInfo creator = new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName());
                 createdGroup = groupBroker.create(user.getUid(), groupName, null, Collections.singleton(creator),
                         GroupPermissionTemplate.DEFAULT_GROUP, null, null, true);
-                Long endTime = System.currentTimeMillis();
-                log.info(String.format("Group has been created ... time taken ... %d msecs", endTime - startTime));
             }
 
             String joiningCode = "*134*1994*" + createdGroup.getGroupTokenCode() + "#";
             cacheManager.putUssdMenuForUser(inputNumber, saveGroupMenuWithInput(createGroupMenu + doSuffix, createdGroup.getUid(), groupName, false));
-            menu = new USSDMenu(getMessage(thisSection, createGroupMenu + doSuffix, promptKey,
-                    new String[]{groupName, joiningCode}, user));
 
-            menu.addMenuOption(groupMenuWithId(createGroupAddNumbers, createdGroup.getUid()),
-                    getMessage(thisSection, createGroupMenu + doSuffix, optionsKey + "numbers", user));
-            menu.addMenuOption(groupMenuWithId(closeGroupToken, createdGroup.getUid()),
-                    getMessage(thisSection, createGroupMenu + doSuffix, optionsKey + "token", user));
-
+            if (!locationRequestEnabled) {
+                menu = postCreateOptionsNoLocation(createdGroup.getUid(), groupName, joiningCode, user);
+            } else {
+                menu = postCreateOptionsWithLocation(createdGroup.getUid(), joiningCode, user);
+            }
         }
         return menuBuilder(menu);
+    }
+
+    private USSDMenu postCreateOptionsNoLocation(final String groupUid, final String groupName, final String joiningCode, User user) {
+        USSDMenu menu = new USSDMenu(getMessage(thisSection, createGroupMenu + doSuffix, promptKey,
+                new String[]{groupName, joiningCode}, user));
+
+        menu.addMenuOption(groupMenuWithId(createGroupAddNumbers, groupUid),
+                getMessage(thisSection, createGroupMenu + doSuffix, optionsKey + "numbers", user));
+        menu.addMenuOption(groupMenuWithId(closeGroupToken, groupUid),
+                getMessage(thisSection, createGroupMenu + doSuffix, optionsKey + "token", user));
+        return menu;
+    }
+
+    private USSDMenu postCreateOptionsWithLocation(final String groupUid, final String joiningCode, User user) {
+        USSDMenu menu = new USSDMenu(getMessage(thisSection, createGroupMenu + doSuffix, promptKey + ".location",
+                joiningCode, user));
+        menu.addMenuOption(groupMenuWithId("public", groupUid) + "&useLocation=true",
+                getMessage(thisSection, createGroupMenu + doSuffix, optionsKey + "public.location", user));
+        menu.addMenuOption(groupMenuWithId("public", groupUid) + "&useLocation=false",
+                getMessage(thisSection, createGroupMenu + doSuffix, optionsKey + "public.nolocation", user));
+        menu.addMenuOption(groupMenuWithId("private", groupUid),
+                getMessage(thisSection, createGroupMenu + doSuffix, optionsKey + "private", user));
+        return menu;
+    }
+
+    @RequestMapping(value = groupPath + "public")
+    public Request setGroupPublic(@RequestParam(phoneNumber) String inputNumber, @RequestParam(groupUidParam) String groupUid,
+                                  @RequestParam boolean useLocation) throws  URISyntaxException {
+        return null;
+    }
+
+    @RequestMapping(value = groupPath + "private")
+    public Request setGroupPrivate(@RequestParam(phoneNumber) String inputNumber, @RequestParam(groupUidParam) String groupUid)
+        throws URISyntaxException {
+        return null;
     }
 
     @RequestMapping(value = groupPath + closeGroupToken)

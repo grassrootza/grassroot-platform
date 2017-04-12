@@ -8,6 +8,7 @@ import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.LocationHolder;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
+import za.org.grassroot.core.enums.LocationSource;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
@@ -134,6 +135,11 @@ public class EventLog implements TaskLog, LocationHolder {
     }
 
     public boolean hasLocation() { return location != null; }
+
+    @Override
+    public LocationSource getSource() {
+        return LocationSource.LOGGED; // by definition
+    }
 
     @Override
     public String toString() {

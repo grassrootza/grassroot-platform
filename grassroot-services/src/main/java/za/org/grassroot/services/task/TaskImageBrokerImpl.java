@@ -241,6 +241,7 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
 
         if (location != null) {
             eventLog.setLocation(location);
+            geoLocationBroker.calculateMeetingLocationInstant(meeting.getUid(), location);
         }
 
         boolean uploadCompleted = storageBroker.storeImage(ActionLogType.EVENT_LOG, eventLog.getUid(), file);
@@ -264,6 +265,7 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
         TodoLog todoLog = new TodoLog(TodoLogType.IMAGE_RECORDED, user, todo, "Photo recorded");
         if (location != null) {
             todoLog.setLocation(location);
+            geoLocationBroker.calculateTodoLocationInstant(todo.getUid(), location);
         }
 
         boolean uploadCompleted = storageBroker.storeImage(TODO_LOG, todoLog.getUid(), file);

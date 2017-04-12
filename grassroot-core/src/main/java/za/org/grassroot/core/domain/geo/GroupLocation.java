@@ -1,6 +1,7 @@
 package za.org.grassroot.core.domain.geo;
 
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.enums.LocationSource;
 
 import javax.persistence.*;
 import java.time.LocalDate;
@@ -27,11 +28,15 @@ public class GroupLocation implements LocationHolder {
 	@Column(name = "score", nullable = false)
 	private float score;
 
+	@Column(name = "source", nullable = false)
+	@Enumerated(EnumType.STRING)
+	private LocationSource source;
+
 	private GroupLocation() {
 		// for JPA
 	}
 
-	public GroupLocation(Group group, LocalDate localDate, GeoLocation location, float score) {
+	public GroupLocation(Group group, LocalDate localDate, GeoLocation location, float score, LocationSource sourceType) {
 		this.group = Objects.requireNonNull(group);
 		this.localDate = Objects.requireNonNull(localDate);
 		this.location = Objects.requireNonNull(location);
@@ -40,6 +45,7 @@ public class GroupLocation implements LocationHolder {
 			throw new IllegalArgumentException("Score has to be between 0 and 1, but is: " + score);
 		}
 		this.score = score;
+		this.source = sourceType;
 	}
 
 	public Long getId() {
@@ -63,6 +69,8 @@ public class GroupLocation implements LocationHolder {
 	public float getScore() {
 		return score;
 	}
+
+	public LocationSource getSource() { return source; }
 
 	@Override
 	public boolean equals(Object o) {
