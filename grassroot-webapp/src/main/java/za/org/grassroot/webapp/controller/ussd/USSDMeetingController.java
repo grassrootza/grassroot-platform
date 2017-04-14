@@ -441,8 +441,9 @@ public class USSDMeetingController extends USSDController {
             return getMessage(thisSection, send, promptKey, user);
         } else {
             int numberEventsLeft = accountGroupBroker.numberEventsLeftForParent(eventUid);
-            return numberEventsLeft < EVENT_LIMIT_WARNING_THRESHOLD ? getMessage(thisSection, send, promptKey, user) :
-                    getMessage(thisSection, send, promptKey + ".limit", String.valueOf(numberEventsLeft), user);
+            return numberEventsLeft < EVENT_LIMIT_WARNING_THRESHOLD ?
+                    getMessage(thisSection, send, promptKey + ".limit", String.valueOf(numberEventsLeft), user) :
+                    getMessage(thisSection, send, promptKey, user);
         }
     }
 
