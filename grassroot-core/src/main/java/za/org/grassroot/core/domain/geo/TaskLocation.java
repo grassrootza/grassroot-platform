@@ -11,8 +11,8 @@ import java.time.Instant;
 /**
  * Created by luke on 2017/04/11.
  */
-@Entity
-@Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
+// @Entity
+// @Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
 public abstract class TaskLocation<P extends UidIdentifiable> {
 
     @Column(name = "calculated_time", nullable = false)

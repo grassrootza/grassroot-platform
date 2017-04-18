@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -14,6 +15,7 @@ import za.org.grassroot.core.domain.geo.ObjectLocation;
 import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.geo.ObjectLocationBroker;
+import za.org.grassroot.services.group.GroupLocationFilter;
 import za.org.grassroot.webapp.controller.BaseController;
 
 import java.util.ArrayList;
@@ -31,16 +33,16 @@ public class LocationController extends BaseController {
     private final ObjectLocationBroker objectLocationBroker;
 
     @Autowired
-    public LocationController (GeoLocationBroker geoLocationBroker, ObjectLocationBroker objectLocationBroker) {
+    public LocationController(GeoLocationBroker geoLocationBroker, ObjectLocationBroker objectLocationBroker) {
         this.geoLocationBroker = geoLocationBroker;
         this.objectLocationBroker = objectLocationBroker;
     }
 
     @RequestMapping(value = "/location", method = RequestMethod.GET)
-    public String search (@RequestParam(required = false) Integer radius,
-                          @RequestParam(required = false) Double latitude,
-                          @RequestParam(required = false) Double longitude,
-                          Model model) {
+    public String search(@RequestParam(required = false) Integer radius,
+                         @RequestParam(required = false) Double latitude,
+                         @RequestParam(required = false) Double longitude,
+                         Model model) {
 
         // Check radius
         Integer searchRadius = (radius == null ? DEFAULT_RADIUS : radius);
@@ -85,6 +87,19 @@ public class LocationController extends BaseController {
         model.addAttribute("radius", searchRadius);
         model.addAttribute("zoom", zoom);
         model.addAttribute("data", objectsToReturn);
+
+        // Create an empty filter object to start using
+        model.addAttribute("filter", new GroupLocationFilter(location, searchRadius, false));
+
+        return "location/map";
+    }
+
+    @RequestMapping(value = "/location", method = RequestMethod.GET)
+    public String searchWithFilter(@ModelAttribute GroupLocationFilter filter, Model model) {
+        model.addAttribute("user", getUserProfile());
+        model.addAttribute("location", filter.getCenter());
+        model.addAttribute("radius", filter.getRadius());
+        model.addAttribute("data", objectLocationBroker.fetchLocationsWithFilter(filter));
 
         return "location/map";
     }

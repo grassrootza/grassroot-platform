@@ -51,7 +51,6 @@ public class GroupRepositoryTest {
     @Autowired
     private EventRepository eventRepository;
 
-
     @Test
     public void shouldAddRole() throws Exception {
 
@@ -602,6 +601,28 @@ public class GroupRepositoryTest {
         assertNotNull(groups);
         assertTrue(groups.contains(tg1));
         assertFalse(groups.contains(tg2));
+    }
+
+    @Test
+    public void tempTestCountSizeMembers() {
+        assertThat(groupRepository.count(), is(0L));
+        User user1 = new User("56789");
+        User user2 = new User("12345");
+        Group group1 = new Group("test", user1);
+        group1.addMember(user1);
+        group1.addMember(user2);
+        groupRepository.save(group1);
+        assertThat(groupRepository.count(), is(1L));
+
+        List<Group> groups1 = groupRepository.findBySizeAbove(3);
+        assertTrue(groups1.isEmpty());
+
+        List<Group> groups2 = groupRepository.findBySizeAbove(1);
+        assertFalse(groups2.isEmpty());
+        assertTrue(groups2.contains(group1));
+
+        List<Group> groups3 = groupRepository.findByTasksMoreThan(0);
+        assertTrue(groups3.isEmpty());
     }
 
 }
