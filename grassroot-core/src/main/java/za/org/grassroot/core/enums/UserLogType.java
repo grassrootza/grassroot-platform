@@ -26,7 +26,8 @@ public enum UserLogType {
     CHANGED_ADDRESS("user changed address"),
     REMOVED_ADDRESS("user removed addres"),
     USED_PROMOTIONAL_CODE("user entered using a promotional code"),
-    GAVE_LOCATION_PERMISSION("user gave permission to track location");
+    GAVE_LOCATION_PERMISSION("user gave permission to track location"),
+    LOCATION_PERMISSION_ENABLED("msisdn added to ussd location tracking service");
 
 
     private final String text;

@@ -17,6 +17,7 @@ import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.geo.ObjectLocationBroker;
 import za.org.grassroot.services.group.GroupLocationFilter;
 import za.org.grassroot.webapp.controller.BaseController;
+import za.org.grassroot.webapp.model.web.GeoFilterFormModel;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -89,17 +90,19 @@ public class LocationController extends BaseController {
         model.addAttribute("data", objectsToReturn);
 
         // Create an empty filter object to start using
-        model.addAttribute("filter", new GroupLocationFilter(location, searchRadius, false));
+        model.addAttribute("filter", new GeoFilterFormModel(location, searchRadius));
 
         return "location/map";
     }
 
-    @RequestMapping(value = "/location", method = RequestMethod.GET)
-    public String searchWithFilter(@ModelAttribute GroupLocationFilter filter, Model model) {
+    @RequestMapping(value = "/location/filter", method = RequestMethod.GET)
+    public String searchWithFilter(@ModelAttribute GeoFilterFormModel filter, Model model) {
         model.addAttribute("user", getUserProfile());
-        model.addAttribute("location", filter.getCenter());
-        model.addAttribute("radius", filter.getRadius());
-        model.addAttribute("data", objectLocationBroker.fetchLocationsWithFilter(filter));
+        model.addAttribute("location", filter.getLocation());
+        model.addAttribute("radius", filter.getSearchRadius());
+
+        model.addAttribute("data",
+                objectLocationBroker.fetchLocationsWithFilter(GeoFilterFormModel.convertToFilter(filter)));
 
         return "location/map";
     }
