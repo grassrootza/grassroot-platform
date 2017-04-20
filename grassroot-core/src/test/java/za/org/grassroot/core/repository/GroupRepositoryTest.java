@@ -1,6 +1,5 @@
 package za.org.grassroot.core.repository;
 
-import org.hibernate.validator.internal.util.privilegedactions.SetAccessibility;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
@@ -14,15 +13,10 @@ import org.springframework.test.context.junit4.SpringRunner;
 import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.core.enums.GroupLogType;
 
-import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
 import javax.transaction.Transactional;
-import java.awt.*;
-import java.lang.reflect.Array;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
@@ -55,7 +49,101 @@ public class GroupRepositoryTest {
     @Autowired
     private EventRepository eventRepository;
 
+    @Autowired
+    private TodoRepository todoRepository;
 
+    @Test
+    public void shouldSaveUpComingEvents() {
+        User user1 = userRepository.save(new User("3456"));
+        Group group1 = groupRepository.save(new Group("Test Group", user1));
+        Event newEvent = eventRepository.save(new Meeting("new Meeting",
+                Instant.now().plus(1L, ChronoUnit.DAYS), user1, group1,
+                "limpopo"));
+
+        assertThat(eventRepository.count(), is(1L));
+        assertNotNull(group1.getUpcomingEvents(Predicate.isEqual(newEvent), false));
+        assertThat(group1.getUpcomingEvents(Predicate.isEqual(newEvent), false).size()
+                , is(1));
+        assertTrue(group1.getUpcomingEvents(Predicate.isEqual(newEvent), false).contains(newEvent));
+
+        Group group2 = groupRepository.save(new Group("Test Group", user1));
+        group2.getUpcomingEvents(Predicate.isEqual(newEvent), false);
+        newEvent.setParent(group2);
+        groupRepository.save(group2);
+        eventRepository.save(newEvent);
+
+        Group groupFromDb = groupRepository.findAll().iterator().next();
+        assertNotNull(groupFromDb.getUpcomingEvents(Predicate.isEqual(newEvent), false));
+        assertThat(groupFromDb.getUpcomingEvents(Predicate.isEqual(newEvent), false).size()
+                , is(1));
+
+        Event eventFromDb = eventRepository.findAll().iterator().next();
+        assertNotNull(eventFromDb.getParent());
+        assertTrue(eventFromDb.getParent().getUid().equals(group2.getUid()));
+
+
+    }
+
+
+    @Test
+    public void shouldSaveTodoReminder() {
+        User userToCreate = userRepository.save(new User("3456"));
+        Group groupToCreate = groupRepository.save(new Group("Test Group", userToCreate));
+        Todo newTask = todoRepository.save(new Todo(userToCreate, groupToCreate, "discuss way forward",
+                Instant.now().plus(1, ChronoUnit.DAYS)));
+
+
+        assertThat(todoRepository.count(), is(1L));
+        assertNotNull(groupToCreate.getDescendantTodos());
+        assertThat(groupToCreate.getDescendantTodos().size(), is(1));
+        assertTrue(groupToCreate.getDescendantTodos().contains(newTask));
+
+        Group groupToCreate1 = groupRepository.save(new Group("Test Group", userToCreate));
+        groupToCreate1.addDescendantTodo(newTask);
+        newTask.setParent(groupToCreate1);
+        groupRepository.save(groupToCreate1);
+        todoRepository.save(newTask);
+
+        Group groupFromDb = groupRepository.findOneByUid(groupToCreate1.getUid());
+        assertNotNull(groupFromDb.getDescendantTodos());
+        assertThat(groupFromDb.getDescendantTodos().size(), is(1));
+
+
+        Todo todoFromDb = todoRepository.findOneByUid(newTask.getUid());
+        assertNotNull(todoFromDb.getParent());
+        assertTrue(todoFromDb.getParent().getUid().equals(groupToCreate1.getUid()));
+    }
+
+
+    @Test
+    public void shouldSaveDefaultImage() {
+        User userToCreate = userRepository.save(new User("12345"));
+        Group groupToCreate = groupRepository.save(new Group("Test Group", userToCreate));
+
+        assertThat(groupRepository.count(), is(1L));
+        assertNotNull(groupToCreate);
+        groupToCreate.setDefaultImage(GroupDefaultImage.SOCIAL_MOVEMENT);
+        assertTrue(groupToCreate.getDefaultImage().equals(GroupDefaultImage.SOCIAL_MOVEMENT));
+
+        Group groupFromDB = groupRepository.findOneByUid(groupToCreate.getUid());
+        assertNotNull(groupFromDB);
+        assertTrue(groupToCreate.getDefaultImage().equals(GroupDefaultImage.SOCIAL_MOVEMENT));
+
+    }
+
+    @Test
+    public void ShouldSaveImageUrl() {
+
+        User userToCreate = userRepository.save(new User("12345"));
+        Group groupToCreate = groupRepository.save(new Group("Test Group", userToCreate));
+        assertThat(groupRepository.count(), is(1L));
+        assertNotNull(groupToCreate);
+        groupToCreate.setImageUrl("http");
+        assertTrue(groupToCreate.getImageUrl().equals("http"));
+        Group groupFromDb = groupRepository.findOneByImageUrl("http");
+        assertNotNull(groupFromDb);
+        assertTrue(groupToCreate.getImageUrl().equals("http"));
+    }
 
 
     @Test
@@ -319,7 +407,7 @@ public class GroupRepositoryTest {
 
         Group testGroup2 = groupRepository.save(new Group("testGroup2", newUser));
         testGroup2.addChildEvent(newEvent);
-        testGroup.setParent(testGroup2);
+        newEvent.setParent(testGroup2);
         groupRepository.save(testGroup2);
         eventRepository.save(newEvent);
 
@@ -329,7 +417,7 @@ public class GroupRepositoryTest {
 
         Event eventBackFromDb = eventRepository.findOneByUid(newEvent.getUid());
         assertNotNull(eventBackFromDb.getParent());
-        assertTrue(eventBackFromDb.getParent().getUid().equals(testGroup.getUid()));
+        assertTrue(eventBackFromDb.getParent().getUid().equals(testGroup2.getUid()));
 
     }
 
@@ -348,8 +436,8 @@ public class GroupRepositoryTest {
 
         Group testGroup1 = groupRepository.save(new Group("testGroup1",userToCreate));
         testGroup1.addDescendantEvent(createEvent);
-        testGroup.setParent(testGroup1);
-        testGroup1.addChildGroup(testGroup);
+        createEvent.setParent(testGroup1);
+        //testGroup1.addChildGroup(testGroup);
         groupRepository.save(testGroup1);
         eventRepository.save(createEvent);
 
@@ -359,7 +447,7 @@ public class GroupRepositoryTest {
 
         Event eventFromDB = eventRepository.findOneByUid(createEvent.getUid());
         assertNotNull(eventFromDB.getParent());
-        assertTrue(createEvent.getParent().getUid().equals(testGroup.getUid()));
+        assertTrue(createEvent.getParent().getUid().equals(testGroup1.getUid()));
 
     }
 
@@ -378,24 +466,7 @@ public class GroupRepositoryTest {
        assertTrue(groupFromDb.getJoinApprover().equals(newUser));
 
     }
-    /*
 
-    @Test
-    public void saveGroupDefaultImage() throws Exception {
-        User newUser = userRepository.save(new User("45677"));
-        Group newGroup = groupRepository.save(new Group("New Group", newUser));
-        Event newEvent = eventRepository.save(new Meeting("New Meeting",
-                Instant.now().plus(1L,
-                        ChronoUnit.DAYS),newUser,newGroup,"jozi hub"));
-
-        assertThat(eventRepository.count(),is(1L));
-        assertNotNull(newEvent);
-        assertTrue(newGroup.getReminderType().compareTo(EventReminderType.valueOf("")));
-
-
-
-    }
-    */
     /*
        code ends here
      */
