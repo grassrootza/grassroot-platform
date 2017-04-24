@@ -68,6 +68,7 @@ public class GroupRepositoryTest {
 
         Group group2 = groupRepository.save(new Group("Test Group", user1));
         group2.getUpcomingEvents(Predicate.isEqual(newEvent), false);
+
         newEvent.setParent(group2);
         groupRepository.save(group2);
         eventRepository.save(newEvent);
