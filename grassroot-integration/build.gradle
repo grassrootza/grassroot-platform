@@ -12,6 +12,8 @@ dependencies {
     compile group: 'org.springframework.social', name: 'spring-social-facebook', version: '2.0.3.RELEASE'
     compile group: 'org.springframework.boot', name: 'spring-boot-starter-mail', version: '1.4.1.RELEASE'
 
+    compile group: 'org.springframework.ws', name: 'spring-ws-core', version: '2.4.0.RELEASE'
+
     compile(group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.2') {
         exclude(module: 'commons-logging')
     }

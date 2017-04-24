@@ -16,8 +16,10 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 
+import static org.springframework.data.jpa.domain.Specifications.where;
 import static za.org.grassroot.core.enums.UserInterfaceType.UNKNOWN;
 import static za.org.grassroot.core.enums.UserInterfaceType.USSD;
+import static za.org.grassroot.core.specifications.UserLogSpecifications.*;
 
 /**
  * Created by luke on 2016/02/22.
@@ -107,27 +109,35 @@ public class AsyncUserLoggerImpl implements AsyncUserLogger {
     @Override
     @Transactional(readOnly = true)
     public int numberSessions(String userUid, UserInterfaceType interfaceType, Instant start, Instant end) {
-        return userLogRepository.countByUserUidAndUserLogTypeAndUserInterfaceAndCreationTimeBetween(
-                userUid, UserLogType.USER_SESSION, interfaceType, start, end);
+        return (int) userLogRepository.count(where(forUser(userUid))
+                .and(ofType(UserLogType.USER_SESSION))
+                .and(usingInterface(interfaceType))
+                .and(creationTimeBetween(start, end)));
     }
 
     @Override
     @Transactional(readOnly = true)
     public boolean hasSkippedName(String userUid) {
-        return (userLogRepository.countByUserUidAndUserLogTypeAndDescription(userUid, UserLogType.USER_SKIPPED_NAME, "") > 0);
+        return (int) userLogRepository.count(where(forUser(userUid))
+                .and(ofType(UserLogType.USER_SKIPPED_NAME))
+                .and(hasDescription(""))) > 0;
     }
 
     @Override
     @Transactional(readOnly = true)
     public boolean hasSkippedNamingGroup(String userUid, String groupUid) {
-        return userLogRepository.countByUserUidAndUserLogTypeAndDescription(userUid, UserLogType.USER_SKIPPED_NAME, groupUid) > 0;
+        return userLogRepository.count(where(forUser(userUid))
+                .and(ofType(UserLogType.USER_SKIPPED_NAME))
+                .and(hasDescription(groupUid))) > 0;
     }
 
     @Override
     public boolean hasUsedJoinCodeRecently(String userUid) {
         Instant end = Instant.now();
         Instant start = end.minus(5, ChronoUnit.MINUTES);
-        return userLogRepository.countByUserUidAndUserLogTypeAndCreationTimeBetween(userUid, UserLogType.USED_A_JOIN_CODE, start, end) > 0;
+        return userLogRepository.count(where(forUser(userUid))
+                .and(ofType(UserLogType.USED_A_JOIN_CODE))
+                .and(creationTimeBetween(start, end))) > 0;
     }
 
 

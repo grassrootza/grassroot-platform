@@ -4,6 +4,7 @@ import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
 import org.springframework.util.StringUtils;
@@ -15,6 +16,7 @@ import za.org.grassroot.core.domain.Address;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.integration.location.UssdLocationServicesBroker;
 import za.org.grassroot.services.user.AddressBroker;
 import za.org.grassroot.services.group.GroupQueryBroker;
 import za.org.grassroot.core.dto.MembershipInfo;
@@ -43,17 +45,16 @@ public class USSDSafetyGroupController extends USSDController {
 
     private static final Logger log = LoggerFactory.getLogger(USSDSafetyGroupController.class);
 
-    @Autowired
-    private Environment environment;
+    private String safetyTriggerString;
+    @Value("${grassroot.ussd.joincode.format:*134*1994*%s#}")
+    private String ussdCodeFormat;
+    @Value("${grassroot.ussd.safety.code:911}")
+    private String safetyCode;
 
-    @Autowired
-    private AddressBroker addressBroker;
-
-    @Autowired
-    private GroupQueryBroker groupQueryBroker;
-
-    @Autowired
-    private SafetyEventBroker safetyEventBroker;
+    private final AddressBroker addressBroker;
+    private final GroupQueryBroker groupQueryBroker;
+    private final SafetyEventBroker safetyEventBroker;
+    private final UssdLocationServicesBroker locationServicesBroker;
 
     private static final String
             createGroupMenu = "create",
@@ -73,14 +74,17 @@ public class USSDSafetyGroupController extends USSDController {
     private static final USSDSection thisSection = USSDSection.SAFETY_GROUP_MANAGER;
     private static final String groupUidParam = "groupUid";
 
-    private String safetyTriggerString;
+    public USSDSafetyGroupController(AddressBroker addressBroker, GroupQueryBroker groupQueryBroker, SafetyEventBroker safetyEventBroker, UssdLocationServicesBroker locationServicesBroker) {
+        this.addressBroker = addressBroker;
+        this.groupQueryBroker = groupQueryBroker;
+        this.safetyEventBroker = safetyEventBroker;
+        this.locationServicesBroker = locationServicesBroker;
+    }
 
     @PostConstruct
     private void init() {
-        safetyTriggerString = String.format(environment.getProperty("grassroot.ussd.joincode.format", "*134*1994*%s#"),
-                environment.getProperty("grassroot.ussd.safety.suffix", "911"));
+        safetyTriggerString = String.format(ussdCodeFormat, safetyCode);
     }
-
 
     @RequestMapping(value = safetyGroupPath + startMenu)
     @ResponseBody
