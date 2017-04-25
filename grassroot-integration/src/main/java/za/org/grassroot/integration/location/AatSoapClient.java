@@ -20,24 +20,41 @@ public class AatSoapClient extends WebServiceGatewaySupport {
     @Value("${grassroot.aat.lbs.password:password}")
     private String aatLbsPassword;
 
-    public AllowedMsisdnResponse addAllowedMsisdn(final String msisdn, final int permissionType) {
-        return (AllowedMsisdnResponse) getWebServiceTemplate()
-                .marshalSendAndReceive(new AatDummyRequestObject());
+    public AddAllowedMsisdnResponse addAllowedMsisdn(final String msisdn, final int permissionType) {
+        AddAllowedMsisdn addAllowedMsisdn = new AddAllowedMsisdn();
+        addAllowedMsisdn.setMsisdn(msisdn);
+        addAllowedMsisdn.setPermissionType(permissionType);
+        addAllowedMsisdn.setUsername(aatLbsUsername);
+        addAllowedMsisdn.setPassword(aatLbsPassword);
+        return (AddAllowedMsisdnResponse) getWebServiceTemplate()
+                .marshalSendAndReceive(addAllowedMsisdn);
     }
 
     public RemoveAllowedMsisdnResponse removeAllowedMsisdn(final String msisdn) {
+        RemoveAllowedMsisdn removeAllowedMsisdn = new RemoveAllowedMsisdn();
+        removeAllowedMsisdn.setMsisdn(msisdn);
+        removeAllowedMsisdn.setUsername(aatLbsUsername);
+        removeAllowedMsisdn.setPassword(aatLbsPassword);
         return (RemoveAllowedMsisdnResponse) getWebServiceTemplate()
-                .marshalSendAndReceive(new AatDummyRequestObject());
+                .marshalSendAndReceive(removeAllowedMsisdn);
     }
 
     public QueryAllowedMsisdnResponse queryAllowedMsisdnResponse(final String msisdn) {
+        QueryAllowedMsisdn request = new QueryAllowedMsisdn();
+        request.setMsisdn(msisdn);
+        request.setUsername(aatLbsUsername);
+        request.setPassword(aatLbsPassword);
         return (QueryAllowedMsisdnResponse) getWebServiceTemplate()
-                .marshalSendAndReceive(new AatDummyRequestObject());
+                .marshalSendAndReceive(request);
     }
 
     public GetLocationResponse getLocationResponse(final String msisdn) {
+        GetLocation request = new GetLocation();
+        request.setMsisdn(msisdn);
+        request.setUsername(aatLbsUsername);
+        request.setPassword(aatLbsPassword);
         return (GetLocationResponse) getWebServiceTemplate()
-                .marshalSendAndReceive(new AatDummyRequestObject());
+                .marshalSendAndReceive(request);
     }
 
 }

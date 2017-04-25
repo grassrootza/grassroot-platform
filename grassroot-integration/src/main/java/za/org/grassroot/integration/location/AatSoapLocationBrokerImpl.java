@@ -16,7 +16,7 @@ import za.org.grassroot.core.repository.UserLocationLogRepository;
 import za.org.grassroot.core.repository.UserLogRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.integration.exception.LocationNotAvailableException;
-import za.org.grassroot.integration.location.aatmodels.AllowedMsisdnResponse;
+import za.org.grassroot.integration.location.aatmodels.AddAllowedMsisdnResponse;
 import za.org.grassroot.integration.location.aatmodels.GetLocationResponse;
 import za.org.grassroot.integration.location.aatmodels.QueryAllowedMsisdnResponse;
 
@@ -52,8 +52,8 @@ public class AatSoapLocationBrokerImpl implements UssdLocationServicesBroker {
     @Transactional
     public boolean addUssdLocationLookupAllowed(String userUid, UserInterfaceType grantedThroughInterface) {
         User user = userRepository.findOneByUid(userUid);
-        AllowedMsisdnResponse response = aatSoapClient.addAllowedMsisdn(user.getPhoneNumber(), 0);
-        if (response.isSuccessful()) {
+        AddAllowedMsisdnResponse response = aatSoapClient.addAllowedMsisdn(user.getPhoneNumber(), 0);
+        if (isAddRequestSuccessful(response)) {
             UserLog successLog = new UserLog(userUid, UserLogType.LOCATION_PERMISSION_ENABLED,
                     "message from server", grantedThroughInterface);
             userLogRepository.save(successLog);
@@ -73,7 +73,7 @@ public class AatSoapLocationBrokerImpl implements UssdLocationServicesBroker {
         } else {
             User user = userRepository.findOneByUid(userUid);
             QueryAllowedMsisdnResponse response = aatSoapClient.queryAllowedMsisdnResponse(user.getPhoneNumber());
-            return response.isAllowed();
+            return isLbsLookupAllowed(response);
         }
     }
 
@@ -84,13 +84,31 @@ public class AatSoapLocationBrokerImpl implements UssdLocationServicesBroker {
         try {
             // todo : will need to use the accuracy score ...
             GetLocationResponse response = aatSoapClient.getLocationResponse(user.getPhoneNumber());
-            GeoLocation location = new GeoLocation(response.getX(), response.getY());
-            Instant timeOfCoord = Instant.ofEpochMilli(response.getCoordDate());
+            GeoLocation location = getLocationFromResposne(response);
+            Instant timeOfCoord = getLocationInstant(response);
             userLocationLogRepository.save(new UserLocationLog(timeOfCoord, userUid, location));
             return location;
         } catch (Exception e) {
             throw new LocationNotAvailableException();
         }
     }
+
+    // here: deal with the awfulness of the AAT XML schema
+    private boolean isAddRequestSuccessful(AddAllowedMsisdnResponse response) {
+        return response.getAddAllowedMsisdnResult().getContent().contains("approved");
+    }
+
+    private boolean isLbsLookupAllowed(QueryAllowedMsisdnResponse response) {
+        return false;
+    }
+
+    private GeoLocation getLocationFromResposne(GetLocationResponse response) {
+        return null;
+    }
+
+    private Instant getLocationInstant(GetLocationResponse response) {
+        return null;
+    }
+
 
 }

@@ -23,7 +23,7 @@ import javax.xml.bind.annotation.XmlType;
  *   &lt;complexContent>
  *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
  *       &lt;sequence>
- *         &lt;element name="QueryAllowedMsisdnResult" minOccurs="0">
+ *         &lt;element name="AddAllowedMsisdnResult" minOccurs="0">
  *           &lt;complexType>
  *             &lt;complexContent>
  *               &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
@@ -44,40 +44,40 @@ import javax.xml.bind.annotation.XmlType;
  */
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "", propOrder = {
-    "queryAllowedMsisdnResult"
+    "addAllowedMsisdnResult"
 })
-@XmlRootElement(name = "QueryAllowedMsisdnResponse", namespace = "http://lbs.gsm.co.za/")
+@XmlRootElement(name = "AddAllowedMsisdnResponse", namespace = "http://lbs.gsm.co.za/")
 @Generated(value = "com.sun.tools.internal.xjc.Driver", date = "2017-04-25T10:47:58+09:00", comments = "JAXB RI v2.2.8-b130911.1802")
-public class QueryAllowedMsisdnResponse {
+public class AddAllowedMsisdnResponse {
 
-    @XmlElement(name = "QueryAllowedMsisdnResult", namespace = "http://lbs.gsm.co.za/")
+    @XmlElement(name = "AddAllowedMsisdnResult", namespace = "http://lbs.gsm.co.za/")
     @Generated(value = "com.sun.tools.internal.xjc.Driver", date = "2017-04-25T10:47:58+09:00", comments = "JAXB RI v2.2.8-b130911.1802")
-    protected QueryAllowedMsisdnResponse.QueryAllowedMsisdnResult queryAllowedMsisdnResult;
+    protected AddAllowedMsisdnResponse.AddAllowedMsisdnResult addAllowedMsisdnResult;
 
     /**
-     * Gets the value of the queryAllowedMsisdnResult property.
+     * Gets the value of the addAllowedMsisdnResult property.
      * 
      * @return
      *     possible object is
-     *     {@link QueryAllowedMsisdnResponse.QueryAllowedMsisdnResult }
+     *     {@link AddAllowedMsisdnResponse.AddAllowedMsisdnResult }
      *     
      */
     @Generated(value = "com.sun.tools.internal.xjc.Driver", date = "2017-04-25T10:47:58+09:00", comments = "JAXB RI v2.2.8-b130911.1802")
-    public QueryAllowedMsisdnResponse.QueryAllowedMsisdnResult getQueryAllowedMsisdnResult() {
-        return queryAllowedMsisdnResult;
+    public AddAllowedMsisdnResponse.AddAllowedMsisdnResult getAddAllowedMsisdnResult() {
+        return addAllowedMsisdnResult;
     }
 
     /**
-     * Sets the value of the queryAllowedMsisdnResult property.
+     * Sets the value of the addAllowedMsisdnResult property.
      * 
      * @param value
      *     allowed object is
-     *     {@link QueryAllowedMsisdnResponse.QueryAllowedMsisdnResult }
+     *     {@link AddAllowedMsisdnResponse.AddAllowedMsisdnResult }
      *     
      */
     @Generated(value = "com.sun.tools.internal.xjc.Driver", date = "2017-04-25T10:47:58+09:00", comments = "JAXB RI v2.2.8-b130911.1802")
-    public void setQueryAllowedMsisdnResult(QueryAllowedMsisdnResponse.QueryAllowedMsisdnResult value) {
-        this.queryAllowedMsisdnResult = value;
+    public void setAddAllowedMsisdnResult(AddAllowedMsisdnResponse.AddAllowedMsisdnResult value) {
+        this.addAllowedMsisdnResult = value;
     }
 
 
@@ -105,7 +105,7 @@ public class QueryAllowedMsisdnResponse {
         "content"
     })
     @Generated(value = "com.sun.tools.internal.xjc.Driver", date = "2017-04-25T10:47:58+09:00", comments = "JAXB RI v2.2.8-b130911.1802")
-    public static class QueryAllowedMsisdnResult {
+    public static class AddAllowedMsisdnResult {
 
         @XmlMixed
         @XmlAnyElement(lax = true)

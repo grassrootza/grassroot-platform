@@ -23,7 +23,7 @@ import javax.xml.bind.annotation.XmlType;
  *   &lt;complexContent>
  *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
  *       &lt;sequence>
- *         &lt;element name="QueryAllowedMsisdnResult" minOccurs="0">
+ *         &lt;element name="QueryAllowedMsisdnWithNetworkResult" minOccurs="0">
  *           &lt;complexType>
  *             &lt;complexContent>
  *               &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
@@ -44,40 +44,40 @@ import javax.xml.bind.annotation.XmlType;
  */
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "", propOrder = {
-    "queryAllowedMsisdnResult"
+    "queryAllowedMsisdnWithNetworkResult"
 })
-@XmlRootElement(name = "QueryAllowedMsisdnResponse", namespace = "http://lbs.gsm.co.za/")
+@XmlRootElement(name = "QueryAllowedMsisdnWithNetworkResponse", namespace = "http://lbs.gsm.co.za/")
 @Generated(value = "com.sun.tools.internal.xjc.Driver", date = "2017-04-25T10:47:58+09:00", comments = "JAXB RI v2.2.8-b130911.1802")
-public class QueryAllowedMsisdnResponse {
+public class QueryAllowedMsisdnWithNetworkResponse {
 
-    @XmlElement(name = "QueryAllowedMsisdnResult", namespace = "http://lbs.gsm.co.za/")
+    @XmlElement(name = "QueryAllowedMsisdnWithNetworkResult", namespace = "http://lbs.gsm.co.za/")
     @Generated(value = "com.sun.tools.internal.xjc.Driver", date = "2017-04-25T10:47:58+09:00", comments = "JAXB RI v2.2.8-b130911.1802")
-    protected QueryAllowedMsisdnResponse.QueryAllowedMsisdnResult queryAllowedMsisdnResult;
+    protected QueryAllowedMsisdnWithNetworkResponse.QueryAllowedMsisdnWithNetworkResult queryAllowedMsisdnWithNetworkResult;
 
     /**
-     * Gets the value of the queryAllowedMsisdnResult property.
+     * Gets the value of the queryAllowedMsisdnWithNetworkResult property.
      * 
      * @return
      *     possible object is
-     *     {@link QueryAllowedMsisdnResponse.QueryAllowedMsisdnResult }
+     *     {@link QueryAllowedMsisdnWithNetworkResponse.QueryAllowedMsisdnWithNetworkResult }
      *     
      */
     @Generated(value = "com.sun.tools.internal.xjc.Driver", date = "2017-04-25T10:47:58+09:00", comments = "JAXB RI v2.2.8-b130911.1802")
-    public QueryAllowedMsisdnResponse.QueryAllowedMsisdnResult getQueryAllowedMsisdnResult() {
-        return queryAllowedMsisdnResult;
+    public QueryAllowedMsisdnWithNetworkResponse.QueryAllowedMsisdnWithNetworkResult getQueryAllowedMsisdnWithNetworkResult() {
+        return queryAllowedMsisdnWithNetworkResult;
     }
 
     /**
-     * Sets the value of the queryAllowedMsisdnResult property.
+     * Sets the value of the queryAllowedMsisdnWithNetworkResult property.
      * 
      * @param value
      *     allowed object is
-     *     {@link QueryAllowedMsisdnResponse.QueryAllowedMsisdnResult }
+     *     {@link QueryAllowedMsisdnWithNetworkResponse.QueryAllowedMsisdnWithNetworkResult }
      *     
      */
     @Generated(value = "com.sun.tools.internal.xjc.Driver", date = "2017-04-25T10:47:58+09:00", comments = "JAXB RI v2.2.8-b130911.1802")
-    public void setQueryAllowedMsisdnResult(QueryAllowedMsisdnResponse.QueryAllowedMsisdnResult value) {
-        this.queryAllowedMsisdnResult = value;
+    public void setQueryAllowedMsisdnWithNetworkResult(QueryAllowedMsisdnWithNetworkResponse.QueryAllowedMsisdnWithNetworkResult value) {
+        this.queryAllowedMsisdnWithNetworkResult = value;
     }
 
 
@@ -105,7 +105,7 @@ public class QueryAllowedMsisdnResponse {
         "content"
     })
     @Generated(value = "com.sun.tools.internal.xjc.Driver", date = "2017-04-25T10:47:58+09:00", comments = "JAXB RI v2.2.8-b130911.1802")
-    public static class QueryAllowedMsisdnResult {
+    public static class QueryAllowedMsisdnWithNetworkResult {
 
         @XmlMixed
         @XmlAnyElement(lax = true)

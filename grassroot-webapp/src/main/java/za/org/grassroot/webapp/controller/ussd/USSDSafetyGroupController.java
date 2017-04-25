@@ -3,9 +3,7 @@ package za.org.grassroot.webapp.controller.ussd;
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,12 +14,14 @@ import za.org.grassroot.core.domain.Address;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.integration.location.UssdLocationServicesBroker;
-import za.org.grassroot.services.user.AddressBroker;
-import za.org.grassroot.services.group.GroupQueryBroker;
 import za.org.grassroot.core.dto.MembershipInfo;
+import za.org.grassroot.core.enums.UserInterfaceType;
+import za.org.grassroot.integration.exception.LocationTrackingImpossibleException;
+import za.org.grassroot.integration.location.UssdLocationServicesBroker;
 import za.org.grassroot.services.SafetyEventBroker;
 import za.org.grassroot.services.group.GroupPermissionTemplate;
+import za.org.grassroot.services.group.GroupQueryBroker;
+import za.org.grassroot.services.user.AddressBroker;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
@@ -134,6 +134,37 @@ public class USSDSafetyGroupController extends USSDController {
         String prompt = getMessage(thisSection, pickGroup, promptKey + ".done", new String[] { group.getGroupName(), safetyTriggerString }, user);
         USSDMenu menu = new USSDMenu(prompt, optionsHomeExit(user, false));
         return menuBuilder(menu);
+    }
+
+    /*
+    SECTION: Request and grant permission to track location
+     */
+
+    @RequestMapping(value = safetyGroupPath + "location/request")
+    @ResponseBody
+    public Request requestLocationTracking(@RequestParam String msisdn) throws URISyntaxException {
+        User user = userManager.findByInputNumber(msisdn);
+
+        USSDMenu menu = new USSDMenu("Can we track you?", optionsYesNo(user,
+                safetyGroupPath + "location/request/allowed",
+                safetyGroupPath + "location/request/denied"));
+
+        return menuBuilder(menu);
+    }
+
+    @RequestMapping(value = safetyGroupPath + "location/request/allowed")
+    @ResponseBody
+    public Request approveLocationTracking(@RequestParam String msisdn) throws URISyntaxException {
+        User user = userManager.findByInputNumber(msisdn);
+
+        try {
+            locationServicesBroker.addUssdLocationLookupAllowed(user.getUid(), UserInterfaceType.USSD);
+            USSDMenu menu = new USSDMenu("Okay, we have done that", optionsHomeExit(user, true));
+            return menuBuilder(menu);
+        } catch (LocationTrackingImpossibleException e) {
+            USSDMenu menu2 = new USSDMenu("Oops we couldn't do that", optionsHomeExit(user, true));
+            return menuBuilder(menu2);
+        }
     }
 
     /*
