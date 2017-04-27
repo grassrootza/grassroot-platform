@@ -12,7 +12,7 @@ import org.springframework.oxm.jaxb.Jaxb2Marshaller;
  * Created by luke on 2017/04/24.
  */
 @Configuration
-@ConditionalOnProperty(name = "ussd.location.service", havingValue = "aat_soap", matchIfMissing = false)
+@ConditionalOnProperty(name = "grassroot.ussd.location.service", havingValue = "aat_soap", matchIfMissing = false)
 public class AatLocationSoapConfiguration {
 
     private static final Logger logger = LoggerFactory.getLogger(AatLocationSoapConfiguration.class);
@@ -26,7 +26,7 @@ public class AatLocationSoapConfiguration {
     @Bean
     public Jaxb2Marshaller marshaller() {
         Jaxb2Marshaller marshaller = new Jaxb2Marshaller();
-        marshaller.setContextPaths(aatSchema);
+        marshaller.setPackagesToScan("za.org.grassroot.integration.location.aatmodels");
         return marshaller;
     }
 

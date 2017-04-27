@@ -9,7 +9,6 @@ import za.org.grassroot.integration.location.aatmodels.*;
 /**
  * Created by luke on 2017/04/24.
  */
-
 public class AatSoapClient extends WebServiceGatewaySupport {
 
     private static final Logger logger = LoggerFactory.getLogger(AatSoapClient.class);

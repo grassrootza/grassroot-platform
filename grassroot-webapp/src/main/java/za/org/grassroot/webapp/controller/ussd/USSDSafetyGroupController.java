@@ -3,6 +3,7 @@ package za.org.grassroot.webapp.controller.ussd;
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.util.StringUtils;
@@ -54,7 +55,7 @@ public class USSDSafetyGroupController extends USSDController {
     private final AddressBroker addressBroker;
     private final GroupQueryBroker groupQueryBroker;
     private final SafetyEventBroker safetyEventBroker;
-    private final UssdLocationServicesBroker locationServicesBroker;
+    private UssdLocationServicesBroker locationServicesBroker;
 
     private static final String
             createGroupMenu = "create",
@@ -74,10 +75,16 @@ public class USSDSafetyGroupController extends USSDController {
     private static final USSDSection thisSection = USSDSection.SAFETY_GROUP_MANAGER;
     private static final String groupUidParam = "groupUid";
 
-    public USSDSafetyGroupController(AddressBroker addressBroker, GroupQueryBroker groupQueryBroker, SafetyEventBroker safetyEventBroker, UssdLocationServicesBroker locationServicesBroker) {
+    @Autowired
+    public USSDSafetyGroupController(AddressBroker addressBroker, GroupQueryBroker groupQueryBroker, SafetyEventBroker safetyEventBroker) {
         this.addressBroker = addressBroker;
         this.groupQueryBroker = groupQueryBroker;
         this.safetyEventBroker = safetyEventBroker;
+        this.locationServicesBroker = locationServicesBroker;
+    }
+
+    @Autowired(required = false)
+    public void setLocationServicesBroker(UssdLocationServicesBroker locationServicesBroker) {
         this.locationServicesBroker = locationServicesBroker;
     }
 

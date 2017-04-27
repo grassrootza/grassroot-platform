@@ -29,8 +29,8 @@ import static za.org.grassroot.core.specifications.UserLogSpecifications.ofType;
 /**
  * Created by luke on 2017/04/19.
  */
-@Service("AAT_SOAP_LBS")
-@ConditionalOnProperty(name = "ussd.location.service", havingValue = "aat_soap", matchIfMissing = false)
+@Service
+@ConditionalOnProperty(name = "grassroot.ussd.location.service", havingValue = "aat_soap", matchIfMissing = false)
 public class AatSoapLocationBrokerImpl implements UssdLocationServicesBroker {
 
     private static final Logger logger = LoggerFactory.getLogger(AatSoapLocationBrokerImpl.class);
