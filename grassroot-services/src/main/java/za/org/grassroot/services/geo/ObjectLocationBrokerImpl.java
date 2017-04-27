@@ -29,7 +29,7 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
     public List<ObjectLocation> fetchGroupLocations(GeoLocation geoLocation, Integer radius) {
         // TODO: 1) Use the user restrictions and search for public groups
         // TODO: 2) Use the radius to search
-        // TODO: 3) Param check
+        // TODO: 3) Param check - throw relevant exception
 
         List<ObjectLocation> list = entityManager.createQuery(
                 "SELECT NEW za.org.grassroot.core.domain.geo.ObjectLocation(" +
