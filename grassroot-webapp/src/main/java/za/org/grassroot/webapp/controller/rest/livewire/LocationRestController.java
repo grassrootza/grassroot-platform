@@ -21,7 +21,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * TODO: Remove logger.debugs
+ * TODO: Create token logic
  */
 @RestController
 @RequestMapping(value = "/api/location", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -37,12 +37,11 @@ public class LocationRestController {
         this.geoLocationBroker = geoLocationBroker;
     }
 
-    //TODO: token
     @RequestMapping(value = "/list", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> search (@RequestParam(value = "latitude", required = true) Double latitude,
                                                    @RequestParam(value = "longitude", required = true) Double longitude,
-                                                   @RequestParam(value = "token", required = true) String token,
-                                                   @RequestParam(value = "radius", required = false) Integer radius) {
+                                                   @RequestParam(value = "radius", required = false) Integer radius,
+                                                   @RequestParam(value = "token", required = true) String token) {
 
         log.info("Attempting to list events locations...");
 
@@ -69,8 +68,9 @@ public class LocationRestController {
         log.info("Groups: {}", groups);
 
         // Load meetings
-        if (true) { //TODO: Use the new table [meeting_location]
+        if (true) {
             for (ObjectLocation group : groups) {
+
                 // Get meetings
                 List<ObjectLocation> meetings = objectLocationBroker.fetchMeetingLocationsByGroup(group, location, radius);
 
@@ -86,7 +86,7 @@ public class LocationRestController {
 
         // Check results
         if (objectsToReturn.isEmpty()) {
-            log.info("found no objects ... returning empty ...");
+            log.info("Found no objects ... returning empty ...");
             responseEntity = RestUtil.okayResponseWithData(RestMessage.NO_GROUP_MATCHING_TERM_FOUND, Collections.emptyList());
         } else {
             responseEntity = RestUtil.okayResponseWithData(RestMessage.POSSIBLE_GROUP_MATCHES, objectsToReturn);
