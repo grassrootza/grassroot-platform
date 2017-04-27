@@ -27,27 +27,21 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
     @Override
     @Transactional(readOnly = true)
     public List<ObjectLocation> fetchGroupLocations(GeoLocation geoLocation, Integer radius) {
-
         // TODO: 1) Use the user restrictions and search for public groups
         // TODO: 2) Use the radius to search
+        // TODO: 3) Param check
+
         List<ObjectLocation> list = entityManager.createQuery(
-                "select NEW za.org.grassroot.core.domain.geo.ObjectLocation("
-                        + " g.uid"
-                        + ",g.groupName"
-                        + ",l.location.latitude"
-                        + ",l.location.longitude"
-                        + ",l.score"
-                        + ",'GROUP'"
-                        + ",g.description"
-                        + ")"
-                        + " from GroupLocation l"
-                        + " inner join l.group g"
-                        + " where g.discoverable = true and l.localDate <= :date and"
-                        + " l.localDate = (select max(ll.localDate) from GroupLocation ll where ll.group = l.group)",
-                ObjectLocation.class
-                )
-                .setParameter("date", LocalDate.now())
-                .getResultList();
+                "SELECT NEW za.org.grassroot.core.domain.geo.ObjectLocation(" +
+                        "g.uid, g.groupName, l.location.latitude, l.location.longitude, l.score, 'GROUP', g.description) " +
+                "FROM GroupLocation l " +
+                "INNER JOIN l.group g " +
+                "WHERE g.discoverable = true " +
+                "AND l.localDate <= :date " +
+                "AND l.localDate = (SELECT MAX(ll.localDate) FROM GroupLocation ll WHERE ll.group = l.group)",
+                ObjectLocation.class)
+            .setParameter("date", LocalDate.now())
+            .getResultList();
 
         return (list.isEmpty() ? new ArrayList<>() : list);
     }
