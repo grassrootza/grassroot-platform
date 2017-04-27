@@ -47,37 +47,54 @@ public class LocationController extends BaseController {
 
         // Get user
         final User user = getUserProfile();
-        log.info("the user {} and radius {}", user, radius);
+        log.info("The user {} and radius {}", user, searchRadius);
 
         // Center the map on either the provided position, or user's last average location, or a default
         // and set the zoom level appropriately (lower for less precise measurements)
         GeoLocation location;
-        int zoom;
+        int zoom = 13;
 
+        // Check parameters
         if (latitude != null && longitude != null) {
+            // Use the passed location
             location = new GeoLocation(latitude, longitude);
             zoom = 13; // todo : calculate or pass as option
         } else if (geoLocationBroker.fetchUserLocation(user.getUid()) != null) {
+            // Use User location
             PreviousPeriodUserLocation lastUserLocation = geoLocationBroker.fetchUserLocation(user.getUid());
             location = lastUserLocation.getLocation();
-            zoom = 13;
         } else {
+            // Use the default location
             location = new GeoLocation(defaultLatitude, defaultLongitude);
             zoom = 11;
         }
+        log.info("The location {}", location);
 
         // Returns list
         List<ObjectLocation> objectsToReturn = new ArrayList<>();
 
         // Load groups
         List<ObjectLocation> groups = objectLocationBroker.fetchGroupLocations(location, searchRadius);
-        log.info("groups found: {}", groups.size());
+        log.info("Groups found: {}", groups.size());
 
         // Save groups
         objectsToReturn.addAll(groups);
 
         // Load meetings
-        objectsToReturn.addAll(objectLocationBroker.fetchMeetingLocations(location, searchRadius));
+        if (groups.size() > 0) {
+            for (ObjectLocation group : groups) {
+                // Get meetings
+                List<ObjectLocation> meetings = objectLocationBroker.fetchMeetingLocationsByGroup(group, location, searchRadius);
+
+                // Concat the results
+                objectsToReturn.addAll(meetings);
+            }
+        } else {
+            List<ObjectLocation> meetings = objectLocationBroker.fetchMeetingLocations(location, searchRadius);
+
+            // Concat the results
+            objectsToReturn.addAll(meetings);
+        }
 
         // Send response
         model.addAttribute("user", user);

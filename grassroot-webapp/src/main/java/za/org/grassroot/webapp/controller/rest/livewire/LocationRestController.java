@@ -44,19 +44,19 @@ public class LocationRestController {
                                                    @RequestParam(value = "token", required = true) String token,
                                                    @RequestParam(value = "radius", required = false) Integer radius) {
 
-        log.debug("Attempting to list events locations...");
+        log.info("Attempting to list events locations...");
 
         // Check radius
         Integer searchRadius = (radius == null ? DEFAULT_RADIUS : radius);
 
         // Create location
         GeoLocation location = new GeoLocation(latitude, longitude);
-        log.debug("Location: " + location);
+        log.info("Location: " + location);
 
         // Mount filter
         ResponseEntity<ResponseWrapper> responseEntity;
         GroupLocationFilter filter = new GroupLocationFilter(location, searchRadius, false);
-        log.debug("Searching for groups and with location filter = {}", filter);
+        log.info("Searching for groups and with location filter = {}", filter);
 
         // Returns list
         List<ObjectLocation> objectsToReturn = new ArrayList<>();
@@ -66,6 +66,7 @@ public class LocationRestController {
 
         // Save groups
         objectsToReturn.addAll(groups);
+        log.info("Groups: {}", groups);
 
         // Load meetings
         if (true) { //TODO: Use the new table [meeting_location]
@@ -85,7 +86,7 @@ public class LocationRestController {
 
         // Check results
         if (objectsToReturn.isEmpty()) {
-            log.debug("found no objects ... returning empty ...");
+            log.info("found no objects ... returning empty ...");
             responseEntity = RestUtil.okayResponseWithData(RestMessage.NO_GROUP_MATCHING_TERM_FOUND, Collections.emptyList());
         } else {
             responseEntity = RestUtil.okayResponseWithData(RestMessage.POSSIBLE_GROUP_MATCHES, objectsToReturn);
