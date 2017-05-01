@@ -98,36 +98,50 @@ public class USSDSafetyGroupController extends USSDController {
     public Request manageSafetyGroup(@RequestParam String msisdn) throws URISyntaxException {
         User user = userManager.findByInputNumber(msisdn);
 
-        USSDMenu menu;
-        if (user.hasSafetyGroup()) {
-            Group group = user.getSafetyGroup();
-            menu = new USSDMenu(getMessage(thisSection, startMenu, promptKey + ".hasgroup", new String[] { group.getGroupName(),
-                    safetyTriggerString }, user));
-            if (!addressBroker.hasAddress(user.getUid())) {
-                menu.addMenuOption(safetyMenus + addAddress, getMessage(thisSection, startMenu, optionsKey + addAddress, user));
-            } else {
-                menu.addMenuOption(safetyMenus+ viewAddress, getMessage(thisSection, startMenu, optionsKey + viewAddress, user));
-            }
-            menu.addMenuOption(safetyMenus + addRespondents + "?groupUid=" + group.getUid(),
-                    getMessage(thisSection, startMenu, optionsKey + "add.respondents", user));
-            menu.addMenuOption(safetyMenus + resetSafetyGroup, getMessage(thisSection, startMenu, optionsKey + resetSafetyGroup, user));
-        } else {
-            menu = new USSDMenu(getMessage(thisSection, startMenu, promptKey + ".nogroup", user));
-            if (groupQueryBroker.fetchUserCreatedGroups(user, 0, 1).getTotalElements() != 0) {
-                menu.addMenuOption(safetyMenus + pickGroup, getMessage(thisSection, startMenu, optionsKey + "existing", user));
-            }
-            menu.addMenuOption(safetyMenus + newGroup, getMessage(thisSection, startMenu, optionsKey + "new", user));
-        }
+        USSDMenu menu = user.hasSafetyGroup() ? createOpeningMenuHasGroup(user) :
+                createOpeningMenuNoGroup(user);
 
-        menu.addMenuOption(startMenu + "_force", getMessage(optionsKey + "back.main", user));
+        menu.addMenuOption(startMenu + "_force",
+                getMessage(optionsKey + "back.main", user));
+
         return menuBuilder(menu);
+    }
+
+    private USSDMenu createOpeningMenuHasGroup(User user) {
+        Group group = user.getSafetyGroup();
+
+        USSDMenu menu = new USSDMenu(getMessage(thisSection, startMenu, promptKey + ".hasgroup", new String[] { group.getGroupName(),
+                safetyTriggerString }, user));
+
+        menu.addMenuOption(safetyMenus + "location/request",
+                getMessage(thisSection, startMenu, optionsKey + "location", user));
+
+        if (addressBroker.hasAddress(user.getUid())) {
+            menu.addMenuOption(safetyMenus+ viewAddress, getMessage(thisSection, startMenu, optionsKey + viewAddress, user));
+        } else {
+            menu.addMenuOption(safetyMenus + addAddress, getMessage(thisSection, startMenu, optionsKey + addAddress, user));
+        }
+        menu.addMenuOption(safetyMenus + addRespondents + "?groupUid=" + group.getUid(),
+                getMessage(thisSection, startMenu, optionsKey + "add.respondents", user));
+        menu.addMenuOption(safetyMenus + resetSafetyGroup, getMessage(thisSection, startMenu, optionsKey + resetSafetyGroup, user));
+        return menu;
+    }
+
+    private USSDMenu createOpeningMenuNoGroup(User user) {
+        USSDMenu menu = new USSDMenu(getMessage(thisSection, startMenu, promptKey + ".nogroup", user));
+        if (groupQueryBroker.fetchUserCreatedGroups(user, 0, 1).getTotalElements() != 0) {
+            menu.addMenuOption(safetyMenus + pickGroup, getMessage(thisSection, startMenu, optionsKey + "existing", user));
+        }
+        menu.addMenuOption(safetyMenus + newGroup, getMessage(thisSection, startMenu, optionsKey + "new", user));
+        return menu;
     }
 
     @RequestMapping(value = safetyGroupPath + pickGroup)
     @ResponseBody
     public Request pickSafetyGroup(@RequestParam String msisdn) throws URISyntaxException {
         User user = userManager.findByInputNumber(msisdn);
-        USSDMenu menu = ussdGroupUtil.showUserCreatedGroupsForSafetyFeature(user, thisSection, safetyMenus + pickGroup + doSuffix, 0);
+        USSDMenu menu = ussdGroupUtil.showUserCreatedGroupsForSafetyFeature(user, thisSection,
+                safetyMenus + pickGroup + doSuffix, 0);
         return menuBuilder(menu);
     }
 
@@ -152,9 +166,10 @@ public class USSDSafetyGroupController extends USSDController {
     public Request requestLocationTracking(@RequestParam String msisdn) throws URISyntaxException {
         User user = userManager.findByInputNumber(msisdn);
 
-        USSDMenu menu = new USSDMenu("Can we track you?", optionsYesNo(user,
-                safetyGroupPath + "location/request/allowed",
-                safetyGroupPath + "location/request/denied"));
+        final String prompt = getMessage(thisSection, "tracking.request", promptKey, user);
+        USSDMenu menu = new USSDMenu(prompt, optionsYesNo(user,
+                safetyMenus + "location/request/allowed?dummy=1",
+                safetyMenus + "location/request/denied?dummy=1"));
 
         return menuBuilder(menu);
     }
