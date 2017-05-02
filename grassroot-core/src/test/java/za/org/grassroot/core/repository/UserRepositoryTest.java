@@ -56,19 +56,6 @@ public class UserRepositoryTest {
     /* Gaven below     */
 
 
-    @Test
-    public void shouldCheckWebProfile() {
-        assertThat(userRepository.count(), is(0L));
-        User userProfile = new User("12345");
-        assertNull(userProfile.getId());
-        assertNotNull(userProfile.getUid());
-        userRepository.save(userProfile);
-
-        User fromDb = userRepository.findAll().iterator().next();
-        assertNotNull(fromDb.getUid());
-        fromDb.setHasWebProfile(true);
-        assertTrue(fromDb.isHasWebProfile());
-    }
 
     @Test
     public void shouldCheckAndroidProfile() {
@@ -76,11 +63,11 @@ public class UserRepositoryTest {
         User userProfile = new User("12345");
         assertNull(userProfile.getId());
         assertNotNull(userProfile.getUid());
+        userProfile.setHasAndroidProfile(true);
         userRepository.save(userProfile);
 
         User fromDb = userRepository.findAll().iterator().next();
         assertNotNull(fromDb.getUid());
-        fromDb.setHasAndroidProfile(true);
         assertTrue(fromDb.hasAndroidProfile());
     }
 
