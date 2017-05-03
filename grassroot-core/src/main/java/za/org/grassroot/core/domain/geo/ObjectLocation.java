@@ -103,9 +103,9 @@ public class ObjectLocation {
         this.uid = uid;
         this.type = type;
         if (JpaEntityType.GROUP.toString().equals(type))
-            this.url = "/group/public/view?groupUid=" + uid;
+            this.url = "/group/view?groupUid=" + uid;
         else
-            this.url = "/meeting/public/view?eventUid=" + uid;
+            this.url = "/meeting/view?eventUid=" + uid;
     }
 
     public ObjectLocation (String uid, String name, double latitude, double longitude, float score, String type) {
