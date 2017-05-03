@@ -68,7 +68,7 @@ public class LocationRestController {
         log.info("Groups: {}", groups);
 
         // Load meetings
-        if (true) {
+        if (groups.size() > 0) {
             for (ObjectLocation group : groups) {
 
                 // Get meetings
