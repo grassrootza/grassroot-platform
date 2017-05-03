@@ -12,6 +12,10 @@ public interface UssdLocationServicesBroker {
     // give it through Android)
     boolean addUssdLocationLookupAllowed(String userUid, UserInterfaceType grantedThroughInterface);
 
+    boolean removeUssdLocationLookup(String userUid, UserInterfaceType revokedThroughInterface);
+
+    boolean hasUserGivenLocationPermission(String userUid);
+
     boolean isUssdLocationLookupAllowed(String userUid);
 
     GeoLocation getUssdLocationForUser(String userUid);

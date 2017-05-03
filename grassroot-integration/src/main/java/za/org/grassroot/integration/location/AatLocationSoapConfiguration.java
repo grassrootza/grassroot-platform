@@ -20,8 +20,8 @@ public class AatLocationSoapConfiguration {
     @Value("${aat.lbs.soap.url:http://localhost:8080}")
     private String aatSoapUrl;
 
-    @Value("${aat.lbs.soap.schema:aatschema.wdsl}")
-    private String aatSchema;
+    // @Value("${aat.lbs.soap.schema:aatschema.wdsl}")
+    // private String aatSchema;
 
     @Bean
     public Jaxb2Marshaller marshaller() {

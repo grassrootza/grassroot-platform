@@ -38,6 +38,13 @@ public class StubLocationBrokerImpl implements UssdLocationServicesBroker {
     }
 
     @Override
+    public boolean removeUssdLocationLookup(String userUid, UserInterfaceType revokedThroughInterface) {
+        User user = userRepository.findOneByUid(userUid);
+        logger.info("Removing user ussd location, user name: {}, phone: {}");
+        return returnValue;
+    }
+
+    @Override
     public boolean isUssdLocationLookupAllowed(String userUid) {
         return returnValue;
     }
@@ -46,4 +53,7 @@ public class StubLocationBrokerImpl implements UssdLocationServicesBroker {
     public GeoLocation getUssdLocationForUser(String userUid) {
         return new GeoLocation(testLat, testLong);
     }
+
+    @Override
+    public boolean hasUserGivenLocationPermission(String userUid) { return returnValue; }
 }

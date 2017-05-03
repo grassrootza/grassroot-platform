@@ -15,8 +15,10 @@ import za.org.grassroot.core.domain.Address;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.enums.UserInterfaceType;
+import za.org.grassroot.integration.exception.LocationNotAvailableException;
 import za.org.grassroot.integration.exception.LocationTrackingImpossibleException;
 import za.org.grassroot.integration.location.UssdLocationServicesBroker;
 import za.org.grassroot.services.SafetyEventBroker;
@@ -113,8 +115,13 @@ public class USSDSafetyGroupController extends USSDController {
         USSDMenu menu = new USSDMenu(getMessage(thisSection, startMenu, promptKey + ".hasgroup", new String[] { group.getGroupName(),
                 safetyTriggerString }, user));
 
-        menu.addMenuOption(safetyMenus + "location/request",
-                getMessage(thisSection, startMenu, optionsKey + "location", user));
+        if (!locationServicesBroker.hasUserGivenLocationPermission(user.getUid())) {
+            menu.addMenuOption(safetyMenus + "location/request",
+                    getMessage(thisSection, startMenu, optionsKey + "track", user));
+        } else {
+            menu.addMenuOption(safetyMenus + "location/current",
+                    getMessage(thisSection, startMenu, optionsKey + "location", user));
+        }
 
         if (addressBroker.hasAddress(user.getUid())) {
             menu.addMenuOption(safetyMenus+ viewAddress, getMessage(thisSection, startMenu, optionsKey + viewAddress, user));
@@ -159,6 +166,8 @@ public class USSDSafetyGroupController extends USSDController {
 
     /*
     SECTION: Request and grant permission to track location
+    todo : think through menu flow for after-approved
+    todo : enable viewing and override of geolocation tagging
      */
 
     @RequestMapping(value = safetyGroupPath + "location/request")
@@ -168,7 +177,7 @@ public class USSDSafetyGroupController extends USSDController {
 
         final String prompt = getMessage(thisSection, "tracking.request", promptKey, user);
         USSDMenu menu = new USSDMenu(prompt, optionsYesNo(user,
-                safetyMenus + "location/request/allowed?dummy=1",
+                safetyMenus + "location/request/allowed?dummy=1", // use dummy else URL is malformed
                 safetyMenus + "location/request/denied?dummy=1"));
 
         return menuBuilder(menu);
@@ -180,12 +189,44 @@ public class USSDSafetyGroupController extends USSDController {
         User user = userManager.findByInputNumber(msisdn);
 
         try {
-            locationServicesBroker.addUssdLocationLookupAllowed(user.getUid(), UserInterfaceType.USSD);
-            USSDMenu menu = new USSDMenu("Okay, we have done that", optionsHomeExit(user, true));
+            boolean lookupAdded = locationServicesBroker.addUssdLocationLookupAllowed(user.getUid(), UserInterfaceType.USSD);
+            final String menuPrompt = getMessage(thisSection, "tracking.request", lookupAdded ? "succeeded" : "failed", user);
+            USSDMenu menu = new USSDMenu(menuPrompt, optionsHomeExit(user, true));
             return menuBuilder(menu);
         } catch (LocationTrackingImpossibleException e) {
-            USSDMenu menu2 = new USSDMenu("Oops we couldn't do that", optionsHomeExit(user, true));
+            USSDMenu menu2 = new USSDMenu(getMessage(thisSection, "tracking.request", "failed", user),
+                    optionsHomeExit(user, false));
             return menuBuilder(menu2);
+        }
+    }
+
+    @RequestMapping(value = safetyGroupPath + "location/revoke")
+    @ResponseBody
+    public Request revokeLocationTracking(@RequestParam String msisdn) throws URISyntaxException {
+        User user = userManager.findByInputNumber(msisdn);
+        try {
+            boolean lookupRemoved = locationServicesBroker.removeUssdLocationLookup(user.getUid(), UserInterfaceType.USSD);
+            final String menuPrompt = getMessage(thisSection, "tracking.revoke", lookupRemoved ? "succeeded" : "failed", user);
+            return menuBuilder(new USSDMenu(menuPrompt, optionsHomeExit(user, true)));
+        } catch (LocationNotAvailableException e) {
+            return menuBuilder(new USSDMenu(getMessage(thisSection, "tracking.request", "nottracked", user),
+                    optionsHomeExit(user, false)));
+        }
+    }
+
+    @RequestMapping(value = safetyGroupPath + "location/current")
+    public Request checkCurrentLocation(@RequestParam String msisdn) throws URISyntaxException {
+        User user = userManager.findByInputNumber(msisdn);
+        try {
+            GeoLocation location = locationServicesBroker.getUssdLocationForUser(user.getUid());
+            final String prompt = getMessage(thisSection, "tracking.current", promptKey, new String[] {
+               String.valueOf(location.getLatitude()), String.valueOf(location.getLongitude())
+            }, user);
+            return menuBuilder(new USSDMenu(prompt, optionsHomeExit(user, true)));
+        } catch (Exception e) { // todo : decent exception handling, and back menu, etc
+            e.printStackTrace();
+            final String errorP = getMessage(thisSection, "tracking.current", "error", user);
+            return menuBuilder(new USSDMenu(errorP, optionsHomeExit(user, true)));
         }
     }
 

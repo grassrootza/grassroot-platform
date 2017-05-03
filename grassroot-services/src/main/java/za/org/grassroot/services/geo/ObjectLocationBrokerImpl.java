@@ -1,25 +1,19 @@
 package za.org.grassroot.services.geo;
 
-import org.hibernate.jpa.internal.QueryImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.jpa.domain.Specifications;
-import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.ObjectLocation;
 import za.org.grassroot.core.repository.GroupLocationRepository;
-import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.MeetingLocationRepository;
-import za.org.grassroot.core.specifications.GroupSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.group.GroupLocationFilter;
 
 import javax.persistence.EntityManager;
-import javax.persistence.TypedQuery;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -33,14 +27,12 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
     private static final Logger logger = LoggerFactory.getLogger(ObjectLocationBroker.class);
 
     private final EntityManager entityManager;
-    private final GroupRepository groupRepository;
     private final GroupLocationRepository groupLocationRepository;
     private final MeetingLocationRepository meetingLocationRepository;
 
     @Autowired
-    public ObjectLocationBrokerImpl(EntityManager entityManager, GroupRepository groupRepository, GroupLocationRepository groupLocationRepository, MeetingLocationRepository meetingLocationRepository) {
+    public ObjectLocationBrokerImpl(EntityManager entityManager, GroupLocationRepository groupLocationRepository, MeetingLocationRepository meetingLocationRepository) {
         this.entityManager = entityManager;
-        this.groupRepository = groupRepository;
         this.groupLocationRepository = groupLocationRepository;
         this.meetingLocationRepository = meetingLocationRepository;
     }

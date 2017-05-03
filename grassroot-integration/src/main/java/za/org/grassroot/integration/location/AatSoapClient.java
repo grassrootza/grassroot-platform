@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.ws.client.core.support.WebServiceGatewaySupport;
+import org.springframework.ws.soap.SoapMessage;
 import za.org.grassroot.integration.location.aatmodels.*;
 
 /**
@@ -25,8 +26,22 @@ public class AatSoapClient extends WebServiceGatewaySupport {
         addAllowedMsisdn.setPermissionType(permissionType);
         addAllowedMsisdn.setUsername(aatLbsUsername);
         addAllowedMsisdn.setPassword(aatLbsPassword);
-        return (AddAllowedMsisdnResponse) getWebServiceTemplate()
-                .marshalSendAndReceive(addAllowedMsisdn);
+
+        logger.info("Sending add allowed msisdn request: {}", addAllowedMsisdn);
+        return (AddAllowedMsisdnResponse) getWebServiceTemplate().marshalSendAndReceive(addAllowedMsisdn,
+                        message -> ((SoapMessage) message).setSoapAction("http://lbs.gsm.co.za/AddAllowedMsisdn"));
+    }
+
+    public AddAllowedMsisdn2Response addAllowedMsisdn2(final String msisdn, final int permissionType) {
+        AddAllowedMsisdn2 addAllowedMsisdn2 = new AddAllowedMsisdn2();
+        addAllowedMsisdn2.setMsisdn(msisdn);
+        addAllowedMsisdn2.setPermissionType(permissionType);
+        addAllowedMsisdn2.setUsername(aatLbsUsername);
+        addAllowedMsisdn2.setPassword(aatLbsPassword);
+
+        logger.info("Sending add allowed msisdn request: {}", addAllowedMsisdn2);
+        return (AddAllowedMsisdn2Response) getWebServiceTemplate().marshalSendAndReceive(addAllowedMsisdn2,
+                message -> ((SoapMessage) message).setSoapAction("http://lbs.gsm.co.za/AddAllowedMsisdn2"));
     }
 
     public RemoveAllowedMsisdnResponse removeAllowedMsisdn(final String msisdn) {
@@ -53,7 +68,8 @@ public class AatSoapClient extends WebServiceGatewaySupport {
         request.setUsername(aatLbsUsername);
         request.setPassword(aatLbsPassword);
         return (GetLocationResponse) getWebServiceTemplate()
-                .marshalSendAndReceive(request);
+                .marshalSendAndReceive(request,
+                        message -> ((SoapMessage) message).setSoapAction("http://lbs.gsm.co.za/GetLocation"));
     }
 
 }
