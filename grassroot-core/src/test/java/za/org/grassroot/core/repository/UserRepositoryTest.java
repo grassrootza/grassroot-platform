@@ -15,6 +15,8 @@ import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
+import za.org.grassroot.core.enums.UserMessagingPreference;
+import za.org.grassroot.core.util.PhoneNumberUtil;
 
 import javax.transaction.Transactional;
 import java.time.Instant;
@@ -53,7 +55,200 @@ public class UserRepositoryTest {
 
     private static final String number = "0821234560";
 
-    /* Gaven below     */
+
+
+
+    @Test
+    public void shouldCheckAndroidProfile() {
+        assertThat(userRepository.count(), is(0L));
+        User userProfile = new User("12345");
+        assertNull(userProfile.getId());
+        assertNotNull(userProfile.getUid());
+        userProfile.setHasAndroidProfile(true);
+        userRepository.save(userProfile);
+
+        User fromDb = userRepository.findAll().iterator().next();
+        assertNotNull(fromDb.getUid());
+        assertTrue(fromDb.hasAndroidProfile());
+    }
+
+    @Test
+    public void shouldHaveSafetyGroup() {
+        User newUser = new User("0111222");
+        Group newGroup = new Group("test Group", newUser);
+        assertNotNull(newUser.getUid());
+        newUser.setSafetyGroup(newGroup);
+        assertTrue(newUser.hasSafetyGroup());
+        assertThat(newUser.getSafetyGroup(), is(newGroup));
+        userRepository.save(newUser);
+        newUser.setSafetyGroup(null);
+        assertFalse(newUser.hasSafetyGroup());
+
+    }
+
+    @Test
+    public void shouldUpdateTimeStamps() {
+        User userStamp = new User("2567");
+        assertNotNull(userStamp.getUid());
+        Instant createdTime = Instant.now();
+        userStamp.updateTimeStamps();
+        assertTrue(userStamp.getCreatedDateTime().equals(createdTime));
+
+    }
+
+    @Test
+    public void shouldSetUserName() {
+        User user = new User("9087687");
+        assertNotNull(user.getUid());
+        user.setUsername("john");
+        assertThat(user.getUsername(), is("john"));
+        userRepository.save(user);
+
+        User userDb = userRepository.findOneByUid(user.getUid());
+        assertThat(userDb.getUsername(), is("john"));
+    }
+
+    @Test
+    public void shouldSavePassword() {
+        User userPass = new User("21345");
+        assertNotNull(userPass.getUid());
+        userPass.setPassword("password");
+        assertThat(userPass.getPassword(), is("password"));
+        userRepository.save(userPass);
+
+        User userDb = userRepository.findOneByUid(userPass.getUid());
+        assertThat(userDb.getPassword(), is("password"));
+    }
+
+
+    @Test
+    public void shouldFetchNameToDisplay() {
+        User user = new User("0987");
+        assertNotNull(user.getUid());
+        user.setDisplayName("john");
+        user.setHasSetOwnName(true);
+        assertTrue(user.isHasSetOwnName());
+        assertThat(user.getDisplayName(), is("john"));
+        userRepository.save(user);
+
+        User db = userRepository.findOneByUid(user.getUid());
+        assertTrue(user.isHasSetOwnName());
+        assertThat(db.getDisplayName(), is("john"));
+    }
+
+    @Test
+    public void shouldSetFirstNameAndLastName() {
+        User userName = new User("09876");
+        assertNotNull(userName.getUid());
+        userName.setFirstName("john");
+        userName.setLastName("doe");
+        assertThat(userName.getFirstName(), is("john"));
+        assertThat(userName.getLastName(), is("doe"));
+        userRepository.save(userName);
+
+        User userDb = userRepository.findOneByUid(userName.getUid());
+        assertThat(userDb.getFirstName(), is("john"));
+        assertThat(userDb.getLastName(), is("doe"));
+
+    }
+
+    @Test
+    public void shouldSetLanguageCode() {
+        User userLanguage = new User("12345");
+        assertNotNull(userLanguage.getUid());
+        userLanguage.setLanguageCode("EN");
+        assertThat(userLanguage.getLanguageCode(), is("EN"));
+        userRepository.save(userLanguage);
+
+        User userDb = userRepository.findOneByUid(userLanguage.getUid());
+        assertThat(userDb.getLanguageCode(), is("EN"));
+
+    }
+
+    @Test
+    public void shouldSavePhoneNumber() {
+        User userNumber = new User("907856");
+        assertNotNull(userNumber.getUid());
+        userNumber.setPhoneNumber("07890");
+        assertThat(userNumber.getPhoneNumber(), is("07890"));
+        assertThat(userNumber.getNationalNumber(), is(PhoneNumberUtil.formattedNumber("07890")));
+        userRepository.save(userNumber);
+
+        User userDb = userRepository.findByPhoneNumber("07890");
+        assertThat(userDb.getPhoneNumber(), is("07890"));
+        assertThat(userDb.getNationalNumber(), is(PhoneNumberUtil.formattedNumber("07890")));
+
+    }
+
+    @Test
+    public void shouldSetEmailAddress() {
+        User userEmail = new User("09090");
+        assertNotNull(userEmail.getUid());
+        userEmail.setEmailAddress("johnDoe@gmail.com");
+        assertTrue(userEmail.hasEmailAddress());
+        assertThat(userEmail.getEmailAddress(), is("johnDoe@gmail.com"));
+        userRepository.save(userEmail);
+
+        User userDb = userRepository.findOneByUid(userEmail.getUid());
+        assertTrue(userDb.hasEmailAddress());
+        assertThat(userDb.getEmailAddress(), is("johnDoe@gmail.com"));
+    }
+
+    @Test
+    public void shouldAddAndRemoveMappedMembership() {
+
+        User user = new User("099654");
+        Role role = new Role("", null);
+        Group group = new Group("", user);
+        Membership newMember = new Membership(group, user, role, Instant.now());
+        user.addMappedByMembership(newMember);
+        assertThat(user.getMemberships().size(), is(1));
+        userRepository.save(user);
+        user.removeMappedByMembership(newMember);
+        assertThat(user.getMemberships().size(), is(0));
+        userRepository.save(user);
+    }
+
+    @Test
+    public void shouldFetchMemberships() {
+        User userMember = new User("1234");
+        Group group = new Group("Group", userMember);
+        Role role = new Role("", null);
+        assertNotNull(userMember.getUid());
+        assertTrue(userMember.getMemberships().isEmpty());
+        Membership newMember = new Membership(group, userMember, role, Instant.now());
+        assertThat(newMember.getGroup().getGroupName(), is("Group"));
+        assertThat(newMember.getUser().getPhoneNumber(), is("1234"));
+        //assertThat(userMember.getMemberships().);
+
+    }
+
+    @Test
+    public void shouldSaveMessagePreference() {
+        User userPrefer = new User("0908");
+        assertNotNull(userPrefer.getUid());
+        userPrefer.setMessagingPreference(UserMessagingPreference.SMS);
+        assertThat(userPrefer.getMessagingPreference(), is(UserMessagingPreference.SMS));
+        userRepository.save(userPrefer);
+        User userDb = userRepository.findOneByUid(userPrefer.getUid());
+        assertNotNull(userDb.getUid());
+        assertThat(userDb.getMessagingPreference(), is(UserMessagingPreference.SMS));
+
+    }
+
+    @Test
+    public void shouldSaveNotificationPriority() {
+        User userPriority = new User("56790");
+        assertNotNull(userPriority.getUid());
+        userPriority.setNotificationPriority(2);
+        assertThat(userPriority.getNotificationPriority(), is(2));
+        userPriority.setNotificationPriority(null);
+        assertThat(userPriority.getNotificationPriority(), is(1));
+        userRepository.save(userPriority);
+    }
+
+
+
     @Test
     public void checkTrialStatus() throws Exception {
         assertThat(userRepository.count(), is(0L));
@@ -85,6 +280,37 @@ public class UserRepositoryTest {
         assertFalse(retrieve.isHasUsedFreeTrial());
         retrieve.setHasUsedFreeTrial(true);
         userRepository.save(retrieve);
+
+    }
+
+    @Test
+    public void shouldSaveAndFetchName() {
+
+        User entity = new User("232331");
+        assertNotNull(entity.getUid());
+        entity.setDisplayName("john");
+        assertTrue(entity.hasName());
+        assertThat(entity.getName(), is("john"));
+        userRepository.save(entity);
+
+        User fromDb = userRepository.findAll().iterator().next();
+        assertNotNull(fromDb.getUid());
+        assertThat(entity.getName(), is("john"));
+
+    }
+
+    @Test
+    public void shouldSetDisplayName() {
+        User entity = new User("2435", "");
+        assertNotNull(entity.getUid());
+        assertFalse(entity.hasName());
+        assertThat(entity.getName(""), is("035"));
+        assertThat(entity.getName("name"), is("name (035)"));
+        assertThat(entity.getPhoneNumber(), is("2435"));
+        userRepository.save(entity);
+        User userDb = userRepository.findOneByUid(entity.getUid());
+        assertNotNull(userDb.getUid());
+        assertThat(entity.getPhoneNumber(), is("2435"));
 
     }
 
