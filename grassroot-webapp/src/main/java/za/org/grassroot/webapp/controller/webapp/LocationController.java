@@ -12,11 +12,11 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.ObjectLocation;
 import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
-import za.org.grassroot.services.exception.InvalidGeoLocationException;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.geo.ObjectLocationBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 
+import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -79,7 +79,7 @@ public class LocationController extends BaseController {
         try {
             groups = objectLocationBroker.fetchGroupLocations(location, searchRadius);
         }
-        catch (InvalidGeoLocationException e) {
+        catch (InvalidParameterException e) {
             logger.info("KPI: POST - BAD REQUEST: " + e.getMessage());
             logger.info("Exception class: " + e.getClass());
             logger.info("Stack trace: ", e);
