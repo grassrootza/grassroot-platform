@@ -1,5 +1,6 @@
 package za.org.grassroot.core.repository;
 
+import org.hibernate.validator.internal.util.privilegedactions.SetAccessibility;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
@@ -16,7 +17,10 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.core.enums.GroupLogType;
 
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
 import javax.transaction.Transactional;
+import java.lang.reflect.Array;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
@@ -145,7 +149,6 @@ public class GroupRepositoryTest {
         assertNotNull(groupFromDb);
         assertTrue(groupToCreate.getImageUrl().equals("http"));
     }
-
 
     @Test
     public void shouldAddRole() throws Exception {
@@ -348,7 +351,6 @@ public class GroupRepositoryTest {
         assertNotNull(groupDefaultLanguage);
         groupDefaultLanguage.setDefaultLanguage("EN");
         groupRepository.save(groupDefaultLanguage);
-
     }
 
 
@@ -390,7 +392,6 @@ public class GroupRepositoryTest {
         assertTrue(groupFromDB.getDescription().equals("Group"));
 
     }
-
 
     @Test
     public void shouldSaveChildEvents() {
