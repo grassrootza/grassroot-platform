@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.ObjectLocation;
+import za.org.grassroot.services.exception.InvalidGeoLocationException;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.geo.ObjectLocationBroker;
 import za.org.grassroot.services.group.GroupLocationFilter;
@@ -61,7 +62,13 @@ public class LocationRestController {
         List<ObjectLocation> objectsToReturn = new ArrayList<>();
 
         // Load groups
-        List<ObjectLocation> groups = objectLocationBroker.fetchGroupLocations(location, radius);
+        List<ObjectLocation> groups = null;
+        try {
+            groups = objectLocationBroker.fetchGroupLocations(location, radius);
+        } catch (InvalidGeoLocationException e) {
+            //TODO
+            e.printStackTrace();
+        }
 
         // Save groups
         objectsToReturn.addAll(groups);

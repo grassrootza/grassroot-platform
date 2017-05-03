@@ -12,6 +12,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.ObjectLocation;
 import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
+import za.org.grassroot.services.exception.InvalidGeoLocationException;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.geo.ObjectLocationBroker;
 import za.org.grassroot.webapp.controller.BaseController;
@@ -21,7 +22,7 @@ import java.util.List;
 
 @Controller
 public class LocationController extends BaseController {
-    private static final Logger log = LoggerFactory.getLogger(LocationController.class);
+    private static final Logger logger = LoggerFactory.getLogger(LocationController.class);
 
     private static final int DEFAULT_RADIUS = 5;
     private static final double defaultLatitude = -26.277636;
@@ -47,7 +48,7 @@ public class LocationController extends BaseController {
 
         // Get user
         final User user = getUserProfile();
-        log.info("The user {} and radius {}", user, searchRadius);
+        logger.info("The user {} and radius {}", user, searchRadius);
 
         // Center the map on either the provided position, or user's last average location, or a default
         // and set the zoom level appropriately (lower for less precise measurements)
@@ -68,14 +69,23 @@ public class LocationController extends BaseController {
             location = new GeoLocation(defaultLatitude, defaultLongitude);
             zoom = 11;
         }
-        log.info("The location {}", location);
+        logger.info("The location {}", location);
 
         // Returns list
         List<ObjectLocation> objectsToReturn = new ArrayList<>();
 
         // Load groups
-        List<ObjectLocation> groups = objectLocationBroker.fetchGroupLocations(location, searchRadius);
-        log.info("Groups found: {}", groups.size());
+        List<ObjectLocation> groups = null;
+        try {
+            groups = objectLocationBroker.fetchGroupLocations(location, searchRadius);
+        }
+        catch (InvalidGeoLocationException e) {
+            logger.info("KPI: POST - BAD REQUEST: " + e.getMessage());
+            logger.info("Exception class: " + e.getClass());
+            logger.info("Stack trace: ", e);
+            //TODO: return jsonErrorResponse(HttpStatus.BAD_REQUEST, e.getMessage());
+        }
+        logger.info("Groups found: {}", groups.size());
 
         // Save groups
         objectsToReturn.addAll(groups);
@@ -105,5 +115,4 @@ public class LocationController extends BaseController {
 
         return "location/map";
     }
-
 }

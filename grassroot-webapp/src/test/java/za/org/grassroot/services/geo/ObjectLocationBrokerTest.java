@@ -2,43 +2,59 @@ package za.org.grassroot.services.geo;
 
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.*;
 import org.mockito.runners.MockitoJUnitRunner;
-import org.springframework.http.MediaType;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.ObjectLocation;
-import za.org.grassroot.webapp.controller.rest.livewire.LocationRestController;
 
 import javax.persistence.EntityManager;
+import javax.persistence.TypedQuery;
+import java.util.Arrays;
+import java.util.List;
+
+import static org.mockito.Mockito.*;
+import static org.mockito.BDDMockito.*;
+
 
 @RunWith(MockitoJUnitRunner.class)
-@ContextConfiguration
 public class ObjectLocationBrokerTest {
 
     @Mock
-    private EntityManager entityManager;
+    private TypedQuery<ObjectLocation> mockQuery;
 
-    @InjectMocks
+    @Mock
+    private EntityManager mockEntityManager;
+
     private ObjectLocationBrokerImpl objectLocationBroker;
 
     @Before
     public void setUp () {
-        MockitoAnnotations.initMocks(this);
-        MockMvcBuilders.standaloneSetup(objectLocationBroker).build();
+        objectLocationBroker = new ObjectLocationBrokerImpl(mockEntityManager);
+
+        given(mockQuery.setParameter(anyString(), any())).willReturn(mockQuery);
+        given(mockQuery.getResultList()).willAnswer(i->Arrays.asList());
+        given(mockEntityManager.createQuery(anyString(), eq(ObjectLocation.class))).willReturn(mockQuery);
     }
 
     @Test
-    @Ignore
-    public void validRequestShouldReturnSuccess () throws Exception {
-        objectLocationBroker.fetchGroupLocations(null, null);
+    public void validRequestShouldBeSuccessful () throws Exception {
+        List<ObjectLocation> groupLocations = objectLocationBroker.fetchGroupLocations(new GeoLocation(53.4808, 2.2426), 10);
+
+        verify(mockQuery, times(1)).setParameter(anyString(), any());
+        verify(mockQuery, times(1)).getResultList();
+        verify(mockEntityManager, times(1)).createQuery(anyString(), eq(ObjectLocation.class));
+
+        Assert.assertNotNull(groupLocations.size());
+        Assert.assertEquals(groupLocations.size(), 0);
+    }
+
+    @Test
+    public void invalidLatLongShouldThrowException () throws Exception {
+
+        //TODO
+        //objectLocationBroker.fetchGroupLocations(new GeoLocation(200, 0), 10);
+
     }
 }
