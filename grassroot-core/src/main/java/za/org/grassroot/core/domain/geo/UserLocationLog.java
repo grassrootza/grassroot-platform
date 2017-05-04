@@ -1,5 +1,7 @@
 package za.org.grassroot.core.domain.geo;
 
+import za.org.grassroot.core.enums.LocationSource;
+
 import javax.persistence.*;
 import java.time.Instant;
 import java.util.Objects;
@@ -25,15 +27,20 @@ public class UserLocationLog {
 
 	private GeoLocation location;
 
+	@Column(name = "source", nullable = false)
+	@Enumerated(EnumType.STRING)
+	private LocationSource locationSource;
+
 	private UserLocationLog() {
 		// for JPA
 	}
 
-	public UserLocationLog(Instant timestamp, String userUid, GeoLocation location) {
+	public UserLocationLog(Instant timestamp, String userUid, GeoLocation location, LocationSource locationSource) {
 		this.uid = UUID.randomUUID().toString();
 		this.timestamp = Objects.requireNonNull(timestamp);
 		this.userUid = Objects.requireNonNull(userUid);
 		this.location = Objects.requireNonNull(location);
+		this.locationSource = Objects.requireNonNull(locationSource);
 	}
 
 	public Long getId() {
@@ -55,6 +62,8 @@ public class UserLocationLog {
 	public GeoLocation getLocation() {
 		return location;
 	}
+
+	public LocationSource getLocationSource() { return locationSource; }
 
 	@Override
 	public boolean equals(Object o) {
@@ -82,6 +91,7 @@ public class UserLocationLog {
 		sb.append("timestamp=").append(timestamp);
 		sb.append(", userUid='").append(userUid).append('\'');
 		sb.append(", location=").append(location);
+		sb.append(", source=").append(locationSource);
 		sb.append(", id=").append(id);
 		sb.append('}');
 		return sb.toString();

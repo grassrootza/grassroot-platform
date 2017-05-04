@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -15,6 +16,7 @@ import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.geo.ObjectLocationBroker;
 import za.org.grassroot.webapp.controller.BaseController;
+import za.org.grassroot.webapp.model.web.GeoFilterFormModel;
 
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
@@ -32,16 +34,15 @@ public class LocationController extends BaseController {
     private final ObjectLocationBroker objectLocationBroker;
 
     @Autowired
-    public LocationController (GeoLocationBroker geoLocationBroker, ObjectLocationBroker objectLocationBroker) {
+    public LocationController(GeoLocationBroker geoLocationBroker, ObjectLocationBroker objectLocationBroker) {
         this.geoLocationBroker = geoLocationBroker;
         this.objectLocationBroker = objectLocationBroker;
     }
 
     @RequestMapping(value = "/location", method = RequestMethod.GET)
-    public String search (@RequestParam(required = false) Integer radius,
-                          @RequestParam(required = false) Double latitude,
-                          @RequestParam(required = false) Double longitude,
-                          Model model) {
+    public String search(@RequestParam(required = false) Integer radius,
+                         @RequestParam(required = false) Double latitude,
+                         @RequestParam(required = false) Double longitude, Model model) {
 
         // Check radius
         Integer searchRadius = (radius == null ? DEFAULT_RADIUS : radius);
@@ -91,20 +92,8 @@ public class LocationController extends BaseController {
         objectsToReturn.addAll(groups);
 
         // Load meetings
-        if (groups.size() > 0) {
-            for (ObjectLocation group : groups) {
-                // Get meetings
-                List<ObjectLocation> meetings = objectLocationBroker.fetchMeetingLocationsByGroup(group, location, searchRadius);
-
-                // Concat the results
-                objectsToReturn.addAll(meetings);
-            }
-        } else {
-            List<ObjectLocation> meetings = objectLocationBroker.fetchMeetingLocations(location, searchRadius);
-
-            // Concat the results
-            objectsToReturn.addAll(meetings);
-        }
+        List<ObjectLocation> meetings = objectLocationBroker.fetchMeetingLocations(location, searchRadius);
+        objectsToReturn.addAll(meetings);
 
         // Send response
         model.addAttribute("user", user);
@@ -113,6 +102,22 @@ public class LocationController extends BaseController {
         model.addAttribute("zoom", zoom);
         model.addAttribute("data", objectsToReturn);
 
+        // Create an empty filter object to start using
+        model.addAttribute("filter", new GeoFilterFormModel(location, searchRadius));
+
         return "location/map";
     }
+
+    @RequestMapping(value = "/location/filter", method = RequestMethod.GET)
+    public String searchWithFilter(@ModelAttribute GeoFilterFormModel filter, Model model) {
+        model.addAttribute("user", getUserProfile());
+        model.addAttribute("location", filter.getLocation());
+        model.addAttribute("radius", filter.getSearchRadius());
+
+        model.addAttribute("data",
+                objectLocationBroker.fetchLocationsWithFilter(GeoFilterFormModel.convertToFilter(filter)));
+
+        return "location/map";
+    }
+
 }

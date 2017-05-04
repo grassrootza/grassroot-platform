@@ -2,6 +2,7 @@ package za.org.grassroot.core.domain.geo;
 
 import za.org.grassroot.core.domain.Meeting;
 import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.core.enums.LocationSource;
 
 import javax.persistence.*;
 import java.time.Instant;
@@ -9,6 +10,7 @@ import java.util.Objects;
 
 /**
  * Created by luke on 2017/03/28.
+ * todo: create task Location and then inheritance (use multi table as these could get very long)
  */
 @Entity
 @Table(name = "meeting_location",
@@ -36,11 +38,15 @@ public class MeetingLocation {
     @Column(name = "event_type", length = 50, nullable = false)
     private EventType eventType;
 
+    @Column(name = "source", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private LocationSource source;
+
     private MeetingLocation() {
         // for JPA
     }
 
-    public MeetingLocation(Meeting meeting, GeoLocation location, float score, EventType eventType) {
+    public MeetingLocation(Meeting meeting, GeoLocation location, float score, EventType eventType, LocationSource source) {
         Objects.requireNonNull(meeting);
         Objects.requireNonNull(location);
         Objects.requireNonNull(eventType);
@@ -50,6 +56,7 @@ public class MeetingLocation {
         this.location = location;
         this.score = score;
         this.eventType = eventType;
+        this.source = source;
     }
 
     public Long getId() {
@@ -75,6 +82,8 @@ public class MeetingLocation {
     public EventType getEventType() {
         return eventType;
     }
+
+    public LocationSource getSource() { return source; }
 
     @Override
     public boolean equals(Object o) {

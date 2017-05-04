@@ -15,6 +15,7 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
+import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.services.exception.AccountLimitExceededException;
@@ -169,9 +170,9 @@ public class MeetingController extends BaseController {
         if (EntityPublicOption.PUBLIC_GET_GPS.equals(meetingWrapper.getPublicOption()) &&
                 meetingWrapper.hasLongLat()) {
             eventBroker.updateMeetingPublicStatus(getUserProfile().getUid(), createdMeeting.getUid(),
-                    true, new GeoLocation(meetingWrapper.getLatitude(), meetingWrapper.getLongitude()));
+                    true, new GeoLocation(meetingWrapper.getLatitude(), meetingWrapper.getLongitude()), UserInterfaceType.WEB);
         } else {
-            eventBroker.updateMeetingPublicStatus(getUserProfile().getUid(), createdMeeting.getUid(), true, null);
+            eventBroker.updateMeetingPublicStatus(getUserProfile().getUid(), createdMeeting.getUid(), true, null, UserInterfaceType.WEB);
         }
 
     }

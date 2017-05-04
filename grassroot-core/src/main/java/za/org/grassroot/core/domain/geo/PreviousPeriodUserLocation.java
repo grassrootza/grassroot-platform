@@ -1,5 +1,7 @@
 package za.org.grassroot.core.domain.geo;
 
+import za.org.grassroot.core.enums.LocationSource;
+
 import javax.persistence.Column;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
@@ -40,7 +42,12 @@ public class PreviousPeriodUserLocation implements LocationHolder {
 
 	public boolean hasLocation() { return true; }
 
-	public int getLogCount() {
+    @Override
+    public LocationSource getSource() {
+        return LocationSource.LOGGED_MULTIPLE; // by definition
+    }
+
+    public int getLogCount() {
 		return logCount;
 	}
 

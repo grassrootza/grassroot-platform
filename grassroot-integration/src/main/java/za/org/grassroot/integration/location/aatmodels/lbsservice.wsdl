@@ -1,0 +1,366 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wsdl:definitions xmlns:s="http://www.w3.org/2001/XMLSchema" xmlns:soap12="http://schemas.xmlsoap.org/wsdl/soap12/" xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/" xmlns:tns="http://lbs.gsm.co.za/" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:tm="http://microsoft.com/wsdl/mime/textMatching/" xmlns:http="http://schemas.xmlsoap.org/wsdl/http/" xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" targetNamespace="http://lbs.gsm.co.za/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">
+  <wsdl:types>
+    <s:schema elementFormDefault="qualified" targetNamespace="http://lbs.gsm.co.za/">
+      <s:element name="AddAllowedMsisdn">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="username" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="password" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="msisdn" type="s:string" />
+            <s:element minOccurs="1" maxOccurs="1" name="permissionType" type="s:int" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="AddAllowedMsisdnResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="AddAllowedMsisdnResult">
+              <s:complexType mixed="true">
+                <s:sequence>
+                  <s:any />
+                </s:sequence>
+              </s:complexType>
+            </s:element>
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="AddAllowedMsisdn2">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="username" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="password" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="msisdn" type="s:string" />
+            <s:element minOccurs="1" maxOccurs="1" name="permissionType" type="s:int" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="AddAllowedMsisdn2Response">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="AddAllowedMsisdn2Result" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="AddAllowedMsisdn2WithNetwork">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="username" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="password" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="msisdn" type="s:string" />
+            <s:element minOccurs="1" maxOccurs="1" name="permissionType" type="s:int" />
+            <s:element minOccurs="1" maxOccurs="1" name="network" type="s:int" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="AddAllowedMsisdn2WithNetworkResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="AddAllowedMsisdn2WithNetworkResult" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="QueryAllowedMsisdn">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="username" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="password" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="msisdn" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="QueryAllowedMsisdnResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="QueryAllowedMsisdnResult">
+              <s:complexType mixed="true">
+                <s:sequence>
+                  <s:any />
+                </s:sequence>
+              </s:complexType>
+            </s:element>
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="QueryAllowedMsisdnWithNetwork">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="username" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="password" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="msisdn" type="s:string" />
+            <s:element minOccurs="1" maxOccurs="1" name="network" type="s:int" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="QueryAllowedMsisdnWithNetworkResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="QueryAllowedMsisdnWithNetworkResult">
+              <s:complexType mixed="true">
+                <s:sequence>
+                  <s:any />
+                </s:sequence>
+              </s:complexType>
+            </s:element>
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="RemoveAllowedMsisdn">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="username" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="password" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="msisdn" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="RemoveAllowedMsisdnResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="RemoveAllowedMsisdnResult">
+              <s:complexType mixed="true">
+                <s:sequence>
+                  <s:any />
+                </s:sequence>
+              </s:complexType>
+            </s:element>
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetLocation">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="username" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="password" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="msisdn" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetLocationResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="GetLocationResult">
+              <s:complexType mixed="true">
+                <s:sequence>
+                  <s:any />
+                </s:sequence>
+              </s:complexType>
+            </s:element>
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+    </s:schema>
+  </wsdl:types>
+  <wsdl:message name="AddAllowedMsisdnSoapIn">
+    <wsdl:part name="parameters" element="tns:AddAllowedMsisdn" />
+  </wsdl:message>
+  <wsdl:message name="AddAllowedMsisdnSoapOut">
+    <wsdl:part name="parameters" element="tns:AddAllowedMsisdnResponse" />
+  </wsdl:message>
+  <wsdl:message name="AddAllowedMsisdn2SoapIn">
+    <wsdl:part name="parameters" element="tns:AddAllowedMsisdn2" />
+  </wsdl:message>
+  <wsdl:message name="AddAllowedMsisdn2SoapOut">
+    <wsdl:part name="parameters" element="tns:AddAllowedMsisdn2Response" />
+  </wsdl:message>
+  <wsdl:message name="AddAllowedMsisdn2WithNetworkSoapIn">
+    <wsdl:part name="parameters" element="tns:AddAllowedMsisdn2WithNetwork" />
+  </wsdl:message>
+  <wsdl:message name="AddAllowedMsisdn2WithNetworkSoapOut">
+    <wsdl:part name="parameters" element="tns:AddAllowedMsisdn2WithNetworkResponse" />
+  </wsdl:message>
+  <wsdl:message name="QueryAllowedMsisdnSoapIn">
+    <wsdl:part name="parameters" element="tns:QueryAllowedMsisdn" />
+  </wsdl:message>
+  <wsdl:message name="QueryAllowedMsisdnSoapOut">
+    <wsdl:part name="parameters" element="tns:QueryAllowedMsisdnResponse" />
+  </wsdl:message>
+  <wsdl:message name="QueryAllowedMsisdnWithNetworkSoapIn">
+    <wsdl:part name="parameters" element="tns:QueryAllowedMsisdnWithNetwork" />
+  </wsdl:message>
+  <wsdl:message name="QueryAllowedMsisdnWithNetworkSoapOut">
+    <wsdl:part name="parameters" element="tns:QueryAllowedMsisdnWithNetworkResponse" />
+  </wsdl:message>
+  <wsdl:message name="RemoveAllowedMsisdnSoapIn">
+    <wsdl:part name="parameters" element="tns:RemoveAllowedMsisdn" />
+  </wsdl:message>
+  <wsdl:message name="RemoveAllowedMsisdnSoapOut">
+    <wsdl:part name="parameters" element="tns:RemoveAllowedMsisdnResponse" />
+  </wsdl:message>
+  <wsdl:message name="GetLocationSoapIn">
+    <wsdl:part name="parameters" element="tns:GetLocation" />
+  </wsdl:message>
+  <wsdl:message name="GetLocationSoapOut">
+    <wsdl:part name="parameters" element="tns:GetLocationResponse" />
+  </wsdl:message>
+  <wsdl:portType name="LBSServiceSoap">
+    <wsdl:operation name="AddAllowedMsisdn">
+      <wsdl:input message="tns:AddAllowedMsisdnSoapIn" />
+      <wsdl:output message="tns:AddAllowedMsisdnSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="AddAllowedMsisdn2">
+      <wsdl:input message="tns:AddAllowedMsisdn2SoapIn" />
+      <wsdl:output message="tns:AddAllowedMsisdn2SoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="AddAllowedMsisdn2WithNetwork">
+      <wsdl:input message="tns:AddAllowedMsisdn2WithNetworkSoapIn" />
+      <wsdl:output message="tns:AddAllowedMsisdn2WithNetworkSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="QueryAllowedMsisdn">
+      <wsdl:input message="tns:QueryAllowedMsisdnSoapIn" />
+      <wsdl:output message="tns:QueryAllowedMsisdnSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="QueryAllowedMsisdnWithNetwork">
+      <wsdl:input message="tns:QueryAllowedMsisdnWithNetworkSoapIn" />
+      <wsdl:output message="tns:QueryAllowedMsisdnWithNetworkSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="RemoveAllowedMsisdn">
+      <wsdl:input message="tns:RemoveAllowedMsisdnSoapIn" />
+      <wsdl:output message="tns:RemoveAllowedMsisdnSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="GetLocation">
+      <wsdl:input message="tns:GetLocationSoapIn" />
+      <wsdl:output message="tns:GetLocationSoapOut" />
+    </wsdl:operation>
+  </wsdl:portType>
+  <wsdl:binding name="LBSServiceSoap" type="tns:LBSServiceSoap">
+    <soap:binding transport="http://schemas.xmlsoap.org/soap/http" />
+    <wsdl:operation name="AddAllowedMsisdn">
+      <soap:operation soapAction="http://lbs.gsm.co.za/AddAllowedMsisdn" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="AddAllowedMsisdn2">
+      <soap:operation soapAction="http://lbs.gsm.co.za/AddAllowedMsisdn2" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="AddAllowedMsisdn2WithNetwork">
+      <soap:operation soapAction="http://lbs.gsm.co.za/AddAllowedMsisdn2WithNetwork" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="QueryAllowedMsisdn">
+      <soap:operation soapAction="http://lbs.gsm.co.za/QueryAllowedMsisdn" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="QueryAllowedMsisdnWithNetwork">
+      <soap:operation soapAction="http://lbs.gsm.co.za/QueryAllowedMsisdnWithNetwork" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="RemoveAllowedMsisdn">
+      <soap:operation soapAction="http://lbs.gsm.co.za/RemoveAllowedMsisdn" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetLocation">
+      <soap:operation soapAction="http://lbs.gsm.co.za/GetLocation" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:binding name="LBSServiceSoap12" type="tns:LBSServiceSoap">
+    <soap12:binding transport="http://schemas.xmlsoap.org/soap/http" />
+    <wsdl:operation name="AddAllowedMsisdn">
+      <soap12:operation soapAction="http://lbs.gsm.co.za/AddAllowedMsisdn" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="AddAllowedMsisdn2">
+      <soap12:operation soapAction="http://lbs.gsm.co.za/AddAllowedMsisdn2" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="AddAllowedMsisdn2WithNetwork">
+      <soap12:operation soapAction="http://lbs.gsm.co.za/AddAllowedMsisdn2WithNetwork" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="QueryAllowedMsisdn">
+      <soap12:operation soapAction="http://lbs.gsm.co.za/QueryAllowedMsisdn" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="QueryAllowedMsisdnWithNetwork">
+      <soap12:operation soapAction="http://lbs.gsm.co.za/QueryAllowedMsisdnWithNetwork" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="RemoveAllowedMsisdn">
+      <soap12:operation soapAction="http://lbs.gsm.co.za/RemoveAllowedMsisdn" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetLocation">
+      <soap12:operation soapAction="http://lbs.gsm.co.za/GetLocation" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:service name="LBSService">
+    <wsdl:port name="LBSServiceSoap" binding="tns:LBSServiceSoap">
+      <soap:address location="https://lbs.gsm.co.za/lbsservice.asmx" />
+    </wsdl:port>
+    <wsdl:port name="LBSServiceSoap12" binding="tns:LBSServiceSoap12">
+      <soap12:address location="https://lbs.gsm.co.za/lbsservice.asmx" />
+    </wsdl:port>
+  </wsdl:service>
+</wsdl:definitions>

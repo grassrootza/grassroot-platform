@@ -442,6 +442,7 @@ public class USSDHomeController extends USSDController {
         return menuBuilder(new USSDMenu(prompt, optionsHomeExit(user, false)));
     }
 
+    // todo: move this into todo controller so we can request & log a location
     @RequestMapping(value = path + "todo-complete")
     @ResponseBody
     public Request todoEntryMarkComplete(@RequestParam(value = phoneNumber) String inputNumber,
