@@ -16,12 +16,13 @@ import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
+import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 /**
- * TODO: Remove logger.debugs
+ * TODO: Create token logic
  */
 @RestController
 @RequestMapping(value = "/api/location", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -37,39 +38,46 @@ public class LocationRestController {
         this.geoLocationBroker = geoLocationBroker;
     }
 
-    //TODO: token
     @RequestMapping(value = "/list", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> search (@RequestParam(value = "latitude", required = true) Double latitude,
                                                    @RequestParam(value = "longitude", required = true) Double longitude,
-                                                   @RequestParam(value = "token", required = true) String token,
-                                                   @RequestParam(value = "radius", required = false) Integer radius) {
+                                                   @RequestParam(value = "radius", required = false) Integer radius,
+                                                   @RequestParam(value = "token", required = true) String token) {
 
-        log.debug("Attempting to list events locations...");
+        log.info("Attempting to list events locations...");
 
         // Check radius
         Integer searchRadius = (radius == null ? DEFAULT_RADIUS : radius);
 
         // Create location
         GeoLocation location = new GeoLocation(latitude, longitude);
-        log.debug("Location: " + location);
+        log.info("Location: " + location);
 
         // Mount filter
         ResponseEntity<ResponseWrapper> responseEntity;
         GroupLocationFilter filter = new GroupLocationFilter(location, searchRadius, false);
-        log.debug("Searching for groups and with location filter = {}", filter);
+        log.info("Searching for groups and with location filter = {}", filter);
 
         // Returns list
         List<ObjectLocation> objectsToReturn = new ArrayList<>();
 
         // Load groups
-        List<ObjectLocation> groups = objectLocationBroker.fetchGroupLocations(location, radius);
+        List<ObjectLocation> groups = null;
+        try {
+            groups = objectLocationBroker.fetchGroupLocations(location, radius);
+        } catch (InvalidParameterException e) {
+            //TODO
+            e.printStackTrace();
+        }
 
         // Save groups
         objectsToReturn.addAll(groups);
+        log.info("Groups: {}", groups);
 
         // Load meetings
-        if (true) { //TODO: Use the new table [meeting_location]
+        if (groups.size() > 0) {
             for (ObjectLocation group : groups) {
+
                 // Get meetings
                 List<ObjectLocation> meetings = objectLocationBroker.fetchMeetingLocationsByGroup(group, location, radius);
 
@@ -85,7 +93,7 @@ public class LocationRestController {
 
         // Check results
         if (objectsToReturn.isEmpty()) {
-            log.debug("found no objects ... returning empty ...");
+            log.info("Found no objects ... returning empty ...");
             responseEntity = RestUtil.okayResponseWithData(RestMessage.NO_GROUP_MATCHING_TERM_FOUND, Collections.emptyList());
         } else {
             responseEntity = RestUtil.okayResponseWithData(RestMessage.POSSIBLE_GROUP_MATCHES, objectsToReturn);

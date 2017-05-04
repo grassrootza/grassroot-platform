@@ -16,12 +16,13 @@ import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.geo.ObjectLocationBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 
+import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.List;
 
 @Controller
 public class LocationController extends BaseController {
-    private static final Logger log = LoggerFactory.getLogger(LocationController.class);
+    private static final Logger logger = LoggerFactory.getLogger(LocationController.class);
 
     private static final int DEFAULT_RADIUS = 5;
     private static final double defaultLatitude = -26.277636;
@@ -47,37 +48,63 @@ public class LocationController extends BaseController {
 
         // Get user
         final User user = getUserProfile();
-        log.info("the user {} and radius {}", user, radius);
+        logger.info("The user {} and radius {}", user, searchRadius);
 
         // Center the map on either the provided position, or user's last average location, or a default
         // and set the zoom level appropriately (lower for less precise measurements)
         GeoLocation location;
-        int zoom;
+        int zoom = 13;
 
+        // Check parameters
         if (latitude != null && longitude != null) {
+            // Use the passed location
             location = new GeoLocation(latitude, longitude);
             zoom = 13; // todo : calculate or pass as option
         } else if (geoLocationBroker.fetchUserLocation(user.getUid()) != null) {
+            // Use User location
             PreviousPeriodUserLocation lastUserLocation = geoLocationBroker.fetchUserLocation(user.getUid());
             location = lastUserLocation.getLocation();
-            zoom = 13;
         } else {
+            // Use the default location
             location = new GeoLocation(defaultLatitude, defaultLongitude);
             zoom = 11;
         }
+        logger.info("The location {}", location);
 
         // Returns list
         List<ObjectLocation> objectsToReturn = new ArrayList<>();
 
         // Load groups
-        List<ObjectLocation> groups = objectLocationBroker.fetchGroupLocations(location, searchRadius);
-        log.info("groups found: {}", groups.size());
+        List<ObjectLocation> groups = null;
+        try {
+            groups = objectLocationBroker.fetchGroupLocations(location, searchRadius);
+        }
+        catch (InvalidParameterException e) {
+            logger.info("KPI: POST - BAD REQUEST: " + e.getMessage());
+            logger.info("Exception class: " + e.getClass());
+            logger.info("Stack trace: ", e);
+            //TODO: return jsonErrorResponse(HttpStatus.BAD_REQUEST, e.getMessage());
+        }
+        logger.info("Groups found: {}", groups.size());
 
         // Save groups
         objectsToReturn.addAll(groups);
 
         // Load meetings
-        objectsToReturn.addAll(objectLocationBroker.fetchMeetingLocations(location, searchRadius));
+        if (groups.size() > 0) {
+            for (ObjectLocation group : groups) {
+                // Get meetings
+                List<ObjectLocation> meetings = objectLocationBroker.fetchMeetingLocationsByGroup(group, location, searchRadius);
+
+                // Concat the results
+                objectsToReturn.addAll(meetings);
+            }
+        } else {
+            List<ObjectLocation> meetings = objectLocationBroker.fetchMeetingLocations(location, searchRadius);
+
+            // Concat the results
+            objectsToReturn.addAll(meetings);
+        }
 
         // Send response
         model.addAttribute("user", user);
@@ -88,5 +115,4 @@ public class LocationController extends BaseController {
 
         return "location/map";
     }
-
 }
