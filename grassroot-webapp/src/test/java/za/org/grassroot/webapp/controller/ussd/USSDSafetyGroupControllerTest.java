@@ -3,10 +3,12 @@ package za.org.grassroot.webapp.controller.ussd;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.MembershipInfo;
+import za.org.grassroot.integration.location.UssdLocationServicesBroker;
 import za.org.grassroot.services.group.GroupPermissionTemplate;
 import za.org.grassroot.webapp.util.USSDUrlUtil;
 
@@ -42,6 +44,9 @@ public class USSDSafetyGroupControllerTest extends USSDAbstractUnitTest {
     private SafetyEvent safetyEvent;
     private Set<MembershipInfo> testMembers = new HashSet<>();
     private GroupPermissionTemplate template = GroupPermissionTemplate.DEFAULT_GROUP;
+
+    @Mock
+    private UssdLocationServicesBroker locationServicesBrokerMock;
 
     @InjectMocks
     private USSDSafetyGroupController ussdSafetyGroupController;

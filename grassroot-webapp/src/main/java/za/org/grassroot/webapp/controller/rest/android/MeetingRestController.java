@@ -16,6 +16,7 @@ import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.MeetingImportance;
 import za.org.grassroot.core.enums.TaskType;
+import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.AccountLimitExceededException;
@@ -110,7 +111,7 @@ public class MeetingRestController {
         User user = userManagementService.findByInputNumber(phoneNumber);
         try {
             GeoLocation location = longitude != null && latitude != null ? new GeoLocation(latitude, longitude) : null;
-            eventBroker.updateMeetingPublicStatus(user.getUid(), meetingUid, setPublic, location);
+            eventBroker.updateMeetingPublicStatus(user.getUid(), meetingUid, setPublic, location, UserInterfaceType.WEB);
             return RestUtil.okayResponseWithData(RestMessage.MEETING_PUBLIC_UPDATED,
                     taskBroker.load(user.getUid(), meetingUid, TaskType.MEETING));
         } catch (AccessDeniedException e) {

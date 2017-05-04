@@ -7,10 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.geo.GeoLocation;
-import za.org.grassroot.core.enums.ActionLogType;
-import za.org.grassroot.core.enums.EventLogType;
-import za.org.grassroot.core.enums.TaskType;
-import za.org.grassroot.core.enums.TodoLogType;
+import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.integration.storage.ImageType;
@@ -75,7 +72,7 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
         GeoLocation location = latitude == null ? null : new GeoLocation(latitude, longitude);
 
         if (location != null) {
-            geoLocationBroker.logUserLocation(userUid, latitude, longitude, Instant.now());
+            geoLocationBroker.logUserLocation(userUid, latitude, longitude, Instant.now(), UserInterfaceType.ANDROID);
         }
 
         switch (taskType) {
@@ -241,6 +238,7 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
 
         if (location != null) {
             eventLog.setLocation(location);
+            geoLocationBroker.calculateMeetingLocationInstant(meeting.getUid(), location, UserInterfaceType.WEB);
         }
 
         boolean uploadCompleted = storageBroker.storeImage(ActionLogType.EVENT_LOG, eventLog.getUid(), file);
@@ -263,7 +261,8 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
 
         TodoLog todoLog = new TodoLog(TodoLogType.IMAGE_RECORDED, user, todo, "Photo recorded");
         if (location != null) {
-            todoLog.setLocation(location);
+            todoLog.setLocationWithSource(location, LocationSource.convertFromInterface(UserInterfaceType.ANDROID));
+            geoLocationBroker.calculateTodoLocationInstant(todo.getUid(), location, UserInterfaceType.ANDROID);
         }
 
         boolean uploadCompleted = storageBroker.storeImage(TODO_LOG, todoLog.getUid(), file);

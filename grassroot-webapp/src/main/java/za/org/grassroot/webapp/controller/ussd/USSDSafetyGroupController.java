@@ -4,7 +4,7 @@ import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.env.Environment;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -15,11 +15,16 @@ import za.org.grassroot.core.domain.Address;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.services.user.AddressBroker;
-import za.org.grassroot.services.group.GroupQueryBroker;
+import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.dto.MembershipInfo;
+import za.org.grassroot.core.enums.UserInterfaceType;
+import za.org.grassroot.integration.exception.LocationNotAvailableException;
+import za.org.grassroot.integration.exception.LocationTrackingImpossibleException;
+import za.org.grassroot.integration.location.UssdLocationServicesBroker;
 import za.org.grassroot.services.SafetyEventBroker;
 import za.org.grassroot.services.group.GroupPermissionTemplate;
+import za.org.grassroot.services.group.GroupQueryBroker;
+import za.org.grassroot.services.user.AddressBroker;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
@@ -43,17 +48,16 @@ public class USSDSafetyGroupController extends USSDController {
 
     private static final Logger log = LoggerFactory.getLogger(USSDSafetyGroupController.class);
 
-    @Autowired
-    private Environment environment;
+    private String safetyTriggerString;
+    @Value("${grassroot.ussd.joincode.format:*134*1994*%s#}")
+    private String ussdCodeFormat;
+    @Value("${grassroot.ussd.safety.code:911}")
+    private String safetyCode;
 
-    @Autowired
-    private AddressBroker addressBroker;
-
-    @Autowired
-    private GroupQueryBroker groupQueryBroker;
-
-    @Autowired
-    private SafetyEventBroker safetyEventBroker;
+    private final AddressBroker addressBroker;
+    private final GroupQueryBroker groupQueryBroker;
+    private final SafetyEventBroker safetyEventBroker;
+    private UssdLocationServicesBroker locationServicesBroker;
 
     private static final String
             createGroupMenu = "create",
@@ -73,50 +77,78 @@ public class USSDSafetyGroupController extends USSDController {
     private static final USSDSection thisSection = USSDSection.SAFETY_GROUP_MANAGER;
     private static final String groupUidParam = "groupUid";
 
-    private String safetyTriggerString;
+    @Autowired
+    public USSDSafetyGroupController(AddressBroker addressBroker, GroupQueryBroker groupQueryBroker, SafetyEventBroker safetyEventBroker) {
+        this.addressBroker = addressBroker;
+        this.groupQueryBroker = groupQueryBroker;
+        this.safetyEventBroker = safetyEventBroker;
+        this.locationServicesBroker = locationServicesBroker;
+    }
+
+    @Autowired(required = false)
+    public void setLocationServicesBroker(UssdLocationServicesBroker locationServicesBroker) {
+        this.locationServicesBroker = locationServicesBroker;
+    }
 
     @PostConstruct
     private void init() {
-        safetyTriggerString = String.format(environment.getProperty("grassroot.ussd.joincode.format", "*134*1994*%s#"),
-                environment.getProperty("grassroot.ussd.safety.suffix", "911"));
+        safetyTriggerString = String.format(ussdCodeFormat, safetyCode);
     }
-
 
     @RequestMapping(value = safetyGroupPath + startMenu)
     @ResponseBody
     public Request manageSafetyGroup(@RequestParam String msisdn) throws URISyntaxException {
         User user = userManager.findByInputNumber(msisdn);
 
-        USSDMenu menu;
-        if (user.hasSafetyGroup()) {
-            Group group = user.getSafetyGroup();
-            menu = new USSDMenu(getMessage(thisSection, startMenu, promptKey + ".hasgroup", new String[] { group.getGroupName(),
-                    safetyTriggerString }, user));
-            if (!addressBroker.hasAddress(user.getUid())) {
-                menu.addMenuOption(safetyMenus + addAddress, getMessage(thisSection, startMenu, optionsKey + addAddress, user));
-            } else {
-                menu.addMenuOption(safetyMenus+ viewAddress, getMessage(thisSection, startMenu, optionsKey + viewAddress, user));
-            }
-            menu.addMenuOption(safetyMenus + addRespondents + "?groupUid=" + group.getUid(),
-                    getMessage(thisSection, startMenu, optionsKey + "add.respondents", user));
-            menu.addMenuOption(safetyMenus + resetSafetyGroup, getMessage(thisSection, startMenu, optionsKey + resetSafetyGroup, user));
+        USSDMenu menu = user.hasSafetyGroup() ? createOpeningMenuHasGroup(user) :
+                createOpeningMenuNoGroup(user);
+
+        menu.addMenuOption(startMenu + "_force",
+                getMessage(optionsKey + "back.main", user));
+
+        return menuBuilder(menu);
+    }
+
+    private USSDMenu createOpeningMenuHasGroup(User user) {
+        Group group = user.getSafetyGroup();
+
+        USSDMenu menu = new USSDMenu(getMessage(thisSection, startMenu, promptKey + ".hasgroup", new String[] { group.getGroupName(),
+                safetyTriggerString }, user));
+
+        if (!locationServicesBroker.hasUserGivenLocationPermission(user.getUid())) {
+            menu.addMenuOption(safetyMenus + "location/request",
+                    getMessage(thisSection, startMenu, optionsKey + "track", user));
         } else {
-            menu = new USSDMenu(getMessage(thisSection, startMenu, promptKey + ".nogroup", user));
-            if (groupQueryBroker.fetchUserCreatedGroups(user, 0, 1).getTotalElements() != 0) {
-                menu.addMenuOption(safetyMenus + pickGroup, getMessage(thisSection, startMenu, optionsKey + "existing", user));
-            }
-            menu.addMenuOption(safetyMenus + newGroup, getMessage(thisSection, startMenu, optionsKey + "new", user));
+            menu.addMenuOption(safetyMenus + "location/current",
+                    getMessage(thisSection, startMenu, optionsKey + "location", user));
         }
 
-        menu.addMenuOption(startMenu + "_force", getMessage(optionsKey + "back.main", user));
-        return menuBuilder(menu);
+        if (addressBroker.hasAddress(user.getUid())) {
+            menu.addMenuOption(safetyMenus+ viewAddress, getMessage(thisSection, startMenu, optionsKey + viewAddress, user));
+        } else {
+            menu.addMenuOption(safetyMenus + addAddress, getMessage(thisSection, startMenu, optionsKey + addAddress, user));
+        }
+        menu.addMenuOption(safetyMenus + addRespondents + "?groupUid=" + group.getUid(),
+                getMessage(thisSection, startMenu, optionsKey + "add.respondents", user));
+        menu.addMenuOption(safetyMenus + resetSafetyGroup, getMessage(thisSection, startMenu, optionsKey + resetSafetyGroup, user));
+        return menu;
+    }
+
+    private USSDMenu createOpeningMenuNoGroup(User user) {
+        USSDMenu menu = new USSDMenu(getMessage(thisSection, startMenu, promptKey + ".nogroup", user));
+        if (groupQueryBroker.fetchUserCreatedGroups(user, 0, 1).getTotalElements() != 0) {
+            menu.addMenuOption(safetyMenus + pickGroup, getMessage(thisSection, startMenu, optionsKey + "existing", user));
+        }
+        menu.addMenuOption(safetyMenus + newGroup, getMessage(thisSection, startMenu, optionsKey + "new", user));
+        return menu;
     }
 
     @RequestMapping(value = safetyGroupPath + pickGroup)
     @ResponseBody
     public Request pickSafetyGroup(@RequestParam String msisdn) throws URISyntaxException {
         User user = userManager.findByInputNumber(msisdn);
-        USSDMenu menu = ussdGroupUtil.showUserCreatedGroupsForSafetyFeature(user, thisSection, safetyMenus + pickGroup + doSuffix, 0);
+        USSDMenu menu = ussdGroupUtil.showUserCreatedGroupsForSafetyFeature(user, thisSection,
+                safetyMenus + pickGroup + doSuffix, 0);
         return menuBuilder(menu);
     }
 
@@ -130,6 +162,72 @@ public class USSDSafetyGroupController extends USSDController {
         String prompt = getMessage(thisSection, pickGroup, promptKey + ".done", new String[] { group.getGroupName(), safetyTriggerString }, user);
         USSDMenu menu = new USSDMenu(prompt, optionsHomeExit(user, false));
         return menuBuilder(menu);
+    }
+
+    /*
+    SECTION: Request and grant permission to track location
+    todo : think through menu flow for after-approved
+    todo : enable viewing and override of geolocation tagging
+     */
+
+    @RequestMapping(value = safetyGroupPath + "location/request")
+    @ResponseBody
+    public Request requestLocationTracking(@RequestParam String msisdn) throws URISyntaxException {
+        User user = userManager.findByInputNumber(msisdn);
+
+        final String prompt = getMessage(thisSection, "tracking.request", promptKey, user);
+        USSDMenu menu = new USSDMenu(prompt, optionsYesNo(user,
+                safetyMenus + "location/request/allowed?dummy=1", // use dummy else URL is malformed
+                safetyMenus + "location/request/denied?dummy=1"));
+
+        return menuBuilder(menu);
+    }
+
+    @RequestMapping(value = safetyGroupPath + "location/request/allowed")
+    @ResponseBody
+    public Request approveLocationTracking(@RequestParam String msisdn) throws URISyntaxException {
+        User user = userManager.findByInputNumber(msisdn);
+
+        try {
+            boolean lookupAdded = locationServicesBroker.addUssdLocationLookupAllowed(user.getUid(), UserInterfaceType.USSD);
+            final String menuPrompt = getMessage(thisSection, "tracking.request", lookupAdded ? "succeeded" : "failed", user);
+            USSDMenu menu = new USSDMenu(menuPrompt, optionsHomeExit(user, true));
+            return menuBuilder(menu);
+        } catch (LocationTrackingImpossibleException e) {
+            USSDMenu menu2 = new USSDMenu(getMessage(thisSection, "tracking.request", "failed", user),
+                    optionsHomeExit(user, false));
+            return menuBuilder(menu2);
+        }
+    }
+
+    @RequestMapping(value = safetyGroupPath + "location/revoke")
+    @ResponseBody
+    public Request revokeLocationTracking(@RequestParam String msisdn) throws URISyntaxException {
+        User user = userManager.findByInputNumber(msisdn);
+        try {
+            boolean lookupRemoved = locationServicesBroker.removeUssdLocationLookup(user.getUid(), UserInterfaceType.USSD);
+            final String menuPrompt = getMessage(thisSection, "tracking.revoke", lookupRemoved ? "succeeded" : "failed", user);
+            return menuBuilder(new USSDMenu(menuPrompt, optionsHomeExit(user, true)));
+        } catch (LocationNotAvailableException e) {
+            return menuBuilder(new USSDMenu(getMessage(thisSection, "tracking.request", "nottracked", user),
+                    optionsHomeExit(user, false)));
+        }
+    }
+
+    @RequestMapping(value = safetyGroupPath + "location/current")
+    public Request checkCurrentLocation(@RequestParam String msisdn) throws URISyntaxException {
+        User user = userManager.findByInputNumber(msisdn);
+        try {
+            GeoLocation location = locationServicesBroker.getUssdLocationForUser(user.getUid());
+            final String prompt = getMessage(thisSection, "tracking.current", promptKey, new String[] {
+               String.valueOf(location.getLatitude()), String.valueOf(location.getLongitude())
+            }, user);
+            return menuBuilder(new USSDMenu(prompt, optionsHomeExit(user, true)));
+        } catch (Exception e) { // todo : decent exception handling, and back menu, etc
+            e.printStackTrace();
+            final String errorP = getMessage(thisSection, "tracking.current", "error", user);
+            return menuBuilder(new USSDMenu(errorP, optionsHomeExit(user, true)));
+        }
     }
 
     /*

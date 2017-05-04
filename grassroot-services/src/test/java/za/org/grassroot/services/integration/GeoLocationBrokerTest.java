@@ -11,6 +11,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
+import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.repository.PreviousPeriodUserLocationRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.geo.CenterCalculationResult;
@@ -35,9 +36,9 @@ public class GeoLocationBrokerTest {
 	@Test
 	public void testPreviusPeriodAggregation() {
 		ZoneId zoneId = DateTimeUtil.getSAST();
-		geoLocationBroker.logUserLocation("111", 50.00, 40.00, LocalDateTime.of(2016, 3, 5, 13, 15).atZone(zoneId).toInstant());
-		geoLocationBroker.logUserLocation("111", 60.00, 40.00, LocalDateTime.of(2016, 3, 7, 13, 15).atZone(zoneId).toInstant());
-		geoLocationBroker.logUserLocation("222", 50.00, 40.00, LocalDateTime.of(2016, 3, 7, 13, 15).atZone(zoneId).toInstant());
+		geoLocationBroker.logUserLocation("111", 50.00, 40.00, LocalDateTime.of(2016, 3, 5, 13, 15).atZone(zoneId).toInstant(), UserInterfaceType.ANDROID);
+		geoLocationBroker.logUserLocation("111", 60.00, 40.00, LocalDateTime.of(2016, 3, 7, 13, 15).atZone(zoneId).toInstant(), UserInterfaceType.ANDROID);
+		geoLocationBroker.logUserLocation("222", 50.00, 40.00, LocalDateTime.of(2016, 3, 7, 13, 15).atZone(zoneId).toInstant(), UserInterfaceType.ANDROID);
 
 		LocalDate localDate1 = LocalDate.of(2016, 4, 4);
 		geoLocationBroker.calculatePreviousPeriodUserLocations(localDate1);

@@ -16,9 +16,7 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.notification.*;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
-import za.org.grassroot.core.enums.EventRSVPResponse;
-import za.org.grassroot.core.enums.EventType;
-import za.org.grassroot.core.enums.MeetingImportance;
+import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.MessageAssemblingService;
@@ -819,7 +817,7 @@ public class EventBrokerImpl implements EventBroker {
 
     @Override
 	@Transactional
-    public void updateMeetingPublicStatus(String userUid, String meetingUid, boolean isPublic, GeoLocation location) {
+    public void updateMeetingPublicStatus(String userUid, String meetingUid, boolean isPublic, GeoLocation location, UserInterfaceType interfaceType) {
         Objects.requireNonNull(meetingUid);
 
         User user = userRepository.findOneByUid(userUid);
@@ -834,12 +832,12 @@ public class EventBrokerImpl implements EventBroker {
         EventLog newLog = new EventLog(user, meeting, isPublic ? MADE_PUBLIC : MADE_PRIVATE);
 
         if (location != null) {
-			newLog.setLocation(location);
-			geoLocationBroker.logUserLocation(userUid, location.getLatitude(), location.getLongitude(), Instant.now());
+			newLog.setLocationWithSource(location, LocationSource.convertFromInterface(interfaceType));
+			geoLocationBroker.logUserLocation(userUid, location.getLatitude(), location.getLongitude(), Instant.now(), UserInterfaceType.ANDROID);
 		}
 
 		if (isPublic) {
-			geoLocationBroker.calculateMeetingLocationInstant(meetingUid, location);
+			geoLocationBroker.calculateMeetingLocationInstant(meetingUid, location, UserInterfaceType.WEB);
 		}
 
 		logsAndNotificationsBroker.storeBundle(new LogsAndNotificationsBundle(Collections.singleton(newLog), Collections.emptySet()));

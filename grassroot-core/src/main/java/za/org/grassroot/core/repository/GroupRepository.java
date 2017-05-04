@@ -10,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
@@ -125,5 +126,14 @@ public interface GroupRepository extends JpaRepository<Group, Long>, JpaSpecific
             "inner join g.memberships m " +
             "where g.active = true and m.user = ?1 and ?2 member of m.role.permissions")
     int countActiveGroupsWhereUserHasPermission(User member, Permission requiredPermission);
+
+    // these are here just to make sure the tests catch if the HQL breaks, as we use it in location filtering a lot
+    @Query("SELECT g from Group g where " +
+            "size(g.memberships) > :minSize")
+    List<Group> findBySizeAbove(@Param(value="minSize") int minSize);
+
+    @Query("SELECT g from Group g where " +
+            "(size(g.descendantEvents) + size(g.descendantTodos)) > :minSize")
+    List<Group> findByTasksMoreThan(@Param(value = "minSize") int minSize);
 
 }
