@@ -8,6 +8,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.ObjectLocation;
@@ -16,6 +17,7 @@ import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.geo.ObjectLocationBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 
+import javax.servlet.http.HttpServletRequest;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,7 +43,8 @@ public class LocationController extends BaseController {
     public String search (@RequestParam(required = false) Integer radius,
                           @RequestParam(required = false) Double latitude,
                           @RequestParam(required = false) Double longitude,
-                          Model model) {
+                          Model model,
+                          HttpServletRequest request, RedirectAttributes attributes) {
 
         // Check radius
         Integer searchRadius = (radius == null ? DEFAULT_RADIUS : radius);
@@ -57,6 +60,15 @@ public class LocationController extends BaseController {
 
         // Check parameters
         if (latitude != null && longitude != null) {
+            // Check values
+            if (latitude < -90.0 || latitude > 90) {
+                addMessage(model, MessageType.ERROR, "location.latitude.error", request);
+                return "location/map";
+             }
+            if (longitude < -180.0 || longitude > 180.0) {
+                addMessage(model, MessageType.ERROR, "location.longitude.error", request);
+                return "location/map";
+            }
             // Use the passed location
             location = new GeoLocation(latitude, longitude);
             zoom = 13; // todo : calculate or pass as option
@@ -83,7 +95,8 @@ public class LocationController extends BaseController {
             logger.info("KPI: POST - BAD REQUEST: " + e.getMessage());
             logger.info("Exception class: " + e.getClass());
             logger.info("Stack trace: ", e);
-            //TODO: return jsonErrorResponse(HttpStatus.BAD_REQUEST, e.getMessage());
+            model.addAttribute(MessageType.ERROR.toString(), e.getMessage());
+            return "location/map";
         }
         logger.info("Groups found: {}", groups.size());
 
