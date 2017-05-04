@@ -17,6 +17,7 @@ import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.integration.exception.SeloParseDateTimeFailure;
 import za.org.grassroot.services.account.AccountGroupBroker;
@@ -461,7 +462,7 @@ public class USSDMeetingController extends USSDController {
         User user = userManager.findByInputNumber(inputNumber);
         try {
             // since getting USSD location is necessarily async, pass null location now, but update through user manager
-            eventBroker.updateMeetingPublicStatus(user.getUid(), mtgUid, true, null);
+            eventBroker.updateMeetingPublicStatus(user.getUid(), mtgUid, true, null, UserInterfaceType.USSD);
             if (useLocation != null && useLocation) {
                 geoLocationBroker.logUserUssdPermission(user.getUid(), mtgUid, JpaEntityType.MEETING);
             }
@@ -481,7 +482,7 @@ public class USSDMeetingController extends USSDController {
         User user = userManager.findByInputNumber(inputNumber);
         String menuPrompt;
         try {
-            eventBroker.updateMeetingPublicStatus(user.getUid(), mtgUid, false, null);
+            eventBroker.updateMeetingPublicStatus(user.getUid(), mtgUid, false, null, UserInterfaceType.USSD);
             menuPrompt = getMessage(thisSection, "private", promptKey + ".done", user);
         } catch (AccessDeniedException e) {
             menuPrompt = getMessage(thisSection, "public", promptKey + ".access", user);

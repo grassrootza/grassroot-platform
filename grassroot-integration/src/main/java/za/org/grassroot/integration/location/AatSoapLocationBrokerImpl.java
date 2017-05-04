@@ -16,6 +16,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.UserLog;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.UserLocationLog;
+import za.org.grassroot.core.enums.LocationSource;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.UserLocationLogRepository;
@@ -122,11 +123,12 @@ public class AatSoapLocationBrokerImpl implements UssdLocationServicesBroker {
     public GeoLocation getUssdLocationForUser(String userUid) {
         User user = userRepository.findOneByUid(userUid);
         try {
-            // todo : will need to use the accuracy score ...
+            // todo : will want to use the accuracy score ...
             GetLocationResponse response = aatSoapClient.getLocationResponse(user.getPhoneNumber());
             GeoLocation location = getLocationFromResposne(response);
             Instant timeOfCoord = getLocationInstant(response);
-            userLocationLogRepository.save(new UserLocationLog(timeOfCoord, userUid, location));
+            userLocationLogRepository.save(new UserLocationLog(timeOfCoord, userUid, location,
+                    LocationSource.LOGGED_APPROX));
             return location;
         } catch (Exception e) {
             // throw new LocationNotAvailableException();

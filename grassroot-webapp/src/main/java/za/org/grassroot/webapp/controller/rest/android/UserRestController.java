@@ -12,6 +12,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.VerificationTokenCode;
 import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.enums.AlertPreference;
+import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.core.enums.VerificationCodeType;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
@@ -230,7 +231,7 @@ public class UserRestController {
 
         User user = userManagementService.findByInputNumber(phoneNumber);
         log.info("Recording a location! With longitude = {} and lattitude = {}, from path string", longitude, latitude);
-        geoLocationBroker.logUserLocation(user.getUid(), latitude, longitude, Instant.now());
+        geoLocationBroker.logUserLocation(user.getUid(), latitude, longitude, Instant.now(), UserInterfaceType.ANDROID);
         return RestUtil.messageOkayResponse(RestMessage.LOCATION_RECORDED);
     }
 

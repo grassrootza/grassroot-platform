@@ -4,10 +4,12 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.*;
+import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.ObjectLocation;
+import za.org.grassroot.core.repository.GroupLocationRepository;
+import za.org.grassroot.core.repository.MeetingLocationRepository;
 
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
@@ -15,8 +17,8 @@ import java.security.InvalidParameterException;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
-import static org.mockito.BDDMockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ObjectLocationBrokerTest {
@@ -26,11 +28,18 @@ public class ObjectLocationBrokerTest {
     @Mock
     private EntityManager mockEntityManager;
 
+    @Mock
+    private GroupLocationRepository mockGroupLocationRepository;
+
+    @Mock
+    private MeetingLocationRepository mockMeetingLocationRepository;
+
     private ObjectLocationBrokerImpl objectLocationBroker;
 
     @Before
     public void setUp () {
-        objectLocationBroker = new ObjectLocationBrokerImpl(mockEntityManager);
+        objectLocationBroker = new ObjectLocationBrokerImpl(mockEntityManager, mockGroupLocationRepository,
+                mockMeetingLocationRepository);
 
         given(mockQuery.setParameter(anyString(), any())).willReturn(mockQuery);
         given(mockQuery.getResultList()).willAnswer(i->Arrays.asList());

@@ -44,7 +44,7 @@ public class PreviousPeriodUserLocation implements LocationHolder {
 
     @Override
     public LocationSource getSource() {
-        return LocationSource.LOG_AVERAGE; // by definition
+        return LocationSource.LOGGED_MULTIPLE; // by definition
     }
 
     public int getLogCount() {

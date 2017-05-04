@@ -12,16 +12,18 @@ import za.org.grassroot.core.domain.geo.*;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.LocationSource;
 import za.org.grassroot.core.enums.UserInterfaceType;
-import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.EventLogSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.integration.location.UssdLocationServicesBroker;
 
 import javax.persistence.EntityManager;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static za.org.grassroot.core.enums.LocationSource.convertFromInterface;
 
 @Service
 public class GeoLocationBrokerImpl implements GeoLocationBroker {
@@ -55,18 +57,22 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 	private MeetingLocationRepository meetingLocationRepository;
 
 	@Autowired
+	private UssdLocationServicesBroker ussdLocationServicesBroker;
+
+	@Autowired
 	private EntityManager entityManager;
 
 	@Override
 	@Transactional
-	public void logUserLocation(String userUid, double latitude, double longitude, Instant time) {
+	public void logUserLocation(String userUid, double latitude, double longitude, Instant time, UserInterfaceType interfaceType) {
 		Objects.requireNonNull(userUid);
 		Objects.requireNonNull(time);
 
 		// WARNING: this can potentially become non-performant, so some kind of table partitioning should be employed,
 		// or even better, some kind of specialized db storage for that (not sql db)
 
-		UserLocationLog userLocationLog = new UserLocationLog(time, userUid, new GeoLocation(latitude, longitude));
+		UserLocationLog userLocationLog = new UserLocationLog(time, userUid, new GeoLocation(latitude, longitude),
+				LocationSource.convertFromInterface(interfaceType));
 		userLocationLogRepository.save(userLocationLog);
 	}
 
@@ -77,15 +83,28 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(entityToUpdateUid);
 
-		UserLog userLog = new UserLog(userUid, UserLogType.GAVE_LOCATION_PERMISSION,
-				String.format("For entity type: %s", entityType.name()), UserInterfaceType.USSD);
-        userLogRepository.save(userLog);
-        // todo : make the call to the API, get the location, log it for user
-		GeoLocation location = new GeoLocation(10, 10);
-		userLocationLogRepository.save(new UserLocationLog(Instant.now(), userUid, location));
-
-		if (JpaEntityType.MEETING.equals(entityType)) {
-			calculateMeetingLocationInstant(entityToUpdateUid, location);
+        logger.info("Logging USSD permission to use location, should be off main thread");
+        // todo: only call this if lookup not already allowed (else duplicating & slow ...)
+		boolean lookupAllowed = ussdLocationServicesBroker.addUssdLocationLookupAllowed(userUid, UserInterfaceType.USSD);
+		if (lookupAllowed) {
+			GeoLocation userLocation = ussdLocationServicesBroker.getUssdLocationForUser(userUid);
+			logger.info("Retrieved a user location: {}", userLocation);
+			switch (entityType) {
+				case MEETING:
+					calculateMeetingLocationInstant(entityToUpdateUid, userLocation, UserInterfaceType.USSD);
+					break;
+				case TODO:
+					calculateTodoLocationInstant(entityToUpdateUid, userLocation, UserInterfaceType.USSD);
+					break;
+				case GROUP:
+					calculateGroupLocationInstant(entityToUpdateUid, userLocation, UserInterfaceType.USSD);
+					break;
+				case SAFETY:
+					// todo : add this
+					break;
+				default:
+					logger.info("Location attempted for an entity that should not have a location attached");
+			}
 		}
     }
 
@@ -153,13 +172,14 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 
 	@Override
 	@Transactional
-	public void calculateGroupLocationInstant(String groupUid, GeoLocation location) {
+	public void calculateGroupLocationInstant(String groupUid, GeoLocation location, UserInterfaceType coordSourceInterface) {
 		Objects.requireNonNull(groupUid);
 		Objects.requireNonNull(location);
 
 		Group group = groupRepository.findOneByUid(groupUid);
 
-		GroupLocation groupLocation = new GroupLocation(group, LocalDate.now(), location, (float) 1.0, LocationSource.LOGGED);
+		GroupLocation groupLocation = new GroupLocation(group, LocalDate.now(), location, (float) 1.0,
+				convertFromInterface(coordSourceInterface));
 		groupLocationRepository.save(groupLocation);
 	}
 
@@ -180,7 +200,7 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 			CenterCalculationResult center = calculateCenter(logsWithLocation);
 			float score = (float) 1.0; // since a related log with a GPS is best possible, but may return to this
 			meetingLocation = new MeetingLocation((Meeting) event, center.getCenter(), score,
-					EventType.MEETING, LocationSource.LOG_AVERAGE);
+					EventType.MEETING, LocationSource.LOGGED_MULTIPLE);
 		} else {
 			Group parent = event.getParent().getThisOrAncestorGroup();
 			GroupLocation parentLocation = fetchGroupLocationWithScoreAbove(parent.getUid(),
@@ -201,12 +221,12 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 
     @Override
 	@Transactional
-    public void calculateMeetingLocationInstant(String eventUid, GeoLocation location) {
+    public void calculateMeetingLocationInstant(String eventUid, GeoLocation location, UserInterfaceType coordSourceInterface) {
 		Meeting meeting = (Meeting) eventRepository.findOneByUid(eventUid);
 		logger.info("Calculating a meeting location ...");
 		if (location != null) {
 			MeetingLocation mtgLocation = new MeetingLocation(meeting, location, (float) 1.0, EventType.MEETING,
-					LocationSource.LOGGED);
+					convertFromInterface(coordSourceInterface));
 			meetingLocationRepository.save(mtgLocation);
 		} else {
 			LocalDate inLastMonth = LocalDate.now().minusMonths(1L);
@@ -225,7 +245,7 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
     }
 
 	@Override
-	public void calculateTodoLocationInstant(String todoUid, GeoLocation location) {
+	public void calculateTodoLocationInstant(String todoUid, GeoLocation location, UserInterfaceType coordSourceInterface) {
 
 	}
 

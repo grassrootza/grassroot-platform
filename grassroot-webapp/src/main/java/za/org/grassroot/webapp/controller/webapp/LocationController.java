@@ -92,20 +92,8 @@ public class LocationController extends BaseController {
         objectsToReturn.addAll(groups);
 
         // Load meetings
-        if (groups.size() > 0) {
-            for (ObjectLocation group : groups) {
-                // Get meetings
-                List<ObjectLocation> meetings = objectLocationBroker.fetchMeetingLocationsByGroup(group, location, searchRadius);
-
-                // Concat the results
-                objectsToReturn.addAll(meetings);
-            }
-        } else {
-            List<ObjectLocation> meetings = objectLocationBroker.fetchMeetingLocations(location, searchRadius);
-
-            // Concat the results
-            objectsToReturn.addAll(meetings);
-        }
+        List<ObjectLocation> meetings = objectLocationBroker.fetchMeetingLocations(location, searchRadius);
+        objectsToReturn.addAll(meetings);
 
         // Send response
         model.addAttribute("user", user);

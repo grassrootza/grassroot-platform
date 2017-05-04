@@ -6,6 +6,7 @@ import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.MeetingImportance;
+import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.services.enums.EventListTimeType;
 
 import java.time.Instant;
@@ -75,7 +76,7 @@ public interface EventBroker {
 
 	void removeAssignedMembers(String userUid, String eventUid, Set<String> memberUids);
 
-	void updateMeetingPublicStatus(String userUid, String meetingUid, boolean isPublic, GeoLocation location);
+	void updateMeetingPublicStatus(String userUid, String meetingUid, boolean isPublic, GeoLocation location, UserInterfaceType interfaceType);
 
 	/*
 	Methods for retrieving lists of upcoming events (all read only)
