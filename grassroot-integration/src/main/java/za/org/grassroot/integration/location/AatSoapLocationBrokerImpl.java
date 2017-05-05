@@ -46,6 +46,7 @@ public class AatSoapLocationBrokerImpl implements UssdLocationServicesBroker {
     private static final Logger logger = LoggerFactory.getLogger(AatSoapLocationBrokerImpl.class);
 
     private final AatSoapClient aatSoapClient;
+
     private final UserRepository userRepository;
     private final UserLogRepository userLogRepository;
     private final UserLocationLogRepository userLocationLogRepository;
@@ -95,6 +96,7 @@ public class AatSoapLocationBrokerImpl implements UssdLocationServicesBroker {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public boolean hasUserGivenLocationPermission(String userUid) {
         List<UserLog> permissionLogs = userLogRepository.findAll(Specifications
                 .where(ofType(UserLogType.GAVE_LOCATION_PERMISSION))

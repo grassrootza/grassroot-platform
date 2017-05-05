@@ -316,7 +316,7 @@ public class EventRepositoryTest {
         assertTrue(newEvent.getReminderType().equals(EventReminderType.CUSTOM));
         newEvent.updateScheduledReminderTime();
         Instant updateTime = DateTimeUtil.restrictToDaytime(scheduleTime.minus(12, ChronoUnit.MINUTES),
-                Instant.now(), DateTimeUtil.getSAST());
+                scheduleTime, DateTimeUtil.getSAST());
         assertThat(newEvent.getScheduledReminderTime(), is(updateTime));
         assertTrue(newEvent.getScheduledReminderTime().isAfter(Instant.now()));
         newEvent.setScheduledReminderActive(false);
@@ -367,7 +367,7 @@ public class EventRepositoryTest {
         assertTrue(eventCreate.getReminderType().equals(EventReminderType.GROUP_CONFIGURED));
         eventCreate.updateScheduledReminderTime();
         Instant timeReminderShouldBe = DateTimeUtil.restrictToDaytime(newTime.minus(30, ChronoUnit.MINUTES),
-                Instant.now(), DateTimeUtil.getSAST());
+                newTime, DateTimeUtil.getSAST());
         assertThat(eventCreate.getScheduledReminderTime(), is(timeReminderShouldBe));
 
 

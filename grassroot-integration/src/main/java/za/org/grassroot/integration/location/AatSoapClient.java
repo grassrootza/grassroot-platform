@@ -20,6 +20,8 @@ public class AatSoapClient extends WebServiceGatewaySupport {
     @Value("${grassroot.aat.lbs.password:password}")
     private String aatLbsPassword;
 
+
+
     public AddAllowedMsisdnResponse addAllowedMsisdn(final String msisdn, final int permissionType) {
         AddAllowedMsisdn addAllowedMsisdn = new AddAllowedMsisdn();
         addAllowedMsisdn.setMsisdn(msisdn);
