@@ -104,6 +104,7 @@
       attributionControl: false
     }).addTo(map);
 
+    // Draw all marks
     var markers = [[${data}]];
 
     for ( var i=0; i < markers.length; ++i )
@@ -113,6 +114,8 @@
           .bindPopup( '<a href="' + m.url + '" target="_blank">' + m.name + '</a> <br><br>' + m.description )
           .addTo( map );
     }
+    // Draw a radius
+    L.circle([latitude, longitude], {radius: 200, fill: true}).addTo(map);
 
     /*]]>*/
   </script>

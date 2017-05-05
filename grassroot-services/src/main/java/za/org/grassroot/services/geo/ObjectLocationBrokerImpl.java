@@ -81,7 +81,7 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
         assertGeolocation(location);
 
         List<ObjectLocation> list = entityManager.createQuery("SELECT NEW za.org.grassroot.core.domain.geo.ObjectLocation( " +
-                        "g.uid, g.groupName, l.location.latitude, l.location.longitude, l.score, 'GROUP', g.description) " +
+                        "g.uid, g.groupName, l.location.latitude, l.location.longitude, l.score, 'GROUP', g.description, false) " +
                         "FROM GroupLocation l " +
                         "INNER JOIN l.group g " +
                         "WHERE g.discoverable = true " +
@@ -107,7 +107,7 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
         /**
         List<ObjectLocation> list = entityManager.createQuery("SELECT NEW za.org.grassroot.core.domain.geo.ObjectLocation(" +
                         "m.uid, m.name, l.location.latitude, l.location.longitude, l.score, 'MEETING', " +
-                        "CONCAT('<strong>Where: </strong>', m.eventLocation, '<br/><strong>Date and Time: </strong>', m.eventStartDateTime)) " +
+                        "CONCAT('<strong>Where: </strong>', m.eventLocation, '<br/><strong>Date and Time: </strong>', m.eventStartDateTime), m.isPublic) " +
                         "FROM MeetingLocation l " +
                         "INNER JOIN l.meeting m " +
                         "WHERE m.isPublic = true " +
@@ -117,13 +117,7 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
         **/
         List<ObjectLocation> list = entityManager.createQuery("SELECT NEW za.org.grassroot.core.domain.geo.ObjectLocation(" +
                         "  m.uid, m.name, l.location.latitude, l.location.longitude, l.score, 'MEETING', " +
-                        "  CONCAT('<strong>Where: </strong>', m.eventLocation, '<br/><strong>Date and Time: </strong>', m.eventStartDateTime)), " +
-                        "  :distance_unit " +
-                        "     * DEGREES(ACOS(COS(RADIANS(:latpoint)) " +
-                        "     * COS(RADIANS(l.location.latitude)) " +
-                        "     * COS(RADIANS(:longpoint - l.location.longitude)) " +
-                        "     + SIN(RADIANS(:latpoint)) " +
-                        "     * SIN(RADIANS(l.location.latitude)))) AS distance " +
+                        "  CONCAT('<strong>Where: </strong>', m.eventLocation, '<br/><strong>Date and Time: </strong>', m.eventStartDateTime), m.isPublic) " +
                         "FROM MeetingLocation l " +
                         "INNER JOIN l.meeting m " +
                         "WHERE m.isPublic = true " +
@@ -135,11 +129,15 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
                         "  AND l.location.longitude " +
                         "      BETWEEN :longpoint - (:radius / (:distance_unit * COS(RADIANS(:latpoint)))) " +
                         "          AND :longpoint + (:radius / (:distance_unit * COS(RADIANS(:latpoint)))) " +
-                        "  AND distance <= :radius " +
-                        "ORDER BY distance",
+                        "  AND :radius >= (:distance_unit " +
+                        "           * DEGREES(ACOS(COS(RADIANS(:latpoint)) " +
+                        "           * COS(RADIANS(l.location.latitude)) " +
+                        "           * COS(RADIANS(:longpoint - l.location.longitude)) " +
+                        "           + SIN(RADIANS(:latpoint)) " +
+                        "           * SIN(RADIANS(l.location.latitude))))) ",
                 ObjectLocation.class)
                 .setParameter("date", Instant.now())
-                .setParameter("radius", radius)
+                .setParameter("radius", (double)radius)
                 .setParameter("distance_unit", KM_PER_DEGREE)
                 .setParameter("latpoint", location.getLatitude())
                 .setParameter("longpoint", location.getLongitude())
@@ -164,7 +162,7 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
 
         List<ObjectLocation> list = entityManager.createQuery("SELECT NEW za.org.grassroot.core.domain.geo.ObjectLocation(" +
                         "m.uid, m.name, l.location.latitude, l.location.longitude, l.score, 'MEETING', " +
-                        "CONCAT('<strong>Where: </strong>', m.eventLocation, '<br/><strong>Date and Time: </strong>', m.eventStartDateTime)) " +
+                        "CONCAT('<strong>Where: </strong>', m.eventLocation, '<br/><strong>Date and Time: </strong>', m.eventStartDateTime), m.isPublic) " +
                         "FROM Meeting m " +
                         "INNER JOIN m.parentGroup g, GroupLocation l " +
                         "WHERE l.localDate <= :date " +
