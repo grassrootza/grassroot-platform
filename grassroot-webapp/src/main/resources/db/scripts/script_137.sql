@@ -2,6 +2,7 @@ create table data_subscriber (
   id bigserial not null,
   active boolean,
   creation_time timestamp not null,
+  display_name varchar(255) not null,
   primary_email varchar(255) not null,
   uid varchar(50) not null,
   administrator bigint not null,

@@ -44,6 +44,10 @@ public class AddressLog implements ActionLog, LocationHolder {
     @Enumerated(EnumType.STRING)
     private LocationSource locationSource;
 
+    private AddressLog() {
+        // for JPA
+    }
+
     public AddressLog(Address address, GeoLocation location, LocationSource source, String description) {
         this.address = Objects.requireNonNull(address);
         this.location = Objects.requireNonNull(location);

@@ -1,4 +1,4 @@
-package za.org.grassroot.webapp.controller.webapp;
+package za.org.grassroot.webapp.controller.webapp.group;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,7 +25,6 @@ import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.PublicGroupWrapper;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;

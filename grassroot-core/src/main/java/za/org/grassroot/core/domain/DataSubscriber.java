@@ -27,6 +27,10 @@ public class DataSubscriber {
     private String uid;
 
     @Basic
+    @Column(name = "display_name", nullable = false)
+    private String displayName;
+
+    @Basic
     @Column(name = "creation_time", nullable = false, updatable = false)
     private Instant creationTime;
 
@@ -56,12 +60,19 @@ public class DataSubscriber {
     @Type(type = "za.org.grassroot.core.util.GenericArrayUserType")
     private String[] userUidsWithAccess;
 
-    public DataSubscriber(User creatingUser, User administrator, String primaryEmail) {
+    private DataSubscriber() {
+        // for JPA
+    }
+
+    public DataSubscriber(User creatingUser, User administrator, String displayName, String primaryEmail) {
         this.uid = UIDGenerator.generateId();
         this.creationTime = Instant.now();
         this.creatingUser = creatingUser;
         this.administrator = administrator;
         this.primaryEmail = primaryEmail;
+        this.displayName = displayName;
+        this.emailsForPushNotifications = new String[0];
+        this.userUidsWithAccess = new String[0];
     }
 
     public String getUid() {
@@ -82,6 +93,14 @@ public class DataSubscriber {
 
     public void setAdministrator(User administrator) {
         this.administrator = administrator;
+    }
+
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    public void setDisplayName(String displayName) {
+        this.displayName = displayName;
     }
 
     public boolean isActive() {

@@ -6,6 +6,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.springframework.web.client.RestTemplate;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.ObjectLocation;
 import za.org.grassroot.core.repository.GroupLocationRepository;
@@ -34,12 +35,15 @@ public class ObjectLocationBrokerTest {
     @Mock
     private MeetingLocationRepository mockMeetingLocationRepository;
 
+    @Mock
+    private RestTemplate mockRestTemplate;
+
     private ObjectLocationBrokerImpl objectLocationBroker;
 
     @Before
     public void setUp () {
         objectLocationBroker = new ObjectLocationBrokerImpl(mockEntityManager, mockGroupLocationRepository,
-                mockMeetingLocationRepository, restTemplate);
+                mockMeetingLocationRepository, mockRestTemplate);
 
         given(mockQuery.setParameter(anyString(), any())).willReturn(mockQuery);
         given(mockQuery.getResultList()).willAnswer(i->Arrays.asList());

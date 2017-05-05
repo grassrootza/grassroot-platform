@@ -22,7 +22,7 @@ public class GenericArrayUserType<T extends Serializable> implements UserType {
 
     @Override
     public Object deepCopy(Object value) throws HibernateException {
-        return value;
+        return value == null ? null : ((Object[]) value).clone();
     }
 
     @SuppressWarnings("unchecked")
