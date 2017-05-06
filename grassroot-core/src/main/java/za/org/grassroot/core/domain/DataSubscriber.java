@@ -2,12 +2,15 @@ package za.org.grassroot.core.domain;
 
 import org.hibernate.annotations.Type;
 import org.hibernate.validator.constraints.Email;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
 import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * Created by luke on 2017/05/05.
@@ -52,25 +55,26 @@ public class DataSubscriber {
 
     // email addresses that get sent wire alerts (may not be attached to a GR account)
     @Column(name = "push_emails")
-    @Type(type = "za.org.grassroot.core.util.GenericArrayUserType")
+    @Type(type = "za.org.grassroot.core.util.StringArrayUserType")
     private String[] emailsForPushNotifications;
 
     // since we're using an array instead of yet one more table, storing the UIDs instead of entity
     @Column(name = "access_users")
-    @Type(type = "za.org.grassroot.core.util.GenericArrayUserType")
+    @Type(type = "za.org.grassroot.core.util.StringArrayUserType")
     private String[] userUidsWithAccess;
 
     private DataSubscriber() {
         // for JPA
     }
 
-    public DataSubscriber(User creatingUser, User administrator, String displayName, String primaryEmail) {
+    public DataSubscriber(User creatingUser, User administrator, String displayName, String primaryEmail, boolean active) {
         this.uid = UIDGenerator.generateId();
         this.creationTime = Instant.now();
         this.creatingUser = creatingUser;
         this.administrator = administrator;
         this.primaryEmail = primaryEmail;
         this.displayName = displayName;
+        this.active = active;
         this.emailsForPushNotifications = new String[0];
         this.userUidsWithAccess = new String[0];
     }
@@ -81,6 +85,10 @@ public class DataSubscriber {
 
     public Instant getCreationTime() {
         return creationTime;
+    }
+
+    public ZonedDateTime getCreationTimeAtSAST() {
+        return DateTimeUtil.convertToUserTimeZone(creationTime, DateTimeUtil.getSAST());
     }
 
     public User getCreatingUser() {
@@ -119,6 +127,10 @@ public class DataSubscriber {
         this.primaryEmail = primaryEmail;
     }
 
+    public List<String> getPushEmails() {
+        return new ArrayList<>(Arrays.asList(getEmailsForPushNotifications()));
+    }
+
     public String[] getEmailsForPushNotifications() {
         if (emailsForPushNotifications == null) {
             emailsForPushNotifications = new String[0];
@@ -130,17 +142,21 @@ public class DataSubscriber {
         this.emailsForPushNotifications = emailsForPushNotifications;
     }
 
-    public void addEmailForPushNotification(String email) {
+    public void addEmailsForPushNotification(List<String> emails) {
         // use getter in case the array is null at beginning (will make sure it no longer is
         ArrayList<String> modifiedList = new ArrayList<>(Arrays.asList(getEmailsForPushNotifications()));
-        modifiedList.add(email);
+        modifiedList.addAll(emails);
         emailsForPushNotifications = listToArray(modifiedList);
     }
 
-    public void removeEmailForPushNotification(String email) {
+    public void removeEmailsForPushNotification(List<String> emails) {
         ArrayList<String> modifiedList = new ArrayList<>(Arrays.asList(getEmailsForPushNotifications()));
-        modifiedList.remove(email);
+        modifiedList.removeAll(emails);
         emailsForPushNotifications = listToArray(modifiedList);
+    }
+
+    public List<String> getUsersWithAccess() {
+        return new ArrayList<>(Arrays.asList(getUserUidsWithAccess()));
     }
 
     public String[] getUserUidsWithAccess() {
@@ -154,15 +170,15 @@ public class DataSubscriber {
         this.userUidsWithAccess = userUidsWithAccess;
     }
 
-    public void addUserUidWithAccess(final String userUid) {
+    public void addUserUidsWithAccess(final List<String> userUids) {
         ArrayList<String> list = new ArrayList<>(Arrays.asList(getUserUidsWithAccess()));
-        list.add(userUid);
+        list.addAll(userUids);
         userUidsWithAccess = listToArray(list);
     }
 
-    public void removeUserUidWithAccess(final String userUid) {
+    public void removeUserUidsWithAccess(final List<String> userUids) {
         ArrayList<String> list = new ArrayList<>(Arrays.asList(getUserUidsWithAccess()));
-        list.remove(userUid);
+        list.removeAll(userUids);
         userUidsWithAccess = listToArray(list);
     }
 

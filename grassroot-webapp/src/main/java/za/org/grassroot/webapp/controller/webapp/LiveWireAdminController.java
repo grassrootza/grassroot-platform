@@ -1,0 +1,163 @@
+package za.org.grassroot.webapp.controller.webapp;
+
+import liquibase.util.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import za.org.grassroot.core.domain.DataSubscriber;
+import za.org.grassroot.core.domain.User;
+import za.org.grassroot.services.DataSubscriberBroker;
+import za.org.grassroot.services.user.PasswordTokenService;
+import za.org.grassroot.webapp.controller.BaseController;
+
+import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+/**
+ * Created by luke on 2017/05/06.
+ */
+@Controller
+@RequestMapping("/livewire/")
+public class LiveWireAdminController extends BaseController {
+
+    private static final Logger logger = LoggerFactory.getLogger(LiveWireAdminController.class);
+
+    private static final Pattern emailSplitPattern = Pattern.compile("\\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,4}\\b",
+            Pattern.CASE_INSENSITIVE);
+
+    private final DataSubscriberBroker subscriberBroker;
+    private final PasswordTokenService tokenService;
+
+    @Autowired
+    public LiveWireAdminController(DataSubscriberBroker subscriberBroker, PasswordTokenService tokenService) {
+        this.subscriberBroker = subscriberBroker;
+        this.tokenService = tokenService;
+    }
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    @RequestMapping(value = "/admin/home", method = RequestMethod.GET)
+    public String listLiveWireSubscribers(Model model) {
+        model.addAttribute("subscribers",
+                subscriberBroker.listSubscribers(false, new Sort(Sort.Direction.ASC, "displayName")));
+        return "livewire/admin/home";
+    }
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    @RequestMapping(value = "/admin/create", method = RequestMethod.GET)
+    public String createDataSubscriberForm() {
+        return "livewire/admin/create_sub";
+    }
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    @RequestMapping(value = "/admin/create", method = RequestMethod.POST)
+    public String createDataSubscriberDo(@RequestParam String displayName, @RequestParam String primaryEmail,
+                                         @RequestParam(required = false) Boolean addToPushEmails,
+                                         @RequestParam(required = false) String emailsForPush,
+                                         @RequestParam(required = false) Boolean active,
+                                         RedirectAttributes attributes, HttpServletRequest request) {
+        List<String> emails = emailsForPush == null ? null : splitEmailInput(emailsForPush);
+        try {
+            subscriberBroker.create(getUserProfile().getUid(), displayName, primaryEmail,
+                    addToPushEmails != null && addToPushEmails, emails, active != null && active);
+            addMessage(attributes, MessageType.SUCCESS, "livewire.subscriber.create.success", request);
+        } catch (Exception e) {
+            logger.error(e.toString());
+            addMessage(attributes, MessageType.ERROR, "livewire.subscriber.create.error", request);
+        }
+        return "redirect:/livewire/admin/home";
+    }
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    @RequestMapping(value = "/admin/toggleactive", method = RequestMethod.POST)
+    public String activateSubscriber(@RequestParam String subscriberUid, @RequestParam String otpEntered,
+                                     RedirectAttributes attributes, HttpServletRequest request) {
+        if (!tokenService.isShortLivedOtpValid(getUserProfile().getPhoneNumber(), otpEntered)) {
+            // todo : show page instead
+            throw new AccessDeniedException("Error! Admin user did not validate with OTP");
+        }
+
+        DataSubscriber subscriber = subscriberBroker.viewSubscriber(getUserProfile().getUid(), subscriberUid);
+        subscriberBroker.updateActiveStatus(getUserProfile().getUid(), subscriberUid, !subscriber.isActive());
+        addMessage(attributes, MessageType.SUCCESS,
+                "livewire.subscriber." + (subscriber.isActive() ? "activated" : "deactivated"),
+                request);
+        return "redirect:/livewire/admin/home";
+    }
+
+    @RequestMapping(value = "/subscriber/view", method = RequestMethod.GET)
+    public String viewDataSubscriber(@RequestParam String subscriberUid, Model model) {
+        try {
+            DataSubscriber subscriber = subscriberBroker.viewSubscriber(
+                    getUserProfile().getUid(),
+                    subscriberUid
+            );
+            model.addAttribute("subscriber", subscriber);
+            model.addAttribute("adminPhoneNumber", getUserProfile().getPhoneNumber());
+            // this is a little heavy but will be very infrequently used (if an issue, just create a loadUsers)
+            List<User> users = subscriber.getUsersWithAccess().stream()
+                    .map(uid -> userManagementService.load(uid)).collect(Collectors.toList());
+            model.addAttribute("users", users);
+            return "livewire/subscriber_view";
+        } catch (AccessDeniedException e) {
+            return "livewire/access_denied";
+        }
+    }
+
+    @RequestMapping(value = "/subscriber/emails/add", method = RequestMethod.POST)
+    public String addPushEmailsToSubscriber(@RequestParam String subscriberUid, @RequestParam String emailsToAdd,
+                                            RedirectAttributes attributes, HttpServletRequest request) {
+        try {
+            DataSubscriber subscriber = subscriberBroker.viewSubscriber(getUserProfile().getUid(), subscriberUid);
+            List<String> emails = splitEmailInput(emailsToAdd);
+            if (emails.isEmpty()) {
+                addMessage(attributes, MessageType.ERROR, "livewire.emails.add.empty", request);
+            } else {
+                subscriberBroker.addPushEmails(getUserProfile().getUid(), subscriber.getUid(), emails);
+                addMessage(attributes, MessageType.SUCCESS, "livewire.emails.add.done", request);
+            }
+            attributes.addAttribute("subscriberUid", subscriber.getUid());
+            return "redirect:/livewire/subscriber/view";
+        } catch (AccessDeniedException e) {
+            addMessage(attributes, MessageType.ERROR, "livewire.emails.add.denied", request);
+            return "livewire/access_denied";
+        }
+    }
+
+    @RequestMapping(value = "/subscriber/emails/remove", method = RequestMethod.POST)
+    public String removePushEmailFromSubscriber(@RequestParam String subscriberUid, @RequestParam String emailsToRemove,
+                                                RedirectAttributes attributes, HttpServletRequest request) {
+        DataSubscriber subscriber = subscriberBroker.viewSubscriber(getUserProfile().getUid(), subscriberUid);
+        List<String> emails = splitEmailInput(emailsToRemove);
+        if (StringUtils.isEmpty(emailsToRemove)) {
+            addMessage(attributes, MessageType.ERROR, "livewire.emails.remove.empty", request);
+        } else {
+            subscriberBroker.removePushEmails(getUserProfile().getUid(), subscriber.getUid(), emails);
+            addMessage(attributes, MessageType.SUCCESS, "livewire.emails.remove.done", request);
+        }
+        attributes.addAttribute("subscriberUid", subscriber.getUid());
+        return "redirect:/livewire/subscriber/view";
+    }
+
+    private List<String> splitEmailInput(String emailsInSingleString) {
+        Matcher emailMatcher = emailSplitPattern.matcher(emailsInSingleString);
+        List<String> emails = new ArrayList<>();
+        while (emailMatcher.find()) {
+            emails.add(emailMatcher.group());
+        }
+        return emails;
+    }
+
+}

@@ -10,7 +10,7 @@ import java.sql.*;
 /**
  * Created by luke on 2017/05/05.
  */
-public class GenericArrayUserType<T extends Serializable> implements UserType {
+public class StringArrayUserType<T extends Serializable> implements UserType {
 
     protected static final int[] SQL_TYPES = { Types.ARRAY };
     private  Class<T> typeParameterClass;
@@ -57,7 +57,7 @@ public class GenericArrayUserType<T extends Serializable> implements UserType {
             return null;
         }
         if (resultSet.getArray(names[0]) == null) {
-            return new Integer[0];
+            return new String[0];
         }
 
         Array array = resultSet.getArray(names[0]);
@@ -75,7 +75,7 @@ public class GenericArrayUserType<T extends Serializable> implements UserType {
         } else {
             @SuppressWarnings("unchecked")
             T castObject = (T) value;
-            Array array = connection.createArrayOf("integer", (Object[]) castObject);
+            Array array = connection.createArrayOf("text", (Object[]) castObject);
             statement.setArray(index, array);
         }
     }

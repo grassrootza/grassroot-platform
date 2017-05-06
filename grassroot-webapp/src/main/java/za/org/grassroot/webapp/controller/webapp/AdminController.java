@@ -297,17 +297,4 @@ public class AdminController extends BaseController {
 		return returnRedir;
 	}
 
-	@PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    @RequestMapping(value = "/admin/livewire/sub/create", method = RequestMethod.GET)
-    public String createDataSubscriberForm() {
-        return "admin/livewire/create_sub";
-    }
-
-    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
-    @RequestMapping(value = "/admin/livewire/sub/create", method = RequestMethod.POST)
-    public String createDataSubscriberDo(@RequestParam String displayName, @RequestParam String primaryEmail,
-                                         RedirectAttributes attributes) {
-        dataSubscriberBroker.create(getUserProfile().getUid(), displayName, primaryEmail);
-        return "redirect:/admin/home";
-    }
 }

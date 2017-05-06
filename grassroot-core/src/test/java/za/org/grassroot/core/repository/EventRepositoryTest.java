@@ -357,7 +357,7 @@ public class EventRepositoryTest {
         User newUser = userRepository.save(new User("098765"));
         Group newGroup = groupRepository.save(new Group("", newUser));
 
-        Instant newTime = Instant.now().plus(35, ChronoUnit.MINUTES);
+        Instant newTime = Instant.now().plus(48, ChronoUnit.HOURS);
         Event eventCreate = eventRepository.save(new Meeting("", newTime,
                 newUser, newGroup, ""));
         assertNotNull(eventCreate.getUid());
@@ -369,7 +369,6 @@ public class EventRepositoryTest {
         Instant timeReminderShouldBe = DateTimeUtil.restrictToDaytime(newTime.minus(30, ChronoUnit.MINUTES),
                 newTime, DateTimeUtil.getSAST());
         assertThat(eventCreate.getScheduledReminderTime(), is(timeReminderShouldBe));
-
 
         assertTrue(eventCreate.getScheduledReminderTime().isAfter(Instant.now()));
         assertFalse(eventCreate.isScheduledReminderActive());
