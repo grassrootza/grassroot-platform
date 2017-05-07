@@ -38,8 +38,8 @@ public class MeetingLocation {
     @Column(name = "event_type", length = 50, nullable = false)
     private EventType eventType;
 
-    @Column(name = "source", nullable = false)
     @Enumerated(EnumType.STRING)
+    @Column(name = "source", length = 50, nullable = false)
     private LocationSource source;
 
     private MeetingLocation() {

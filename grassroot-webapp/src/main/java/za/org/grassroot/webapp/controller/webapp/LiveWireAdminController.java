@@ -13,9 +13,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import za.org.grassroot.core.domain.DataSubscriber;
+import za.org.grassroot.core.domain.livewire.DataSubscriber;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.services.DataSubscriberBroker;
+import za.org.grassroot.services.livewire.DataSubscriberBroker;
 import za.org.grassroot.services.user.PasswordTokenService;
 import za.org.grassroot.webapp.controller.BaseController;
 

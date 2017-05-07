@@ -49,7 +49,6 @@ public interface GroupRepository extends JpaRepository<Group, Long>, JpaSpecific
     Find all groups, with pagination--for system admin
      */
     Page<Group> findAll(Pageable pageable);
-    Long countByActive(boolean active);
 
     /*
     Couple of methods to be able to discover groups, public if user not a member, and their own groups
@@ -82,11 +81,6 @@ public interface GroupRepository extends JpaRepository<Group, Long>, JpaSpecific
             "where g.active = true and m.user_id = ?1 and to_tsvector('english', g.name) @@ to_tsquery('english', ?2)",
             nativeQuery = true)
     List<Group> findByActiveAndMembershipsUserWithNameContainsText(Long userId, String nameTsQuery);
-
-    /*
-    Methods for analytical service, to retrieve and count groups in periods (by created date time)
-     */
-    int countByCreatedDateTimeBetweenAndActive(Instant periodStart, Instant periodEnd, boolean active);
 
     /*
     Find the max(groupTokenCode) in table

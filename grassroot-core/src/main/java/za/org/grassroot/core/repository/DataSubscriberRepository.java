@@ -4,7 +4,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
-import za.org.grassroot.core.domain.DataSubscriber;
+import za.org.grassroot.core.domain.livewire.DataSubscriber;
 
 import java.util.List;
 

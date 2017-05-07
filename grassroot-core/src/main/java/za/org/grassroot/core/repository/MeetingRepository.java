@@ -28,8 +28,6 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long>, JpaSpec
 
 	Page<Meeting> findByParentGroupMembershipsUserAndEventStartDateTimeBetweenAndCanceledFalseOrderByEventStartDateTimeDesc(User user, Instant startTime, Instant endTime, Pageable page);
 
-	Meeting findOneByCreatedByUserAndParentGroupAndNameAndEventStartDateTimeBetweenAndCanceledFalse(User user, Group group, String name, Instant startDateTime, Instant endDateTime);
-
     /**
      * Find meetings for which we should send out response totals (i.e., X said yes, and so forth), being meetings:
      * Called in a certain interval of time

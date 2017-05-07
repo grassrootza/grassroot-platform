@@ -1,8 +1,8 @@
-package za.org.grassroot.services;
+package za.org.grassroot.services.livewire;
 
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
-import za.org.grassroot.core.domain.DataSubscriber;
+import za.org.grassroot.core.domain.livewire.DataSubscriber;
 
 import java.util.List;
 

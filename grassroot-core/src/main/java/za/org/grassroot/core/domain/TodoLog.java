@@ -51,7 +51,8 @@ public class TodoLog implements TaskLog {
 	})
 	private GeoLocation location;
 
-	@Column(name = "location_source", nullable = true)
+	@Enumerated(EnumType.STRING)
+	@Column(name = "location_source", length = 50, nullable = true)
 	private LocationSource locationSource;
 
 	private TodoLog() {

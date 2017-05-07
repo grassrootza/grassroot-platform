@@ -1,4 +1,4 @@
-package za.org.grassroot.services;
+package za.org.grassroot.services.livewire;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -6,10 +6,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.DataSubscriber;
+import za.org.grassroot.core.domain.livewire.DataSubscriber;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.repository.DataSubscriberRepository;
 import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.services.PermissionBroker;
 
 import java.util.Collections;
 import java.util.List;

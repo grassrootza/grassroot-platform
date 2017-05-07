@@ -1,7 +1,8 @@
-package za.org.grassroot.core.domain;
+package za.org.grassroot.core.domain.livewire;
 
 import org.hibernate.annotations.Type;
 import org.hibernate.validator.constraints.Email;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 

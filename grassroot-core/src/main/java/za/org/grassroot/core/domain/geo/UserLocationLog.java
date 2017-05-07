@@ -27,8 +27,8 @@ public class UserLocationLog {
 
 	private GeoLocation location;
 
-	@Column(name = "source", nullable = false)
 	@Enumerated(EnumType.STRING)
+	@Column(name = "source", length = 50, nullable = false)
 	private LocationSource locationSource;
 
 	private UserLocationLog() {

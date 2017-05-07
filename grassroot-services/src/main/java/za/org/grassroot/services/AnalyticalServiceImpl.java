@@ -13,6 +13,7 @@ import za.org.grassroot.core.dto.KeywordDTO;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.*;
+import za.org.grassroot.core.specifications.GroupSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 
@@ -27,6 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.springframework.data.jpa.domain.Specifications.where;
 import static za.org.grassroot.core.util.DateTimeUtil.*;
 import static za.org.grassroot.services.specifications.UserSpecifications.*;
 
@@ -75,8 +77,8 @@ public class AnalyticalServiceImpl implements AnalyticalService {
     @Override
     @Transactional(readOnly = true)
     public int countUsersCreatedInInterval(LocalDateTime start, LocalDateTime end) {
-        return (int) userRepository.count(Specifications
-                .where(createdAfter(convertToSystemTime(start, getSAST())))
+        return (int) userRepository.count(
+                where(createdAfter(convertToSystemTime(start, getSAST())))
                 .and(createdBefore(convertToSystemTime(end, getSAST()))));
     }
 
@@ -89,7 +91,7 @@ public class AnalyticalServiceImpl implements AnalyticalService {
     @Override
     @Transactional(readOnly = true)
     public int countUsersCreatedAndInitiatedInPeriod(LocalDateTime start, LocalDateTime end) {
-        return (int) userRepository.count(Specifications.where(hasInitiatedSession())
+        return (int) userRepository.count(where(hasInitiatedSession())
                 .and(createdAfter(convertToSystemTime(start, getSAST())))
                 .and(createdBefore(convertToSystemTime(end, getSAST()))));
     }
@@ -103,7 +105,7 @@ public class AnalyticalServiceImpl implements AnalyticalService {
     @Override
     @Transactional(readOnly = true)
     public int countUsersCreatedWithWebProfileInPeriod(LocalDateTime start, LocalDateTime end) {
-        return (int) userRepository.count(Specifications.where(hasWebProfile())
+        return (int) userRepository.count(where(hasWebProfile())
                 .and(createdAfter(convertToSystemTime(start, getSAST())))
                 .and(createdBefore(convertToSystemTime(end, getSAST()))));
     }
@@ -129,7 +131,7 @@ public class AnalyticalServiceImpl implements AnalyticalService {
     @Override
     @Transactional(readOnly = true)
     public int countUsersCreatedWithAndroidProfileInPeriod(LocalDateTime start, LocalDateTime end) {
-        return (int) userRepository.count(Specifications.where(hasAndroidProfile())
+        return (int) userRepository.count(where(hasAndroidProfile())
                 .and(createdAfter(convertToSystemTime(start, getSAST())))
                 .and(createdBefore(convertToSystemTime(end, getSAST()))));
     }
@@ -137,14 +139,15 @@ public class AnalyticalServiceImpl implements AnalyticalService {
     @Override
     @Transactional(readOnly = true)
     public Long countActiveGroups() {
-        return groupRepository.countByActive(true);
+        return groupRepository.count(where(GroupSpecifications.isActive()));
     }
 
     @Override
     @Transactional(readOnly = true)
     public int countGroupsCreatedInInterval(LocalDateTime start, LocalDateTime end) {
-        return groupRepository.countByCreatedDateTimeBetweenAndActive(convertToSystemTime(start, getSAST()),
-                convertToSystemTime(end, getSAST()), true);
+        return (int) groupRepository.count(where(
+                GroupSpecifications.createdBetween(convertToSystemTime(start, getSAST()), convertToSystemTime(end, getSAST())))
+                .and(GroupSpecifications.isActive()));
     }
 
     @Override

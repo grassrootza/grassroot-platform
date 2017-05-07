@@ -38,5 +38,10 @@
     <button th:action="@{/emulator/ussd/view}" method="get">Trigger safety alert</button>
 </form></div>
 
+<div><form>
+    <input type="hidden" name="request" value="*134*19940*411#" />
+    <button th:action="@{/emulator/ussd/view}" method="get">LiveWire</button>
+</form></div>
+
 </body>
 </html>

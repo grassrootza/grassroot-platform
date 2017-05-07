@@ -25,7 +25,7 @@ import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.AdminService;
 import za.org.grassroot.services.AnalyticalService;
-import za.org.grassroot.services.DataSubscriberBroker;
+import za.org.grassroot.services.livewire.DataSubscriberBroker;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.MemberNotPartOfGroupException;
 import za.org.grassroot.services.exception.NoSuchUserException;
