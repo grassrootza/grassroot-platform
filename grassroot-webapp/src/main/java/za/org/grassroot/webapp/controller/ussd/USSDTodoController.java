@@ -50,6 +50,9 @@ public class USSDTodoController extends USSDController {
     @Value("${grassroot.todos.completion.threshold:20}") // defaults to 20 percent
     private double COMPLETION_PERCENTAGE_BOUNDARY;
 
+    @Value("${grassroot.ussd.location.enabled:false}")
+    private boolean locationRequestEnabled;
+
     @Autowired
     private PermissionBroker permissionBroker;
 

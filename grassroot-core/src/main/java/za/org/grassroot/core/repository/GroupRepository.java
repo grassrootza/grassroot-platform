@@ -10,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
@@ -48,7 +49,6 @@ public interface GroupRepository extends JpaRepository<Group, Long>, JpaSpecific
     Find all groups, with pagination--for system admin
      */
     Page<Group> findAll(Pageable pageable);
-    Long countByActive(boolean active);
 
     /*
     Couple of methods to be able to discover groups, public if user not a member, and their own groups
@@ -81,11 +81,6 @@ public interface GroupRepository extends JpaRepository<Group, Long>, JpaSpecific
             "where g.active = true and m.user_id = ?1 and to_tsvector('english', g.name) @@ to_tsquery('english', ?2)",
             nativeQuery = true)
     List<Group> findByActiveAndMembershipsUserWithNameContainsText(Long userId, String nameTsQuery);
-
-    /*
-    Methods for analytical service, to retrieve and count groups in periods (by created date time)
-     */
-    int countByCreatedDateTimeBetweenAndActive(Instant periodStart, Instant periodEnd, boolean active);
 
     /*
     Find the max(groupTokenCode) in table
@@ -125,5 +120,14 @@ public interface GroupRepository extends JpaRepository<Group, Long>, JpaSpecific
             "inner join g.memberships m " +
             "where g.active = true and m.user = ?1 and ?2 member of m.role.permissions")
     int countActiveGroupsWhereUserHasPermission(User member, Permission requiredPermission);
+
+    // these are here just to make sure the tests catch if the HQL breaks, as we use it in location filtering a lot
+    @Query("SELECT g from Group g where " +
+            "size(g.memberships) > :minSize")
+    List<Group> findBySizeAbove(@Param(value="minSize") int minSize);
+
+    @Query("SELECT g from Group g where " +
+            "(size(g.descendantEvents) + size(g.descendantTodos)) > :minSize")
+    List<Group> findByTasksMoreThan(@Param(value = "minSize") int minSize);
 
 }

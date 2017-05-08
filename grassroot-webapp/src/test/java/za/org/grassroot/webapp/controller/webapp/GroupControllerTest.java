@@ -13,6 +13,7 @@ import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.webapp.controller.BaseController;
+import za.org.grassroot.webapp.controller.webapp.group.GroupController;
 import za.org.grassroot.webapp.model.web.MemberWrapperList;
 
 import java.time.Instant;

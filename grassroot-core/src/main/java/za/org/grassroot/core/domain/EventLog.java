@@ -8,10 +8,10 @@ import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.LocationHolder;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
+import za.org.grassroot.core.enums.LocationSource;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
-import javax.validation.constraints.AssertTrue;
 import java.time.Instant;
 import java.util.Objects;
 
@@ -55,6 +55,10 @@ public class EventLog implements TaskLog, LocationHolder {
             @AttributeOverride(name="longitude", column = @Column(nullable = true))
     })
     private GeoLocation location;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "location_source", length = 50, nullable = true)
+    private LocationSource locationSource;
 
     /*
     Constructors
@@ -133,7 +137,19 @@ public class EventLog implements TaskLog, LocationHolder {
         this.location = location;
     }
 
+    public void setLocationSource(LocationSource locationSource) { this.locationSource = locationSource; }
+
+    public void setLocationWithSource(GeoLocation location, LocationSource source) {
+        this.location = location;
+        this.locationSource = source;
+    }
+
     public boolean hasLocation() { return location != null; }
+
+    @Override
+    public LocationSource getSource() {
+        return locationSource; // by definition
+    }
 
     @Override
     public String toString() {

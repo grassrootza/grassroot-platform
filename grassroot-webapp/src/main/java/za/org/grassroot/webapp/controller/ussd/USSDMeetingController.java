@@ -17,12 +17,14 @@ import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.integration.exception.SeloParseDateTimeFailure;
 import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.services.enums.EventListTimeType;
 import za.org.grassroot.services.exception.AccountLimitExceededException;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
+import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.group.GroupPermissionTemplate;
 import za.org.grassroot.services.task.EventLogBroker;
 import za.org.grassroot.services.task.EventRequestBroker;
@@ -47,13 +49,15 @@ import static za.org.grassroot.webapp.util.USSDUrlUtil.*;
 /**
  * @author luke on 2015/08/14.
  */
-
 @RequestMapping(method = GET, produces = MediaType.APPLICATION_XML_VALUE)
 @RestController
 public class USSDMeetingController extends USSDController {
 
     @Value("${grassroot.events.limit.enabled:false}")
     private boolean eventMonthlyLimitActive;
+
+    @Value("${grassroot.ussd.location.enabled:false}")
+    private boolean locationRequestEnabled;
 
     private static final int EVENT_LIMIT_WARNING_THRESHOLD = 5; // only warn when below this
 
@@ -62,6 +66,7 @@ public class USSDMeetingController extends USSDController {
     private final EventLogBroker eventLogBroker;
     private final EventLogRepository eventLogRepository;
     private final AccountGroupBroker accountGroupBroker;
+    private final GeoLocationBroker geoLocationBroker;
 
     private Logger log = LoggerFactory.getLogger(getClass());
     private static final String path = homePath + meetingMenus;
@@ -98,11 +103,12 @@ public class USSDMeetingController extends USSDController {
     }
 
     @Autowired
-    public USSDMeetingController(EventRequestBroker eventRequestBroker, EventLogBroker eventLogBroker, EventLogRepository eventLogRepository, AccountGroupBroker accountGroupBroker) {
+    public USSDMeetingController(EventRequestBroker eventRequestBroker, EventLogBroker eventLogBroker, EventLogRepository eventLogRepository, AccountGroupBroker accountGroupBroker, GeoLocationBroker geoLocationBroker) {
         this.eventRequestBroker = eventRequestBroker;
         this.eventLogBroker = eventLogBroker;
         this.eventLogRepository = eventLogRepository;
         this.accountGroupBroker = accountGroupBroker;
+        this.geoLocationBroker = geoLocationBroker;
     }
 
     // for stubbing with Mockito ...
@@ -402,12 +408,25 @@ public class USSDMeetingController extends USSDController {
         User user = userManager.findByInputNumber(inputNumber, null);
         try {
             String eventUid = eventRequestBroker.finish(user.getUid(), mtgRequestUid, true);
+
             USSDMenu menu = new USSDMenu(chooseSendPrompt(eventUid, user));
-            menu.addMenuOption(meetingMenus + "public" + entityUidUrlSuffix + eventUid,
-                    getMessage(thisSection, send, optionsKey + "public", user));
+            final String firstOptionKey = optionsKey + "public" + (locationRequestEnabled ? ".location" : "");
+            final String firstOptionUrl = meetingMenus + "public" + entityUidUrlSuffix + eventUid +
+                    (locationRequestEnabled ? "&useLocation=true" : "");
+            menu.addMenuOption(firstOptionUrl, getMessage(thisSection, send, firstOptionKey, user));
+
+            if (locationRequestEnabled) { // give the option of not providing a location
+                menu.addMenuOption(meetingMenus + "public" + entityUidUrlSuffix + eventUid + "&useLocation=false",
+                        getMessage(thisSection, send, optionsKey + "public.nolocation", user));
+            }
+
             menu.addMenuOption(meetingMenus + "private" + entityUidUrlSuffix + eventUid,
                     getMessage(thisSection, send, optionsKey + "private", user));
-            menu.addMenuOptions(optionsHomeExit(user, true));
+
+            if (!locationRequestEnabled) {
+                menu.addMenuOptions(optionsHomeExit(user, true));
+            }
+
             return menuBuilder(menu);
         } catch (EventStartTimeNotInFutureException e) {
             return handleDateTimeNotInFuture(user, mtgRequestUid);
@@ -437,10 +456,15 @@ public class USSDMeetingController extends USSDController {
 
     @RequestMapping(value = path + "public")
     public Request makeMtgPublic(@RequestParam(value = phoneNumber) String inputNumber,
-                                 @RequestParam(value = entityUidParam) String mtgUid) throws URISyntaxException {
+                                 @RequestParam(value = entityUidParam) String mtgUid,
+                                 @RequestParam(required = false) Boolean useLocation) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber);
         try {
-            eventBroker.updateMeetingPublicStatus(user.getUid(), mtgUid, true, null);
+            // since getting USSD location is necessarily async, pass null location now, but update through user manager
+            eventBroker.updateMeetingPublicStatus(user.getUid(), mtgUid, true, null, UserInterfaceType.USSD);
+            if (useLocation != null && useLocation) {
+                geoLocationBroker.logUserUssdPermission(user.getUid(), mtgUid, JpaEntityType.MEETING);
+            }
             USSDMenu menu = new USSDMenu(getMessage(thisSection, "public", promptKey + ".done", user));
             menu.addMenuOptions(optionsHomeExit(user, false));
             return menuBuilder(menu);
@@ -457,7 +481,7 @@ public class USSDMeetingController extends USSDController {
         User user = userManager.findByInputNumber(inputNumber);
         String menuPrompt;
         try {
-            eventBroker.updateMeetingPublicStatus(user.getUid(), mtgUid, false, null);
+            eventBroker.updateMeetingPublicStatus(user.getUid(), mtgUid, false, null, UserInterfaceType.USSD);
             menuPrompt = getMessage(thisSection, "private", promptKey + ".done", user);
         } catch (AccessDeniedException e) {
             menuPrompt = getMessage(thisSection, "public", promptKey + ".access", user);

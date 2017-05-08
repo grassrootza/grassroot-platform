@@ -4,20 +4,26 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.Specifications;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.geo.*;
 import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.core.enums.LocationSource;
+import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.EventLogSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.integration.location.UssdLocationServicesBroker;
 
 import javax.persistence.EntityManager;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static za.org.grassroot.core.enums.LocationSource.convertFromInterface;
 
 @Service
 public class GeoLocationBrokerImpl implements GeoLocationBroker {
@@ -31,6 +37,9 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 
 	@Autowired
 	private UserRepository userRepository;
+
+	@Autowired
+	private UserLogRepository userLogRepository;
 
 	@Autowired
 	private GroupRepository groupRepository;
@@ -48,23 +57,58 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 	private MeetingLocationRepository meetingLocationRepository;
 
 	@Autowired
+	private UssdLocationServicesBroker ussdLocationServicesBroker;
+
+	@Autowired
 	private EntityManager entityManager;
 
 	@Override
 	@Transactional
-	public void logUserLocation(String userUid, double latitude, double longitude, Instant time) {
+	public void logUserLocation(String userUid, double latitude, double longitude, Instant time, UserInterfaceType interfaceType) {
 		Objects.requireNonNull(userUid);
 		Objects.requireNonNull(time);
 
 		// WARNING: this can potentially become non-performant, so some kind of table partitioning should be employed,
 		// or even better, some kind of specialized db storage for that (not sql db)
 
-		UserLocationLog userLocationLog = new UserLocationLog(time, userUid, new GeoLocation(latitude, longitude));
-		logger.info("Logging user location: {}", userLocationLog);
+		UserLocationLog userLocationLog = new UserLocationLog(time, userUid, new GeoLocation(latitude, longitude),
+				LocationSource.convertFromInterface(interfaceType));
 		userLocationLogRepository.save(userLocationLog);
 	}
 
-	@Override
+	@Async
+    @Override
+	@Transactional
+    public void logUserUssdPermission(String userUid, String entityToUpdateUid, JpaEntityType entityType) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(entityToUpdateUid);
+
+        logger.info("Logging USSD permission to use location, should be off main thread");
+        // todo: only call this if lookup not already allowed (else duplicating & slow ...)
+		boolean lookupAllowed = ussdLocationServicesBroker.addUssdLocationLookupAllowed(userUid, UserInterfaceType.USSD);
+		if (lookupAllowed) {
+			GeoLocation userLocation = ussdLocationServicesBroker.getUssdLocationForUser(userUid);
+			logger.info("Retrieved a user location: {}", userLocation);
+			switch (entityType) {
+				case MEETING:
+					calculateMeetingLocationInstant(entityToUpdateUid, userLocation, UserInterfaceType.USSD);
+					break;
+				case TODO:
+					calculateTodoLocationInstant(entityToUpdateUid, userLocation, UserInterfaceType.USSD);
+					break;
+				case GROUP:
+					calculateGroupLocationInstant(entityToUpdateUid, userLocation, UserInterfaceType.USSD);
+					break;
+				case SAFETY:
+					// todo : add this
+					break;
+				default:
+					logger.info("Location attempted for an entity that should not have a location attached");
+			}
+		}
+    }
+
+    @Override
 	@Transactional
 	public void calculatePreviousPeriodUserLocations(LocalDate localDate) {
 		Objects.requireNonNull(localDate);
@@ -108,6 +152,8 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 
 		Group group = groupRepository.findOneByUid(groupUid);
 
+		// todo: look for direct logged locations and rank them higher
+
 		// delete so we can recalculate
 		groupLocationRepository.deleteByGroupAndLocalDate(group, localDate);
 
@@ -117,11 +163,24 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 		if (result.isDefined()) {
 			// for now, score is simply ratio of found member locations to total member count
 			float score = result.getEntityCount() / (float) memberUids.size();
-			GroupLocation groupLocation = new GroupLocation(group, localDate, result.getCenter(), score);
+			GroupLocation groupLocation = new GroupLocation(group, localDate, result.getCenter(), score, LocationSource.CALCULATED);
 			groupLocationRepository.save(groupLocation);
 		} else {
 			logger.debug("No member location data found for group {} for local date {}", group, localDate);
 		}
+	}
+
+	@Override
+	@Transactional
+	public void calculateGroupLocationInstant(String groupUid, GeoLocation location, UserInterfaceType coordSourceInterface) {
+		Objects.requireNonNull(groupUid);
+		Objects.requireNonNull(location);
+
+		Group group = groupRepository.findOneByUid(groupUid);
+
+		GroupLocation groupLocation = new GroupLocation(group, LocalDate.now(), location, (float) 1.0,
+				convertFromInterface(coordSourceInterface));
+		groupLocationRepository.save(groupLocation);
 	}
 
 	@Override
@@ -141,14 +200,14 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 			CenterCalculationResult center = calculateCenter(logsWithLocation);
 			float score = (float) 1.0; // since a related log with a GPS is best possible, but may return to this
 			meetingLocation = new MeetingLocation((Meeting) event, center.getCenter(), score,
-					EventType.MEETING);
+					EventType.MEETING, LocationSource.LOGGED_MULTIPLE);
 		} else {
 			Group parent = event.getParent().getThisOrAncestorGroup();
 			GroupLocation parentLocation = fetchGroupLocationWithScoreAbove(parent.getUid(),
 					localDate, 0);
 			if (parentLocation != null) {
 				meetingLocation = new MeetingLocation((Meeting) event, parentLocation.getLocation(),
-						parentLocation.getScore(), EventType.MEETING);
+						parentLocation.getScore(), EventType.MEETING, LocationSource.CALCULATED);
 			} else {
 				logger.debug("No event logs or group with location data for meeting");
 				meetingLocation = null;
@@ -162,11 +221,12 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 
     @Override
 	@Transactional
-    public void calculateMeetingLocationInstant(String eventUid, GeoLocation location) {
+    public void calculateMeetingLocationInstant(String eventUid, GeoLocation location, UserInterfaceType coordSourceInterface) {
 		Meeting meeting = (Meeting) eventRepository.findOneByUid(eventUid);
 		logger.info("Calculating a meeting location ...");
 		if (location != null) {
-			MeetingLocation mtgLocation = new MeetingLocation(meeting, location, (float) 1.0, EventType.MEETING);
+			MeetingLocation mtgLocation = new MeetingLocation(meeting, location, (float) 1.0, EventType.MEETING,
+					convertFromInterface(coordSourceInterface));
 			meetingLocationRepository.save(mtgLocation);
 		} else {
 			LocalDate inLastMonth = LocalDate.now().minusMonths(1L);
@@ -180,6 +240,16 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
     }
 
     @Override
+    public void calculateTodoLocationScheduled(String todoUid, LocalDate localDate) {
+
+    }
+
+	@Override
+	public void calculateTodoLocationInstant(String todoUid, GeoLocation location, UserInterfaceType coordSourceInterface) {
+
+	}
+
+	@Override
 	@Transactional
 	public CenterCalculationResult calculateCenter(Set<String> userUids, LocalDate date) {
 		Objects.requireNonNull(userUids);

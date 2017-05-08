@@ -1,5 +1,7 @@
 package za.org.grassroot.core.domain;
 
+import za.org.grassroot.core.domain.geo.GeoLocation;
+import za.org.grassroot.core.enums.LocationSource;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
@@ -44,6 +46,16 @@ public class SafetyEvent {
     @Column(name = "responded_to")
     private boolean respondedTo;
 
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name="latitude", column = @Column(nullable = true)),
+            @AttributeOverride(name="longitude", column = @Column(nullable = true))
+    })
+    private GeoLocation location;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "location_source", length = 50, nullable = true)
+    private LocationSource locationSource;
 
     private SafetyEvent() {
     }

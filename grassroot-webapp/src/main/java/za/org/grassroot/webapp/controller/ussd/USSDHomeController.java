@@ -12,9 +12,11 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.*;
-import za.org.grassroot.services.*;
+import za.org.grassroot.services.PermissionBroker;
+import za.org.grassroot.services.SafetyEventBroker;
 import za.org.grassroot.services.enums.EventListTimeType;
 import za.org.grassroot.services.group.GroupQueryBroker;
+import za.org.grassroot.services.livewire.LiveWireAlertBroker;
 import za.org.grassroot.services.task.EventLogBroker;
 import za.org.grassroot.services.task.TodoBroker;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
@@ -65,6 +67,9 @@ public class USSDHomeController extends USSDController {
     private SafetyEventBroker safetyEventBroker;
 
     @Autowired
+    private LiveWireAlertBroker liveWireAlertBroker;
+
+    @Autowired
     private Environment environment;
 
     private static final Logger log = LoggerFactory.getLogger(USSDHomeController.class);
@@ -88,6 +93,9 @@ public class USSDHomeController extends USSDController {
 
     @Value("${grassroot.ussd.promotion.suffix:44}")
     private String promotionSuffix;
+
+    @Value("${grassroot.ussd.livewire.suffix:411}")
+    private String livewireSuffix;
 
     private static final String openingMenuKey = String.join(".", Arrays.asList(homeKey, startMenu, optionsKey));
 
@@ -130,8 +138,6 @@ public class USSDHomeController extends USSDController {
                              @RequestParam(value = userInputParam, required = false) String enteredUSSD) throws URISyntaxException {
 
         Long startTime = System.currentTimeMillis();
-
-        log.info("testing ... hash position = {}, safetyPrefix = {}", hashPosition, safetyCode);
 
         USSDMenu openingMenu;
         final boolean trailingDigitsPresent = codeHasTrailingDigits(enteredUSSD);
@@ -218,6 +224,8 @@ public class USSDHomeController extends USSDController {
         log.info("Processing trailing digits ..." + trailingDigits);
         if (safetyCode.equals(trailingDigits)) {
             returnMenu = assemblePanicButtonActivationMenu(user);
+        } else if (livewireSuffix.equals(trailingDigits)) {
+            returnMenu = assembleLiveWireOpening(user);
         } else if (sendMeLink.equals(trailingDigits)) {
             returnMenu = assembleSendMeAndroidLinkMenu(user);
         } else if (promotionSuffix.equals(trailingDigits)) {
@@ -240,7 +248,47 @@ public class USSDHomeController extends USSDController {
             }
         }
         return returnMenu;
+    }
 
+    private USSDMenu assembleLiveWireOpening(User user) {
+        long groupsForInstant = liveWireAlertBroker.countGroupsForInstantAlert(user.getUid());
+        List<Meeting> meetingList = liveWireAlertBroker.meetingsForAlert(user.getUid());
+
+        log.info("Generating LiveWire menu, groups for instant alert {}, meetings {}",
+                groupsForInstant, meetingList.size());
+
+        USSDMenu menu;
+        long startTime = System.currentTimeMillis();
+        if (groupsForInstant == 0L && meetingList.isEmpty()) {
+            menu = new USSDMenu("Sorry, you have no meetings and can't create an instant alert");
+            menu.addMenuOption(meetingMenus + startMenu + "?newMtg=1", "Create a meeting");
+            menu.addMenuOption(startMenu, "Main menu");
+            menu.addMenuOption("exit", "Exit");
+        } else if (meetingList.isEmpty()) {
+            menu = new USSDMenu("You have no meetings upcoming, but can send an instant alert");
+            menu.addMenuOption("livewire/instant", "Instant alert");
+            menu.addMenuOption(meetingMenus + startMenu + "?newMtg=1", "Call a meeting first");
+            menu.addMenuOption(startMenu, "Main menu");
+        } else {
+            final String prompt = groupsForInstant != 0L ?
+                    "Send an alert for a meeting, or an instant alert?"
+                    : "Which meeting are you sending it for?";
+            menu = new USSDMenu(prompt);
+
+            int i = 0;
+            Iterator<Meeting> meetings = meetingList.iterator();
+            while (meetings.hasNext() && i < 3) {
+                Meeting meeting = meetings.next();
+                menu.addMenuOption("livewire/mtg?mtgUid=" + meeting.getUid(), "Meeting: " + meeting.getName());
+                i++;
+            }
+
+            if (groupsForInstant != 0L) {
+                menu.addMenuOption("livewire/instant", "Instant alert");
+            }
+        }
+        log.info("Time to check LiveWire conditions: {}", System.currentTimeMillis() - startTime);
+        return menu;
     }
 
     private boolean codeHasTrailingDigits(String enteredUSSD) {
@@ -254,9 +302,7 @@ public class USSDHomeController extends USSDController {
     }
 
     private USSDMenu requestUserResponse(User user, USSDResponseTypes response) throws URISyntaxException {
-
         USSDMenu openingMenu = new USSDMenu();
-
         switch (response) {
             case RESPOND_SAFETY:
                 SafetyEvent safetyEvent = safetyEventBroker.getOutstandingUserSafetyEventsResponse(user.getUid()).get(0);
@@ -442,6 +488,7 @@ public class USSDHomeController extends USSDController {
         return menuBuilder(new USSDMenu(prompt, optionsHomeExit(user, false)));
     }
 
+    // todo: move this into todo controller so we can request & log a location
     @RequestMapping(value = path + "todo-complete")
     @ResponseBody
     public Request todoEntryMarkComplete(@RequestParam(value = phoneNumber) String inputNumber,

@@ -181,7 +181,7 @@ public class MessageAssemblingManager implements MessageAssemblingService {
         String[] fields;
         String message;
         if (address != null) {
-            fields = new String[]{requestor.nameToDisplay(), address.getHouseNumber(), address.getStreetName(), address.getTown()};
+            fields = new String[]{requestor.nameToDisplay(), address.getHouse(), address.getStreet(), address.getNeighbourhood()};
             message = (reminder) ? messageSourceAccessor.getMessage("sms.safety.reminder", fields, getUserLocale(requestor)) :
                     messageSourceAccessor.getMessage("sms.safety.new", fields, getUserLocale(requestor));
         } else {

@@ -3,10 +3,12 @@ package za.org.grassroot.webapp.controller.ussd;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.MembershipInfo;
+import za.org.grassroot.integration.location.UssdLocationServicesBroker;
 import za.org.grassroot.services.group.GroupPermissionTemplate;
 import za.org.grassroot.webapp.util.USSDUrlUtil;
 
@@ -42,6 +44,9 @@ public class USSDSafetyGroupControllerTest extends USSDAbstractUnitTest {
     private SafetyEvent safetyEvent;
     private Set<MembershipInfo> testMembers = new HashSet<>();
     private GroupPermissionTemplate template = GroupPermissionTemplate.DEFAULT_GROUP;
+
+    @Mock
+    private UssdLocationServicesBroker locationServicesBrokerMock;
 
     @InjectMocks
     private USSDSafetyGroupController ussdSafetyGroupController;
@@ -151,7 +156,7 @@ public class USSDSafetyGroupControllerTest extends USSDAbstractUnitTest {
     public void addAddressShouldWorkWhenFieldIsTown() throws Exception{
         final String urlToSave = USSDUrlUtil.saveAddressMenu("add-address", "town");
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
-        when(addressBrokerMock.getUserAddress(testUser.getUid())).thenReturn(new Address(testUser,"44","Stanley", "JHB"));
+        when(addressBrokerMock.getUserAddress(testUser.getUid())).thenReturn(new Address(testUser,"44","Stanley", "JHB", null));
         mockMvc.perform(get(path+"add-address").param(phoneParam,testUserPhone).param(userChoiceParam,"JHB").param("field","town")).andExpect(status().isOk());
         verify(userManagementServiceMock,times(1)).findByInputNumber(testUserPhone, urlToSave);
         verify(addressBrokerMock,times(1)).updateUserAddress(testUser.getUid(),null,null,"JHB");
@@ -180,7 +185,7 @@ public class USSDSafetyGroupControllerTest extends USSDAbstractUnitTest {
     public void changeAddressShouldWorkWhenFieldIsStreet() throws Exception{
         final String urlToSave = saveAddressMenu("change-address-do", "street");
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
-        when(addressBrokerMock.getUserAddress(testUser.getUid())).thenReturn(new Address(testUser,"38","Stanley", "JHB"));
+        when(addressBrokerMock.getUserAddress(testUser.getUid())).thenReturn(new Address(testUser,"38","Stanley", "JHB", null));
 
         mockMvc.perform(get(path+"change-address-do").param(phoneParam,testUserPhone).param("field","street").
                 param(userChoiceParam,"Stanley")).andExpect(status().isOk());
@@ -196,7 +201,7 @@ public class USSDSafetyGroupControllerTest extends USSDAbstractUnitTest {
     public void changeAddressShouldWorkWhenFieldIsHouse() throws Exception{
         final String urlToSave = saveAddressMenu("change-address-do", "house");
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
-        when(addressBrokerMock.getUserAddress(testUser.getUid())).thenReturn(new Address(testUser,"38","Stanley", "JHB"));
+        when(addressBrokerMock.getUserAddress(testUser.getUid())).thenReturn(new Address(testUser,"38","Stanley", "JHB", null));
 
         mockMvc.perform(get(path+"change-address-do").param(phoneParam,testUserPhone).param("field", "house").
                 param(userChoiceParam,"38")).andExpect(status().isOk());

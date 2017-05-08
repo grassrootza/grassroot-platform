@@ -1,6 +1,7 @@
 package za.org.grassroot.core.domain;
 
 import za.org.grassroot.core.domain.geo.GeoLocation;
+import za.org.grassroot.core.enums.LocationSource;
 import za.org.grassroot.core.enums.TodoLogType;
 import za.org.grassroot.core.util.UIDGenerator;
 
@@ -49,6 +50,10 @@ public class TodoLog implements TaskLog {
 			@AttributeOverride(name="longitude", column = @Column(nullable = true))
 	})
 	private GeoLocation location;
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "location_source", length = 50, nullable = true)
+	private LocationSource locationSource;
 
 	private TodoLog() {
 		// for JPA only
@@ -100,6 +105,11 @@ public class TodoLog implements TaskLog {
 
 	public void setLocation(GeoLocation location) {
 		this.location = location;
+	}
+
+	public void setLocationWithSource(GeoLocation location, LocationSource source) {
+		this.location = location;
+		this.locationSource = source;
 	}
 
 	@Override

@@ -56,5 +56,6 @@ test {
 
   systemProperty "gcm.sender.key", "gcm_sender_key"
 
+  systemProperty "grassroot.ussd.location.service", "test_local"
 
 }
