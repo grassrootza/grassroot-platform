@@ -75,8 +75,9 @@ public class AccountController extends BaseController {
     }
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
-    @RequestMapping(value = "setprimary", method = RequestMethod.POST)
-    public String setAccountPrimary(RedirectAttributes attributes, @RequestParam String accountUid, HttpServletRequest request) {
+    @RequestMapping(value = "setprimary", method = RequestMethod.GET)
+    public String setAccountPrimary(RedirectAttributes attributes, @RequestParam String accountUid,
+                                    HttpServletRequest request) {
         accountBroker.setAccountPrimary(getUserProfile().getUid(), accountUid);
         addMessage(attributes, MessageType.SUCCESS, "account.primary.done", request);
         attributes.addAttribute("accountUid", accountUid);
@@ -99,13 +100,7 @@ public class AccountController extends BaseController {
         } else if (AccountPaymentType.FREE_TRIAL.equals(account.getDefaultPaymentType())) {
             return viewTrialAccount(model, accountUid);
         } else {
-            if (user.hasMultipleAccounts()) {
-                model.addAttribute("otherAccounts", user.getAccountsAdministered().stream()
-                        .filter(a -> !account.equals(a) && a.isVisible())
-                        .sorted(Comparator.comparing(Account::getName))
-                        .collect(Collectors.toList()));
-            }
-
+            checkForMultipleAccounts(user, account, model);
             List<PaidGroup> currentlyPaidGroups = account.getPaidGroups().stream()
                     .filter(PaidGroup::isActive)
                     .collect(Collectors.toList());
@@ -140,17 +135,30 @@ public class AccountController extends BaseController {
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/trial", method = RequestMethod.GET)
     public String viewTrialAccount(Model model, @RequestParam String accountUid) {
+        Account account = accountBroker.loadAccount(accountUid);
+        User user = userManagementService.load(getUserProfile().getUid());
         model.addAttribute("account", accountBroker.loadAccount(accountUid));
-        boolean canAddAnyGroups = accountGroupBroker.canAddGroupToAccount(getUserProfile().getUid(), accountUid);
+        checkForMultipleAccounts(user, account, model);
+        boolean canAddAnyGroups = accountGroupBroker.canAddGroupToAccount(user.getUid(), accountUid);
         model.addAttribute("canAddAnyGroups", canAddAnyGroups);
         if (canAddAnyGroups) {
-            model.addAttribute("canAddAllGroups", accountGroupBroker.canAddAllCreatedGroupsToAccount(getUserProfile().getUid(), accountUid));
-            model.addAttribute("groupsCanAdd", accountGroupBroker.fetchUserCreatedGroupsUnpaidFor(getUserProfile().getUid(), new Sort(Sort.Direction.ASC, "groupName")));
+            model.addAttribute("canAddAllGroups", accountGroupBroker.canAddAllCreatedGroupsToAccount(user.getUid(), accountUid));
+            model.addAttribute("groupsCanAdd", accountGroupBroker.fetchUserCreatedGroupsUnpaidFor(user.getUid(), new Sort(Sort.Direction.ASC, "groupName")));
         } else {
             model.addAttribute("canAddAllGroups", false);
             model.addAttribute("groupsCanAdd", new ArrayList<Group>()); // just to avoid Thymeleaf null pointer etc
         }
         return "account/trial";
+    }
+
+    private void checkForMultipleAccounts(User user, Account account, Model model) {
+        if (user.hasMultipleAccounts()) {
+            model.addAttribute("isPrimary", account.equals(user.getPrimaryAccount()));
+            model.addAttribute("otherAccounts", user.getAccountsAdministered().stream()
+                    .filter(a -> !account.equals(a) && a.isVisible())
+                    .sorted(Comparator.comparing(Account::getName))
+                    .collect(Collectors.toList()));
+        }
     }
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
