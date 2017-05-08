@@ -6,8 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.livewire.DataSubscriber;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.livewire.DataSubscriber;
 import za.org.grassroot.core.repository.DataSubscriberRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.PermissionBroker;
@@ -151,8 +151,8 @@ public class DataSubscriberBrokerImpl implements DataSubscriberBroker {
 
     @Override
     @Transactional(readOnly = true)
-    public List<String> fetchAllPushEmails() {
-        return dataSubscriberRepository.findAllActiveSubscriberPushEmails();
+    public int countPushEmails() {
+        return dataSubscriberRepository.findAllActiveSubscriberPushEmails().size();
     }
 
     private void validateAdminUser(User user, DataSubscriber subscriber) {

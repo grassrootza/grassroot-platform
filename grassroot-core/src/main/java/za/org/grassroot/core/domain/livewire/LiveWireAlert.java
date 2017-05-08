@@ -193,6 +193,10 @@ public class LiveWireAlert {
         return contactName;
     }
 
+    public String getContactNameNullSafe() {
+        return contactName == null ? contactUser.getName() : contactName;
+    }
+
     public Meeting getMeeting() {
         return meeting;
     }

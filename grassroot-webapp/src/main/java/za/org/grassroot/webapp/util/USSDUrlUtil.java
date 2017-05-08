@@ -76,14 +76,6 @@ public class USSDUrlUtil {
         }
     }
 
-    public static String createInterruptedString(String path, Map<String, String> parameters) {
-        // note: this might be more efficient with a URLBuilder or the like, but those (AFAIK) impose fully written paths
-        StringBuilder urlBuilder = new StringBuilder(path + "?");
-        for (Map.Entry<String, String> parameter : parameters.entrySet())
-            urlBuilder.append(parameter.getKey()).append("=").append(encodeParameter(parameter.getValue()));
-        return urlBuilder.toString();
-    }
-
     // note: this expects the entityId string fully formed (e.g., "groupId=1"), else have to create many duplicate methods
     public static String saveMenuUrlWithInput(USSDSection section, String menu, String entityId, String input) {
         String divisor = (entityId == null || entityId.equals("")) ? "?" : entityId; // if we are passed groupId=1, or similar, it comes with the "?" character
