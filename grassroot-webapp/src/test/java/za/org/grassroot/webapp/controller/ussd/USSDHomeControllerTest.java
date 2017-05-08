@@ -60,6 +60,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
         wireUpMessageSourceAndGroupUtil(ussdHomeController);
         // todo : extend this parrent into method above, to remove public setters
         ReflectionTestUtils.setField(ussdHomeController, "safetyCode", "911");
+        ReflectionTestUtils.setField(ussdHomeController, "livewireSuffix", "411");
         ReflectionTestUtils.setField(ussdHomeController, "sendMeLink", "123");
         ReflectionTestUtils.setField(ussdHomeController, "hashPosition", 9);
         ReflectionTestUtils.setField(ussdHomeController, "promotionSuffix", "44");

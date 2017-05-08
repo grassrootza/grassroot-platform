@@ -38,6 +38,8 @@ public class VerificationTokenCode {
     @Enumerated(EnumType.STRING)
     private VerificationCodeType type;
 
+
+
     private VerificationTokenCode() {
         // for JPA
     }

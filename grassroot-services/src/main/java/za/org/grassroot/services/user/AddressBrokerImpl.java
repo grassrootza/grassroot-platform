@@ -55,11 +55,11 @@ public class AddressBrokerImpl implements AddressBroker {
         }
 
         if (!StringUtils.isEmpty(houseNumber))
-            address.setHouseNumber(houseNumber);
+            address.setHouse(houseNumber);
         if (!StringUtils.isEmpty(street))
-            address.setStreetName(street);
+            address.setStreet(street);
         if (!StringUtils.isEmpty(town))
-            address.setTown(town);;
+            address.setNeighbourhood(town);;
 
         log.info("updated user address");
     }

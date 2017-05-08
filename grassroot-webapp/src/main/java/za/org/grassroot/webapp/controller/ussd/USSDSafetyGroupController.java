@@ -22,6 +22,7 @@ import za.org.grassroot.integration.exception.LocationNotAvailableException;
 import za.org.grassroot.integration.exception.LocationTrackingImpossibleException;
 import za.org.grassroot.integration.location.UssdLocationServicesBroker;
 import za.org.grassroot.services.SafetyEventBroker;
+import za.org.grassroot.services.geo.ObjectLocationBroker;
 import za.org.grassroot.services.group.GroupPermissionTemplate;
 import za.org.grassroot.services.group.GroupQueryBroker;
 import za.org.grassroot.services.user.AddressBroker;
@@ -33,6 +34,8 @@ import za.org.grassroot.webapp.util.USSDUrlUtil;
 
 import javax.annotation.PostConstruct;
 import java.net.URISyntaxException;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.Set;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
@@ -58,6 +61,7 @@ public class USSDSafetyGroupController extends USSDController {
     private final GroupQueryBroker groupQueryBroker;
     private final SafetyEventBroker safetyEventBroker;
     private UssdLocationServicesBroker locationServicesBroker;
+    private ObjectLocationBroker objectLocationBroker;
 
     private static final String
             createGroupMenu = "create",
@@ -82,12 +86,16 @@ public class USSDSafetyGroupController extends USSDController {
         this.addressBroker = addressBroker;
         this.groupQueryBroker = groupQueryBroker;
         this.safetyEventBroker = safetyEventBroker;
-        this.locationServicesBroker = locationServicesBroker;
     }
 
     @Autowired(required = false)
     public void setLocationServicesBroker(UssdLocationServicesBroker locationServicesBroker) {
         this.locationServicesBroker = locationServicesBroker;
+    }
+
+    @Autowired(required = false)
+    public void setObjectLocationBroker(ObjectLocationBroker objectLocationBroker) {
+        this.objectLocationBroker = objectLocationBroker;
     }
 
     @PostConstruct
@@ -219,9 +227,22 @@ public class USSDSafetyGroupController extends USSDController {
         User user = userManager.findByInputNumber(msisdn);
         try {
             GeoLocation location = locationServicesBroker.getUssdLocationForUser(user.getUid());
+
+            final String reverseGeoAddressFull = objectLocationBroker.getReverseGeoCodedAddress(location);
+            int firstComma = reverseGeoAddressFull.indexOf(",");
+            int secondComma = reverseGeoAddressFull.indexOf(",", firstComma + 1);
+            final String reverseGeoAddressCrop = firstComma == -1 ? reverseGeoAddressFull :
+                    firstComma < 10 ?
+                    reverseGeoAddressFull.substring(0, secondComma) :
+                    reverseGeoAddressFull.substring(0, firstComma);
+
+            final NumberFormat coordFormat = new DecimalFormat("#.##");
             final String prompt = getMessage(thisSection, "tracking.current", promptKey, new String[] {
-               String.valueOf(location.getLatitude()), String.valueOf(location.getLongitude())
+                    coordFormat.format(location.getLatitude()),
+                    coordFormat.format(location.getLongitude()),
+                    reverseGeoAddressCrop
             }, user);
+            // todo : add in ability to change / correct
             return menuBuilder(new USSDMenu(prompt, optionsHomeExit(user, true)));
         } catch (Exception e) { // todo : decent exception handling, and back menu, etc
             e.printStackTrace();
@@ -354,8 +375,8 @@ public class USSDSafetyGroupController extends USSDController {
     public Request viewAddress(@RequestParam String msisdn) throws URISyntaxException {
         final User user = userManager.findByInputNumber(msisdn, saveSafetyMenuPrompt(viewAddress));
         final Address address = addressBroker.getUserAddress(user.getUid());
-        final String[] fields = new String[]{address.getHouseNumber(), address.getStreetName(), address.getTown()};
-        final String prompt = StringUtils.isEmpty(address.getTown()) ? getMessage(thisSection, viewAddress, promptKey + ".notown", fields, user)
+        final String[] fields = new String[]{address.getHouse(), address.getStreet(), address.getNeighbourhood()};
+        final String prompt = StringUtils.isEmpty(address.getNeighbourhood()) ? getMessage(thisSection, viewAddress, promptKey + ".notown", fields, user)
                 : getMessage(thisSection, viewAddress, promptKey, fields, user);
         USSDMenu menu = new USSDMenu(prompt);
         menu.addMenuOption(safetyMenus + changeAddress + doSuffix, getMessage(thisSection, viewAddress, optionsKey + "change", user));
@@ -425,8 +446,8 @@ public class USSDSafetyGroupController extends USSDController {
         }
 
         Address address = addressBroker.getUserAddress(user.getUid());
-        String[] confirmFields = new String[]{address.getHouseNumber(), address.getStreetName(), address.getTown()};
-        final String confirmPrompt = StringUtils.isEmpty(address.getTown()) ? getMessage(thisSection, "address.confirm", promptKey + ".notown", confirmFields, user)
+        String[] confirmFields = new String[]{address.getHouse(), address.getStreet(), address.getNeighbourhood()};
+        final String confirmPrompt = StringUtils.isEmpty(address.getNeighbourhood()) ? getMessage(thisSection, "address.confirm", promptKey + ".notown", confirmFields, user)
                 : getMessage(thisSection, "address.confirm", promptKey, confirmFields, user);
 
         menu = new USSDMenu(confirmPrompt);
@@ -538,11 +559,11 @@ public class USSDSafetyGroupController extends USSDController {
             String confirmPrompt;
             String[] confirmFields;
 
-            if (!StringUtils.isEmpty(address.getTown())) {
-                confirmFields = new String[]{address.getHouseNumber(), address.getStreetName(), address.getTown()};
+            if (!StringUtils.isEmpty(address.getNeighbourhood())) {
+                confirmFields = new String[]{address.getHouse(), address.getStreet(), address.getNeighbourhood()};
                 confirmPrompt = getMessage(thisSection, "address.confirm", promptKey, confirmFields, user);
             } else {
-                confirmFields = new String[]{address.getHouseNumber(), address.getStreetName() };
+                confirmFields = new String[]{address.getHouse(), address.getStreet() };
                 confirmPrompt = getMessage(thisSection, "address.confirm.notown", promptKey, confirmFields, user);
             }
 

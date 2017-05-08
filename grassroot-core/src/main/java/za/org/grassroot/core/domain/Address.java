@@ -1,6 +1,9 @@
 package za.org.grassroot.core.domain;
 
 import org.springframework.util.StringUtils;
+import za.org.grassroot.core.domain.geo.GeoLocation;
+import za.org.grassroot.core.domain.geo.LocationHolder;
+import za.org.grassroot.core.enums.LocationSource;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
@@ -12,33 +15,47 @@ import java.time.Instant;
 
 @Entity
 @Table(name = "address")
-public class Address {
+public class Address implements LocationHolder {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
     private Long id;
 
-    @Column(name = "uid", nullable = false, unique = true)
+    @Column(name = "uid", nullable = false, unique = true, length = 50)
     private String uid;
 
     @Column(name="house_number")
-    private String houseNumber;
+    private String house;
 
     @Column(name ="street_name")
-    private String streetName;
+    private String street;
 
-    @Column(name ="area")
-    private String town;
+    @Column(name = "area")
+    private String neighbourhood;
 
-    @Column(name = "created_date_time", nullable = false,insertable = true, updatable = false)
+    @Column(name = "city")
+    private String city;
+
+    @Column(name = "created_date_time", nullable = false, updatable = false)
     private Instant createdDateTime;
 
-    @ManyToOne()
-    @JoinColumn(name = "resident_user_id", nullable = false, updatable = false)
+    // think about whether to make this many to many if multiple users at same address
+    @ManyToOne
+    @JoinColumn(name = "resident_user_id", nullable = true, updatable = true)
     private User resident;
 
-    private Address(){
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name="latitude", column = @Column(nullable = true)),
+            @AttributeOverride(name="longitude", column = @Column(nullable = true))
+    })
+    private GeoLocation location;
 
+    @Column(name = "location_source", nullable = true)
+    private LocationSource locationSource;
+
+    private Address(){
+        // for JPA
     }
 
     public Address(User resident) {
@@ -47,20 +64,17 @@ public class Address {
         this.resident = resident;
     }
 
-    public Address(User resident, String houseNumber, String streetName, String town){
+    public Address(User resident, String houseNumber, String streetName, String town, String city) {
         this(resident);
-        this.houseNumber = houseNumber;
-        this.streetName = streetName;
-        this.town = town;
+        this.house = houseNumber;
+        this.street = streetName;
+        this.neighbourhood = town;
+        this.city = city;
     }
 
 
     public Long getId() {
         return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
     }
 
     public User getResident() {
@@ -75,55 +89,71 @@ public class Address {
         return uid;
     }
 
-    public void setUid(String uid) {
-        this.uid = uid;
+    public String getHouse() {
+        return house;
     }
 
-    public String getHouseNumber() {
-        return houseNumber;
+    public void setHouse(String house) {
+        this.house = house;
     }
 
-    public void setHouseNumber(String houseNumber) {
-        this.houseNumber = houseNumber;
+    public String getStreet() {
+        return street;
     }
 
-    public String getStreetName() {
-        return streetName;
+    public void setStreet(String street) {
+        this.street = street;
     }
 
-    public void setStreetName(String streetName) {
-        this.streetName = streetName;
+    public String getNeighbourhood() {
+        return neighbourhood;
     }
 
-    public String getTown() {
-        return town;
-    }
-
-    public void setTown(String town) {
-        this.town = town;
+    public void setNeighbourhood(String neighbourhood) {
+        this.neighbourhood = neighbourhood;
     }
 
     public Instant getCreatedDateTime() {
         return createdDateTime;
     }
 
-    public void setCreatedDateTime(Instant createdDateTime) {
-        this.createdDateTime = createdDateTime;
+    public String getCity() {
+        return city;
+    }
+
+    public void setCity(String city) {
+        this.city = city;
+    }
+
+    @Override
+    public GeoLocation getLocation() {
+        return location;
+    }
+
+    @Override
+    public boolean hasLocation() {
+        return location != null;
+    }
+
+    @Override
+    public LocationSource getSource() {
+        return locationSource;
+    }
+
+    public void setLocationSource(LocationSource locationSource) {
+        this.locationSource = locationSource;
     }
 
     public boolean hasHouseAndStreet() {
-        return !StringUtils.isEmpty(this.houseNumber) || !StringUtils.isEmpty(this.streetName);
+        return !StringUtils.isEmpty(this.house) || !StringUtils.isEmpty(this.street);
     }
 
     @Override
     public String toString() {
         return "Address{" +
-                "id=" + id +
-                ", uid='" + uid + '\'' +
-                ", houseNumber='" + houseNumber + '\'' +
-                ", streetName='" + streetName + '\'' +
-                ", town='" + town + '\'' +
-                ", createdDateTime=" + createdDateTime +
+                "house='" + house + '\'' +
+                ", street='" + street + '\'' +
+                ", neighbourhood='" + neighbourhood + '\'' +
                 ", resident=" + resident +
                 '}';
     }

@@ -25,6 +25,7 @@ import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.AdminService;
 import za.org.grassroot.services.AnalyticalService;
+import za.org.grassroot.services.livewire.DataSubscriberBroker;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.MemberNotPartOfGroupException;
 import za.org.grassroot.services.exception.NoSuchUserException;
@@ -59,16 +60,18 @@ public class AdminController extends BaseController {
     private final PasswordTokenService passwordTokenService;
     private final AdminService adminService;
     private final AnalyticalService analyticalService;
+    private final DataSubscriberBroker dataSubscriberBroker;
 
     @Autowired
     public AdminController(GroupRepository groupRepository, GroupBroker groupBroker, PermissionBroker permissionBroker,
-                           PasswordTokenService passwordTokenService, AdminService adminService, AnalyticalService analyticalService) {
+                           PasswordTokenService passwordTokenService, AdminService adminService, AnalyticalService analyticalService, DataSubscriberBroker dataSubscriberBroker) {
         this.groupRepository = groupRepository;
         this.groupBroker = groupBroker;
         this.permissionBroker = permissionBroker;
         this.passwordTokenService = passwordTokenService;
         this.adminService = adminService;
         this.analyticalService = analyticalService;
+        this.dataSubscriberBroker = dataSubscriberBroker;
     }
 
     @PostConstruct
@@ -293,4 +296,5 @@ public class AdminController extends BaseController {
 		addMessage(attributes, MessageType.INFO, "admin.done", request);
 		return returnRedir;
 	}
+
 }

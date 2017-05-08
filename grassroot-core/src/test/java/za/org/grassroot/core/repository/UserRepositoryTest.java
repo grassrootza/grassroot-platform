@@ -10,8 +10,8 @@ import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
-import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
+import za.org.grassroot.core.StandaloneDatabaseConfig;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
@@ -31,7 +31,7 @@ import static org.junit.Assert.*;
  */
 
 @RunWith(SpringRunner.class)
-@ContextConfiguration(classes = TestContextConfiguration.class)
+@ContextConfiguration(classes = {StandaloneDatabaseConfig.class})
 @Transactional
 @ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
 public class UserRepositoryTest {
@@ -56,8 +56,6 @@ public class UserRepositoryTest {
     private static final String number = "0821234560";
 
 
-
-
     @Test
     public void shouldCheckAndroidProfile() {
         assertThat(userRepository.count(), is(0L));
@@ -67,6 +65,7 @@ public class UserRepositoryTest {
         userProfile.setHasAndroidProfile(true);
         userRepository.save(userProfile);
 
+        assertThat(userRepository.count(), is(1L));
         User fromDb = userRepository.findAll().iterator().next();
         assertNotNull(fromDb.getUid());
         assertTrue(fromDb.hasAndroidProfile());

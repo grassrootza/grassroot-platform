@@ -1,0 +1,1 @@
+drop table live_wire_alert;

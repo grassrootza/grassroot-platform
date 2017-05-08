@@ -49,7 +49,6 @@ import static za.org.grassroot.webapp.util.USSDUrlUtil.*;
 /**
  * @author luke on 2015/08/14.
  */
-
 @RequestMapping(method = GET, produces = MediaType.APPLICATION_XML_VALUE)
 @RestController
 public class USSDMeetingController extends USSDController {

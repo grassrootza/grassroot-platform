@@ -1,4 +1,4 @@
-package za.org.grassroot.webapp.controller.webapp;
+package za.org.grassroot.webapp.controller.webapp.group;
 
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
