@@ -239,8 +239,6 @@ public class EventRepositoryTest {
         groupToCheck = groupRepository.save(groupToCheck);
 
         Instant startTime = Instant.now().plus(2, ChronoUnit.DAYS);
-
-
         Event event = eventRepository.save(new Meeting("", startTime
                 , userToCheck, groupToCheck
                 , ""));
@@ -315,8 +313,10 @@ public class EventRepositoryTest {
         newEvent.setCustomReminderMinutes(12);
         assertTrue(newEvent.getReminderType().equals(EventReminderType.CUSTOM));
         newEvent.updateScheduledReminderTime();
+
         Instant updateTime = DateTimeUtil.restrictToDaytime(scheduleTime.minus(12, ChronoUnit.MINUTES),
                 Instant.now(), DateTimeUtil.getSAST());
+
         assertThat(newEvent.getScheduledReminderTime(), is(updateTime));
         assertTrue(newEvent.getScheduledReminderTime().isAfter(Instant.now()));
         newEvent.setScheduledReminderActive(false);
@@ -366,11 +366,11 @@ public class EventRepositoryTest {
         eventCreate.setReminderType(EventReminderType.GROUP_CONFIGURED);
         assertTrue(eventCreate.getReminderType().equals(EventReminderType.GROUP_CONFIGURED));
         eventCreate.updateScheduledReminderTime();
+
         Instant timeReminderShouldBe = DateTimeUtil.restrictToDaytime(newTime.minus(30, ChronoUnit.MINUTES),
                 Instant.now(), DateTimeUtil.getSAST());
+
         assertThat(eventCreate.getScheduledReminderTime(), is(timeReminderShouldBe));
-
-
         assertTrue(eventCreate.getScheduledReminderTime().isAfter(Instant.now()));
         assertFalse(eventCreate.isScheduledReminderActive());
 
@@ -378,12 +378,16 @@ public class EventRepositoryTest {
         assertThat(eventFromDb.getScheduledReminderTime(), is(timeReminderShouldBe));
         assertTrue(eventFromDb.getScheduledReminderTime().isAfter(Instant.now()));
         assertFalse(eventFromDb.isScheduledReminderActive());
+
         eventFromDb.setReminderType(EventReminderType.DISABLED);
         assertThat(eventFromDb.getReminderType(), is(EventReminderType.DISABLED));
         eventFromDb.updateScheduledReminderTime();
         assertThat(eventFromDb.getScheduledReminderTime(), is(nullValue()));
 
     }
+
+
+
 
 
     @Test
