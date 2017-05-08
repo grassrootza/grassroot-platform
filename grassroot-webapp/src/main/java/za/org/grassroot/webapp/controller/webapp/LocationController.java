@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -16,6 +17,7 @@ import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.geo.ObjectLocationBroker;
 import za.org.grassroot.webapp.controller.BaseController;
+import za.org.grassroot.webapp.model.web.GeoFilterFormModel;
 
 import javax.servlet.http.HttpServletRequest;
 import java.security.InvalidParameterException;
@@ -23,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Controller
+@RequestMapping(value = "/location")
 public class LocationController extends BaseController {
     private static final Logger logger = LoggerFactory.getLogger(LocationController.class);
 
@@ -39,7 +42,7 @@ public class LocationController extends BaseController {
         this.objectLocationBroker = objectLocationBroker;
     }
 
-    @RequestMapping(value = "/location", method = RequestMethod.GET)
+    @RequestMapping(value = "", method = RequestMethod.GET)
     public String search (@RequestParam(required = false) Integer radius,
                           @RequestParam(required = false) Double latitude,
                           @RequestParam(required = false) Double longitude,
@@ -126,6 +129,22 @@ public class LocationController extends BaseController {
         model.addAttribute("zoom", zoom);
         model.addAttribute("data", objectsToReturn);
 
+        // Create an empty filter object to start using
+        model.addAttribute("filter", new GeoFilterFormModel(location, searchRadius));
+
         return "location/map";
     }
+
+    @RequestMapping(value = "/filter", method = RequestMethod.GET)
+    public String searchWithFilter(@ModelAttribute GeoFilterFormModel filter, Model model) {
+        model.addAttribute("user", getUserProfile());
+        model.addAttribute("location", filter.getLocation());
+        model.addAttribute("radius", filter.getSearchRadius());
+
+        model.addAttribute("data",
+                objectLocationBroker.fetchLocationsWithFilter(GeoFilterFormModel.convertToFilter(filter)));
+
+        return "location/map";
+    }
+
 }
