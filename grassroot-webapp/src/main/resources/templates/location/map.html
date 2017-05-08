@@ -21,10 +21,13 @@
   <meta name="_csrf" th:content="${_csrf.token}"/>
   <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
 
+  <!-- Leaflet Scale: https://github.com/nerik/leaflet-graphicscale -->
   <link rel="stylesheet" th:href="@{/assets/leaflet-css/leaflet.css}"/>
+  <link rel="stylesheet" th:href="@{/assets/leaflet-css/Leaflet.GraphicScale.min.css}"/>
   <link rel="stylesheet" th:href="@{/assets/bootleaf.css}"/>
 
   <script th:src="@{/js/lib/leaflet.js}"></script>
+  <script th:src="@{/js/lib/Leaflet.GraphicScale.min.js}"></script>
 
 </head>
 <body>
@@ -93,10 +96,14 @@
     /*<![CDATA[*/
     console.log("loading map ...");
 
+    // Get parameters
+    var radius = [[${radius}]];
     var latitude = [[${location.latitude}]];
     var longitude = [[${location.longitude}]];
-
     var zoom = [[${zoom}]];
+    if (radius == null) radius = 2;
+
+    // Create map
     var map = L.map('map').setView([latitude, longitude], zoom);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -114,8 +121,32 @@
           .bindPopup( '<a href="' + m.url + '" target="_blank">' + m.name + '</a> <br><br>' + m.description )
           .addTo( map );
     }
+
+    // Find new point
+    var r_earth = 6378.0; // Earth radius in Km
+    var pi = 3.14159265359;
+    // Coordinate offsets in radians
+    // Radius in Km
+    var dLat = radius / r_earth;
+    var dLon = radius / (r_earth * Math.cos(pi * latitude / 180.0));
+    var convert = 180.0 / pi;
+    var new_latitude  = latitude  + dLat * convert;
+    var new_longitude = longitude + dLon * convert;
+
+    // Convert lat,long to pixel
+    var point = map.project([new_latitude, new_longitude], zoom);
+    // Calculate the circle radius
+    radius = Math.abs(map.getPixelOrigin().x - point.x);
+
     // Draw a radius
-    L.circle([latitude, longitude], {radius: 200, fill: true}).addTo(map);
+    L.circle([latitude, longitude], {radius: radius, fill: true}).addTo(map);
+
+    // Draw the scale
+    var graphicScale = L.control.graphicScale({
+      doubleLine: false
+      ,fill: 'fill'
+      ,showSubunits: false
+    }).addTo(map);
 
     /*]]>*/
   </script>
