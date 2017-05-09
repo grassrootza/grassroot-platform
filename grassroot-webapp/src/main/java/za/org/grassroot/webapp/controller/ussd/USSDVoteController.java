@@ -151,6 +151,8 @@ public class USSDVoteController extends USSDController {
             requestUid = voteRequest.getUid();
         } else {
             requestUid = interruptedRequestUid;
+            VoteRequest savedRequest = (VoteRequest) eventRequestBroker.load(requestUid);
+            groupUid = savedRequest.getParent().getUid();
         }
         cacheManager.putUssdMenuForUser(user.getPhoneNumber(), saveVoteMenu("issue", requestUid));
 

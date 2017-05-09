@@ -21,6 +21,7 @@ import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.email.GrassrootEmail;
 import za.org.grassroot.integration.livewire.LiveWirePushBroker;
 
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 /**
@@ -30,6 +31,9 @@ import java.util.*;
 public class LiveWireSendingBrokerImpl implements LiveWireSendingBroker {
 
     private static final Logger logger = LoggerFactory.getLogger(LiveWireSendingBroker.class);
+
+    private static final DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("EEE, d MMMM yyyy");
+    private static final DateTimeFormatter mtgFormat = DateTimeFormatter.ofPattern("dd MM, HH:mm");
 
     private final LiveWireAlertRepository alertRepository;
     private final DataSubscriberRepository subscriberRepository;
@@ -73,6 +77,8 @@ public class LiveWireSendingBrokerImpl implements LiveWireSendingBroker {
         Map<String, Object> emailVars = new HashedMap<>();
 
         emailVars.put("contactName", alert.getContactNameNullSafe());
+        logger.info("contactName, and from alert: {}", alert.getContactNameNullSafe(),
+                alert.getContactUser().getName());
         emailVars.put("contactNumber", PhoneNumberUtil.formattedNumber(
                 alert.getContactUser().getPhoneNumber()));
         emailVars.put("description", alert.getDescription());
@@ -90,14 +96,15 @@ public class LiveWireSendingBrokerImpl implements LiveWireSendingBroker {
             subject = "email.livewire.meeting.subject";
             template = "livewire_meeting";
             emailVars.put("mtgLocation", meeting.getEventLocation());
-            emailVars.put("dateTime", meeting.getEventDateTimeAtSAST());
+            emailVars.put("dateTime", mtgFormat.format(meeting.getEventDateTimeAtSAST()));
             emailVars.put("mtgSubject", meeting.getName());
             populateGroupVars(meeting.getAncestorGroup(), emailVars);
         }
 
-        final Context ctx = new Context(Locale.getDefault());
+        final Context ctx = new Context(Locale.ENGLISH);
         ctx.setVariables(emailVars);
-        builder.subject(messageSource.getMessage(subject))
+        builder.from("Grassroot LiveWire")
+                .subject(messageSource.getMessage(subject))
                 .content(templateEngine.process("text/" + template, ctx))
                 .htmlContent(templateEngine.process("html/" + template, ctx));
 
@@ -110,7 +117,7 @@ public class LiveWireSendingBrokerImpl implements LiveWireSendingBroker {
 
     private void populateGroupVars(Group group, Map<String, Object> emailVars) {
         emailVars.put("numberMembers", group.getMembers().size());
-        emailVars.put("lengthTime", group.getCreatedDateTime());
+        emailVars.put("lengthTime", dateFormat.format(group.getCreatedDateTimeAtSAST()));
         emailVars.put("numberTasks",
                 String.valueOf(group.getDescendantEvents().size() + group.getDescendantTodos().size()));
     }

@@ -278,7 +278,10 @@ public class AdminController extends BaseController {
         final String returnRedir = "redirect:/admin/groups/search";
         attributes.addAttribute("searchTerm", searchTerm);
 
+        log.info("Looking for user with this phone: {}", msisdn);
+
         if (!userManagementService.userExist(msisdn)) {
+            log.info("Could not find user, returning error");
             addMessage(attributes, MessageType.ERROR, "admin.role.change.notfound", new String[] { msisdn }, request);
             return returnRedir;
         }
@@ -287,7 +290,8 @@ public class AdminController extends BaseController {
 		Group group = groupBroker.load(groupUid);
 
 		if (!group.getMembers().contains(userToModify)) {
-		    addMessage(attributes, MessageType.ERROR, "admin.role.change.notfound", new String[] { msisdn }, request);
+		    log.info("User not in group, returning with error");
+		    addMessage(attributes, MessageType.ERROR, "admin.role.change.notmember", new String[] { msisdn }, request);
 		    return returnRedir;
         }
 

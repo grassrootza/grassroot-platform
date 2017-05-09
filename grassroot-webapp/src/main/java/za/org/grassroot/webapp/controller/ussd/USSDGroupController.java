@@ -171,11 +171,12 @@ public class USSDGroupController extends USSDController {
             String joiningCode = "*134*1994*" + createdGroup.getGroupTokenCode() + "#";
             cacheManager.putUssdMenuForUser(inputNumber, saveGroupMenuWithInput(createGroupMenu + doSuffix, createdGroup.getUid(), groupName, false));
 
-            if (!locationRequestEnabled) {
+            // todo: restore and finish these
+            // if (!locationRequestEnabled) {
                 menu = postCreateOptionsNoLocation(createdGroup.getUid(), groupName, joiningCode, user);
-            } else {
+            /*} else {
                 menu = postCreateOptionsWithLocation(createdGroup.getUid(), joiningCode, user);
-            }
+            }*/
         }
         return menuBuilder(menu);
     }
@@ -501,7 +502,6 @@ public class USSDGroupController extends USSDController {
 
     /**
      * SECTION: MENUS TO ADD MEMBERS, UNSUBSCRIBE, AND LIST MEMBERS
-     * todo: decide if want some kind of "list members" function (maybe delivered via SMS)?
      */
 
     @RequestMapping(value = groupPath + addMemberPrompt)
@@ -541,8 +541,6 @@ public class USSDGroupController extends USSDController {
     @ResponseBody
     public Request unsubscribeConfirm(@RequestParam(value = phoneNumber) String inputNumber,
                                       @RequestParam(value = groupUidParam) String groupUid) throws URISyntaxException {
-
-        // todo: add in a brief description of group, e.g., who created it
 
         User sessionUser = userManager.findByInputNumber(inputNumber, saveGroupMenu(unsubscribePrompt, groupUid));
 

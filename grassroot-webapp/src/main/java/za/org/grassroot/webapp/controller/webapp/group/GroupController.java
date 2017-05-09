@@ -241,10 +241,10 @@ public class GroupController extends BaseController {
             groupBroker.updateDiscoverable(getUserProfile().getUid(), groupUid, false, null);
             addMessage(model, MessageType.SUCCESS, "group.invisible.success", request);
         } else {
+            log.info("Switching group to discoverable, with approver msisdn : {}", approverPhoneNumber);
             groupBroker.updateDiscoverable(getUserProfile().getUid(), groupUid, true, approverPhoneNumber);
             addMessage(model, MessageType.SUCCESS, "group.visible.success", request);
         }
-
         return viewGroupIndex(model, groupUid);
     }
 

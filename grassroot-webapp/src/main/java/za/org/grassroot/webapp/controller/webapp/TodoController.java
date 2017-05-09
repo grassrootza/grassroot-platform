@@ -184,6 +184,7 @@ public class TodoController extends BaseController {
         User user = userManagementService.load(getUserProfile().getUid());
 
         model.addAttribute("todo", todoEntry);
+        model.addAttribute("isAssigned", todoEntry.getAssignedMembers().contains(user));
         model.addAttribute("parent", todoEntry.getParent());
         model.addAttribute("isComplete", todoEntry.isCompleted(COMPLETION_PERCENTAGE_BOUNDARY));
         model.addAttribute("hasReminders", todoEntry.isReminderActive() && todoEntry.getNumberOfRemindersLeftToSend() > 0);
