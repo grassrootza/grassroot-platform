@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{html/fragments :: header}"></head>
+<body>
+<p>
+  GRASSROOT LIVEWIRE ALERT: PUBLIC GATHERING
+</p>
+<p th:text="#{livewire.meeting.preamble(${contactName}, ${contactNumber})}">
+  Sandile, contact number 010 555 9123, has issued a LiveWire alert about an upcoming gathering,
+  with the description:
+</p>
+<p th:text="${description}" class="blockquote">
+  Enter description here
+</p>
+<p th:text="#{livewire.meeting.details(${mtgLocation}, ${dateTime}, ${mtgSubject})}">
+  The gathering will be taking place at (location), on (date and time). The subject to members is (subject).
+</p>
+<p th:text="#{livewire.meeting.groupdetails(${numberMembers}, ${lengthTime}, ${numberTasks})}">
+  The group that is meeting has X people, has been active on Grassroot for the last Y amount
+  of time, and has met or acted Z times in the last year.
+</p>
+<p th:text="#{livewire.meeting.location(${groupLocation}, ${groupAddress}, ${mtgLocation}, ${mtgAddress})}">
+  The group that is meeting is located at (coordinates), approximately (area), and declared that the meeting
+  is taking place at (some other coord).
+</p>
+</body>
+</html>

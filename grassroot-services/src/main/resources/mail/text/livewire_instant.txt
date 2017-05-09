@@ -1,0 +1,13 @@
+GRASSROOT LIVEWIRE FLASH ALERT
+
+[[ #{livewire.instant.preamble(${contactName}, ${contactNumber})} ]]
+
+====================
+
+[[ ${description} ]]
+
+====================
+
+[[ #{livewire.instant.groupdetails(${numberMembers}, ${lengthTime}, ${numberTasks})} ]]
+
+<!-- [[ #{livewire.instant.location(${groupCoord},${groupAddress},${alertCoord},${alertAddress})} ]] -->

@@ -60,10 +60,11 @@ public class AccountSignUpController extends BaseController {
     }
 
     @RequestMapping(value = "signup", method = RequestMethod.GET)
-    public String startAccountSignup(Model model, @RequestParam(required = false) String accountType) {
+    public String startAccountSignup(Model model, @RequestParam(required = false) String accountType,
+                                     @RequestParam(required = false) Boolean forceNew) {
         User user = userManagementService.load(getUserProfile().getUid());
-        logger.info("accountType in parameter: {}", accountType);
-        if (user.getPrimaryAccount() != null) {
+        logger.debug("accountType in parameter: {}", accountType);
+        if (user.getPrimaryAccount() != null && (forceNew == null || !forceNew)) {
             return user.getPrimaryAccount().isEnabled() ? "redirect:/account/type" : "redirect:/account";
         } else {
             model.addAttribute("user", user); // may be cached (and not reflect email) if use just getuserprofile

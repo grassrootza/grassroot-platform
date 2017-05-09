@@ -37,10 +37,15 @@
   <section class="grassroot-form">
     <div class="container">
       <div class="row" th:if="${user.hasMultipleAccounts()}">
-        <div class="col-md-8 col-md-offset-2 col-sm-12 col-xs-12">
-          <p class="grassroot-body">
+        <div th:switch="${isPrimary}" class="col-md-8 col-md-offset-2 col-sm-12 col-xs-12">
+          <p th:case="${true}" class="grassroot-body bottom-buffer-lg">
             You administer multiple Grassroot Extra accounts. You are currently viewing your primary account. If you would
             like to manage another account, <a href="#switchAccountModal" data-toggle="modal" data-target="#switchAccountModal">click here.</a>
+          </p>
+          <p th:case="${false}" class="grassroot-body bottom-buffer-lg">
+            You administer multiple Grassroot Extra accounts. This account is not your primary. You can view
+            <a href="#switchAccountModal" data-toggle="modal" data-target="#switchAccountModal">another account</a>,
+            or <a th:href="@{setprimary(accountUid=${account.uid})}">make this one primary</a>.
           </p>
         </div>
       </div>
@@ -160,9 +165,16 @@
 
           <hr>
 
-          <div class="row no-padding">
+          <div class="row">
             <div class="col-md-9 col-md-offset-3 col-sm-9 col-sm-offset-3 col-xs-12">
-              <a class="grassroot-body" data-target="#closeAccModal" data-toggle="modal" href="#closeAccModal">Close account</a>
+              <p>
+                <a class="grassroot-body" data-target="#closeAccModal" data-toggle="modal" href="#closeAccModal">
+                  Close account
+                </a>
+              </p>
+              <p>
+                <a class="grassroot-body" th:href="@{/account/signup(forceNew=true)}">New account</a>
+              </p>
             </div>
           </div>
 

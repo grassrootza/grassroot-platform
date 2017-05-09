@@ -4,12 +4,13 @@ import com.google.common.collect.ImmutableMap;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.MessageSource;
+import org.springframework.context.NoSuchMessageException;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.services.task.EventBroker;
+import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.group.GroupJoinRequestService;
+import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.user.UserManagementService;
-import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.util.CacheUtilService;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
@@ -150,10 +151,13 @@ public class USSDController {
     i18n helper methods
      */
 
-
     protected String getMessage(USSDSection section, String menu, String messageType, User user) {
         final String messageKey = "ussd." + section.toKey() + menu + "." + messageType;
-        return messageSource.getMessage(messageKey, null, new Locale(getLanguage(user)));
+        try {
+            return messageSource.getMessage(messageKey, null, new Locale(getLanguage(user)));
+        } catch (NoSuchMessageException e) {
+            return messageSource.getMessage(messageKey, null, new Locale("EN"));
+        }
     }
 
     // convenience function for when passing just a name (of user or group, for example)

@@ -1,0 +1,15 @@
+GRASSROOT LIVEWIRE ALERT: PUBLIC GATHERING
+
+[[ #{livewire.meeting.preamble(${contactName}, ${contactNumber})} ]]
+
+====================
+
+[[ ${description} ]]
+
+====================
+
+[[ #{livewire.meeting.details(${mtgLocation}, ${dateTime}, ${mtgSubject})} ]]
+
+[[ #{livewire.meeting.groupdetails(${numberMembers}, ${lengthTime}, ${numberTasks})} ]]
+
+<!-- [[ #{livewire.meeting.location(${groupCoord},${groupAddress},${alertCoord},${alertAddress})} ]] -->

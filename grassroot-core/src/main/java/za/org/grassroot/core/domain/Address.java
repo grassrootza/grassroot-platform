@@ -33,8 +33,8 @@ public class Address implements LocationHolder {
     @Column(name = "area")
     private String neighbourhood;
 
-    @Column(name = "city")
-    private String city;
+    /*@Column(name = "city")
+    private String city;*/
 
     @Column(name = "created_date_time", nullable = false, updatable = false)
     private Instant createdDateTime;
@@ -64,12 +64,12 @@ public class Address implements LocationHolder {
         this.resident = resident;
     }
 
-    public Address(User resident, String houseNumber, String streetName, String town, String city) {
+    public Address(User resident, String houseNumber, String streetName, String town) {
         this(resident);
         this.house = houseNumber;
         this.street = streetName;
         this.neighbourhood = town;
-        this.city = city;
+        // this.city = city;
     }
 
 
@@ -117,13 +117,13 @@ public class Address implements LocationHolder {
         return createdDateTime;
     }
 
-    public String getCity() {
+    /*public String getCity() {
         return city;
     }
 
     public void setCity(String city) {
         this.city = city;
-    }
+    }*/
 
     @Override
     public GeoLocation getLocation() {

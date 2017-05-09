@@ -35,6 +35,6 @@ public class SimpleLoggingInterceptor extends HandlerInterceptorAdapter {
         long endTime = System.currentTimeMillis();
         long executeTime = endTime - startTime;
 
-        logger.info("{} ms : [{}]", executeTime, handler);
+        logger.debug("{} ms : [{}]", executeTime, handler);
     }
 }

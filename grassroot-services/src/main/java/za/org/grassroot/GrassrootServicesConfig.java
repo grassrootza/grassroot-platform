@@ -27,6 +27,7 @@ import org.thymeleaf.templateresolver.ITemplateResolver;
 import org.thymeleaf.templateresolver.StringTemplateResolver;
 import za.org.grassroot.scheduling.ApplicationContextAwareQuartzJobBean;
 import za.org.grassroot.scheduling.BatchedNotificationSenderJob;
+import za.org.grassroot.scheduling.LiveWireAlertSenderJob;
 import za.org.grassroot.scheduling.UnreadNotificationSenderJob;
 
 import java.util.Collections;
@@ -97,8 +98,27 @@ public class GrassrootServicesConfig implements SchedulingConfigurer {
 	}
 
 	@Bean
+	public JobDetailFactoryBean livewireAlertSenderJobDetail() {
+    	JobDetailFactoryBean factoryBean = new JobDetailFactoryBean();
+    	factoryBean.setJobClass(LiveWireAlertSenderJob.class);
+    	factoryBean.setDurability(false);
+    	return factoryBean;
+	}
+
+	@Bean
+	public CronTriggerFactoryBean livewireAlertSenderCronTrigger(
+			@Qualifier("livewireAlertSenderJobDetail") JobDetail jobDetail) {
+    	CronTriggerFactoryBean factoryBean = new CronTriggerFactoryBean();
+    	factoryBean.setJobDetail(jobDetail);
+    	factoryBean.setCronExpression("0 0/2 * * * ?");
+    	factoryBean.setMisfireInstruction(CronTrigger.MISFIRE_INSTRUCTION_DO_NOTHING);
+    	return factoryBean;
+	}
+
+	@Bean
 	public SchedulerFactoryBean schedulerFactoryBean(@Qualifier("batchedNotificationSenderCronTrigger") CronTrigger sendTrigger,
-													 @Qualifier("unreadNotificationSenderCronTrigger") CronTrigger unreadTrigger) {
+													 @Qualifier("unreadNotificationSenderCronTrigger") CronTrigger unreadTrigger,
+													 @Qualifier("livewireAlertSenderCronTrigger") CronTrigger livewireTrigger) {
 		Properties quartzProperties = new Properties();
 
 		SchedulerFactoryBean factory = new SchedulerFactoryBean();
@@ -108,7 +128,7 @@ public class GrassrootServicesConfig implements SchedulingConfigurer {
 		factory.setQuartzProperties(quartzProperties);
 		factory.setStartupDelay(10);
 		factory.setApplicationContextSchedulerContextKey(ApplicationContextAwareQuartzJobBean.APPLICATION_CONTEXT_KEY);
-		factory.setTriggers(sendTrigger, unreadTrigger);
+		factory.setTriggers(sendTrigger, unreadTrigger, livewireTrigger);
 
 		return factory;
 	}

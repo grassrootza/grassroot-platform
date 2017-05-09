@@ -30,7 +30,6 @@ import javax.validation.constraints.NotNull;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Objects;
 
@@ -81,7 +80,7 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
     @Transactional(readOnly = true)
     public long countGroupsForInstantAlert(String userUid) {
         User user = userRepository.findOneByUid(userUid);
-        return (long) groupsForInstantAlertQuery(user, true).getFirstResult();
+        return (long) groupsForInstantAlertQuery(user, true).getSingleResult();
     }
 
     @Override
@@ -110,7 +109,7 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
         Objects.requireNonNull(userUid);
         User user = userRepository.findOneByUid(userUid);
         return (List<Meeting>) entityManager.createQuery("" +
-                "select e from Event e inner join e.ancestorGroup.memberships m " +
+                "select distinct e from Event e inner join e.ancestorGroup.memberships m " +
                 "where e.eventStartDateTime > :earliestTime " +
                 "and type(e) = Meeting " +
                 "and e.canceled = FALSE " +
@@ -157,7 +156,7 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
         LiveWireAlert alert = alertRepository.findOneByUid(alertUid);
         validateCreatingUser(user, alert);
 
-        User contactUser = userRepository.findOneByUid(userUid);
+        User contactUser = userRepository.findOneByUid(contactUserUid);
         alert.setContactUser(contactUser);
         alert.setContactName(contactName);
     }
@@ -220,13 +219,6 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
 
         LiveWireAlert alert = alertRepository.findOneByUid(alertUid);
         alert.setSent(sent);
-    }
-
-    @Override
-    public List<LiveWireAlert> findAlertsPendingSend() {
-        Instant end = Instant.now();
-        Instant start = end.minus(1L, ChronoUnit.HOURS);
-        return alertRepository.findBySendTimeBetweenAndSentFalse(start, end);
     }
 
     private void validateCreatingUser(User user, LiveWireAlert alert) throws AccessDeniedException {

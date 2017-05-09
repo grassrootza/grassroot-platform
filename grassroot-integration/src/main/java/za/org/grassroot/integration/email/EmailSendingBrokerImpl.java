@@ -8,10 +8,10 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import za.org.grassroot.integration.PdfGeneratingService;
+import za.org.grassroot.integration.utils.EmailUtils;
 
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
@@ -81,22 +81,9 @@ public class EmailSendingBrokerImpl implements EmailSendingBroker {
     @Async
     @Override
     public void sendMail(GrassrootEmail email) {
-        MimeMessage mail = mailSender.createMimeMessage();
         try {
-            MimeMessageHelper helper = new MimeMessageHelper(mail, email.hasAttachment() || email.hasHtmlContent());
-            helper.setFrom(emailFromAddress, emailFromName);
-            helper.setTo(email.getAddress());
-            helper.setSubject(email.getSubject());
-
-            if (email.hasHtmlContent()) {
-                helper.setText(email.getContent(), email.getHtmlContent());
-            }  else {
-                helper.setText(email.getContent());
-            }
-
-            if (email.hasAttachment()) {
-                helper.addAttachment(email.getAttachmentName(), email.getAttachment());
-            }
+            MimeMessage mail = mailSender.createMimeMessage();
+            mail = EmailUtils.transformEmailToMail(mail, email, emailFromAddress);
             logger.info("Okay, sending a mail, to : " + email.getAddress());
             mailSender.send(mail);
         } catch (MessagingException|MailException|UnsupportedEncodingException e) {

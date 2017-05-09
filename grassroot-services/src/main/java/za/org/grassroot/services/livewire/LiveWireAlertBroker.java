@@ -35,6 +35,4 @@ public interface LiveWireAlertBroker {
 
     void updateSentStatus(String alertUid, boolean sent);
 
-    List<LiveWireAlert> findAlertsPendingSend();
-
 }

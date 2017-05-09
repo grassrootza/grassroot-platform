@@ -41,7 +41,7 @@ public class AddressRepositoryTest {
     public void shouldFindByResident() throws Exception{
 
      User user = userRepository.save(new User("0833203013"));
-        addressRepository.save(new Address(user, testHouseNumber,testStreetName,testTown, null));
+        addressRepository.save(new Address(user, testHouseNumber,testStreetName,testTown));
         Address address = addressRepository.findOneByResident(user);
         assertNotNull(address);
         assertNotNull(address.getUid());

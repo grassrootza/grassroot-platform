@@ -18,7 +18,7 @@ public interface DataSubscriberRepository extends JpaRepository<DataSubscriber, 
 
     List<DataSubscriber> findByActiveTrue(Sort sort);
 
-    @Query(value = "select distinct unnest(push_emails) from database_subscriber " +
+    @Query(value = "select distinct unnest(push_emails) from data_subscriber " +
             "where active = true", nativeQuery = true)
     List<String> findAllActiveSubscriberPushEmails();
 
