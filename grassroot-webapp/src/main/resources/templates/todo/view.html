@@ -187,7 +187,7 @@
           <div class="row top-buffer">
             <div class="btn-group button-md-align pull-right" th:unless="${isComplete}">
               <a th:href="@{list(groupUid=${todo.parent.uid})}"><button class="btn default-button btn-neutral">Back to group</button></a>
-              <a th:href="@{complete(todoUid=${todo.uid}, source='todoview')}"><button class="btn default-button btn-positive">Mark as complete</button></a>
+              <a th:if="${isAssigned}" th:href="@{complete(todoUid=${todo.uid}, source='todoview')}"><button class="btn default-button btn-positive">Mark as complete</button></a>
             </div>
             <div class="button-md-align pull-right" th:if="${isComplete}">
               <a th:href="@{list(groupUid=${todo.parent.uid})}"><button class="btn default-button btn-neutral">Back to group</button></a>

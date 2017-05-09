@@ -1,5 +1,6 @@
 package za.org.grassroot.core.domain.livewire;
 
+import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Meeting;
 import za.org.grassroot.core.domain.User;
@@ -194,7 +195,7 @@ public class LiveWireAlert {
     }
 
     public String getContactNameNullSafe() {
-        return contactName == null ? contactUser.getName() : contactName;
+        return StringUtils.isEmpty(contactName) ? contactUser.getName() : contactName;
     }
 
     public Meeting getMeeting() {

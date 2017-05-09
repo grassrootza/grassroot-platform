@@ -17,6 +17,7 @@ public class EmailUtils {
             UnsupportedEncodingException, MessagingException, MailException {
         MimeMessageHelper helper = new MimeMessageHelper(mail, email.hasAttachment() || email.hasHtmlContent());
         helper.setFrom(fromAddress, email.getFrom());
+
         helper.setSubject(email.getSubject());
         helper.setTo(email.getAddress());
 

@@ -1,6 +1,7 @@
 package za.org.grassroot.webapp.controller.ussd;
 
 import com.google.common.collect.Sets;
+import org.h2.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -238,7 +239,11 @@ public class USSDMeetingController extends USSDController {
                               @RequestParam(value = "revising", required = false) boolean revising) throws URISyntaxException {
 
         User sessionUser = userManager.findByInputNumber(inputNumber);
-        int eventsLeft = eventMonthlyLimitActive ? accountGroupBroker.numberEventsLeftForGroup(groupUid) : 99;
+        log.info("event request uid: {}", passedRequestUid);
+        groupUid = groupUid != null ? groupUid :
+                ((MeetingRequest) eventRequestBroker.load(passedRequestUid)).getParent().getUid();
+        int eventsLeft = eventMonthlyLimitActive ?
+                accountGroupBroker.numberEventsLeftForGroup(groupUid) : 99;
 
         String mtgRequestUid;
 

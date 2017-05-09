@@ -8,9 +8,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventType;
-import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.services.enums.EventListTimeType;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.util.USSDEventUtil;
@@ -292,17 +292,19 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         String urlToCheck = saveMeetingMenu("subject", testMeeting.getUid(), false);
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(eventRequestBrokerMock.createEmptyMeetingRequest(testUser.getUid(), testGroup.getUid())).thenReturn(testMeeting);
+        when(eventRequestBrokerMock.load(testMeeting.getUid())).thenReturn(testMeeting);
 
         mockMvc.perform(get(path + "subject").param(phoneParam, testUserPhone).param("groupUid", "" + testGroup.getUid())
                                 .param("prior_menu", "group")).andExpect(status().isOk());
-        mockMvc.perform(get(base + urlToCheck).param(phoneParam, testUserPhone).param("request", "1")).
-                andExpect(status().isOk());
+        mockMvc.perform(get(base + urlToCheck).param(phoneParam, testUserPhone).param("request", "1"))
+                .andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone);
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(cacheUtilManagerMock, times(2)).putUssdMenuForUser(testUserPhone, urlToCheck);
         verifyNoMoreInteractions(cacheUtilManagerMock);
         verify(eventRequestBrokerMock, times(1)).createEmptyMeetingRequest(testUser.getUid(), testGroup.getUid());
+        verify(eventRequestBrokerMock, times(1)).load(testMeeting.getUid());
         verifyNoMoreInteractions(eventRequestBrokerMock);
     }
 

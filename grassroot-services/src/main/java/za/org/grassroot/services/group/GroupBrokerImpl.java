@@ -21,6 +21,7 @@ import za.org.grassroot.core.repository.GroupLogRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.AfterTxCommitTask;
+import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.integration.GroupChatService;
 import za.org.grassroot.integration.mqtt.MqttSubscriptionService;
@@ -480,7 +481,7 @@ public class GroupBrokerImpl implements GroupBroker {
         Set<ActionLog> actionLogs = new HashSet<>();
         for (Membership membership : memberships) {
             group.removeMembership(membership);
-            if(gcmService.hasGcmKey(membership.getUser())) {
+            if (gcmService != null && gcmService.hasGcmKey(membership.getUser())) {
                 try {
                     gcmService.unsubscribeFromTopic(gcmService.getGcmKey(membership.getUser()),group.getUid());
                 } catch (Exception e) {
@@ -983,6 +984,7 @@ public class GroupBrokerImpl implements GroupBroker {
     public void updateDiscoverable(String userUid, String groupUid, boolean discoverable, String authUserPhoneNumber) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(groupUid);
+        DebugUtil.transactionRequired("");
 
         User user = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
@@ -995,6 +997,7 @@ public class GroupBrokerImpl implements GroupBroker {
             group.setDiscoverable(true);
             group.setJoinApprover(authorizer);
             logEntry = "Set group publicly discoverable, with join approver " + authorizer.nameToDisplay();
+            logger.info(logEntry);
         } else {
             group.setJoinApprover(null);
             group.setDiscoverable(false);
