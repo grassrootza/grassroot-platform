@@ -134,9 +134,9 @@
     var new_longitude = longitude + dLon * convert;
 
     // Convert lat,long to pixel
-    var point = map.project([new_latitude, new_longitude], zoom);
-    // Calculate the circle radius
-    radius = Math.abs(map.getPixelOrigin().x - point.x);
+    var point = map.latLngToContainerPoint([new_latitude, new_longitude]);
+    // Calculate the circle radius (need to apply an scale)
+    radius = point.x * 1.5;
 
     // Draw a radius
     L.circle([latitude, longitude], {radius: radius, fill: true}).addTo(map);
