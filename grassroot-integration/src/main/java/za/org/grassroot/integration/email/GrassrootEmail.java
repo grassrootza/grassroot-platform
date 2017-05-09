@@ -27,8 +27,15 @@ public class GrassrootEmail {
         private File attachment;
         private String attachmentName;
 
+        public EmailBuilder() { }
+
         public EmailBuilder(String subject) {
             this.subject = subject;
+        }
+
+        public EmailBuilder subject(String subject) {
+            this.subject = subject;
+            return this;
         }
 
         public EmailBuilder from(String from) {

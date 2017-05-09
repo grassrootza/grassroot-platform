@@ -30,6 +30,6 @@ public interface DataSubscriberBroker {
 
     void removeUsersWithViewAccess(final String adminUid, final String subscriberUid, final List<String> userUids);
 
-    List<String> fetchAllPushEmails();
+    int countPushEmails();
 
 }
