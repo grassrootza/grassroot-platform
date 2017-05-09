@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.function.Predicate;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.*;
 
 /**
@@ -689,6 +690,35 @@ public class GroupRepositoryTest {
         Page<Group> activeGroups = groupRepository.findByCreatedByUserAndActiveTrueOrderByCreatedDateTimeDesc(user, new PageRequest(0,3));
         assertFalse(activeGroups.hasNext());
     }
+
+    @Test
+    public void shouldHaveValidGroupToken() {
+
+        User user = userRepository.save(new User("4879342"));
+        Group groupToken = groupRepository.save(new Group("Token",user));
+        assertNotNull(groupToken.getUid());
+
+        Instant tokenTime = Instant.now().plus(10,ChronoUnit.DAYS);
+
+        groupToken.setTokenExpiryDateTime(tokenTime);
+        groupToken.setGroupTokenCode("1234");
+        assertTrue(groupToken.hasValidGroupTokenCode());
+        assertThat(groupToken.getTokenExpiryDateTime(),is(tokenTime));
+        assertThat(groupToken.getGroupTokenCode(),is("1234"));
+        //assertThat(groupRepository.count(),is(1L));
+
+        Group groupDb = groupRepository.findByGroupTokenCode("1234");
+        assertThat(groupDb.getTokenExpiryDateTime(),is(tokenTime));
+
+        Group group = groupRepository.findAll().iterator().next();
+        Instant expiredTime = Instant.now().minus(9,ChronoUnit.DAYS);
+        group.setGroupTokenCode(null);
+        group.setTokenExpiryDateTime(expiredTime);
+        assertThat(group.getGroupTokenCode(),is(nullValue()));
+        assertThat(group.getTokenExpiryDateTime(),is(expiredTime));
+
+    }
+
 
     @Test
     public void shouldSaveAndRetrievePaidFor() {

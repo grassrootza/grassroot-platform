@@ -1,5 +1,6 @@
 package za.org.grassroot.core.repository;
 
+import com.sun.xml.internal.ws.server.sei.SEIInvokerTube;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,11 +15,13 @@ import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.util.DateTimeUtil;
 
 import javax.transaction.Transactional;
+import java.lang.reflect.Array;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoField;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -192,8 +195,8 @@ public class EventRepositoryTest {
         assertNotNull(eventReminder.getUid());
         eventReminder.setReminderType(EventReminderType.CUSTOM);
         assertThat(eventReminder.getReminderType(), is(EventReminderType.CUSTOM));
-        eventReminder.setCustomReminderMinutes(12);
-        assertThat(eventReminder.getCustomReminderMinutes(), is(12));
+        eventReminder.setCustomReminderMinutes(10);
+        assertThat(eventReminder.getCustomReminderMinutes(), is(10));
         eventRepository.save(eventReminder);
 
 
@@ -202,9 +205,17 @@ public class EventRepositoryTest {
         assertNotNull(eventFromDb.getId());
         assertThat(eventFromDb.getAncestorGroup().getGroupName(), is("Test "));
         assertThat(eventFromDb.getReminderType(), is(EventReminderType.CUSTOM));
-        assertThat(eventFromDb.getCustomReminderMinutes(), is(12));
-        assertThat(eventFromDb.getTodoReminderMinutes(), is(12));
+        assertThat(eventFromDb.getCustomReminderMinutes(), is(10));
+        assertThat(eventFromDb.getTodoReminderMinutes(), is(10));
+
+        Event event = eventRepository.findAll().iterator().next();
+        event.setCustomReminderMinutes(0);
+        assertThat(event.getCustomReminderMinutes(),is(0));
+
+
     }
+
+
 
     @Test
     public void shouldSaveAndFetchAssignedMemberCollection() {
@@ -239,11 +250,11 @@ public class EventRepositoryTest {
         groupToCheck = groupRepository.save(groupToCheck);
 
         Instant startTime = Instant.now().plus(2, ChronoUnit.DAYS);
-<<<<<<< HEAD
-=======
 
 
->>>>>>> eda9232368e316370553a008d0f733638ef4217d
+
+
+
         Event event = eventRepository.save(new Meeting("", startTime
                 , userToCheck, groupToCheck
                 , ""));
@@ -265,10 +276,12 @@ public class EventRepositoryTest {
         User users = userRepository.save(new User("0763490"));
         User users1 = userRepository.save(new User("07634"));
         User users2 = userRepository.save(new User("0763423"));
+
         Group groups = groupRepository.save(new Group("Events Test", users));
         groups.addMember(users);
         groups.addMember(users1);
         groups.addMember(users2);
+
         groups = groupRepository.save(groups);
         Instant startTime = Instant.now().plus(10, ChronoUnit.MINUTES);
         Event event = eventRepository.save(new Vote("", startTime, users,
@@ -282,6 +295,7 @@ public class EventRepositoryTest {
         assertNotNull(eventFromDb.getUid());
         assertThat(eventFromDb.getAncestorGroup().getMembersWithChildrenIncluded().size(), is(3));
         assertThat(eventFromDb.getAncestorGroup().getMembers().size(), is(3));
+        assertThat(eventFromDb.getAssignedMembers().size(),is(0));
 
 
     }
@@ -318,19 +332,20 @@ public class EventRepositoryTest {
         newEvent.setCustomReminderMinutes(12);
         assertTrue(newEvent.getReminderType().equals(EventReminderType.CUSTOM));
         newEvent.updateScheduledReminderTime();
-<<<<<<< HEAD
 
-        Instant updateTime = DateTimeUtil.restrictToDaytime(scheduleTime.minus(12, ChronoUnit.MINUTES),
-                Instant.now(), DateTimeUtil.getSAST());
 
-=======
+
+
+
+
         Instant updateTime = DateTimeUtil.restrictToDaytime(scheduleTime.minus(12, ChronoUnit.MINUTES),
                 scheduleTime, DateTimeUtil.getSAST());
->>>>>>> eda9232368e316370553a008d0f733638ef4217d
+
         assertThat(newEvent.getScheduledReminderTime(), is(updateTime));
         assertTrue(newEvent.getScheduledReminderTime().isAfter(Instant.now()));
         newEvent.setScheduledReminderActive(false);
         assertFalse(newEvent.isScheduledReminderActive());
+
 
 
         Event eventFromDb = eventRepository.findAll().iterator().next();
@@ -367,11 +382,11 @@ public class EventRepositoryTest {
         User newUser = userRepository.save(new User("098765"));
         Group newGroup = groupRepository.save(new Group("", newUser));
 
-<<<<<<< HEAD
-        Instant newTime = Instant.now().plus(35, ChronoUnit.MINUTES);
-=======
+
+
+
         Instant newTime = Instant.now().plus(48, ChronoUnit.HOURS);
->>>>>>> eda9232368e316370553a008d0f733638ef4217d
+
         Event eventCreate = eventRepository.save(new Meeting("", newTime,
                 newUser, newGroup, ""));
         assertNotNull(eventCreate.getUid());
@@ -380,18 +395,18 @@ public class EventRepositoryTest {
         eventCreate.setReminderType(EventReminderType.GROUP_CONFIGURED);
         assertTrue(eventCreate.getReminderType().equals(EventReminderType.GROUP_CONFIGURED));
         eventCreate.updateScheduledReminderTime();
-<<<<<<< HEAD
 
-        Instant timeReminderShouldBe = DateTimeUtil.restrictToDaytime(newTime.minus(30, ChronoUnit.MINUTES),
-                Instant.now(), DateTimeUtil.getSAST());
 
-        assertThat(eventCreate.getScheduledReminderTime(), is(timeReminderShouldBe));
-=======
+
+
+
+
+
         Instant timeReminderShouldBe = DateTimeUtil.restrictToDaytime(newTime.minus(30, ChronoUnit.MINUTES),
                 newTime, DateTimeUtil.getSAST());
         assertThat(eventCreate.getScheduledReminderTime(), is(timeReminderShouldBe));
 
->>>>>>> eda9232368e316370553a008d0f733638ef4217d
+
         assertTrue(eventCreate.getScheduledReminderTime().isAfter(Instant.now()));
         assertFalse(eventCreate.isScheduledReminderActive());
 
@@ -399,10 +414,10 @@ public class EventRepositoryTest {
         assertThat(eventFromDb.getScheduledReminderTime(), is(timeReminderShouldBe));
         assertTrue(eventFromDb.getScheduledReminderTime().isAfter(Instant.now()));
         assertFalse(eventFromDb.isScheduledReminderActive());
-<<<<<<< HEAD
 
-=======
->>>>>>> eda9232368e316370553a008d0f733638ef4217d
+
+
+
         eventFromDb.setReminderType(EventReminderType.DISABLED);
         assertThat(eventFromDb.getReminderType(), is(EventReminderType.DISABLED));
         eventFromDb.updateScheduledReminderTime();
@@ -411,12 +426,12 @@ public class EventRepositoryTest {
     }
 
 
-<<<<<<< HEAD
 
 
 
-=======
->>>>>>> eda9232368e316370553a008d0f733638ef4217d
+
+
+
     @Test
     public void shouldReturnEventsForGroupAfterDate() {
         User user = userRepository.save(new User("27827654321"));

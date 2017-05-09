@@ -13,13 +13,12 @@ import org.springframework.test.context.junit4.SpringRunner;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.StandaloneDatabaseConfig;
 import za.org.grassroot.core.domain.*;
-<<<<<<< HEAD
 import za.org.grassroot.core.enums.*;
-=======
+
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.UserMessagingPreference;
->>>>>>> eda9232368e316370553a008d0f733638ef4217d
+
 import za.org.grassroot.core.util.PhoneNumberUtil;
 
 import javax.transaction.Transactional;
@@ -63,11 +62,11 @@ public class UserRepositoryTest {
     private static final String number = "0821234560";
 
 
-<<<<<<< HEAD
 
 
-=======
->>>>>>> eda9232368e316370553a008d0f733638ef4217d
+
+
+
     @Test
     public void shouldCheckAndroidProfile() {
         assertThat(userRepository.count(), is(0L));
@@ -77,10 +76,10 @@ public class UserRepositoryTest {
         userProfile.setHasAndroidProfile(true);
         userRepository.save(userProfile);
 
-<<<<<<< HEAD
-=======
+
+
         assertThat(userRepository.count(), is(1L));
->>>>>>> eda9232368e316370553a008d0f733638ef4217d
+
         User fromDb = userRepository.findAll().iterator().next();
         assertNotNull(fromDb.getUid());
         assertTrue(fromDb.hasAndroidProfile());
@@ -167,7 +166,7 @@ public class UserRepositoryTest {
     }
 
     @Test
-<<<<<<< HEAD
+
     public void shouldSetAccounts() {
         User userAcc = new User("098765");
         assertNotNull(userAcc.getUid());
@@ -193,8 +192,8 @@ public class UserRepositoryTest {
     }
 
     @Test
-=======
->>>>>>> eda9232368e316370553a008d0f733638ef4217d
+
+
     public void shouldSetLanguageCode() {
         User userLanguage = new User("12345");
         assertNotNull(userLanguage.getUid());
@@ -208,7 +207,7 @@ public class UserRepositoryTest {
     }
 
     @Test
-<<<<<<< HEAD
+
     public void shouldGetAlertPreference() {
         User newUser = new User("13124");
         assertNotNull(newUser.getUid());
@@ -222,8 +221,8 @@ public class UserRepositoryTest {
     }
 
     @Test
-=======
->>>>>>> eda9232368e316370553a008d0f733638ef4217d
+
+
     public void shouldSavePhoneNumber() {
         User userNumber = new User("907856");
         assertNotNull(userNumber.getUid());
@@ -277,12 +276,12 @@ public class UserRepositoryTest {
         Membership newMember = new Membership(group, userMember, role, Instant.now());
         assertThat(newMember.getGroup().getGroupName(), is("Group"));
         assertThat(newMember.getUser().getPhoneNumber(), is("1234"));
-<<<<<<< HEAD
+
         assertThat(userMember.getMemberships().size(),is(0));
 
-=======
+
         //assertThat(userMember.getMemberships().);
->>>>>>> eda9232368e316370553a008d0f733638ef4217d
+
 
     }
 
