@@ -52,10 +52,24 @@ public class LocationRestControllerTest {
 
     @Test
     public void validRequestShouldReturnSuccess () throws Exception {
-//        String json = new String(readAllBytes(Paths.get(ClassLoader.getSystemResource("input_post_json_sample/dtt/valid.json").toURI())));
-//        when(service.retrieveTriggerJsonString(any(String.class))).thenReturn(json);
-
         String uri = "/api/location/list?latitude=1&longitude=1&radius=2&token=234324";
+        MvcResult result = mvc.perform(MockMvcRequestBuilders.get(uri).accept(MediaType.APPLICATION_JSON)).andReturn();
+        Assert.assertEquals("failure - expected HTTP status 200", 200, result.getResponse().getStatus());
+    }
+
+    @Test
+    public void radiusParameterShouldBeOptional () throws Exception {
+        String uri = "/api/location/list?latitude=1&longitude=1&token=234324";
+        MvcResult result = mvc.perform(MockMvcRequestBuilders.get(uri).accept(MediaType.APPLICATION_JSON)).andReturn();
+        Assert.assertEquals("failure - expected HTTP status 200", 200, result.getResponse().getStatus());
+    }
+
+    @Test
+    public void t () throws Exception {
+        //        String json = new String(readAllBytes(Paths.get(ClassLoader.getSystemResource("input_post_json_sample/dtt/valid.json").toURI())));
+        //        when(service.retrieveTriggerJsonString(any(String.class))).thenReturn(json);
+
+        String uri = "/api/location/list?latitude=30.5595&longitude=22.9375&token=234324";
         MvcResult result = mvc.perform(MockMvcRequestBuilders.get(uri).accept(MediaType.APPLICATION_JSON)).andReturn();
 
         int status = result.getResponse().getStatus();
