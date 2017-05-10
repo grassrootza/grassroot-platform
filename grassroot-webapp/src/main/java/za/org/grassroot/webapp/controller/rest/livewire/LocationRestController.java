@@ -22,7 +22,8 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * TODO: Create token logic
+ * TODO 1 - Create token logic
+ * TODO 2 - Deal correctly with the exceptions in this class
  */
 @RestController
 @RequestMapping(value = "/api/location", produces = MediaType.APPLICATION_JSON_VALUE)

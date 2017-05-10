@@ -24,6 +24,9 @@ import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * TODO 1 - Create a unit test for this class
+ */
 @Controller
 @RequestMapping(value = "/location")
 public class LocationController extends BaseController {
@@ -31,6 +34,7 @@ public class LocationController extends BaseController {
 
     // Radius in Km
     private static final int DEFAULT_RADIUS = 5;
+
     // Default position: Kliptown, South Africa
     private static final double defaultLatitude = -26.277636;
     private static final double defaultLongitude = 27.889045;
