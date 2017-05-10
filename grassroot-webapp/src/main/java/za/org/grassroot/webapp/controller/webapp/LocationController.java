@@ -29,7 +29,9 @@ import java.util.List;
 public class LocationController extends BaseController {
     private static final Logger logger = LoggerFactory.getLogger(LocationController.class);
 
+    // Radius in Km
     private static final int DEFAULT_RADIUS = 5;
+    // Default position: Kliptown, South Africa
     private static final double defaultLatitude = -26.277636;
     private static final double defaultLongitude = 27.889045;
 
@@ -59,7 +61,6 @@ public class LocationController extends BaseController {
         // Center the map on either the provided position, or user's last average location, or a default
         // and set the zoom level appropriately (lower for less precise measurements)
         GeoLocation location;
-        int zoom = 13;
 
         // Check parameters
         if (latitude != null && longitude != null) {
@@ -74,7 +75,6 @@ public class LocationController extends BaseController {
             }
             // Use the passed location
             location = new GeoLocation(latitude, longitude);
-            zoom = 13; // todo : calculate or pass as option
         } else if (geoLocationBroker.fetchUserLocation(user.getUid()) != null) {
             // Use User location
             PreviousPeriodUserLocation lastUserLocation = geoLocationBroker.fetchUserLocation(user.getUid());
@@ -82,7 +82,6 @@ public class LocationController extends BaseController {
         } else {
             // Use the default location
             location = new GeoLocation(defaultLatitude, defaultLongitude);
-            zoom = 11;
         }
         logger.info("The location {}", location);
 
@@ -126,7 +125,6 @@ public class LocationController extends BaseController {
         model.addAttribute("user", user);
         model.addAttribute("location", location);
         model.addAttribute("radius", searchRadius);
-        model.addAttribute("zoom", zoom);
         model.addAttribute("data", objectsToReturn);
 
         // Create an empty filter object to start using

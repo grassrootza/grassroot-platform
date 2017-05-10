@@ -97,49 +97,37 @@
     console.log("loading map ...");
 
     // Get parameters
-    var radius = [[${radius}]];
     var latitude = [[${location.latitude}]];
     var longitude = [[${location.longitude}]];
-    var zoom = [[${zoom}]];
+    // Radius in Km
+    var radius = [[${radius}]];
     if (radius == null) radius = 2;
+    // Try to calculate a zoom
+    var maxZoom = 18;
+    var zoom = maxZoom - radius;
 
     // Create map
     var map = L.map('map').setView([latitude, longitude], zoom);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 18,
+      maxZoom: maxZoom,
       attributionControl: false
     }).addTo(map);
 
     // Draw all marks
     var markers = [[${data}]];
-
-    for ( var i=0; i < markers.length; ++i )
+    for (var i=0; i < markers.length; ++i)
     {
       var m = markers[i];
-      L.marker( [m.latitude, m.longitude] )
-          .bindPopup( '<a href="' + m.url + '" target="_blank">' + m.name + '</a> <br><br>' + m.description )
-          .addTo( map );
+      L.marker([m.latitude, m.longitude])
+          .bindPopup('<a href="' + m.url + '" target="_blank">' + m.name + '</a> <br><br>' + m.description)
+          .addTo(map);
     }
 
-    // Find new point
-    var r_earth = 6378.0; // Earth radius in Km
-    var pi = 3.14159265359;
-    // Coordinate offsets in radians
-    // Radius in Km
-    var dLat = radius / r_earth;
-    var dLon = radius / (r_earth * Math.cos(pi * latitude / 180.0));
-    var convert = 180.0 / pi;
-    var new_latitude  = latitude  + dLat * convert;
-    var new_longitude = longitude + dLon * convert;
-
-    // Convert lat,long to pixel
-    var point = map.latLngToContainerPoint([new_latitude, new_longitude]);
-    // Calculate the circle radius (need to apply an scale)
-    radius = point.x * 1.5;
-
-    // Draw a radius
-    L.circle([latitude, longitude], {radius: radius, fill: true}).addTo(map);
+    // Radius in Km, convert to meters
+    radius *= 1000.0;
+    // Draw a radius in meters
+    L.circle([latitude, longitude], radius, {fill: true}).addTo(map);
 
     // Draw the scale
     var graphicScale = L.control.graphicScale({
