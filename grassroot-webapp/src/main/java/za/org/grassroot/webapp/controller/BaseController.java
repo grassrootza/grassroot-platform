@@ -7,6 +7,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.context.support.MessageSourceAccessor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -21,13 +23,11 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.util.LocalDateTimePropertyEditor;
+import com.amazonaws.util.json.JSONObject;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 
-/**
- * @author Lesetse Kimwaga
- */
 @Controller
 public class BaseController {
 
@@ -175,6 +175,26 @@ public class BaseController {
      * */
     private String getText(String msgKey, Object[] args, Locale locale) {
         return messageSourceAccessor.getMessage("web." + msgKey, args, locale);
+    }
+
+    protected ResponseEntity jsonErrorResponse(HttpStatus code, String message) {
+        try {
+            JSONObject response = new JSONObject();
+            JSONObject errorResponse = new JSONObject();
+
+            errorResponse.put("code", code.toString());
+            errorResponse.put("message", message);
+
+            response.put("error", errorResponse);
+
+            return new ResponseEntity<>(response.toString(), code);
+        }
+        catch (Exception e) {
+            return new ResponseEntity<>(
+                    "{\"error\":{ \"code\": 500, \"message\":\"KPI: CONTROLLER - INTERNAL ERROR: Internal Server " +
+                            "Error\"}}",
+                    HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
 }
