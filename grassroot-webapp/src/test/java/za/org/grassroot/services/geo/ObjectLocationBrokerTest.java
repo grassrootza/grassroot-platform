@@ -54,7 +54,6 @@ public class ObjectLocationBrokerTest {
     public void validRequestShouldBeSuccessfulWhenFetchingGroupLocations () throws Exception {
         List<ObjectLocation> groupLocations = objectLocationBroker.fetchGroupLocations(new GeoLocation(53.4808, 2.2426), 10);
 
-        verify(mockQuery, times(1)).setParameter(anyString(), any());
         verify(mockQuery, times(1)).getResultList();
         verify(mockEntityManager, times(1)).createQuery(anyString(), eq(ObjectLocation.class));
 
@@ -95,7 +94,6 @@ public class ObjectLocationBrokerTest {
     public void validRequestShouldBeSuccessfulWhenFetchingMeetingLocations () throws Exception {
         List<ObjectLocation> groupLocations = objectLocationBroker.fetchMeetingLocations(new GeoLocation(53.4808, 2.2426), 10);
 
-        verify(mockQuery, times(1)).setParameter(anyString(), any());
         verify(mockQuery, times(1)).getResultList();
         verify(mockEntityManager, times(1)).createQuery(anyString(), eq(ObjectLocation.class));
 
