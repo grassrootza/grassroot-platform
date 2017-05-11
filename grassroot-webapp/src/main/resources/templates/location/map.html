@@ -104,9 +104,11 @@
     // Get parameters
     var latitude = [[${location.latitude}]];
     var longitude = [[${location.longitude}]];
+
     // Radius in Km
     var originalRadius = [[${radius}]];
     if (originalRadius == null) originalRadius = 2;
+
     // Try to calculate a zoom, if needed
     var maxZoom = 18;
     var zoom = [[${zoom}]];
@@ -144,15 +146,7 @@
       ,showSubunits: false
     }).addTo(map);
 
-//    map.on('click', function(e) {
-//      var popLocation= e.latlng;
-//      var popup = L.popup()
-//          .setLatLng(popLocation)
-//          .setContent('<p>Hello world!<br />This is a nice popup.</p>')
-//          .openOn(map);
-//    });
-
-
+    // TODO: The code below is not working well - create better approach
     // Add to map the 'moveend' event
 //    map.on('moveend', function(e) {
 //      var center = map.getCenter();
