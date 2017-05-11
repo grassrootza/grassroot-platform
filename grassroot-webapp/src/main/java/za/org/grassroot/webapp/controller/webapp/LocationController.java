@@ -52,6 +52,7 @@ public class LocationController extends BaseController {
     public String search (@RequestParam(required = false) Integer radius,
                           @RequestParam(required = false) Double latitude,
                           @RequestParam(required = false) Double longitude,
+                          @RequestParam(required = false) Double zoom,
                           Model model,
                           HttpServletRequest request, RedirectAttributes attributes) {
 
@@ -130,6 +131,7 @@ public class LocationController extends BaseController {
         model.addAttribute("location", location);
         model.addAttribute("radius", searchRadius);
         model.addAttribute("data", objectsToReturn);
+        model.addAttribute("zoom", zoom);
 
         // Create an empty filter object to start using
         model.addAttribute("filter", new GeoFilterFormModel(location, searchRadius));
