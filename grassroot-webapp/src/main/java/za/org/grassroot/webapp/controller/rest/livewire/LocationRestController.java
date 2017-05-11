@@ -19,9 +19,6 @@ import za.org.grassroot.webapp.util.RestUtil;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * TODO 1 - Create token logic
- */
 @RestController
 @RequestMapping(value = "/api/location", produces = MediaType.APPLICATION_JSON_VALUE)
 public class LocationRestController extends BaseController {
@@ -43,6 +40,7 @@ public class LocationRestController extends BaseController {
                                                    @RequestParam(value = "radius", required = false) Integer radius,
                                                    @RequestParam(value = "token", required = true) String token) {
 
+        //TODO: token!
         logger.info("Attempting to list events locations...");
 
         // Validate parameters
