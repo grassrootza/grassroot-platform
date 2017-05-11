@@ -1,6 +1,10 @@
 package za.org.grassroot.services.geo;
 
+import za.org.grassroot.core.domain.Address;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
+import za.org.grassroot.core.enums.LocationSource;
+import za.org.grassroot.core.enums.UserInterfaceType;
 
 import java.util.List;
 import java.util.Objects;
@@ -45,5 +49,19 @@ public class GeoLocationUtils {
 		double midPointLatitude = Math.toDegrees(centralLatitude * 180 / Math.PI);
 		double midPointLongitude = Math.toDegrees(centralLongitude * 180 / Math.PI);
 		return new GeoLocation(midPointLatitude, midPointLongitude);
+	}
+
+	public static Address convertGeoCodeToAddress(InvertGeoCodeAddress resultAddress, User user,
+												  GeoLocation location, UserInterfaceType interfaceType) {
+		Objects.requireNonNull(resultAddress);
+		Address address = new Address(user,
+				resultAddress.getHouseNumber(),
+				resultAddress.getRoad(),
+				resultAddress.getSuburb(), true);
+		if (location != null) {
+			address.setLocation(location);
+			address.setLocationSource(LocationSource.convertFromInterface(interfaceType));
+		}
+		return address;
 	}
 }

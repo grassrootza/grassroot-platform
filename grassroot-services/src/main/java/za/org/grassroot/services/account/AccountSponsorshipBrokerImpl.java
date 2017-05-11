@@ -204,19 +204,18 @@ public class AccountSponsorshipBrokerImpl implements AccountSponsorshipBroker {
 
     private void handleAbortedRequest(AccountSponsorshipRequest request) {
         DebugUtil.transactionRequired("");
-
         if (!AssocRequestStatus.APPROVED.equals(request.getStatus())) {
-            throw new IllegalArgumentException("Can only abort an approved request!");
+            logger.info("Can only abort an approved request!");
+        } else {
+            request.setStatus(AssocRequestStatus.PENDING); // resets to this
+            requestEventRepository.save(new AssociationRequestEvent(AssocRequestEventType.ABORTED, request,
+                    request.getDestination(), Instant.now()));
+
+            emailSendingBroker.sendMail(accountEmailService.sponsorshipReminderEmailSponsor(request));
+
+            accountEmailService.sponsorshipReminderEmailRequestor(request)
+                    .forEach(emailSendingBroker::sendMail);
         }
-
-        request.setStatus(AssocRequestStatus.PENDING); // resets to this
-        requestEventRepository.save(new AssociationRequestEvent(AssocRequestEventType.ABORTED, request,
-                request.getDestination(), Instant.now()));
-
-        emailSendingBroker.sendMail(accountEmailService.sponsorshipReminderEmailSponsor(request));
-
-        accountEmailService.sponsorshipReminderEmailRequestor(request)
-                .forEach(emailSendingBroker::sendMail);
     }
 
     @Override

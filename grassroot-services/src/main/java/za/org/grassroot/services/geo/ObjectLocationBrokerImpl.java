@@ -102,17 +102,12 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
         return locations;
     }
 
-    // todo : use to generate an Address entity, once that has been detached from users
     @Override
     public String getReverseGeoCodedAddress(GeoLocation location) {
+        Objects.requireNonNull(location);
         try {
-            Objects.requireNonNull(location);
-            URIBuilder uriBuilder = new URIBuilder(geocodingApiUrl);
-            uriBuilder.addParameter("format", "json");
-            uriBuilder.addParameter("lat", String.valueOf(location.getLatitude()));
-            uriBuilder.addParameter("lon", String.valueOf(location.getLongitude()));
-            uriBuilder.addParameter("zoom", "18");
-            InvertGeoCodeSimpleResult result = restTemplate.getForObject(uriBuilder.build(), InvertGeoCodeSimpleResult.class);
+            InvertGeoCodeResult result = restTemplate.getForObject(
+                    invertGeoCodeRequestURI(location).build(), InvertGeoCodeResult.class);
             return result.getDisplayName();
         } catch (URISyntaxException|NullPointerException|HttpClientErrorException e) {
             e.printStackTrace();
@@ -120,6 +115,26 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
         }
     }
 
+    @Override
+    public InvertGeoCodeResult getReviseGeoCodeAddressFullGeoLocation(GeoLocation location) {
+        try {
+            return restTemplate.getForObject(
+                    invertGeoCodeRequestURI(location).build(),
+                    InvertGeoCodeResult.class);
+        } catch (URISyntaxException|NullPointerException|HttpClientErrorException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private URIBuilder invertGeoCodeRequestURI(GeoLocation location) throws URISyntaxException {
+        URIBuilder uriBuilder = new URIBuilder(geocodingApiUrl);
+        uriBuilder.addParameter("format", "json");
+        uriBuilder.addParameter("lat", String.valueOf(location.getLatitude()));
+        uriBuilder.addParameter("lon", String.valueOf(location.getLongitude()));
+        uriBuilder.addParameter("zoom", "18");
+        return uriBuilder;
+    }
 
     /**
      * TODO: 1) Use the user restrictions and search for public groups/meetings

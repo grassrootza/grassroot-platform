@@ -107,7 +107,6 @@ public class TodoController extends BaseController {
     }
 
     // todo : abstract & consolidate these two
-
     @RequestMapping(value = "record", method = RequestMethod.POST)
     public String recordTodo(@ModelAttribute("entry") TodoWrapper todoEntry,
                              RedirectAttributes redirectAttributes, HttpServletRequest request) {

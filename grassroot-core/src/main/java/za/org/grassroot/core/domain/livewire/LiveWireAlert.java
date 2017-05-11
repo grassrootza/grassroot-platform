@@ -1,5 +1,6 @@
 package za.org.grassroot.core.domain.livewire;
 
+import org.hibernate.annotations.Type;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Meeting;
@@ -68,8 +69,16 @@ public class LiveWireAlert {
     private Instant sendTime;
 
     @Basic
+    @Column(name = "reviewed")
+    private boolean reviewed;
+
+    @Basic
     @Column(name = "sent")
     private boolean sent;
+
+    @Column(name = "tags")
+    @Type(type = "za.org.grassroot.core.util.StringArrayUserType")
+    private String[] tags;
 
     @Embedded
     @AttributeOverrides({
@@ -240,6 +249,22 @@ public class LiveWireAlert {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public boolean isReviewed() {
+        return reviewed;
+    }
+
+    public void setReviewed(boolean reviewed) {
+        this.reviewed = reviewed;
+    }
+
+    public String[] getTags() {
+        return tags;
+    }
+
+    public void setTags(String[] tags) {
+        this.tags = tags;
     }
 
     public void setSendTime(Instant sendTime) {

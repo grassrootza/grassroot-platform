@@ -22,6 +22,8 @@ import za.org.grassroot.integration.exception.LocationNotAvailableException;
 import za.org.grassroot.integration.exception.LocationTrackingImpossibleException;
 import za.org.grassroot.integration.location.UssdLocationServicesBroker;
 import za.org.grassroot.services.SafetyEventBroker;
+import za.org.grassroot.services.geo.GeoLocationUtils;
+import za.org.grassroot.services.geo.InvertGeoCodeResult;
 import za.org.grassroot.services.geo.ObjectLocationBroker;
 import za.org.grassroot.services.group.GroupPermissionTemplate;
 import za.org.grassroot.services.group.GroupQueryBroker;
@@ -174,8 +176,6 @@ public class USSDSafetyGroupController extends USSDController {
 
     /*
     SECTION: Request and grant permission to track location
-    todo : think through menu flow for after-approved
-    todo : enable viewing and override of geolocation tagging
      */
 
     @RequestMapping(value = safetyGroupPath + "location/request")
@@ -227,29 +227,84 @@ public class USSDSafetyGroupController extends USSDController {
         User user = userManager.findByInputNumber(msisdn);
         try {
             GeoLocation location = locationServicesBroker.getUssdLocationForUser(user.getUid());
-
-            final String reverseGeoAddressFull = objectLocationBroker.getReverseGeoCodedAddress(location);
-            int firstComma = reverseGeoAddressFull.indexOf(",");
-            int secondComma = reverseGeoAddressFull.indexOf(",", firstComma + 1);
-            final String reverseGeoAddressCrop = firstComma == -1 ? reverseGeoAddressFull :
-                    firstComma < 10 ?
-                    reverseGeoAddressFull.substring(0, secondComma) :
-                    reverseGeoAddressFull.substring(0, firstComma);
-
+            final InvertGeoCodeResult result = objectLocationBroker.getReviseGeoCodeAddressFullGeoLocation(location);
+            Address address = GeoLocationUtils.convertGeoCodeToAddress(result.getAddress(), user,
+                    location, UserInterfaceType.USSD);
+            final String addressUid = addressBroker.storeAddressRaw(user.getUid(), address, false);
             final NumberFormat coordFormat = new DecimalFormat("#.##");
             final String prompt = getMessage(thisSection, "tracking.current", promptKey, new String[] {
                     coordFormat.format(location.getLatitude()),
                     coordFormat.format(location.getLongitude()),
-                    reverseGeoAddressCrop
+                    getShortDescription(result)
             }, user);
-            // todo : add in ability to change / correct
-            return menuBuilder(new USSDMenu(prompt, optionsHomeExit(user, true)));
-        } catch (Exception e) { // todo : decent exception handling, and back menu, etc
+            USSDMenu menu = new USSDMenu(prompt);
+            menu.addMenuOption(locationUrl("current/confirm", addressUid, location),
+                    getMessage("options.yes", user));
+            menu.addMenuOption(locationUrl("current/change", addressUid, location),
+                    getMessage("options.no", user));
+            return menuBuilder(menu);
+        } catch (Exception e) {
             e.printStackTrace();
             final String errorP = getMessage(thisSection, "tracking.current", "error", user);
-            return menuBuilder(new USSDMenu(errorP, optionsHomeExit(user, true)));
+            USSDMenu menu = new USSDMenu(errorP);
+            menu.addMenuOption(safetyMenus + startMenu, getMessage("options.back", user));
+            menu.addMenuOption(startMenu, getMessage("options.back.main", user));
+            return menuBuilder(menu);
         }
     }
+
+    private String locationUrl(String menu, String addressUid, GeoLocation location) {
+        return safetyMenus + "location/" + menu + "?addressUid=" + addressUid +
+                "&latitude=" + location.getLatitude() + "&longitude=" + location.getLongitude();
+    }
+
+    @RequestMapping(value = safetyGroupPath + "location/current/confirm")
+    public Request respondToCurrentLocation(@RequestParam String msisdn, @RequestParam String addressUid,
+                                            @RequestParam double latitude, @RequestParam double longitude) throws URISyntaxException {
+        User user = userManager.findByInputNumber(msisdn);
+        GeoLocation location = new GeoLocation(latitude, longitude);
+        addressBroker.confirmLocationAddress(user.getUid(), addressUid, location, UserInterfaceType.USSD);
+        return menuBuilder(new USSDMenu(getMessage(thisSection, "current.confirm", promptKey, user),
+                optionsHomeExit(user, true)));
+    }
+
+    @RequestMapping(value = safetyGroupPath + "location/current/change")
+    public Request changeCurrentLocation(@RequestParam String msisdn, @RequestParam String addressUid,
+                                         @RequestParam double latitude, @RequestParam double longitude) throws URISyntaxException {
+        User user = userManager.findByInputNumber(msisdn);
+        GeoLocation location = new GeoLocation(latitude, longitude);
+        USSDMenu menu = new USSDMenu(getMessage(thisSection, "current.change", promptKey, user));
+        menu.setFreeText(true);
+        menu.setNextURI(locationUrl("current/describe", addressUid, location));
+        return menuBuilder(menu);
+    }
+
+    @RequestMapping(value = safetyGroupPath + "location/current/describe")
+    public Request describeCurrentLocation(@RequestParam String msisdn, @RequestParam String addressUid,
+                                           @RequestParam double latitude, @RequestParam double longitude,
+                                           @RequestParam String request) throws URISyntaxException {
+        // todo : validate input
+        User user = userManager.findByInputNumber(msisdn);
+        addressBroker.reviseLocationAddress(user.getUid(), addressUid, new GeoLocation(latitude, longitude),
+                request, UserInterfaceType.USSD);
+        return menuBuilder(new USSDMenu(getMessage(thisSection, "current.change", "done", request, user),
+                optionsHomeExit(user, false)));
+    }
+
+    private String getShortDescription(InvertGeoCodeResult result) {
+        final String reverseGeoAddressFull = result.getDisplayName();
+        int firstComma = reverseGeoAddressFull.indexOf(",");
+        int secondComma = reverseGeoAddressFull.indexOf(",", firstComma + 1);
+        return firstComma == -1 ? reverseGeoAddressFull : firstComma < 10 ?
+                        reverseGeoAddressFull.substring(0, secondComma) :
+                        reverseGeoAddressFull.substring(0, firstComma);
+    }
+
+    /* @RequestMapping(value = safetyGroupPath + "location/current/response")
+    public Request respondToCurrentLocation(@RequestParam String msisdn,
+                                            @RequestParam String addressUid) {
+
+    }*/
 
     /*
     SECTION: Creating a safety group

@@ -18,6 +18,7 @@ import za.org.grassroot.services.geo.ObjectLocationBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.GeoFilterFormModel;
 
+import javax.servlet.http.HttpServletRequest;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,7 +43,8 @@ public class LocationController extends BaseController {
     @RequestMapping(value = "/location", method = RequestMethod.GET)
     public String search(@RequestParam(required = false) Integer radius,
                          @RequestParam(required = false) Double latitude,
-                         @RequestParam(required = false) Double longitude, Model model) {
+                         @RequestParam(required = false) Double longitude,
+                         HttpServletRequest request, Model model) {
 
         // Check radius
         Integer searchRadius = (radius == null ? DEFAULT_RADIUS : radius);
@@ -58,9 +60,16 @@ public class LocationController extends BaseController {
 
         // Check parameters
         if (latitude != null && longitude != null) {
-            // Use the passed location
+            // Check values
+            if (latitude < -90.0 || latitude > 90) {
+                addMessage(model, MessageType.ERROR, "location.latitude.error", request);
+                return "location/map";
+            }
+            if (longitude < -180.0 || longitude > 180.0) {
+                addMessage(model, MessageType.ERROR, "location.longitude.error", request);
+                return "location/map";
+            }
             location = new GeoLocation(latitude, longitude);
-            zoom = 13; // todo : calculate or pass as option
         } else if (geoLocationBroker.fetchUserLocation(user.getUid()) != null) {
             // Use User location
             PreviousPeriodUserLocation lastUserLocation = geoLocationBroker.fetchUserLocation(user.getUid());

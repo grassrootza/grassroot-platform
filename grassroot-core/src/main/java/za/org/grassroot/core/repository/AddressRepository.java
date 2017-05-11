@@ -9,10 +9,8 @@ import za.org.grassroot.core.domain.User;
  */
 public interface AddressRepository extends JpaRepository<Address, Long> {
 
-    Address findOneByResident(User user);
+    Address findOneByResidentAndPrimaryTrue(User user);
 
     Address findOneByUid(String uid);
-
-
 
 }

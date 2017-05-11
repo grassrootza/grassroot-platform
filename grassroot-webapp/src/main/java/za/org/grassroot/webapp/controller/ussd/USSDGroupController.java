@@ -171,12 +171,11 @@ public class USSDGroupController extends USSDController {
             String joiningCode = "*134*1994*" + createdGroup.getGroupTokenCode() + "#";
             cacheManager.putUssdMenuForUser(inputNumber, saveGroupMenuWithInput(createGroupMenu + doSuffix, createdGroup.getUid(), groupName, false));
 
-            // todo: restore and finish these
-            // if (!locationRequestEnabled) {
+            if (!locationRequestEnabled) {
                 menu = postCreateOptionsNoLocation(createdGroup.getUid(), groupName, joiningCode, user);
-            /*} else {
+            } else {
                 menu = postCreateOptionsWithLocation(createdGroup.getUid(), joiningCode, user);
-            }*/
+            }
         }
         return menuBuilder(menu);
     }
@@ -207,13 +206,24 @@ public class USSDGroupController extends USSDController {
     @RequestMapping(value = groupPath + "public")
     public Request setGroupPublic(@RequestParam(phoneNumber) String inputNumber, @RequestParam(groupUidParam) String groupUid,
                                   @RequestParam boolean useLocation) throws  URISyntaxException {
-        return null;
+        User user = userManager.findByInputNumber(inputNumber);
+        Group group = groupBroker.load(groupUid);
+        groupBroker.updateDiscoverable(user.getUid(), groupUid, true, inputNumber);
+        if (useLocation) {
+            geoLocationBroker.logUserUssdPermission(user.getUid(), groupUid, JpaEntityType.GROUP, false);
+        }
+        return menuBuilder(postCreateOptionsNoLocation(groupUid, group.getName(),
+                group.getGroupTokenCode(), user));
     }
 
     @RequestMapping(value = groupPath + "private")
     public Request setGroupPrivate(@RequestParam(phoneNumber) String inputNumber, @RequestParam(groupUidParam) String groupUid)
         throws URISyntaxException {
-        return null;
+        User user = userManager.findByInputNumber(inputNumber);
+        Group group = groupBroker.load(groupUid);
+        groupBroker.updateDiscoverable(user.getUid(), groupUid, false, null);
+        return menuBuilder(postCreateOptionsNoLocation(groupUid, group.getName(),
+                group.getGroupTokenCode(), user));
     }
 
     @RequestMapping(value = groupPath + closeGroupToken)

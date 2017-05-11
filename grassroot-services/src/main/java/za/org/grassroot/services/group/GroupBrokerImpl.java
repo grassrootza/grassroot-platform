@@ -190,8 +190,10 @@ public class GroupBrokerImpl implements GroupBroker {
     }
 
     private void addGroupMembersToChatAfterCommit(Group group, User user) {
-        AfterTxCommitTask afterTxCommitTask = () -> groupChatService.addAllGroupMembersToChat(group, user);
-        applicationEventPublisher.publishEvent(afterTxCommitTask);
+        if (groupChatService != null) {
+            AfterTxCommitTask afterTxCommitTask = () -> groupChatService.addAllGroupMembersToChat(group, user);
+            applicationEventPublisher.publishEvent(afterTxCommitTask);
+        }
     }
 
     @Override

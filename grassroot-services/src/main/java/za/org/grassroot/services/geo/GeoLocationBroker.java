@@ -18,7 +18,7 @@ public interface GeoLocationBroker {
 	void logUserLocation(String userUid, double latitude, double longitude, Instant time, UserInterfaceType interfaceType);
 
 	// means user has given us permission to log their location, through some action, so record it, and update entity
-	void logUserUssdPermission(String userUid, String entityToUpdateUid, JpaEntityType entityType);
+	void logUserUssdPermission(String userUid, String entityToUpdateUid, JpaEntityType entityType, boolean singleTrackPermission);
 
 	void calculatePreviousPeriodUserLocations(LocalDate localDate);
 

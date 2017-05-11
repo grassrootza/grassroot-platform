@@ -89,9 +89,12 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
     public GroupResponseWrapper(Group group, GroupLog groupLog, Role role, boolean hasTasks){
         this(group, role, hasTasks);
         this.lastChangeType = GroupChangeType.getChangeType(groupLog);
-        this.lastChangeDescription = (groupLog.getDescription()!=null) ? groupLog.getDescription() : group.getDescription();
-        this.dateTime = groupLog.getCreatedDateTime().atZone(DateTimeUtil.getSAST()).toLocalDateTime();
-        this.lastMajorChangeMillis = groupLog.getCreatedDateTime().toEpochMilli();
+        this.lastChangeDescription = (groupLog != null && groupLog.getDescription()!=null) ?
+                groupLog.getDescription() : group.getDescription();
+        this.dateTime = groupLog == null ? group.getCreatedDateTimeAtSAST().toLocalDateTime() :
+                groupLog.getCreatedDateTime().atZone(DateTimeUtil.getSAST()).toLocalDateTime();
+        this.lastMajorChangeMillis = groupLog == null ? group.getCreatedDateTime().toEpochMilli() :
+                groupLog.getCreatedDateTime().toEpochMilli();
     }
 
     public String getGroupUid() {

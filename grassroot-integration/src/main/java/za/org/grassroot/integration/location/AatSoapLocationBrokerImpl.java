@@ -81,14 +81,16 @@ public class AatSoapLocationBrokerImpl implements UssdLocationServicesBroker {
 
     @Override
     @Transactional
-    public boolean removeUssdLocationLookup(String userUid, UserInterfaceType revokedThroughInterface) {
+    public boolean removeUssdLocationLookup(String userUid, UserInterfaceType interfaceType) {
         User user = userRepository.findOneByUid(userUid);
         logger.info("About to remove a user from LBS lookup, for phone: {}", user.getPhoneNumber());
-        userLogRepository.save(new UserLog(userUid, UserLogType.REVOKED_LOCATION_PERMISSION, "", revokedThroughInterface));
+        UserLogType logType = UserInterfaceType.SYSTEM.equals(interfaceType) ?
+                UserLogType.ONCE_OFF_LBS_REVERSAL : UserLogType.REVOKED_LOCATION_PERMISSION;
+        userLogRepository.save(new UserLog(userUid, logType, "", interfaceType));
         RemoveAllowedMsisdnResponse response = aatSoapClient.removeAllowedMsisdn(user.getPhoneNumber());
         if (isRemoveRequestSuccessful(response)) {
             userLogRepository.save(new UserLog(userUid, UserLogType.LOCATION_PERMISSION_REMOVED,
-                    "message from server", revokedThroughInterface));
+                    "message from server", interfaceType));
             return true;
         } else {
             return false;

@@ -28,6 +28,7 @@ public enum UserLogType {
     USED_PROMOTIONAL_CODE("user entered using a promotional code"),
     GAVE_LOCATION_PERMISSION("user gave permission to track location"),
     REVOKED_LOCATION_PERMISSION("user revoked permission to track location"),
+    ONCE_OFF_LBS_REVERSAL("LBS permission removed automatically after once off request"),
     LOCATION_PERMISSION_ENABLED("msisdn added to ussd location tracking service"),
     LOCATION_PERMISSION_REMOVED("msisdn removed from location tracking service");
 
