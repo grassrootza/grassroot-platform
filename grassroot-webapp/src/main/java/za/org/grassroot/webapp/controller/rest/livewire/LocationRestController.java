@@ -3,7 +3,6 @@ package za.org.grassroot.webapp.controller.rest.livewire;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -72,7 +71,7 @@ public class LocationRestController extends BaseController {
             logger.info("KPI: POST - BAD REQUEST: " + e.getMessage());
             logger.info("Exception class: " + e.getClass());
             logger.info("Stack trace: ", e);
-            return jsonErrorResponse(HttpStatus.BAD_REQUEST, e.getMessage());
+            return RestUtil.errorResponse(RestMessage.INVALID_PARAMETER);
         }
 
         // Save groups

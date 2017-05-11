@@ -23,7 +23,6 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.util.LocalDateTimePropertyEditor;
-import com.amazonaws.util.json.JSONObject;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.*;
@@ -176,25 +175,4 @@ public class BaseController {
     private String getText(String msgKey, Object[] args, Locale locale) {
         return messageSourceAccessor.getMessage("web." + msgKey, args, locale);
     }
-
-    protected ResponseEntity jsonErrorResponse(HttpStatus code, String message) {
-        try {
-            JSONObject response = new JSONObject();
-            JSONObject errorResponse = new JSONObject();
-
-            errorResponse.put("code", code.toString());
-            errorResponse.put("message", message);
-
-            response.put("error", errorResponse);
-
-            return new ResponseEntity<>(response.toString(), code);
-        }
-        catch (Exception e) {
-            return new ResponseEntity<>(
-                    "{\"error\":{ \"code\": 500, \"message\":\"KPI: CONTROLLER - INTERNAL ERROR: Internal Server " +
-                            "Error\"}}",
-                    HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
 }

@@ -12,12 +12,6 @@ buildscript {
 
 apply plugin: 'org.springframework.boot'
 
-dependencyManagement {
-    imports {
-        mavenBom 'com.amazonaws:aws-java-sdk-bom:1.10.77'
-    }
-}
-
 dependencies {
     compile project(':grassroot-core')
     compile project(':grassroot-services')
@@ -45,8 +39,6 @@ dependencies {
     compile group: 'org.springframework.boot', name: 'spring-boot-devtools', version: libs.springBootVersion
 
     compile group: 'commons-validator', name: 'commons-validator', version: '1.5.1'
-
-    compile 'com.amazonaws:aws-java-sdk-s3'
 
     testCompile group: 'xmlunit', name: 'xmlunit', version: '1.6'
     testCompile(group: 'org.powermock', name: 'powermock-api-mockito', version: '1.6.5') {
