@@ -44,7 +44,6 @@
 
 </section>
 
-<!-- note: still a bit weird in that it removes the navbar when you change zoom, but at least getting there -->
 <main layout:fragment="content" class="map-container">
   <div class="container map-container" id="map_container">
     <div id="sidebar">
@@ -108,11 +107,14 @@
     var latitude = [[${location.latitude}]];
     var longitude = [[${location.longitude}]];
     // Radius in Km
-    var radius = [[${radius}]];
-    if (radius == null) radius = 2;
-    // Try to calculate a zoom
+    var originalRadius = [[${radius}]];
+    if (originalRadius == null) originalRadius = 2;
+    // Try to calculate a zoom, if needed
     var maxZoom = 18;
-    var zoom = maxZoom - radius;
+    var zoom = [[${zoom}]];
+
+    if (zoom == null) zoom = maxZoom - originalRadius;
+
 
     // Create map
     var map = L.map('map').setView([latitude, longitude], zoom);
@@ -133,7 +135,8 @@
     }
 
     // Radius in Km, convert to meters
-    radius *= 1000.0;
+    var radius = originalRadius * 1000.0;
+
     // Draw a radius in meters
     L.circle([latitude, longitude], radius, {fill: true}).addTo(map);
 
@@ -143,6 +146,16 @@
       ,fill: 'fill'
       ,showSubunits: false
     }).addTo(map);
+
+    // Add to map the 'moveend' event
+    map.on('moveend', function(e) {
+      var center = map.getCenter();
+      window.location = '/location'
+      + '?latitude=' + center.lat
+      + '&longitude=' + center.lng
+      + '&radius=' + originalRadius
+      + '&zoom=' + map.getZoom();
+    });
 
     /*]]>*/
   </script>
