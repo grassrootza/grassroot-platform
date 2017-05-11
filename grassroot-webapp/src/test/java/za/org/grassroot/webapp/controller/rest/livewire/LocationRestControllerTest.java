@@ -1,5 +1,6 @@
 package za.org.grassroot.webapp.controller.rest.livewire;
 
+import com.jayway.jsonpath.JsonPath;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -19,6 +20,7 @@ import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.geo.ObjectLocationBroker;
 import za.org.grassroot.webapp.controller.rest.RestAbstractUnitTest;
 
+import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -66,14 +68,49 @@ public class LocationRestControllerTest extends RestAbstractUnitTest {
     }
 
     @Test
-    public void t () throws Exception {
-        //        String json = new String(readAllBytes(Paths.get(ClassLoader.getSystemResource("input_post_json_sample/dtt/valid.json").toURI())));
-        //        when(service.retrieveTriggerJsonString(any(String.class))).thenReturn(json);
+    public void invalidLatitudeShouldReturn400 () throws Exception {
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders
+                .get(uri + "?latitude=200&longitude=0&radius=3&token=234324")
+                .accept(MediaType.APPLICATION_JSON))
+                .andReturn();
 
-        List<ObjectLocation> locationList = new ArrayList<>();
-        locationList.add(new ObjectLocation("uuid", "name", 1, 1, 1, "type", true));
+        Assert.assertEquals("failure - expected HTTP status 400", 400, result.getResponse().getStatus());
+    }
 
-        when(objectLocationBroker.fetchGroupLocations(any(GeoLocation.class), any(Integer.class))).thenReturn(locationList);
+    @Test
+    public void invalidLongitudeShouldReturn400 () throws Exception {
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders
+                .get(uri + "?latitude=0&longitude=200&radius=3&token=234324")
+                .accept(MediaType.APPLICATION_JSON))
+                .andReturn();
+
+        Assert.assertEquals("failure - expected HTTP status 400", 400, result.getResponse().getStatus());
+    }
+
+    @Test
+    public void invalidRadiusShouldReturn400 () throws Exception {
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders
+                .get(uri + "?latitude=0&longitude=0&radius=0&token=234324")
+                .accept(MediaType.APPLICATION_JSON))
+                .andReturn();
+
+        Assert.assertEquals("failure - expected HTTP status 400", 400, result.getResponse().getStatus());
+    }
+
+    @Test
+    public void erroringFetchMeetingLocationsShouldReturn500 () throws Exception {
+        when(objectLocationBroker.fetchMeetingLocations(any(GeoLocation.class), any(Integer.class))).thenThrow(InvalidParameterException.class);
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders
+                .get(uri + "?latitude=0&longitude=0&radius=3&token=234324")
+                .accept(MediaType.APPLICATION_JSON))
+                .andReturn();
+
+        Assert.assertEquals("failure - expected HTTP status 500", 500, result.getResponse().getStatus());
+    }
+
+    @Test
+    public void emptyLocationsShouldReturnEmptyResponse () throws Exception {
+        when(objectLocationBroker.fetchMeetingLocations(any(GeoLocation.class), any(Integer.class))).thenReturn(new ArrayList<>());
 
         MvcResult result = mockMvc.perform(
                 MockMvcRequestBuilders.get(uri)
@@ -84,9 +121,34 @@ public class LocationRestControllerTest extends RestAbstractUnitTest {
                         .accept(MediaType.APPLICATION_JSON))
                 .andReturn();
 
-        int status = result.getResponse().getStatus();
-        System.out.println(result.getResponse());
+        Assert.assertEquals("failure - expected HTTP status 200", 200, result.getResponse().getStatus());
+        Assert.assertTrue("failure - expected HTTP response body to contain content",
+                result.getResponse().getContentAsString().trim().length() > 0);
 
-        Assert.assertEquals("failure - expected HTTP status 200", 200, status);
+        String responseMessage = JsonPath.read(result.getResponse().getContentAsString(), "$.message");
+        Assert.assertEquals("failure - expected ", responseMessage, "LOCATION_EMPTY");
+    }
+
+    @Test
+    public void notEmptyLocationsShouldReturnNotEmptyResponse () throws Exception {
+        List<ObjectLocation> locations = new ArrayList<>();
+        locations.add(new ObjectLocation("dummy-uid", "dummy-name", 0, 0, 0, "dummy-type", false));
+        when(objectLocationBroker.fetchMeetingLocations(any(GeoLocation.class), any(Integer.class))).thenReturn(locations);
+
+        MvcResult result = mockMvc.perform(
+                MockMvcRequestBuilders.get(uri)
+                        .param("latitude", "30.5595")
+                        .param("longitude", "22.9375")
+                        .param("radius", "5")
+                        .param("token", "1234")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andReturn();
+
+        Assert.assertEquals("failure - expected HTTP status 200", 200, result.getResponse().getStatus());
+        Assert.assertTrue("failure - expected HTTP response body to contain content",
+                result.getResponse().getContentAsString().trim().length() > 0);
+
+        String responseMessage = JsonPath.read(result.getResponse().getContentAsString(), "$.message");
+        Assert.assertEquals("failure - expected ", responseMessage, "LOCATION_HAS_MEETINGS");
     }
 }

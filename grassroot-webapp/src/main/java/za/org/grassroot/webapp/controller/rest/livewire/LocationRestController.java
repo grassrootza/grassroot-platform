@@ -11,25 +11,22 @@ import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.ObjectLocation;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.geo.ObjectLocationBroker;
-import za.org.grassroot.services.group.GroupLocationFilter;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
-import java.security.InvalidParameterException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 /**
  * TODO 1 - Create token logic
- * TODO 2 - Deal correctly with the exceptions in this class
  */
 @RestController
 @RequestMapping(value = "/api/location", produces = MediaType.APPLICATION_JSON_VALUE)
 public class LocationRestController extends BaseController {
-    private static int DEFAULT_RADIUS = 5;
+    private static int LOCATION_RADIUS_DEFAULT = 5;
+    private static int LOCATION_RADIUS_MAX = 16;
     private static final Logger logger = LoggerFactory.getLogger(LocationRestController.class);
     private final GeoLocationBroker geoLocationBroker;
     private final ObjectLocationBroker objectLocationBroker;
@@ -48,59 +45,39 @@ public class LocationRestController extends BaseController {
 
         logger.info("Attempting to list events locations...");
 
-        // Check radius
-        Integer searchRadius = (radius == null ? DEFAULT_RADIUS : radius);
-
-        // Create location
-        GeoLocation location = new GeoLocation(latitude, longitude);
-        logger.info("Location: " + location);
-
-        // Mount filter
-        ResponseEntity<ResponseWrapper> responseEntity;
-        GroupLocationFilter filter = new GroupLocationFilter(location, searchRadius, false);
-        logger.info("Searching for groups and with location filter = {}", filter);
-
-        // Returns list
-        List<ObjectLocation> objectsToReturn = new ArrayList<>();
-
-        // Load groups
-        List<ObjectLocation> groups;
-        try {
-            groups = objectLocationBroker.fetchGroupLocations(location, radius);
-        } catch (InvalidParameterException e) {
-            logger.info("KPI: POST - BAD REQUEST: " + e.getMessage());
-            logger.info("Exception class: " + e.getClass());
-            logger.info("Stack trace: ", e);
+        // Validate parameters
+        Integer searchRadius = (radius == null ? LOCATION_RADIUS_DEFAULT : radius);
+        if (searchRadius <= 0 || searchRadius > LOCATION_RADIUS_MAX) {
+            logger.info(
+                    "KPI: GET - BAD REQUEST: Invalid radius. Make sure it is greater than zero and smaller than " + LOCATION_RADIUS_MAX + ".");
             return RestUtil.errorResponse(RestMessage.INVALID_PARAMETER);
         }
 
-        // Save groups
-        objectsToReturn.addAll(groups);
-        logger.info("Groups: {}", groups);
-
-        // Load meetings
-        if (groups.size() > 0) {
-            for (ObjectLocation group : groups) {
-
-                // Get meetings
-                List<ObjectLocation> meetings = objectLocationBroker.fetchMeetingLocationsByGroup(group, location, radius);
-
-                // Concat the results
-                objectsToReturn.addAll(meetings);
-            }
-        } else {
-            List<ObjectLocation> meetings = objectLocationBroker.fetchMeetingLocations(location, radius);
-
-            // Concat the results
-            objectsToReturn.addAll(meetings);
+        GeoLocation location = new GeoLocation(latitude, longitude);
+        if (!location.isValid()) {
+            logger.info("KPI: GET - BAD REQUEST: Invalid location parameter.");
+            return RestUtil.errorResponse(RestMessage.INVALID_PARAMETER);
         }
 
-        // Check results
+        // Find objects on the given location around the desired radius
+        // TODO: filter?
+        // TODO: public x private
+        List<ObjectLocation> objectsToReturn;
+        ResponseEntity<ResponseWrapper> responseEntity;
+
+        try {
+            objectsToReturn = objectLocationBroker.fetchMeetingLocations(location, searchRadius);
+        }
+        catch (Exception e){
+            logger.info("KPI: GET - INTERNAL SERVER ERROR: " + e.getLocalizedMessage());
+            return RestUtil.internalErrorResponse(RestMessage.INVALID_PARAMETER);
+        }
+
         if (objectsToReturn.isEmpty()) {
             logger.info("Found no objects ... returning empty ...");
-            responseEntity = RestUtil.okayResponseWithData(RestMessage.NO_GROUP_MATCHING_TERM_FOUND, Collections.emptyList());
+            responseEntity = RestUtil.okayResponseWithData(RestMessage.LOCATION_EMPTY, Collections.emptyList());
         } else {
-            responseEntity = RestUtil.okayResponseWithData(RestMessage.POSSIBLE_GROUP_MATCHES, objectsToReturn);
+            responseEntity = RestUtil.okayResponseWithData(RestMessage.LOCATION_HAS_MEETINGS, objectsToReturn);
         }
         return responseEntity;
     }

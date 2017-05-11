@@ -30,14 +30,9 @@ import java.util.Objects;
 
 @Service
 public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
-    private final static double MIN_LATITUDE = -90.00;
-    private final static double MAX_LATITUDE = 90.00;
-    private final static double MIN_LONGITUDE = -180.00;
-    private final static double MAX_LONGITUDE = 180.00;
-
+    private final static Logger logger = LoggerFactory.getLogger(ObjectLocationBroker.class);
     private final static double KM_PER_DEGREE = 111.045;
 
-    private static final Logger logger = LoggerFactory.getLogger(ObjectLocationBroker.class);
     private final EntityManager entityManager;
     private final GroupLocationRepository groupLocationRepository;
     private final MeetingLocationRepository meetingLocationRepository;
@@ -47,7 +42,8 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
     private String geocodingApiUrl;
 
     @Autowired
-    public ObjectLocationBrokerImpl(EntityManager entityManager, GroupLocationRepository groupLocationRepository, MeetingLocationRepository meetingLocationRepository, RestTemplate restTemplate) {
+    public ObjectLocationBrokerImpl(EntityManager entityManager, GroupLocationRepository groupLocationRepository,
+                                    MeetingLocationRepository meetingLocationRepository, RestTemplate restTemplate) {
         this.entityManager = entityManager;
         this.groupLocationRepository = groupLocationRepository;
         this.meetingLocationRepository = meetingLocationRepository;
@@ -55,43 +51,10 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
     }
 
     /**
+     * TODO: 1) Use the user restrictions and search for public groups
+     *
      * Fast nearest-location finder for SQL (MySQL, PostgreSQL, SQL Server)
      * Source: http://www.plumislandmedia.net/mysql/haversine-mysql-nearest-loc/
-     *
-     * SELECT zip, primary_city,
-     *    latitude, longitude, distance
-     * FROM (
-     *    SELECT z.zip,
-     *      z.primary_city,
-     *      z.latitude, z.longitude,
-     *      p.radius,
-     *      p.distance_unit
-     *        * DEGREES(ACOS(COS(RADIANS(p.latpoint))
-     *        * COS(RADIANS(z.latitude))
-     *        * COS(RADIANS(p.longpoint - z.longitude))
-     *        + SIN(RADIANS(p.latpoint))
-     *        * SIN(RADIANS(z.latitude)))) AS distance
-     *    FROM zip AS z
-     *    JOIN (
-     *      SELECT 42.81  AS latpoint,       -- these are the query parameters
-     *             -70.81 AS longpoint,
-     *             50.0 AS radius,           -- A 50 km of maximum radius
-     *             111.045 AS distance_unit  -- The distance is 111.045 km per degree
-     *    ) AS p ON 1=1
-     *    WHERE z.latitude
-     *      BETWEEN p.latpoint  - (p.radius / p.distance_unit)
-     *        AND p.latpoint  + (p.radius / p.distance_unit)
-     *      AND z.longitude
-     *      BETWEEN p.longpoint - (p.radius / (p.distance_unit * COS(RADIANS(p.latpoint))))
-     *        AND p.longpoint + (p.radius / (p.distance_unit * COS(RADIANS(p.latpoint))))
-     * ) AS d
-     * WHERE distance <= radius
-     * ORDER BY distance
-     * LIMIT 15
-     */
-
-    /**
-     * TODO: 1) Use the user restrictions and search for public groups
      */
     @Override
     @Transactional(readOnly = true)
@@ -269,8 +232,7 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
     }
 
     private void assertGeolocation (GeoLocation location) throws InvalidParameterException {
-        if (location == null || location.getLatitude() < MIN_LATITUDE || location.getLatitude() > MAX_LATITUDE ||
-                location.getLongitude() < MIN_LONGITUDE || location.getLongitude() > MAX_LONGITUDE) {
+        if (location == null || !location.isValid()) {
             throw new InvalidParameterException("Invalid GeoLocation object.");
         }
     }
