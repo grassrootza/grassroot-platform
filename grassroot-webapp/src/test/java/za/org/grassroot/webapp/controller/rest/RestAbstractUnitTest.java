@@ -32,11 +32,6 @@ import java.time.temporal.ChronoUnit;
 import static za.org.grassroot.core.util.DateTimeUtil.convertToUserTimeZone;
 import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
 
-/**
- * Created by paballo on 2016/02/18.
- *
- *
- */
 @RunWith(MockitoJUnitRunner.class)
 @ContextConfiguration
 public class RestAbstractUnitTest {
