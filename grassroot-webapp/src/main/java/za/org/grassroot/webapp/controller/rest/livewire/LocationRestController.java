@@ -47,22 +47,25 @@ public class LocationRestController extends BaseController {
         // Validate parameters
         Integer searchRadius = (radius == null ? LOCATION_RADIUS_DEFAULT : radius);
         if (searchRadius <= 0 || searchRadius > LOCATION_RADIUS_MAX) {
-            logger.info(
-                    "KPI: GET - BAD REQUEST: Invalid radius. Make sure it is greater than zero and smaller than " + LOCATION_RADIUS_MAX + ".");
-            return RestUtil.errorResponse(RestMessage.INVALID_PARAMETER);
+            String errorMsg = "KPI: GET - BAD REQUEST: Invalid radius. Make sure it is greater than zero and smaller than " +
+                    LOCATION_RADIUS_MAX + ".";
+            logger.info(errorMsg);
+            return RestUtil.errorResponse(RestMessage.INVALID_LOCATION_RADIUS_PARAMETER);
         }
 
         // Check restriction
         Integer useRestriction = (restriction == null ? PUBLIC_LEVEL : restriction);
         if (useRestriction < PRIVATE_LEVEL || useRestriction > ALL_LEVEL) {
-            logger.info("KPI: GET - BAD REQUEST: Invalid restriction. Make sure it is greater than zero and smaller than " + ALL_LEVEL + ".");
-            return RestUtil.errorResponse(RestMessage.INVALID_PARAMETER);
+            String errorMsg = "Invalid restriction. Make sure it is greater than zero and smaller than " + ALL_LEVEL + ".";
+            logger.info("KPI: GET - BAD REQUEST: " + errorMsg);
+            return RestUtil.errorResponse(RestMessage.INVALID_LOCATION_RESTRICTION_PARAMETER);
         }
 
         GeoLocation location = new GeoLocation(latitude, longitude);
         if (!location.isValid()) {
-            logger.info("KPI: GET - BAD REQUEST: Invalid location parameter.");
-            return RestUtil.errorResponse(RestMessage.INVALID_PARAMETER);
+            String errorMsg = "KPI: GET - BAD REQUEST: Invalid location parameter.";
+            logger.info(errorMsg);
+            return RestUtil.errorResponse(RestMessage.INVALID_LOCATION_LATLONG_PARAMETER);
         }
 
         // Find objects on the given location around the desired radius
@@ -75,7 +78,7 @@ public class LocationRestController extends BaseController {
         }
         catch (Exception e){
             logger.info("KPI: GET - INTERNAL SERVER ERROR: " + e.getLocalizedMessage());
-            return RestUtil.internalErrorResponse(RestMessage.INVALID_PARAMETER);
+            return RestUtil.internalErrorResponse(RestMessage.INTERNAL_SERVER_ERROR);
         }
 
         if (objectsToReturn.isEmpty()) {

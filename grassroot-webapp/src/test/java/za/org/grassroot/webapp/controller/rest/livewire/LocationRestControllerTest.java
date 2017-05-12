@@ -85,6 +85,11 @@ public class LocationRestControllerTest extends RestAbstractUnitTest {
                 .andReturn();
 
         Assert.assertEquals("failure - expected HTTP status 400", 400, result.getResponse().getStatus());
+        Assert.assertTrue("failure - expected HTTP response body to contain content",
+                result.getResponse().getContentAsString().trim().length() > 0);
+
+        String responseMessage = JsonPath.read(result.getResponse().getContentAsString(), "$.message");
+        Assert.assertEquals("failure - expected ", responseMessage, "INVALID_LOCATION_LATLONG_PARAMETER");
     }
 
     @Test
@@ -95,6 +100,11 @@ public class LocationRestControllerTest extends RestAbstractUnitTest {
                 .andReturn();
 
         Assert.assertEquals("failure - expected HTTP status 400", 400, result.getResponse().getStatus());
+        Assert.assertTrue("failure - expected HTTP response body to contain content",
+                result.getResponse().getContentAsString().trim().length() > 0);
+
+        String responseMessage = JsonPath.read(result.getResponse().getContentAsString(), "$.message");
+        Assert.assertEquals("failure - expected ", responseMessage, "INVALID_LOCATION_LATLONG_PARAMETER");
     }
 
     @Test
@@ -105,6 +115,11 @@ public class LocationRestControllerTest extends RestAbstractUnitTest {
                 .andReturn();
 
         Assert.assertEquals("failure - expected HTTP status 400", 400, result.getResponse().getStatus());
+        Assert.assertTrue("failure - expected HTTP response body to contain content",
+                result.getResponse().getContentAsString().trim().length() > 0);
+
+        String responseMessage = JsonPath.read(result.getResponse().getContentAsString(), "$.message");
+        Assert.assertEquals("failure - expected ", responseMessage, "INVALID_LOCATION_RADIUS_PARAMETER");
     }
 
     @Test

@@ -57,8 +57,9 @@ public class LocationController extends BaseController {
                           Model model,
                           HttpServletRequest request, RedirectAttributes attributes) {
 
-        // Check radiues
+        // Check radius'
         Integer searchRadius = (radius == null ? DEFAULT_RADIUS : radius);
+        logger.info("Radius: " + searchRadius);
 
         // Check restriction
         Integer useRestriction = (restriction == null ? PUBLIC_LEVEL : restriction);
@@ -92,13 +93,13 @@ public class LocationController extends BaseController {
             // Use the default location
             location = new GeoLocation(defaultLatitude, defaultLongitude);
         }
-        logger.info("The location {}", location);
+        logger.info("Location: {}", location);
 
         // Returns list
         List<ObjectLocation> objectsToReturn = new ArrayList<>();
 
         // Load groups
-        List<ObjectLocation> groups = null;
+        List<ObjectLocation> groups;
         try {
             groups = objectLocationBroker.fetchGroupLocations(location, searchRadius);
         }
@@ -149,11 +150,8 @@ public class LocationController extends BaseController {
         model.addAttribute("user", getUserProfile());
         model.addAttribute("location", filter.getLocation());
         model.addAttribute("radius", filter.getSearchRadius());
-
-        model.addAttribute("data",
-                objectLocationBroker.fetchLocationsWithFilter(GeoFilterFormModel.convertToFilter(filter)));
+        model.addAttribute("data", objectLocationBroker.fetchLocationsWithFilter(GeoFilterFormModel.convertToFilter(filter)));
 
         return "location/map";
     }
-
 }
