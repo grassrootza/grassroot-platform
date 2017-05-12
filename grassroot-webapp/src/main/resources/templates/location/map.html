@@ -33,6 +33,7 @@
 
   <script th:src="@{/js/lib/leaflet.js}"></script>
   <script th:src="@{/js/lib/Leaflet.GraphicScale.min.js}"></script>
+  <script th:src="@{/js/lib/jquery-2.2.4.min.js}"></script>
 
 </head>
 <body>
@@ -43,11 +44,12 @@
 <main layout:fragment="content" class="map-container" style="position: fixed; outline: none; overflow: visible;">
   <div class="container map-container" id="map_container" style="overflow: visible;padding-left: 0px;padding-bottom: 150px;">
     <div id="sidebar">
-      <div class="sidebar-wrapper">
+      <div class="sidebar-wrapper" id="filter">
         <div class="panel panel-default" id="features">
           <div class="panel-heading">
             <h3 class="panel-title">Points of Interest
-              <button type="button" class="btn btn-xs btn-default pull-right" id="sidebar-hide-btn"><i class="fa fa-chevron-left"></i></button></h3>
+              <button type="button" class="btn btn-xs btn-default pull-right" id="sidebar-hide-btn"><i class="fa fa-chevron-left"></i></button>
+            </h3>
           </div>
           <div class="panel-body">
             <div class="row">
@@ -77,14 +79,24 @@
           </div>
         </div>
       </div>
+
+      <!-- Button to show sidebar -->
+      <div class="sidebar-wrapper" id="show-sidebar" hidden>
+        <div class="panel panel-default">
+          <button type="button" class="btn btn-xs btn-default pull-left" id="sidebar-show-btn"><i class="fa fa-chevron-right"></i></button>
+        </div>
+      </div>
     </div>
+
     <!-- <form th:object="${filter}">
       <input type="checkbox" name="groupSize" /> Filter by group size
       <input type="checkbox" name="groupLength" /> Filter by length of group
       <input type="checkbox" name="numberTasks" /> Filter by number of tasks
       <button type="submit">Filter</button>
     </form> -->
-    <div id="map"></div>
+
+    <!-- The Map -->
+    <div id="map" style="height: 100%;"></div>
   </div>
 
   <!-- <div id="loading">
@@ -97,6 +109,7 @@
 
   <script type='text/javascript' th:inline="javascript">
     /*<![CDATA[*/
+    $(document).ready(function() {
     console.log("loading map ...");
 
     // Get parameters
@@ -115,47 +128,62 @@
 
     // Create map
     var map = L.map('map').setView([latitude, longitude], zoom);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: maxZoom,
+        attributionControl: false
+      }).addTo(map);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: maxZoom,
-      attributionControl: false
-    }).addTo(map);
+      // Draw all marks
+      var markers = [[${data}]];
+      for (var i=0; i < markers.length; ++i)
+      {
+        var m = markers[i];
+        L.marker([m.latitude, m.longitude])
+            .bindPopup('<a href="' + m.url + '" target="_blank">' + m.name + '</a> <br><br>' + m.description)
+            .addTo(map);
+      }
 
-    // Draw all marks
-    var markers = [[${data}]];
-    for (var i=0; i < markers.length; ++i)
-    {
-      var m = markers[i];
-      L.marker([m.latitude, m.longitude])
-          .bindPopup('<a href="' + m.url + '" target="_blank">' + m.name + '</a> <br><br>' + m.description)
-          .addTo(map);
-    }
+      // Radius in Km, convert to meters
+      var radius = originalRadius * 1000.0;
 
-    // Radius in Km, convert to meters
-    var radius = originalRadius * 1000.0;
+      // Draw a radius in meters
+      L.circle([latitude, longitude], radius, {fill: true}).addTo(map);
 
-    // Draw a radius in meters
-    L.circle([latitude, longitude], radius, {fill: true}).addTo(map);
+      // Draw the scale
+      var graphicScale = L.control.graphicScale({
+        doubleLine: false
+        ,fill: 'fill'
+        ,showSubunits: false
+      }).addTo(map);
 
-    // Draw the scale
-    var graphicScale = L.control.graphicScale({
-      doubleLine: false
-      ,fill: 'fill'
-      ,showSubunits: false
-    }).addTo(map);
+      // TODO: The code below is not working well - create better approach
+      // Add to map the 'moveend' event
+  //    map.on('moveend', function(e) {
+  //      var center = map.getCenter();
+  //      window.location = '/location'
+  //      + '?latitude=' + center.lat
+  //      + '&longitude=' + center.lng
+  //      + '&radius=' + originalRadius
+  //      + '&zoom=' + map.getZoom();
+  //    });
 
-    // TODO: The code below is not working well - create better approach
-    // Add to map the 'moveend' event
-//    map.on('moveend', function(e) {
-//      var center = map.getCenter();
-//      window.location = '/location'
-//      + '?latitude=' + center.lat
-//      + '&longitude=' + center.lng
-//      + '&radius=' + originalRadius
-//      + '&zoom=' + map.getZoom();
-//    });
+    // -------------------------
+    // Add callbacks to buttons
+    // -------------------------
+    // Hide sidebar
+    $('#sidebar-hide-btn').click(function () {
+        $('#filter').hide();
+        $('#show-sidebar').show();
+    });
 
-    /*]]>*/
+    // Show sidebar
+    $('#sidebar-show-btn').click(function () {
+        $('#filter').show();
+        $('#show-sidebar').hide();
+    });
+
+  });
+  /*]]>*/
   </script>
 
 </main>
