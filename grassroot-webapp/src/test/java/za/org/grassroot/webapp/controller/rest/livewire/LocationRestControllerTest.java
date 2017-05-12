@@ -99,7 +99,8 @@ public class LocationRestControllerTest extends RestAbstractUnitTest {
 
     @Test
     public void erroringFetchMeetingLocationsShouldReturn500 () throws Exception {
-        when(objectLocationBroker.fetchMeetingLocations(any(GeoLocation.class), any(Integer.class))).thenThrow(InvalidParameterException.class);
+        when(objectLocationBroker.fetchMeetingLocations(any(GeoLocation.class), any(Integer.class), any(Integer.class))).thenThrow
+                (InvalidParameterException.class);
         MvcResult result = mockMvc.perform(MockMvcRequestBuilders
                 .get(uri + "?latitude=0&longitude=0&radius=3&token=234324")
                 .accept(MediaType.APPLICATION_JSON))
@@ -110,7 +111,7 @@ public class LocationRestControllerTest extends RestAbstractUnitTest {
 
     @Test
     public void emptyLocationsShouldReturnEmptyResponse () throws Exception {
-        when(objectLocationBroker.fetchMeetingLocations(any(GeoLocation.class), any(Integer.class))).thenReturn(new ArrayList<>());
+        when(objectLocationBroker.fetchMeetingLocations(any(GeoLocation.class), any(Integer.class), any(Integer.class))).thenReturn(new ArrayList<>());
 
         MvcResult result = mockMvc.perform(
                 MockMvcRequestBuilders.get(uri)
@@ -133,7 +134,7 @@ public class LocationRestControllerTest extends RestAbstractUnitTest {
     public void notEmptyLocationsShouldReturnNotEmptyResponse () throws Exception {
         List<ObjectLocation> locations = new ArrayList<>();
         locations.add(new ObjectLocation("dummy-uid", "dummy-name", 0, 0, 0, "dummy-type", false));
-        when(objectLocationBroker.fetchMeetingLocations(any(GeoLocation.class), any(Integer.class))).thenReturn(locations);
+        when(objectLocationBroker.fetchMeetingLocations(any(GeoLocation.class), any(Integer.class), any(Integer.class))).thenReturn(locations);
 
         MvcResult result = mockMvc.perform(
                 MockMvcRequestBuilders.get(uri)
