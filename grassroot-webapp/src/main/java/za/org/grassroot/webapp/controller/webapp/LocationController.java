@@ -26,6 +26,7 @@ import java.util.List;
 
 /**
  * TODO 1 - Create a unit test for this class
+ * TODO - LocationController + LocationRestController --> Move shared code to Service
  */
 @Controller
 @RequestMapping(value = "/location")
@@ -55,7 +56,10 @@ public class LocationController extends BaseController {
                           @RequestParam(required = false) Double zoom,
                           @RequestParam(required = false) Integer restriction,
                           Model model,
-                          HttpServletRequest request, RedirectAttributes attributes) {
+                          HttpServletRequest request,
+                          RedirectAttributes attributes) {
+
+        logger.info("Attempting to search events locations...");
 
         // Check radius'
         Integer searchRadius = (radius == null ? DEFAULT_RADIUS : radius);

@@ -41,7 +41,9 @@ public class LocationRestController extends BaseController {
                                                    @RequestParam(value = "restriction", required = false) Integer restriction,
                                                    @RequestParam(value = "token", required = true) String token) {
 
-        //TODO: token!
+        // TODO: token!
+        // TODO: Bounding box search instead of disc
+        // TODO: Initial position from location
         logger.info("Attempting to list events locations...");
 
         // Validate parameters

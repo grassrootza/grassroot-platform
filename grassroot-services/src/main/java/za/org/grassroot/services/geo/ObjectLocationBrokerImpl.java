@@ -164,33 +164,43 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
         }
 
         // Mount query
-        List<ObjectLocation> list = entityManager.createQuery("SELECT NEW za.org.grassroot.core.domain.geo.ObjectLocation(" +
-                        "  m.uid, m.name, l.location.latitude, l.location.longitude, l.score, 'MEETING', " +
-                        "  CONCAT('<strong>Where: </strong>', m.eventLocation, '<br/><strong>Date and Time: </strong>', m.eventStartDateTime), m.isPublic) " +
-                        "FROM MeetingLocation l " +
-                        "INNER JOIN l.meeting m " +
-                        "WHERE " + restrictionClause +
-                        "  l.calculatedDateTime <= :date " +
-                        "  AND l.calculatedDateTime = (SELECT MAX(ll.calculatedDateTime) FROM MeetingLocation ll WHERE ll.meeting = l.meeting) " +
-                        "  AND l.location.latitude " +
-                        "      BETWEEN :latpoint  - (:radius / :distance_unit) " +
-                        "          AND :latpoint  + (:radius / :distance_unit) " +
-                        "  AND l.location.longitude " +
-                        "      BETWEEN :longpoint - (:radius / (:distance_unit * COS(RADIANS(:latpoint)))) " +
-                        "          AND :longpoint + (:radius / (:distance_unit * COS(RADIANS(:latpoint)))) " +
-                        "  AND :radius >= (:distance_unit " +
-                        "           * DEGREES(ACOS(COS(RADIANS(:latpoint)) " +
-                        "           * COS(RADIANS(l.location.latitude)) " +
-                        "           * COS(RADIANS(:longpoint - l.location.longitude)) " +
-                        "           + SIN(RADIANS(:latpoint)) " +
-                        "           * SIN(RADIANS(l.location.latitude))))) ",
-                ObjectLocation.class)
+        String query =
+            "SELECT NEW za.org.grassroot.core.domain.geo.ObjectLocation(" +
+            "  m.uid, m.name, l.location.latitude, l.location.longitude, l.score, 'MEETING', " +
+            "  CONCAT('<strong>Where: </strong>', m.eventLocation, '<br/><strong>Date and Time: </strong>', m.eventStartDateTime), m.isPublic) " +
+            "FROM MeetingLocation l " +
+            "INNER JOIN l.meeting m " +
+            "WHERE " + restrictionClause +
+            "  l.calculatedDateTime <= :date " +
+            "  AND l.calculatedDateTime = (SELECT MAX(ll.calculatedDateTime) FROM MeetingLocation ll WHERE ll.meeting = l.meeting) " +
+            "  AND l.location.latitude " +
+            "      BETWEEN :latpoint  - (:radius / :distance_unit) " +
+            "          AND :latpoint  + (:radius / :distance_unit) " +
+            "  AND l.location.longitude " +
+            "      BETWEEN :longpoint - (:radius / (:distance_unit * COS(RADIANS(:latpoint)))) " +
+            "          AND :longpoint + (:radius / (:distance_unit * COS(RADIANS(:latpoint)))) " +
+            "  AND :radius >= (:distance_unit " +
+            "           * DEGREES(ACOS(COS(RADIANS(:latpoint)) " +
+            "           * COS(RADIANS(l.location.latitude)) " +
+            "           * COS(RADIANS(:longpoint - l.location.longitude)) " +
+            "           + SIN(RADIANS(:latpoint)) " +
+            "           * SIN(RADIANS(l.location.latitude))))) ";
+
+        logger.info(query);
+
+        List<ObjectLocation> list = entityManager.createQuery(query, ObjectLocation.class)
                 .setParameter("date", Instant.now())
                 .setParameter("radius", (double)radius)
                 .setParameter("distance_unit", KM_PER_DEGREE)
                 .setParameter("latpoint", location.getLatitude())
                 .setParameter("longpoint", location.getLongitude())
                 .getResultList();
+
+        logger.info("" + Instant.now());
+        logger.info("" + (double)radius);
+        logger.info("" + KM_PER_DEGREE);
+        logger.info("" + location.getLatitude());
+        logger.info("" + location.getLongitude());
 
         return (list.isEmpty() ? new ArrayList<>() : list);
     }
