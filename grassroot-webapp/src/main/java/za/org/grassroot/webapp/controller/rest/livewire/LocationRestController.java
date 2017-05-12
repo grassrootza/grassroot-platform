@@ -38,6 +38,7 @@ public class LocationRestController extends BaseController {
     public ResponseEntity<ResponseWrapper> search (@RequestParam(value = "latitude", required = true) Double latitude,
                                                    @RequestParam(value = "longitude", required = true) Double longitude,
                                                    @RequestParam(value = "radius", required = false) Integer radius,
+                                                   @RequestParam(value = "restriction", required = false) Integer restriction,
                                                    @RequestParam(value = "token", required = true) String token) {
 
         //TODO: token!
@@ -51,6 +52,13 @@ public class LocationRestController extends BaseController {
             return RestUtil.errorResponse(RestMessage.INVALID_PARAMETER);
         }
 
+        // Check restriction
+        Integer useRestriction = (restriction == null ? PUBLIC_LEVEL : restriction);
+        if (restriction < PRIVATE_LEVEL || restriction > ALL_LEVEL) {
+            logger.info("KPI: GET - BAD REQUEST: Invalid restriction. Make sure it is greater than zero and smaller than " + ALL_LEVEL + ".");
+            return RestUtil.errorResponse(RestMessage.INVALID_PARAMETER);
+        }
+
         GeoLocation location = new GeoLocation(latitude, longitude);
         if (!location.isValid()) {
             logger.info("KPI: GET - BAD REQUEST: Invalid location parameter.");
@@ -59,12 +67,11 @@ public class LocationRestController extends BaseController {
 
         // Find objects on the given location around the desired radius
         // TODO: filter?
-        // TODO: public x private
         List<ObjectLocation> objectsToReturn;
         ResponseEntity<ResponseWrapper> responseEntity;
 
         try {
-            objectsToReturn = objectLocationBroker.fetchMeetingLocations(location, searchRadius);
+            objectsToReturn = objectLocationBroker.fetchMeetingLocations(location, searchRadius, useRestriction);
         }
         catch (Exception e){
             logger.info("KPI: GET - INTERNAL SERVER ERROR: " + e.getLocalizedMessage());

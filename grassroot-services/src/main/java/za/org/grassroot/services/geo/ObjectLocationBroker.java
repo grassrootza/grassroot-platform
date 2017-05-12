@@ -11,7 +11,8 @@ public interface ObjectLocationBroker {
 
     List<ObjectLocation> fetchGroupLocations(GeoLocation geoLocation, Integer radius) throws InvalidParameterException;
 
-    List<ObjectLocation> fetchMeetingLocations(GeoLocation geoLocation, Integer radius) throws InvalidParameterException;
+    List<ObjectLocation> fetchMeetingLocations(GeoLocation geoLocation, Integer radius, Integer restriction)
+            throws InvalidParameterException;
 
     List<ObjectLocation> fetchMeetingLocationsByGroup(ObjectLocation group, GeoLocation geoLocation, Integer radius)
             throws InvalidParameterException;

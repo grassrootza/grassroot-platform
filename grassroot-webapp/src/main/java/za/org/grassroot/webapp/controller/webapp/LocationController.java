@@ -53,11 +53,15 @@ public class LocationController extends BaseController {
                           @RequestParam(required = false) Double latitude,
                           @RequestParam(required = false) Double longitude,
                           @RequestParam(required = false) Double zoom,
+                          @RequestParam(required = false) Integer restriction,
                           Model model,
                           HttpServletRequest request, RedirectAttributes attributes) {
 
-        // Check radius
+        // Check radiues
         Integer searchRadius = (radius == null ? DEFAULT_RADIUS : radius);
+
+        // Check restriction
+        Integer useRestriction = (restriction == null ? PUBLIC_LEVEL : restriction);
 
         // Get user
         final User user = getUserProfile();
@@ -120,7 +124,8 @@ public class LocationController extends BaseController {
                 objectsToReturn.addAll(meetings);
             }
         } else {
-            List<ObjectLocation> meetings = objectLocationBroker.fetchMeetingLocations(location, searchRadius);
+            List<ObjectLocation> meetings = objectLocationBroker.fetchMeetingLocations(location, searchRadius, useRestriction);
+            logger.info("Meetings found: {}", meetings.size());
 
             // Concat the results
             objectsToReturn.addAll(meetings);

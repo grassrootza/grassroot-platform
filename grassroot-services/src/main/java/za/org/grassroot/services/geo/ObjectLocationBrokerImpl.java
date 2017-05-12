@@ -33,6 +33,10 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
     private final static Logger logger = LoggerFactory.getLogger(ObjectLocationBroker.class);
     private final static double KM_PER_DEGREE = 111.045;
 
+    private final static int PRIVATE_LEVEL = 0;
+    private final static int PUBLIC_LEVEL = 1;
+    private final static int ALL_LEVEL = 2;
+
     private final EntityManager entityManager;
     private final GroupLocationRepository groupLocationRepository;
     private final MeetingLocationRepository meetingLocationRepository;
@@ -139,23 +143,32 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
     }
 
     /**
-     * TODO: 1) Use the user restrictions and search for public groups/meetings
+     * TODO: 1) Use the user restrictions
      */
     @Override
     @Transactional(readOnly = true)
-    public List<ObjectLocation> fetchMeetingLocations (GeoLocation location, Integer radius) {
+    public List<ObjectLocation> fetchMeetingLocations (GeoLocation location, Integer radius, Integer restriction) {
         logger.info("Fetching meeting locations ...");
 
+        assertRestriction(restriction);
         assertRadius(radius);
         assertGeolocation(location);
 
+        // Mount restriction
+        String restrictionClause = "";
+        if (restriction == PRIVATE_LEVEL)
+            restrictionClause = "m.isPublic = false AND ";
+        else if (restriction == PUBLIC_LEVEL)
+            restrictionClause = "m.isPublic = true AND ";
+
+        // Mount query
         List<ObjectLocation> list = entityManager.createQuery("SELECT NEW za.org.grassroot.core.domain.geo.ObjectLocation(" +
                         "  m.uid, m.name, l.location.latitude, l.location.longitude, l.score, 'MEETING', " +
                         "  CONCAT('<strong>Where: </strong>', m.eventLocation, '<br/><strong>Date and Time: </strong>', m.eventStartDateTime), m.isPublic) " +
                         "FROM MeetingLocation l " +
                         "INNER JOIN l.meeting m " +
-                        "WHERE m.isPublic = true " +
-                        "  AND l.calculatedDateTime <= :date " +
+                        "WHERE " + restrictionClause +
+                        "  l.calculatedDateTime <= :date " +
                         "  AND l.calculatedDateTime = (SELECT MAX(ll.calculatedDateTime) FROM MeetingLocation ll WHERE ll.meeting = l.meeting) " +
                         "  AND l.location.latitude " +
                         "      BETWEEN :latpoint  - (:radius / :distance_unit) " +
@@ -223,6 +236,14 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
                 .getResultList();
 
         return (list.isEmpty() ? new ArrayList<>() : list);
+    }
+
+    private void assertRestriction (Integer restriction) throws InvalidParameterException {
+        if (restriction == null) {
+            throw new InvalidParameterException("Invalid restriction object.");
+        } else if (restriction < PRIVATE_LEVEL || restriction > ALL_LEVEL) {
+            throw new InvalidParameterException("Invalid restriction object.");
+        }
     }
 
     private void assertRadius (Integer radius) throws InvalidParameterException {

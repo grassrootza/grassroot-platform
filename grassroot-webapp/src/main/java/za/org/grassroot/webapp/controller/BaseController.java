@@ -50,6 +50,11 @@ public class BaseController {
         }
     }
 
+    // Restriction levels
+    public final static int PRIVATE_LEVEL = 0;
+    public final static int PUBLIC_LEVEL = 1;
+    public final static int ALL_LEVEL = 2;
+
     @Autowired
     @Qualifier("messageSource")
     private MessageSource messageSource;
