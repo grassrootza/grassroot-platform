@@ -54,7 +54,7 @@ public class LocationRestController extends BaseController {
 
         // Check restriction
         Integer useRestriction = (restriction == null ? PUBLIC_LEVEL : restriction);
-        if (restriction < PRIVATE_LEVEL || restriction > ALL_LEVEL) {
+        if (useRestriction < PRIVATE_LEVEL || useRestriction > ALL_LEVEL) {
             logger.info("KPI: GET - BAD REQUEST: Invalid restriction. Make sure it is greater than zero and smaller than " + ALL_LEVEL + ".");
             return RestUtil.errorResponse(RestMessage.INVALID_PARAMETER);
         }

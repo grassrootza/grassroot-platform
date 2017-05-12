@@ -92,7 +92,7 @@ public class ObjectLocationBrokerTest {
 
     @Test
     public void validRequestShouldBeSuccessfulWhenFetchingMeetingLocations () throws Exception {
-        List<ObjectLocation> groupLocations = objectLocationBroker.fetchMeetingLocations(new GeoLocation(53.4808, 2.2426), 10);
+        List<ObjectLocation> groupLocations = objectLocationBroker.fetchMeetingLocations(new GeoLocation(53.4808, 2.2426), 10, 0);
 
         verify(mockQuery, times(1)).getResultList();
         verify(mockEntityManager, times(1)).createQuery(anyString(), eq(ObjectLocation.class));
@@ -103,17 +103,17 @@ public class ObjectLocationBrokerTest {
 
     @Test(expected=InvalidParameterException.class)
     public void nullGeoLocationShouldThrowExceptionWhenFetchingMeetingLocations () throws Exception {
-        objectLocationBroker.fetchMeetingLocations(null, 10);
+        objectLocationBroker.fetchMeetingLocations(null, 10, null);
     }
 
     @Test(expected=InvalidParameterException.class)
     public void nullRadiusThrowExceptionWhenFetchingMeetingLocations () throws Exception {
-        objectLocationBroker.fetchMeetingLocations(new GeoLocation(0.00, 0.00), null);
+        objectLocationBroker.fetchMeetingLocations(new GeoLocation(0.00, 0.00), null, null);
     }
 
     @Test(expected=InvalidParameterException.class)
     public void negativeRadiusThrowExceptionWhenFetchingMeetingLocations () throws Exception {
-        objectLocationBroker.fetchMeetingLocations(new GeoLocation(0.00, 0.00), -10);
+        objectLocationBroker.fetchMeetingLocations(new GeoLocation(0.00, 0.00), -10, null);
     }
 
     private void expectedValidFetchGroupLocationsRequest (double latitude, double longitude){

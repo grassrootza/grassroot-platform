@@ -49,9 +49,9 @@ public class LocationRestControllerTest extends RestAbstractUnitTest {
     }
 
     @Test
-    public void validRequestShouldReturn200 () throws Exception {
+    public void validFullRequestShouldReturn200 () throws Exception {
         MvcResult result = mockMvc.perform(MockMvcRequestBuilders
-                .get(uri + "?latitude=1&longitude=1&radius=3&token=234324")
+                .get(uri + "?latitude=1&longitude=1&restriction=0&radius=3&token=234324")
                 .accept(MediaType.APPLICATION_JSON))
                 .andReturn();
         Assert.assertEquals("failure - expected HTTP status 200", 200, result.getResponse().getStatus());
@@ -61,7 +61,17 @@ public class LocationRestControllerTest extends RestAbstractUnitTest {
     public void radiusParameterShouldBeOptional () throws Exception {
         MvcResult result = mockMvc.perform(
                 MockMvcRequestBuilders
-                        .get(uri + "?latitude=1&longitude=1&token=234324")
+                        .get(uri + "?latitude=1&longitude=1&restriction=0&token=234324")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andReturn();
+        Assert.assertEquals("failure - expected HTTP status 200", 200, result.getResponse().getStatus());
+    }
+
+    @Test
+    public void restrictionParameterShouldBeOptional () throws Exception {
+        MvcResult result = mockMvc.perform(
+                MockMvcRequestBuilders
+                        .get(uri + "?latitude=1&longitude=1&radius=1&token=234324")
                         .accept(MediaType.APPLICATION_JSON))
                 .andReturn();
         Assert.assertEquals("failure - expected HTTP status 200", 200, result.getResponse().getStatus());

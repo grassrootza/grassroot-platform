@@ -156,10 +156,12 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
 
         // Mount restriction
         String restrictionClause = "";
-        if (restriction == PRIVATE_LEVEL)
+        if (restriction == PRIVATE_LEVEL) {
             restrictionClause = "m.isPublic = false AND ";
-        else if (restriction == PUBLIC_LEVEL)
+        }
+        else if (restriction == PUBLIC_LEVEL) {
             restrictionClause = "m.isPublic = true AND ";
+        }
 
         // Mount query
         List<ObjectLocation> list = entityManager.createQuery("SELECT NEW za.org.grassroot.core.domain.geo.ObjectLocation(" +
