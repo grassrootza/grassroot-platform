@@ -1,5 +1,7 @@
 package za.org.grassroot.core.repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
 
@@ -14,5 +16,7 @@ public interface LiveWireAlertRepository extends JpaRepository<LiveWireAlert, Lo
     LiveWireAlert findOneByUid(String alertUid);
 
     List<LiveWireAlert> findBySendTimeBetweenAndSentFalse(Instant start, Instant end);
+
+    Page<LiveWireAlert> findByReviewed(boolean reviewed, Pageable pageable);
 
 }

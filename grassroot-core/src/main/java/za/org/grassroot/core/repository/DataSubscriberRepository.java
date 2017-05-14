@@ -22,4 +22,11 @@ public interface DataSubscriberRepository extends JpaRepository<DataSubscriber, 
             "where active = true", nativeQuery = true)
     List<String> findAllActiveSubscriberPushEmails();
 
+    @Query(value = "select distinct unnest(access_users) from data_subscriber " +
+            "where active = true", nativeQuery = true)
+    List<String> userUidsOfDataSubscriberUsers();
+
+    @Query(value = "select * from data_subscriber where ?1 = ANY(access_users)", nativeQuery = true)
+    List<DataSubscriber> findSubscriberHoldingUser(String userUid);
+
 }

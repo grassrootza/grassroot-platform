@@ -3,6 +3,8 @@ package za.org.grassroot.services.user;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -19,7 +21,11 @@ import za.org.grassroot.core.repository.AddressRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.async.AsyncUserLogger;
 
+import java.util.List;
 import java.util.Objects;
+
+import static za.org.grassroot.core.specifications.AddressSpecifications.forUser;
+import static za.org.grassroot.core.specifications.AddressSpecifications.matchesStreetArea;
 
 /**
  * Created by paballo on 2016/07/14.
@@ -104,7 +110,17 @@ public class AddressBrokerImpl implements AddressBroker {
     @Transactional
     public String storeAddressRaw(String userUid, Address address, boolean makePrimary) {
         address.setPrimary(makePrimary);
-        Address storedAddress = addressRepository.save(address);
+        Address storedAddress;
+        List<Address> duplicateCheck = addressRepository.findAll(Specifications
+                        .where(forUser(address.getResident()))
+                        .and(matchesStreetArea(address.getHouse(), address.getStreet(), address.getNeighbourhood())),
+                new Sort(Sort.Direction.DESC, "createdDateTime"));
+        log.info("size of returned address: {}", duplicateCheck.size());
+        storedAddress = duplicateCheck.isEmpty() ?
+                addressRepository.save(address) : duplicateCheck.iterator().next();
+        if (makePrimary) {
+            address.setPrimary(true);
+        }
         return storedAddress.getUid();
     }
 

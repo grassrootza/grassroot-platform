@@ -10,6 +10,24 @@ update address set is_primary = true; -- will have to manually delete duplicates
 
 alter table live_wire_alert add column tags text[] not null default '{}';
 alter table live_wire_alert add column reviewed boolean default false;
-create index lwalert_tag_index on live_wire_alert using gin(tags);
+alter table live_wire_alert add column reviewed_by_user_id bigint;
+alter table live_wire_alert add column version integer default 0;
 
--- create index dsub_push_emails on data_subscriber using gin(push_emails);
+create index lwalert_tag_index on live_wire_alert using gin(tags);
+alter table live_wire_alert add constraint fk_lwire_reviewed_user foreign key (reviewed_by_user_id) references user_profile;
+
+alter table event add column tags text[] not null default '{}';
+create index event_tags_index on event using gin(tags);
+
+alter table event_request add column tags text[] not null default '{}';
+create index event_req_tags_index on event_request using gin(tags);
+
+alter table group_profile add column tags text[] not null default '{}';
+create index group_tags_index on group_profile using gin(tags);
+
+alter table user_profile add column livewire_contact boolean default false;
+
+alter table data_subscriber add column can_tag boolean default false;
+alter table data_subscriber add column can_release boolean default false;
+
+insert into role (role_name, role_type) values ('ROLE_LIVEWIRE_USER', 'STANDARD');

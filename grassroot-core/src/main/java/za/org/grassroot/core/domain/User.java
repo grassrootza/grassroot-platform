@@ -110,6 +110,10 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
     @Column(name = "free_trial_used")
     private boolean hasUsedFreeTrial;
 
+    @Basic
+    @Column(name = "livewire_contact")
+    private boolean liveWireContact;
+
     // note: keep an eye on this in profiling, make sure it is super lazy (i.e., join table not hit at all), else drop on this side
     @ManyToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "administrators")
     private Set<Account> accountsAdministered = new HashSet<>();
@@ -359,8 +363,20 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
     }
 
     /*
-    We use the next set to handle Grassroot Extra accounts
+    Whether the user can be contacted by LiveWire subscribers
      */
+
+    public boolean isLiveWireContact() {
+        return liveWireContact;
+    }
+
+    public void setLiveWireContact(boolean liveWireContact) {
+        this.liveWireContact = liveWireContact;
+    }
+
+    /*
+        We use the next set to handle Grassroot Extra accounts
+         */
     public Set<Account> getAccountsAdministered() {
         if (accountsAdministered == null) {
             accountsAdministered = new HashSet<>();

@@ -54,10 +54,4 @@ public interface GeoLocationBroker {
 
 	List<double[]> fetchUserLatitudeLongitudeInAvgPeriod(String userUid, LocalDate localDate);
 
-	/*
-	Methods for fetching public entities (groups, meetings, etc) near a location, with information about the location
-	data origin, quality, etc
-	 */
-
-
 }

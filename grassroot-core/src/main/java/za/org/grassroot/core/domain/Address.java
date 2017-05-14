@@ -66,6 +66,7 @@ public class Address implements LocationHolder {
         this.uid = UIDGenerator.generateId();
         this.createdDateTime = Instant.now();
         this.resident = resident;
+        this.primary = primary;
     }
 
     public Address(User resident, String houseNumber, String streetName, String town, boolean primary) {
@@ -73,12 +74,13 @@ public class Address implements LocationHolder {
         this.house = houseNumber;
         this.street = streetName;
         this.neighbourhood = town;
-        // this.city = city;
     }
 
     public Long getId() {
         return id;
     }
+
+    public User getResident() { return resident; }
 
     public boolean isPrimary() {
         return primary;

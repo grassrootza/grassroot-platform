@@ -17,10 +17,11 @@ import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
 import za.org.grassroot.core.dto.GroupTreeDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.repository.*;
+import za.org.grassroot.core.specifications.GroupSpecifications;
+import za.org.grassroot.core.specifications.PaidGroupSpecifications;
 import za.org.grassroot.services.ChangedSinceData;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.geo.GeoLocationBroker;
-import za.org.grassroot.core.specifications.PaidGroupSpecifications;
 import za.org.grassroot.services.util.FullTextSearchUtils;
 
 import java.time.Instant;
@@ -31,6 +32,8 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static za.org.grassroot.core.specifications.GroupSpecifications.hasParent;
+import static za.org.grassroot.core.specifications.GroupSpecifications.isActive;
 import static za.org.grassroot.core.util.DateTimeUtil.convertToSystemTime;
 import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
 
@@ -144,7 +147,7 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
 
     @Override
     public Optional<Group> findGroupFromJoinCode(String joinCode) {
-        Group groupToReturn = groupRepository.findByGroupTokenCode(joinCode);
+        Group groupToReturn = groupRepository.findOne(GroupSpecifications.hasJoinCode(joinCode));
         if (groupToReturn == null) return Optional.empty();
         if (groupToReturn.getTokenExpiryDateTime().isBefore(Instant.now())) return null;
         return Optional.of(groupToReturn);
@@ -153,7 +156,7 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
     @Override
     public Set<Group> subGroups(String groupUid) {
         Group group = groupRepository.findOneByUid(groupUid);
-        return new HashSet<>(groupRepository.findByParentAndActiveTrue(group));
+        return new HashSet<>(groupRepository.findAll(Specifications.where(hasParent(group)).and(isActive())));
     }
 
     @Transactional(readOnly = true)

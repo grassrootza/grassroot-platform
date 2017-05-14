@@ -2,6 +2,7 @@ package za.org.grassroot.services.group;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Group;
@@ -12,6 +13,7 @@ import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.specifications.GroupSpecifications;
 import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
@@ -57,7 +59,7 @@ public class GroupImageBrokerImpl implements GroupImageBroker {
 
     @Override
     public Group getGroupByImageUrl(String imageUrl) {
-        return groupRepository.findOneByImageUrl(imageUrl);
+        return groupRepository.findOne(Specifications.where(GroupSpecifications.hasImageUrl(imageUrl)));
     }
 
     @Override

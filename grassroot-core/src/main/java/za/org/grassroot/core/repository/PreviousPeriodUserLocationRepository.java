@@ -11,8 +11,6 @@ import java.util.Set;
 public interface PreviousPeriodUserLocationRepository extends JpaRepository<PreviousPeriodUserLocation, String> {
 	void deleteByKeyLocalDate(LocalDate localDate);
 
-
-
 	@Transactional(readOnly = true)
 	List<PreviousPeriodUserLocation> findByKeyLocalDateAndKeyUserUidIn(LocalDate localDate, Set<String> userUids);
 

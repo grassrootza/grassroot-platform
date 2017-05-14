@@ -1,5 +1,6 @@
 package za.org.grassroot.core.domain.livewire;
 
+import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.Type;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.Group;
@@ -8,10 +9,15 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.enums.LiveWireAlertType;
 import za.org.grassroot.core.enums.LocationSource;
+import za.org.grassroot.core.util.PhoneNumberUtil;
+import za.org.grassroot.core.util.StringArrayUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -21,6 +27,7 @@ import java.util.Objects;
  */
 @Entity
 @Table(name = "live_wire_alert")
+@DynamicUpdate
 public class LiveWireAlert {
 
     @Id
@@ -72,6 +79,10 @@ public class LiveWireAlert {
     @Column(name = "reviewed")
     private boolean reviewed;
 
+    @ManyToOne
+    @JoinColumn(name = "reviewed_by_user_id")
+    private User reviewedByUser;
+
     @Basic
     @Column(name = "sent")
     private boolean sent;
@@ -90,6 +101,9 @@ public class LiveWireAlert {
     @Enumerated(EnumType.STRING)
     @Column(name = "location_source", length = 50, nullable = true)
     private LocationSource locationSource;
+
+    @Version
+    private Integer version;
 
     public static class Builder {
         private User creatingUser;
@@ -199,6 +213,10 @@ public class LiveWireAlert {
         return contactUser;
     }
 
+    public String getContactNumberFormatted() {
+        return PhoneNumberUtil.invertPhoneNumber(contactUser.getPhoneNumber());
+    }
+
     public String getContactName() {
         return contactName;
     }
@@ -259,12 +277,30 @@ public class LiveWireAlert {
         this.reviewed = reviewed;
     }
 
+    public User getReviewedByUser() {
+        return reviewedByUser;
+    }
+
+    public void setReviewedByUser(User reviewedByUser) {
+        this.reviewedByUser = reviewedByUser;
+    }
+
     public String[] getTags() {
         return tags;
     }
 
+    public List<String> getTagList() {
+        return tags == null ? new ArrayList<>() : new ArrayList<>(Arrays.asList(tags));
+    }
+
     public void setTags(String[] tags) {
         this.tags = tags;
+    }
+
+    public void addTags(List<String> tagsToAdd) {
+        List<String> currentTags = StringArrayUtil.arrayToList(tags);
+        currentTags.addAll(tagsToAdd);
+        tags = StringArrayUtil.listToArrayRemoveDuplicates(currentTags);
     }
 
     public void setSendTime(Instant sendTime) {
@@ -289,6 +325,10 @@ public class LiveWireAlert {
 
     public void setLocationSource(LocationSource locationSource) {
         this.locationSource = locationSource;
+    }
+
+    public Integer getVersion() {
+        return version;
     }
 
     @Override

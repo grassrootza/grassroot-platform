@@ -22,6 +22,7 @@ import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.UserLocationLogRepository;
 import za.org.grassroot.core.repository.UserLogRepository;
 import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.integration.exception.LocationNotAvailableException;
 import za.org.grassroot.integration.location.aatmodels.*;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -126,18 +127,16 @@ public class AatSoapLocationBrokerImpl implements UssdLocationServicesBroker {
     @Transactional
     public GeoLocation getUssdLocationForUser(String userUid) {
         User user = userRepository.findOneByUid(userUid);
-        try {
-            // todo : will want to use the accuracy score ...
-            GetLocationResponse response = aatSoapClient.getLocationResponse(user.getPhoneNumber());
-            GeoLocation location = getLocationFromResposne(response);
-            Instant timeOfCoord = getLocationInstant(response);
-            userLocationLogRepository.save(new UserLocationLog(timeOfCoord, userUid, location,
-                    LocationSource.LOGGED_APPROX));
-            return location;
-        } catch (Exception e) {
-            // throw new LocationNotAvailableException();
-            throw e;
+        // todo : will want to use the accuracy score ...
+        GetLocationResponse response = aatSoapClient.getLocationResponse(user.getPhoneNumber());
+        GeoLocation location = getLocationFromResposne(response);
+        Instant timeOfCoord = getLocationInstant(response);
+        if (location.getLongitude() == 0 || location.getLatitude() == 0) {
+            throw new LocationNotAvailableException();
         }
+        userLocationLogRepository.save(new UserLocationLog(timeOfCoord, userUid, location,
+                LocationSource.LOGGED_APPROX));
+        return location;
     }
 
     // here: deal with the awfulness of the AAT XML schema

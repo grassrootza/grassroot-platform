@@ -6,15 +6,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.livewire.DataSubscriber;
 import za.org.grassroot.core.repository.DataSubscriberRepository;
+import za.org.grassroot.core.repository.RoleRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.PermissionBroker;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Created by luke on 2017/05/05.
@@ -24,15 +27,19 @@ public class DataSubscriberBrokerImpl implements DataSubscriberBroker {
 
     private static final Logger logger = LoggerFactory.getLogger(DataSubscriberBrokerImpl.class);
 
+    private static final String liveWireRoleName = "ROLE_LIVEWIRE_USER";
+
     private final DataSubscriberRepository dataSubscriberRepository;
     private final UserRepository userRepository;
     private final PermissionBroker permissionBroker;
+    private final RoleRepository roleRepository;
 
     @Autowired
-    public DataSubscriberBrokerImpl(DataSubscriberRepository dataSubscriberRepository, UserRepository userRepository, PermissionBroker permissionBroker) {
+    public DataSubscriberBrokerImpl(DataSubscriberRepository dataSubscriberRepository, UserRepository userRepository, PermissionBroker permissionBroker, RoleRepository roleRepository) {
         this.dataSubscriberRepository = dataSubscriberRepository;
         this.userRepository = userRepository;
         this.permissionBroker = permissionBroker;
+        this.roleRepository = roleRepository;
     }
 
     @Override
@@ -44,7 +51,7 @@ public class DataSubscriberBrokerImpl implements DataSubscriberBroker {
 
     @Override
     @Transactional(readOnly = true)
-    public DataSubscriber viewSubscriber(String viewingUserUid, String subscriberUid) {
+    public DataSubscriber validateSubscriberAdmin(String viewingUserUid, String subscriberUid) {
         Objects.requireNonNull(viewingUserUid);
         Objects.requireNonNull(subscriberUid);
 
@@ -123,7 +130,7 @@ public class DataSubscriberBrokerImpl implements DataSubscriberBroker {
 
     @Override
     @Transactional
-    public void addUsersWithViewAccess(String adminUid, String subscriberUid, List<String> userUids) {
+    public void addUsersWithViewAccess(String adminUid, String subscriberUid, Set<String> userUids) {
         Objects.requireNonNull(adminUid);
         Objects.requireNonNull(subscriberUid);
         Objects.requireNonNull(userUids);
@@ -133,11 +140,14 @@ public class DataSubscriberBrokerImpl implements DataSubscriberBroker {
 
         validateAdminUser(user, subscriber);
         subscriber.addUserUidsWithAccess(userUids);
+        Role liveWireRole = roleRepository.findByNameAndRoleType(liveWireRoleName, Role.RoleType.STANDARD).get(0);
+        userRepository.findByUidIn(userUids)
+                .forEach(u -> u.addStandardRole(liveWireRole));
     }
 
     @Override
     @Transactional
-    public void removeUsersWithViewAccess(String adminUid, String subscriberUid, List<String> userUids) {
+    public void removeUsersWithViewAccess(String adminUid, String subscriberUid, Set<String> userUids) {
         Objects.requireNonNull(adminUid);
         Objects.requireNonNull(subscriberUid);
         Objects.requireNonNull(userUids);
@@ -147,6 +157,10 @@ public class DataSubscriberBrokerImpl implements DataSubscriberBroker {
 
         validateAdminUser(user, subscriber);
         subscriber.removeUserUidsWithAccess(userUids);
+
+        Role liveWireRole = roleRepository.findByNameAndRoleType(liveWireRoleName, Role.RoleType.STANDARD).get(0);
+        userRepository.findByUidIn(userUids)
+                .forEach(u -> u.removeStandardRole(liveWireRole));
     }
 
     @Override

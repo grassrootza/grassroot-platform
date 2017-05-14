@@ -1,7 +1,10 @@
 package za.org.grassroot.core.domain;
 
+import org.hibernate.annotations.DynamicUpdate;
+import org.hibernate.annotations.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import za.org.grassroot.core.domain.geo.GroupLocation;
 import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.UIDGenerator;
@@ -19,6 +22,7 @@ import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "group_profile") // quoting table name in case "group" is a reserved keyword
+@DynamicUpdate
 public class Group implements TodoContainer, VoteContainer, MeetingContainer, Serializable, Comparable<Group> {
 
     private static final Logger logger = LoggerFactory.getLogger(Group.class);
@@ -89,13 +93,19 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
     @Column(name = "active", nullable = false)
     private boolean active;
 
-
     /*
     Adding a 'discoverable' field, so group owners can mark if they want others to be able to find them, and a link
     to the UID of the user who will authorize this (UID so we can set it blank and leave nullable)
      */
     @Column(name = "discoverable", nullable = false)
     private boolean discoverable;
+
+    /*
+    Adding a mapping from group to its calculated locations (note : watch performance, as noted elsewhere, may want
+    to start removing prior calculation results)
+     */
+    @OneToMany(mappedBy = "group")
+    private Set<GroupLocation> locations;
 
     @ManyToOne(optional = true)
     @JoinColumn(name= "join_approver_id", nullable = true)
@@ -141,6 +151,10 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
     @Column(name="default_image")
     @Enumerated(EnumType.STRING)
     private GroupDefaultImage defaultImage;
+
+    @Column(name = "tags")
+    @Type(type = "za.org.grassroot.core.util.StringArrayUserType")
+    private String[] tags;
 
     private Group() {
         // for JPA
@@ -528,6 +542,14 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
     public String getDescription() { return description; }
 
     public void setDescription(String description) { this.description = description; }
+
+    public String[] getTags() {
+        return tags;
+    }
+
+    public void setTags(String[] tags) {
+        this.tags = tags;
+    }
 
     public byte[] getImage() {
         return image;
