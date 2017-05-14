@@ -15,6 +15,7 @@ import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class LiveWireAlertDTO {
 
+    private String uid;
     private Long creationTimeMillis;
     private String creatingUserName;
     private String creatingUserPhone;
@@ -34,8 +35,10 @@ public class LiveWireAlertDTO {
     private int groupTasks;
 
     private List<String> tags;
+    private boolean reviewed;
 
     public LiveWireAlertDTO(LiveWireAlert alert) {
+        this.uid = alert.getUid();
         this.creationTimeMillis = alert.getCreationTime().toEpochMilli();
         this.creatingUserName = alert.getCreatingUser().getName();
         this.creatingUserPhone = PhoneNumberUtil.invertPhoneNumber(alert.getCreatingUser().getPhoneNumber());
@@ -60,7 +63,11 @@ public class LiveWireAlertDTO {
         this.groupSize = group.getMemberships().size();
         this.groupCreationMillis = group.getCreatedDateTime().toEpochMilli();
         this.groupTasks = group.getDescendantEvents().size() + group.getDescendantTodos().size();
+
+        this.reviewed = alert.isReviewed();
     }
+
+    public String getUid() { return uid; }
 
     public String getCreatingUserName() {
         return creatingUserName;
@@ -114,7 +121,11 @@ public class LiveWireAlertDTO {
         return meetingTimeMillis;
     }
 
+    public String getMeetingLocation() { return meetingLocation; }
+
     public Long getGroupCreationMillis() {
         return groupCreationMillis;
     }
+
+    public boolean isReviewed() { return reviewed; }
 }

@@ -126,10 +126,10 @@ public class LiveWireUserController extends BaseController {
         } catch (InvalidParameterException e) {
             addMessage(attributes, MessageType.ERROR, "livewire.tags.invalid", request);
         }
-        return "redirect:/livewire/user/alert/list";
+        return "redirect:/livewire/user/";
     }
 
-    @RequestMapping(value = "/alert/release")
+    @RequestMapping(value = "/alert/release", method = RequestMethod.POST)
     public String releaseAlert(@RequestParam String alertUid,
                                @RequestParam(required = false) String tags,
                                RedirectAttributes attributes, HttpServletRequest request) {
@@ -142,6 +142,6 @@ public class LiveWireUserController extends BaseController {
         } catch (IllegalArgumentException e) {
             addMessage(attributes, MessageType.ERROR, "livewire.released.error", request);
         }
-        return "redirect:/livewire/user/alert/list";
+        return "redirect:/livewire/user/";
     }
 }

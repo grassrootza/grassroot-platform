@@ -9,6 +9,7 @@ alter table address add column is_primary boolean default false;
 update address set is_primary = true; -- will have to manually delete duplicates
 
 alter table live_wire_alert add column tags text[] not null default '{}';
+alter table live_wire_alert add column complete boolean default false;
 alter table live_wire_alert add column reviewed boolean default false;
 alter table live_wire_alert add column reviewed_by_user_id bigint;
 alter table live_wire_alert add column version integer default 0;
@@ -29,5 +30,6 @@ alter table user_profile add column livewire_contact boolean default false;
 
 alter table data_subscriber add column can_tag boolean default false;
 alter table data_subscriber add column can_release boolean default false;
+alter table data_subscriber add column version integer default 0;
 
 insert into role (role_name, role_type) values ('ROLE_LIVEWIRE_USER', 'STANDARD');

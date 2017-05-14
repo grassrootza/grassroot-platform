@@ -31,6 +31,9 @@ public interface DataSubscriberBroker {
 
     void removeUsersWithViewAccess(final String adminUid, final String subscriberUid, final Set<String> userUids);
 
+    void updateSubscriberPermissions(final String adminUid, final String subscriberUid,
+                                     final boolean canTag, final boolean canRelease);
+
     int countPushEmails();
 
 }

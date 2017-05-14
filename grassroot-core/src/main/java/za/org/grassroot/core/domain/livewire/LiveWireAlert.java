@@ -76,6 +76,10 @@ public class LiveWireAlert {
     private Instant sendTime;
 
     @Basic
+    @Column(name = "complete")
+    private boolean complete;
+
+    @Basic
     @Column(name = "reviewed")
     private boolean reviewed;
 
@@ -114,6 +118,7 @@ public class LiveWireAlert {
         private Group group;
         private String description;
         private Instant sendTime;
+        private boolean complete;
 
         public Builder creatingUser(User creatingUser) {
             this.creatingUser = creatingUser;
@@ -155,6 +160,11 @@ public class LiveWireAlert {
             return this;
         }
 
+        public Builder complete(boolean complete) {
+            this.complete = complete;
+            return this;
+        }
+
         public LiveWireAlert build() {
             LiveWireAlert alert = new LiveWireAlert(
                     Objects.requireNonNull(creatingUser),
@@ -170,6 +180,8 @@ public class LiveWireAlert {
                 alert.setContactName(contactName);
             }
 
+            alert.setComplete(complete);
+
             return alert;
         }
     }
@@ -178,7 +190,8 @@ public class LiveWireAlert {
         // for JPA
     }
 
-    private LiveWireAlert(User creatingUser, LiveWireAlertType type, Meeting meeting, Group group, String description) {
+    private LiveWireAlert(User creatingUser, LiveWireAlertType type, Meeting meeting, Group group,
+                          String description) {
         this.uid = UIDGenerator.generateId();
         this.creationTime = Instant.now();
         this.creatingUser = creatingUser;
@@ -186,7 +199,9 @@ public class LiveWireAlert {
         this.meeting = meeting;
         this.group = group;
         this.description = description;
+        this.complete = false;
         this.sent = false;
+        this.tags = new String[0];
     }
 
     public Long getId() {
@@ -269,6 +284,14 @@ public class LiveWireAlert {
         this.description = description;
     }
 
+    public boolean isComplete() {
+        return complete;
+    }
+
+    public void setComplete(boolean complete) {
+        this.complete = complete;
+    }
+
     public boolean isReviewed() {
         return reviewed;
     }
@@ -298,7 +321,7 @@ public class LiveWireAlert {
     }
 
     public void addTags(List<String> tagsToAdd) {
-        List<String> currentTags = StringArrayUtil.arrayToList(tags);
+        List<String> currentTags = new ArrayList<>(StringArrayUtil.arrayToList(tags));
         currentTags.addAll(tagsToAdd);
         tags = StringArrayUtil.listToArrayRemoveDuplicates(currentTags);
     }

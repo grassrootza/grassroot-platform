@@ -237,7 +237,7 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
 
     @Override
     @Transactional
-    public void setAlertToSend(String userUid, String alertUid, Instant timeToSend) {
+    public void setAlertComplete(String userUid, String alertUid, Instant soonestTimeToSend) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(alertUid);
 
@@ -245,7 +245,10 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
         LiveWireAlert alert = alertRepository.findOneByUid(alertUid);
         validateCreatingUser(user, alert);
 
-        alert.setSendTime(timeToSend == null ? Instant.now() : timeToSend);
+        alert.setComplete(true);
+        if (LiveWireAlertType.INSTANT.equals(alert.getType())) {
+            alert.setSendTime(Instant.now());
+        }
     }
 
     @Async
@@ -306,7 +309,8 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(pageable);
 
-        return unreviewedOnly ? alertRepository.findAll(pageable) : alertRepository.findByReviewed(false, pageable);
+        return unreviewedOnly ? alertRepository.findByCompleteTrueAndReviewedFalse(pageable)
+                : alertRepository.findByCompleteTrue(pageable);
     }
 
     @Override

@@ -80,7 +80,9 @@
             </div>
             <div th:switch="${#lists.isEmpty(users)}" class="col-md-6 col-sm-6 col-xs-12">
               <div th:case="true">
-
+                <p class="grassroot-body">
+                  No users added to subscriber yet
+                </p>
               </div>
               <div th:case="false">
                 <ul class="list-group">
@@ -98,6 +100,30 @@
                 Add
               </button>
             </div>
+          </div>
+
+          <hr>
+
+          <div class="row no-padding">
+            <div class="col-md-3 col-sm-3 col-xs-12">
+              <label class="grassroot-sidebar">Permissions</label>
+            </div>
+            <form class="grassroot-form" th:action="@{/livewire/subscriber/permissions/change}" method="post">
+              <input type="hidden" name="subscriberUid" th:value="${subscriber.uid}" />
+              <div class="col-md-6 col-sm-6 col-xs-12">
+                <label class="checkbox-inline">
+                  <input th:checked="${subscriber.canTag}" type="checkbox" name="canTag" /><span>Users can tag alerts</span>
+                </label>
+                <label class="checkbox-inline">
+                  <input th:checked="${subscriber.canRelease}" type="checkbox" name="canRelease" /><span>Users can release alerts</span>
+                </label>
+              </div>
+              <div class="col-md-3 col-sm-3 col-xs-12">
+                <button type="submit" class="btn default-button full-width-button">
+                  Update
+                </button>
+              </div>
+            </form>
           </div>
 
           <hr>

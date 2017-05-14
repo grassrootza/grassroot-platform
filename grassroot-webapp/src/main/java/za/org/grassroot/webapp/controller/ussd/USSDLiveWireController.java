@@ -269,7 +269,7 @@ public class USSDLiveWireController extends USSDController {
                              @RequestParam boolean location) throws URISyntaxException {
         User user = userManager.findByInputNumber(msisdn, null);
         Instant sendTime = location ? Instant.now().plus(3, ChronoUnit.MINUTES) : Instant.now();
-        liveWireAlertBroker.setAlertToSend(user.getUid(), alertUid, sendTime);
+        liveWireAlertBroker.setAlertComplete(user.getUid(), alertUid, sendTime); // say, will be reviewed
         if (location) {
             liveWireAlertBroker.addLocationToAlert(user.getUid(), alertUid, null, UserInterfaceType.USSD);
         }

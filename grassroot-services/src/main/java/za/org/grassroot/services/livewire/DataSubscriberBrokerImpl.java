@@ -164,7 +164,21 @@ public class DataSubscriberBrokerImpl implements DataSubscriberBroker {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
+    public void updateSubscriberPermissions(String adminUid, String subscriberUid, boolean canTag, boolean canRelease) {
+        Objects.requireNonNull(adminUid);
+        Objects.requireNonNull(subscriberUid);
+
+        User user = userRepository.findOneByUid(adminUid);
+        DataSubscriber subscriber = dataSubscriberRepository.findOneByUid(subscriberUid);
+        validateAdminUser(user, subscriber);
+
+        subscriber.setCanRelease(canRelease);
+        subscriber.setCanTag(canTag);
+    }
+
+    @Override
+    @Transactional // todo : figure out read only
     public int countPushEmails() {
         return dataSubscriberRepository.findAllActiveSubscriberPushEmails().size();
     }

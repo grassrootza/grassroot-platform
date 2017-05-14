@@ -17,6 +17,8 @@ public interface LiveWireAlertRepository extends JpaRepository<LiveWireAlert, Lo
 
     List<LiveWireAlert> findBySendTimeBetweenAndSentFalse(Instant start, Instant end);
 
-    Page<LiveWireAlert> findByReviewed(boolean reviewed, Pageable pageable);
+    Page<LiveWireAlert> findByCompleteTrue(Pageable pageable);
+
+    Page<LiveWireAlert> findByCompleteTrueAndReviewedFalse(Pageable pageable);
 
 }

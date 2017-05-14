@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Set;
 
 import static za.org.grassroot.core.util.StringArrayUtil.listToArray;
+import static za.org.grassroot.core.util.StringArrayUtil.listToArrayRemoveDuplicates;
 
 /**
  * Created by luke on 2017/05/05.
@@ -75,6 +76,9 @@ public class DataSubscriber {
     @Basic
     @Column(name = "can_release")
     private boolean canRelease;
+
+    @Version
+    private Integer version;
 
     private DataSubscriber() {
         // for JPA
@@ -190,7 +194,7 @@ public class DataSubscriber {
                 .filter(u -> !list.contains(u))
                 .forEach(list::add);
         list.addAll(userUids);
-        userUidsWithAccess = listToArray(list);
+        userUidsWithAccess = listToArrayRemoveDuplicates(list);
     }
 
     public boolean isCanTag() {
@@ -214,6 +218,8 @@ public class DataSubscriber {
         list.removeAll(userUids);
         userUidsWithAccess = listToArray(list);
     }
+
+    public Integer getVersion() { return version; }
 
     @Override
     public boolean equals(Object o) {

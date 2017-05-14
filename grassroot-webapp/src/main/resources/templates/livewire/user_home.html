@@ -26,7 +26,7 @@
   <section class="group-buttons">
     <div class="container">
       <div class="row">
-        <div class="col-md-4 col-md-offset-0 text-center">
+        <div class="col-md-4 col-md-offset-2 text-center">
           <a href="" th:href="@{alert/list(onlyUnreviewed=false)}">
             <button class="white-button group-button">
               <i class="fa fa-comments-o" aria-hidden="true"></i>View all alerts
@@ -79,9 +79,10 @@
                   <td class="col-md-2"><span th:text="${alert.contactNumberFormatted}">Contact number</span></td>
                   <td class="col-md-2"><span th:text="${#strings.listJoin(alert.tagList, ',')}">Tags</span></td>
                   <td class="col-md-2 text-center">
-                    <button th:onclick="'javascript:fetchAlertDescription(\'' + ${alert.uid} + '\')'"
+                    <button class="default-button btn-sm"
+                            th:onclick="'javascript:fetchAlertDescription(\'' + ${alert.uid} + '\')'"
                             th:attr="data-alertUid=${alert.uid}, data-alertIndex=${idx.index}">
-                      More
+                      Details
                     </button>
                   </td>
                 </tr>
@@ -103,25 +104,37 @@
         </div>
         <div class="modal-body">
           <div class="form-group">
-            <label for="group_description" class="control-label">Group description:</label>
-            <span id="group_description"></span>
-            <label for="alert_description" class="control-label">Alert description:</label>
-            <span id="alert_description"></span>
-            <label for="contact_details" class="control-label">Contact details:</label>
-            <span id="contact_details"></span>
-            <label id="mtg_details_label" for="meeting_details" class="control-label">Meeting details:</label>
-            <span id="meeting_details"></span>
-            <label for="tag_list" class="control-label">Tags:</label>
-            <span th:unless="${canTag}" id="tag_list"></span>
-            <form th:if="${canTag}">
-              <input th:if="${canTag}" id="tag_list" type="text" class="input-lg" />
-              <button type="submit" class="white-button">Change</button>
-            </form>
+            <p class="no-vertical">
+              <label for="group_description" class="grassroot-lead">Group description:</label>
+              <span id="group_description" class="grassroot-body"></span>
+            </p>
+            <p class="no-vertical">
+              <label for="alert_description" class="grassroot-lead">Alert description:</label>
+              <span id="alert_description" class="grassroot-body"></span>
+            </p>
+            <p class="no-vertical">
+              <label for="contact_details" class="grassroot-lead">Contact details:</label>
+              <span id="contact_details" class="grassroot-body"></span>
+            </p>
+            <p class="no-vertical">
+              <label id="mtg_details_label" for="meeting_details" class="control-label">Meeting details:</label>
+              <span id="meeting_details" class="grassroot-body"></span>
+            </p>
+            <p class="no-vertical">
+              <label for="tag_list" class="grassroot-lead">Tags:</label>
+              <span th:unless="${canTag}" id="tag_list" class="grassroot-body"></span>
+              <form th:if="${canTag}" th:action="@{/livewire/user/alert/tag}" method="post">
+                <input type="hidden" id="alert_uid_tag" name="alertUid" />
+                <input th:if="${canTag}" name="tags" id="tag_list" type="text" class="input-lg" />
+                <button type="submit" class="white-button">Change</button>
+              </form>
+            </p>
           </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-default btn-lg default-button btn-neutral" data-dismiss="modal">Close</button>
-          <form th:if="${canRelease}" th:action="@{/livewire/user/alert/release}">
+          <form id="release_form" th:if="${canRelease}" th:action="@{/livewire/user/alert/release}" method="post">
+            <input type="hidden" id="alert_uid_release" name="alertUid" />
             <input type="hidden" name="tags" id="release_tags_submit" />
             <button type="submit" class="btn btn-warning btn-lg default-button">Release</button>
           </form>
@@ -145,6 +158,9 @@
     var mtgLabel = $("#mtg_details_label");
     var mtgText = $("#meeting_details");
     var tagField = $("#tag_list");
+    var tagUid = $("#alert_uid_tag");
+    var releaseUid = $("#alert_uid_release");
+    var releaseForm = $("#release_form");
 
     function fetchAlertDescription(alertUid) {
         console.log("fetching alert description, for uid: " + alertUid);
@@ -171,6 +187,11 @@
             mtgText.text('Meeting about ' + data.meetingName + ', at ' + data.meetingLocation +
               m.format('MMMM Do YYYY, h:mm:ss a'));
         }
+        if (releaseForm !== null) {
+            releaseForm.toggle(!data.reviewed);
+        }
+        tagUid.val(data.uid);
+        releaseUid.val(data.uid);
         modal.modal();
     }
 

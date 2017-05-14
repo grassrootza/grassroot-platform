@@ -110,7 +110,7 @@ public class GrassrootServicesConfig implements SchedulingConfigurer {
 			@Qualifier("livewireAlertSenderJobDetail") JobDetail jobDetail) {
     	CronTriggerFactoryBean factoryBean = new CronTriggerFactoryBean();
     	factoryBean.setJobDetail(jobDetail);
-    	factoryBean.setCronExpression("0 0/10 * * * ?");
+    	factoryBean.setCronExpression("0 0/1 * * * ?");
     	factoryBean.setMisfireInstruction(CronTrigger.MISFIRE_INSTRUCTION_DO_NOTHING);
     	return factoryBean;
 	}

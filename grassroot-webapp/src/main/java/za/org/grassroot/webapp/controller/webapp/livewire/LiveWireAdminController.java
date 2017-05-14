@@ -189,6 +189,22 @@ public class LiveWireAdminController extends BaseController {
         return "redirect:/livewire/subscriber/view";
     }
 
+    @RequestMapping(value = "/subscriber/permissions/change", method = RequestMethod.POST)
+    public String alterDataSubscriberPermissions(@RequestParam String subscriberUid,
+                                                 @RequestParam(required = false) Boolean canTag,
+                                                 @RequestParam(required = false) Boolean canRelease,
+                                                 RedirectAttributes attributes, HttpServletRequest request) {
+        try {
+            subscriberBroker.updateSubscriberPermissions(getUserProfile().getUid(), subscriberUid,
+                    canTag != null ? canTag : false, canRelease != null ? canRelease : false);
+            addMessage(attributes, MessageType.SUCCESS, "livewire.permissions.change.done", request);
+        } catch (AccessDeniedException e) {
+            addMessage(attributes, MessageType.ERROR, "livewire.permissions.change.denied", request);
+        }
+        attributes.addAttribute("subscriberUid", subscriberUid);
+        return "redirect:/livewire/subscriber/view";
+    }
+
     private List<String> splitEmailInput(String emailsInSingleString) {
         Matcher emailMatcher = emailSplitPattern.matcher(emailsInSingleString);
         List<String> emails = new ArrayList<>();

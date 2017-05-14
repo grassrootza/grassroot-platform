@@ -39,7 +39,7 @@ public interface LiveWireAlertBroker {
 
     void updateDescription(String userUid, String alertUid, String description);
 
-    void setAlertToSend(String userUid, String alertUid, Instant timeToSend);
+    void setAlertComplete(String userUid, String alertUid, Instant soonestTimeToSend);
 
     void addLocationToAlert(String userUid, String alertUid, GeoLocation location, UserInterfaceType interfaceType);
 

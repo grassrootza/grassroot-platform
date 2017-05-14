@@ -34,8 +34,8 @@ public class BatchedLiveWireSenderImpl implements BatchedLiveWireSender {
         Instant end = Instant.now();
         Instant start = end.minus(1L, ChronoUnit.HOURS);
         List<LiveWireAlert> alerts = alertRepository.findBySendTimeBetweenAndSentFalse(start, end);
-        logger.info("LiveWire Alert Sender: processing {} alerts", alerts.size());
         if (!alerts.isEmpty()) {
+            logger.info("LiveWire Alert Sender: processing {} alerts", alerts.size());
             sendingBroker.sendLiveWireAlerts(alerts.stream()
                     .map(LiveWireAlert::getUid).collect(Collectors.toSet()));
         }
