@@ -49,12 +49,11 @@ public class StandaloneDatabaseConfig {
     @Bean
     public AbstractEntityManagerFactoryBean entityManagerFactory() {
         Map<String, Object> jpaProperties = new HashMap<>();
-        jpaProperties.put("hibernate.dialect", "za.org.grassroot.core.HSQLDialectArray");
-        jpaProperties.put("hibernate.hbm2ddl.auto", "create");
+        log.info("Setting up entity manager factory, with Hibernate properties ...");
 
         LocalContainerEntityManagerFactoryBean localContainerEntityManagerFactoryBean = new LocalContainerEntityManagerFactoryBean();
         localContainerEntityManagerFactoryBean.setPackagesToScan("za.org.grassroot.core");
-        localContainerEntityManagerFactoryBean.setJpaPropertyMap(jpaProperties);
+        // localContainerEntityManagerFactoryBean.setJpaPropertyMap(jpaProperties);
         localContainerEntityManagerFactoryBean.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
         localContainerEntityManagerFactoryBean.setDataSource(dataSource());
 
