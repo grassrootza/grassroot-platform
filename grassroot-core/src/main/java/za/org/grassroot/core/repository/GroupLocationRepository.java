@@ -38,6 +38,7 @@ public interface GroupLocationRepository extends JpaRepository<GroupLocation, Lo
 			+ ",l.score"
 			+ ",'GROUP'"
 			+ ",g.description"
+			+ ",false"
 			+ ")"
 			+ " from GroupLocation l"
 			+ " inner join l.group g"

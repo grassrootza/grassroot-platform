@@ -18,9 +18,6 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * Created by Siyanda Mzam on 2016/03/27 9:22 AM.
- */
 public class TaskRestControllerTest extends RestAbstractUnitTest {
 
     @InjectMocks

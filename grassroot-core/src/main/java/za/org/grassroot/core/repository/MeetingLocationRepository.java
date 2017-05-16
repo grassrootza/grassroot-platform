@@ -9,13 +9,10 @@ import za.org.grassroot.core.domain.geo.ObjectLocation;
 import java.util.Collection;
 import java.util.List;
 
-/**
- * Created by luke on 2017/04/06.
- */
 public interface MeetingLocationRepository extends JpaRepository<MeetingLocation, Long> {
 
-// note : subequery makes this difficult to do with specifications, hence this way
-	// todo : reconsider keeping old calculation results if subquery performance starts degrading
+    // note : subequery makes this difficult to do with specifications, hence this way
+    // todo : reconsider keeping old calculation results if subquery performance starts degrading
     @Query("select NEW za.org.grassroot.core.domain.geo.ObjectLocation("
         + " m.uid"
         + ",m.name"
@@ -23,6 +20,7 @@ public interface MeetingLocationRepository extends JpaRepository<MeetingLocation
         + ",l.location.longitude"
         + ",l.score"
         + ",'MEETING'"
+        + ",m.isPublic"
         + ")"
         + " from MeetingLocation l"
         + " inner join l.meeting m"
