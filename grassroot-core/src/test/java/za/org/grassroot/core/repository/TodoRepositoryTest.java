@@ -4,6 +4,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -13,6 +14,7 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Todo;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.TodoCompletionConfirmType;
+import za.org.grassroot.core.specifications.GroupSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
 
 import javax.transaction.Transactional;
@@ -130,7 +132,8 @@ public class TodoRepositoryTest {
         Group group4 = groupRepository.save(new Group("subgroup11", user, group2));
         Group group5 = groupRepository.save(new Group("group2", user));
 
-        List<Group> subGroups = groupRepository.findByParentAndActiveTrue(groupParent);
+        List<Group> subGroups = groupRepository.findAll(Specifications.where(
+                GroupSpecifications.hasParent(groupParent)).and(GroupSpecifications.isActive()));;
         assertTrue(subGroups.contains(group2));
         assertTrue(subGroups.contains(group3));
         subGroups.add(group4);

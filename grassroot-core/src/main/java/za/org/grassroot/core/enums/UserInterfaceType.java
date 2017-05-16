@@ -7,7 +7,8 @@ public enum UserInterfaceType {
     UNKNOWN("unknown"),
     USSD("ussd"),
     WEB("web"),
-    ANDROID("android");
+    ANDROID("android"),
+    SYSTEM("system");
 
     private final String text;
 

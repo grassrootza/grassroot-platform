@@ -142,8 +142,8 @@ public class VerificationTokenCode {
     public String toString() {
         return "VerificationTokenCode{" +
                 "username='" + username + '\'' +
-                ", code='" + code + '\'' +
                 ", expiryDateTime=" + expiryDateTime +
+                ", code='" + code + '\'' +
                 '}';
     }
 }

@@ -1,14 +1,10 @@
 package za.org.grassroot.services.geo;
 
+import com.fasterxml.jackson.annotation.*;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import com.fasterxml.jackson.annotation.JsonAnyGetter;
-import com.fasterxml.jackson.annotation.JsonAnySetter;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({
@@ -19,9 +15,10 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
         "lat",
         "lon",
         "display_name",
+        "address",
         "boundingbox"
 })
-public class InvertGeoCodeSimpleResult {
+public class InvertGeoCodeResult {
 
     @JsonProperty("place_id")
     private String placeId;
@@ -39,6 +36,8 @@ public class InvertGeoCodeSimpleResult {
     private String displayName;
     @JsonProperty("boundingbox")
     private List<String> boundingbox = null;
+    @JsonProperty("address")
+    private InvertGeoCodeAddress address;
     @JsonIgnore
     private Map<String, Object> additionalProperties = new HashMap<String, Object>();
 
@@ -122,6 +121,16 @@ public class InvertGeoCodeSimpleResult {
         this.boundingbox = boundingbox;
     }
 
+    @JsonProperty("address")
+    public InvertGeoCodeAddress getAddress() {
+        return address;
+    }
+
+    @JsonProperty("address")
+    public void setAddress(InvertGeoCodeAddress address) {
+        this.address = address;
+    }
+
     @JsonAnyGetter
     public Map<String, Object> getAdditionalProperties() {
         return this.additionalProperties;
@@ -134,7 +143,7 @@ public class InvertGeoCodeSimpleResult {
 
     @Override
     public String toString() {
-        return "InvertGeoCodeSimpleResult{" +
+        return "InvertGeoCodeResult{" +
                 "placeId='" + placeId + '\'' +
                 ", licence='" + licence + '\'' +
                 ", osmType='" + osmType + '\'' +

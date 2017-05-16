@@ -1,5 +1,6 @@
 package za.org.grassroot.core.domain;
 
+import org.hibernate.annotations.Type;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.UIDGenerator;
@@ -30,6 +31,14 @@ public abstract class AbstractEventEntity {
 
 	@Column(name = "description", length = 512)
 	protected String description;
+
+	/*
+	For meetings, this is just a tag, maybe used later -- for votes, it is the vote options
+	(and hence also needed in vote request for assembling)
+	 */
+	@Column(name = "tags")
+	@Type(type = "za.org.grassroot.core.util.StringArrayUserType")
+	private String[] tags;
 
 	/*
 	For meetings this the meeting start time
@@ -193,6 +202,14 @@ public abstract class AbstractEventEntity {
 
 	public void setDescription(String description) {
 		this.description = description;
+	}
+
+	public String[] getTags() {
+		return tags;
+	}
+
+	public void setTags(String[] tags) {
+		this.tags = tags;
 	}
 
 	@Override

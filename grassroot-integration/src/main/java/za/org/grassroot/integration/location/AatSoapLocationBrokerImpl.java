@@ -22,6 +22,7 @@ import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.UserLocationLogRepository;
 import za.org.grassroot.core.repository.UserLogRepository;
 import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.integration.exception.LocationNotAvailableException;
 import za.org.grassroot.integration.location.aatmodels.*;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -81,14 +82,16 @@ public class AatSoapLocationBrokerImpl implements UssdLocationServicesBroker {
 
     @Override
     @Transactional
-    public boolean removeUssdLocationLookup(String userUid, UserInterfaceType revokedThroughInterface) {
+    public boolean removeUssdLocationLookup(String userUid, UserInterfaceType interfaceType) {
         User user = userRepository.findOneByUid(userUid);
         logger.info("About to remove a user from LBS lookup, for phone: {}", user.getPhoneNumber());
-        userLogRepository.save(new UserLog(userUid, UserLogType.REVOKED_LOCATION_PERMISSION, "", revokedThroughInterface));
+        UserLogType logType = UserInterfaceType.SYSTEM.equals(interfaceType) ?
+                UserLogType.ONCE_OFF_LBS_REVERSAL : UserLogType.REVOKED_LOCATION_PERMISSION;
+        userLogRepository.save(new UserLog(userUid, logType, "", interfaceType));
         RemoveAllowedMsisdnResponse response = aatSoapClient.removeAllowedMsisdn(user.getPhoneNumber());
         if (isRemoveRequestSuccessful(response)) {
             userLogRepository.save(new UserLog(userUid, UserLogType.LOCATION_PERMISSION_REMOVED,
-                    "message from server", revokedThroughInterface));
+                    "message from server", interfaceType));
             return true;
         } else {
             return false;
@@ -124,18 +127,16 @@ public class AatSoapLocationBrokerImpl implements UssdLocationServicesBroker {
     @Transactional
     public GeoLocation getUssdLocationForUser(String userUid) {
         User user = userRepository.findOneByUid(userUid);
-        try {
-            // todo : will want to use the accuracy score ...
-            GetLocationResponse response = aatSoapClient.getLocationResponse(user.getPhoneNumber());
-            GeoLocation location = getLocationFromResposne(response);
-            Instant timeOfCoord = getLocationInstant(response);
-            userLocationLogRepository.save(new UserLocationLog(timeOfCoord, userUid, location,
-                    LocationSource.LOGGED_APPROX));
-            return location;
-        } catch (Exception e) {
-            // throw new LocationNotAvailableException();
-            throw e;
+        // todo : will want to use the accuracy score ...
+        GetLocationResponse response = aatSoapClient.getLocationResponse(user.getPhoneNumber());
+        GeoLocation location = getLocationFromResposne(response);
+        Instant timeOfCoord = getLocationInstant(response);
+        if (location.getLongitude() == 0 || location.getLatitude() == 0) {
+            throw new LocationNotAvailableException();
         }
+        userLocationLogRepository.save(new UserLocationLog(timeOfCoord, userUid, location,
+                LocationSource.LOGGED_APPROX));
+        return location;
     }
 
     // here: deal with the awfulness of the AAT XML schema

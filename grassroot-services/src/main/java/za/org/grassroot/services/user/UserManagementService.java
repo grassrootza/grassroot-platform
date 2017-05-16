@@ -50,7 +50,7 @@ public interface UserManagementService {
 
     String generateAndroidUserVerifier(String phoneNumber, String displayName);
 
-    String regenerateUserVerifier(String phoneNumber);
+    String regenerateUserVerifier(String phoneNumber, boolean createUserIfNotExists);
 
     /*
     Methods to update user properties

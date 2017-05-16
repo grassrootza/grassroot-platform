@@ -93,6 +93,35 @@ public class USSDLiveWireController extends USSDController {
         return menuBuilder(menu);
     }
 
+    @RequestMapping("register")
+    @ResponseBody
+    public Request promptToRegisterAsContact(@RequestParam String msisdn) throws URISyntaxException {
+        User user = userManager.findByInputNumber(msisdn);
+        USSDMenu menu = new USSDMenu(getMessage(LIVEWIRE, "register", promptKey, user));
+        menu.addMenuOption("livewire/register/do?location=true",
+                getMessage(LIVEWIRE, "register", optionsKey + "location", user));
+        menu.addMenuOption("livewire/register/do?location=false",
+                getMessage(LIVEWIRE, "register", optionsKey + "nolocation", user));
+        menu.addMenuOption("start_livewire?page=0", getMessage("options.back", user));
+        return menuBuilder(menu);
+    }
+
+    @RequestMapping("register/do")
+    @ResponseBody
+    public Request registerAsLiveWireContact(@RequestParam String msisdn,
+                                             @RequestParam boolean location) throws URISyntaxException {
+        User user = userManager.findByInputNumber(msisdn);
+        liveWireAlertBroker.updateUserLiveWireContactStatus(user.getUid(), true, UserInterfaceType.USSD);
+        USSDMenu menu = new USSDMenu(getMessage(LIVEWIRE, "register.do", promptKey, user));
+        menu.addMenuOption("start_livewire?page=0",
+                getMessage(LIVEWIRE, "register.do", optionsKey + "lwire", user));
+        menu.addMenuOptions(optionsHomeExit(user, false));
+        if (location) {
+            liveWireAlertBroker.trackLocationForLiveWireContact(user.getUid(), UserInterfaceType.USSD);
+        }
+        return menuBuilder(menu);
+    }
+
     @RequestMapping("group")
     public Request groupChosen(@RequestParam String msisdn,
                                @RequestParam(required = false) String groupUid,
@@ -240,7 +269,7 @@ public class USSDLiveWireController extends USSDController {
                              @RequestParam boolean location) throws URISyntaxException {
         User user = userManager.findByInputNumber(msisdn, null);
         Instant sendTime = location ? Instant.now().plus(3, ChronoUnit.MINUTES) : Instant.now();
-        liveWireAlertBroker.setAlertToSend(user.getUid(), alertUid, sendTime);
+        liveWireAlertBroker.setAlertComplete(user.getUid(), alertUid, sendTime); // say, will be reviewed
         if (location) {
             liveWireAlertBroker.addLocationToAlert(user.getUid(), alertUid, null, UserInterfaceType.USSD);
         }

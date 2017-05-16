@@ -44,6 +44,10 @@ public class Address implements LocationHolder {
     @JoinColumn(name = "resident_user_id", nullable = true, updatable = true)
     private User resident;
 
+    @Basic
+    @Column(name = "is_primary")
+    private boolean primary;
+
     @Embedded
     @AttributeOverrides({
             @AttributeOverride(name="latitude", column = @Column(nullable = true)),
@@ -58,31 +62,32 @@ public class Address implements LocationHolder {
         // for JPA
     }
 
-    public Address(User resident) {
+    public Address(User resident, boolean primary) {
         this.uid = UIDGenerator.generateId();
         this.createdDateTime = Instant.now();
         this.resident = resident;
+        this.primary = primary;
     }
 
-    public Address(User resident, String houseNumber, String streetName, String town) {
-        this(resident);
+    public Address(User resident, String houseNumber, String streetName, String town, boolean primary) {
+        this(resident, primary);
         this.house = houseNumber;
         this.street = streetName;
         this.neighbourhood = town;
-        // this.city = city;
     }
-
 
     public Long getId() {
         return id;
     }
 
-    public User getResident() {
-        return resident;
+    public User getResident() { return resident; }
+
+    public boolean isPrimary() {
+        return primary;
     }
 
-    public void setResident(User resident) {
-        this.resident = resident;
+    public void setPrimary(boolean primary) {
+        this.primary = primary;
     }
 
     public String getUid() {
@@ -124,6 +129,8 @@ public class Address implements LocationHolder {
     public void setCity(String city) {
         this.city = city;
     }*/
+
+    public void setLocation(GeoLocation location) { this.location = location; }
 
     @Override
     public GeoLocation getLocation() {

@@ -352,6 +352,9 @@ public class USSDHomeController extends USSDController {
 
             if (groupsForInstant != 0L) {
                 menu.addMenuOption("livewire/instant", getMessage(LIVEWIRE, startMenu, optionsKey + "instant", user));
+                // if (!user.isLiveWireContact()) {
+                    menu.addMenuOption("livewire/register", getMessage(LIVEWIRE, startMenu, optionsKey + "register", user));
+                // }
             }
         }
         return menu;

@@ -17,7 +17,7 @@ public class HSQLDialectArray extends HSQLDialect {
         super();
 
         registerHibernateType(Types.ARRAY, "array");
-        registerColumnType(Types.ARRAY, "String[]");
+        registerColumnType(Types.ARRAY, "ARRAY");
     }
 
 }
