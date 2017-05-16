@@ -128,44 +128,54 @@
 
     // Create map
     var map = L.map('map').setView([latitude, longitude], zoom);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: maxZoom,
-        attributionControl: false
-      }).addTo(map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: maxZoom,
+      attributionControl: false
+    }).addTo(map);
 
-      // Draw all marks
-      var markers = [[${data}]];
-      for (var i=0; i < markers.length; ++i)
-      {
-        var m = markers[i];
-        L.marker([m.latitude, m.longitude])
-            .bindPopup('<a href="' + m.url + '" target="_blank">' + m.name + '</a> <br><br>' + m.description)
-            .addTo(map);
-      }
+    // Draw all marks
+    var markers = [[${data}]];
+    for (var i=0; i < markers.length; ++i)
+    {
+      var m = markers[i];
+      L.marker([m.latitude, m.longitude])
+          .bindPopup('<a href="' + m.url + '" target="_blank">' + m.name + '</a> <br><br>' + m.description)
+          .addTo(map);
+    }
 
-      // Radius in Km, convert to meters
-      var radius = originalRadius * 1000.0;
+    // Radius in Km, convert to meters
+    var radius = originalRadius * 1000.0;
 
-      // Draw a radius in meters
-      L.circle([latitude, longitude], radius, {fill: true}).addTo(map);
+    // Draw a radius in meters
+    L.circle([latitude, longitude], radius, {fill: true}).addTo(map);
 
-      // Draw the scale
-      var graphicScale = L.control.graphicScale({
-        doubleLine: false
-        ,fill: 'fill'
-        ,showSubunits: false
-      }).addTo(map);
+    // Draw the scale
+    var graphicScale = L.control.graphicScale({
+      doubleLine: false
+      ,fill: 'fill'
+      ,showSubunits: false
+    }).addTo(map);
 
-      // TODO: The code below is not working well - create better approach
-      // Add to map the 'moveend' event
-  //    map.on('moveend', function(e) {
-  //      var center = map.getCenter();
-  //      window.location = '/location'
-  //      + '?latitude=' + center.lat
-  //      + '&longitude=' + center.lng
-  //      + '&radius=' + originalRadius
-  //      + '&zoom=' + map.getZoom();
-  //    });
+    // TODO: The code below is not working well - create better approach
+    // Add to map the 'moveend' event
+    map.on('moveend', function(e) {
+      var url = '/location';
+      var min = map.getBounds().getSouthWest();
+      var max = map.getBounds().getNorthEast();
+      var data = {
+        min: { latitude: min.lat, longitude: min.lng }
+        ,max: { latitude: max.lat, longitude: max.lng }
+      };
+      // Load new data
+      $.post(url, data)
+      .done(function(data) {
+        console.log("done");
+      })
+      .fail(function(jqxhr, textStatus, error) {
+        var err = textStatus + ", " + error;
+        console.log( "Request Failed: " + err );  
+      });
+	  });
 
     // -------------------------
     // Add callbacks to buttons

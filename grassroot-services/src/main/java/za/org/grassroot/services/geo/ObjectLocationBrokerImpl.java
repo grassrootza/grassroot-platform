@@ -147,6 +147,62 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
      */
     @Override
     @Transactional(readOnly = true)
+    public List<ObjectLocation> fetchMeetingLocations (GeoLocation min, GeoLocation max, Integer restriction) {
+        logger.info("Fetching meeting locations ...");
+
+        assertRestriction(restriction);
+        assertGeolocation(min);
+        assertGeolocation(max);
+
+        // Mount restriction
+        String restrictionClause = "";
+        if (restriction == PRIVATE_LEVEL) {
+            restrictionClause = "m.isPublic = false AND ";
+        }
+        else if (restriction == PUBLIC_LEVEL) {
+            restrictionClause = "m.isPublic = true AND ";
+        }
+
+        // Mount query
+        String query =
+            "SELECT NEW za.org.grassroot.core.domain.geo.ObjectLocation(" +
+            "  m.uid, m.name, l.location.latitude, l.location.longitude, l.score, 'MEETING', " +
+            "  CONCAT('<strong>Where: </strong>', m.eventLocation, '<br/><strong>Date and Time: </strong>', m.eventStartDateTime), m.isPublic) " +
+            "FROM MeetingLocation l " +
+            "INNER JOIN l.meeting m " +
+            "WHERE " + restrictionClause +
+            "  l.calculatedDateTime <= :date " +
+            "  AND l.calculatedDateTime = (SELECT MAX(ll.calculatedDateTime) FROM MeetingLocation ll WHERE ll.meeting = l.meeting) " +
+            "  AND l.location.latitude " +
+            "      BETWEEN :latMin AND :latMin " +
+            "  AND l.location.longitude " +
+            "      BETWEEN :longMin AND :longMin ";
+
+        logger.info(query);
+
+        List<ObjectLocation> list = entityManager.createQuery(query, ObjectLocation.class)
+                .setParameter("date", Instant.now())
+                .setParameter("latMin", min.getLatitude())
+                .setParameter("longMin", min.getLongitude())
+                .setParameter("latMax", max.getLatitude())
+                .setParameter("longMax", max.getLongitude())
+                .getResultList();
+
+        logger.info("" + Instant.now());
+        logger.info("" + KM_PER_DEGREE);
+        logger.info("" + min.getLatitude());
+        logger.info("" + min.getLongitude());
+        logger.info("" + max.getLatitude());
+        logger.info("" + max.getLongitude());
+
+        return (list.isEmpty() ? new ArrayList<>() : list);
+    }
+
+    /**
+     * TODO: 1) Use the user restrictions
+     */
+    @Override
+    @Transactional(readOnly = true)
     public List<ObjectLocation> fetchMeetingLocations (GeoLocation location, Integer radius, Integer restriction) {
         logger.info("Fetching meeting locations ...");
 

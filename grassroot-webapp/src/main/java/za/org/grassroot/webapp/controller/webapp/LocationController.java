@@ -149,6 +149,38 @@ public class LocationController extends BaseController {
         return "location/map";
     }
 
+    @RequestMapping(value = "", method = RequestMethod.POST)
+    public String searchBox (@RequestParam(required = false) Integer restriction,
+                          @ModelAttribute("min") GeoLocation min,
+                          @ModelAttribute("max") GeoLocation max,
+                          Model model,
+                          HttpServletRequest request, RedirectAttributes attributes) {
+
+        // Check restriction
+        Integer useRestriction = (restriction == null ? PUBLIC_LEVEL : restriction);
+
+        // Get user
+        final User user = getUserProfile();
+        logger.info("The user {}", user);
+        logger.info("The bounding box {} - {}", min, max);
+
+        // Returns list
+        List<ObjectLocation> objectsToReturn = new ArrayList<>();
+
+        // Load meetings
+        List<ObjectLocation> meetings = objectLocationBroker.fetchMeetingLocations(min, max, useRestriction);
+        logger.info("Meetings found: {}", meetings.size());
+
+        // Concat the results
+        objectsToReturn.addAll(meetings);
+
+        // Send response
+        model.addAttribute("user", user);
+        model.addAttribute("data", objectsToReturn);
+
+        return "location/map";
+    }
+
     @RequestMapping(value = "/filter", method = RequestMethod.GET)
     public String searchWithFilter(@ModelAttribute GeoFilterFormModel filter, Model model) {
         model.addAttribute("user", getUserProfile());
