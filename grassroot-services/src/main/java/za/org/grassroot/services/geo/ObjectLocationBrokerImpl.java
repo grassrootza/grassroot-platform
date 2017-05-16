@@ -18,6 +18,7 @@ import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.group.GroupLocationFilter;
 
 import javax.persistence.EntityManager;
+import javax.persistence.TypedQuery;
 import java.net.URISyntaxException;
 import java.security.InvalidParameterException;
 import java.time.Instant;
@@ -26,7 +27,8 @@ import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
+
+import static za.org.grassroot.services.geo.GeoLocationUtils.KM_PER_DEGREE;
 
 @Service
 public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
@@ -36,6 +38,7 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
     private final static double MAX_LONGITUDE = 180.00;
 
     private static final Logger logger = LoggerFactory.getLogger(ObjectLocationBroker.class);
+
     private final EntityManager entityManager;
     private final GroupLocationRepository groupLocationRepository;
     private final MeetingLocationRepository meetingLocationRepository;
@@ -65,13 +68,31 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
         assertGeolocation(location);
 
         List<ObjectLocation> list = entityManager.createQuery("SELECT NEW za.org.grassroot.core.domain.geo.ObjectLocation( " +
-                        "g.uid, g.groupName, l.location.latitude, " + "l.location.longitude, l.score, 'GROUP', g.description) " +
+                        "g.uid, g.groupName, l.location.latitude, l.location.longitude, l.score, 'GROUP', g.description, false) " +
                         "FROM GroupLocation l " +
                         "INNER JOIN l.group g " +
                         "WHERE g.discoverable = true " +
                         "AND l.localDate <= :date " +
-                        "AND l.localDate = (SELECT MAX(ll.localDate) FROM GroupLocation ll WHERE ll.group = l.group)",
-                ObjectLocation.class).setParameter("date", LocalDate.now()).getResultList();
+                        "AND l.localDate = (SELECT MAX(ll.localDate) FROM GroupLocation ll WHERE ll.group = l.group)" +
+                        "AND l.location.latitude " +
+                        "    BETWEEN :latpoint  - (:radius / :distance_unit) " +
+                        "        AND :latpoint  + (:radius / :distance_unit) " +
+                        "AND l.location.longitude " +
+                        "    BETWEEN :longpoint - (:radius / (:distance_unit * COS(RADIANS(:latpoint)))) " +
+                        "        AND :longpoint + (:radius / (:distance_unit * COS(RADIANS(:latpoint)))) " +
+                        "AND :radius >= (:distance_unit " +
+                        "         * DEGREES(ACOS(COS(RADIANS(:latpoint)) " +
+                        "         * COS(RADIANS(l.location.latitude)) " +
+                        "         * COS(RADIANS(:longpoint - l.location.longitude)) " +
+                        "         + SIN(RADIANS(:latpoint)) " +
+                        "         * SIN(RADIANS(l.location.latitude))))) ",
+                ObjectLocation.class)
+                .setParameter("date", LocalDate.now())
+                .setParameter("radius", (double)radius)
+                .setParameter("distance_unit", KM_PER_DEGREE)
+                .setParameter("latpoint", location.getLatitude())
+                .setParameter("longpoint", location.getLongitude())
+                .getResultList();
 
         return (list.isEmpty() ? new ArrayList<>() : list);
     }
@@ -85,16 +106,9 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
                 LocalDate.now().minus(filter.getMinimumGroupLifeWeeks(), ChronoUnit.WEEKS)
                 .atStartOfDay().toInstant(ZoneOffset.UTC);
 
-        // note : if need to optimize performance, leave out size counts if nulls passed, instead of check > 0
-        List<Group> groupsToInclude = entityManager.createQuery("" +
-                "select g from Group g where " +
-                "g.createdDateTime >= :createdDateTime and " +
-                "size(g.memberships) >= :minMembership and " +
-                "(size(g.descendantEvents) + size(g.descendantTodos)) >= :minTasks", Group.class)
-                .setParameter("createdDateTime", earliestDate)
-                .setParameter("minMembership", filter.getMinimumGroupSize() == null ? 0 : filter.getMinimumGroupSize())
-                .setParameter("minTasks", filter.getMinimumGroupTasks() == null ? 0 : filter.getMinimumGroupTasks())
-                .getResultList();
+        // subsequent group query adds discoverable filter, leaving off here enables flexibility to have private
+        // group but public meeting
+        List<Group> groupsToInclude = filterQuery(filter, earliestDate, false).getResultList();
 
         locations.addAll(groupLocationRepository.findAllLocationsWithDateAfterAndGroupIn(groupsToInclude));
         locations.addAll(meetingLocationRepository.findAllLocationsWithDateAfterAndGroupIn(groupsToInclude));
@@ -102,24 +116,40 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
         return locations;
     }
 
-    // todo : use to generate an Address entity, once that has been detached from users
+    // todo : add / integrate with location filter
+    private TypedQuery<Group> filterQuery(GroupLocationFilter filter, Instant earliestDate, boolean discoverableOnly) {
+        // note : if need to optimize performance, leave out size counts if nulls passed, instead of check > 0
+        return entityManager.createQuery("" +
+                "select g from Group g where " +
+                (discoverableOnly ? "g.discoverable = true and " : "") +
+                "g.createdDateTime >= :createdDateTime and " +
+                "size(g.memberships) >= :minMembership and " +
+                "(size(g.descendantEvents) + size(g.descendantTodos)) >= :minTasks", Group.class)
+                .setParameter("createdDateTime", earliestDate)
+                .setParameter("minMembership", filter.getMinimumGroupSize() == null ? 0 : filter.getMinimumGroupSize())
+                .setParameter("minTasks", filter.getMinimumGroupTasks() == null ? 0 : filter.getMinimumGroupTasks());
+    }
+
     @Override
-    public String getReverseGeoCodedAddress(GeoLocation location) {
+    public InvertGeoCodeResult getReviseGeoCodeAddressFullGeoLocation(GeoLocation location) {
         try {
-            Objects.requireNonNull(location);
-            URIBuilder uriBuilder = new URIBuilder(geocodingApiUrl);
-            uriBuilder.addParameter("format", "json");
-            uriBuilder.addParameter("lat", String.valueOf(location.getLatitude()));
-            uriBuilder.addParameter("lon", String.valueOf(location.getLongitude()));
-            uriBuilder.addParameter("zoom", "18");
-            InvertGeoCodeSimpleResult result = restTemplate.getForObject(uriBuilder.build(), InvertGeoCodeSimpleResult.class);
-            return result.getDisplayName();
+            return restTemplate.getForObject(
+                    invertGeoCodeRequestURI(location).build(),
+                    InvertGeoCodeResult.class);
         } catch (URISyntaxException|NullPointerException|HttpClientErrorException e) {
             e.printStackTrace();
-            return "Undetected";
+            return null;
         }
     }
 
+    private URIBuilder invertGeoCodeRequestURI(GeoLocation location) throws URISyntaxException {
+        URIBuilder uriBuilder = new URIBuilder(geocodingApiUrl);
+        uriBuilder.addParameter("format", "json");
+        uriBuilder.addParameter("lat", String.valueOf(location.getLatitude()));
+        uriBuilder.addParameter("lon", String.valueOf(location.getLongitude()));
+        uriBuilder.addParameter("zoom", "18");
+        return uriBuilder;
+    }
 
     /**
      * TODO: 1) Use the user restrictions and search for public groups/meetings

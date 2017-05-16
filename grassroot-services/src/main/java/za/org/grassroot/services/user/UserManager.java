@@ -244,12 +244,16 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     @Override
     @Transactional
-    public String regenerateUserVerifier(String phoneNumber) {
+    public String regenerateUserVerifier(String phoneNumber, boolean createUserIfNotExists) {
         User user = userRepository.findByPhoneNumber(phoneNumber);
         if (user == null) {
-            UserCreateRequest userCreateRequest = userCreateRequestRepository.findByPhoneNumber(phoneNumber);
-            if (userCreateRequest == null) {
-                throw new AccessDeniedException("Error! Trying to resend OTP for user before creating");
+            if (createUserIfNotExists) {
+                UserCreateRequest userCreateRequest = userCreateRequestRepository.findByPhoneNumber(phoneNumber);
+                if (userCreateRequest == null) {
+                    throw new AccessDeniedException("Error! Trying to resend OTP for user before creating");
+                }
+            } else {
+                throw new AccessDeniedException("Error! Trying to create an OTP for non-existent user");
             }
         }
         VerificationTokenCode newTokenCode = passwordTokenService.generateShortLivedOTP(phoneNumber);

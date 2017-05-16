@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.env.Environment;
+import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +21,7 @@ import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.GroupLogRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.specifications.GroupSpecifications;
 import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
@@ -190,8 +192,10 @@ public class GroupBrokerImpl implements GroupBroker {
     }
 
     private void addGroupMembersToChatAfterCommit(Group group, User user) {
-        AfterTxCommitTask afterTxCommitTask = () -> groupChatService.addAllGroupMembersToChat(group, user);
-        applicationEventPublisher.publishEvent(afterTxCommitTask);
+        if (groupChatService != null) {
+            AfterTxCommitTask afterTxCommitTask = () -> groupChatService.addAllGroupMembersToChat(group, user);
+            applicationEventPublisher.publishEvent(afterTxCommitTask);
+        }
     }
 
     @Override
@@ -851,7 +855,8 @@ public class GroupBrokerImpl implements GroupBroker {
         group.setDefaultLanguage(newLocale);
 
         if (includeSubGroups) {
-            List<Group> subGroups = new ArrayList<>(groupRepository.findByParentAndActiveTrue(group));
+            List<Group> subGroups = groupRepository.findAll(Specifications.where(
+                    GroupSpecifications.hasParent(group)).and(GroupSpecifications.isActive()));
             if (!subGroups.isEmpty()) {
                 for (Group subGroup : subGroups)
                     updateGroupDefaultLanguage(userUid, subGroup.getUid(), newLocale, true);

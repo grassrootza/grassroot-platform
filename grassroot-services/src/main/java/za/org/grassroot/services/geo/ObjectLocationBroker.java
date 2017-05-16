@@ -16,6 +16,6 @@ public interface ObjectLocationBroker {
             throws InvalidParameterException;
     List<ObjectLocation> fetchLocationsWithFilter(GroupLocationFilter filter);
 
-    String getReverseGeoCodedAddress(GeoLocation location);
+    InvertGeoCodeResult getReviseGeoCodeAddressFullGeoLocation(GeoLocation location);
 
 }

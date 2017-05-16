@@ -1,5 +1,7 @@
 package za.org.grassroot.core.domain.livewire;
 
+import org.hibernate.annotations.DynamicUpdate;
+import org.hibernate.annotations.Type;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Meeting;
@@ -7,10 +9,15 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.enums.LiveWireAlertType;
 import za.org.grassroot.core.enums.LocationSource;
+import za.org.grassroot.core.util.PhoneNumberUtil;
+import za.org.grassroot.core.util.StringArrayUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -20,6 +27,7 @@ import java.util.Objects;
  */
 @Entity
 @Table(name = "live_wire_alert")
+@DynamicUpdate
 public class LiveWireAlert {
 
     @Id
@@ -68,8 +76,24 @@ public class LiveWireAlert {
     private Instant sendTime;
 
     @Basic
+    @Column(name = "complete")
+    private boolean complete;
+
+    @Basic
+    @Column(name = "reviewed")
+    private boolean reviewed;
+
+    @ManyToOne
+    @JoinColumn(name = "reviewed_by_user_id")
+    private User reviewedByUser;
+
+    @Basic
     @Column(name = "sent")
     private boolean sent;
+
+    @Column(name = "tags")
+    @Type(type = "za.org.grassroot.core.util.StringArrayUserType")
+    private String[] tags;
 
     @Embedded
     @AttributeOverrides({
@@ -82,6 +106,9 @@ public class LiveWireAlert {
     @Column(name = "location_source", length = 50, nullable = true)
     private LocationSource locationSource;
 
+    @Version
+    private Integer version;
+
     public static class Builder {
         private User creatingUser;
         private LiveWireAlertType type;
@@ -91,6 +118,7 @@ public class LiveWireAlert {
         private Group group;
         private String description;
         private Instant sendTime;
+        private boolean complete;
 
         public Builder creatingUser(User creatingUser) {
             this.creatingUser = creatingUser;
@@ -132,6 +160,11 @@ public class LiveWireAlert {
             return this;
         }
 
+        public Builder complete(boolean complete) {
+            this.complete = complete;
+            return this;
+        }
+
         public LiveWireAlert build() {
             LiveWireAlert alert = new LiveWireAlert(
                     Objects.requireNonNull(creatingUser),
@@ -147,6 +180,8 @@ public class LiveWireAlert {
                 alert.setContactName(contactName);
             }
 
+            alert.setComplete(complete);
+
             return alert;
         }
     }
@@ -155,7 +190,8 @@ public class LiveWireAlert {
         // for JPA
     }
 
-    private LiveWireAlert(User creatingUser, LiveWireAlertType type, Meeting meeting, Group group, String description) {
+    private LiveWireAlert(User creatingUser, LiveWireAlertType type, Meeting meeting, Group group,
+                          String description) {
         this.uid = UIDGenerator.generateId();
         this.creationTime = Instant.now();
         this.creatingUser = creatingUser;
@@ -163,7 +199,9 @@ public class LiveWireAlert {
         this.meeting = meeting;
         this.group = group;
         this.description = description;
+        this.complete = false;
         this.sent = false;
+        this.tags = new String[0];
     }
 
     public Long getId() {
@@ -188,6 +226,10 @@ public class LiveWireAlert {
 
     public User getContactUser() {
         return contactUser;
+    }
+
+    public String getContactNumberFormatted() {
+        return PhoneNumberUtil.invertPhoneNumber(contactUser.getPhoneNumber());
     }
 
     public String getContactName() {
@@ -242,6 +284,48 @@ public class LiveWireAlert {
         this.description = description;
     }
 
+    public boolean isComplete() {
+        return complete;
+    }
+
+    public void setComplete(boolean complete) {
+        this.complete = complete;
+    }
+
+    public boolean isReviewed() {
+        return reviewed;
+    }
+
+    public void setReviewed(boolean reviewed) {
+        this.reviewed = reviewed;
+    }
+
+    public User getReviewedByUser() {
+        return reviewedByUser;
+    }
+
+    public void setReviewedByUser(User reviewedByUser) {
+        this.reviewedByUser = reviewedByUser;
+    }
+
+    public String[] getTags() {
+        return tags;
+    }
+
+    public List<String> getTagList() {
+        return tags == null ? new ArrayList<>() : new ArrayList<>(Arrays.asList(tags));
+    }
+
+    public void setTags(String[] tags) {
+        this.tags = tags;
+    }
+
+    public void addTags(List<String> tagsToAdd) {
+        List<String> currentTags = new ArrayList<>(StringArrayUtil.arrayToList(tags));
+        currentTags.addAll(tagsToAdd);
+        tags = StringArrayUtil.listToArrayRemoveDuplicates(currentTags);
+    }
+
     public void setSendTime(Instant sendTime) {
         this.sendTime = sendTime;
     }
@@ -264,6 +348,10 @@ public class LiveWireAlert {
 
     public void setLocationSource(LocationSource locationSource) {
         this.locationSource = locationSource;
+    }
+
+    public Integer getVersion() {
+        return version;
     }
 
     @Override

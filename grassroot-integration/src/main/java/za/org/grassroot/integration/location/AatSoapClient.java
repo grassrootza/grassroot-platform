@@ -51,8 +51,8 @@ public class AatSoapClient extends WebServiceGatewaySupport {
         removeAllowedMsisdn.setMsisdn(msisdn);
         removeAllowedMsisdn.setUsername(aatLbsUsername);
         removeAllowedMsisdn.setPassword(aatLbsPassword);
-        return (RemoveAllowedMsisdnResponse) getWebServiceTemplate()
-                .marshalSendAndReceive(removeAllowedMsisdn);
+        return (RemoveAllowedMsisdnResponse) getWebServiceTemplate().marshalSendAndReceive(removeAllowedMsisdn,
+                message -> ((SoapMessage) message).setSoapAction("http://lbs.gsm.co.za/RemoveAllowedMsisdn"));
     }
 
     public QueryAllowedMsisdnResponse queryAllowedMsisdnResponse(final String msisdn) {
@@ -60,8 +60,8 @@ public class AatSoapClient extends WebServiceGatewaySupport {
         request.setMsisdn(msisdn);
         request.setUsername(aatLbsUsername);
         request.setPassword(aatLbsPassword);
-        return (QueryAllowedMsisdnResponse) getWebServiceTemplate()
-                .marshalSendAndReceive(request);
+        return (QueryAllowedMsisdnResponse) getWebServiceTemplate().marshalSendAndReceive(request,
+                message -> ((SoapMessage) message).setSoapAction("http://lbs.gsm.co.za/QueryAllowedMsisdn"));
     }
 
     public GetLocationResponse getLocationResponse(final String msisdn) {

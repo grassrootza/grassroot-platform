@@ -6,6 +6,7 @@ import org.hibernate.usertype.UserType;
 
 import java.io.Serializable;
 import java.sql.*;
+import java.util.Arrays;
 
 /**
  * Created by luke on 2017/05/05.
@@ -33,11 +34,11 @@ public class StringArrayUserType<T extends Serializable> implements UserType {
 
     @Override
     public boolean equals(Object x, Object y) throws HibernateException {
-
         if (x == null) {
             return y == null;
         }
-        return x.equals(y);
+        return (x instanceof String[] && y instanceof String[]) ?
+                Arrays.equals((String[]) x, (String[]) y) : x.equals(y);
     }
 
     @Override

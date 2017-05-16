@@ -4,6 +4,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -11,27 +14,33 @@ import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Meeting;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.UserLog;
 import za.org.grassroot.core.domain.geo.GeoLocation;
+import za.org.grassroot.core.domain.livewire.DataSubscriber;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
 import za.org.grassroot.core.enums.LiveWireAlertType;
 import za.org.grassroot.core.enums.LocationSource;
 import za.org.grassroot.core.enums.UserInterfaceType;
-import za.org.grassroot.core.repository.GroupRepository;
-import za.org.grassroot.core.repository.LiveWireAlertRepository;
-import za.org.grassroot.core.repository.MeetingRepository;
-import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.enums.UserLogType;
+import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.integration.location.UssdLocationServicesBroker;
+import za.org.grassroot.services.geo.GeoLocationUtils;
+import za.org.grassroot.services.geo.ObjectLocationBroker;
+import za.org.grassroot.services.specifications.UserSpecifications;
+import za.org.grassroot.services.util.LogsAndNotificationsBroker;
+import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
 import javax.persistence.TypedQuery;
 import javax.validation.constraints.NotNull;
+import java.security.InvalidParameterException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
-import java.util.List;
-import java.util.Objects;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
 
 /**
  * Created by luke on 2017/05/06.
@@ -41,11 +50,14 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
 
     private static final Logger logger = LoggerFactory.getLogger(LiveWireAlertBroker.class);
 
+    // todo : consolidate several of these using entity manager
     private final LiveWireAlertRepository alertRepository;
     private final UserRepository userRepository;
     private final GroupRepository groupRepository;
     private final MeetingRepository meetingRepository;
     private final EntityManager entityManager;
+    private final DataSubscriberRepository dataSubscriberRepository;
+    private final LogsAndNotificationsBroker logsAndNotificationsBroker;
 
     private UssdLocationServicesBroker locationServicesBroker;
 
@@ -56,12 +68,14 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
     private int minGroupTasksForInstantAlert;
 
     @Autowired
-    public LiveWireAlertBrokerImpl(LiveWireAlertRepository alertRepository, UserRepository userRepository, GroupRepository groupRepository, MeetingRepository meetingRepository, EntityManager entityManager) {
+    public LiveWireAlertBrokerImpl(LiveWireAlertRepository alertRepository, UserRepository userRepository, GroupRepository groupRepository, MeetingRepository meetingRepository, EntityManager entityManager, DataSubscriberRepository dataSubscriberRepository, ObjectLocationBroker objectLocationBroker, LogsAndNotificationsBroker logsAndNotificationsBroker) {
         this.alertRepository = alertRepository;
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
         this.meetingRepository = meetingRepository;
         this.entityManager = entityManager;
+        this.dataSubscriberRepository = dataSubscriberRepository;
+        this.logsAndNotificationsBroker = logsAndNotificationsBroker;
     }
 
     @Autowired(required = false)
@@ -117,6 +131,52 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
                 .setParameter("earliestTime", LocalDate.now().atStartOfDay().toInstant(ZoneOffset.UTC))
                 .setParameter("user", user)
                 .getResultList();
+    }
+
+    @Override
+    public List<User> fetchLiveWireContactsNearby(String queryingUserUid, GeoLocation location, Integer radius) {
+        Objects.requireNonNull(queryingUserUid);
+        Objects.requireNonNull(location);
+
+        List<String> userUidsWithAccess = dataSubscriberRepository.userUidsOfDataSubscriberUsers();
+
+        if (!userUidsWithAccess.contains(queryingUserUid)) {
+            throw new AccessDeniedException("Error! Querying user is not authorized");
+        }
+
+        TypedQuery<User> query = entityManager.createQuery("select u from Membership m " +
+                "inner join m.user u " +
+                "inner join m.group g " +
+                "inner join g.locations l " +
+                "where g.discoverable = true and " +
+                "m.role.name = 'ROLE_GROUP_ORGANIZER' and " +
+                "l.localDate = (SELECT MAX(ll.localDate) FROM GroupLocation ll WHERE ll.group = l.group) and " +
+                GeoLocationUtils.locationFilterSuffix("l.location"), User.class);
+        GeoLocationUtils.addLocationParamsToQuery(query, location, radius);
+
+        // note: there may be a way to do this in one using HQL, but can't figure out all mapping, hence just
+        // using a second one, which anyway as a straight select on unique key will have little performance problem
+        // note: also not restricting to single calculated location, in case user has been moving around (at present
+        // prefer too many records rather than too few)
+        TypedQuery<String> locationQuery = entityManager.createQuery("" +
+                "select distinct ppl.key.userUid from PreviousPeriodUserLocation ppl where " +
+                "ppl.key.localDate >= :oldestRecord and " +
+                GeoLocationUtils.locationFilterSuffix("ppl.location"), String.class);
+        locationQuery.setParameter("oldestRecord", LocalDate.now().minus(3, ChronoUnit.MONTHS));
+        GeoLocationUtils.addLocationParamsToQuery(locationQuery, location, radius);
+
+        // todo : think about how to sort
+        Set<User> users = new HashSet<>();
+        users.addAll(query.getResultList());
+
+        List<String> userUids = locationQuery.getResultList();
+        if (userUids != null && !userUids.isEmpty()) {
+            users.addAll(userRepository.findAll(Specifications
+                    .where(UserSpecifications.isLiveWireContact())
+                    .and(UserSpecifications.uidIn(locationQuery.getResultList()))));
+        }
+
+        return new ArrayList<>(users);
     }
 
     @Override
@@ -177,7 +237,7 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
 
     @Override
     @Transactional
-    public void setAlertToSend(String userUid, String alertUid, Instant timeToSend) {
+    public void setAlertComplete(String userUid, String alertUid, Instant soonestTimeToSend) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(alertUid);
 
@@ -185,7 +245,10 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
         LiveWireAlert alert = alertRepository.findOneByUid(alertUid);
         validateCreatingUser(user, alert);
 
-        alert.setSendTime(timeToSend == null ? Instant.now() : timeToSend);
+        alert.setComplete(true);
+        if (LiveWireAlertType.INSTANT.equals(alert.getType())) {
+            alert.setSendTime(Instant.now());
+        }
     }
 
     @Async
@@ -214,11 +277,97 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
 
     @Override
     @Transactional
-    public void updateSentStatus(String alertUid, boolean sent) {
+    public void updateUserLiveWireContactStatus(String userUid, boolean addingPermission, UserInterfaceType interfaceType) {
+        Objects.requireNonNull(userUid);
+        User user = userRepository.findOneByUid(userUid);
+        user.setLiveWireContact(addingPermission);
+
+        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+        bundle.addLog(new UserLog(userUid,
+                addingPermission ? UserLogType.LIVEWIRE_CONTACT_GRANTED : UserLogType.LIVEWIRE_CONTACT_REVOKED,
+                (addingPermission ? "added " : "removed ") + " livewire contact status",
+                interfaceType));
+        logsAndNotificationsBroker.asyncStoreBundle(bundle);
+    }
+
+    @Async
+    @Override
+    @Transactional
+    public void trackLocationForLiveWireContact(String userUid, UserInterfaceType type) {
+        User user = userRepository.findOneByUid(userUid);
+        if (!user.isLiveWireContact()) {
+            logger.info("Error! Location track called for user not yet set as contact");
+        } else if (locationServicesBroker != null) {
+            locationServicesBroker.addUssdLocationLookupAllowed(userUid, type);
+            locationServicesBroker.getUssdLocationForUser(userUid); // will save a user log (though prev period will wait)
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<LiveWireAlert> loadAlerts(String userUid, boolean unreviewedOnly, Pageable pageable) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(pageable);
+
+        return unreviewedOnly ? alertRepository.findByCompleteTrueAndReviewedFalse(pageable)
+                : alertRepository.findByCompleteTrue(pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean canUserTag(String userUid) {
+        Objects.requireNonNull(userUid);
+        return dataSubscriberRepository.findSubscriberHoldingUser(userUid)
+                .stream()
+                .anyMatch(DataSubscriber::isCanTag);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean canUserRelease(String userUid) {
+        Objects.requireNonNull(userUid);
+        return dataSubscriberRepository.findSubscriberHoldingUser(userUid)
+                .stream()
+                .anyMatch(DataSubscriber::isCanRelease);
+    }
+
+    @Override
+    @Transactional
+    public void addTagsToAlert(String userUid, String alertUid, List<String> tags) {
+        Objects.requireNonNull(userUid);
         Objects.requireNonNull(alertUid);
 
+        if (!canUserTag(userUid)) {
+            throw new AccessDeniedException("This user does not have permission to tag");
+        }
+
+        if (tags == null) {
+            throw new InvalidParameterException("Error! No tags provided");
+        }
+
         LiveWireAlert alert = alertRepository.findOneByUid(alertUid);
-        alert.setSent(sent);
+        alert.addTags(tags);
+    }
+
+    @Override
+    @Transactional
+    public void releaseAlert(String userUid, String alertUid, List<String> tags) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(alertUid);
+
+        if (!canUserRelease(userUid)) {
+            throw new AccessDeniedException("This user does not have permission to release");
+        }
+
+        User user = userRepository.findOneByUid(userUid);
+        LiveWireAlert alert = alertRepository.findOneByUid(alertUid);
+        if (tags != null) {
+            alert.addTags(tags);
+        }
+
+        alert.setReviewed(true);
+        alert.setReviewedByUser(user);
+        alert.setSendTime(Instant.now());
     }
 
     private void validateCreatingUser(User user, LiveWireAlert alert) throws AccessDeniedException {

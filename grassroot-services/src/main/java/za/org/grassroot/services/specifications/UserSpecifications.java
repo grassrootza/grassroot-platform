@@ -5,6 +5,7 @@ import za.org.grassroot.core.domain.*;
 
 import javax.persistence.criteria.Join;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.Set;
 
 /**
@@ -46,6 +47,14 @@ public final class UserSpecifications {
 
     public static Specification<User> nameContains(String nameFragment) {
         return (root, query, cb) -> cb.like(cb.lower(root.get(User_.displayName)), "%" + nameFragment.toLowerCase() + "%");
+    }
+
+    public static Specification<User> uidIn(Collection<String> uids) {
+        return (root, query, cb) -> root.get(User_.uid).in(uids);
+    }
+
+    public static Specification<User> isLiveWireContact() {
+        return (root, query, cb) -> cb.isTrue(root.get(User_.liveWireContact));
     }
 
 }

@@ -84,7 +84,7 @@ public class UserRestController {
     public ResponseEntity<ResponseWrapper> resendOtp(@PathVariable("phoneNumber") String phoneNumber) {
         final String msisdn = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
         try {
-            final String tokenCode = temporaryTokenSend(userManagementService.regenerateUserVerifier(phoneNumber), msisdn, true); // will be empty in production
+            final String tokenCode = temporaryTokenSend(userManagementService.regenerateUserVerifier(phoneNumber, true), msisdn, true); // will be empty in production
             return RestUtil.okayResponseWithData(RestMessage.VERIFICATION_TOKEN_SENT, tokenCode);
         } catch (Exception e) {
             log.info("here is the error : " + e.toString());
@@ -172,6 +172,32 @@ public class UserRestController {
             return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.BAD_TOKEN_UPDATE);
         } catch (AccessDeniedException e) {
             return RestUtil.accessDeniedResponse();
+        }
+    }
+
+    @RequestMapping(value = "/auth/refresh/initiate/{phoneNumber}", method = RequestMethod.GET)
+    public ResponseEntity<ResponseWrapper> initiateTokenRefresh(@PathVariable String phoneNumber) {
+        try {
+            final String msisdn = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
+            // this will send the token by SMS and return an empty string if in production, or return the token if on staging
+            String token = temporaryTokenSend(
+                    userManagementService.regenerateUserVerifier(msisdn, false), msisdn, false);
+            return RestUtil.okayResponseWithData(RestMessage.VERIFICATION_TOKEN_SENT, token);
+        } catch (InvalidPhoneNumberException|AccessDeniedException e) {
+            return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.BAD_TOKEN_UPDATE);
+        }
+    }
+
+    @RequestMapping(value = "/auth/refresh/verify/{phoneNumber}", method = RequestMethod.GET)
+    public ResponseEntity<ResponseWrapper> verifyTokenRefresh(@PathVariable String phoneNumber,
+                                                              @RequestParam String otp) {
+        if (passwordTokenService.isShortLivedOtpValid(phoneNumber, otp)) {
+            User user = userManagementService.findByInputNumber(phoneNumber);
+            passwordTokenService.expireVerificationCode(user.getUid(), VerificationCodeType.SHORT_OTP);
+            VerificationTokenCode longLivedToken = passwordTokenService.generateLongLivedAuthCode(user.getUid());
+            return RestUtil.okayResponseWithData(RestMessage.LOGIN_SUCCESS, longLivedToken.getCode());
+        } else {
+            return RestUtil.errorResponse(HttpStatus.UNAUTHORIZED, RestMessage.INVALID_OTP);
         }
     }
 

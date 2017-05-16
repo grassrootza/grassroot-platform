@@ -26,6 +26,8 @@ import java.util.function.Predicate;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.*;
+import static org.springframework.data.jpa.domain.Specifications.where;
+import static za.org.grassroot.core.specifications.GroupSpecifications.*;
 
 /**
  * @author Lesetse Kimwaga
@@ -55,6 +57,7 @@ public class GroupRepositoryTest {
 
     @Test
     public void shouldSaveUpComingEvents() {
+
         User user1 = userRepository.save(new User("3456"));
         Group group1 = groupRepository.save(new Group("Test Group", user1));
         Event newEvent = eventRepository.save(new Meeting("new Meeting",
@@ -142,7 +145,7 @@ public class GroupRepositoryTest {
         assertNotNull(groupToCreate);
         groupToCreate.setImageUrl("http");
         assertTrue(groupToCreate.getImageUrl().equals("http"));
-        Group groupFromDb = groupRepository.findOneByImageUrl("http");
+        Group groupFromDb = groupRepository.findOne(where(hasImageUrl("http")));
         assertNotNull(groupFromDb);
         assertTrue(groupToCreate.getImageUrl().equals("http"));
     }
@@ -550,7 +553,8 @@ public class GroupRepositoryTest {
         Group gb = groupRepository.save(new Group("gb", user));
         Group gb1 = groupRepository.save(new Group("gb1", user, gb));
         Group gb2 = groupRepository.save(new Group("gb2", user, gb));
-        List<Group> children = groupRepository.findByParentAndActiveTrue(gb);
+        List<Group> children = groupRepository.findAll(where(
+                hasParent(gb)).and(isActive()));;
         assertEquals(2,children.size());
     }
 
@@ -591,8 +595,8 @@ public class GroupRepositoryTest {
         Integer fakeToken = realToken - 10;
         group.setGroupTokenCode(String.valueOf(realToken));
         groupRepository.save(group);
-        Group groupFromDb1 = groupRepository.findByGroupTokenCode(String.valueOf(realToken));
-        Group groupFromDb2 = groupRepository.findByGroupTokenCode(String.valueOf(fakeToken));
+        Group groupFromDb1 = groupRepository.findOne(hasJoinCode(String.valueOf(realToken)));
+        Group groupFromDb2 = groupRepository.findOne(hasJoinCode(String.valueOf(fakeToken)));
         assertNotNull(groupFromDb1);
         assertNull(groupFromDb2);
         assertEquals(groupFromDb1, group);
@@ -610,15 +614,15 @@ public class GroupRepositoryTest {
         group.setGroupTokenCode(token);
         group.setTokenExpiryDateTime(testDate2);
         groupRepository.save(group);
-        Group group1 = groupRepository.findByGroupTokenCodeAndTokenExpiryDateTimeAfter(token, testDate1);
-        Group group2 = groupRepository.findByGroupTokenCodeAndTokenExpiryDateTimeAfter(token, testDate3);
+        Group group1 = groupRepository.findOne(where(hasJoinCode(token)).and(joinCodeExpiresAfter(testDate1)));
+        Group group2 = groupRepository.findOne(where(hasJoinCode(token)).and(joinCodeExpiresAfter(testDate3)));
         assertNotNull(group1);
         assertEquals(group1, group);
         assertNull(group2);
 
         group.setTokenExpiryDateTime(testDate3);
         groupRepository.save(group);
-        Group group3 = groupRepository.findByGroupTokenCodeAndTokenExpiryDateTimeAfter(token, testDate2);
+        Group group3 = groupRepository.findOne(where(hasJoinCode(token)).and(joinCodeExpiresAfter(testDate2)));
         assertNotNull(group3);
         assertEquals(group3, group);
     }
@@ -634,12 +638,12 @@ public class GroupRepositoryTest {
         group.setGroupTokenCode(token);
         group.setTokenExpiryDateTime(testDate2);
         groupRepository.save(group);
-        Group group1 = groupRepository.findByGroupTokenCodeAndTokenExpiryDateTimeAfter(token, testDate1);
+        Group group1 = groupRepository.findOne(where(hasJoinCode(token)).and(joinCodeExpiresAfter(testDate1)));
         assertNotNull(group1);
         assertEquals(group, group1);
 
         group.setTokenExpiryDateTime(Instant.now());
-        Group group2 = groupRepository.findByGroupTokenCodeAndTokenExpiryDateTimeAfter(token, testDate1);
+        Group group2 = groupRepository.findOne(where(hasJoinCode(token)).and(joinCodeExpiresAfter(testDate1)));
         assertNull(group2);
 
     }

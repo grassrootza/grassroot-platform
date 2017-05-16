@@ -1,4 +1,4 @@
-package za.org.grassroot.webapp.controller.webapp;
+package za.org.grassroot.webapp.controller.webapp.livewire;
 
 import liquibase.util.StringUtils;
 import org.slf4j.Logger;
@@ -13,14 +13,18 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import za.org.grassroot.core.domain.livewire.DataSubscriber;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.livewire.DataSubscriber;
+import za.org.grassroot.core.util.InvalidPhoneNumberException;
+import za.org.grassroot.core.util.PhoneNumberUtil;
+import za.org.grassroot.services.exception.NoSuchUserException;
 import za.org.grassroot.services.livewire.DataSubscriberBroker;
 import za.org.grassroot.services.user.PasswordTokenService;
 import za.org.grassroot.webapp.controller.BaseController;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -89,7 +93,7 @@ public class LiveWireAdminController extends BaseController {
             throw new AccessDeniedException("Error! Admin user did not validate with OTP");
         }
 
-        DataSubscriber subscriber = subscriberBroker.viewSubscriber(getUserProfile().getUid(), subscriberUid);
+        DataSubscriber subscriber = subscriberBroker.validateSubscriberAdmin(getUserProfile().getUid(), subscriberUid);
         subscriberBroker.updateActiveStatus(getUserProfile().getUid(), subscriberUid, !subscriber.isActive());
         addMessage(attributes, MessageType.SUCCESS,
                 "livewire.subscriber." + (subscriber.isActive() ? "activated" : "deactivated"),
@@ -100,7 +104,7 @@ public class LiveWireAdminController extends BaseController {
     @RequestMapping(value = "/subscriber/view", method = RequestMethod.GET)
     public String viewDataSubscriber(@RequestParam String subscriberUid, Model model) {
         try {
-            DataSubscriber subscriber = subscriberBroker.viewSubscriber(
+            DataSubscriber subscriber = subscriberBroker.validateSubscriberAdmin(
                     getUserProfile().getUid(),
                     subscriberUid
             );
@@ -120,7 +124,7 @@ public class LiveWireAdminController extends BaseController {
     public String addPushEmailsToSubscriber(@RequestParam String subscriberUid, @RequestParam String emailsToAdd,
                                             RedirectAttributes attributes, HttpServletRequest request) {
         try {
-            DataSubscriber subscriber = subscriberBroker.viewSubscriber(getUserProfile().getUid(), subscriberUid);
+            DataSubscriber subscriber = subscriberBroker.validateSubscriberAdmin(getUserProfile().getUid(), subscriberUid);
             List<String> emails = splitEmailInput(emailsToAdd);
             if (emails.isEmpty()) {
                 addMessage(attributes, MessageType.ERROR, "livewire.emails.add.empty", request);
@@ -139,7 +143,7 @@ public class LiveWireAdminController extends BaseController {
     @RequestMapping(value = "/subscriber/emails/remove", method = RequestMethod.POST)
     public String removePushEmailFromSubscriber(@RequestParam String subscriberUid, @RequestParam String emailsToRemove,
                                                 RedirectAttributes attributes, HttpServletRequest request) {
-        DataSubscriber subscriber = subscriberBroker.viewSubscriber(getUserProfile().getUid(), subscriberUid);
+        DataSubscriber subscriber = subscriberBroker.validateSubscriberAdmin(getUserProfile().getUid(), subscriberUid);
         List<String> emails = splitEmailInput(emailsToRemove);
         if (StringUtils.isEmpty(emailsToRemove)) {
             addMessage(attributes, MessageType.ERROR, "livewire.emails.remove.empty", request);
@@ -148,6 +152,56 @@ public class LiveWireAdminController extends BaseController {
             addMessage(attributes, MessageType.SUCCESS, "livewire.emails.remove.done", request);
         }
         attributes.addAttribute("subscriberUid", subscriber.getUid());
+        return "redirect:/livewire/subscriber/view";
+    }
+
+    @RequestMapping(value = "/subscriber/user/add", method = RequestMethod.POST)
+    public String addUserUidToSubscriber(@RequestParam String subscriberUid, @RequestParam String addUserPhone,
+                                         RedirectAttributes attributes, HttpServletRequest request) {
+        try {
+            String msisdn = PhoneNumberUtil.convertPhoneNumber(addUserPhone);
+            User user = userManagementService.findByInputNumber(msisdn);
+            subscriberBroker.addUsersWithViewAccess(getUserProfile().getUid(), subscriberUid,
+                    Collections.singleton(user.getUid()));
+            addMessage(attributes, MessageType.SUCCESS, "livewire.user.added.done", request);
+        } catch (AccessDeniedException e) {
+            addMessage(attributes, MessageType.ERROR, "livewire.user.added.denied", request);
+        } catch (InvalidPhoneNumberException e) {
+            addMessage(attributes, MessageType.ERROR, "livewire.user.added.badnumber", request);
+        } catch (NoSuchUserException e) {
+            addMessage(attributes, MessageType.ERROR, "livewire.user.added.nouser", request);
+        }
+        attributes.addAttribute("subscriberUid", subscriberUid);
+        return "redirect:/livewire/subscriber/view";
+    }
+
+    @RequestMapping(value = "/subscriber/user/remove", method = RequestMethod.POST)
+    public String removeUserUidFromSubscriber(@RequestParam String subscriberUid, @RequestParam String userToRemoveUid,
+                                              RedirectAttributes attributes, HttpServletRequest request) {
+        try {
+            subscriberBroker.removeUsersWithViewAccess(getUserProfile().getUid(), subscriberUid,
+                    Collections.singleton(userToRemoveUid));
+            addMessage(attributes, MessageType.SUCCESS, "livewire.user.removed.done", request);
+        } catch (AccessDeniedException e) {
+            addMessage(attributes, MessageType.ERROR, "livewire.user.removed.denied", request);
+        }
+        attributes.addAttribute("subscriberUid", subscriberUid);
+        return "redirect:/livewire/subscriber/view";
+    }
+
+    @RequestMapping(value = "/subscriber/permissions/change", method = RequestMethod.POST)
+    public String alterDataSubscriberPermissions(@RequestParam String subscriberUid,
+                                                 @RequestParam(required = false) Boolean canTag,
+                                                 @RequestParam(required = false) Boolean canRelease,
+                                                 RedirectAttributes attributes, HttpServletRequest request) {
+        try {
+            subscriberBroker.updateSubscriberPermissions(getUserProfile().getUid(), subscriberUid,
+                    canTag != null ? canTag : false, canRelease != null ? canRelease : false);
+            addMessage(attributes, MessageType.SUCCESS, "livewire.permissions.change.done", request);
+        } catch (AccessDeniedException e) {
+            addMessage(attributes, MessageType.ERROR, "livewire.permissions.change.denied", request);
+        }
+        attributes.addAttribute("subscriberUid", subscriberUid);
         return "redirect:/livewire/subscriber/view";
     }
 

@@ -1,7 +1,6 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       data-layout-decorate="~{layout}">
-
 <head>
   <meta charset="UTF-8" />
   <title>LiveWire Subscriber</title>
@@ -81,13 +80,15 @@
             </div>
             <div th:switch="${#lists.isEmpty(users)}" class="col-md-6 col-sm-6 col-xs-12">
               <div th:case="true">
-
+                <p class="grassroot-body">
+                  No users added to subscriber yet
+                </p>
               </div>
               <div th:case="false">
                 <ul class="list-group">
                   <li th:each="user: ${users}" class="list-group-item borderless no-padding clearfix">
                     <span class="grassroot-body" th:text="${user.displayName}">User name</span>
-                    <a th:unless="${#strings.equals(user.uid, currentUser.uid)}" href="#remAdminModal" data-toggle="modal"
+                    <a href="#remAdminModal" data-toggle="modal"
                       data-target="#remUserModal" th:attr="data-useruid=${user.uid}">(remove)</a>
                   </li>
                 </ul>
@@ -99,6 +100,30 @@
                 Add
               </button>
             </div>
+          </div>
+
+          <hr>
+
+          <div class="row no-padding">
+            <div class="col-md-3 col-sm-3 col-xs-12">
+              <label class="grassroot-sidebar">Permissions</label>
+            </div>
+            <form class="grassroot-form" th:action="@{/livewire/subscriber/permissions/change}" method="post">
+              <input type="hidden" name="subscriberUid" th:value="${subscriber.uid}" />
+              <div class="col-md-6 col-sm-6 col-xs-12">
+                <label class="checkbox-inline">
+                  <input th:checked="${subscriber.canTag}" type="checkbox" name="canTag" /><span>Users can tag alerts</span>
+                </label>
+                <label class="checkbox-inline">
+                  <input th:checked="${subscriber.canRelease}" type="checkbox" name="canRelease" /><span>Users can release alerts</span>
+                </label>
+              </div>
+              <div class="col-md-3 col-sm-3 col-xs-12">
+                <button type="submit" class="btn default-button full-width-button">
+                  Update
+                </button>
+              </div>
+            </form>
           </div>
 
           <hr>
@@ -175,7 +200,7 @@
     </div>
   </div>
 
-  <!-- Add administrator modal -->
+  <!-- Add subscriber modal -->
   <div class="modal fade" id="addUserModal" tabindex="-1" role="dialog" aria-labelledby="addUserLabel">
     <div class="modal-dialog" role="document">
       <div class="modal-content">
@@ -183,18 +208,16 @@
           <button type="button" class="close" data-dismiss="modal" aria-label="Close">
             <span aria-hidden="true">&times;</span>
           </button>
-          <h4 class="modal-title" id="addUserLabel">Add users</h4>
+          <h4 class="modal-title" id="addUserLabel">Add user</h4>
         </div>
-        <form th:action="@{/livewire/subscribe/user/add}" method="get">
+        <form th:action="@{/livewire/subscriber/user/add}" method="post">
           <input type="hidden" name="subscriberUid" th:value="${subscriber.uid}" />
-          <input type="hidden" id="userMsisdn" name="userMsisdn" />
           <div class="modal-body">
             <div class="form-group">
               <p class="grassroot-body">
-                Please enter the name of the user to add below (they must be part of a group you belong to.
+                Please enter the phone number of the user to add below (they must already have used Grassroot).
               </p>
-              <input type="text" class="form-control" id="add_user_name"
-                     name="addUserName" autocomplete="off" />
+              <input type="text" class="form-control" name="addUserPhone" autocomplete="off" />
             </div>
           </div>
           <div class="modal-footer">
@@ -218,6 +241,7 @@
         </div>
         <form th:action="@{/livewire/subscriber/user/remove}" method="post">
           <input type="hidden" name="subscriberUid" th:value="${subscriber.uid}" />
+          <input type="hidden" name="userToRemoveUid" id="userToRemoveUid" />
           <div class="modal-body">
             <div class="form-group">
               <p>
@@ -277,19 +301,11 @@
       modal.find('#emailsToRemove').val(email);
     });
 
-    $('#addUserModal').on('show.bs.modal', function(event) {
-      var modal = $(this);
-      var nameInput = modal.find("#add_user_name");
-      nameInput.autocomplete(
-          grassrootJS.memberAutoComplete(nameInput, modal.find('#userMsisdn'))
-      )
-    });
-
     $('#remUserModal').on('show.bs.modal', function (event) {
         var button = $(event.relatedTarget);
         var uid = button.data('useruid');
         var modal = $(this);
-        modal.find('#remUserUid').val(uid);
+        modal.find('#userToRemoveUid').val(uid);
     });
 
     $('#disableModal').on('show.bs.modal', function(event) {

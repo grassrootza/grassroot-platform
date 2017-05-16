@@ -12,6 +12,10 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
+
+import static za.org.grassroot.core.util.StringArrayUtil.listToArray;
+import static za.org.grassroot.core.util.StringArrayUtil.listToArrayRemoveDuplicates;
 
 /**
  * Created by luke on 2017/05/05.
@@ -64,6 +68,18 @@ public class DataSubscriber {
     @Type(type = "za.org.grassroot.core.util.StringArrayUserType")
     private String[] userUidsWithAccess;
 
+    // whether users of this subscriber can tag alerts
+    @Basic
+    @Column(name = "can_tag")
+    private boolean canTag;
+
+    @Basic
+    @Column(name = "can_release")
+    private boolean canRelease;
+
+    @Version
+    private Integer version;
+
     private DataSubscriber() {
         // for JPA
     }
@@ -78,6 +94,7 @@ public class DataSubscriber {
         this.active = active;
         this.emailsForPushNotifications = new String[0];
         this.userUidsWithAccess = new String[0];
+        this.canTag = false;
     }
 
     public String getUid() {
@@ -171,22 +188,38 @@ public class DataSubscriber {
         this.userUidsWithAccess = userUidsWithAccess;
     }
 
-    public void addUserUidsWithAccess(final List<String> userUids) {
+    public void addUserUidsWithAccess(final Set<String> userUids) {
         ArrayList<String> list = new ArrayList<>(Arrays.asList(getUserUidsWithAccess()));
+        userUids.stream()
+                .filter(u -> !list.contains(u))
+                .forEach(list::add);
         list.addAll(userUids);
-        userUidsWithAccess = listToArray(list);
+        userUidsWithAccess = listToArrayRemoveDuplicates(list);
     }
 
-    public void removeUserUidsWithAccess(final List<String> userUids) {
+    public boolean isCanTag() {
+        return canTag;
+    }
+
+    public void setCanTag(boolean canTag) {
+        this.canTag = canTag;
+    }
+
+    public boolean isCanRelease() {
+        return canRelease;
+    }
+
+    public void setCanRelease(boolean canRelease) {
+        this.canRelease = canRelease;
+    }
+
+    public void removeUserUidsWithAccess(final Set<String> userUids) {
         ArrayList<String> list = new ArrayList<>(Arrays.asList(getUserUidsWithAccess()));
         list.removeAll(userUids);
         userUidsWithAccess = listToArray(list);
     }
 
-    private String[] listToArray(ArrayList<String> list) {
-        String[] array = new String[list.size()];
-        return list.toArray(array);
-    }
+    public Integer getVersion() { return version; }
 
     @Override
     public boolean equals(Object o) {

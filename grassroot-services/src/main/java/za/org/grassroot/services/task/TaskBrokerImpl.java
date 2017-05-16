@@ -211,6 +211,7 @@ public class TaskBrokerImpl implements TaskBroker {
         User user = userRepository.findOneByUid(userUid);
         Instant now = Instant.now();
 
+        // todo : switch all of these to using assignment instead of just group
         // todo : use specifications when those are wired up properly
         List<Event> events = eventRepository.findByParentGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceledFalse(user, now);
 

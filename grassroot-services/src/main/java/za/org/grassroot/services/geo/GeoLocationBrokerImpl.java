@@ -79,14 +79,17 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 	@Async
     @Override
 	@Transactional
-    public void logUserUssdPermission(String userUid, String entityToUpdateUid, JpaEntityType entityType) {
+    public void logUserUssdPermission(String userUid, String entityToUpdateUid,
+									  JpaEntityType entityType, boolean singleTrackPermission) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(entityToUpdateUid);
 
         logger.info("Logging USSD permission to use location, should be off main thread");
-        // todo: only call this if lookup not already allowed (else duplicating & slow ...)
-		boolean lookupAllowed = ussdLocationServicesBroker.addUssdLocationLookupAllowed(userUid, UserInterfaceType.USSD);
-		if (lookupAllowed) {
+        boolean priorAllowed = ussdLocationServicesBroker.isUssdLocationLookupAllowed(userUid);
+        boolean lookupAllowed = priorAllowed ||
+				ussdLocationServicesBroker.addUssdLocationLookupAllowed(userUid, UserInterfaceType.USSD);
+
+        if (lookupAllowed) {
 			GeoLocation userLocation = ussdLocationServicesBroker.getUssdLocationForUser(userUid);
 			logger.info("Retrieved a user location: {}", userLocation);
 			switch (entityType) {
@@ -104,6 +107,10 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 					break;
 				default:
 					logger.info("Location attempted for an entity that should not have a location attached");
+			}
+
+			if (!priorAllowed && singleTrackPermission) {
+				ussdLocationServicesBroker.removeUssdLocationLookup(userUid, UserInterfaceType.SYSTEM);
 			}
 		}
     }

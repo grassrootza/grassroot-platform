@@ -119,6 +119,7 @@ public class PermissionBrokerImpl implements PermissionBroker {
     }
 
     private Query fetchAllGroupsSortedForUser(User user) {
+        log.info("about to execute select query ...");
         return entityManager.createNativeQuery("SELECT group_profile.*, greatest(latest_group_change, latest_event, latest_todo) as latest_activity from group_profile " +
                 "inner join group_user_membership as membership on (group_profile.id = membership.group_id and group_profile.active=true and membership.user_id= :user) " +
                 "left outer join (select group_id, max(created_date_time) as latest_group_change from group_log group by group_id) as group_log on (group_log.group_id=group_profile.id) " +
@@ -203,7 +204,8 @@ public class PermissionBrokerImpl implements PermissionBroker {
     @Transactional(readOnly = true)
     @SuppressWarnings("unchecked")
     public List<Group> getActiveGroupsSorted(User user, Permission requiredPermission) {
-        Query resultQuery = requiredPermission == null ? fetchAllGroupsSortedForUser(user) : fetchGroupsWithPermission(user, requiredPermission);
+        Query resultQuery = requiredPermission == null ?
+                fetchAllGroupsSortedForUser(user) : fetchGroupsWithPermission(user, requiredPermission);
         return resultQuery.getResultList();
     }
 

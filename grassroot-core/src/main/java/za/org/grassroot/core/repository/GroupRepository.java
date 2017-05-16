@@ -27,10 +27,6 @@ public interface GroupRepository extends JpaRepository<Group, Long>, JpaSpecific
      */
     Group findFirstByCreatedByUserAndActiveTrueOrderByIdDesc(User createdByUser);
     Group findFirstByCreatedByUserAndGroupNameAndCreatedDateTimeAfterAndActiveTrue(User createdByUser, String groupName, Instant createdSince);
-    Group findOneByImageUrl(String imageUrl);
-
-    // Get the sub-groups for a specific group (one level only)
-    List<Group> findByParentAndActiveTrue(Group parent);
 
     // Find all the groups that a user is part of, with pagination
     List<Group> findByMembershipsUserAndActiveTrue(User user);
@@ -38,12 +34,6 @@ public interface GroupRepository extends JpaRepository<Group, Long>, JpaSpecific
     Page<Group> findByCreatedByUserAndActiveTrueOrderByCreatedDateTimeDesc(User user, Pageable pageable);
 
     int countByMembershipsUserAndActiveTrue(User user);
-
-    /*
-    Find a group by a code
-     */
-    Group findByGroupTokenCode(String groupTokenCode);
-    Group findByGroupTokenCodeAndTokenExpiryDateTimeAfter(String groupTokenCode, Instant expiryTime);
 
     /*
     Find all groups, with pagination--for system admin

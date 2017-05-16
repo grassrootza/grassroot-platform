@@ -40,8 +40,20 @@ public final class GroupSpecifications {
         return (root, query, cb) -> cb.equal(root.get(Group_.groupTokenCode), joinCode);
     }
 
+    public static Specification<Group> joinCodeExpiresAfter(Instant time) {
+        return (root, query, cb) -> cb.greaterThan(root.get(Group_.tokenExpiryDateTime), time);
+    }
+
     public static Specification<Group> createdBetween(Instant start, Instant end) {
         return (root, query, cb) -> cb.between(root.get(Group_.createdDateTime), start, end);
+    }
+
+    public static Specification<Group> hasParent(Group parent) {
+        return (root, query, cb) -> cb.equal(root.get(Group_.parent), parent);
+    }
+
+    public static Specification<Group> hasImageUrl(String imageUrl) {
+        return (root, query, cb) -> cb.equal(root.get(Group_.imageUrl), imageUrl);
     }
 
 }
