@@ -108,7 +108,7 @@ public class ObjectLocationBrokerTest {
 
     @Test(expected=InvalidParameterException.class)
     public void nullRadiusThrowExceptionWhenFetchingMeetingLocations () throws Exception {
-        objectLocationBroker.fetchMeetingLocations(new GeoLocation(0.00, 0.00), null, null);
+        objectLocationBroker.fetchMeetingLocations(new GeoLocation(0.00, 0.00), 0, 0);
     }
 
     @Test(expected=InvalidParameterException.class)

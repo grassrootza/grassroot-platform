@@ -18,6 +18,7 @@ import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.group.GroupLocationFilter;
 
 import javax.persistence.EntityManager;
+import javax.persistence.TypedQuery;
 import java.net.URISyntaxException;
 import java.security.InvalidParameterException;
 import java.time.Instant;
@@ -27,6 +28,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+
+import static za.org.grassroot.services.geo.GeoLocationUtils.KM_PER_DEGREE;
 
 @Service
 public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
@@ -124,21 +127,13 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
         return locations;
     }
 
-    // todo : use to generate an Address entity, once that has been detached from users
     @Override
-    public String getReverseGeoCodedAddress(GeoLocation location) {
+    public InvertGeoCodeResult getReviseGeoCodeAddressFullGeoLocation(GeoLocation location) {
         try {
-            Objects.requireNonNull(location);
-            URIBuilder uriBuilder = new URIBuilder(geocodingApiUrl);
-            uriBuilder.addParameter("format", "json");
-            uriBuilder.addParameter("lat", String.valueOf(location.getLatitude()));
-            uriBuilder.addParameter("lon", String.valueOf(location.getLongitude()));
-            uriBuilder.addParameter("zoom", "18");
-            InvertGeoCodeSimpleResult result = restTemplate.getForObject(uriBuilder.build(), InvertGeoCodeSimpleResult.class);
-            return result.getDisplayName();
+            return restTemplate.getForObject(invertGeoCodeRequestURI(location).build(), InvertGeoCodeResult.class);
         } catch (URISyntaxException|NullPointerException|HttpClientErrorException e) {
             e.printStackTrace();
-            return "Undetected";
+            return null;
         }
     }
 
@@ -324,5 +319,14 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
         if (location == null || !location.isValid()) {
             throw new InvalidParameterException("Invalid GeoLocation object.");
         }
+    }
+
+    private URIBuilder invertGeoCodeRequestURI(GeoLocation location) throws URISyntaxException {
+        URIBuilder uriBuilder = new URIBuilder(geocodingApiUrl);
+        uriBuilder.addParameter("format", "json");
+        uriBuilder.addParameter("lat", String.valueOf(location.getLatitude()));
+        uriBuilder.addParameter("lon", String.valueOf(location.getLongitude()));
+        uriBuilder.addParameter("zoom", "18");
+        return uriBuilder;
     }
 }
