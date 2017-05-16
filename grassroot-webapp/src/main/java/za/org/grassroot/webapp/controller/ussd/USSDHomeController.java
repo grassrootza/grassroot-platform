@@ -160,7 +160,9 @@ public class USSDHomeController extends USSDController {
 
         if (trailingDigitsPresent) {
             String trailingDigits = enteredUSSD.substring(hashPosition + 1, enteredUSSD.length() - 1);
-            openingMenu = processTrailingDigits(trailingDigits, sessionUser);
+            // check for livewire & interruption (as user may have been in middle of alert)
+            openingMenu = userInterrupted(inputNumber) && livewireSuffix.equals(trailingDigits) ?
+                    interruptedPrompt(inputNumber) : processTrailingDigits(trailingDigits, sessionUser);
         } else {
             if (!sessionUser.isHasInitiatedSession())
                 userManager.setHasInitiatedUssdSession(sessionUser.getUid());

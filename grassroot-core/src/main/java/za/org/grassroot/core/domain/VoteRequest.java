@@ -42,6 +42,7 @@ public class VoteRequest extends EventRequest<VoteContainer> {
 		request.reminderType = EventReminderType.DISABLED;
 		request.uid = UIDGenerator.generateId();
 		request.createdByUser = user;
+		request.tags = new String[0];
 		if (parent != null) request.setParent(parent);
 		return request;
 	}

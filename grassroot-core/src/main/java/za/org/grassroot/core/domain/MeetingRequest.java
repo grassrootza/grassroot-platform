@@ -36,6 +36,7 @@ public class MeetingRequest extends EventRequest<MeetingContainer> {
 		request.reminderType = EventReminderType.GROUP_CONFIGURED;
 		request.uid = UIDGenerator.generateId();
 		request.createdByUser = user;
+		request.tags = new String[0];
 		if (parent != null) request.setParent(parent);
 		return request;
 	}

@@ -38,7 +38,7 @@ public abstract class AbstractEventEntity {
 	 */
 	@Column(name = "tags")
 	@Type(type = "za.org.grassroot.core.util.StringArrayUserType")
-	private String[] tags;
+	protected String[] tags;
 
 	/*
 	For meetings this the meeting start time
@@ -107,6 +107,7 @@ public abstract class AbstractEventEntity {
 		this.reminderType = Objects.requireNonNull(reminderType);
 		this.customReminderMinutes = customReminderMinutes;
 		this.description = (description == null) ? "" : description;
+		this.tags = new String[0];
 
 		this.rsvpRequired = rsvpRequired;
 		this.relayable = relayable;

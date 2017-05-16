@@ -11,6 +11,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.thymeleaf.util.StringUtils;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Meeting;
 import za.org.grassroot.core.domain.User;
@@ -333,15 +334,18 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
 
     @Override
     @Transactional
-    public void addTagsToAlert(String userUid, String alertUid, List<String> tags) {
+    public void setTagsForAlert(String userUid, String alertUid, List<String> tags) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(alertUid);
+
+        logger.info("tags received: {}", tags);
 
         if (!canUserTag(userUid)) {
             throw new AccessDeniedException("This user does not have permission to tag");
         }
 
-        if (tags == null) {
+        if (listIsNullEmptyOrAllBlank(tags)) {
+            logger.info("tags are empty!");
             throw new InvalidParameterException("Error! No tags provided");
         }
 
@@ -349,9 +353,14 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
         alert.addTags(tags);
     }
 
+    private boolean listIsNullEmptyOrAllBlank(List<String> list) {
+        return list == null || list.isEmpty() ||
+                list.stream().allMatch(StringUtils::isEmpty);
+    }
+
     @Override
     @Transactional
-    public void releaseAlert(String userUid, String alertUid, List<String> tags) {
+    public void reviewAlert(String userUid, String alertUid, List<String> tags, boolean send) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(alertUid);
 
@@ -361,13 +370,16 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
 
         User user = userRepository.findOneByUid(userUid);
         LiveWireAlert alert = alertRepository.findOneByUid(alertUid);
-        if (tags != null) {
-            alert.addTags(tags);
+        if (tags != null && !tags.isEmpty()) {
+            alert.reviseTags(tags);
         }
 
         alert.setReviewed(true);
         alert.setReviewedByUser(user);
-        alert.setSendTime(Instant.now());
+
+        if (send) {
+            alert.setSendTime(Instant.now());
+        }
     }
 
     private void validateCreatingUser(User user, LiveWireAlert alert) throws AccessDeniedException {

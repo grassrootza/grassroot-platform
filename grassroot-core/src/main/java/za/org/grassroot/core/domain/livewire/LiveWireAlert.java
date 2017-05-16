@@ -1,6 +1,5 @@
 package za.org.grassroot.core.domain.livewire;
 
-import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.Type;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.Group;
@@ -27,7 +26,6 @@ import java.util.Objects;
  */
 @Entity
 @Table(name = "live_wire_alert")
-@DynamicUpdate
 public class LiveWireAlert {
 
     @Id
@@ -300,6 +298,10 @@ public class LiveWireAlert {
         this.reviewed = reviewed;
     }
 
+    public boolean isInstant() {
+        return LiveWireAlertType.INSTANT.equals(type);
+    }
+
     public User getReviewedByUser() {
         return reviewedByUser;
     }
@@ -324,6 +326,11 @@ public class LiveWireAlert {
         List<String> currentTags = new ArrayList<>(StringArrayUtil.arrayToList(tags));
         currentTags.addAll(tagsToAdd);
         tags = StringArrayUtil.listToArrayRemoveDuplicates(currentTags);
+    }
+
+    public void reviseTags(List<String> tags) {
+        Objects.requireNonNull(tags);
+        this.tags = StringArrayUtil.listToArrayRemoveDuplicates(tags);
     }
 
     public void setSendTime(Instant sendTime) {

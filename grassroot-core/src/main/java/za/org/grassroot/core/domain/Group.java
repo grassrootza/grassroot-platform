@@ -176,6 +176,7 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         this.reminderMinutes = 24 * 60; // defaults to a day
         this.description = ""; // at some point may want to add to the constructor
         this.defaultImage = GroupDefaultImage.SOCIAL_MOVEMENT;
+        this.tags = new String[0];
 
         if (parent != null) {
             parent.addChildGroup(this);
