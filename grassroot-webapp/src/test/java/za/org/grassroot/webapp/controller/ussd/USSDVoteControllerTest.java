@@ -133,6 +133,7 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(userManagementServiceMock.findByInputNumber(testUserPhone, interruptedUrl)).thenReturn(testUser);
         when(eventRequestBrokerMock.createEmptyVoteRequest(testUser.getUid(), testGroup.getUid())).thenReturn(testVote);
+        when(eventRequestBrokerMock.load(testVote.getUid())).thenReturn(testVote);
         when(accountGroupBrokerMock.numberEventsLeftForGroup(testGroup.getUid())).thenReturn(99);
 
         mockMvc.perform(get(path + "issue").param(phoneParam, testUserPhone).param("groupUid", "" + testGroup.getUid())).
@@ -146,8 +147,8 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(cacheUtilManagerMock, times(3)).putUssdMenuForUser(testUserPhone, interruptedUrl);
         verify(eventRequestBrokerMock, times(1)).createEmptyVoteRequest(testUser.getUid(), testGroup.getUid());
+        verify(eventRequestBrokerMock, times(2)).load(testVote.getUid());
         verifyNoMoreInteractions(eventBrokerMock);
-
     }
 
     @Test

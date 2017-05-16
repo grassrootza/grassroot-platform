@@ -408,11 +408,12 @@ public class EventRepositoryTest {
 
 
         assertTrue(eventCreate.getScheduledReminderTime().isAfter(Instant.now()));
-        assertFalse(eventCreate.isScheduledReminderActive());
+        assertTrue(eventCreate.isScheduledReminderActive());
 
         Event eventFromDb = eventRepository.findAll().iterator().next();
         assertThat(eventFromDb.getScheduledReminderTime(), is(timeReminderShouldBe));
         assertTrue(eventFromDb.getScheduledReminderTime().isAfter(Instant.now()));
+
         assertFalse(eventFromDb.isScheduledReminderActive());
 
 

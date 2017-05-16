@@ -33,3 +33,10 @@ blockquote a {
     text-decoration: none;
     color: black;
 }
+
+h3 {
+    color: #207A34;
+    font-size: 1.2em;
+    font-weight: bolder;
+    font-family: sans-serif;
+}

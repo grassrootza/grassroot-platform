@@ -3,24 +3,27 @@
       xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{html/fragments :: header}"></head>
 <body>
-<p>
+<h3>
   GRASSROOT LIVEWIRE ALERT: PUBLIC GATHERING
+</h3>
+<p>
+  <b th:text="#{livewire.meeting.preamble.1(${contactName}, ${contactNumber})}"></b><span th:text="#{livewire.meeting.preamble.2}">
+  <b>Sandile</b>, contact number <b>010 555 9123</b>, has issued a LiveWire alert about an upcoming gathering,
+  with the description:</span>
 </p>
-<p th:text="#{livewire.meeting.preamble(${contactName}, ${contactNumber})}">
-  Sandile, contact number 010 555 9123, has issued a LiveWire alert about an upcoming gathering,
-  with the description:
-</p>
-<p th:text="${description}" class="blockquote">
-  Enter description here
-</p>
+<blockquote>
+  <p th:text="${description}">
+    Enter description here
+  </p>
+</blockquote>
 <p th:text="#{livewire.meeting.details(${mtgLocation}, ${dateTime}, ${mtgSubject})}">
   The gathering will be taking place at (location), on (date and time). The subject to members is (subject).
 </p>
 <p th:text="#{livewire.meeting.groupdetails(${numberMembers}, ${lengthTime}, ${numberTasks})}">
-  The group that is meeting has X people, has been active on Grassroot for the last Y amount
-  of time, and has met or acted Z times in the last year.
+  The group that is meeting has X people, has been active on Grassroot since Y, and has met or
+  acted Z times in the last year.
 </p>
-<p th:text="#{livewire.meeting.location(${groupLocation}, ${groupAddress}, ${mtgLocation}, ${mtgAddress})}">
+<p th:if="${hasLocation}" th:text="#{livewire.meeting.location(${groupLocation}, ${groupAddress}, ${mtgLocation}, ${mtgAddress})}">
   The group that is meeting is located at (coordinates), approximately (area), and declared that the meeting
   is taking place at (some other coord).
 </p>

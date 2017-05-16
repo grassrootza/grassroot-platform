@@ -3,20 +3,23 @@
       xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{html/fragments :: header}"></head>
 <body>
-<p>
+<h3>
   GRASSROOT LIVEWIRE FLASH ALERT
+</h3>
+<p>
+  <b th:text="#{livewire.instant.preamble.1(${contactName}, ${contactNumber})}"></b><span th:text="#{livewire.instant.preamble.2}">
+  Sandile, contact number 010 555 9123, has issued a flash alert with the description:</span>
 </p>
-<p th:text="#{livewire.instant.preamble(${contactName}, ${contactNumber})}">
-  Sandile, contact number 010 555 9123, has issued a flash alert with the description:
-</p>
-<p class="blockquote" th:text="${description}">
-  Enter description here
-</p>
+<blockquote>
+  <p th:text="${description}">
+    Enter description here
+  </p>
+</blockquote>
 <p th:text="#{livewire.instant.groupdetails(${contactName}, ${numberMembers}, ${lengthTime}, ${numberTasks})}">
-  Sandile is the organizer of a group of X people, which has been active on Grassroot for the last Y amount
-  of time, and has met or acted Z times in the last year.
+  Sandile is the organizer of a group of X people, which has been active on Grassroot since Y, and has
+  met or acted Z times in the last year.
 </p>
-<p th:text="#{livewire.instant.location(${groupLocation}, ${groupAddress}, ${alertLocation}, ${alertAddress})}">
+<p th:if="${hasLocation}" th:text="#{livewire.instant.location(${groupLocation}, ${groupAddress}, ${alertLocation}, ${alertAddress})}">
   The group is located at (coordinates), approximately (area), and declared that the alert is located at
   (some other coord).
 </p>
