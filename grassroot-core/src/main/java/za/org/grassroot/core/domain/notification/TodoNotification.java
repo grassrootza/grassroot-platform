@@ -1,6 +1,8 @@
 package za.org.grassroot.core.domain.notification;
 
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.ActionLog;
+import za.org.grassroot.core.domain.TodoLog;
 import za.org.grassroot.core.enums.NotificationDetailedType;
 import za.org.grassroot.core.enums.NotificationType;
 

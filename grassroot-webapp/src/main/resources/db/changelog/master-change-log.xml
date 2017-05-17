@@ -143,5 +143,6 @@
     <include file="change_137.xml" relativeToChangelogFile="true" />
     <include file="change_138.xml" relativeToChangelogFile="true" />
     <include file="change_139.xml" relativeToChangelogFile="true" />
+    <include file="change_140.xml" relativeToChangelogFile="true" />
 
 </databaseChangeLog>

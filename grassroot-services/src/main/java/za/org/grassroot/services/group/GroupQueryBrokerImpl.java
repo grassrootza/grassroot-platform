@@ -14,6 +14,8 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.GroupLocation;
 import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
+import za.org.grassroot.core.domain.EventLog;
+import za.org.grassroot.core.domain.GroupLog;
 import za.org.grassroot.core.dto.GroupTreeDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.repository.*;

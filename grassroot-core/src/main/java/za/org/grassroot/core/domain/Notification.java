@@ -66,6 +66,10 @@ public abstract class Notification implements Serializable {
 	@JoinColumn(name = "user_log_id", foreignKey = @ForeignKey(name = "fk_notification_user_log"))
 	private UserLog userLog;
 
+	@ManyToOne
+	@JoinColumn(name = "livewire_log_id", foreignKey = @ForeignKey(name = "fk_notification_livewire_log"))
+	private LiveWireLog liveWireLog;
+
 	@Column(name = "read")
 	private boolean read = false;
 
@@ -114,6 +118,8 @@ public abstract class Notification implements Serializable {
 			accountLog = (AccountLog) actionLog;
 		} else if (actionLog instanceof UserLog) {
 			userLog = (UserLog) actionLog;
+		} else if (actionLog instanceof LiveWireLog) {
+			liveWireLog = (LiveWireLog) actionLog;
 		} else {
 			throw new IllegalArgumentException("Unsupported action log: " + actionLog);
 		}
@@ -166,6 +172,8 @@ public abstract class Notification implements Serializable {
 	public UserLog getUserLog() {
 		return userLog;
 	}
+
+	public LiveWireLog getLiveWireLog() { return liveWireLog; }
 
 	public String getMessage() {
 		return message;

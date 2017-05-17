@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.google.common.collect.ComparisonChain;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.EventLog;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.TaskType;

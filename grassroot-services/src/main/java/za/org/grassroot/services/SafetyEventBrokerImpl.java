@@ -5,6 +5,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.GroupLog;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.repository.GroupLogRepository;
 import za.org.grassroot.core.repository.GroupRepository;

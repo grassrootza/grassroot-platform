@@ -11,6 +11,7 @@ public enum NotificationType {
 	CHAT,
 	ACCOUNT,
 	USER,
+	LIVEWIRE,
 	GENERAL
 
 

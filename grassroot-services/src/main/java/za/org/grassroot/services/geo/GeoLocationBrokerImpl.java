@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.geo.*;
+import za.org.grassroot.core.domain.EventLog;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.LocationSource;
 import za.org.grassroot.core.enums.UserInterfaceType;

@@ -1,8 +1,5 @@
-package za.org.grassroot.core.domain.log;
+package za.org.grassroot.core.domain;
 
-import za.org.grassroot.core.domain.ActionLog;
-import za.org.grassroot.core.domain.Address;
-import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.LocationHolder;
 import za.org.grassroot.core.enums.AddressLogType;

@@ -11,7 +11,7 @@ import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.Address;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
-import za.org.grassroot.core.domain.log.AddressLog;
+import za.org.grassroot.core.domain.AddressLog;
 import za.org.grassroot.core.enums.AddressLogType;
 import za.org.grassroot.core.enums.LocationSource;
 import za.org.grassroot.core.enums.UserInterfaceType;

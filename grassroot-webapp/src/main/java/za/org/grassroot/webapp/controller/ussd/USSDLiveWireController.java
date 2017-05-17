@@ -249,7 +249,7 @@ public class USSDLiveWireController extends USSDController {
             }
         }
         LiveWireAlert alert = liveWireAlertBroker.load(alertUid);
-        String[] fields = new String[] { alert.getDescription(), alert.getContactUser().getName() };
+        String[] fields = new String[] { alert.getDescription(), alert.getContactNameNullSafe() };
 
         USSDMenu menu = new USSDMenu(getMessage(LIVEWIRE, "confirm", promptKey, fields, user));
         menu.addMenuOption(menuUri("send", alertUid) + "&location=false",
@@ -273,7 +273,8 @@ public class USSDLiveWireController extends USSDController {
         if (location) {
             liveWireAlertBroker.addLocationToAlert(user.getUid(), alertUid, null, UserInterfaceType.USSD);
         }
-        USSDMenu menu = new USSDMenu(getMessage(LIVEWIRE, "send", "success",
+        LiveWireAlert alert = liveWireAlertBroker.load(alertUid);
+        USSDMenu menu = new USSDMenu(getMessage(LIVEWIRE, "send", alert.getType().name().toLowerCase() + ".success",
                 new String[] { String.valueOf(dataSubscriberBroker.countPushEmails()) }, user));
         menu.addMenuOptions(optionsHomeExit(user, false));
         return menuBuilder(menu);

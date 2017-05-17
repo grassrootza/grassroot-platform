@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.AccountLog;
 import za.org.grassroot.core.domain.notification.AccountBillingNotification;
 import za.org.grassroot.core.enums.AccountLogType;
 import za.org.grassroot.core.enums.AccountPaymentType;

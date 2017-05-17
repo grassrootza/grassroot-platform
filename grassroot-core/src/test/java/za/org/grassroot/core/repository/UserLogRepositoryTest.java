@@ -4,7 +4,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -13,7 +12,6 @@ import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.UserLog;
-import za.org.grassroot.core.specifications.UserLogSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
 
 import java.time.Instant;

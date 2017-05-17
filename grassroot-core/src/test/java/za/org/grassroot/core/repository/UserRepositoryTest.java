@@ -13,6 +13,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.StandaloneDatabaseConfig;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.EventLog;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.UserMessagingPreference;

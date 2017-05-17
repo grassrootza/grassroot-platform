@@ -23,16 +23,18 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 	private final EventLogRepository eventLogRepository;
 	private final TodoLogRepository todoLogRepository;
 	private final AccountLogRepository accountLogRepository;
+	private final LiveWireLogRepository liveWireLogRepository;
 
 	@Autowired
 	public LogsAndNotificationsBrokerImpl(NotificationRepository notificationRepository, GroupLogRepository groupLogRepository,
-										  UserLogRepository userLogRepository, EventLogRepository eventLogRepository, TodoLogRepository todoLogRepository, AccountLogRepository accountLogRepository) {
+										  UserLogRepository userLogRepository, EventLogRepository eventLogRepository, TodoLogRepository todoLogRepository, AccountLogRepository accountLogRepository, LiveWireLogRepository liveWireLogRepository) {
 		this.notificationRepository = notificationRepository;
 		this.groupLogRepository = groupLogRepository;
 		this.userLogRepository = userLogRepository;
 		this.eventLogRepository = eventLogRepository;
 		this.todoLogRepository = todoLogRepository;
 		this.accountLogRepository = accountLogRepository;
+		this.liveWireLogRepository = liveWireLogRepository;
 	}
 
 	@Override
@@ -74,19 +76,16 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
     private void saveLog(ActionLog actionLog) {
 		if (actionLog instanceof GroupLog) {
 			groupLogRepository.save((GroupLog) actionLog);
-
 		} else if (actionLog instanceof UserLog) {
 			userLogRepository.save((UserLog) actionLog);
-
 		} else if (actionLog instanceof EventLog) {
 			eventLogRepository.save((EventLog) actionLog);
-
 		} else if (actionLog instanceof TodoLog) {
 			todoLogRepository.save((TodoLog) actionLog);
-
 		} else if (actionLog instanceof AccountLog) {
 			accountLogRepository.save((AccountLog) actionLog);
-
+		} else if (actionLog instanceof LiveWireLog) {
+			liveWireLogRepository.save((LiveWireLog) actionLog);
 		} else {
 			throw new UnsupportedOperationException("Unsupported log: " + actionLog);
 		}
