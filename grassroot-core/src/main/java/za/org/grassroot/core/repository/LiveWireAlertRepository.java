@@ -21,4 +21,6 @@ public interface LiveWireAlertRepository extends JpaRepository<LiveWireAlert, Lo
 
     Page<LiveWireAlert> findByCompleteTrueAndReviewedFalse(Pageable pageable);
 
+    long countByCreationTimeBetween(Instant start, Instant end);
+
 }

@@ -9,9 +9,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.Address;
+import za.org.grassroot.core.domain.AddressLog;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
-import za.org.grassroot.core.domain.AddressLog;
 import za.org.grassroot.core.enums.AddressLogType;
 import za.org.grassroot.core.enums.LocationSource;
 import za.org.grassroot.core.enums.UserInterfaceType;
@@ -54,7 +54,7 @@ public class AddressBrokerImpl implements AddressBroker {
     public Address getUserAddress(String userUid) {
         Objects.requireNonNull(userUid);
         User user = userRepository.findOneByUid(userUid);
-        return addressRepository.findOneByResidentAndPrimaryTrue(user);
+        return addressRepository.findTopByResidentAndPrimaryTrueOrderByCreatedDateTimeDesc(user);
     }
 
     @Override
@@ -63,7 +63,7 @@ public class AddressBrokerImpl implements AddressBroker {
         Objects.requireNonNull(userUid);
 
         User user = userRepository.findOneByUid(userUid);
-        Address address = addressRepository.findOneByResidentAndPrimaryTrue(user);
+        Address address = addressRepository.findTopByResidentAndPrimaryTrueOrderByCreatedDateTimeDesc(user);
 
         if (address == null) {
             address = createAddress(user);
@@ -86,13 +86,12 @@ public class AddressBrokerImpl implements AddressBroker {
         return address;
     }
 
-
     @Override
     @Transactional
     public void removeAddress(String userUid) {
         Objects.requireNonNull(userUid);
         User user = userRepository.findOneByUid(userUid);
-        Address address = addressRepository.findOneByResidentAndPrimaryTrue(user);
+        Address address = addressRepository.findTopByResidentAndPrimaryTrueOrderByCreatedDateTimeDesc(user);
         addressRepository.delete(address);
         asyncUserLogger.recordUserLog(user.getUid(), UserLogType.REMOVED_ADDRESS, "user deleted address");
         log.info("deleting user address from db");
@@ -102,14 +101,14 @@ public class AddressBrokerImpl implements AddressBroker {
     @Transactional(readOnly = true)
     public boolean hasAddress(String userUid) {
         final User user = userRepository.findOneByUid(userUid);
-        final Address address = addressRepository.findOneByResidentAndPrimaryTrue(user);
+        final Address address = addressRepository.findTopByResidentAndPrimaryTrueOrderByCreatedDateTimeDesc(user);
         return address != null && address.hasHouseAndStreet();
     }
 
     @Override
     @Transactional
-    public String storeAddressRaw(String userUid, Address address, boolean makePrimary) {
-        address.setPrimary(makePrimary);
+    public String storeAddressRaw(String userUid, Address address) {
+        address.setPrimary(false); // to make sure we never accidentally override
         Address storedAddress;
         List<Address> duplicateCheck = addressRepository.findAll(Specifications
                         .where(forUser(address.getResident()))
@@ -118,9 +117,6 @@ public class AddressBrokerImpl implements AddressBroker {
         log.info("size of returned address: {}", duplicateCheck.size());
         storedAddress = duplicateCheck.isEmpty() ?
                 addressRepository.save(address) : duplicateCheck.iterator().next();
-        if (makePrimary) {
-            address.setPrimary(true);
-        }
         return storedAddress.getUid();
     }
 

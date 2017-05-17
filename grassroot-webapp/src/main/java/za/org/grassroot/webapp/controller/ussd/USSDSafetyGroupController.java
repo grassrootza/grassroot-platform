@@ -231,7 +231,7 @@ public class USSDSafetyGroupController extends USSDController {
             Address address = GeoLocationUtils.convertGeoCodeToAddress(result.getAddress(), user,
                     location, UserInterfaceType.USSD, false);
             log.info("Storing raw address ... ");
-            final String addressUid = addressBroker.storeAddressRaw(user.getUid(), address, false);
+            final String addressUid = addressBroker.storeAddressRaw(user.getUid(), address);
             final NumberFormat coordFormat = new DecimalFormat("#.##");
             final String prompt = getMessage(thisSection, "tracking.current", promptKey, new String[] {
                     coordFormat.format(location.getLatitude()),
