@@ -160,21 +160,36 @@
     // Add to map the 'moveend' event
     map.on('moveend', function(e) {
       var url = '/location';
+      // Get bounding box
       var min = map.getBounds().getSouthWest();
       var max = map.getBounds().getNorthEast();
       var data = {
-        min: { latitude: min.lat, longitude: min.lng }
-        ,max: { latitude: max.lat, longitude: max.lng }
+        min: { latitude: min.lat, longitude: min.lng },
+        max: { latitude: max.lat, longitude: max.lng }
       };
+      // Add security
+      var csrfHeader = $("meta[name='_csrf_header']").attr("content");
+			var csrfToken = $("meta[name='_csrf']").attr("content");
+      //data['_csrf'] = csrfToken;
+      var headers = {
+        "Content-Type": "application/json"
+      };
+			headers[csrfHeader] = csrfToken;
       // Load new data
-      $.post(url, data)
-      .done(function(data) {
-        console.log("done");
-      })
-      .fail(function(jqxhr, textStatus, error) {
-        var err = textStatus + ", " + error;
-        console.log( "Request Failed: " + err );  
-      });
+      $.ajax({
+        url: url,
+        type: 'post',
+        dataType: 'json',
+        data: data,
+        headers: headers,
+        success: function(data) {
+          console.log("done");
+        },
+        error: function(jqxhr, status, error) {
+          var err = status + ", " + error;
+          console.log( "Request Failed: " + err );  
+        }
+	    });
 	  });
 
     // -------------------------

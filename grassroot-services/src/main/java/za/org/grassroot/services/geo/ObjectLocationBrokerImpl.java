@@ -18,7 +18,6 @@ import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.group.GroupLocationFilter;
 
 import javax.persistence.EntityManager;
-import javax.persistence.TypedQuery;
 import java.net.URISyntaxException;
 import java.security.InvalidParameterException;
 import java.time.Instant;
@@ -27,14 +26,12 @@ import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 import static za.org.grassroot.services.geo.GeoLocationUtils.KM_PER_DEGREE;
 
 @Service
 public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
     private final static Logger logger = LoggerFactory.getLogger(ObjectLocationBroker.class);
-    private final static double KM_PER_DEGREE = 111.045;
 
     private final static int PRIVATE_LEVEL = 0;
     private final static int PUBLIC_LEVEL = 1;
@@ -169,9 +166,9 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
             "  l.calculatedDateTime <= :date " +
             "  AND l.calculatedDateTime = (SELECT MAX(ll.calculatedDateTime) FROM MeetingLocation ll WHERE ll.meeting = l.meeting) " +
             "  AND l.location.latitude " +
-            "      BETWEEN :latMin AND :latMin " +
+            "      BETWEEN :latMin AND :latMax " +
             "  AND l.location.longitude " +
-            "      BETWEEN :longMin AND :longMin ";
+            "      BETWEEN :longMin AND :longMax ";
 
         logger.info(query);
 

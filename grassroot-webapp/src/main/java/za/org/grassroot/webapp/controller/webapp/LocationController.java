@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -47,6 +48,11 @@ public class LocationController extends BaseController {
     public LocationController (GeoLocationBroker geoLocationBroker, ObjectLocationBroker objectLocationBroker) {
         this.geoLocationBroker = geoLocationBroker;
         this.objectLocationBroker = objectLocationBroker;
+    }
+
+    public class BoundingBox {
+        public GeoLocation min;
+        public GeoLocation max;
     }
 
     @RequestMapping(value = "", method = RequestMethod.GET)
@@ -151,8 +157,7 @@ public class LocationController extends BaseController {
 
     @RequestMapping(value = "", method = RequestMethod.POST)
     public String searchBox (@RequestParam(required = false) Integer restriction,
-                          @ModelAttribute("min") GeoLocation min,
-                          @ModelAttribute("max") GeoLocation max,
+                          @RequestBody BoundingBox boundingBox,
                           Model model,
                           HttpServletRequest request, RedirectAttributes attributes) {
 
@@ -162,13 +167,13 @@ public class LocationController extends BaseController {
         // Get user
         final User user = getUserProfile();
         logger.info("The user {}", user);
-        logger.info("The bounding box {} - {}", min, max);
+        logger.info("The bounding box {} - {}", boundingBox.min, boundingBox.max);
 
         // Returns list
         List<ObjectLocation> objectsToReturn = new ArrayList<>();
 
         // Load meetings
-        List<ObjectLocation> meetings = objectLocationBroker.fetchMeetingLocations(min, max, useRestriction);
+        List<ObjectLocation> meetings = objectLocationBroker.fetchMeetingLocations(boundingBox.min, boundingBox.max, useRestriction);
         logger.info("Meetings found: {}", meetings.size());
 
         // Concat the results
