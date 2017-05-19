@@ -132,6 +132,7 @@ public class MeetingRepositoryTest {
         assertThat(checkSecond.contains(mtg2), is(true));
     }
 
+    @Ignore
     @Test
     public void shouldFindMeetingsForThankYous() {
 
