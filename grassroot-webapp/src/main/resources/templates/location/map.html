@@ -109,7 +109,6 @@
 
   <script type='text/javascript' th:inline="javascript">
     /*<![CDATA[*/
-    $(document).ready(function() {
     console.log("loading map ...");
 
     // Get parameters
@@ -131,38 +130,54 @@
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: maxZoom,
       attributionControl: false
-    }).addTo(map);
+    }).addTo(this.map);
 
-    // Draw all marks
-    var markers = [[${data}]];
-    for (var i=0; i < markers.length; ++i)
-    {
-      var m = markers[i];
-      L.marker([m.latitude, m.longitude])
-          .bindPopup('<a href="' + m.url + '" target="_blank">' + m.name + '</a> <br><br>' + m.description)
-          .addTo(map);
-    }
+    // setup a marker group
+    var markersLayer = L.layerGroup();
 
     // Radius in Km, convert to meters
     var radius = originalRadius * 1000.0;
 
     // Draw a radius in meters
-    L.circle([latitude, longitude], radius, {fill: true}).addTo(map);
+    L.circle([latitude, longitude], radius, {fill: true}).addTo(this.map);
 
     // Draw the scale
     var graphicScale = L.control.graphicScale({
       doubleLine: false
       ,fill: 'fill'
       ,showSubunits: false
-    }).addTo(map);
+    }).addTo(this.map);
 
-    // TODO: The code below is not working well - create better approach
+    // Function to create the markers into map
+    function CreateMarkers(markers) {
+      // First clear old markers
+      this.map.removeLayer(this.markersLayer);
+
+      // Create all marks
+      for (var i=0; i < markers.length; ++i)
+      {
+        // Get data
+        var m = markers[i];
+
+        // Create marker
+        var marker = L.marker([m.latitude, m.longitude]);
+        marker.bindPopup('<a href="' + m.url + '" target="_blank">' + m.name + '</a> <br><br>' + m.description);
+
+        // Add marker
+        this.markersLayer.addLayer(marker);
+      }
+
+      // Add the group to the map
+      // for more see https://github.com/Leaflet/Leaflet.markercluster
+      this.map.addLayer(this.markersLayer);
+    }
+
     // Add to map the 'moveend' event
-    map.on('moveend', function(e) {
-      var url = '/location';
+    function LoadMarkers() {
+      var url = '/api/location';
       // Get bounding box
-      var min = map.getBounds().getSouthWest();
-      var max = map.getBounds().getNorthEast();
+      var min = this.map.getBounds().getSouthWest();
+      var max = this.map.getBounds().getNorthEast();
       var data = {
         min: { latitude: min.lat, longitude: min.lng },
         max: { latitude: max.lat, longitude: max.lng }
@@ -180,34 +195,42 @@
         url: url,
         type: 'post',
         dataType: 'json',
-        data: data,
+        data: JSON.stringify(data),
         headers: headers,
-        success: function(data) {
+        success: function(response) {
           console.log("done");
+          CreateMarkers(response.data);
         },
         error: function(jqxhr, status, error) {
           var err = status + ", " + error;
           console.log( "Request Failed: " + err );  
         }
 	    });
-	  });
+	  }
 
-    // -------------------------
-    // Add callbacks to buttons
-    // -------------------------
-    // Hide sidebar
-    $('#sidebar-hide-btn').click(function () {
-        $('#filter').hide();
-        $('#show-sidebar').show();
+    // Do the job whem ready
+    $(document).ready(function() {
+      // -------------------------
+      // Add callbacks to buttons
+      // -------------------------
+      map.on('moveend', function(e) {
+        LoadMarkers();
+      });
+      // Hide sidebar
+      $('#sidebar-hide-btn').click(function () {
+          $('#filter').hide();
+          $('#show-sidebar').show();
+      });
+
+      // Show sidebar
+      $('#sidebar-show-btn').click(function () {
+          $('#filter').show();
+          $('#show-sidebar').hide();
+      });
+
+      // Load initial markers
+      LoadMarkers();
     });
-
-    // Show sidebar
-    $('#sidebar-show-btn').click(function () {
-        $('#filter').show();
-        $('#show-sidebar').hide();
-    });
-
-  });
   /*]]>*/
   </script>
 
