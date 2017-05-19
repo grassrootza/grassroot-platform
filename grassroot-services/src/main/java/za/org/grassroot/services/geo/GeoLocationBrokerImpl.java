@@ -57,7 +57,7 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 	@Autowired
 	private MeetingLocationRepository meetingLocationRepository;
 
-	@Autowired
+	@Autowired(required = false)
 	private UssdLocationServicesBroker ussdLocationServicesBroker;
 
 	@Autowired

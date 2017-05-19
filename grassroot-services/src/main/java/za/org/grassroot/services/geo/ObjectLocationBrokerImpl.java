@@ -80,10 +80,10 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
         // Mount restriction
         String restrictionClause = "";
         if (restriction == null || restriction == PUBLIC_LEVEL) {
-            restrictionClause = "g.discoverable = true AND ";
+            restrictionClause = "g.discoverable = true ";
         }
         else if (restriction == PRIVATE_LEVEL) {
-            restrictionClause = "g.discoverable = false AND ";
+            restrictionClause = "g.discoverable = false ";
         }
 
         // Mount query
@@ -139,10 +139,10 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
         // Mount restriction
         String restrictionClause = "";
         if (restriction == PRIVATE_LEVEL) {
-            restrictionClause = "g.discoverable = false AND ";
+            restrictionClause = "g.discoverable = false ";
         }
         else if (restriction == PUBLIC_LEVEL) {
-            restrictionClause = "g.discoverable = true AND ";
+            restrictionClause = "g.discoverable = true ";
         }
 
         // Mount query
