@@ -42,7 +42,7 @@ public class AddressRepositoryTest {
 
      User user = userRepository.save(new User("0833203013"));
         addressRepository.save(new Address(user, testHouseNumber,testStreetName,testTown, true));
-        Address address = addressRepository.findOneByResidentAndPrimaryTrue(user);
+        Address address = addressRepository.findTopByResidentAndPrimaryTrueOrderByCreatedDateTimeDesc(user);
         assertNotNull(address);
         assertNotNull(address.getUid());
         assertNotNull(address.getCreatedDateTime());

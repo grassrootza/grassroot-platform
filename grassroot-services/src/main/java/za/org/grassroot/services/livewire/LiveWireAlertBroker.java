@@ -60,9 +60,9 @@ public interface LiveWireAlertBroker {
     boolean canUserRelease(String userUid);
 
     @PreAuthorize("hasRole('ROLE_LIVEWIRE_USER')")
-    void addTagsToAlert(String userUid, String alertUid, List<String> tags);
+    void setTagsForAlert(String userUid, String alertUid, List<String> tags);
 
     @PreAuthorize("hasRole('ROLE_LIVEWIRE_USER')")
-    void releaseAlert(String userUid, String alertUid, List<String> tags);
+    void reviewAlert(String userUid, String alertUid, List<String> tags, boolean send);
 
 }

@@ -3,6 +3,7 @@ package za.org.grassroot.webapp.controller.rest.android;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.GroupLog;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.group.GroupQueryBroker;

@@ -6,7 +6,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.dto.KeywordDTO;
@@ -16,6 +15,7 @@ import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.GroupSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.geo.GeoLocationBroker;
+import za.org.grassroot.services.specifications.NotificationSpecifications;
 
 import javax.persistence.EntityManager;
 import java.time.Instant;
@@ -52,11 +52,13 @@ public class AnalyticalServiceImpl implements AnalyticalService {
     private final GeoLocationBroker geoLocationBroker;
     private final EntityManager entityManager;
     private final SafetyEventRepository safetyEventRepository;
+    private final LiveWireAlertRepository liveWireAlertRepository;
+    private final NotificationRepository notificationRepository;
 
     @Autowired
     public AnalyticalServiceImpl(UserRepository userRepository, UserLogRepository userLogRepository, GroupRepository groupRepository,
                                  VoteRepository voteRepository, MeetingRepository meetingRepository, EntityManager entityManager,
-                                 TodoRepository todoRepository, GeoLocationBroker geoLocationBroker, SafetyEventRepository safetyRepository) {
+                                 TodoRepository todoRepository, GeoLocationBroker geoLocationBroker, SafetyEventRepository safetyRepository, LiveWireAlertRepository liveWireAlertRepository, NotificationRepository notificationRepository) {
         this.userRepository = userRepository;
         this.userLogRepository = userLogRepository;
         this.groupRepository = groupRepository;
@@ -66,6 +68,8 @@ public class AnalyticalServiceImpl implements AnalyticalService {
         this.todoRepository = todoRepository;
         this.geoLocationBroker = geoLocationBroker;
         this.safetyEventRepository = safetyRepository;
+        this.liveWireAlertRepository = liveWireAlertRepository;
+        this.notificationRepository = notificationRepository;
     }
 
     @Override
@@ -228,6 +232,16 @@ public class AnalyticalServiceImpl implements AnalyticalService {
             data.put(i + interval, countSessionsInPeriod(start, end, i + 1, i + interval));
         }
         return data;
+    }
+
+    @Override
+    public long countLiveWireAlertsInInterval(Instant start, Instant end) {
+        return liveWireAlertRepository.countByCreationTimeBetween(start, end);
+    }
+
+    @Override
+    public long countNotificationsInInterval(Instant start, Instant end) {
+        return notificationRepository.count(NotificationSpecifications.createdTimeBetween(start, end));
     }
 
     private int getMaxSessionsInPeriod(Instant start, Instant end) {

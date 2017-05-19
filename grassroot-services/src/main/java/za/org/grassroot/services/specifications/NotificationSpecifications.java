@@ -2,6 +2,10 @@ package za.org.grassroot.services.specifications;
 
 import org.springframework.data.jpa.domain.Specification;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.AccountLog;
+import za.org.grassroot.core.domain.EventLog;
+import za.org.grassroot.core.domain.GroupLog;
+import za.org.grassroot.core.domain.TodoLog;
 import za.org.grassroot.core.enums.AccountLogType;
 
 import javax.persistence.criteria.Join;

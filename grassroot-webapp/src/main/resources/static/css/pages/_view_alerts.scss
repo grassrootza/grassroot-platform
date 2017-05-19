@@ -1,0 +1,88 @@
+/* LiveWire alerts */
+/* Not just extending group members because don't fully trust */
+
+.alert-list {
+  .panel {
+    box-shadow: none;
+  }
+
+  .panel-default > .panel-heading {
+    background-color: $green;
+    border-radius: 0;
+    color: $white;
+  }
+
+  .panel-group .panel {
+    border-radius: 0 !important;
+  }
+
+  .panel-title a i {
+    position: absolute;
+    right: 6px;
+  }
+
+  .panel-title > a,
+  .panel-title > small,
+  .panel-title > .small,
+  .panel-title > small > a,
+  .panel-title > .small > a {
+    font-weight: 400;
+
+    &:active,
+    &:focus,
+    &:hover {
+      text-decoration: none;
+    }
+
+    .form-link {
+      &:active,
+      &:focus,
+      &:hover {
+        font-weight: 800;
+      }
+    }
+  }
+
+  .header-link {
+    @extend .panel-title;
+    margin-right: 10px;
+  }
+
+  .disabled-link {
+    @extend .panel-title;
+    color: $offwhite;
+    font-weight: 100;
+  }
+
+  form {
+    display: inline;
+    margin-right: 5px;
+  }
+
+  .select-style {
+    border: 1px solid #ccc;
+    width: 120px;
+    border-radius: 3px;
+    overflow: hidden;
+    background: #fafafa no-repeat 90% 50%;
+    color: black;
+    margin-right: 10px;
+
+    select {
+      padding: 5px 8px;
+      width: 130%;
+      border: none;
+      box-shadow: none;
+      background: transparent;
+      background-image: none;
+      -webkit-appearance: none;
+
+      &:focus {
+        outline: none;
+      }
+    }
+  }
+
+
+
+}

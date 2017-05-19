@@ -3,7 +3,10 @@ package za.org.grassroot.services.livewire;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specifications;
@@ -11,19 +14,17 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.Meeting;
-import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.domain.UserLog;
+import org.thymeleaf.util.StringUtils;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.livewire.DataSubscriber;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
-import za.org.grassroot.core.enums.LiveWireAlertType;
-import za.org.grassroot.core.enums.LocationSource;
-import za.org.grassroot.core.enums.UserInterfaceType;
-import za.org.grassroot.core.enums.UserLogType;
+import za.org.grassroot.core.domain.notification.LiveWireMadeContactNotification;
+import za.org.grassroot.core.domain.notification.LiveWireToReviewNotification;
+import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.location.UssdLocationServicesBroker;
 import za.org.grassroot.services.geo.GeoLocationUtils;
 import za.org.grassroot.services.geo.ObjectLocationBroker;
@@ -41,6 +42,7 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created by luke on 2017/05/06.
@@ -55,10 +57,12 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
     private final UserRepository userRepository;
     private final GroupRepository groupRepository;
     private final MeetingRepository meetingRepository;
-    private final EntityManager entityManager;
     private final DataSubscriberRepository dataSubscriberRepository;
+
+    private final EntityManager entityManager;
     private final LogsAndNotificationsBroker logsAndNotificationsBroker;
 
+    private MessageSourceAccessor messageSource;
     private UssdLocationServicesBroker locationServicesBroker;
 
     @Value("${grassroot.livewire.instant.minsize:100}")
@@ -68,7 +72,7 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
     private int minGroupTasksForInstantAlert;
 
     @Autowired
-    public LiveWireAlertBrokerImpl(LiveWireAlertRepository alertRepository, UserRepository userRepository, GroupRepository groupRepository, MeetingRepository meetingRepository, EntityManager entityManager, DataSubscriberRepository dataSubscriberRepository, ObjectLocationBroker objectLocationBroker, LogsAndNotificationsBroker logsAndNotificationsBroker) {
+    public LiveWireAlertBrokerImpl(LiveWireAlertRepository alertRepository, UserRepository userRepository, GroupRepository groupRepository, MeetingRepository meetingRepository, EntityManager entityManager, DataSubscriberRepository dataSubscriberRepository, ObjectLocationBroker objectLocationBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, ApplicationEventPublisher applicationEventPublisher) {
         this.alertRepository = alertRepository;
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
@@ -76,6 +80,11 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
         this.entityManager = entityManager;
         this.dataSubscriberRepository = dataSubscriberRepository;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
+    }
+
+    @Autowired
+    public void setMessageSource(@Qualifier("servicesMessageSourceAccessor") MessageSourceAccessor messageSource) {
+        this.messageSource = messageSource;
     }
 
     @Autowired(required = false)
@@ -219,6 +228,10 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
         User contactUser = userRepository.findOneByUid(contactUserUid);
         alert.setContactUser(contactUser);
         alert.setContactName(contactName);
+
+        if (!contactUser.hasName()) {
+            contactUser.setDisplayName(contactName);
+        }
     }
 
     @Override
@@ -245,10 +258,44 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
         LiveWireAlert alert = alertRepository.findOneByUid(alertUid);
         validateCreatingUser(user, alert);
 
+        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+
         alert.setComplete(true);
         if (LiveWireAlertType.INSTANT.equals(alert.getType())) {
             alert.setSendTime(Instant.now());
+            bundle.addLog(new LiveWireLog.Builder()
+                    .alert(alert)
+                    .userTakingAction(user)
+                    .type(LiveWireLogType.ALERT_RELEASED)
+                    .notes("released immediately as instant alert")
+                    .build());
+        } else {
+            LiveWireLog log = new LiveWireLog.Builder()
+                    .alert(alert)
+                    .userTakingAction(user)
+                    .type(LiveWireLogType.ALERT_COMPLETED)
+                    .notes("alert completed and out for review")
+                    .build();
+            bundle.addLog(log);
+            bundle.addNotifications(generateToReviewNotifications(log));
         }
+
+        if (alert.getContactUser() != null && !alert.getContactUser().equals(alert.getCreatingUser())) {
+            LiveWireLog log = new LiveWireLog.Builder()
+                    .alert(alert)
+                    .userTakingAction(user)
+                    .userTargeted(alert.getContactUser())
+                    .type(LiveWireLogType.USER_SET_AS_CONTACT)
+                    .notes("user made a contact but not creating user")
+                    .build();
+            bundle.addLog(log);
+            Notification notification = generateMadeContactNotification(log);
+            logger.info("adding other contact notification: {}", notification);
+            bundle.addNotification(notification);
+        }
+
+        logger.info("bundle notifications: {}", bundle.getNotifications());
+        logsAndNotificationsBroker.asyncStoreBundle(bundle);
     }
 
     @Async
@@ -277,7 +324,8 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
 
     @Override
     @Transactional
-    public void updateUserLiveWireContactStatus(String userUid, boolean addingPermission, UserInterfaceType interfaceType) {
+    public void updateUserLiveWireContactStatus(String userUid, boolean addingPermission,
+                                                UserInterfaceType interfaceType) {
         Objects.requireNonNull(userUid);
         User user = userRepository.findOneByUid(userUid);
         user.setLiveWireContact(addingPermission);
@@ -294,6 +342,7 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
     @Override
     @Transactional
     public void trackLocationForLiveWireContact(String userUid, UserInterfaceType type) {
+        logger.info("tracking user location for livewire contact");
         User user = userRepository.findOneByUid(userUid);
         if (!user.isLiveWireContact()) {
             logger.info("Error! Location track called for user not yet set as contact");
@@ -333,15 +382,18 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
 
     @Override
     @Transactional
-    public void addTagsToAlert(String userUid, String alertUid, List<String> tags) {
+    public void setTagsForAlert(String userUid, String alertUid, List<String> tags) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(alertUid);
+
+        logger.info("tags received: {}", tags);
 
         if (!canUserTag(userUid)) {
             throw new AccessDeniedException("This user does not have permission to tag");
         }
 
-        if (tags == null) {
+        if (listIsNullEmptyOrAllBlank(tags)) {
+            logger.info("tags are empty!");
             throw new InvalidParameterException("Error! No tags provided");
         }
 
@@ -349,9 +401,14 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
         alert.addTags(tags);
     }
 
+    private boolean listIsNullEmptyOrAllBlank(List<String> list) {
+        return list == null || list.isEmpty() ||
+                list.stream().allMatch(StringUtils::isEmpty);
+    }
+
     @Override
     @Transactional
-    public void releaseAlert(String userUid, String alertUid, List<String> tags) {
+    public void reviewAlert(String userUid, String alertUid, List<String> tags, boolean send) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(alertUid);
 
@@ -361,13 +418,16 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
 
         User user = userRepository.findOneByUid(userUid);
         LiveWireAlert alert = alertRepository.findOneByUid(alertUid);
-        if (tags != null) {
-            alert.addTags(tags);
+        if (tags != null && !tags.isEmpty()) {
+            alert.reviseTags(tags);
         }
 
         alert.setReviewed(true);
         alert.setReviewedByUser(user);
-        alert.setSendTime(Instant.now());
+
+        if (send) {
+            alert.setSendTime(Instant.now());
+        }
     }
 
     private void validateCreatingUser(User user, LiveWireAlert alert) throws AccessDeniedException {
@@ -390,6 +450,25 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
                 .setParameter("createdDateTime", DateTimeUtil.getEarliestInstant())
                 .setParameter("minMembership", minGroupSizeForInstantAlert)
                 .setParameter("minTasks", minGroupTasksForInstantAlert);
+    }
+
+    private Set<Notification> generateToReviewNotifications(LiveWireLog log) {
+        final String message = messageSource.getMessage("livewire.alert.toreview",
+                new String[] { log.getAlert().getCreatingUser().getName() });
+        List<String> userUids = dataSubscriberRepository.fetchUserUidsOfReviewingUsers();
+        List<User> users = userRepository.findByUidIn(new HashSet<>(userUids));
+        return users.stream()
+                .map(u -> new LiveWireToReviewNotification(u, message, log))
+                .collect(Collectors.toSet());
+    }
+
+    private Notification generateMadeContactNotification(LiveWireLog log) {
+        final String[] fields = new String[] { log.getAlert().getCreatingUser().getName(), log.getAlert().getDescription(),
+                PhoneNumberUtil.invertPhoneNumber(log.getAlert().getCreatingUser().getPhoneNumber())};
+        return new LiveWireMadeContactNotification(
+                log.getAlert().getContactUser(),
+                messageSource.getMessage("livewire.alert.madecontact", fields),
+                log);
     }
 
 }

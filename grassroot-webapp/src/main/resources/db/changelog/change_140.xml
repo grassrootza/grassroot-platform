@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.0.xsd">
+    <changeSet id="change_140" author="luke">
+        <comment>Added logs and notifications for LiveWire</comment>
+        <sqlFile path="db/scripts/script_140.sql" splitStatements="false"/>
+        <rollback>
+            <sqlFile path="db/scripts/script_140_rollback.sql"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

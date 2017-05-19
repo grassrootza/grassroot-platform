@@ -22,14 +22,15 @@ import za.org.grassroot.core.dto.MaskedUserDTO;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.repository.GroupRepository;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.AdminService;
 import za.org.grassroot.services.AnalyticalService;
-import za.org.grassroot.services.livewire.DataSubscriberBroker;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.MemberNotPartOfGroupException;
 import za.org.grassroot.services.exception.NoSuchUserException;
 import za.org.grassroot.services.group.GroupBroker;
+import za.org.grassroot.services.livewire.DataSubscriberBroker;
 import za.org.grassroot.services.user.PasswordTokenService;
 import za.org.grassroot.services.util.FullTextSearchUtils;
 import za.org.grassroot.webapp.controller.BaseController;
@@ -38,6 +39,7 @@ import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
@@ -126,6 +128,20 @@ public class AdminController extends BaseController {
         model.addAttribute("safetyLastWeek", analyticalService.countSafetyEventsInInterval(week, now));
         model.addAttribute("safetyLastMonth", analyticalService.countSafetyEventsInInterval(month, now));
         model.addAttribute("safetyTotal", analyticalService.countSafetyEventsInInterval(null, null));
+
+        model.addAttribute("livewireLastWeek", analyticalService.countLiveWireAlertsInInterval(
+                week.toInstant(ZoneOffset.UTC), Instant.now()));
+        model.addAttribute("livewireLastMonth", analyticalService.countLiveWireAlertsInInterval(
+                month.toInstant(ZoneOffset.UTC), Instant.now()));
+        model.addAttribute("livewireTotal", analyticalService.countLiveWireAlertsInInterval(
+                month.toInstant(ZoneOffset.UTC), Instant.now()));
+
+        model.addAttribute("notificationsLastWeek", analyticalService.countNotificationsInInterval(
+                week.toInstant(ZoneOffset.UTC), Instant.now()));
+        model.addAttribute("notificationsLastMonth", analyticalService.countNotificationsInInterval(
+                month.toInstant(ZoneOffset.UTC), Instant.now()));
+        model.addAttribute("notificationsTotal", analyticalService.countNotificationsInInterval(
+                DateTimeUtil.getEarliestInstant(), Instant.now()));
 
         return "admin/home";
 

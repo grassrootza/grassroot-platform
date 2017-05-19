@@ -36,6 +36,7 @@ public class LiveWireAlertDTO {
 
     private List<String> tags;
     private boolean reviewed;
+    private boolean sent;
 
     public LiveWireAlertDTO(LiveWireAlert alert) {
         this.uid = alert.getUid();
@@ -65,6 +66,7 @@ public class LiveWireAlertDTO {
         this.groupTasks = group.getDescendantEvents().size() + group.getDescendantTodos().size();
 
         this.reviewed = alert.isReviewed();
+        this.sent = alert.isSent();
     }
 
     public String getUid() { return uid; }
@@ -128,4 +130,6 @@ public class LiveWireAlertDTO {
     }
 
     public boolean isReviewed() { return reviewed; }
+
+    public boolean isSent() { return sent; }
 }
