@@ -84,6 +84,7 @@ public class USSDLiveWireController extends USSDController {
             menu.addMenuOption("livewire/group?groupUid=" + g.getUid(), g.getName());
         });
 
+
         if (numberGroups > (page + 1) * listPageSize) {
             menu.addMenuOption("livewire/instant?pageNumber=" + (page + 1), getMessage("options.more", user));
         }

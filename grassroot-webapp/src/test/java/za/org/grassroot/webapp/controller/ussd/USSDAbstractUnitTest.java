@@ -15,7 +15,6 @@ import org.springframework.web.servlet.handler.SimpleMappingExceptionResolver;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.domain.livewire.LiveWireAlert;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.integration.LearningService;
 import za.org.grassroot.services.PermissionBroker;
@@ -25,6 +24,7 @@ import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.group.GroupJoinRequestService;
 import za.org.grassroot.services.group.GroupQueryBroker;
+import za.org.grassroot.services.livewire.DataSubscriberBroker;
 import za.org.grassroot.services.livewire.LiveWireAlertBroker;
 import za.org.grassroot.services.task.*;
 import za.org.grassroot.services.user.AddressBroker;
@@ -63,6 +63,9 @@ public abstract class USSDAbstractUnitTest {
 
     @Mock
     protected LiveWireAlertBroker liveWireBrokerMock;
+
+    @Mock
+    protected DataSubscriberBroker dataSubscriberBrokerMock;
 
     @Mock
     protected EventRequestBroker eventRequestBrokerMock;
