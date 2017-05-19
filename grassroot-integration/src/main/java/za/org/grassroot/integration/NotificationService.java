@@ -27,5 +27,4 @@ public interface NotificationService {
 
 	void markNotificationAsDelivered(String notificationUid);
 
-	void sendNotification(String notificationUid);
 }

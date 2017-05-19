@@ -1,23 +1,17 @@
 package za.org.grassroot.integration.mqtt;
 
-import org.jivesoftware.smack.packet.Message;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.integration.mqtt.inbound.MqttPahoMessageDrivenChannelAdapter;
-import org.springframework.messaging.MessageChannel;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.repository.GroupRepository;
-import za.org.grassroot.integration.utils.MessageUtils;
-import za.org.grassroot.integration.xmpp.GcmXmppMessageCodec;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -32,13 +26,11 @@ public class MqttSubscriptionServiceImpl implements MqttSubscriptionService {
 
     private GroupRepository groupRepository;
     private MqttPahoMessageDrivenChannelAdapter mqttAdapter;
-    private MessageChannel gcmXmppOutboundChannel;
 
     @Autowired
-    public MqttSubscriptionServiceImpl(GroupRepository groupRepository, MqttPahoMessageDrivenChannelAdapter mqttAdapter, MessageChannel gcmXmppOutboundChannel) {
+    public MqttSubscriptionServiceImpl(GroupRepository groupRepository, MqttPahoMessageDrivenChannelAdapter mqttAdapter) {
         this.groupRepository = groupRepository;
         this.mqttAdapter = mqttAdapter;
-        this.gcmXmppOutboundChannel = gcmXmppOutboundChannel;
     }
 
     @Override @Async
@@ -63,14 +55,5 @@ public class MqttSubscriptionServiceImpl implements MqttSubscriptionService {
             mqttAdapter.addTopic(group.getUid(), 1);
         }
     }
-
-    private void pingUsersForGroupChat(Group group) {
-        Map<String, Object> data = MessageUtils.generatePingMessageData(group);
-        org.springframework.messaging.Message<Message> gcmMessage = GcmXmppMessageCodec.encode(TOPICS.concat(group.getUid()), (String) data.get("messageId"),
-                null,
-                data);
-        gcmXmppOutboundChannel.send(gcmMessage);
-    }
-
 
 }

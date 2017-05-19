@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.core.repository.NotificationRepository;
 import za.org.grassroot.core.repository.UserRepository;
 
@@ -95,31 +94,4 @@ public class NotificationManager implements NotificationService{
         }
     }
 
-    @Override
-    @Transactional
-    public void sendNotification(String notificationUid) {
-        Objects.requireNonNull(notificationUid);
-
-        Instant now = Instant.now();
-
-        Notification notification = notificationRepository.findByUid(notificationUid);
-        logger.info("Sending notification: {}", notification);
-
-        notification.incrementAttemptCount();
-        notification.setLastAttemptTime(now);
-
-        try {
-            boolean redelivery = notification.getAttemptCount() > 1;
-            if (redelivery) {
-                notification.setNextAttemptTime(null); // this practically means we try to redeliver only once
-                messageSendingService.sendMessage(UserMessagingPreference.SMS.name(), notification);
-            } else {
-                // we set next attempt (redelivery) time which will get erased in case delivery gets confirmed in the mean time
-                notification.setNextAttemptTime(now.plusSeconds(60 * 15));
-                messageSendingService.sendMessage(notification);
-            }
-        } catch (Exception e) {
-            logger.error("Failed to send notification " + notification + ": " + e.getMessage(), e);
-        }
-    }
 }

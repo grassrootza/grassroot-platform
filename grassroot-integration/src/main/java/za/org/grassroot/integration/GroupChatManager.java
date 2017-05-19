@@ -3,7 +3,6 @@ package za.org.grassroot.integration;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import org.jivesoftware.smack.packet.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,7 +31,6 @@ import za.org.grassroot.integration.exception.SeloParseDateTimeFailure;
 import za.org.grassroot.integration.mqtt.MqttObjectMapper;
 import za.org.grassroot.integration.utils.MessageUtils;
 import za.org.grassroot.integration.xmpp.GcmService;
-import za.org.grassroot.integration.xmpp.GcmXmppMessageCodec;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -243,7 +241,6 @@ public class GroupChatManager implements GroupChatService {
 
             GroupChatMessageStats groupChatMessageStats = new GroupChatMessageStats(payload.getUid(), group, user, numberOfIntendedRecepients, 1L, false);
             groupChatMessageStatsRepository.save(groupChatMessageStats);
-            pingUsersForGroupChat(group);
         }
     }
 
@@ -281,13 +278,6 @@ public class GroupChatManager implements GroupChatService {
         return mutedUsersUids;
     }
 
-    private void pingUsersForGroupChat(Group group) {
-        Map<String, Object> data = MessageUtils.generatePingMessageData(group);
-        org.springframework.messaging.Message<Message> gcmMessage = GcmXmppMessageCodec.encode(TOPICS.concat(group.getUid()), (String) data.get("messageId"),
-                null, data);
-        gcmXmppOutboundChannel.send(gcmMessage);
-    }
-
     @Override
     @Async
     public void pingToSync(User initiator, User addedUser, Group group){
@@ -300,12 +290,6 @@ public class GroupChatManager implements GroupChatService {
             mqttOutboundChannel.send(MessageBuilder.withPayload(message).
                     setHeader(MqttHeaders.TOPIC, addedUser.getPhoneNumber()).build());
             final String gcmKey = gcmService.getGcmKey(addedUser);
-            if (gcmKey !=null) {
-                org.springframework.messaging.Message<Message> gcmMessage = GcmXmppMessageCodec.encode(gcmKey,
-                        (String) data.get("messageId"), null, data);
-                gcmXmppOutboundChannel.send(gcmMessage);
-
-            }
         } catch (JsonProcessingException e) {
             logger.debug("Error sending sync request to user with number ={}", addedUser.getPhoneNumber());
         }

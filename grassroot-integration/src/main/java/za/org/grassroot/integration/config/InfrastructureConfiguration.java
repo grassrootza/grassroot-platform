@@ -30,23 +30,10 @@ public class InfrastructureConfiguration {
     }
 
     @Bean
-    public MessageChannel gcmOutboundChannel(){
-        return new DirectChannel();
-    }
-
-    @Bean
-    public MessageChannel gcmXmppOutboundChannel(){
-        return new DirectChannel();
-    }
-
-    @Bean
     public MessageChannel requestChannel(){return new QueueChannel();}
 
     @Bean
     public MessageChannel gcmInboundChannel(){return new DirectChannel();}
-
-    @Bean
-    public MessageChannel smsOutboundChannel(){return new DirectChannel();}
 
     @Bean
     public MessageChannel systemMessageChannel(){return new DirectChannel();}

@@ -27,7 +27,6 @@ import org.thymeleaf.templateresolver.ITemplateResolver;
 import org.thymeleaf.templateresolver.StringTemplateResolver;
 import za.org.grassroot.scheduling.ApplicationContextAwareQuartzJobBean;
 import za.org.grassroot.scheduling.LiveWireAlertSenderJob;
-import za.org.grassroot.scheduling.UnreadNotificationSenderJob;
 
 import java.util.Collections;
 import java.util.Properties;
@@ -61,24 +60,6 @@ public class GrassrootServicesConfig implements SchedulingConfigurer {
     }
 
 	@Bean
-	public JobDetailFactoryBean unreadNotificationSenderJobDetail() {
-		JobDetailFactoryBean factoryBean = new JobDetailFactoryBean();
-		factoryBean.setJobClass(UnreadNotificationSenderJob.class);
-		factoryBean.setDurability(false);
-		return factoryBean;
-	}
-
-	@Bean
-	public CronTriggerFactoryBean unreadNotificationSenderCronTrigger(
-			@Qualifier("unreadNotificationSenderJobDetail") JobDetail jobDetail) {
-		CronTriggerFactoryBean factoryBean = new CronTriggerFactoryBean();
-		factoryBean.setJobDetail(jobDetail);
-		factoryBean.setCronExpression("0 0 0/1 * * ?");
-		factoryBean.setMisfireInstruction(CronTrigger.MISFIRE_INSTRUCTION_DO_NOTHING);
-		return factoryBean;
-	}
-
-	@Bean
 	public JobDetailFactoryBean livewireAlertSenderJobDetail() {
     	JobDetailFactoryBean factoryBean = new JobDetailFactoryBean();
     	factoryBean.setJobClass(LiveWireAlertSenderJob.class);
@@ -97,8 +78,7 @@ public class GrassrootServicesConfig implements SchedulingConfigurer {
 	}
 
 	@Bean
-	public SchedulerFactoryBean schedulerFactoryBean(@Qualifier("unreadNotificationSenderCronTrigger") CronTrigger unreadTrigger,
-													 @Qualifier("livewireAlertSenderCronTrigger") CronTrigger livewireTrigger) {
+	public SchedulerFactoryBean schedulerFactoryBean(@Qualifier("livewireAlertSenderCronTrigger") CronTrigger livewireTrigger) {
 		Properties quartzProperties = new Properties();
 
 		SchedulerFactoryBean factory = new SchedulerFactoryBean();
@@ -108,7 +88,7 @@ public class GrassrootServicesConfig implements SchedulingConfigurer {
 		factory.setQuartzProperties(quartzProperties);
 		factory.setStartupDelay(10);
 		factory.setApplicationContextSchedulerContextKey(ApplicationContextAwareQuartzJobBean.APPLICATION_CONTEXT_KEY);
-		factory.setTriggers(unreadTrigger, livewireTrigger);
+		factory.setTriggers(livewireTrigger);
 
 		return factory;
 	}

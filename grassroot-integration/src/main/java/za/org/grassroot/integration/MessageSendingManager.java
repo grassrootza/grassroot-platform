@@ -46,12 +46,6 @@ public class MessageSendingManager implements MessageSendingService {
     }
 
     @Override
-    public void sendMessage(Notification notification) {
-        Message<Notification> message = createMessage(notification, null);
-        requestChannel.send(message);
-    }
-
-    @Override
     public void sendMessage(String destination, Notification notification) {
         Message<Notification> message = createMessage(notification, destination);
         requestChannel.send(message);
@@ -72,7 +66,9 @@ public class MessageSendingManager implements MessageSendingService {
     }
 
     private Message<Notification> createMessage(Notification notification, String givenRoute) {
-        String route = (givenRoute == null) ? notification.getTarget().getMessagingPreference().name() : givenRoute;
+        String route = (givenRoute == null) ? notification.getTarget().getMessagingPreference().name()
+                : givenRoute;
+        logger.info("route for notification: {}", route);
         if ("ANDROID_APP".equals(route)) {
             if (!checkGcmRegistration(notification)) {
                 route = "SMS";
