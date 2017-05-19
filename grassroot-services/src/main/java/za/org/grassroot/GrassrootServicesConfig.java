@@ -26,7 +26,6 @@ import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
 import org.thymeleaf.templateresolver.ITemplateResolver;
 import org.thymeleaf.templateresolver.StringTemplateResolver;
 import za.org.grassroot.scheduling.ApplicationContextAwareQuartzJobBean;
-import za.org.grassroot.scheduling.BatchedNotificationSenderJob;
 import za.org.grassroot.scheduling.LiveWireAlertSenderJob;
 import za.org.grassroot.scheduling.UnreadNotificationSenderJob;
 
@@ -62,24 +61,6 @@ public class GrassrootServicesConfig implements SchedulingConfigurer {
     }
 
 	@Bean
-	public JobDetailFactoryBean batchedNotificationSenderJobDetail() {
-		JobDetailFactoryBean factoryBean = new JobDetailFactoryBean();
-		factoryBean.setJobClass(BatchedNotificationSenderJob.class);
-		factoryBean.setDurability(false);
-		return factoryBean;
-	}
-
-	@Bean
-	public CronTriggerFactoryBean batchedNotificationSenderCronTrigger(
-			@Qualifier("batchedNotificationSenderJobDetail") JobDetail jobDetail) {
-		CronTriggerFactoryBean factoryBean = new CronTriggerFactoryBean();
-		factoryBean.setJobDetail(jobDetail);
-		factoryBean.setCronExpression("0/15 * * * * ?");
-		factoryBean.setMisfireInstruction(CronTrigger.MISFIRE_INSTRUCTION_DO_NOTHING);
-		return factoryBean;
-	}
-
-	@Bean
 	public JobDetailFactoryBean unreadNotificationSenderJobDetail() {
 		JobDetailFactoryBean factoryBean = new JobDetailFactoryBean();
 		factoryBean.setJobClass(UnreadNotificationSenderJob.class);
@@ -92,7 +73,7 @@ public class GrassrootServicesConfig implements SchedulingConfigurer {
 			@Qualifier("unreadNotificationSenderJobDetail") JobDetail jobDetail) {
 		CronTriggerFactoryBean factoryBean = new CronTriggerFactoryBean();
 		factoryBean.setJobDetail(jobDetail);
-		factoryBean.setCronExpression("0 0/5 * * * ?");
+		factoryBean.setCronExpression("0 0 0/1 * * ?");
 		factoryBean.setMisfireInstruction(CronTrigger.MISFIRE_INSTRUCTION_DO_NOTHING);
 		return factoryBean;
 	}
@@ -116,8 +97,7 @@ public class GrassrootServicesConfig implements SchedulingConfigurer {
 	}
 
 	@Bean
-	public SchedulerFactoryBean schedulerFactoryBean(@Qualifier("batchedNotificationSenderCronTrigger") CronTrigger sendTrigger,
-													 @Qualifier("unreadNotificationSenderCronTrigger") CronTrigger unreadTrigger,
+	public SchedulerFactoryBean schedulerFactoryBean(@Qualifier("unreadNotificationSenderCronTrigger") CronTrigger unreadTrigger,
 													 @Qualifier("livewireAlertSenderCronTrigger") CronTrigger livewireTrigger) {
 		Properties quartzProperties = new Properties();
 
@@ -128,7 +108,7 @@ public class GrassrootServicesConfig implements SchedulingConfigurer {
 		factory.setQuartzProperties(quartzProperties);
 		factory.setStartupDelay(10);
 		factory.setApplicationContextSchedulerContextKey(ApplicationContextAwareQuartzJobBean.APPLICATION_CONTEXT_KEY);
-		factory.setTriggers(sendTrigger, unreadTrigger, livewireTrigger);
+		factory.setTriggers(unreadTrigger, livewireTrigger);
 
 		return factory;
 	}
