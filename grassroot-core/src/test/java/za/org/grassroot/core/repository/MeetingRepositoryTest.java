@@ -1,5 +1,6 @@
 package za.org.grassroot.core.repository;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
@@ -8,7 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.junit4.SpringRunner;
 import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
@@ -28,9 +28,6 @@ import static org.junit.Assert.*;
 import static za.org.grassroot.core.util.DateTimeUtil.convertToSystemTime;
 import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
 
-/**
- * Created by luke on 2016/04/17.
- */
 @RunWith(SpringRunner.class)
 @ContextConfiguration(classes = TestContextConfiguration.class)
 @Transactional
