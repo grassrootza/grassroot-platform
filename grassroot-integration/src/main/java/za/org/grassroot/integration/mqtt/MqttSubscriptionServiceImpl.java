@@ -16,6 +16,8 @@ import java.util.Objects;
 
 /**
  * Created by luke on 2016/11/05.
+ * also adding this for storage:
+ *
  */
 @Service
 @ConditionalOnProperty(name = "mqtt.connection.enabled", havingValue = "true",  matchIfMissing = false)
@@ -55,5 +57,18 @@ public class MqttSubscriptionServiceImpl implements MqttSubscriptionService {
             mqttAdapter.addTopic(group.getUid(), 1);
         }
     }
+
+    /*
+    adding for storage
+    @Override
+    public void sendPollingMessage(){
+        if (mqttAdapter != null) {
+            List<String> topicsSubscribedTo = Arrays.asList(mqttAdapter.getTopic());
+            if (!topicsSubscribedTo.contains("Grassroot")) {
+                mqttAdapter.addTopic("Grassroot", 1);
+            }
+        }
+    }
+     */
 
 }

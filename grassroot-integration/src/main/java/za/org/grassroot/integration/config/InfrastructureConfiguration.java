@@ -30,12 +30,6 @@ public class InfrastructureConfiguration {
     }
 
     @Bean
-    public MessageChannel requestChannel(){return new QueueChannel();}
-
-    @Bean
-    public MessageChannel gcmInboundChannel(){return new DirectChannel();}
-
-    @Bean
     public MessageChannel systemMessageChannel(){return new DirectChannel();}
 
     @Bean

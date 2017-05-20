@@ -12,7 +12,6 @@ import org.springframework.integration.mqtt.support.MqttHeaders;
 import org.springframework.messaging.MessageHandler;
 import za.org.grassroot.integration.GroupChatService;
 import za.org.grassroot.integration.config.GrassrootIntegrationConfig;
-import za.org.grassroot.integration.domain.MQTTPayload;
 
 import java.io.IOException;
 

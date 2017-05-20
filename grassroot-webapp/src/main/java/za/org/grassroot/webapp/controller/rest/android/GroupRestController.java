@@ -18,7 +18,7 @@ import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.integration.GroupChatService;
 import za.org.grassroot.integration.exception.GroupChatSettingNotFoundException;
-import za.org.grassroot.integration.xmpp.GcmService;
+import za.org.grassroot.integration.GcmRegistrationBroker;
 import za.org.grassroot.services.exception.GroupSizeLimitExceededException;
 import za.org.grassroot.services.group.GroupPermissionTemplate;
 import za.org.grassroot.webapp.enums.RestMessage;
@@ -44,7 +44,7 @@ public class GroupRestController extends GroupAbstractRestController {
     private static final Logger log = LoggerFactory.getLogger(GroupRestController.class);
 
     private GroupChatService groupChatService;
-    private GcmService gcmService;
+    private GcmRegistrationBroker gcmRegistrationBroker;
 
     private final MessageSourceAccessor messageSourceAccessor;
 
@@ -62,8 +62,8 @@ public class GroupRestController extends GroupAbstractRestController {
     }
 
     @Autowired(required = false)
-    public void setGcmService(GcmService gcmService) {
-        this.gcmService = gcmService;
+    public void setGcmRegistrationBroker(GcmRegistrationBroker gcmRegistrationBroker) {
+        this.gcmRegistrationBroker = gcmRegistrationBroker;
     }
 
     @Autowired(required = false)
@@ -359,12 +359,12 @@ public class GroupRestController extends GroupAbstractRestController {
             permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_MUTE_MEMBER);
         }
         groupChatService.updateActivityStatus(userSettingTobeUpdated, groupUid, active, userInitiated);
-        if (userInitiated && gcmService.hasGcmKey(user)) {
-            String registrationId = gcmService.getGcmKey(user);
+        if (userInitiated && gcmRegistrationBroker.hasGcmKey(user)) {
+            String registrationId = gcmRegistrationBroker.getGcmKey(user);
             if (active) {
-                gcmService.subscribeToTopic(registrationId, groupUid);
+                gcmRegistrationBroker.subscribeToTopic(registrationId, groupUid);
             } else {
-                gcmService.unsubscribeFromTopic(registrationId, groupUid);
+                gcmRegistrationBroker.unsubscribeFromTopic(registrationId, groupUid);
             }
         }
         return RestUtil.messageOkayResponse((!active) ? RestMessage.CHAT_DEACTIVATED : RestMessage.CHAT_ACTIVATED);
@@ -378,7 +378,7 @@ public class GroupRestController extends GroupAbstractRestController {
 
         User user = userManagementService.findByInputNumber(phoneNumber);
         Group group = groupBroker.load(groupUid);
-//        gcmService.pingUsersForGroupChat(group);
+//        gcmRegistrationBroker.pingUsersForGroupChat(group);
 
         return RestUtil.messageOkayResponse(RestMessage.PING);
     }

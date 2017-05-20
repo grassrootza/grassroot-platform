@@ -25,12 +25,10 @@ import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.UIDGenerator;
-import za.org.grassroot.integration.domain.MQTTPayload;
 import za.org.grassroot.integration.exception.GroupChatSettingNotFoundException;
 import za.org.grassroot.integration.exception.SeloParseDateTimeFailure;
+import za.org.grassroot.integration.mqtt.MQTTPayload;
 import za.org.grassroot.integration.mqtt.MqttObjectMapper;
-import za.org.grassroot.integration.utils.MessageUtils;
-import za.org.grassroot.integration.xmpp.GcmService;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -68,14 +66,14 @@ public class GroupChatManager implements GroupChatService {
     private final MessageChannel gcmXmppOutboundChannel;
     private final MessageChannel mqttOutboundChannel;
     private final GroupChatMessageStatsRepository groupChatMessageStatsRepository;
-    private final GcmService gcmService;
+    private final GcmRegistrationBroker gcmRegistrationBroker;
     private final MqttObjectMapper payloadMapper;
     private final MessageSourceAccessor messageSourceAccessor;
 
     @Autowired
     public GroupChatManager(UserRepository userRepository, GroupRepository groupRepository, GroupChatSettingsRepository groupChatSettingsRepository,
                             LearningService learningService, MessageChannel gcmXmppOutboundChannel, MessageChannel mqttOutboundChannel,
-                            GroupChatMessageStatsRepository groupChatMessageStatsRepository, GcmService gcmService, MqttObjectMapper payloadMapper,
+                            GroupChatMessageStatsRepository groupChatMessageStatsRepository, GcmRegistrationBroker gcmRegistrationBroker, MqttObjectMapper payloadMapper,
                             @Qualifier("integrationMessageSourceAccessor") MessageSourceAccessor messageSourceAccessor) {
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
@@ -84,7 +82,7 @@ public class GroupChatManager implements GroupChatService {
         this.gcmXmppOutboundChannel = gcmXmppOutboundChannel;
         this.mqttOutboundChannel = mqttOutboundChannel;
         this.groupChatMessageStatsRepository = groupChatMessageStatsRepository;
-        this.gcmService = gcmService;
+        this.gcmRegistrationBroker = gcmRegistrationBroker;
         this.payloadMapper = payloadMapper;
         this.messageSourceAccessor = messageSourceAccessor;
     }
@@ -282,14 +280,13 @@ public class GroupChatManager implements GroupChatService {
     @Async
     public void pingToSync(User initiator, User addedUser, Group group){
         MQTTPayload payload = generateSyncData(initiator, group);
-        Map<String, Object> data = MessageUtils.generatePingMessageData(group);
         try {
             ObjectMapper mapper = new ObjectMapper();
             mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS,true);
             final String message = mapper.writeValueAsString(payload);
             mqttOutboundChannel.send(MessageBuilder.withPayload(message).
                     setHeader(MqttHeaders.TOPIC, addedUser.getPhoneNumber()).build());
-            final String gcmKey = gcmService.getGcmKey(addedUser);
+            final String gcmKey = gcmRegistrationBroker.getGcmKey(addedUser);
         } catch (JsonProcessingException e) {
             logger.debug("Error sending sync request to user with number ={}", addedUser.getPhoneNumber());
         }
@@ -304,11 +301,11 @@ public class GroupChatManager implements GroupChatService {
         logger.info("handling group chat topic subscription ...");
         for (Membership membership : memberships) {
             User user = membership.getUser();
-            if (gcmService.hasGcmKey(user) && !messengerSettingExist(user.getUid(), groupUid)) {
+            if (gcmRegistrationBroker.hasGcmKey(user) && !messengerSettingExist(user.getUid(), groupUid)) {
                 createUserGroupMessagingSetting(user.getUid(), groupUid, true, true, true);
-                String registrationId = gcmService.getGcmKey(user);
+                String registrationId = gcmRegistrationBroker.getGcmKey(user);
                 try {
-                    gcmService.subscribeToTopic(registrationId, groupUid);
+                    gcmRegistrationBroker.subscribeToTopic(registrationId, groupUid);
                     pingToSync(initiatingUser,user,group);
                 } catch (IOException e) {
                     logger.info("Could not subscribe user to group topic {}", groupUid);

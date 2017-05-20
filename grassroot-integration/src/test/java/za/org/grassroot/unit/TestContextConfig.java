@@ -18,7 +18,7 @@ import za.org.grassroot.integration.MessageSendingService;
 import za.org.grassroot.integration.NotificationService;
 import za.org.grassroot.integration.mqtt.MqttSubscriptionService;
 import za.org.grassroot.integration.sms.SmsSendingService;
-import za.org.grassroot.integration.xmpp.GcmService;
+import za.org.grassroot.integration.GcmRegistrationBroker;
 
 import static org.mockito.Mockito.mock;
 
@@ -75,8 +75,8 @@ public class TestContextConfig {
     }
 
     @Bean
-    public FactoryBean<GcmService> gcmService() {
-        return new MockitoFactoryBean<>(GcmService.class);
+    public FactoryBean<GcmRegistrationBroker> gcmService() {
+        return new MockitoFactoryBean<>(GcmRegistrationBroker.class);
     }
 
 

@@ -31,9 +31,6 @@ public class NotificationManager implements NotificationService{
     @Autowired
     private NotificationRepository notificationRepository;
 
-    @Autowired
-    private MessageSendingService messageSendingService;
-
     @Override
     @Transactional(readOnly = true)
     public Notification loadNotification(String uid) {
@@ -59,14 +56,6 @@ public class NotificationManager implements NotificationService{
         }
 
         return notifications;
-    }
-
-    @Override
-    @Transactional
-    public void updateNotificationReadStatus(String notificationUid, boolean read) {
-        logger.info("Setting notification as read ...");
-        Notification notification = notificationRepository.findByUid(notificationUid);
-        notification.setRead(read);
     }
 
     @Override

@@ -11,7 +11,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.core.repository.VerificationTokenCodeRepository;
-import za.org.grassroot.integration.xmpp.GcmService;
+import za.org.grassroot.integration.GcmRegistrationBroker;
 import za.org.grassroot.integration.sms.SmsSendingService;
 import za.org.grassroot.services.*;
 import za.org.grassroot.services.account.AccountBroker;
@@ -96,7 +96,7 @@ public class RestAbstractUnitTest {
     protected TaskBroker taskBrokerMock;
 
     @Mock
-    protected GcmService gcmServiceMock;
+    protected GcmRegistrationBroker gcmRegistrationBrokerMock;
 
     @Mock
     protected MessageAssemblingService messageAssemblingServiceMock;

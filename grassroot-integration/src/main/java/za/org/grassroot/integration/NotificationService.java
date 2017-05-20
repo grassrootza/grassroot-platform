@@ -19,8 +19,6 @@ public interface NotificationService {
 
 	List<Notification> fetchAndroidNotificationsSince(String userUid, Instant createdSince);
 
-	void updateNotificationReadStatus(String notificationUid, boolean read);
-
 	void updateNotificationsViewedAndRead(Set<String> notificationUids);
 
 	int countUnviewedAndroidNotifications(String targetUid);

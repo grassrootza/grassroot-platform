@@ -1,4 +1,4 @@
-package za.org.grassroot.integration.domain;
+package za.org.grassroot.integration.mqtt;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;

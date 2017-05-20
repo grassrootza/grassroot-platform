@@ -30,7 +30,7 @@ import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.integration.GroupChatService;
 import za.org.grassroot.integration.mqtt.MqttSubscriptionService;
-import za.org.grassroot.integration.xmpp.GcmService;
+import za.org.grassroot.integration.GcmRegistrationBroker;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.account.AccountGroupBroker;
@@ -78,7 +78,7 @@ public class GroupBrokerImpl implements GroupBroker {
 
     // todo : consolidate these to cut down all these dependencies & do null checks so they don't break methods
     private GroupChatService groupChatService;
-    private GcmService gcmService;
+    private GcmRegistrationBroker gcmRegistrationBroker;
     private MqttSubscriptionService mqttSubscriptionService;
 
     private final AccountGroupBroker accountGroupBroker;
@@ -102,8 +102,8 @@ public class GroupBrokerImpl implements GroupBroker {
     }
 
     @Autowired(required = false)
-    public void setGcmService(GcmService gcmService) {
-        this.gcmService = gcmService;
+    public void setGcmRegistrationBroker(GcmRegistrationBroker gcmRegistrationBroker) {
+        this.gcmRegistrationBroker = gcmRegistrationBroker;
     }
 
     @Autowired(required = false)
@@ -488,9 +488,9 @@ public class GroupBrokerImpl implements GroupBroker {
         Set<ActionLog> actionLogs = new HashSet<>();
         for (Membership membership : memberships) {
             group.removeMembership(membership);
-            if (gcmService != null && gcmService.hasGcmKey(membership.getUser())) {
+            if (gcmRegistrationBroker != null && gcmRegistrationBroker.hasGcmKey(membership.getUser())) {
                 try {
-                    gcmService.unsubscribeFromTopic(gcmService.getGcmKey(membership.getUser()),group.getUid());
+                    gcmRegistrationBroker.unsubscribeFromTopic(gcmRegistrationBroker.getGcmKey(membership.getUser()),group.getUid());
                 } catch (Exception e) {
                     logger.error("Unable to unsubscribe member with uid={} from group topic ={}", membership.getUser(), group);
                 }

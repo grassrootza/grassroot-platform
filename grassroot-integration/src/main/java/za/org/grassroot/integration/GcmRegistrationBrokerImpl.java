@@ -1,11 +1,10 @@
-package za.org.grassroot.integration.xmpp;
+package za.org.grassroot.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.*;
 import org.springframework.scheduling.annotation.Async;
@@ -23,7 +22,6 @@ import za.org.grassroot.core.repository.GroupChatSettingsRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
 
-import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.util.*;
 
@@ -33,10 +31,9 @@ import static org.springframework.http.HttpMethod.POST;
  * Created by paballo on 2016/04/05.
  */
 @Service
-@ConditionalOnProperty(name = "gcm.connection.enabled", havingValue = "true",  matchIfMissing = false)
-public class GcmManager implements GcmService {
+public class GcmRegistrationBrokerImpl implements GcmRegistrationBroker {
 
-    private static final Logger log = LoggerFactory.getLogger(GcmManager.class);
+    private static final Logger log = LoggerFactory.getLogger(GcmRegistrationBrokerImpl.class);
 
     private final UserRepository userRepository;
     private final GcmRegistrationRepository gcmRegistrationRepository;
@@ -73,17 +70,12 @@ public class GcmManager implements GcmService {
     private final static Random random = new Random();
 
     @Autowired
-    public GcmManager(UserRepository userRepository, GcmRegistrationRepository gcmRegistrationRepository, GroupRepository groupRepository, RestTemplate restTemplate, GroupChatSettingsRepository groupChatSettingsRepository) {
+    public GcmRegistrationBrokerImpl(UserRepository userRepository, GcmRegistrationRepository gcmRegistrationRepository, GroupRepository groupRepository, RestTemplate restTemplate, GroupChatSettingsRepository groupChatSettingsRepository) {
         this.userRepository = userRepository;
         this.gcmRegistrationRepository = gcmRegistrationRepository;
         this.groupRepository = groupRepository;
         this.restTemplate = restTemplate;
         this.groupChatSettingsRepository = groupChatSettingsRepository;
-    }
-
-    @PostConstruct
-    public void init() {
-        log.info("GCM key: {}", AUTH_KEY);
     }
 
     @Override
@@ -96,11 +88,7 @@ public class GcmManager implements GcmService {
     @Transactional(readOnly = true)
     public String getGcmKey(User user) {
         GcmRegistration gcmRegistration = gcmRegistrationRepository.findTopByUserOrderByCreationTimeDesc(user);
-        if (gcmRegistration != null) {
-            return gcmRegistration.getRegistrationId();
-        } else {
-            return null;
-        }
+        return gcmRegistration != null ? gcmRegistration.getRegistrationId() : null;
     }
 
     @Override
@@ -135,25 +123,18 @@ public class GcmManager implements GcmService {
         for (Group group : groupsPartOf) {
             try {
                 GroupChatSettings settings = groupChatSettingsRepository.findByUserAndGroup(user, group);
-                if (settings != null) {
-                    if (settings.isCanReceive()) {
-                        subscribeToTopic(registrationId, group.getUid());
-                    }
-                } else {
-                    subscribeToTopic(registrationId, group.getUid());
-                    try {
-                        GroupChatSettings thisGroupSettings = new GroupChatSettings(user, group, true, true, true, true);
-                        groupChatSettingsRepository.saveAndFlush(thisGroupSettings);
-                    } catch (DataIntegrityViolationException e) {
-                        log.error("Error storing group chat settings, possibly due to async loop");
-                    }
+                subscribeToTopic(registrationId, group.getUid());
+                if (settings == null || !settings.isCanReceive()) {
+                    GroupChatSettings thisGroupSettings = new GroupChatSettings(user, group, true, true, true, true);
+                    groupChatSettingsRepository.saveAndFlush(thisGroupSettings);
                 }
+            } catch (DataIntegrityViolationException e) {
+                log.error("Error storing group chat settings, possibly due to async loop");
             } catch (IOException e) {
-                log.info("IO exception in loop ... XMPP connection must be down");
+                log.info("IO exception in loop ... GCM connection must be down");
                 e.printStackTrace();
             }
         }
-
         log.info("Finished doing the registration");
     }
 
@@ -275,6 +256,4 @@ public class GcmManager implements GcmService {
 
         return backoff;
     }
-
-
 }

@@ -3,7 +3,7 @@ package za.org.grassroot.integration;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.GroupChatSettings;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.integration.domain.MQTTPayload;
+import za.org.grassroot.integration.mqtt.MQTTPayload;
 import za.org.grassroot.integration.exception.GroupChatSettingNotFoundException;
 
 import java.util.List;

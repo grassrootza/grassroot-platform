@@ -1,4 +1,4 @@
-package za.org.grassroot.integration.xmpp;
+package za.org.grassroot.integration;
 
 import za.org.grassroot.core.domain.GcmRegistration;
 import za.org.grassroot.core.domain.User;
@@ -8,7 +8,7 @@ import java.io.IOException;
 /**
  * Created by paballo on 2016/04/05.
  */
-public interface GcmService {
+public interface GcmRegistrationBroker {
 
     GcmRegistration load(String uid);
 
