@@ -16,9 +16,9 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
+import za.org.grassroot.integration.GcmRegistrationBroker;
 import za.org.grassroot.integration.GroupChatService;
 import za.org.grassroot.integration.exception.GroupChatSettingNotFoundException;
-import za.org.grassroot.integration.GcmRegistrationBroker;
 import za.org.grassroot.services.exception.GroupSizeLimitExceededException;
 import za.org.grassroot.services.group.GroupPermissionTemplate;
 import za.org.grassroot.webapp.enums.RestMessage;
@@ -400,9 +400,7 @@ public class GroupRestController extends GroupAbstractRestController {
     public ResponseEntity<ResponseWrapper> marksAsRead(@PathVariable String phoneNumber, @PathVariable String code, @PathVariable String groupUid, @RequestParam Set<String> messageUids) {
         User user = userManagementService.findByInputNumber(phoneNumber);
         Group group = groupBroker.load(groupUid);
-        if (groupChatService.isCanSend(user.getUid(), groupUid)) {
-            groupChatService.markMessagesAsRead(groupUid, group.getGroupName(), messageUids);
-        }
+        groupChatService.markMessagesAsRead(groupUid, group.getGroupName(), messageUids);
         return RestUtil.messageOkayResponse(RestMessage.CHATS_MARKED_AS_READ);
     }
 

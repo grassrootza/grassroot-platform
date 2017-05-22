@@ -194,11 +194,12 @@ public class GroupBrokerImpl implements GroupBroker {
         }
     }
 
+    // todo : switch it to just creating the chat settings, and a call to messaging service
     private void addGroupMembersToChatAfterCommit(Group group, User user) {
-        if (groupChatService != null) {
+        /* if (groupChatService != null) {
             AfterTxCommitTask afterTxCommitTask = () -> groupChatService.addAllGroupMembersToChat(group, user);
             applicationEventPublisher.publishEvent(afterTxCommitTask);
-        }
+        }*/
     }
 
     @Override

@@ -27,6 +27,8 @@ dependencies {
     compile group: 'com.amazonaws', name: 'aws-java-sdk-s3', version: '1.11.93'
 
     compile group: 'com.itextpdf', name: 'itextpdf', version: '5.5.10'
+
+    compile group: 'io.jsonwebtoken', name: 'jjwt', version: '0.7.0'
 }
 
 test {

@@ -167,22 +167,6 @@ public class ScheduledTasks {
         }
     }
 
-    @Scheduled(fixedRate = 300000)
-    public void reactivateMutedUsers() throws Exception {
-        if (groupChatService != null) {
-            List<GroupChatSettings> groupChatSettingses = groupChatService.loadUsersToBeUnmuted();
-            for (GroupChatSettings messengerSetting : groupChatSettingses) {
-                String userUid = messengerSetting.getUser().getUid();
-                String groupUid = messengerSetting.getGroup().getUid();
-                try {
-                    groupChatService.updateActivityStatus(userUid, groupUid, true, false);
-                } catch (GroupChatSettingNotFoundException e) {
-                    logger.error("Error while trying unmute user with " + userUid);
-                }
-            }
-        }
-    }
-
     @Scheduled(cron = "0 0 1 * * *") //runs at 1 am everyday
     public void subscribeServerToGroupTopics(){
         if (mqttSubscriptionService != null) {

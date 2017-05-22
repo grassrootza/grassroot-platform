@@ -117,7 +117,7 @@ public class UserAccountsRecoveryController extends BaseController {
 
     private void temporaryTokenSend(VerificationTokenCode verificationTokenCode) {
         if (verificationTokenCode != null) {
-            SmsGatewayResponse messageResult = smsSendingService.sendSMS(getMessage("user.profile.token.message", verificationTokenCode.getCode()),
+            SmsGatewayResponse messageResult = smsSendingService.sendPrioritySMS(getMessage("user.profile.token.message", verificationTokenCode.getCode()),
                     verificationTokenCode.getUsername());
             if (!environment.acceptsProfiles("production")) {
                 log.info("For token {}, sms send result: {}", verificationTokenCode.getCode(), messageResult.toString());
