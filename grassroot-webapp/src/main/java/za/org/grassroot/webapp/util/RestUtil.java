@@ -15,9 +15,6 @@ import java.util.stream.Stream;
 
 import static org.springframework.http.HttpStatus.*;
 
-/**
- * Created by paballo on 2016/03/22.
- */
 public class RestUtil {
 
     private final static Set<Permission> homeScreenPermissions = Stream.of(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS,
@@ -56,29 +53,31 @@ public class RestUtil {
     }
 
     public static ResponseEntity<ResponseWrapper> errorResponse(HttpStatus httpCode, RestMessage message) {
-		return new ResponseEntity<>(new ResponseWrapperImpl(httpCode, message, RestStatus.FAILURE), httpCode);
-	}
+        return new ResponseEntity<>(new ResponseWrapperImpl(httpCode, message, RestStatus.FAILURE), httpCode);
+    }
 
     public static ResponseEntity<ResponseWrapper> errorResponse(RestMessage restMessage) {
         return errorResponse(HttpStatus.BAD_REQUEST, restMessage);
     }
 
-    public static ResponseEntity<ResponseWrapper> accessDeniedResponse() {
-	    return new ResponseEntity<>(new ResponseWrapperImpl(FORBIDDEN, RestMessage.PERMISSION_DENIED, RestStatus.FAILURE), FORBIDDEN);
+    public static ResponseEntity<ResponseWrapper> internalErrorResponse(RestMessage restMessage) {
+        return errorResponse(HttpStatus.INTERNAL_SERVER_ERROR, restMessage);
     }
 
-	public static ResponseEntity<ResponseWrapper> messageOkayResponse(RestMessage message) {
-		return new ResponseEntity<>(new ResponseWrapperImpl(OK, message, RestStatus.SUCCESS), OK);
-	}
+    public static ResponseEntity<ResponseWrapper> accessDeniedResponse() {
+        return new ResponseEntity<>(new ResponseWrapperImpl(FORBIDDEN, RestMessage.PERMISSION_DENIED, RestStatus.FAILURE), FORBIDDEN);
+    }
 
-	public static ResponseEntity<ResponseWrapper> okayResponseWithData(RestMessage message, Object data) {
-		return new ResponseEntity<>(new GenericResponseWrapper(OK, message, RestStatus.SUCCESS, data), OK);
-	}
+    public static ResponseEntity<ResponseWrapper> messageOkayResponse(RestMessage message) {
+        return new ResponseEntity<>(new ResponseWrapperImpl(OK, message, RestStatus.SUCCESS), OK);
+    }
 
-	public static ResponseEntity<ResponseWrapper> errorResponseWithData(RestMessage message, Object data) {
-		GenericResponseWrapper error = new GenericResponseWrapper(BAD_REQUEST, message, RestStatus.FAILURE, data);
-		return new ResponseEntity<>(error, BAD_REQUEST);
-	}
+    public static ResponseEntity<ResponseWrapper> okayResponseWithData(RestMessage message, Object data) {
+        return new ResponseEntity<>(new GenericResponseWrapper(OK, message, RestStatus.SUCCESS, data), OK);
+    }
 
+    public static ResponseEntity<ResponseWrapper> errorResponseWithData(RestMessage message, Object data) {
+        GenericResponseWrapper error = new GenericResponseWrapper(BAD_REQUEST, message, RestStatus.FAILURE, data);
+        return new ResponseEntity<>(error, BAD_REQUEST);
+    }
 }
-

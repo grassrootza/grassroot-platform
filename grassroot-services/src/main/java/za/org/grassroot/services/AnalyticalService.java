@@ -50,12 +50,9 @@ public interface AnalyticalService {
      */
 
     Long countAllTodos();
-
     Long countTodosRecordedInInterval(LocalDateTime start, LocalDateTime end);
 
-    /*
-    Count safety events, put in nulls for no start/end point
-     */
+    // Count safety events, put in nulls for no start/end point
 
     int countSafetyEventsInInterval(LocalDateTime start, LocalDateTime end);
 
@@ -68,4 +65,9 @@ public interface AnalyticalService {
 
     Map<Integer, Integer> getSessionHistogram(Instant start, Instant end, int interval);
 
+    /*
+    And now a couple for livewire alerts and notifications
+     */
+    long countLiveWireAlertsInInterval(Instant start, Instant end);
+    long countNotificationsInInterval(Instant start, Instant end);
 }

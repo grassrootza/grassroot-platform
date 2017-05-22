@@ -11,24 +11,20 @@ import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.ObjectLocation;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.geo.ObjectLocationBroker;
-import za.org.grassroot.services.group.GroupLocationFilter;
+import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
-import java.security.InvalidParameterException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * TODO: Create token logic
- */
 @RestController
 @RequestMapping(value = "/api/location", produces = MediaType.APPLICATION_JSON_VALUE)
-public class LocationRestController {
-    private static int DEFAULT_RADIUS = 5;
-    private static final Logger log = LoggerFactory.getLogger(LocationRestController.class);
+public class LocationRestController extends BaseController {
+    private static int LOCATION_RADIUS_DEFAULT = 5;
+    private static int LOCATION_RADIUS_MAX = 16;
+    private static final Logger logger = LoggerFactory.getLogger(LocationRestController.class);
     private final GeoLocationBroker geoLocationBroker;
     private final ObjectLocationBroker objectLocationBroker;
 
@@ -42,61 +38,56 @@ public class LocationRestController {
     public ResponseEntity<ResponseWrapper> search (@RequestParam(value = "latitude", required = true) Double latitude,
                                                    @RequestParam(value = "longitude", required = true) Double longitude,
                                                    @RequestParam(value = "radius", required = false) Integer radius,
+                                                   @RequestParam(value = "restriction", required = false) Integer restriction,
                                                    @RequestParam(value = "token", required = true) String token) {
 
-        log.info("Attempting to list events locations...");
+        // TODO: token!
+        // TODO: Bounding box search instead of disc
+        // TODO: Initial position from location
+        logger.info("Attempting to list events locations...");
 
-        // Check radius
-        Integer searchRadius = (radius == null ? DEFAULT_RADIUS : radius);
+        // Validate parameters
+        Integer searchRadius = (radius == null ? LOCATION_RADIUS_DEFAULT : radius);
+        if (searchRadius <= 0 || searchRadius > LOCATION_RADIUS_MAX) {
+            String errorMsg = "KPI: GET - BAD REQUEST: Invalid radius. Make sure it is greater than zero and smaller than " +
+                    LOCATION_RADIUS_MAX + ".";
+            logger.info(errorMsg);
+            return RestUtil.errorResponse(RestMessage.INVALID_LOCATION_RADIUS_PARAMETER);
+        }
 
-        // Create location
+        // Check restriction
+        Integer useRestriction = (restriction == null ? PUBLIC_LEVEL : restriction);
+        if (useRestriction < PRIVATE_LEVEL || useRestriction > ALL_LEVEL) {
+            String errorMsg = "Invalid restriction. Make sure it is greater than zero and smaller than " + ALL_LEVEL + ".";
+            logger.info("KPI: GET - BAD REQUEST: " + errorMsg);
+            return RestUtil.errorResponse(RestMessage.INVALID_LOCATION_RESTRICTION_PARAMETER);
+        }
+
         GeoLocation location = new GeoLocation(latitude, longitude);
-        log.info("Location: " + location);
+        if (!location.isValid()) {
+            String errorMsg = "KPI: GET - BAD REQUEST: Invalid location parameter.";
+            logger.info(errorMsg);
+            return RestUtil.errorResponse(RestMessage.INVALID_LOCATION_LATLONG_PARAMETER);
+        }
 
-        // Mount filter
+        // Find objects on the given location around the desired radius
+        // TODO: filter?
+        List<ObjectLocation> objectsToReturn;
         ResponseEntity<ResponseWrapper> responseEntity;
-        GroupLocationFilter filter = new GroupLocationFilter(location, searchRadius, false);
-        log.info("Searching for groups and with location filter = {}", filter);
 
-        // Returns list
-        List<ObjectLocation> objectsToReturn = new ArrayList<>();
-
-        // Load groups
-        List<ObjectLocation> groups = null;
         try {
-            groups = objectLocationBroker.fetchGroupLocations(location, radius);
-        } catch (InvalidParameterException e) {
-            //TODO
-            e.printStackTrace();
+            objectsToReturn = objectLocationBroker.fetchMeetingLocations(location, searchRadius, useRestriction);
+        }
+        catch (Exception e){
+            logger.info("KPI: GET - INTERNAL SERVER ERROR: " + e.getLocalizedMessage());
+            return RestUtil.internalErrorResponse(RestMessage.INTERNAL_SERVER_ERROR);
         }
 
-        // Save groups
-        objectsToReturn.addAll(groups);
-        log.info("Groups: {}", groups);
-
-        // Load meetings
-        if (groups.size() > 0) {
-            for (ObjectLocation group : groups) {
-
-                // Get meetings
-                List<ObjectLocation> meetings = objectLocationBroker.fetchMeetingLocationsByGroup(group, location, radius);
-
-                // Concat the results
-                objectsToReturn.addAll(meetings);
-            }
-        } else {
-            List<ObjectLocation> meetings = objectLocationBroker.fetchMeetingLocations(location, radius);
-
-            // Concat the results
-            objectsToReturn.addAll(meetings);
-        }
-
-        // Check results
         if (objectsToReturn.isEmpty()) {
-            log.info("Found no objects ... returning empty ...");
-            responseEntity = RestUtil.okayResponseWithData(RestMessage.NO_GROUP_MATCHING_TERM_FOUND, Collections.emptyList());
+            logger.info("Found no objects ... returning empty ...");
+            responseEntity = RestUtil.okayResponseWithData(RestMessage.LOCATION_EMPTY, Collections.emptyList());
         } else {
-            responseEntity = RestUtil.okayResponseWithData(RestMessage.POSSIBLE_GROUP_MATCHES, objectsToReturn);
+            responseEntity = RestUtil.okayResponseWithData(RestMessage.LOCATION_HAS_MEETINGS, objectsToReturn);
         }
         return responseEntity;
     }

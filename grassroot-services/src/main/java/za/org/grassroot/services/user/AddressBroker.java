@@ -17,7 +17,7 @@ public interface AddressBroker {
 
     boolean hasAddress(String userUid);
 
-    String storeAddressRaw(String userUid, Address address, boolean makePrimary);
+    String storeAddressRaw(String userUid, Address address);
 
     void confirmLocationAddress(String userUid, String addressUid,
                                 GeoLocation location, UserInterfaceType interfaceType);

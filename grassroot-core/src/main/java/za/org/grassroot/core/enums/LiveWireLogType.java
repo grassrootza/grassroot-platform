@@ -1,0 +1,25 @@
+package za.org.grassroot.core.enums;
+
+/**
+ * Created by luke on 2017/05/16.
+ */
+public enum LiveWireLogType {
+
+    SUBSCRIBER_CREATED,
+    PUSH_EMAIL_ADDED,
+    USER_UID_ADDED,
+    PUSH_EMAIL_REMOVED,
+    USER_UID_REMOVED,
+    TAGGING_ENABLED,
+    TAGGING_DISABLED,
+    RELEASING_ENABLED,
+    RELEASING_DISABLED,
+    ALERT_COMPLETED,
+    USER_SET_AS_CONTACT,
+    ALERT_RELEASED,
+    ALERT_BLOCKED,
+    ALERT_SENT,
+    ALERT_TAGS_ADDED,
+    ALERT_TAGS_REMOVED
+
+}

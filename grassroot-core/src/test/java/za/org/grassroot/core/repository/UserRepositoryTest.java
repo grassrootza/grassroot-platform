@@ -15,6 +15,8 @@ import za.org.grassroot.core.StandaloneDatabaseConfig;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.*;
 
+import za.org.grassroot.core.domain.EventLog;
+
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.UserMessagingPreference;

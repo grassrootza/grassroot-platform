@@ -7,6 +7,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.context.support.MessageSourceAccessor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -25,9 +27,6 @@ import za.org.grassroot.webapp.util.LocalDateTimePropertyEditor;
 import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 
-/**
- * @author Lesetse Kimwaga
- */
 @Controller
 public class BaseController {
 
@@ -50,6 +49,11 @@ public class BaseController {
             return messageKey;
         }
     }
+
+    // Restriction levels
+    public final static int PRIVATE_LEVEL = 0;
+    public final static int PUBLIC_LEVEL = 1;
+    public final static int ALL_LEVEL = 2;
 
     @Autowired
     @Qualifier("messageSource")
@@ -176,5 +180,4 @@ public class BaseController {
     private String getText(String msgKey, Object[] args, Locale locale) {
         return messageSourceAccessor.getMessage("web." + msgKey, args, locale);
     }
-
 }

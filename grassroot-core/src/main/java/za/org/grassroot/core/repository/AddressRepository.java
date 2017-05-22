@@ -10,7 +10,8 @@ import za.org.grassroot.core.domain.User;
  */
 public interface AddressRepository extends JpaRepository<Address, Long>, JpaSpecificationExecutor<Address> {
 
-    Address findOneByResidentAndPrimaryTrue(User user);
+    // should enforce uniqueness on resident and primary but for now taking top / latest
+    Address findTopByResidentAndPrimaryTrueOrderByCreatedDateTimeDesc(User user);
 
     Address findOneByUid(String uid);
 

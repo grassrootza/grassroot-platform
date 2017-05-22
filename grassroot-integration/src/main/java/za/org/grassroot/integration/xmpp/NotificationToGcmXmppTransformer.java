@@ -10,6 +10,8 @@ import org.springframework.messaging.Message;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.EventLog;
+import za.org.grassroot.core.domain.TodoLog;
 import za.org.grassroot.core.domain.notification.UserNotification;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.enums.UserLogType;
