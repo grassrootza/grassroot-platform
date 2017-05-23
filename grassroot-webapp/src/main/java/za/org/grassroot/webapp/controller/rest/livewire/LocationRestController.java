@@ -17,6 +17,7 @@ import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
 import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -83,6 +84,95 @@ public class LocationRestController extends BaseController {
             return RestUtil.internalErrorResponse(RestMessage.INTERNAL_SERVER_ERROR);
         }
 
+        if (objectsToReturn.isEmpty()) {
+            logger.info("Found no objects ... returning empty ...");
+            responseEntity = RestUtil.okayResponseWithData(RestMessage.LOCATION_EMPTY, Collections.emptyList());
+        } else {
+            responseEntity = RestUtil.okayResponseWithData(RestMessage.LOCATION_HAS_MEETINGS, objectsToReturn);
+        }
+        return responseEntity;
+    }
+
+    /**
+     * Local class
+     */
+    public static class BoundingBox {
+        public GeoLocation min;
+        public GeoLocation max;
+
+        public BoundingBox() {
+            // for JPA
+        }
+
+        public BoundingBox(GeoLocation min, GeoLocation max) {
+            this.min = min;
+            this.max = max;
+        }
+
+        public GeoLocation getMin() {
+           return min; 
+        }
+
+        public GeoLocation getMax() {
+           return max; 
+        }
+
+        public void setMin(GeoLocation min) {
+           this.min = min;
+        }
+
+        public void setMax(GeoLocation max) {
+           this.max = max;
+        }
+
+        public boolean isValid () {
+            return min.isValid() && max.isValid();
+        }
+    }
+
+    @RequestMapping(value = "", method = RequestMethod.POST)
+    public ResponseEntity<ResponseWrapper> searchBox (
+                    @RequestParam(required = false) Integer restriction,
+                    @RequestParam(required = false) String token,
+                    @RequestBody BoundingBox boundingBox) {
+
+        // TODO: token!
+        // TODO: Initial position from location
+        logger.info("Attempting to list events locations from bounding box...");
+        
+        // Check restriction
+        Integer useRestriction = (restriction == null ? PUBLIC_LEVEL : restriction);
+        if (useRestriction < PRIVATE_LEVEL || useRestriction > ALL_LEVEL) {
+            String errorMsg = "Invalid restriction. Make sure it is greater than zero and smaller than " + ALL_LEVEL + ".";
+            logger.info("KPI: POST - BAD REQUEST: " + errorMsg);
+            return RestUtil.errorResponse(RestMessage.INVALID_LOCATION_RESTRICTION_PARAMETER);
+        }
+
+        // Check bounding box
+        if (!boundingBox.isValid()) {
+            String errorMsg = "KPI: POST - BAD REQUEST: Invalid bounding box parameter.";
+            logger.info(errorMsg);
+            return RestUtil.errorResponse(RestMessage.INVALID_BOUNDINGBOX_LATLONG_PARAMETER);
+        }
+
+        logger.info("The bounding box {} - {}", boundingBox.min, boundingBox.max);
+
+        // Returns list
+        List<ObjectLocation> objectsToReturn = new ArrayList<>();
+
+        // Load meetings
+        // TODO: filter?
+        try {
+            objectsToReturn = objectLocationBroker.fetchMeetingLocations(boundingBox.min, boundingBox.max, useRestriction);
+            logger.info("Meetings found: {}", objectsToReturn.size());
+        }
+        catch (Exception e){
+            logger.info("KPI: POST - INTERNAL SERVER ERROR: " + e.getLocalizedMessage());
+            return RestUtil.internalErrorResponse(RestMessage.INTERNAL_SERVER_ERROR);
+        }
+
+        // Send response
+        ResponseEntity<ResponseWrapper> responseEntity;
         if (objectsToReturn.isEmpty()) {
             logger.info("Found no objects ... returning empty ...");
             responseEntity = RestUtil.okayResponseWithData(RestMessage.LOCATION_EMPTY, Collections.emptyList());

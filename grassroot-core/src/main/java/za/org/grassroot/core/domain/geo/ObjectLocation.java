@@ -114,7 +114,7 @@ public class ObjectLocation {
         this.uid = uid;
         this.type = type;
         this.canAccess = isPublic;
-        String access = (isPublic ? "public/" : "");
+        String access = ""; // (isPublic ? "public/" : "");
         if (JpaEntityType.GROUP.toString().equals(type))
             this.url = "/group/" + access + "view?groupUid=" + uid;
         else
