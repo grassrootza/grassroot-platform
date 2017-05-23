@@ -93,7 +93,7 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
             "FROM GroupLocation l " +
             "INNER JOIN l.group g " +
             "WHERE " + restrictionClause +
-            " AND l.localDate <= :date " +
+            " l.localDate <= :date " +
             " AND l.localDate = (SELECT MAX(ll.localDate) FROM GroupLocation ll WHERE ll.group = l.group)" +
             " AND l.location.latitude " +
             "    BETWEEN :latpoint  - (:radius / :distance_unit) " +
@@ -152,7 +152,7 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
             "FROM GroupLocation l " +
             "INNER JOIN l.group g " +
             "WHERE " + restrictionClause +
-            "  AND l.localDate <= :date " +
+            "  l.localDate <= :date " +
             "  AND l.localDate = (SELECT MAX(ll.localDate) FROM GroupLocation ll WHERE ll.group = l.group) " +
             "  AND l.location.latitude " +
             "      BETWEEN :latMin AND :latMax " +
