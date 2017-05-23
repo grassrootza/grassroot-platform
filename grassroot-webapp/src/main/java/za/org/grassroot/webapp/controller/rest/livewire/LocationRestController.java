@@ -161,11 +161,15 @@ public class LocationRestController extends BaseController {
         List<ObjectLocation> objectsToReturn = new ArrayList<>();
 
         // Load meetings
-        List<ObjectLocation> meetings = objectLocationBroker.fetchMeetingLocations(boundingBox.min, boundingBox.max, useRestriction);
-        logger.info("Meetings found: {}", meetings.size());
-
-        // Concat the results
-        objectsToReturn.addAll(meetings);
+        // TODO: filter?
+        try {
+            objectsToReturn = objectLocationBroker.fetchMeetingLocations(boundingBox.min, boundingBox.max, useRestriction);
+            logger.info("Meetings found: {}", objectsToReturn.size());
+        }
+        catch (Exception e){
+            logger.info("KPI: POST - INTERNAL SERVER ERROR: " + e.getLocalizedMessage());
+            return RestUtil.internalErrorResponse(RestMessage.INTERNAL_SERVER_ERROR);
+        }
 
         // Send response
         ResponseEntity<ResponseWrapper> responseEntity;
