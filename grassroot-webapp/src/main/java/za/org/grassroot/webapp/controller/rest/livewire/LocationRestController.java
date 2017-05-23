@@ -181,5 +181,4 @@ public class LocationRestController extends BaseController {
         }
         return responseEntity;
     }
-
 }
