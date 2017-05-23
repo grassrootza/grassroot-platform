@@ -9,9 +9,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.repository.*;
-import za.org.grassroot.integration.GroupChatService;
-import za.org.grassroot.integration.exception.GroupChatSettingNotFoundException;
-import za.org.grassroot.integration.mqtt.MqttSubscriptionService;
 import za.org.grassroot.services.SafetyEventBroker;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.specifications.TodoSpecifications;
@@ -64,14 +61,8 @@ public class ScheduledTasks {
     @Autowired
     private TodoRepository todoRepository;
 
-    @Autowired(required = false)
-    private GroupChatService groupChatService;
-
     @Autowired
     private SafetyEventRepository safetyEventRepository;
-
-    @Autowired(required = false)
-    private MqttSubscriptionService mqttSubscriptionService;
 
     @Scheduled(fixedRate = 300000) //runs every 5 minutes
     public void sendReminders() {
@@ -164,13 +155,6 @@ public class ScheduledTasks {
             } catch (Throwable th) {
                 logger.error("Error while sending reminder for todo " + todo + ": " + th.getMessage(), th);
             }
-        }
-    }
-
-    @Scheduled(cron = "0 0 1 * * *") //runs at 1 am everyday
-    public void subscribeServerToGroupTopics(){
-        if (mqttSubscriptionService != null) {
-            mqttSubscriptionService.subscribeServerToAllGroupTopics();
         }
     }
 

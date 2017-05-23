@@ -3,14 +3,9 @@ description = 'Grassroot Integration'
 dependencies {
     compile project(':grassroot-core')
 
-    compile group: 'org.springframework', name: 'spring-oxm', version: libs.springVersion
     compile group: 'org.springframework', name: 'spring-web', version: libs.springVersion
-    compile group: 'org.springframework.integration', name: 'spring-integration-core', version: libs.springIntegrationVersion
-    compile group: 'org.springframework.integration', name: 'spring-integration-mqtt', version:  libs.springIntegrationVersion
 
-    compile group: 'org.springframework.social', name: 'spring-social-facebook', version: '2.0.3.RELEASE'
     compile group: 'org.springframework.boot', name: 'spring-boot-starter-mail', version: '1.4.1.RELEASE'
-
     compile group: 'org.springframework.ws', name: 'spring-ws-core', version: '2.4.0.RELEASE'
 
     compile(group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.2') {
@@ -23,10 +18,9 @@ dependencies {
 
     compile group: 'org.apache.poi', name: 'poi', version: '3.15'
     compile group: 'org.apache.poi', name: 'poi-ooxml', version: '3.15'
+    compile group: 'com.itextpdf', name: 'itextpdf', version: '5.5.10'
 
     compile group: 'com.amazonaws', name: 'aws-java-sdk-s3', version: '1.11.93'
-
-    compile group: 'com.itextpdf', name: 'itextpdf', version: '5.5.10'
 
     compile group: 'io.jsonwebtoken', name: 'jjwt', version: '0.7.0'
 }

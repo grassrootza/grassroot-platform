@@ -1,4 +1,6 @@
-package za.org.grassroot.integration;
+package za.org.grassroot.integration.messaging;
+
+import za.org.grassroot.integration.PublicCredentials;
 
 import java.util.Map;
 

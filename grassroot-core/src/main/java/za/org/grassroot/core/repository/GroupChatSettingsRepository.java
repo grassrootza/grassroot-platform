@@ -5,7 +5,6 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.GroupChatSettings;
 import za.org.grassroot.core.domain.User;
 
-import java.time.Instant;
 import java.util.List;
 
 /**
@@ -15,12 +14,6 @@ public interface GroupChatSettingsRepository extends JpaRepository<GroupChatSett
 
     GroupChatSettings findByUserAndGroup(User user, Group group);
 
-    List<GroupChatSettings> findByUser(User user);
-
-    List<GroupChatSettings> findByActiveAndUserInitiatedAndReactivationTimeBefore(boolean active, boolean userInitiated, Instant reactivationTime);
-
     List<GroupChatSettings> findByGroupAndActiveAndCanSend(Group group, boolean active, boolean canSend);
-
-    Long countByGroupAndActive(Group group, boolean active);
 
  }

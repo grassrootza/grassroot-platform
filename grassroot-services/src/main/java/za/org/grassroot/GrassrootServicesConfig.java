@@ -1,8 +1,5 @@
 package za.org.grassroot;
 
-import org.quartz.CronTrigger;
-import org.quartz.JobDetail;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
@@ -16,20 +13,14 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.SchedulingConfigurer;
 import org.springframework.scheduling.config.ScheduledTaskRegistrar;
-import org.springframework.scheduling.quartz.CronTriggerFactoryBean;
-import org.springframework.scheduling.quartz.JobDetailFactoryBean;
-import org.springframework.scheduling.quartz.SchedulerFactoryBean;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.spring4.SpringTemplateEngine;
 import org.thymeleaf.templatemode.TemplateMode;
 import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
 import org.thymeleaf.templateresolver.ITemplateResolver;
 import org.thymeleaf.templateresolver.StringTemplateResolver;
-import za.org.grassroot.scheduling.ApplicationContextAwareQuartzJobBean;
-import za.org.grassroot.scheduling.LiveWireAlertSenderJob;
 
 import java.util.Collections;
-import java.util.Properties;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
@@ -58,40 +49,6 @@ public class GrassrootServicesConfig implements SchedulingConfigurer {
     public Executor taskExecutor() {
         return Executors.newScheduledThreadPool(10);
     }
-
-	@Bean
-	public JobDetailFactoryBean livewireAlertSenderJobDetail() {
-    	JobDetailFactoryBean factoryBean = new JobDetailFactoryBean();
-    	factoryBean.setJobClass(LiveWireAlertSenderJob.class);
-    	factoryBean.setDurability(false);
-    	return factoryBean;
-	}
-
-	@Bean
-	public CronTriggerFactoryBean livewireAlertSenderCronTrigger(
-			@Qualifier("livewireAlertSenderJobDetail") JobDetail jobDetail) {
-    	CronTriggerFactoryBean factoryBean = new CronTriggerFactoryBean();
-    	factoryBean.setJobDetail(jobDetail);
-    	factoryBean.setCronExpression("0 0/1 * * * ?");
-    	factoryBean.setMisfireInstruction(CronTrigger.MISFIRE_INSTRUCTION_DO_NOTHING);
-    	return factoryBean;
-	}
-
-	@Bean
-	public SchedulerFactoryBean schedulerFactoryBean(@Qualifier("livewireAlertSenderCronTrigger") CronTrigger livewireTrigger) {
-		Properties quartzProperties = new Properties();
-
-		SchedulerFactoryBean factory = new SchedulerFactoryBean();
-		factory.setAutoStartup(true);
-		factory.setSchedulerName("grassroot-quartz");
-		factory.setWaitForJobsToCompleteOnShutdown(true);
-		factory.setQuartzProperties(quartzProperties);
-		factory.setStartupDelay(10);
-		factory.setApplicationContextSchedulerContextKey(ApplicationContextAwareQuartzJobBean.APPLICATION_CONTEXT_KEY);
-		factory.setTriggers(livewireTrigger);
-
-		return factory;
-	}
 
 	/*
 	Configuration for notification messages and HTML emails

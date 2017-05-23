@@ -1,4 +1,4 @@
-package za.org.grassroot.integration;
+package za.org.grassroot.integration.messaging;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -7,6 +7,7 @@ import io.jsonwebtoken.impl.crypto.RsaProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import za.org.grassroot.integration.PublicCredentials;
 
 import javax.annotation.PostConstruct;
 import java.security.KeyPair;

@@ -1,9 +1,9 @@
-package za.org.grassroot.integration.sms;
+package za.org.grassroot.integration.messaging;
 
 /**
  * Created by luke on 2016/09/19.
  */
-public enum SmsResponseType {
+public enum MessagePushResponseType {
 
     ROUTED,
     DELIVERED,

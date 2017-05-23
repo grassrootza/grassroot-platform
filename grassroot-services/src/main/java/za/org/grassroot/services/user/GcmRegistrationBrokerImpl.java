@@ -1,4 +1,4 @@
-package za.org.grassroot.integration;
+package za.org.grassroot.services.user;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -43,28 +43,17 @@ public class GcmRegistrationBrokerImpl implements GcmRegistrationBroker {
 
     private final static String INSTANCE_ID_FIXED_PATH = "/iid/v1/";
 
-    @Value("${gcm.topics.url}")
-    private String INSTANCE_ID_SERVICE_GATEWAY;
-    @Value("${gcm.sender.key}")
-    private String AUTH_KEY;
-    @Value("${gcm.topics.authorization}")
-    private String HEADER_AUTH;
-    @Value("${gcm.topics.max.retries}")
-    private int MAX_RETRIES;
-    @Value("${gcm.topics.backoff.initial.delay}")
-    private int BACKOFF_INITIAL_DELAY ;
-    @Value("${gcm.topics.backoff.max.delay}")
-    private int MAX_BACKOFF_DELAY;
-    @Value("${gcm.topics.destination}")
-    private String DESTINATION;
-    @Value("${gcm.topics.tokens}")
-    private String REGISTRATION_TOKENS;
-    @Value("${gcm.topics.batch.remove}")
-    private String BATCH_REMOVE;
-    @Value("${gcm.topics.batch.add}")
-    private String BATCH_ADD;
-    @Value("${gcm.topics.path}")
-    private String TOPICS;
+    @Value("${gcm.topics.url:iid.googleapis.com}") private String INSTANCE_ID_SERVICE_GATEWAY;
+    @Value("${gcm.sender.key:12345}") private String AUTH_KEY;
+    @Value("${gcm.topics.authorization:Authorization}") private String HEADER_AUTH;
+    @Value("${gcm.topics.max.retries:3}") private int MAX_RETRIES;
+    @Value("${gcm.topics.backoff.initial.delay:1000}") private int BACKOFF_INITIAL_DELAY ;
+    @Value("${gcm.topics.backoff.max.delay:60000}") private int MAX_BACKOFF_DELAY;
+    @Value("${gcm.topics.destination:to}") private String DESTINATION;
+    @Value("${gcm.topics.tokens:registration_tokens}") private String REGISTRATION_TOKENS;
+    @Value("${gcm.topics.batch.remove:':batchRemove'}") private String BATCH_REMOVE;
+    @Value("${gcm.topics.batch.add:':batchAdd'}") private String BATCH_ADD;
+    @Value("${gcm.topics.path:/topics/}") private String TOPICS;
 
     private static final ObjectMapper mapper = new ObjectMapper();
     private final static Random random = new Random();
@@ -76,25 +65,6 @@ public class GcmRegistrationBrokerImpl implements GcmRegistrationBroker {
         this.groupRepository = groupRepository;
         this.restTemplate = restTemplate;
         this.groupChatSettingsRepository = groupChatSettingsRepository;
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public GcmRegistration load(String uid) {
-        return gcmRegistrationRepository.findByUid(uid);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public String getGcmKey(User user) {
-        GcmRegistration gcmRegistration = gcmRegistrationRepository.findTopByUserOrderByCreationTimeDesc(user);
-        return gcmRegistration != null ? gcmRegistration.getRegistrationId() : null;
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public boolean hasGcmKey(User user){
-        return gcmRegistrationRepository.findTopByUserOrderByCreationTimeDesc(user) != null;
     }
 
     @Override
@@ -123,7 +93,7 @@ public class GcmRegistrationBrokerImpl implements GcmRegistrationBroker {
         for (Group group : groupsPartOf) {
             try {
                 GroupChatSettings settings = groupChatSettingsRepository.findByUserAndGroup(user, group);
-                subscribeToTopic(registrationId, group.getUid());
+                changeTopicSubscription(user.getUid(), group.getUid(), true);
                 if (settings == null || !settings.isCanReceive()) {
                     GroupChatSettings thisGroupSettings = new GroupChatSettings(user, group, true, true, true, true);
                     groupChatSettingsRepository.saveAndFlush(thisGroupSettings);
@@ -154,7 +124,26 @@ public class GcmRegistrationBrokerImpl implements GcmRegistrationBroker {
 
     @Async
     @Override
-    public void subscribeToTopic(String registrationId, String topicId) throws IOException {
+    public void changeTopicSubscription(String userUid, String topicId, boolean subscribe) throws IOException {
+        User user = userRepository.findOneByUid(userUid);
+        GcmRegistration gcmRegistration = gcmRegistrationRepository.findTopByUserOrderByCreationTimeDesc(user);
+        String registrationId = gcmRegistration != null ? gcmRegistration.getRegistrationId() : null;
+        if (registrationId != null) {
+            if (subscribe) {
+                subscribeToTopic(registrationId, topicId);
+            } else {
+                unsubscribeFromTopic(registrationId, topicId);
+            }
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean hasGcmKey(User user){
+        return gcmRegistrationRepository.findTopByUserOrderByCreationTimeDesc(user) != null;
+    }
+
+    private void subscribeToTopic(String registrationId, String topicId) throws IOException {
         UriComponentsBuilder gatewayURI = UriComponentsBuilder.newInstance()
                 .scheme("https")
                 .host(INSTANCE_ID_SERVICE_GATEWAY)
@@ -172,7 +161,8 @@ public class GcmRegistrationBrokerImpl implements GcmRegistrationBroker {
             noAttempts++;
             // todo : work out why this is so slow (~ 3 secs ... seems like it's not pooling, which is strange)
             try {
-                response = restTemplate.exchange(gatewayURI.build().toUri(), POST, new HttpEntity<String>(getHttpHeaders()), String.class);
+                response = restTemplate.exchange(gatewayURI.build().toUri(), POST,
+                        new HttpEntity<String>(getHttpHeaders()), String.class);
             } catch (HttpClientErrorException e) {
                 log.error("Error calling group subscribe, with message: {}, and path: {}", e.toString(), gatewayURI.build().toString());
                 if (e.getStatusCode().equals(HttpStatus.NOT_FOUND)) {
@@ -202,9 +192,7 @@ public class GcmRegistrationBrokerImpl implements GcmRegistrationBroker {
         }
     }
 
-    @Async
-    @Override
-    public void unsubscribeFromTopic(String registrationId, String topicId) throws Exception {
+    private void unsubscribeFromTopic(String registrationId, String topicId) throws IOException {
         UriComponentsBuilder gatewayURI = UriComponentsBuilder.newInstance()
                 .scheme("https")
                 .host(INSTANCE_ID_SERVICE_GATEWAY)

@@ -3,7 +3,8 @@ package za.org.grassroot.services.livewire;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
 import za.org.grassroot.core.repository.LiveWireAlertRepository;
 
@@ -14,22 +15,23 @@ import java.util.stream.Collectors;
 
 /**
  * Created by luke on 2017/05/08.
+ * todo : keep watch on fragility, now that this is moved out of quartz
  */
-@Service
-public class BatchedLiveWireSenderImpl implements BatchedLiveWireSender {
+@Component
+public class ScheduledLiveWireSender {
 
-    private static final Logger logger = LoggerFactory.getLogger(BatchedLiveWireSenderImpl.class);
+    private static final Logger logger = LoggerFactory.getLogger(ScheduledLiveWireSender.class);
 
     private final LiveWireAlertRepository alertRepository;
     private final LiveWireSendingBroker sendingBroker;
 
     @Autowired
-    public BatchedLiveWireSenderImpl(LiveWireAlertRepository alertRepository, LiveWireSendingBroker sendingBroker) {
+    public ScheduledLiveWireSender(LiveWireAlertRepository alertRepository, LiveWireSendingBroker sendingBroker) {
         this.alertRepository = alertRepository;
         this.sendingBroker = sendingBroker;
     }
 
-    @Override
+    @Scheduled(cron = "0 0/1 * * * ?")
     public void processPendingLiveWireAlerts() {
         Instant end = Instant.now();
         Instant start = end.minus(1L, ChronoUnit.HOURS);

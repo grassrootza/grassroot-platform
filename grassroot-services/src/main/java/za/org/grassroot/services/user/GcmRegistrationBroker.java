@@ -1,4 +1,4 @@
-package za.org.grassroot.integration;
+package za.org.grassroot.services.user;
 
 import za.org.grassroot.core.domain.GcmRegistration;
 import za.org.grassroot.core.domain.User;
@@ -10,20 +10,14 @@ import java.io.IOException;
  */
 public interface GcmRegistrationBroker {
 
-    GcmRegistration load(String uid);
-
     GcmRegistration registerUser(User user, String registrationId);
 
     void unregisterUser(User user);
 
-    String getGcmKey(User user);
-
-    boolean hasGcmKey(User user);
-
-    void subscribeToTopic(String registrationId, String topicId) throws IOException;
+    void changeTopicSubscription(String userUid, String topicId, boolean subscribe) throws IOException;
 
     void refreshAllGroupTopicSubscriptions(String userUid, String registrationId);
 
-    void unsubscribeFromTopic(String registrationId, String topicId) throws Exception;
+    boolean hasGcmKey(User user);
 
 }
