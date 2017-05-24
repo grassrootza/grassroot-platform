@@ -13,7 +13,6 @@ import org.springframework.test.context.junit4.SpringRunner;
 import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.domain.GroupLog;
 import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.core.enums.GroupLogType;
 
@@ -86,10 +85,7 @@ public class GroupRepositoryTest {
         Event eventFromDb = eventRepository.findAll().iterator().next();
         assertNotNull(eventFromDb.getParent());
         assertTrue(eventFromDb.getParent().getUid().equals(group2.getUid()));
-
-
     }
-
 
     @Test
     public void shouldSaveTodoReminder() {
@@ -260,14 +256,12 @@ public class GroupRepositoryTest {
 
         User userToRemove1 = new User("56788");
         userRepository.save(userToRemove1);
-
         List<User> userNumber = Arrays.asList(userToRemove,userToRemove1);
 
         Group groupToCreate = new Group("Test Group",userToRemove);
         groupToCreate.addMembers(userNumber,BaseRoles.ROLE_ORDINARY_MEMBER);
         groupRepository.save(groupToCreate);
         assertThat(groupRepository.count(),is(1L));
-
 
         Group groupFromDb = groupRepository.findAll().iterator().next();
         assertNotNull(groupToCreate);
@@ -284,10 +278,8 @@ public class GroupRepositoryTest {
     @Test
     public void shouldAddChildGroup() throws Exception {
         assertThat(groupRepository.count(),is(0L));
-
         User userToCreate = new User("56789");
         userRepository.save(userToCreate);
-
         Group groupToAddParent = new Group("TestGroup",userToCreate);
         groupRepository.save(groupToAddParent);
 
@@ -319,7 +311,6 @@ public class GroupRepositoryTest {
        assertThat(groupRepository.count(),is(0L));
        User userToDiscover = new User("56789");
        userRepository.save(userToDiscover);
-
        Group groupToDiscover = new Group("TestGroup",userToDiscover);
        groupRepository.save(groupToDiscover);
 
@@ -469,12 +460,6 @@ public class GroupRepositoryTest {
        assertTrue(groupFromDb.getJoinApprover().equals(newUser));
 
     }
-
-    /*
-       code ends here
-     */
-
-
     @Test
     public void shouldSaveAndRetrieveGroupData() throws Exception {
 
@@ -493,7 +478,6 @@ public class GroupRepositoryTest {
         assertThat(groupFromDb.getGroupName(), is("TestGroup"));
         assertThat(groupFromDb.getCreatedByUser().getPhoneNumber(), is("56789"));
     }
-
     @Test
     public void shouldSaveWithAddedMember() throws Exception {
         assertThat(groupRepository.count(), is(0L));
@@ -697,30 +681,35 @@ public class GroupRepositoryTest {
     }
 
     @Test
-    public void shouldHaveValidGroupToken() {
+    public void shouldHaveValidGroupToken() throws Exception {
 
         User user = userRepository.save(new User("4879342"));
-        Group groupToken = groupRepository.save(new Group("Token",user));
+        Group groupToken = groupRepository.save(new Group(
+                "Token",user));
         assertNotNull(groupToken.getUid());
 
-        Instant tokenTime = Instant.now().plus(10,ChronoUnit.DAYS);
+        Instant tokenTime = Instant.now().plus(10,
+                ChronoUnit.DAYS);
 
         groupToken.setTokenExpiryDateTime(tokenTime);
         groupToken.setGroupTokenCode("1234");
         assertTrue(groupToken.hasValidGroupTokenCode());
-        assertThat(groupToken.getTokenExpiryDateTime(),is(tokenTime));
+        assertThat(groupToken.getTokenExpiryDateTime(),
+                is(tokenTime));
         assertThat(groupToken.getGroupTokenCode(),is("1234"));
-        //assertThat(groupRepository.count(),is(1L));
 
-        Group groupDb = groupRepository.findByGroupTokenCode("1234");
+        Group groupDb = groupRepository.findAll().iterator().next();
         assertThat(groupDb.getTokenExpiryDateTime(),is(tokenTime));
 
         Group group = groupRepository.findAll().iterator().next();
         Instant expiredTime = Instant.now().minus(9,ChronoUnit.DAYS);
         group.setGroupTokenCode(null);
         group.setTokenExpiryDateTime(expiredTime);
-        assertThat(group.getGroupTokenCode(),is(nullValue()));
-        assertThat(group.getTokenExpiryDateTime(),is(expiredTime));
+        groupRepository.save(group);
+
+        Group newGroupDb = groupRepository.findAll().iterator().next();
+        assertThat(newGroupDb.getGroupTokenCode(),is(nullValue()));
+        assertThat(newGroupDb.getTokenExpiryDateTime(),is(expiredTime));
 
     }
 

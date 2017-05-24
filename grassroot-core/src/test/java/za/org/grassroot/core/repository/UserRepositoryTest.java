@@ -14,24 +14,14 @@ import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.StandaloneDatabaseConfig;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.*;
-
-import za.org.grassroot.core.domain.EventLog;
-
-import za.org.grassroot.core.enums.EventLogType;
-import za.org.grassroot.core.enums.EventRSVPResponse;
-import za.org.grassroot.core.enums.UserMessagingPreference;
-
 import za.org.grassroot.core.util.PhoneNumberUtil;
-
 import javax.transaction.Transactional;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.*;
 
 /**
@@ -63,12 +53,6 @@ public class UserRepositoryTest {
 
     private static final String number = "0821234560";
 
-
-
-
-
-
-
     @Test
     public void shouldCheckAndroidProfile() {
         assertThat(userRepository.count(), is(0L));
@@ -78,10 +62,7 @@ public class UserRepositoryTest {
         userProfile.setHasAndroidProfile(true);
         userRepository.save(userProfile);
 
-
-
         assertThat(userRepository.count(), is(1L));
-
         User fromDb = userRepository.findAll().iterator().next();
         assertNotNull(fromDb.getUid());
         assertTrue(fromDb.hasAndroidProfile());
@@ -108,7 +89,6 @@ public class UserRepositoryTest {
         Instant createdTime = Instant.now();
         userStamp.updateTimeStamps();
         assertTrue(userStamp.getCreatedDateTime().equals(createdTime));
-
     }
 
     @Test
@@ -134,7 +114,6 @@ public class UserRepositoryTest {
         User userDb = userRepository.findOneByUid(userPass.getUid());
         assertThat(userDb.getPassword(), is("password"));
     }
-
 
     @Test
     public void shouldFetchNameToDisplay() {
@@ -168,7 +147,6 @@ public class UserRepositoryTest {
     }
 
     @Test
-
     public void shouldSetAccounts() {
         User userAcc = new User("098765");
         assertNotNull(userAcc.getUid());
@@ -194,8 +172,6 @@ public class UserRepositoryTest {
     }
 
     @Test
-
-
     public void shouldSetLanguageCode() {
         User userLanguage = new User("12345");
         assertNotNull(userLanguage.getUid());
@@ -209,7 +185,6 @@ public class UserRepositoryTest {
     }
 
     @Test
-
     public void shouldGetAlertPreference() {
         User newUser = new User("13124");
         assertNotNull(newUser.getUid());
@@ -223,8 +198,6 @@ public class UserRepositoryTest {
     }
 
     @Test
-
-
     public void shouldSavePhoneNumber() {
         User userNumber = new User("907856");
         assertNotNull(userNumber.getUid());
@@ -275,16 +248,11 @@ public class UserRepositoryTest {
         Role role = new Role("", null);
         assertNotNull(userMember.getUid());
         assertTrue(userMember.getMemberships().isEmpty());
+
         Membership newMember = new Membership(group, userMember, role, Instant.now());
         assertThat(newMember.getGroup().getGroupName(), is("Group"));
         assertThat(newMember.getUser().getPhoneNumber(), is("1234"));
-
         assertThat(userMember.getMemberships().size(),is(0));
-
-
-        //assertThat(userMember.getMemberships().);
-
-
     }
 
     @Test
@@ -311,12 +279,10 @@ public class UserRepositoryTest {
         userRepository.save(userPriority);
     }
 
-
-
     @Test
     public void checkTrialStatus() throws Exception {
-        assertThat(userRepository.count(), is(0L));
 
+        assertThat(userRepository.count(), is(0L));
         User entity = new User("07515757537");
         assertNull(entity.getId());
         assertNotNull(entity.getUid());
@@ -328,13 +294,12 @@ public class UserRepositoryTest {
         assertThat(db.getPhoneNumber(), is("07515757537"));
         assertNotNull(db.getCreatedDateTime());
         assertFalse(db.isHasUsedFreeTrial());
-
     }
 
     @Test
     public void changeTrialStatus() throws Exception {
-        assertThat(userRepository.count(), is(0L));
 
+        assertThat(userRepository.count(), is(0L));
         User ToCreate = new User("07515757537");
         userRepository.save(ToCreate);
 
@@ -344,7 +309,6 @@ public class UserRepositoryTest {
         assertFalse(retrieve.isHasUsedFreeTrial());
         retrieve.setHasUsedFreeTrial(true);
         userRepository.save(retrieve);
-
     }
 
     @Test
@@ -360,7 +324,6 @@ public class UserRepositoryTest {
         User fromDb = userRepository.findAll().iterator().next();
         assertNotNull(fromDb.getUid());
         assertThat(entity.getName(), is("john"));
-
     }
 
     @Test
@@ -375,7 +338,6 @@ public class UserRepositoryTest {
         User userDb = userRepository.findOneByUid(entity.getUid());
         assertNotNull(userDb.getUid());
         assertThat(entity.getPhoneNumber(), is("2435"));
-
     }
 
     @Test
@@ -389,10 +351,7 @@ public class UserRepositoryTest {
         assertNotNull(check.getId());
         assertThat(check.getPhoneNumber(), is("07515757537"));
         assertFalse(check.isHasUsedFreeTrial());
-
-
     }
-
 
     @Test
     public void shouldSaveAndRetrieveUserData() throws Exception {
@@ -426,8 +385,6 @@ public class UserRepositoryTest {
 
         userRepository.save(secondUserToCreate);
         fail("Saving a user with the phone number of an already existing user should throw an exception");
-
-
     }
 
     @Test

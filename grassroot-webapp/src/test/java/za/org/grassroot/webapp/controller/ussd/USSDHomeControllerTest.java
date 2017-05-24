@@ -12,10 +12,8 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.Vote;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
-import za.org.grassroot.services.enums.EventListTimeType;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
@@ -158,10 +156,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
             mockMvc.perform(get(openingMenu).param(phoneParameter, user.getPhoneNumber()).param("request", "*134*1994*111#")).
                     andExpect(status().isOk());
         }
-
     }
-
-
 
     @Test
     public void voteRequestScreenShouldWorkInAllLanguages() throws Exception {
@@ -231,9 +226,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
                     .param("confirmed", "yes")).andExpect(status().isOk());
 
             verify(eventLogBrokerMock, times(1)).rsvpForEvent(meeting.getUid(), user.getUid(), EventRSVPResponse.YES);
-
         }
-
     }
 
     @Test
@@ -243,13 +236,10 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
                     ,testUser,group,"");
 
              List<Meeting> newMeeting  = Arrays.asList(meeting);
-             List<Meeting> meetingList = Collections.emptyList();
 
              when(userManagementServiceMock.loadOrCreateUser(phoneForTests)).thenReturn(testUser);
              when(liveWireBrokerMock.countGroupsForInstantAlert(testUser.getUid())).
                 thenReturn(0L);
-             when(liveWireBrokerMock.meetingsForAlert(testUser.getUid())).
-                     thenReturn(meetingList);
 
               mockMvc.perform(get(openingMenu).param(phoneParameter, phoneForTests)
                      .param("request", "*134*1994*411#")).
@@ -257,7 +247,6 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
 
               verify(userManagementServiceMock,times(1)).
                 loadOrCreateUser(phoneForTests);
-
               verify(liveWireBrokerMock,times(1)).
                       meetingsForAlert(testUser.getUid());
               verify(liveWireBrokerMock, times(1))
@@ -276,8 +265,6 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
                 .param("request", "*134*1994*411#").
                               param("page","1")).
                 andExpect(status().isOk());
-
-
     }
 
     /*
