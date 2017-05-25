@@ -33,6 +33,7 @@ public class ScheduledLiveWireSender {
 
     @Scheduled(cron = "0 0/1 * * * ?")
     public void processPendingLiveWireAlerts() {
+        logger.debug("Processing pending LiveWire alerts");
         Instant end = Instant.now();
         Instant start = end.minus(1L, ChronoUnit.HOURS);
         List<LiveWireAlert> alerts = alertRepository.findBySendTimeBetweenAndSentFalse(start, end);

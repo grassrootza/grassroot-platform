@@ -199,10 +199,8 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
 
     @Test
     public void meetingRsvpShouldWorkInAllLanguages() throws Exception {
-
         resetTestUser();
         Group testGroup = new Group(testGroupName, testUser);
-
         Meeting meeting = new Meeting("Meeting about testing", Instant.now(), testUser, testGroup, "someLocation");
 
         List<User> groupMembers = new ArrayList<>(languageUsers);
@@ -221,7 +219,8 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
             mockMvc.perform(get(openingMenu).param(phoneParameter, user.getPhoneNumber())).andExpect(status().isOk());
             verify(eventBrokerMock, times(1)).getOutstandingResponseForUser(user, EventType.MEETING);
 
-            mockMvc.perform(get("/ussd/start").param(phoneParameter, user.getPhoneNumber())
+            mockMvc.perform(get("/ussd/rsvp")
+                    .param(phoneParameter, user.getPhoneNumber())
                     .param("entityUid", "" + meeting.getUid())
                     .param("confirmed", "yes")).andExpect(status().isOk());
 

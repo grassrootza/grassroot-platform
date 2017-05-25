@@ -160,7 +160,7 @@ public class GroupBrokerImpl implements GroupBroker {
         logger.info("Group created under UID {}", group.getUid());
 
         messagingServiceBroker.subscribeServerToGroupChatTopic(group.getUid());
-        addGroupMembersToChatAfterCommit(group, user);
+        // addGroupMembersToChatAfterCommit(group, user);
 
         if (openJoinToken) {
             JoinTokenOpeningResult joinTokenOpeningResult = openJoinTokenInternal(user, group, null);
@@ -176,17 +176,13 @@ public class GroupBrokerImpl implements GroupBroker {
         if (!actionLogs.isEmpty()) {
             LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
             bundle.addLogs(actionLogs);
-            AfterTxCommitTask afterTxCommitTask = () -> logsAndNotificationsBroker.asyncStoreBundle(bundle); // we want to log group events after transaction has committed
-            applicationEventPublisher.publishEvent(afterTxCommitTask);
+            storeBundleAfterCommit(bundle);
         }
     }
 
-    // todo : switch it to just creating the chat settings, and a call to messaging service
-    private void addGroupMembersToChatAfterCommit(Group group, User user) {
-        /* if (groupChatService != null) {
-            AfterTxCommitTask afterTxCommitTask = () -> groupChatService.addAllGroupMembersToChat(group, user);
-            applicationEventPublisher.publishEvent(afterTxCommitTask);
-        }*/
+    private void storeBundleAfterCommit(LogsAndNotificationsBundle bundle) {
+        AfterTxCommitTask afterTxCommitTask = () -> logsAndNotificationsBroker.asyncStoreBundle(bundle); // we want to log group events after transaction has committed
+        applicationEventPublisher.publishEvent(afterTxCommitTask);
     }
 
     @Override
@@ -276,7 +272,7 @@ public class GroupBrokerImpl implements GroupBroker {
             permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER);
             if (!checkGroupSizeLimit(group, membershipInfos.size())) {
                 throw new GroupSizeLimitExceededException();
-            };
+            }
         } else {
             permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
         }
@@ -308,16 +304,12 @@ public class GroupBrokerImpl implements GroupBroker {
         group.addMembers(userSet, BaseRoles.ROLE_ORDINARY_MEMBER);
 
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
-
-        @SuppressWarnings("unchecked")
-        Set<Meeting> meetings = (Set) group.getUpcomingEventsIncludingParents(event -> event.getEventType().equals(EventType.MEETING));
-
-        addGroupMembersToChatAfterCommit(group, user);
+        // addGroupMembersToChatAfterCommit(group, user);
 
         for (User u  : users) {
             GroupLog groupLog = new GroupLog(group, user, GroupLogType.GROUP_MEMBER_ADDED, u.getId());
             bundle.addLog(groupLog);
-            notifyNewMembersOfUpcomingMeetings(bundle, u, group, groupLog, meetings);
+            notifyNewMembersOfUpcomingMeetings(bundle, u, group, groupLog);
         }
 
         logsAndNotificationsBroker.asyncStoreBundle(bundle);
@@ -335,11 +327,13 @@ public class GroupBrokerImpl implements GroupBroker {
         logger.info("Adding a member via token code: group={}, user={}, code={}", group, user, tokenPassed);
         group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER);
 
-        Set<ActionLog> logs = new HashSet<>();
-        logs.add(new GroupLog(group, user, GroupLogType.GROUP_MEMBER_ADDED_VIA_JOIN_CODE, user.getId(),
-                                    "Member joined via join code: " + tokenPassed));
-        logs.add(new UserLog(userUidToAdd, UserLogType.USED_A_JOIN_CODE, groupUid, UNKNOWN));
-        logActionLogsAfterCommit(logs);
+        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+        GroupLog groupLog = new GroupLog(group, user, GroupLogType.GROUP_MEMBER_ADDED_VIA_JOIN_CODE, user.getId(),
+                                    "Member joined via join code: " + tokenPassed);
+        bundle.addLog(groupLog);
+        bundle.addLog(new UserLog(userUidToAdd, UserLogType.USED_A_JOIN_CODE, groupUid, UNKNOWN));
+        notifyNewMembersOfUpcomingMeetings(bundle, user, group, groupLog);
+        storeBundleAfterCommit(bundle);
     }
 
     @Override
@@ -430,23 +424,17 @@ public class GroupBrokerImpl implements GroupBroker {
             bundle.addLog(new UserLog(createdUser.getUid(), UserLogType.CREATED_IN_DB, String.format("Created by being added to group with ID: %s", group.getUid()), UNKNOWN));
         }
 
-        @SuppressWarnings("unchecked")
-        Set<Meeting> meetings = (Set) group.getUpcomingEventsIncludingParents(event -> event.getEventType().equals(EventType.MEETING));
         final GroupLogType logType = duringGroupCreation ? GroupLogType.GROUP_MEMBER_ADDED_AT_CREATION : GroupLogType.GROUP_MEMBER_ADDED;
 
-        if (!duringGroupCreation) { // todo : just add the new users
+        /*if (!duringGroupCreation) { // todo : just add the new users
             addGroupMembersToChatAfterCommit(group,initiator);
-        }
-
-        logger.debug("added user to group chat");
+        }*/
 
         for (Membership membership : memberships) {
             User member = membership.getUser();
-
             GroupLog groupLog = new GroupLog(group, initiator, logType, member.getId());
             bundle.addLog(groupLog);
-
-            notifyNewMembersOfUpcomingMeetings(bundle, member, group, groupLog, meetings);
+            notifyNewMembersOfUpcomingMeetings(bundle, member, group, groupLog);
         }
 
         logger.info("Done with member add subroutine, returning bundle");
@@ -457,8 +445,9 @@ public class GroupBrokerImpl implements GroupBroker {
     // for each meeting that belongs to this group, or it belongs to one of parent groups and apply to subgroups,
     // we create event notification for new member, but in case when meeting belongs to parent group, then only if member
     // is not already contained in this ancestor group (otherwise, it already got the notification for such meetings)
-    private void notifyNewMembersOfUpcomingMeetings(LogsAndNotificationsBundle bundle, User user, Group group, GroupLog groupLog,
-                                                    Set<Meeting> meetings) {
+    private void notifyNewMembersOfUpcomingMeetings(LogsAndNotificationsBundle bundle, User user, Group group, GroupLog groupLog) {
+        @SuppressWarnings("unchecked")
+        Set<Meeting> meetings = (Set) group.getUpcomingEventsIncludingParents(event -> event.getEventType().equals(EventType.MEETING));
         meetings.forEach(m -> {
             Group meetingGroup = m.getAncestorGroup();
             if (meetingGroup.equals(group) || !meetingGroup.hasMember(user)) {
