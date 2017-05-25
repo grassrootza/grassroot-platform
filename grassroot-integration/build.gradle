@@ -24,12 +24,3 @@ dependencies {
 
     compile group: 'io.jsonwebtoken', name: 'jjwt', version: '0.7.0'
 }
-
-test {
-    systemProperty "gcm.topics.url", "iid.googleapis.com"
-    systemProperty "mqtt.connection.url", "tcp://localhost:1883"
-}
-
-
-
-
