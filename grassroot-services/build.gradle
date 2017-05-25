@@ -10,7 +10,6 @@ dependencies {
   compile group: 'org.springframework.boot', name: 'spring-boot-starter-data-jpa', version:libs.springBootVersion
   compile group: 'org.springframework.boot', name: 'spring-boot-starter-web', version:libs.springBootVersion
 
-  compile group: 'org.quartz-scheduler', name: 'quartz', version:'2.2.3'
   compile group: 'net.sf.ehcache', name: 'ehcache-core', version:'2.6.11'
 
   compile group: 'org.thymeleaf', name: 'thymeleaf', version: libs.thymeleafVersion
@@ -24,22 +23,6 @@ dependencies {
 }
 
 test {
-  systemProperty "grassroot.sms.gateway", "127.0.0.1"
-  systemProperty "grassroot.sms.gateway.username", "grassrootstest"
-  systemProperty "grassroot.sms.gateway.password", "test"
-  systemProperty "gcm.topics.url", "iid.googleapis.com"
-  systemProperty "gcm.topics.batch.add" , ":batchAdd"
-  systemProperty "gcm.topics.batch.remove", "batchRemove"
-  systemProperty "gcm.topics.authorization","Authorization"
-  systemProperty "gcm.topics.backoff.max.delay", "60000"
-  systemProperty "gcm.topics.destination", "to"
-  systemProperty "gcm.topics.tokens", "registration_tokens"
-  systemProperty "gcm.topics.path", "/topics/"
-  systemProperty "gcm.topics.backoff.initial.delay", "1000"
-  systemProperty "gcm.topics.max.retries", "3"
-
-  systemProperty "mqtt.connection.url", "tcp://localhost:1883"
-
   systemProperty "grassroot.email.enabled", "true"
 
   systemProperty "spring.mail.host", "gmail.com"
@@ -53,8 +36,6 @@ test {
 
   systemProperty "grassroot.billing.cron.trigger", "0 0 9 * * ?"
   systemProperty "grassroot.payments.cron.trigger", "0 0 9 * * ?"
-
-  systemProperty "gcm.sender.key", "gcm_sender_key"
 
   systemProperty "grassroot.ussd.location.service", "test_local"
 

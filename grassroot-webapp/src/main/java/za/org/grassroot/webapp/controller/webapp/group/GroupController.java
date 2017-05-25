@@ -15,7 +15,6 @@ import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.domain.GroupLog;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.core.enums.EventType;
@@ -166,23 +165,24 @@ public class GroupController extends BaseController {
     }
 
     @RequestMapping(value = "addmember", method = RequestMethod.POST)
-    public String addMember(Model model, @RequestParam String groupUid, @RequestParam String phoneNumber,
-                            @RequestParam String displayName, @RequestParam String roleName, HttpServletRequest request) {
+    public String addMember(@RequestParam String groupUid, @RequestParam String phoneNumber,
+                            @RequestParam String displayName, @RequestParam String roleName,
+                            RedirectAttributes attributes, HttpServletRequest request) {
         // note : we validate client side, on length & only chars, but need to check again for slip throughs (e.g., right digits, non-existent network)
         if (PhoneNumberUtil.testInputNumber(phoneNumber)) {
             MembershipInfo newMember = new MembershipInfo(phoneNumber, roleName, displayName);
             try {
                 groupBroker.addMembers(getUserProfile().getUid(), groupUid, Sets.newHashSet(newMember), false);
-                addMessage(model, MessageType.SUCCESS, "group.addmember.success", request);
+                addMessage(attributes, MessageType.SUCCESS, "group.addmember.success", request);
             } catch (GroupSizeLimitExceededException e) {
-                // todo : redirect to the account page?
-                addMessage(model, MessageType.ERROR, "group.addmember.limit", request);
+                addMessage(attributes, MessageType.ERROR, "group.addmember.limit", request);
             }
         } else {
-            addMessage(model, MessageType.ERROR, "user.enter.error.phoneNumber.invalid", request);
+            addMessage(attributes, MessageType.ERROR, "user.enter.error.phoneNumber.invalid", request);
         }
 
-        return viewGroupIndex(model, groupUid);
+        attributes.addAttribute("groupUid", groupUid);
+        return "redirect:/group/view";
     }
 
     @RequestMapping(value = "rename_member", method = RequestMethod.POST)

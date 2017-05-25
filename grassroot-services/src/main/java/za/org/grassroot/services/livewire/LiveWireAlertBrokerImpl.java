@@ -19,6 +19,7 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.livewire.DataSubscriber;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
+import za.org.grassroot.core.domain.notification.LiveWireAlertReleasedNotification;
 import za.org.grassroot.core.domain.notification.LiveWireMadeContactNotification;
 import za.org.grassroot.core.domain.notification.LiveWireToReviewNotification;
 import za.org.grassroot.core.enums.*;
@@ -425,9 +426,24 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
         alert.setReviewed(true);
         alert.setReviewedByUser(user);
 
+        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+        LiveWireLog log = new LiveWireLog.Builder()
+                .alert(alert)
+                .userTakingAction(user)
+                .type(send ? LiveWireLogType.ALERT_RELEASED : LiveWireLogType.ALERT_BLOCKED)
+                .notes("tags added: {}" + tags)
+                .build();
+        bundle.addLog(log);
+
         if (send) {
             alert.setSendTime(Instant.now());
+            bundle.addNotification(new LiveWireAlertReleasedNotification(
+                    alert.getCreatingUser(),
+                    messageSource.getMessage("livewire.alert.released"),
+                    log));
         }
+
+        logsAndNotificationsBroker.asyncStoreBundle(bundle);
     }
 
     private void validateCreatingUser(User user, LiveWireAlert alert) throws AccessDeniedException {

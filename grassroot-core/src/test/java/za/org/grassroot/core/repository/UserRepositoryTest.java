@@ -13,17 +13,14 @@ import org.springframework.test.context.junit4.SpringRunner;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.StandaloneDatabaseConfig;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.domain.EventLog;
-import za.org.grassroot.core.enums.EventLogType;
-import za.org.grassroot.core.enums.EventRSVPResponse;
-import za.org.grassroot.core.enums.UserMessagingPreference;
+import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.util.PhoneNumberUtil;
-
 import javax.transaction.Transactional;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
-
+import java.util.Set;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
 
@@ -55,7 +52,6 @@ public class UserRepositoryTest {
     private RoleRepository roleRepository;
 
     private static final String number = "0821234560";
-
 
     @Test
     public void shouldCheckAndroidProfile() {
@@ -93,7 +89,6 @@ public class UserRepositoryTest {
         Instant createdTime = Instant.now();
         userStamp.updateTimeStamps();
         assertTrue(userStamp.getCreatedDateTime().equals(createdTime));
-
     }
 
     @Test
@@ -119,7 +114,6 @@ public class UserRepositoryTest {
         User userDb = userRepository.findOneByUid(userPass.getUid());
         assertThat(userDb.getPassword(), is("password"));
     }
-
 
     @Test
     public void shouldFetchNameToDisplay() {
@@ -153,6 +147,31 @@ public class UserRepositoryTest {
     }
 
     @Test
+    public void shouldSetAccounts() {
+        User userAcc = new User("098765");
+        assertNotNull(userAcc.getUid());
+        Account account = new Account(userAcc,"", AccountType.FREE,userAcc,
+                AccountPaymentType.FREE_TRIAL,AccountBillingCycle.ANNUAL);
+        Account account1 = new Account(userAcc,"", AccountType.FREE,userAcc,
+                AccountPaymentType.FREE_TRIAL,AccountBillingCycle.MONTHLY);
+        Set<Account> accounts = new HashSet<>();
+        userAcc.setAccountsAdministered(accounts);
+        userAcc.setPrimaryAccount(account);
+        userAcc.addAccountAdministered(account);
+        userAcc.addAccountAdministered(account1);
+        userRepository.save(userAcc);
+        assertTrue(userAcc.hasMultipleAccounts());
+        assertThat(userAcc.getPrimaryAccount(),is(account));
+        assertThat(userAcc.getAccountsAdministered().size(),is(2));
+
+        User userDb = userRepository.findOneByUid(userAcc.getUid());
+        assertNotNull(userDb.getUid());
+        assertTrue(userAcc.hasMultipleAccounts());
+        assertThat(userAcc.getPrimaryAccount(),is(account));
+        assertThat(userAcc.getAccountsAdministered().size(),is(2));
+    }
+
+    @Test
     public void shouldSetLanguageCode() {
         User userLanguage = new User("12345");
         assertNotNull(userLanguage.getUid());
@@ -162,6 +181,19 @@ public class UserRepositoryTest {
 
         User userDb = userRepository.findOneByUid(userLanguage.getUid());
         assertThat(userDb.getLanguageCode(), is("EN"));
+
+    }
+
+    @Test
+    public void shouldGetAlertPreference() {
+        User newUser = new User("13124");
+        assertNotNull(newUser.getUid());
+        newUser.setAlertPreference(AlertPreference.NOTIFY_NEW_AND_REMINDERS);
+        assertThat(newUser.getAlertPreference(),is(AlertPreference.NOTIFY_NEW_AND_REMINDERS));
+        userRepository.save(newUser);
+        User fromDb = userRepository.findAll().iterator().next();
+        assertNotNull(fromDb.getUid());
+        assertThat(newUser.getAlertPreference(),is(AlertPreference.NOTIFY_NEW_AND_REMINDERS));
 
     }
 
@@ -216,11 +248,11 @@ public class UserRepositoryTest {
         Role role = new Role("", null);
         assertNotNull(userMember.getUid());
         assertTrue(userMember.getMemberships().isEmpty());
+
         Membership newMember = new Membership(group, userMember, role, Instant.now());
         assertThat(newMember.getGroup().getGroupName(), is("Group"));
         assertThat(newMember.getUser().getPhoneNumber(), is("1234"));
-        //assertThat(userMember.getMemberships().);
-
+        assertThat(userMember.getMemberships().size(),is(0));
     }
 
     @Test
@@ -247,12 +279,10 @@ public class UserRepositoryTest {
         userRepository.save(userPriority);
     }
 
-
-
     @Test
     public void checkTrialStatus() throws Exception {
-        assertThat(userRepository.count(), is(0L));
 
+        assertThat(userRepository.count(), is(0L));
         User entity = new User("07515757537");
         assertNull(entity.getId());
         assertNotNull(entity.getUid());
@@ -264,13 +294,12 @@ public class UserRepositoryTest {
         assertThat(db.getPhoneNumber(), is("07515757537"));
         assertNotNull(db.getCreatedDateTime());
         assertFalse(db.isHasUsedFreeTrial());
-
     }
 
     @Test
     public void changeTrialStatus() throws Exception {
-        assertThat(userRepository.count(), is(0L));
 
+        assertThat(userRepository.count(), is(0L));
         User ToCreate = new User("07515757537");
         userRepository.save(ToCreate);
 
@@ -280,7 +309,6 @@ public class UserRepositoryTest {
         assertFalse(retrieve.isHasUsedFreeTrial());
         retrieve.setHasUsedFreeTrial(true);
         userRepository.save(retrieve);
-
     }
 
     @Test
@@ -296,7 +324,6 @@ public class UserRepositoryTest {
         User fromDb = userRepository.findAll().iterator().next();
         assertNotNull(fromDb.getUid());
         assertThat(entity.getName(), is("john"));
-
     }
 
     @Test
@@ -311,7 +338,6 @@ public class UserRepositoryTest {
         User userDb = userRepository.findOneByUid(entity.getUid());
         assertNotNull(userDb.getUid());
         assertThat(entity.getPhoneNumber(), is("2435"));
-
     }
 
     @Test
@@ -325,10 +351,7 @@ public class UserRepositoryTest {
         assertNotNull(check.getId());
         assertThat(check.getPhoneNumber(), is("07515757537"));
         assertFalse(check.isHasUsedFreeTrial());
-
-
     }
-
 
     @Test
     public void shouldSaveAndRetrieveUserData() throws Exception {
@@ -362,8 +385,6 @@ public class UserRepositoryTest {
 
         userRepository.save(secondUserToCreate);
         fail("Saving a user with the phone number of an already existing user should throw an exception");
-
-
     }
 
     @Test

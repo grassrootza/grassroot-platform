@@ -1,7 +1,6 @@
 package za.org.grassroot.webapp.controller.webapp;
 
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -11,7 +10,6 @@ import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.GrassrootWebApplicationConfig;
-import za.org.grassroot.webapp.IntegrationTest;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -23,7 +21,6 @@ import static org.hamcrest.Matchers.equalTo;
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringBootTest(classes = {GrassrootWebApplicationConfig.class})
 @ActiveProfiles(GrassrootApplicationProfiles.INMEMORY)
-@Category(IntegrationTest.class)
 public class UserProfileControllerIT {
 
     @Autowired

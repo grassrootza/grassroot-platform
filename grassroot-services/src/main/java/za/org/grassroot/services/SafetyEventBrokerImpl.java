@@ -5,13 +5,12 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.domain.GroupLog;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.repository.GroupLogRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.SafetyEventRepository;
 import za.org.grassroot.core.repository.UserRepository;
-import za.org.grassroot.integration.sms.SmsSendingService;
+import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.user.AddressBroker;
 import za.org.grassroot.services.util.CacheUtilService;
 
@@ -46,7 +45,7 @@ public class SafetyEventBrokerImpl implements SafetyEventBroker {
     private MessageAssemblingService messageAssemblingService;
 
     @Autowired
-    private SmsSendingService smsSendingService;
+    private MessagingServiceBroker messagingServiceBroker;
 
     @Autowired
     private AddressBroker addressBroker;
@@ -79,7 +78,7 @@ public class SafetyEventBrokerImpl implements SafetyEventBroker {
     private void sendSafetyNotice(SafetyEvent safetyEvent, User requestor, Address address, User respondent) {
         cacheUtilService.putSafetyEventResponseForUser(respondent, safetyEvent);
         String message = messageAssemblingService.createSafetyEventMessage(respondent, requestor, address, false);
-        smsSendingService.sendAsyncSMS(message, respondent.getPhoneNumber());
+        messagingServiceBroker.sendSMS(message, respondent.getPhoneNumber());
     }
 
     @Override
@@ -106,7 +105,7 @@ public class SafetyEventBrokerImpl implements SafetyEventBroker {
             long count = safetyEventRepository.countByActivatedByAndCreatedDateTimeAfterAndFalseAlarm(requestor, Instant.now().minus(30, ChronoUnit.DAYS), true);
             String message = (count++ > 3) ? messageAssemblingService.createBarringMessage(safetyEvent.getActivatedBy()) :
                     messageAssemblingService.createFalseSafetyEventActivationMessage(safetyEvent.getActivatedBy(), count);
-            smsSendingService.sendAsyncSMS(requestor.getPhoneNumber(), message);
+            messagingServiceBroker.sendSMS(requestor.getPhoneNumber(), message);
         }
 
         Group group = safetyEvent.getGroup();
@@ -118,8 +117,8 @@ public class SafetyEventBrokerImpl implements SafetyEventBroker {
     }
 
     private void sendRespondedNotice(SafetyEvent safetyEvent, User responder, User member) {
-        smsSendingService.sendAsyncSMS(messageAssemblingService.createSafetyEventReportMessage(member, responder, safetyEvent, true),
-                member.getPhoneNumber());
+        messagingServiceBroker.sendSMS(messageAssemblingService.createSafetyEventReportMessage(
+                member, responder, safetyEvent, true), member.getPhoneNumber());
         cacheUtilService.clearSafetyEventResponseForUser(member, safetyEvent);
     }
 
@@ -199,7 +198,7 @@ public class SafetyEventBrokerImpl implements SafetyEventBroker {
         for (User respondent : group.getMembers()) {
             if (!respondent.equals(requestor)) {
                 String message = messageAssemblingService.createSafetyEventMessage(respondent, requestor, address, true);
-                smsSendingService.sendSMS(message, respondent.getPhoneNumber());
+                messagingServiceBroker.sendSMS(message, respondent.getPhoneNumber());
             }
         }
 

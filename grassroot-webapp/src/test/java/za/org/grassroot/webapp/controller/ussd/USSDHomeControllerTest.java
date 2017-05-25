@@ -156,10 +156,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
             mockMvc.perform(get(openingMenu).param(phoneParameter, user.getPhoneNumber()).param("request", "*134*1994*111#")).
                     andExpect(status().isOk());
         }
-
     }
-
-
 
     @Test
     public void voteRequestScreenShouldWorkInAllLanguages() throws Exception {
@@ -202,10 +199,8 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
 
     @Test
     public void meetingRsvpShouldWorkInAllLanguages() throws Exception {
-
         resetTestUser();
         Group testGroup = new Group(testGroupName, testUser);
-
         Meeting meeting = new Meeting("Meeting about testing", Instant.now(), testUser, testGroup, "someLocation");
 
         List<User> groupMembers = new ArrayList<>(languageUsers);
@@ -224,14 +219,51 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
             mockMvc.perform(get(openingMenu).param(phoneParameter, user.getPhoneNumber())).andExpect(status().isOk());
             verify(eventBrokerMock, times(1)).getOutstandingResponseForUser(user, EventType.MEETING);
 
-            mockMvc.perform(get("/ussd/rsvp").param(phoneParameter, user.getPhoneNumber())
-                                    .param("entityUid", "" + meeting.getUid())
-                                    .param("confirmed", "yes")).andExpect(status().isOk());
+            mockMvc.perform(get("/ussd/rsvp")
+                    .param(phoneParameter, user.getPhoneNumber())
+                    .param("entityUid", "" + meeting.getUid())
+                    .param("confirmed", "yes")).andExpect(status().isOk());
 
             verify(eventLogBrokerMock, times(1)).rsvpForEvent(meeting.getUid(), user.getUid(), EventRSVPResponse.YES);
-
         }
+    }
 
+    @Test
+    public void shouldAssembleLiveWire() throws Exception {
+             Group group = new Group(testGroupName, testUser);
+             Meeting meeting = new Meeting("",Instant.now().plus(1,ChronoUnit.HOURS)
+                    ,testUser,group,"");
+
+             List<Meeting> newMeeting  = Arrays.asList(meeting);
+
+             when(userManagementServiceMock.loadOrCreateUser(phoneForTests)).thenReturn(testUser);
+             when(liveWireBrokerMock.countGroupsForInstantAlert(testUser.getUid())).
+                thenReturn(0L);
+
+              mockMvc.perform(get(openingMenu).param(phoneParameter, phoneForTests)
+                     .param("request", "*134*1994*411#")).
+                andExpect(status().isOk());
+
+              verify(userManagementServiceMock,times(1)).
+                loadOrCreateUser(phoneForTests);
+              verify(liveWireBrokerMock,times(1)).
+                      meetingsForAlert(testUser.getUid());
+              verify(liveWireBrokerMock, times(1))
+                .countGroupsForInstantAlert(testUser.getUid());
+
+              when(liveWireBrokerMock.countGroupsForInstantAlert(testUser.getUid()))
+                      .thenReturn(2L);
+
+               mockMvc.perform(get(openingMenu).param(phoneParameter, phoneForTests)
+                .param("request", "*134*1994*411#")).
+                       andExpect(status().isOk());
+
+              when(liveWireBrokerMock.meetingsForAlert(testUser.getUid())).
+                      thenReturn(newMeeting);
+              mockMvc.perform(get(openingMenu).param(phoneParameter, phoneForTests)
+                .param("request", "*134*1994*411#").
+                              param("page","1")).
+                andExpect(status().isOk());
     }
 
     /*
