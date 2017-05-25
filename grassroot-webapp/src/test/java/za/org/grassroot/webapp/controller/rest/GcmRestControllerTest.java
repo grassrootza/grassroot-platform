@@ -32,14 +32,14 @@ public class GcmRestControllerTest extends RestAbstractUnitTest {
     public void gcmRegistrationShouldWork() throws  Exception{
         GcmRegistration gcmRegistration = new GcmRegistration();
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
-        when(gcmServiceMock.registerUser(sessionTestUser, "random")).thenReturn(gcmRegistration);
+        when(gcmRegistrationBrokerMock.registerUser(sessionTestUser, "random")).thenReturn(gcmRegistration);
         mockMvc.perform(post(path + "register/{phoneNumber}/{code}", testUserPhone, testUserCode).param("registration_id", "random")).andExpect(status().isOk());
         verify(userManagementServiceMock).findByInputNumber(testUserPhone);
-        verify(gcmServiceMock).registerUser(sessionTestUser,"random");
-        verify(gcmServiceMock).refreshAllGroupTopicSubscriptions(sessionTestUser.getUid(), "random");
+        verify(gcmRegistrationBrokerMock).registerUser(sessionTestUser,"random");
+        verify(gcmRegistrationBrokerMock).refreshAllGroupTopicSubscriptions(sessionTestUser.getUid(), "random");
         verify(userManagementServiceMock).setMessagingPreference(sessionTestUser.getUid(), UserMessagingPreference.ANDROID_APP);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verifyNoMoreInteractions(gcmServiceMock);
+        verifyNoMoreInteractions(gcmRegistrationBrokerMock);
 
     }
 
@@ -47,7 +47,7 @@ public class GcmRestControllerTest extends RestAbstractUnitTest {
     // @Test
     // public void gcmDeregistrationShouldWork() throws Exception{
     // when(userManagementServiceMock.loadOrCreateUser(testUserPhone)).thenReturn();
-    //   when(gcmServiceMock.registerUser(sessionTestUser, "random"));
+    //   when(gcmRegistrationBrokerMock.registerUser(sessionTestUser, "random"));
 
     // }
 

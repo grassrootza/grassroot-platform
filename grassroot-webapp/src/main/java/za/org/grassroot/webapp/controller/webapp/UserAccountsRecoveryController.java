@@ -16,8 +16,8 @@ import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.servlet.view.RedirectView;
 import za.org.grassroot.core.domain.VerificationTokenCode;
-import za.org.grassroot.integration.sms.SmsGatewayResponse;
-import za.org.grassroot.integration.sms.SmsSendingService;
+import za.org.grassroot.integration.messaging.MessagingServiceBroker;
+import za.org.grassroot.integration.messaging.MessageServicePushResponse;
 import za.org.grassroot.services.user.PasswordTokenService;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.BaseController;
@@ -38,7 +38,7 @@ public class UserAccountsRecoveryController extends BaseController {
     @Autowired
     private UserManagementService userManagementService;
     @Autowired
-    private SmsSendingService smsSendingService;
+    private MessagingServiceBroker messagingServiceBroker;
     @Autowired
     private Environment environment;
 
@@ -117,8 +117,10 @@ public class UserAccountsRecoveryController extends BaseController {
 
     private void temporaryTokenSend(VerificationTokenCode verificationTokenCode) {
         if (verificationTokenCode != null) {
-            SmsGatewayResponse messageResult = smsSendingService.sendSMS(getMessage("user.profile.token.message", verificationTokenCode.getCode()),
-                    verificationTokenCode.getUsername());
+            MessageServicePushResponse messageResult = messagingServiceBroker.
+                    sendPrioritySMS(getMessage("user.profile.token.message",
+                            verificationTokenCode.getCode()),
+                            verificationTokenCode.getUsername());
             if (!environment.acceptsProfiles("production")) {
                 log.info("For token {}, sms send result: {}", verificationTokenCode.getCode(), messageResult.toString());
             }

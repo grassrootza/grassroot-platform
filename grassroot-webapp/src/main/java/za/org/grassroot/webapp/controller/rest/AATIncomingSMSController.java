@@ -11,7 +11,7 @@ import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
-import za.org.grassroot.integration.sms.SmsSendingService;
+import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.EventLogBroker;
@@ -33,25 +33,23 @@ public class AATIncomingSMSController {
     private static final String patternToMatch = "\\b(?:yes|no|abstain|maybe)\\b";
 
     private final EventBroker eventBroker;
-
     private final UserManagementService userManager;
-
     private final EventLogBroker eventLogManager;
-
     private final MessageAssemblingService messageAssemblingService;
-
-    private final SmsSendingService smsSendingService;
+    private final MessagingServiceBroker messagingServiceBroker;
 
     private static final String fromNumber ="fn";
     private static final String message ="ms";
 
     @Autowired
-    public AATIncomingSMSController(EventBroker eventBroker, UserManagementService userManager, EventLogBroker eventLogManager, MessageAssemblingService messageAssemblingService, SmsSendingService smsSendingService) {
+    public AATIncomingSMSController(EventBroker eventBroker, UserManagementService userManager,
+                                    EventLogBroker eventLogManager, MessageAssemblingService messageAssemblingService,
+                                    MessagingServiceBroker messagingServiceBroker) {
         this.eventBroker = eventBroker;
         this.userManager = userManager;
         this.eventLogManager = eventLogManager;
         this.messageAssemblingService = messageAssemblingService;
-        this.smsSendingService = smsSendingService;
+        this.messagingServiceBroker = messagingServiceBroker;
     }
 
 
@@ -93,7 +91,7 @@ public class AATIncomingSMSController {
 
     private void notifyUnableToProcessReply(User user) {
         String message = messageAssemblingService.createReplyFailureMessage(user);
-        smsSendingService.sendSMS(message, user.getPhoneNumber());
+        messagingServiceBroker.sendSMS(message, user.getPhoneNumber());
     }
 
     private boolean isValidInput(String message){

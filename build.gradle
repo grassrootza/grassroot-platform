@@ -1,17 +1,15 @@
 allprojects  {
   apply plugin: 'maven'
   group = 'za.org.grassroot'
-  version = '1.0.0.M5'
+  version = '1.0.0.RC1'
 }
 
 ext.libs = [
         springVersion: '4.3.7.RELEASE',
         springBootVersion: '1.5.1.RELEASE',
         springSecurityVersion: '4.2.1.RELEASE',
-        springIntegrationVersion: '4.3.7.RELEASE',
         thymeleafVersion: '3.0.0.RELEASE',
-        jacksonVersion: '2.8.7',
-        smackVersion: '4.1.8'
+        jacksonVersion: '2.8.7'
 ]
 
 subprojects {

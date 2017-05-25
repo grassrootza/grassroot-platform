@@ -9,10 +9,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.repository.*;
-import za.org.grassroot.integration.GroupChatService;
-import za.org.grassroot.integration.MessageSendingService;
-import za.org.grassroot.integration.exception.GroupChatSettingNotFoundException;
-import za.org.grassroot.integration.mqtt.MqttSubscriptionService;
 import za.org.grassroot.services.SafetyEventBroker;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.specifications.TodoSpecifications;
@@ -65,17 +61,8 @@ public class ScheduledTasks {
     @Autowired
     private TodoRepository todoRepository;
 
-    @Autowired(required = false)
-    private GroupChatService groupChatService;
-
     @Autowired
     private SafetyEventRepository safetyEventRepository;
-
-    @Autowired
-    private MessageSendingService messageSendingService;
-
-    @Autowired(required = false)
-    private MqttSubscriptionService mqttSubscriptionService;
 
     @Scheduled(fixedRate = 300000) //runs every 5 minutes
     public void sendReminders() {
@@ -171,37 +158,9 @@ public class ScheduledTasks {
         }
     }
 
-    @Scheduled(fixedRate = 300000)
-    public void reactivateMutedUsers() throws Exception {
-        if (groupChatService != null) {
-            List<GroupChatSettings> groupChatSettingses = groupChatService.loadUsersToBeUnmuted();
-            for (GroupChatSettings messengerSetting : groupChatSettingses) {
-                String userUid = messengerSetting.getUser().getUid();
-                String groupUid = messengerSetting.getGroup().getUid();
-                try {
-                    groupChatService.updateActivityStatus(userUid, groupUid, true, false);
-                } catch (GroupChatSettingNotFoundException e) {
-                    logger.error("Error while trying unmute user with " + userUid);
-                }
-            }
-        }
-    }
-
-    @Scheduled(cron = "0 0 1 * * *") //runs at 1 am everyday
-    public void subscribeServerToGroupTopics(){
-        if (mqttSubscriptionService != null) {
-            mqttSubscriptionService.subscribeServerToAllGroupTopics();
-        }
-    }
-
 
     @Scheduled(cron = "0 0 15 * * *") // runs at 3pm (= 5pm SAST) every day
     public void sendGroupJoinNotifications() { groupBroker.notifyOrganizersOfJoinCodeUse(Instant.now().minus(1, ChronoUnit.DAYS),
                                                                                          Instant.now());}
-    @Scheduled(fixedRate = 300000) // runs every five minutes
-    public void gcmKeepAlive(){
-        messageSendingService.sendPollingMessage();
-    }
-
 
 }

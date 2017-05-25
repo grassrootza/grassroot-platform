@@ -4,9 +4,12 @@ package za.org.grassroot.webapp.controller.rest;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.integration.messaging.MessagingServiceBroker;
+import za.org.grassroot.services.MessageAssemblingService;
 
 import java.util.Collections;
 import java.util.List;
@@ -22,6 +25,12 @@ public class AATIncomingSMSControllerTest extends RestAbstractUnitTest {
 
     private static final String path = "/sms/";
     private Event meeting;
+
+    @Mock
+    private MessageAssemblingService messageAssemblingService;
+
+    @Mock
+    private MessagingServiceBroker messagingServiceBroker;
 
     @InjectMocks
     private AATIncomingSMSController aatIncomingSMSController;
@@ -56,9 +65,15 @@ public class AATIncomingSMSControllerTest extends RestAbstractUnitTest {
     public void receiveSMSShouldWorkWithInvalidInput() throws Exception{
         // todo : check calls to message service & sms service
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
+        when(messageAssemblingService.createReplyFailureMessage(sessionTestUser)).thenReturn("Failed!");
+
         mockMvc.perform(get(path+"incoming").param("fn",testUserPhone).param("ms", "yebo"))
                 .andExpect(status().isOk());
+
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
+        verify(messageAssemblingService, times(1)).createReplyFailureMessage(sessionTestUser);
+        verify(messagingServiceBroker, times(1)).sendSMS("Failed!", testUserPhone);
+
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(eventBrokerMock);
 

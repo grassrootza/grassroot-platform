@@ -12,9 +12,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.domain.ActionLog;
-import za.org.grassroot.core.domain.GroupLog;
-import za.org.grassroot.core.domain.UserLog;
 import za.org.grassroot.core.domain.notification.EventInfoNotification;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.enums.EventType;
@@ -28,19 +25,19 @@ import za.org.grassroot.core.specifications.GroupSpecifications;
 import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
-import za.org.grassroot.integration.GroupChatService;
-import za.org.grassroot.integration.mqtt.MqttSubscriptionService;
-import za.org.grassroot.integration.xmpp.GcmService;
+import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.services.exception.GroupDeactivationNotAvailableException;
 import za.org.grassroot.services.exception.GroupSizeLimitExceededException;
 import za.org.grassroot.services.exception.InvalidTokenException;
+import za.org.grassroot.services.user.GcmRegistrationBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 import za.org.grassroot.services.util.TokenGeneratorService;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -75,11 +72,9 @@ public class GroupBrokerImpl implements GroupBroker {
     private final LogsAndNotificationsBroker logsAndNotificationsBroker;
     private final TokenGeneratorService tokenGeneratorService;
     private final MessageAssemblingService messageAssemblingService;
+    private final MessagingServiceBroker messagingServiceBroker;
 
-    // todo : consolidate these to cut down all these dependencies & do null checks so they don't break methods
-    private GroupChatService groupChatService;
-    private GcmService gcmService;
-    private MqttSubscriptionService mqttSubscriptionService;
+    private GcmRegistrationBroker gcmRegistrationBroker;
 
     private final AccountGroupBroker accountGroupBroker;
 
@@ -88,7 +83,7 @@ public class GroupBrokerImpl implements GroupBroker {
                            GroupLogRepository groupLogRepository, PermissionBroker permissionBroker,
                            ApplicationEventPublisher applicationEventPublisher, LogsAndNotificationsBroker logsAndNotificationsBroker,
                            TokenGeneratorService tokenGeneratorService, MessageAssemblingService messageAssemblingService,
-                           AccountGroupBroker accountGroupBroker) {
+                           MessagingServiceBroker messagingServiceBroker, AccountGroupBroker accountGroupBroker) {
         this.groupRepository = groupRepository;
         this.environment = environment;
         this.userRepository = userRepository;
@@ -98,22 +93,17 @@ public class GroupBrokerImpl implements GroupBroker {
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
         this.tokenGeneratorService = tokenGeneratorService;
         this.messageAssemblingService = messageAssemblingService;
+        this.messagingServiceBroker = messagingServiceBroker;
         this.accountGroupBroker = accountGroupBroker;
     }
 
     @Autowired(required = false)
-    public void setGcmService(GcmService gcmService) {
-        this.gcmService = gcmService;
+    public void setGcmRegistrationBroker(GcmRegistrationBroker gcmRegistrationBroker) {
+        this.gcmRegistrationBroker = gcmRegistrationBroker;
     }
 
     @Autowired(required = false)
-    public void setGroupChatService(GroupChatService groupChatService) {
-        this.groupChatService = groupChatService;
-    }
-
-    @Autowired(required = false)
-    public void setMqttSubscriptionService(MqttSubscriptionService mqttSubscriptionService) {
-        this.mqttSubscriptionService = mqttSubscriptionService;
+    public void setGroupChatService(GroupChatBroker groupChatService) {
     }
 
     @Override
@@ -167,12 +157,9 @@ public class GroupBrokerImpl implements GroupBroker {
         permissionBroker.setRolePermissionsFromTemplate(group, groupPermissionTemplate);
         group = groupRepository.save(group);
 
-        if (mqttSubscriptionService != null) {
-            mqttSubscriptionService.subscribeServerToGroupTopic(group);
-        }
-
         logger.info("Group created under UID {}", group.getUid());
 
+        messagingServiceBroker.subscribeServerToGroupChatTopic(group.getUid());
         addGroupMembersToChatAfterCommit(group, user);
 
         if (openJoinToken) {
@@ -194,11 +181,12 @@ public class GroupBrokerImpl implements GroupBroker {
         }
     }
 
+    // todo : switch it to just creating the chat settings, and a call to messaging service
     private void addGroupMembersToChatAfterCommit(Group group, User user) {
-        if (groupChatService != null) {
+        /* if (groupChatService != null) {
             AfterTxCommitTask afterTxCommitTask = () -> groupChatService.addAllGroupMembersToChat(group, user);
             applicationEventPublisher.publishEvent(afterTxCommitTask);
-        }
+        }*/
     }
 
     @Override
@@ -488,10 +476,10 @@ public class GroupBrokerImpl implements GroupBroker {
         Set<ActionLog> actionLogs = new HashSet<>();
         for (Membership membership : memberships) {
             group.removeMembership(membership);
-            if (gcmService != null && gcmService.hasGcmKey(membership.getUser())) {
+            if (gcmRegistrationBroker != null && gcmRegistrationBroker.hasGcmKey(membership.getUser())) {
                 try {
-                    gcmService.unsubscribeFromTopic(gcmService.getGcmKey(membership.getUser()),group.getUid());
-                } catch (Exception e) {
+                    gcmRegistrationBroker.changeTopicSubscription(membership.getUser().getUid(), group.getUid(), false);
+                } catch (IOException e) {
                     logger.error("Unable to unsubscribe member with uid={} from group topic ={}", membership.getUser(), group);
                 }
             }

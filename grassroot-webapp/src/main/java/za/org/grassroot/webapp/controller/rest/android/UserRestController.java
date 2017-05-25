@@ -18,7 +18,7 @@ import za.org.grassroot.core.enums.VerificationCodeType;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.NotificationService;
-import za.org.grassroot.integration.sms.SmsSendingService;
+import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.user.PasswordTokenService;
@@ -44,19 +44,19 @@ public class UserRestController {
     private final UserManagementService userManagementService;
     private final PasswordTokenService passwordTokenService;
     private final GeoLocationBroker geoLocationBroker;
-    private final SmsSendingService smsSendingService;
+    private final MessagingServiceBroker messagingServiceBroker;
     private final NotificationService notificationService;
     private final PermissionBroker permissionBroker;
     private final Environment environment;
 
     @Autowired
     public UserRestController(UserManagementService userManagementService, PasswordTokenService passwordTokenService,
-                              GeoLocationBroker geoLocationBroker, SmsSendingService smsSendingService, NotificationService notificationService,
+                              GeoLocationBroker geoLocationBroker, MessagingServiceBroker messagingServiceBroker, NotificationService notificationService,
                               PermissionBroker permissionBroker, Environment environment) {
         this.userManagementService = userManagementService;
         this.passwordTokenService = passwordTokenService;
         this.geoLocationBroker = geoLocationBroker;
-        this.smsSendingService = smsSendingService;
+        this.messagingServiceBroker = messagingServiceBroker;
         this.notificationService = notificationService;
         this.permissionBroker = permissionBroker;
         this.environment = environment;
@@ -270,7 +270,7 @@ public class UserRestController {
             if (token != null) {
                 // todo : wire up a message source for this
                 final String prefix = resending ? "Grassroot code (resent): " : "Grassroot code: ";
-                smsSendingService.sendPrioritySMS(prefix + token, destinationNumber);
+                messagingServiceBroker.sendPrioritySMS(prefix + token, destinationNumber);
             } else {
                 log.warn("Did not send verification message. No system messaging configuration found.");
             }
