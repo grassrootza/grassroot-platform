@@ -4,17 +4,11 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-import org.springframework.context.MessageSource;
-import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.repository.EventLogRepository;
-import za.org.grassroot.core.repository.VerificationTokenCodeRepository;
-import za.org.grassroot.services.user.GcmRegistrationBroker;
-import za.org.grassroot.integration.messaging.SmsSendingService;
-import za.org.grassroot.services.*;
-import za.org.grassroot.services.account.AccountBroker;
+import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.group.GroupJoinRequestService;
 import za.org.grassroot.services.group.GroupQueryBroker;
@@ -22,7 +16,7 @@ import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.EventLogBroker;
 import za.org.grassroot.services.task.TaskBroker;
 import za.org.grassroot.services.task.TodoBroker;
-import za.org.grassroot.services.user.PasswordTokenService;
+import za.org.grassroot.services.user.GcmRegistrationBroker;
 import za.org.grassroot.services.user.UserManagementService;
 
 import java.time.Instant;
@@ -60,9 +54,6 @@ public class RestAbstractUnitTest {
     protected PermissionBroker permissionBrokerMock;
 
     @Mock
-    protected AccountBroker accountBrokerMock;
-
-    @Mock
     protected EventLogBroker eventLogBrokerMock;
 
     @Mock
@@ -75,13 +66,7 @@ public class RestAbstractUnitTest {
     protected UserManagementService userManagementServiceMock;
 
     @Mock
-    protected PasswordTokenService passwordTokenServiceMock;
-
-    @Mock
     protected GroupJoinRequestService groupJoinRequestServiceMock;
-
-    @Mock
-    protected VerificationTokenCodeRepository verificationTokenCodeRepositoryMock;
 
     @Mock
     protected GroupBroker groupBrokerMock;
@@ -97,21 +82,6 @@ public class RestAbstractUnitTest {
 
     @Mock
     protected GcmRegistrationBroker gcmRegistrationBrokerMock;
-
-    @Mock
-    protected MessageAssemblingService messageAssemblingServiceMock;
-
-    @Mock
-    protected SmsSendingService smsSendingServiceMock;
-
-    protected MessageSource messageSource () {
-
-        ResourceBundleMessageSource messageSource = new ResourceBundleMessageSource();
-        messageSource.setBasename("messages");
-        messageSource.setUseCodeAsDefaultMessage(true);
-
-        return messageSource;
-    }
 
     @Test
     public void dummyTest () throws Exception {
