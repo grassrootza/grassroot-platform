@@ -30,7 +30,7 @@ public enum GroupChangeType {
     }
 
     public static GroupChangeType getChangeType(GroupLog groupLog) {
-        logger.info("groupLog: {}", groupLog);
+        logger.debug("groupLog: {}", groupLog);
         if (groupLog == null) {
             return OTHER_CHANGE;
         } else {

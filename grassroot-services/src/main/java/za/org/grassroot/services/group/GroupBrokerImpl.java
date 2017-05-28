@@ -472,7 +472,6 @@ public class GroupBrokerImpl implements GroupBroker {
                     logger.error("Unable to unsubscribe member with uid={} from group topic ={}", membership.getUser(), group);
                 }
             }
-
             actionLogs.add(new GroupLog(group, initiator, GroupLogType.GROUP_MEMBER_REMOVED, membership.getUser().getId()));
         }
         return actionLogs;

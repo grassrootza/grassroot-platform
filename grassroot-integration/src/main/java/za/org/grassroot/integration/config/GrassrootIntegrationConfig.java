@@ -37,7 +37,7 @@ import org.springframework.web.client.RestTemplate;
 @EnableAutoConfiguration
 @EnableJpaRepositories
 @EnableAsync
-@PropertySource(value = "file:${user.home}/grassroot/grassroot-integration.properties", ignoreResourceNotFound = true)
+@PropertySource(value = "${grassroot.integration.properties}", ignoreResourceNotFound = false)
 public class GrassrootIntegrationConfig {
 
     private static final int DEFAULT_MAX_TOTAL_CONNECTIONS = 100;

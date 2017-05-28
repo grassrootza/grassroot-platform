@@ -42,7 +42,7 @@ import java.util.stream.Collectors;
 @Controller
 @RequestMapping("/livewire/user")
 @PreAuthorize("hasRole('ROLE_LIVEWIRE_USER')")
-@PropertySource(value = "file:${user.home}/grassroot/grassroot-integration.properties", ignoreResourceNotFound = true)
+@PropertySource(value = "${grassroot.integration.properties}", ignoreResourceNotFound = true)
 public class LiveWireUserController extends BaseController {
 
     private static final Logger logger = LoggerFactory.getLogger(LiveWireUserController.class);
