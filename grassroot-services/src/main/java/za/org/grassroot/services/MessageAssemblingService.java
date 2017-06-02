@@ -7,6 +7,7 @@ import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by aakilomar on 8/24/15.
@@ -28,6 +29,8 @@ public interface MessageAssemblingService {
     String createTodoUpdateNotificationMessage(User target, Todo todo);
 
     String createVoteResultsMessage(User user, Vote event, double yes, double no, double abstain, double noReply);
+
+    String createMultiOptionVoteResultsMessage(User user, Vote vote, Map<String, Long> optionsWithCount);
 
     String createScheduledEventReminderMessage(User destination, Event event);
 

@@ -1,23 +1,31 @@
 package za.org.grassroot.services.task;
 
 import za.org.grassroot.core.domain.EventRequest;
+import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.MeetingRequest;
 import za.org.grassroot.core.domain.VoteRequest;
 
 import java.time.LocalDateTime;
 
 public interface EventRequestBroker {
+
 	EventRequest load(String eventRequestUid);
 
 	MeetingRequest createEmptyMeetingRequest(String userUid, String groupUid);
 
 	VoteRequest createEmptyVoteRequest(String userUid, String groupUid);
 
+	String createNewStyleEmptyVote(String userUid, String subject);
+
 	void updateName(String userUid, String eventRequestUid, String name);
 
 	void updateEventDateTime(String userUid, String eventRequestUid, LocalDateTime eventDateTime);
 
 	void updateMeetingLocation(String userUid, String meetingRequestUid, String location);
+
+	int addVoteOption(String userUid, String voteRequestUid, String voteOption);
+
+	void updateVoteGroup(String userUid, String voteRequestUid, String groupUid);
 
 	String finish(String userUid, String eventRequestUid, boolean rsvpRequired);
 

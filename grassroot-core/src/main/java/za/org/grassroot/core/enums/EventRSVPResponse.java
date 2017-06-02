@@ -9,7 +9,8 @@ public enum EventRSVPResponse {
     NO,
     NO_RESPONSE,
     INVALID_RESPONSE,
-    MAYBE;
+    MAYBE,
+    VOTE_OPTION;
 
     public static EventRSVPResponse fromString(String rsvp) {
         if (rsvp != null) {

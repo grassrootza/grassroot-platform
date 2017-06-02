@@ -105,11 +105,11 @@ public class USSDUrlUtil {
     }
 
     public static String saveVoteMenu(String menu, String requestUid) {
-        return USSDSection.VOTES.toPath() + menu + "?entityUid=" + requestUid + setInterruptedFlag;
+        return USSDSection.VOTES.toPath() + menu + "?requestUid=" + requestUid + setInterruptedFlag;
     }
 
     public static String backVoteUrl(String menu, String requestUid) {
-        return USSDSection.VOTES.toPath() + menu + "?entityUid=" + requestUid + setRevisingFlag;
+        return USSDSection.VOTES.toPath() + menu + "?requestUid=" + requestUid + setRevisingFlag;
     }
 
     public static String saveToDoMenu(String menu, String todoUid) {

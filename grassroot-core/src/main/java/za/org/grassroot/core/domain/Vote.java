@@ -1,12 +1,15 @@
 package za.org.grassroot.core.domain;
 
 import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.core.util.StringArrayUtil;
 
 import javax.persistence.DiscriminatorValue;
 import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 @Entity
 @DiscriminatorValue("VOTE")

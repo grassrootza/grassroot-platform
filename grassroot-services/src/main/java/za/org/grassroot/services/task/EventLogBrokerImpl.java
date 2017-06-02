@@ -110,6 +110,7 @@ public class EventLogBrokerImpl implements EventLogBroker {
         }
     }
 
+    // todo : will have to shift this to just meetings (better separation / design anyway)
     @Override
     public boolean hasUserRespondedToEvent(Event event, User user) {
         EventLog rsvpEventLog = eventLogRepository.findByEventAndUserAndEventLogType(event, user, EventLogType.RSVP);

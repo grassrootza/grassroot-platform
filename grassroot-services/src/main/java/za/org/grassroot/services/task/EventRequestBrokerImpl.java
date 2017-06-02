@@ -3,9 +3,11 @@ package za.org.grassroot.services.task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.MeetingImportance;
 import za.org.grassroot.core.repository.EventRequestRepository;
@@ -14,6 +16,7 @@ import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.EventRequestNotFilledException;
 
+import java.security.InvalidParameterException;
 import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.Set;
@@ -27,6 +30,9 @@ import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
 public class EventRequestBrokerImpl implements EventRequestBroker {
 
     private static final Logger log = LoggerFactory.getLogger(EventRequestBrokerImpl.class);
+
+	@Value("${grassroot.vote.option.maxlength:20}")
+	private int MAX_OPTION_LENGTH;
 
 	@Autowired
 	private GroupRepository groupRepository;
@@ -76,6 +82,18 @@ public class EventRequestBrokerImpl implements EventRequestBroker {
 
 	@Override
 	@Transactional
+	public String createNewStyleEmptyVote(String userUid, String subject) {
+		Objects.requireNonNull(userUid);
+		Objects.requireNonNull(subject);
+
+		User user = userRepository.findOneByUid(userUid);
+		VoteRequest voteRequest = new VoteRequest(user, subject);
+		eventRequestRepository.save(voteRequest);
+		return voteRequest.getUid();
+	}
+
+	@Override
+	@Transactional
 	public void updateName(String userUid, String eventRequestUid, String name) {
 		Objects.requireNonNull(userUid);
 		Objects.requireNonNull(eventRequestUid);
@@ -109,7 +127,55 @@ public class EventRequestBrokerImpl implements EventRequestBroker {
         request.setEventLocation(location);
 	}
 
+    @Override
+	@Transactional
+    public int addVoteOption(String userUid, String voteRequestUid, String voteOption) {
+		Objects.requireNonNull(userUid);
+		Objects.requireNonNull(voteRequestUid);
+
+		User user = userRepository.findOneByUid(userUid);
+		VoteRequest vote = (VoteRequest) eventRequestRepository.findOneByUid(voteRequestUid);
+
+		if (!vote.getCreatedByUser().equals(user)) {
+			throw new AccessDeniedException("Only user who created a WIP vote request can add options to it");
+		}
+
+		if (StringUtils.isEmpty(voteOption)) {
+			throw new IllegalArgumentException("Error! Vote option cannot be an empty string");
+		}
+
+		if (voteOption.length() > MAX_OPTION_LENGTH) {
+			throw new InvalidParameterException("Error! Vote option description is too long");
+		}
+
+		vote.addVoteOption(voteOption);
+
+		return vote.getVoteOptions().size();
+    }
+
 	@Override
+	@Transactional
+	public void updateVoteGroup(String userUid, String voteRequestUid, String groupUid) {
+		Objects.requireNonNull(userUid);
+		Objects.requireNonNull(voteRequestUid);
+		Objects.requireNonNull(groupUid);
+
+		User user = userRepository.findOneByUid(userUid);
+		VoteRequest voteRequest = (VoteRequest) eventRequestRepository.findOneByUid(voteRequestUid);
+
+		if (!voteRequest.getCreatedByUser().equals(user)) {
+			throw new AccessDeniedException("Only user who created a vote request can change its group");
+		}
+
+		Group group = groupRepository.findOneByUid(groupUid);
+		permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE);
+
+		voteRequest.setParent(group);
+	}
+
+
+	@Override
+	@Transactional
 	public String finish(String userUid, String eventRequestUid, boolean rsvpRequired) {
 		Objects.requireNonNull(userUid);
 		Objects.requireNonNull(eventRequestUid);

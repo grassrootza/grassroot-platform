@@ -19,6 +19,7 @@ import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import static za.org.grassroot.services.util.MessageUtils.getUserLocale;
 import static za.org.grassroot.services.util.MessageUtils.shortDateFormatter;
@@ -117,6 +118,12 @@ public class MessageAssemblingManager implements MessageAssemblingService {
         String messageKey = "sms.vote.send.results";
         String[] args = populateEventFields(event, yes, no, abstain, noReply);
         return messageSourceAccessor.getMessage(messageKey, args, locale);
+    }
+
+    @Override
+    public String createMultiOptionVoteResultsMessage(User user, Vote vote, Map<String, Long> optionsWithCount) {
+        // todo : okay, set this up
+        return "here is where the results string will go";
     }
 
     @Override
