@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
@@ -29,6 +30,7 @@ import static za.org.grassroot.core.util.StringArrayUtil.listToArray;
 /**
  * Created by luke on 2017/05/31.
  */
+@Service
 public class VoteBrokerImpl implements VoteBroker {
 
     @Value("${grassroot.vote.option.maxlength:20}")

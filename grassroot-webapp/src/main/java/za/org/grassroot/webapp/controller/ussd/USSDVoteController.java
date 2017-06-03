@@ -12,7 +12,9 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.EventRequest;
+import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.PermissionBroker;
@@ -20,6 +22,7 @@ import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.services.exception.AccountLimitExceededException;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.services.task.EventRequestBroker;
+import za.org.grassroot.services.task.VoteBroker;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.enums.VoteTime;
@@ -54,21 +57,19 @@ public class USSDVoteController extends USSDController {
     private static final int EVENT_LIMIT_WARNING_THRESHOLD = 5; // only warn when below this
 
     private final EventRequestBroker eventRequestBroker;
+    private final VoteBroker voteBroker;
     private final PermissionBroker permissionBroker;
     private final AccountGroupBroker accountGroupBroker;
 
     private USSDEventUtil eventUtil;
 
     private static final String path = homePath + voteMenus;
-
-    private static final String pathNew = homePath + voteMenus + "new_format/";
-    private static final String menusNew = voteMenus + "new_format/";
-
     private static final USSDSection thisSection = USSDSection.VOTES;
 
     @Autowired
-    public USSDVoteController(EventRequestBroker eventRequestBroker, PermissionBroker permissionBroker, AccountGroupBroker accountGroupBroker) {
+    public USSDVoteController(EventRequestBroker eventRequestBroker, VoteBroker voteBroker, PermissionBroker permissionBroker, AccountGroupBroker accountGroupBroker) {
         this.eventRequestBroker = eventRequestBroker;
+        this.voteBroker = voteBroker;
         this.permissionBroker = permissionBroker;
         this.accountGroupBroker = accountGroupBroker;
     }
@@ -79,30 +80,46 @@ public class USSDVoteController extends USSDController {
     }
 
     private String menuUrl(String menu, String requestUid) {
-        return menusNew + menu + "?requestUid=" + requestUid;
+        return voteMenus + menu + "?requestUid=" + requestUid;
+    }
+
+    /*
+    Vote response menu
+     */
+
+    @RequestMapping(value = path + "record")
+    @ResponseBody
+    public Request voteAndWelcome(@RequestParam(value = phoneNumber) String inputNumber,
+                                  @RequestParam String voteUid, @RequestParam String response) throws URISyntaxException {
+        User user = userManager.findByInputNumber(inputNumber);
+        voteBroker.recordUserVote(user.getUid(), voteUid, response);
+        String prompt = getMessage(thisSection, startMenu, promptKey + ".vote-recorded", user);
+        cacheManager.clearRsvpCacheForUser(user, EventType.VOTE);
+        return menuBuilder(new USSDMenu(prompt, optionsHomeExit(user, false)));
     }
 
     /*
     Restructured menus begin here: begin with subject
      */
-    @RequestMapping(value = pathNew + "subject")
+    @RequestMapping(value = { path + startMenu, path + "subject" })
     @ResponseBody
-    public Request voteSubject(@RequestParam String msisdn) throws URISyntaxException {
+    public Request voteSubject(@RequestParam String msisdn,
+                               @RequestParam(required = false) String requestUid) throws URISyntaxException {
         User user = userManager.findByInputNumber(msisdn);
         int possibleGroups = permissionBroker.countActiveGroupsWithPermission(user, GROUP_PERMISSION_CREATE_GROUP_VOTE);
-        USSDMenu menu;
-        if (possibleGroups == 0) {
-            // this will by definition return the "no group" menu, since we are in this branch
-            menu = ussdGroupUtil.askForGroup(new USSDGroupUtil.GroupMenuBuilder(user, thisSection));
-        } else {
-            menu = new USSDMenu("Please enter a subject for the vote");
-            menu.setFreeText(true);
-            menu.setNextURI(menusNew + "type");
+        // if request UID is not null then by definition we are here via confirmation return
+        String nextUrl = voteMenus + (StringUtils.isEmpty(requestUid) ? "type" : menuUrl("confirm", requestUid) + "&field=subject");
+        if (!StringUtils.isEmpty(requestUid)) {
+            cacheManager.putUssdMenuForUser(msisdn, saveVoteMenu("subject", requestUid));
         }
+        // ask for group will by definition return the "no group" menu, since we are in this branch
+        USSDMenu menu = possibleGroups != 0 ?
+                new USSDMenu(getMessage(thisSection, "subject", promptKey, user), nextUrl) :
+                ussdGroupUtil.askForGroup(new USSDGroupUtil.GroupMenuBuilder(user, thisSection));
         return menuBuilder(menu);
     }
 
-    @RequestMapping(value = pathNew + "type")
+    @RequestMapping(value = path + "type")
     @ResponseBody
     public Request voteType(@RequestParam String msisdn, @RequestParam String request,
                             @RequestParam(required = false) String requestUid) throws URISyntaxException {
@@ -110,81 +127,97 @@ public class USSDVoteController extends USSDController {
         if (StringUtils.isEmpty(requestUid)) {
             requestUid = eventRequestBroker.createNewStyleEmptyVote(user.getUid(), request);
         }
-        // todo: add a "revising" flag to the saved URL
         cacheManager.putUssdMenuForUser(msisdn, saveVoteMenu("type", requestUid));
-        USSDMenu menu = new USSDMenu("What kind of vote will it be?");
-        menu.addMenuOption(menuUrl("yes_no", requestUid), "Yes or no vote");
-        menu.addMenuOption(menuUrl("multi_option/start", requestUid), "Write my own options");
+        USSDMenu menu = new USSDMenu(getMessage(thisSection, "type", promptKey, user));
+        menu.addMenuOption(menuUrl("yes_no", requestUid),
+                getMessage(thisSection, "type", optionsKey + "yesno", user));
+        menu.addMenuOption(menuUrl("multi_option/start", requestUid),
+                getMessage(thisSection, "type", optionsKey + "multi", user));
         return menuBuilder(menu);
     }
 
-    @RequestMapping(value = pathNew + "yes_no")
+    @RequestMapping(value = path + "yes_no")
     @ResponseBody
-    public Request voteType(@RequestParam String msisdn, @RequestParam String requestUid) throws URISyntaxException {
-        User user = userManager.findByInputNumber(msisdn);
-        int possibleGroups = permissionBroker.countActiveGroupsWithPermission(user, GROUP_PERMISSION_CREATE_GROUP_VOTE);
-        USSDMenu menu = possibleGroups == 1 ?
-                timeMenu(user, "Creating yes-no vote for your group. When will it close?", requestUid) :
-                ussdGroupUtil.askForGroup(new USSDGroupUtil
-                        .GroupMenuBuilder(user, thisSection)
-                        .messageKey("group")
-                        .urlForExistingGroup("closing?requestUid=" + requestUid));
-        return menuBuilder(menu);
+    public Request yesNoSelectGroup(@RequestParam String msisdn, @RequestParam String requestUid) throws URISyntaxException {
+        User user = userManager.findByInputNumber(msisdn, saveVoteMenu("yes_no", requestUid));
+        // if the user only has one group, that gets passed in
+        final String timePrompt = getMessage(thisSection, "time", promptKey + ".yesno", user);
+        return menuBuilder(groupMenu(user, timePrompt, requestUid));
     }
 
-    @RequestMapping(value = pathNew + "closing")
+    @RequestMapping(value = path + "closing")
     @ResponseBody
     public Request selectTime(@RequestParam String msisdn, @RequestParam String requestUid,
                                 @RequestParam String groupUid) throws URISyntaxException {
-        User user = userManager.findByInputNumber(msisdn);
+        User user = userManager.findByInputNumber(msisdn,
+                saveVoteMenu("closing", requestUid) + "&groupUid=" + groupUid);
         eventRequestBroker.updateVoteGroup(user.getUid(), requestUid, groupUid);
-        return menuBuilder(timeMenu(user, "Okay, now just choose when the vote will close", requestUid));
+        final String prompt = getMessage(thisSection, "time", promptKey, user);
+        return menuBuilder(timeMenu(user, prompt, requestUid));
     }
 
-    @RequestMapping(value = pathNew + "multi_option/start")
+    @RequestMapping(value = path + "multi_option/start")
     @ResponseBody
     public Request initiateMultiOption(@RequestParam String msisdn, @RequestParam String requestUid)
             throws URISyntaxException {
-        USSDMenu menu = new USSDMenu("Okay, we will set the options one by one. Please enter the first option");
-        menu.setFreeText(true);
-        menu.setNextURI(menuUrl("multi_option/add", requestUid));
+        User user = userManager.findByInputNumber(msisdn, saveVoteMenu("multi_option/start", requestUid));
+        USSDMenu menu = new USSDMenu(getMessage(thisSection, "multi", promptKey + ".start", user),
+                menuUrl("multi_option/add", requestUid));
         return menuBuilder(menu);
     }
 
-    @RequestMapping(value = pathNew + "multi_option/add")
+    @RequestMapping(value = path + "multi_option/add")
     @ResponseBody
     public Request addVoteOption(@RequestParam String msisdn, @RequestParam String requestUid,
                                  @RequestParam String request,
                                  @RequestParam(required = false) String priorInput) throws URISyntaxException {
-        User user = userManager.findByInputNumber(msisdn);
-        // watch for duplication but service & core should both catch it
         String userInput = StringUtils.isEmpty(priorInput) ? request : priorInput;
+        User user = userManager.findByInputNumber(msisdn,
+                saveVoteMenu("multi_option/add", requestUid) + "&priorInput=" + priorInput);
+        // watch for duplication but service & core should both catch it
         int numberOptions = eventRequestBroker.load(requestUid).getVoteOptions().size();
         if (numberOptions > 1 && "0".equals(userInput.trim())) {
-            return menuBuilder(timeMenu(user, "Okay, vote options set, now please add a time", requestUid));
+            final String timePrompt = getMessage(thisSection, "time", promptKey + ".multi", user);
+            return menuBuilder(groupMenu(user, timePrompt, requestUid));
         } else {
             int newNumber = eventRequestBroker.addVoteOption(user.getUid(), requestUid, userInput);
-            final String prompt = newNumber > 1 ? "Enter another option or 0 to end": "Enter another option";
+            final String prompt = newNumber > 1 ?
+                    getMessage(thisSection, "multi", promptKey + ".more", user):
+                    getMessage(thisSection, "multi", promptKey + ".1more", user);
             USSDMenu menu = new USSDMenu(prompt, menuUrl("multi_option/add", requestUid));
             return menuBuilder(menu);
+        }
+    }
+
+    private USSDMenu groupMenu(User user, String timePrompt, String requestUid) throws URISyntaxException {
+        int possibleGroups = permissionBroker.countActiveGroupsWithPermission(user, GROUP_PERMISSION_CREATE_GROUP_VOTE);
+        if (possibleGroups == 1) {
+            Group group = permissionBroker.getActiveGroupsSorted(user, GROUP_PERMISSION_CREATE_GROUP_VOTE).get(0);
+            eventRequestBroker.updateVoteGroup(user.getUid(), requestUid, group.getUid());
+            return timeMenu(user, timePrompt, requestUid);
+        } else {
+            return ussdGroupUtil.askForGroup(new USSDGroupUtil
+                    .GroupMenuBuilder(user, thisSection)
+                    .messageKey("group")
+                    .urlForExistingGroup("closing?requestUid=" + requestUid));
         }
     }
 
     private USSDMenu timeMenu(User user, String prompt, String requestUid) {
         USSDMenu menu = new USSDMenu(prompt);
 
-        String nextUrl = menusNew + "confirm?requestUid=" + requestUid + "&field=standard&time=";
+        String nextUrl = voteMenus + "confirm?requestUid=" + requestUid + "&field=standard&time=";
         String optionKey = voteKey + ".time." + optionsKey;
 
         menu.addMenuOption(nextUrl + INSTANT.name(), getMessage(optionKey + "instant", user));
         menu.addMenuOption(nextUrl + HOUR.name(), getMessage(optionKey + "hour", user));
         menu.addMenuOption(nextUrl + DAY.name(), getMessage(optionKey + "day", user));
         menu.addMenuOption(nextUrl + WEEK.name(), getMessage(optionKey + "week", user));
-        menu.addMenuOption(voteMenus + "time_custom" + entityUidUrlSuffix + requestUid, getMessage(optionKey + "custom", user));
+        menu.addMenuOption(voteMenus + "time_custom?requestUid=" + requestUid, getMessage(optionKey + "custom", user));
         return menu;
     }
 
-    @RequestMapping(value = pathNew + "time_custom")
+    @RequestMapping(value = path + "time_custom")
     @ResponseBody
     public Request customVotingTime(@RequestParam String inputNumber,
                                     @RequestParam String requestUid) throws URISyntaxException {
@@ -192,20 +225,20 @@ public class USSDVoteController extends USSDController {
         User user = userManager.findByInputNumber(inputNumber, saveVoteMenu("time_custom", requestUid));
         USSDMenu menu = new USSDMenu(getMessage(thisSection, "time", promptKey + "-custom", user));
         menu.setFreeText(true);
-        menu.setNextURI(voteMenus + "confirm" + entityUidUrlSuffix + requestUid + "&field=custom");
-
+        menu.setNextURI(voteMenus + "confirm?requestUid=" + requestUid + "&field=custom");
         return menuBuilder(menu);
-
     }
 
-    @RequestMapping(value = pathNew + "confirm")
+    @RequestMapping(value = path + "confirm")
     @ResponseBody
     public Request confirmVoteSend(@RequestParam String msisdn, @RequestParam String requestUid,
-                                   @RequestParam(value = "request") String userInput,
+                                   @RequestParam String request,
+                                   @RequestParam(required = false) String priorInput,
                                    @RequestParam(required = false) String field,
                                    @RequestParam(required = false) VoteTime time,
                                    @RequestParam(required = false) Boolean interrupted) throws URISyntaxException {
-        User user = userManager.findByInputNumber(msisdn);
+        final String userInput = StringUtils.isEmpty(priorInput) ? request : priorInput;
+        User user = userManager.findByInputNumber(msisdn, saveVoteMenu("confirm", requestUid));
         String lastMenu = field == null ? "standard" : field;
 
         if (interrupted == null || !interrupted) {
@@ -213,7 +246,7 @@ public class USSDVoteController extends USSDController {
                 setStandardTime(requestUid, time, user);
             } else if ("custom".equals(lastMenu)) {
                 setCustomTime(requestUid, userInput, user);
-            } else if ("issue".equals(lastMenu)) {
+            } else if ("subject".equals(lastMenu)) {
                 adjustSubject(requestUid, userInput, user);
             }
         }
@@ -221,15 +254,17 @@ public class USSDVoteController extends USSDController {
         EventRequest vote = eventRequestBroker.load(requestUid);
         String[] promptFields = new String[]{vote.getName(), "at " + vote.getEventDateTimeAtSAST().format(dateTimeFormat)};
 
+        // note: for the moment, not allowing revision of options, because somewhat fiddly (will
+        // add if demand arises)
         USSDMenu menu = new USSDMenu(getMessage(thisSection, "confirm", promptKey, promptFields, user));
-        menu.addMenuOption(menusNew + "send?requestUid=" + requestUid, getMessage(thisSection, "confirm", optionsKey + "yes", user));
+        menu.addMenuOption(voteMenus + "send?requestUid=" + requestUid, getMessage(thisSection, "confirm", optionsKey + "yes", user));
         menu.addMenuOption(backVoteUrl("subject", requestUid), getMessage(thisSection, "confirm", optionsKey + "topic", user));
         menu.addMenuOption(backVoteUrl("closing", requestUid), getMessage(thisSection, "confirm", optionsKey + "time", user));
 
         return menuBuilder(menu);
     }
 
-    @RequestMapping(value = pathNew + "send")
+    @RequestMapping(value = path + "send")
     @ResponseBody
     public Request voteSendDo(@RequestParam(value = phoneNumber) String inputNumber,
                               @RequestParam String requestUid) throws URISyntaxException {
@@ -258,7 +293,6 @@ public class USSDVoteController extends USSDController {
         }
     }
 
-
     @RequestMapping(value = path + "send-reset")
     public Request voteSendResetTime(@RequestParam(value = phoneNumber) String inputNumber,
                                      @RequestParam String requestUid) throws URISyntaxException {
@@ -267,7 +301,6 @@ public class USSDVoteController extends USSDController {
         eventRequestBroker.finish(user.getUid(), requestUid, true);
         return menuBuilder(new USSDMenu(getMessage(thisSection, "send", promptKey, user), optionsHomeExit(user, false)));
     }
-
 
     private void setCustomTime(String requestUid, String userInput, User user) {
         LocalDateTime parsedTime = eventUtil.parseDateTime(userInput);
@@ -309,7 +342,5 @@ public class USSDVoteController extends USSDController {
             eventRequestBroker.updateEventDateTime(user.getUid(), requestUid, LocalDateTime.now().plusMinutes(7L));
         }
     }
-
-
 
 }

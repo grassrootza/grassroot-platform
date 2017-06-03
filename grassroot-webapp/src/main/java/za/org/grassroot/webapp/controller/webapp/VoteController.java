@@ -106,7 +106,7 @@ public class VoteController extends BaseController {
 
         try {
             eventBroker.createVote(getUserProfile().getUid(), groupUid, JpaEntityType.GROUP, vote.getTitle(), vote.getEventDateTime(),
-                    vote.isIncludeSubGroups(), vote.getDescription(), Collections.emptySet());
+                    vote.isIncludeSubGroups(), vote.getDescription(), Collections.emptySet(), null);
             addMessage(redirectAttributes, MessageType.SUCCESS, "vote.creation.success", request);
             redirectAttributes.addAttribute("groupUid", groupUid);
             return "redirect:/group/view";

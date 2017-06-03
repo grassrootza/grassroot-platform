@@ -49,7 +49,7 @@ public interface EventBroker {
 	                   EventReminderType reminderType, int customReminderMinutes, Set<String> assignedMemberUids);
 
 	Vote createVote(String userUid, String parentUid, JpaEntityType parentType, String name, LocalDateTime eventStartDateTime,
-					boolean includeSubGroups, String description, Set<String> assignMemberUids);
+					boolean includeSubGroups, String description, Set<String> assignMemberUids, List<String> options);
 
     // votes cannot change topic or scope (groups included or not) after creation, just closing time & description field
     Vote updateVote(String userUid, String voteUid, LocalDateTime eventStartDateTime, String description);

@@ -47,7 +47,7 @@ public class VoteRestControllerTest extends RestAbstractUnitTest {
 
         when(eventBrokerMock.createVote(sessionTestUser.getUid(), testGroup.getUid(), JpaEntityType.GROUP,
                                         voteEvent.getName(), testDateTime, false, testEventDescription,
-                                        Collections.emptySet())).thenReturn(voteEvent);
+                                        Collections.emptySet(), null)).thenReturn(voteEvent);
 
         log.info("ZOG: Creating a vote, passing these parameters: userUid= {}, groupUid= {}, voteName= {}, time= {}",
                  sessionTestUser.getUid(), testGroup.getUid(), testEventTitle, testDateTime.toString());
@@ -63,7 +63,7 @@ public class VoteRestControllerTest extends RestAbstractUnitTest {
 
         verify(userManagementServiceMock).findByInputNumber(testUserPhone);
         verify(eventBrokerMock).createVote(sessionTestUser.getUid(), testGroup.getUid(), JpaEntityType.GROUP, voteEvent.getName(),
-                                           testDateTime, false, testEventDescription, Collections.emptySet());
+                                           testDateTime, false, testEventDescription, Collections.emptySet(), null);
     }
 
     @Test
