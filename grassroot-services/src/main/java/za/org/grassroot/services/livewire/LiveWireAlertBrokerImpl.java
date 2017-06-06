@@ -72,6 +72,9 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
     @Value("${grassroot.livewire.instant.mintasks:5}")
     private int minGroupTasksForInstantAlert;
 
+    @Value("${grassroot.livewire.contacts.expansive:false}")
+    private boolean expansiveContactFind;
+
     @Autowired
     public LiveWireAlertBrokerImpl(LiveWireAlertRepository alertRepository, UserRepository userRepository, GroupRepository groupRepository, MeetingRepository meetingRepository, EntityManager entityManager, DataSubscriberRepository dataSubscriberRepository, ObjectLocationBroker objectLocationBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, ApplicationEventPublisher applicationEventPublisher) {
         this.alertRepository = alertRepository;
@@ -154,15 +157,8 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
             throw new AccessDeniedException("Error! Querying user is not authorized");
         }
 
-        TypedQuery<User> query = entityManager.createQuery("select u from Membership m " +
-                "inner join m.user u " +
-                "inner join m.group g " +
-                "inner join g.locations l " +
-                "where g.discoverable = true and " +
-                "m.role.name = 'ROLE_GROUP_ORGANIZER' and " +
-                "l.localDate = (SELECT MAX(ll.localDate) FROM GroupLocation ll WHERE ll.group = l.group) and " +
-                GeoLocationUtils.locationFilterSuffix("l.location"), User.class);
-        GeoLocationUtils.addLocationParamsToQuery(query, location, radius);
+        // todo : think about how to sort
+        Set<User> users = new HashSet<>();
 
         // note: there may be a way to do this in one using HQL, but can't figure out all mapping, hence just
         // using a second one, which anyway as a straight select on unique key will have little performance problem
@@ -175,10 +171,6 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
         locationQuery.setParameter("oldestRecord", LocalDate.now().minus(3, ChronoUnit.MONTHS));
         GeoLocationUtils.addLocationParamsToQuery(locationQuery, location, radius);
 
-        // todo : think about how to sort
-        Set<User> users = new HashSet<>();
-        users.addAll(query.getResultList());
-
         List<String> userUids = locationQuery.getResultList();
         if (userUids != null && !userUids.isEmpty()) {
             users.addAll(userRepository.findAll(Specifications
@@ -186,7 +178,25 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
                     .and(UserSpecifications.uidIn(locationQuery.getResultList()))));
         }
 
+        if (expansiveContactFind) {
+            users.addAll(fetchOrganizersOfPublicGroupsNearby(location, radius));
+        }
+
         return new ArrayList<>(users);
+    }
+
+    private Set<User> fetchOrganizersOfPublicGroupsNearby(GeoLocation location, Integer radius) {
+        TypedQuery<User> query = entityManager.createQuery("select u from Membership m " +
+                "inner join m.user u " +
+                "inner join m.group g " +
+                "inner join g.locations l " +
+                "where g.discoverable = true and " +
+                "m.role.name = 'ROLE_GROUP_ORGANIZER' and " +
+                "l.localDate = (SELECT MAX(ll.localDate) FROM GroupLocation ll WHERE ll.group = l.group) and " +
+                GeoLocationUtils.locationFilterSuffix("l.location"), User.class);
+        GeoLocationUtils.addLocationParamsToQuery(query, location, radius);
+
+        return new HashSet<>(query.getResultList());
     }
 
     @Override

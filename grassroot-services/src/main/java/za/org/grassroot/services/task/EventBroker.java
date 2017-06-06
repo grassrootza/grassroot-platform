@@ -70,8 +70,6 @@ public interface EventBroker {
 
 	void sendMeetingAcknowledgements(String meetingUid);
 
-	void sendVoteResults(String voteUid);
-
 	void assignMembers(String userUid, String eventUid, Set<String> assignMemberUids);
 
 	void removeAssignedMembers(String userUid, String eventUid, Set<String> memberUids);

@@ -1,5 +1,7 @@
 package za.org.grassroot.services.task;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.jpa.domain.Specifications;
@@ -32,6 +34,8 @@ import static za.org.grassroot.core.util.StringArrayUtil.listToArray;
  */
 @Service
 public class VoteBrokerImpl implements VoteBroker {
+
+    private static final Logger logger = LoggerFactory.getLogger(VoteBrokerImpl.class);
 
     @Value("${grassroot.vote.option.maxlength:20}")
     private int MAX_OPTION_LENGTH;
@@ -122,31 +126,38 @@ public class VoteBrokerImpl implements VoteBroker {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public void calculateAndSendVoteResults(String voteUid) {
         Objects.requireNonNull(voteUid);
-
         Vote vote = voteRepository.findOneByUid(voteUid);
-        Map<String, Long> voteResults = vote.getTags() == null || vote.getTags().length == 0 ?
-                calculateYesNoResults(vote) : calculateMultiOptionResults(vote, vote.getVoteOptions());
+        logger.info("Sending vote results for {}", vote.getName());
+        try {
+            Map<String, Long> voteResults = vote.getTags() == null || vote.getTags().length == 0 ?
+                    calculateYesNoResults(vote) : calculateMultiOptionResults(vote, vote.getVoteOptions());
 
-        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
-        EventLog eventLog = new EventLog(null, vote, EventLogType.RESULT);
-        Set<User> voteResultsNotificationSentMembers = new HashSet<>(
-                userRepository.findNotificationTargetsForEvent(vote, VoteResultsNotification.class));
 
-        vote.getAllMembers().stream()
-                .filter(u -> !voteResultsNotificationSentMembers.contains(u))
-                .forEach(u -> {
-                    String msg = messageService.createMultiOptionVoteResultsMessage(u, vote, voteResults);
-                    bundle.addNotification(new VoteResultsNotification(u, msg, eventLog));
-                });
+            LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+            EventLog eventLog = new EventLog(null, vote, EventLogType.RESULT);
+            Set<User> voteResultsNotificationSentMembers = new HashSet<>(
+                    userRepository.findNotificationTargetsForEvent(vote, VoteResultsNotification.class));
 
-        if (!bundle.getNotifications().isEmpty()) {
-            bundle.addLog(eventLog);
+            vote.getAllMembers().stream()
+                    .filter(u -> !voteResultsNotificationSentMembers.contains(u))
+                    .forEach(u -> {
+                        String msg = messageService.createMultiOptionVoteResultsMessage(u, vote, voteResults);
+                        bundle.addNotification(new VoteResultsNotification(u, msg, eventLog));
+                    });
+
+            if (!bundle.getNotifications().isEmpty()) {
+                bundle.addLog(eventLog);
+            }
+
+            logsAndNotificationsBroker.storeBundle(bundle);
+        } catch (Exception e) {
+            // just adding this since method is called in a stream / lambda so need to make sure
+            // no exception interrupts it (else will spill over)
+            logger.error("Error while sending vote results for vote " + vote + ": " + e.getMessage(), e);
         }
-
-        logsAndNotificationsBroker.storeBundle(bundle);
     }
 
     private Map<String, Long> calculateMultiOptionResults(Vote vote, List<String> options) {

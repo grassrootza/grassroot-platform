@@ -124,12 +124,21 @@ public class EventLog implements TaskLog, LocationHolder {
         return eventLogType;
     }
 
+    public boolean isResponseToEvent() {
+        return EventLogType.VOTE_OPTION_RESPONSE.equals(eventLogType) ||
+                EventLogType.RSVP.equals(eventLogType);
+    }
+
     public EventRSVPResponse getResponse() {
         return response;
     }
 
+    public boolean isVoteResponse() {
+        return EventLogType.VOTE_OPTION_RESPONSE.equals(eventLogType);
+    }
+
     public boolean hasValidResponse() {
-        return response != null && !response.equals(EventRSVPResponse.INVALID_RESPONSE);
+        return isVoteResponse() || (response != null && !response.equals(EventRSVPResponse.INVALID_RESPONSE));
     }
 
     public Boolean getStartTimeChanged() {

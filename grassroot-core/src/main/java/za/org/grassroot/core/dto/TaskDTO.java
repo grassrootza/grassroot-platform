@@ -3,18 +3,25 @@ package za.org.grassroot.core.dto;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.google.common.collect.ComparisonChain;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.domain.EventLog;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.enums.TodoStatus;
 import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.core.util.StringArrayUtil;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.springframework.data.jpa.domain.Specifications.where;
+import static za.org.grassroot.core.specifications.EventLogSpecifications.*;
 
 /**
  * Created by paballo on 2016/03/02.
@@ -46,6 +53,8 @@ public class TaskDTO implements Comparable<TaskDTO> {
     private final boolean wholeGroupAssigned;
     private final int assignedMemberCount;
     private boolean canEdit;
+
+    private List<String> tags;
 
     @JsonIgnore
     private final Instant instant;
@@ -79,26 +88,27 @@ public class TaskDTO implements Comparable<TaskDTO> {
      * worthwhile trade-off because it ensures consistency on this object data at multiple places in code.
      */
     public TaskDTO(Event event, User user, EventLogRepository eventLogRepository) {
-        this(event, user, eventLogRepository.findByEventAndUserAndEventLogType(event, user, EventLogType.RSVP));
+        this(event, user, eventLogRepository.findOne(where(forEvent(event))
+                .and(forUser(user)).and(isResponseToAnEvent())));
     }
 
     public TaskDTO(Event event, User user, EventLog eventLog) {
         this(user, event);
-
-
-        if (eventLog != null && !eventLog.getEventLogType().equals(EventLogType.RSVP)) {
-            throw new IllegalArgumentException("Event log has to be of " + EventLogType.RSVP + ": " + eventLog);
+        if (eventLog != null && !eventLog.isResponseToEvent()) {
+            throw new IllegalArgumentException("Event log has to be a response to an event: " + eventLog);
         }
 
         this.description =event.getDescription();
         this.hasResponded = eventLog != null;
 
-        this.reply = (eventLog != null && eventLog.hasValidResponse()) ? eventLog.getResponse().toString() :
+        this.reply = (eventLog != null && eventLog.hasValidResponse()) ?
+                eventLog.isVoteResponse() ? eventLog.getTag() : eventLog.getResponse().toString() :
                 String.valueOf(TodoStatus.NO_RESPONSE);
         this.canAction = canActionOnEvent(event, user);
         this.location = event.getEventType().equals(EventType.MEETING) ? ((Meeting) event).getEventLocation() : "";
         this.canEdit = event.getCreatedByUser().equals(user) && instant.isAfter(Instant.now());
 
+        this.tags = StringArrayUtil.arrayToList(event.getTags());
     }
 
     public TaskDTO(Todo todo, User user) {
@@ -108,6 +118,7 @@ public class TaskDTO implements Comparable<TaskDTO> {
         this.canAction = canActionOnLogBook(todo, user);
         this.location = "";
         this.canEdit = todo.getCreatedByUser().equals(user); // may adjust in future
+        this.tags = new ArrayList<>();
     }
 
     public String getTaskUid() {
@@ -166,6 +177,10 @@ public class TaskDTO implements Comparable<TaskDTO> {
     public boolean isCanEdit() { return canEdit; }
 
 	public boolean isCreatedByUser() { return createdByUser; }
+
+    public List<String> getTags() {
+        return tags;
+    }
 
     private String getTodoStatus(Todo todo, User user) {
         if (todo.isCompletionConfirmedByMember(user)) {

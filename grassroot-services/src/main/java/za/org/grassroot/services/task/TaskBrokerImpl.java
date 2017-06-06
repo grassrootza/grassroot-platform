@@ -28,6 +28,10 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.springframework.data.jpa.domain.Specifications.where;
+import static za.org.grassroot.core.specifications.EventLogSpecifications.forEvent;
+import static za.org.grassroot.core.specifications.EventLogSpecifications.forUser;
+import static za.org.grassroot.core.specifications.EventLogSpecifications.isResponseToAnEvent;
 import static za.org.grassroot.services.specifications.TodoSpecifications.*;
 
 /**
@@ -290,7 +294,8 @@ public class TaskBrokerImpl implements TaskBroker {
 	private Set<TaskDTO> resolveEventTaskDtos(List<Event> events, User user, Instant changedSince) {
         Set<TaskDTO> taskDtos = new HashSet<>();
         for (Event event : events) {
-            EventLog userResponseLog = eventLogRepository.findByEventAndUserAndEventLogType(event, user, EventLogType.RSVP);
+            EventLog userResponseLog = eventLogRepository.findOne(where(forEvent(event))
+                    .and(forUser(user)).and(isResponseToAnEvent()));
             if (changedSince == null || isEventAddedOrUpdatedSince(event, userResponseLog, changedSince)) {
                 taskDtos.add(new TaskDTO(event, user, userResponseLog));
             }

@@ -13,15 +13,16 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
-import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.services.exception.AccountLimitExceededException;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.EventLogBroker;
+import za.org.grassroot.services.task.VoteBroker;
 import za.org.grassroot.webapp.controller.BaseController;
-import za.org.grassroot.webapp.model.web.EventWrapper;
+import za.org.grassroot.webapp.enums.VoteType;
+import za.org.grassroot.webapp.model.web.VoteWrapper;
 
 import javax.servlet.http.HttpServletRequest;
 import java.time.Instant;
@@ -29,6 +30,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
+import java.util.List;
 
 import static za.org.grassroot.core.domain.Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE;
 
@@ -47,13 +49,16 @@ public class VoteController extends BaseController {
     private final EventLogBroker eventLogBroker;
     private final AccountGroupBroker accountGroupBroker;
 
+    private final VoteBroker voteBroker;
+
     @Autowired
     public VoteController(EventBroker eventBroker, GroupBroker groupBroker, EventLogBroker eventLogBroker,
-                          AccountGroupBroker accountGroupBroker) {
+                          AccountGroupBroker accountGroupBroker, VoteBroker voteBroker) {
         this.eventBroker = eventBroker;
         this.groupBroker = groupBroker;
         this.eventLogBroker = eventLogBroker;
         this.accountGroupBroker = accountGroupBroker;
+        this.voteBroker = voteBroker;
     }
 
     @InitBinder
@@ -73,7 +78,7 @@ public class VoteController extends BaseController {
             return "redirect:/group/create";
         }
 
-        EventWrapper voteWrapper = EventWrapper.makeEmpty();
+        VoteWrapper voteWrapper = VoteWrapper.makeEmpty();
         if (groupSpecified) {
             Group group = groupBroker.load(groupUid);
             permissionBroker.validateGroupPermission(user, group, GROUP_PERMISSION_CREATE_GROUP_VOTE); // double check, given sensitivity
@@ -98,15 +103,17 @@ public class VoteController extends BaseController {
     }
 
     @RequestMapping(value = "create", method = RequestMethod.POST)
-    public String createVoteDo(Model model, @ModelAttribute("vote") EventWrapper vote, BindingResult bindingResult,
+    public String createVoteDo(Model model, @ModelAttribute("vote") VoteWrapper vote, BindingResult bindingResult,
                                @RequestParam(value = "selectedGroupUid", required = false) String selectedGroupUid,
                                HttpServletRequest request, RedirectAttributes redirectAttributes) {
 
         String groupUid = (selectedGroupUid == null) ? vote.getParentUid() : selectedGroupUid;
 
         try {
+            // since user might have added options then switched back to yes/no, can't just pass getOptions
+            List<String> voteOptions = VoteType.YES_NO.equals(vote.getType()) ? null : vote.getOptions();
             eventBroker.createVote(getUserProfile().getUid(), groupUid, JpaEntityType.GROUP, vote.getTitle(), vote.getEventDateTime(),
-                    vote.isIncludeSubGroups(), vote.getDescription(), Collections.emptySet(), null);
+                    vote.isIncludeSubGroups(), vote.getDescription(), Collections.emptySet(), voteOptions);
             addMessage(redirectAttributes, MessageType.SUCCESS, "vote.creation.success", request);
             redirectAttributes.addAttribute("groupUid", groupUid);
             return "redirect:/group/view";
@@ -192,14 +199,16 @@ public class VoteController extends BaseController {
     }
 
     @RequestMapping(value = "answer", method = RequestMethod.GET)
-    public String answerVote(Model model, @RequestParam String eventUid, @RequestParam String answer,
+    public String answerVote(@RequestParam String eventUid, @RequestParam String answer,
                              HttpServletRequest request, RedirectAttributes redirectAttributes) {
 
         Event vote = eventBroker.load(eventUid);
         User sessionUser = getUserProfile();
         String priorUrl = request.getHeader(HttpHeaders.REFERER);
 
-        eventLogBroker.rsvpForEvent(vote.getUid(), sessionUser.getUid(), EventRSVPResponse.fromString(answer));
+        log.info("recording vote answer: {}", answer);
+
+        voteBroker.recordUserVote(sessionUser.getUid(), eventUid, answer);
 
         addMessage(redirectAttributes, MessageType.INFO, "vote.recorded", request);
 

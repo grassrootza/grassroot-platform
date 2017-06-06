@@ -8,7 +8,6 @@ import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.association.GroupJoinRequest;
-import za.org.grassroot.core.domain.EventLog;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
@@ -122,8 +121,23 @@ public class MessageAssemblingManager implements MessageAssemblingService {
 
     @Override
     public String createMultiOptionVoteResultsMessage(User user, Vote vote, Map<String, Long> optionsWithCount) {
-        // todo : okay, set this up
-        return "here is where the results string will go";
+        Locale locale = getUserLocale(user);
+        String messagePrefix = messageSourceAccessor.getMessage("sms.vote.send.results.prefix",
+                new String[] { vote.getAncestorGroup().getName(), vote.getName() }, locale);
+        StringBuilder sb = new StringBuilder(messagePrefix);
+        optionsWithCount.forEach((option, count) -> {
+            sb.append(", ").append(option).append(" = ").append(String.valueOf(count));
+        });
+        sb.append(", ").append(
+                messageSourceAccessor.getMessage("sms.vote.send.results.noreply",
+                new String[] { countNoReply(optionsWithCount, vote) }));
+        return sb.toString();
+    }
+
+    // todo : watch TX counts here (on object graph)
+    private String countNoReply(Map<String, Long> count, Vote vote) {
+        long totalVotes = count.values().stream().mapToLong(Long::longValue).sum();
+        return String.valueOf(vote.getAllMembers().size() - totalVotes);
     }
 
     @Override

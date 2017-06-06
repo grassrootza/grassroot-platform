@@ -108,7 +108,7 @@ public class USSDVoteController extends USSDController {
         User user = userManager.findByInputNumber(msisdn);
         int possibleGroups = permissionBroker.countActiveGroupsWithPermission(user, GROUP_PERMISSION_CREATE_GROUP_VOTE);
         // if request UID is not null then by definition we are here via confirmation return
-        String nextUrl = voteMenus + (StringUtils.isEmpty(requestUid) ? "type" : menuUrl("confirm", requestUid) + "&field=subject");
+        String nextUrl = StringUtils.isEmpty(requestUid) ? voteMenus + "type" : menuUrl("confirm", requestUid) + "&field=subject";
         if (!StringUtils.isEmpty(requestUid)) {
             cacheManager.putUssdMenuForUser(msisdn, saveVoteMenu("subject", requestUid));
         }
@@ -148,10 +148,12 @@ public class USSDVoteController extends USSDController {
     @RequestMapping(value = path + "closing")
     @ResponseBody
     public Request selectTime(@RequestParam String msisdn, @RequestParam String requestUid,
-                                @RequestParam String groupUid) throws URISyntaxException {
-        User user = userManager.findByInputNumber(msisdn,
-                saveVoteMenu("closing", requestUid) + "&groupUid=" + groupUid);
-        eventRequestBroker.updateVoteGroup(user.getUid(), requestUid, groupUid);
+                              @RequestParam(required = false) String groupUid) throws URISyntaxException {
+        User user = userManager.findByInputNumber(msisdn, saveVoteMenu("closing", requestUid)
+                + (groupUid != null  ? "&groupUid=" + groupUid : ""));
+        if (groupUid != null) {
+            eventRequestBroker.updateVoteGroup(user.getUid(), requestUid, groupUid);
+        }
         final String prompt = getMessage(thisSection, "time", promptKey, user);
         return menuBuilder(timeMenu(user, prompt, requestUid));
     }
@@ -342,5 +344,4 @@ public class USSDVoteController extends USSDController {
             eventRequestBroker.updateEventDateTime(user.getUid(), requestUid, LocalDateTime.now().plusMinutes(7L));
         }
     }
-
 }

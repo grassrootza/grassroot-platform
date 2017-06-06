@@ -729,41 +729,6 @@ public class EventBrokerImpl implements EventBroker {
 
 	@Override
 	@Transactional
-	public void sendVoteResults(String voteUid) {
-		Objects.requireNonNull(voteUid);
-		Vote vote = voteRepository.findOneByUid(voteUid);
-
-		logger.info("Sending vote results for vote", vote);
-
-		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
-
-		EventLog eventLog = new EventLog(null, vote, RESULT);
-
-		ResponseTotalsDTO responseTotalsDTO = eventLogBroker.getResponseCountForEvent(vote);
-		Set<User> voteResultsNotificationSentMembers = new HashSet<>(userRepository.findNotificationTargetsForEvent(
-				vote, VoteResultsNotification.class));
-		for (User member : getAllEventMembers(vote)) {
-			if (!voteResultsNotificationSentMembers.contains(member)) {
-				String message = messageAssemblingService.createVoteResultsMessage(member, vote,
-						responseTotalsDTO.getYes(),
-						responseTotalsDTO.getNo(),
-						responseTotalsDTO.getMaybe(),
-						responseTotalsDTO.getNumberNoRSVP());
-				Notification notification = new VoteResultsNotification(member, message, eventLog);
-				bundle.addNotification(notification);
-			}
-		}
-
-		// we only want to include log if there are some notifications
-		if (!bundle.getNotifications().isEmpty()) {
-			bundle.addLog(eventLog);
-		}
-
-		logsAndNotificationsBroker.storeBundle(bundle);
-	}
-
-	@Override
-	@Transactional
 	@SuppressWarnings("unchecked") // for weirdness on event.getmembers
 	public void assignMembers(String userUid, String eventUid, Set<String> assignMemberUids) {
 		Objects.requireNonNull(userUid);

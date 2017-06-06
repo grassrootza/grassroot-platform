@@ -7,13 +7,17 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.Event;
+import za.org.grassroot.core.domain.Meeting;
+import za.org.grassroot.core.domain.SafetyEvent;
+import za.org.grassroot.core.domain.Todo;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.services.SafetyEventBroker;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.specifications.TodoSpecifications;
 import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.TodoBroker;
+import za.org.grassroot.services.task.VoteBroker;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -39,6 +43,9 @@ public class ScheduledTasks {
 
     @Autowired
     private EventBroker eventBroker;
+
+    @Autowired
+    private VoteBroker voteBroker;
 
     @Autowired
     private GroupBroker groupBroker;
@@ -67,7 +74,7 @@ public class ScheduledTasks {
     @Scheduled(fixedRate = 300000) //runs every 5 minutes
     public void sendReminders() {
         List<Event> events = eventRepository.findEventsForReminders(Instant.now());
-        logger.info("Sending scheduled reminders for {} event(s)", events.size());
+        logger.debug("Sending scheduled reminders for {} event(s)", events.size());
 
         for (Event event : events) {
             try {
@@ -91,18 +98,10 @@ public class ScheduledTasks {
 
     @Scheduled(fixedRate = 60000) //runs every 1 minute
     public void sendUnsentVoteResults() {
-        List<Vote> votes = voteRepository.findUnsentVoteResults(Instant.now().minus(1, ChronoUnit.HOURS), Instant.now());
-        if (!votes.isEmpty()) {
-            logger.info("Sending vote results for {} unsent votes...", votes.size());
-        }
-
-        for (Vote vote : votes) {
-            try {
-                eventBroker.sendVoteResults(vote.getUid());
-            } catch (Exception e) {
-                logger.error("Error while sending vote results for vote " + vote + ": " + e.getMessage(), e);
-            }
-        }
+        logger.debug("Checking for unsent votes ...");
+        voteRepository
+                .findUnsentVoteResults(Instant.now().minus(1, ChronoUnit.HOURS), Instant.now())
+                .forEach(vote -> voteBroker.calculateAndSendVoteResults(vote.getUid()));
     }
 
     @Scheduled(cron = "0 0 16 * * *") // runs at 4pm (=6pm SAST) every day
