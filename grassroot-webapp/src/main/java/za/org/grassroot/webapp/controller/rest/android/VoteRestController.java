@@ -13,6 +13,7 @@ import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.repository.EventLogRepository;
+import za.org.grassroot.core.util.StringArrayUtil;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.AccountLimitExceededException;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
@@ -63,14 +64,13 @@ public class VoteRestController {
 
     @RequestMapping(value = "/create/{id}/{phoneNumber}/{code}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> createVote(@PathVariable("phoneNumber") String phoneNumber,
-                                                      @PathVariable("code") String code,
                                                       @PathVariable("id") String groupUid,
                                                       @RequestParam("title") String title,
                                                       @RequestParam(value = "closingTime") String time,
                                                       @RequestParam(value = "description", required = false) String description,
                                                       @RequestParam("reminderMins") int reminderMinutes,
-                                                      @RequestParam(value = "notifyGroup", required = false) boolean relayable,
-                                                      @RequestParam(value = "members", required = false) List<String> members) {
+                                                      @RequestParam(value = "members", required = false) List<String> members,
+                                                      @RequestParam(value = "options", required = false) List<String> options) {
 
         log.info("ZOG: Creating vote with parameters ... phoneNumber: {}, groupUid: {}, title: {}, closingTime: {}," +
                          "description: {}, ", phoneNumber, groupUid, title, time);
@@ -84,8 +84,9 @@ public class VoteRestController {
         try {
             // todo : atomicity in broker calls, also handle bad UIDs
             LocalDateTime eventStartDateTime = LocalDateTime.parse(time.trim(), getPreferredRestFormat());
+            List<String> voteOptions = StringArrayUtil.isAllEmptyOrNull(options) ? null : options;
             Vote vote = eventBroker.createVote(user.getUid(), groupUid, JpaEntityType.GROUP, title, eventStartDateTime,
-                    false, description, membersUid, null);
+                    false, description, membersUid, voteOptions);
             eventBroker.updateReminderSettings(user.getUid(), vote.getUid(), EventReminderType.CUSTOM,
                     RestUtil.getReminderMinutes(reminderMinutes));
             TaskDTO voteCreated = taskBroker.load(user.getUid(), vote.getUid(), TaskType.VOTE);
@@ -125,12 +126,13 @@ public class VoteRestController {
 
     @RequestMapping(value = "/do/{id}/{phoneNumber}/{code}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> castVote(@PathVariable("phoneNumber") String phoneNumber,
-                                                    @PathVariable("code") String code, @PathVariable("id") String voteUid,
-                                                    @RequestParam(value = "response", required = true) String response) {
+                                                    @PathVariable("id") String voteUid,
+                                                    @RequestParam String response) {
 
         User user = userManagementService.findByInputNumber(phoneNumber);
         Event event = eventBroker.load(voteUid);
         String trimmedResponse = transformResponseIncludingLegacy(response);
+        log.info("casting a vote response! : {}", trimmedResponse);
 
         ResponseEntity<ResponseWrapper> responseWrapper;
         if (event.getEventType().equals(EventType.VOTE) && isOpen(event)) {
@@ -146,8 +148,11 @@ public class VoteRestController {
 
     // because some of the old clients may still send "maybe" expecting the old design .. can remove in time
     private String transformResponseIncludingLegacy(String response) {
-        return "maybe".equals(response.trim().toLowerCase()) ?
-                "abstain" : response.trim().toLowerCase();
+        final String normResp = response.trim().toLowerCase();
+        return "maybe".equals(normResp) ? "ABSTAIN" :
+                "yes".equals(normResp) ? "YES" :
+                        "no".equals(normResp) ? "NO" :
+                                response.trim();
     }
 
     @RequestMapping(value = "/update/{uid}/{phoneNumber}/{code}", method = RequestMethod.POST)

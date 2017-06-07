@@ -382,7 +382,7 @@ public class USSDHomeController extends USSDController {
         if (vote.getVoteOptions().isEmpty()) {
             openingMenu.addMenuOption(voteUri + "YES", getMessage(optionMsgKey + "yes", sessionUser));
             openingMenu.addMenuOption(voteUri + "NO", getMessage(optionMsgKey + "no", sessionUser));
-            openingMenu.addMenuOption(voteUri + "abstain", getMessage(optionMsgKey + "abstain", sessionUser));
+            openingMenu.addMenuOption(voteUri + "ABSTAIN", getMessage(optionMsgKey + "abstain", sessionUser));
         } else {
             vote.getVoteOptions().forEach(o -> {
                openingMenu.addMenuOption(voteUri + USSDUrlUtil.encodeParameter(o), o);

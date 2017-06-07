@@ -174,9 +174,9 @@
                           <span th:if="${task.hasResponded}">Closes <span th:text="${deadline}">11 September 2015</span></span>
                           <div th:unless="${task.hasResponded}">
                             <div th:if="${#lists.isEmpty(task.getTags())}">
-                              <a th:href="@{vote/answer(eventUid=${task.taskUid},answer=yes)}" class="btn default-button btn-positive">Vote yes</a>
-                              <a th:href="@{vote/answer(eventUid=${task.taskUid},answer=no)}" class="btn default-button btn-negative">Vote no</a>
-                              <a th:href="@{vote/answer(eventUid=${task.taskUid},answer=abstain)}" class="btn default-button btn-neutral">Abstain</a>
+                              <a th:href="@{vote/answer(eventUid=${task.taskUid},answer=YES)}" class="btn default-button btn-positive">Vote yes</a>
+                              <a th:href="@{vote/answer(eventUid=${task.taskUid},answer=NO)}" class="btn default-button btn-negative">Vote no</a>
+                              <a th:href="@{vote/answer(eventUid=${task.taskUid},answer=ABSTAIN)}" class="btn default-button btn-neutral">Abstain</a>
                             </div>
                             <div th:if="${not #lists.isEmpty(task.tags)}">
                               <select name="answer" class="form-control vote-selector" th:attr="data-uid=${task.taskUid}">

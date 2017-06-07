@@ -41,9 +41,9 @@ public class VoteBrokerImpl implements VoteBroker {
     @Value("${grassroot.vote.option.maxlength:20}")
     private int MAX_OPTION_LENGTH;
 
-    private static final String YES = "yes";
-    private static final String NO = "no";
-    private static final String ABSTAIN = "abstain";
+    private static final String YES = "YES";
+    private static final String NO = "NO";
+    private static final String ABSTAIN = "ABSTAIN";
     private static final List<String> optionsForYesNoVote = Arrays.asList(YES, NO, ABSTAIN);
 
     private final UserRepository userRepository;
