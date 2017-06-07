@@ -115,7 +115,7 @@ public class TaskBrokerImpl implements TaskBroker {
                 taskToReturn = null;
         }
 
-        log.info("Task created by user: {}", taskToReturn.isCreatedByUser());
+        log.debug("Task created by user: {}", taskToReturn.isCreatedByUser());
         return taskToReturn;
     }
 
@@ -305,11 +305,7 @@ public class TaskBrokerImpl implements TaskBroker {
 
     private boolean partOfGroupBeforeVoteCalled(Event event, User user) {
         Membership membership = event.getAncestorGroup().getMembership(user);
-        if (membership == null) {
-            return false;
-        } else {
-            return event.getCreatedDateTime().isAfter(membership.getJoinTime());
-        }
+        return membership != null && event.getCreatedDateTime().isAfter(membership.getJoinTime());
     }
 
     private Set<TaskDTO> resolveTodoTaskDtos(List<Todo> todos, User user, Instant changedSince) {

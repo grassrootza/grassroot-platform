@@ -12,7 +12,6 @@ import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.services.exception.AccountLimitExceededException;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
@@ -31,6 +30,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import static za.org.grassroot.core.domain.Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE;
 
@@ -42,23 +42,20 @@ import static za.org.grassroot.core.domain.Permission.GROUP_PERMISSION_CREATE_GR
 @SessionAttributes("vote")
 public class VoteController extends BaseController {
 
-    Logger log = LoggerFactory.getLogger(VoteController.class);
-
-    private final EventBroker eventBroker;
-    private final GroupBroker groupBroker;
-    private final EventLogBroker eventLogBroker;
-    private final AccountGroupBroker accountGroupBroker;
+    private static final Logger log = LoggerFactory.getLogger(VoteController.class);
 
     private final VoteBroker voteBroker;
+    private final EventBroker eventBroker;
+    private final GroupBroker groupBroker;
+    private final AccountGroupBroker accountGroupBroker;
 
     @Autowired
     public VoteController(EventBroker eventBroker, GroupBroker groupBroker, EventLogBroker eventLogBroker,
                           AccountGroupBroker accountGroupBroker, VoteBroker voteBroker) {
+        this.voteBroker = voteBroker;
         this.eventBroker = eventBroker;
         this.groupBroker = groupBroker;
-        this.eventLogBroker = eventLogBroker;
         this.accountGroupBroker = accountGroupBroker;
-        this.voteBroker = voteBroker;
     }
 
     @InitBinder
@@ -135,19 +132,19 @@ public class VoteController extends BaseController {
     @RequestMapping("view")
     public String viewVote(Model model, @RequestParam String eventUid, @RequestParam(required = false) SourceMarker source) {
 
-        Event vote = eventBroker.load(eventUid);
+        Vote vote = voteBroker.load(eventUid);
         boolean canModify = (vote.getCreatedByUser().equals(getUserProfile())
                 && vote.getEventStartDateTime().isAfter(Instant.now())); // todo: make this more nuanced
 
-        ResponseTotalsDTO responses = eventLogBroker.getResponseCountForEvent(vote);
+        Map<String, Long> voteTotals = voteBroker.fetchVoteResults(getUserProfile().getUid(), eventUid);
+        long totalResponses = voteTotals.values().stream().mapToLong(Long::longValue).sum();
+        long possibleResponses = vote.getAllMembers().size();
 
         model.addAttribute("vote", vote);
-        model.addAttribute("yes", responses.getYes());
-        model.addAttribute("no", responses.getNo());
-        model.addAttribute("abstained", responses.getMaybe());
-        model.addAttribute("noreply", responses.getNumberNoRSVP());
-        model.addAttribute("replied", responses.getNumberOfUsers() - responses.getNumberNoRSVP());
-        model.addAttribute("possible", responses.getNumberOfUsers());
+        model.addAttribute("voteTotals", voteTotals);
+        model.addAttribute("noReply", possibleResponses - totalResponses);
+        model.addAttribute("replied", totalResponses);
+        model.addAttribute("possible", possibleResponses);
 
         model.addAttribute("canModify", canModify);
         model.addAttribute("reminderOptions", EventReminderType.values());
@@ -202,7 +199,7 @@ public class VoteController extends BaseController {
     public String answerVote(@RequestParam String eventUid, @RequestParam String answer,
                              HttpServletRequest request, RedirectAttributes redirectAttributes) {
 
-        Event vote = eventBroker.load(eventUid);
+        Vote vote = voteBroker.load(eventUid);
         User sessionUser = getUserProfile();
         String priorUrl = request.getHeader(HttpHeaders.REFERER);
 

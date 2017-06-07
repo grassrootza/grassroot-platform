@@ -48,6 +48,7 @@ public interface EventBroker {
 	void updateMeeting(String userUid, String meetingUid, String name, String description, LocalDateTime eventStartDateTime, String eventLocation,
 	                   EventReminderType reminderType, int customReminderMinutes, Set<String> assignedMemberUids);
 
+	// note: keeping these here instead of moving to VoteBroker for now, given the intertwining with various elements of rest of eventbroker
 	Vote createVote(String userUid, String parentUid, JpaEntityType parentType, String name, LocalDateTime eventStartDateTime,
 					boolean includeSubGroups, String description, Set<String> assignMemberUids, List<String> options);
 

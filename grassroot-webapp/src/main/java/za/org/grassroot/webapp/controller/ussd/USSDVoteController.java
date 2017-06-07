@@ -93,7 +93,7 @@ public class USSDVoteController extends USSDController {
                                   @RequestParam String voteUid, @RequestParam String response) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber);
         voteBroker.recordUserVote(user.getUid(), voteUid, response);
-        String prompt = getMessage(thisSection, startMenu, promptKey + ".vote-recorded", user);
+        final String prompt = getMessage(thisSection, startMenu, promptKey + ".vote-recorded", user);
         cacheManager.clearRsvpCacheForUser(user, EventType.VOTE);
         return menuBuilder(new USSDMenu(prompt, optionsHomeExit(user, false)));
     }
@@ -175,7 +175,7 @@ public class USSDVoteController extends USSDController {
                                  @RequestParam(required = false) String priorInput) throws URISyntaxException {
         String userInput = StringUtils.isEmpty(priorInput) ? request : priorInput;
         User user = userManager.findByInputNumber(msisdn,
-                saveVoteMenu("multi_option/add", requestUid) + "&priorInput=" + priorInput);
+                saveVoteMenu("multi_option/add", requestUid) + "&priorInput=" + userInput);
         // watch for duplication but service & core should both catch it
         int numberOptions = eventRequestBroker.load(requestUid).getVoteOptions().size();
         if (numberOptions > 1 && "0".equals(userInput.trim())) {
@@ -221,10 +221,10 @@ public class USSDVoteController extends USSDController {
 
     @RequestMapping(value = path + "time_custom")
     @ResponseBody
-    public Request customVotingTime(@RequestParam String inputNumber,
+    public Request customVotingTime(@RequestParam String msisdn,
                                     @RequestParam String requestUid) throws URISyntaxException {
 
-        User user = userManager.findByInputNumber(inputNumber, saveVoteMenu("time_custom", requestUid));
+        User user = userManager.findByInputNumber(msisdn, saveVoteMenu("time_custom", requestUid));
         USSDMenu menu = new USSDMenu(getMessage(thisSection, "time", promptKey + "-custom", user));
         menu.setFreeText(true);
         menu.setNextURI(voteMenus + "confirm?requestUid=" + requestUid + "&field=custom");

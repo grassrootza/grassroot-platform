@@ -16,6 +16,7 @@ import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.repository.VoteRepository;
+import za.org.grassroot.core.util.StringArrayUtil;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
@@ -58,6 +59,11 @@ public class VoteBrokerImpl implements VoteBroker {
         this.eventLogRepository = eventLogRepository;
         this.messageService = messageService;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
+    }
+
+    @Override
+    public Vote load(String voteUid) {
+        return voteRepository.findOneByUid(voteUid);
     }
 
     @Override
@@ -112,7 +118,7 @@ public class VoteBrokerImpl implements VoteBroker {
         User user = userRepository.findOneByUid(userUid);
         Vote vote = voteRepository.findOneByUid(voteUid);
 
-        validateUserCanVote(user, vote);
+        validateUserPartOfVote(user, vote, true);
 
         EventLog priorResponse = eventLogRepository
                 .findByEventAndUserAndEventLogType(vote, user, EventLogType.VOTE_OPTION_RESPONSE);
@@ -132,9 +138,8 @@ public class VoteBrokerImpl implements VoteBroker {
         Vote vote = voteRepository.findOneByUid(voteUid);
         logger.info("Sending vote results for {}", vote.getName());
         try {
-            Map<String, Long> voteResults = vote.getTags() == null || vote.getTags().length == 0 ?
+            Map<String, Long> voteResults = StringArrayUtil.isAllEmptyOrNull(vote.getVoteOptions()) ?
                     calculateYesNoResults(vote) : calculateMultiOptionResults(vote, vote.getVoteOptions());
-
 
             LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
             EventLog eventLog = new EventLog(null, vote, EventLogType.RESULT);
@@ -158,6 +163,21 @@ public class VoteBrokerImpl implements VoteBroker {
             // no exception interrupts it (else will spill over)
             logger.error("Error while sending vote results for vote " + vote + ": " + e.getMessage(), e);
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, Long> fetchVoteResults(String userUid, String voteUid) {
+        Objects.requireNonNull(voteUid);
+        Objects.requireNonNull(userUid);
+
+        User user = userRepository.findOneByUid(userUid);
+        Vote vote = voteRepository.findOneByUid(voteUid);
+
+        validateUserPartOfVote(user, vote, false);
+
+        return StringArrayUtil.isAllEmptyOrNull(vote.getVoteOptions()) ?
+                calculateYesNoResults(vote) : calculateMultiOptionResults(vote, vote.getVoteOptions());
     }
 
     private Map<String, Long> calculateMultiOptionResults(Vote vote, List<String> options) {
@@ -198,8 +218,8 @@ public class VoteBrokerImpl implements VoteBroker {
 
     // not yet checking if vote has already been cast, since we allow for vote revision
     // (at the moment), and hence just check start date and part of vote members
-    private void validateUserCanVote(User user, Vote vote) {
-        if (vote.getEventStartDateTime().isBefore(Instant.now())) {
+    private void validateUserPartOfVote(User user, Vote vote, boolean checkVoteOpen) {
+        if (checkVoteOpen && vote.getEventStartDateTime().isBefore(Instant.now())) {
             throw new IllegalArgumentException("Error! Cannot respond to a closed vote");
         }
 
@@ -208,7 +228,7 @@ public class VoteBrokerImpl implements VoteBroker {
                 vote.getAssignedMembers().contains(user);
 
         if (!isUserInGroup) {
-            throw new AccessDeniedException("Only users part of group or assigned to vote can vote");
+            throw new AccessDeniedException("Only users part of group or assigned to vote can view or respond to vote");
         }
     }
 }
