@@ -19,6 +19,7 @@ import za.org.grassroot.services.group.GroupQueryBroker;
 import za.org.grassroot.services.livewire.LiveWireAlertBroker;
 import za.org.grassroot.services.task.EventLogBroker;
 import za.org.grassroot.services.task.TodoBroker;
+import za.org.grassroot.services.task.VoteBroker;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDResponseTypes;
 import za.org.grassroot.webapp.enums.USSDSection;
@@ -106,7 +107,7 @@ public class USSDHomeController extends USSDController {
             new SimpleEntry<>(GROUP_MANAGER, new String[]{groupMenus + startMenu, openingMenuKey + groupKey}),
             new SimpleEntry<>(USER_PROFILE, new String[]{userMenus + startMenu, openingMenuKey + userKey}),
             new SimpleEntry<>(SAFETY_GROUP_MANAGER, new String[]{safetyMenus + startMenu, openingMenuKey + safetyKey})).
-            collect(Collectors.toMap((e) -> e.getKey(), (e) -> e.getValue())));
+            collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue)));
 
     private static final List<USSDSection> openingSequenceWithGroups = Arrays.asList(
             MEETINGS, VOTES, TODO, GROUP_MANAGER, USER_PROFILE, SAFETY_GROUP_MANAGER);
@@ -118,17 +119,15 @@ public class USSDHomeController extends USSDController {
         hashPosition = environment.getRequiredProperty("grassroot.ussd.code.length", Integer.class);
     }
 
-    public USSDMenu welcomeMenu(String opening, User user) {
-
+    private USSDMenu welcomeMenu(String opening, User user) {
         USSDMenu homeMenu = new USSDMenu(opening);
-        List<USSDSection> menuSequence = permissionBroker.countActiveGroupsWithPermission(user, null) != 0 ?
+        List<USSDSection> menuSequence =
+                permissionBroker.countActiveGroupsWithPermission(user, null) != 0 ?
                 openingSequenceWithGroups : openingSequenceWithoutGroups;
-
-        for (USSDSection section : menuSequence) {
-            homeMenu.addMenuOption(openingMenuOptions.get(section)[0],
-                    getMessage(openingMenuOptions.get(section)[1], user));
-        }
-
+        menuSequence.forEach(s -> {
+            String[] urlMsgPair = openingMenuOptions.get(s);
+            homeMenu.addMenuOption(urlMsgPair[0], getMessage(urlMsgPair[1], user));
+        });
         return homeMenu;
     }
 
@@ -164,10 +163,12 @@ public class USSDHomeController extends USSDController {
             openingMenu = userInterrupted(inputNumber) && livewireSuffix.equals(trailingDigits) ?
                     interruptedPrompt(inputNumber) : processTrailingDigits(trailingDigits, sessionUser);
         } else {
-            if (!sessionUser.isHasInitiatedSession())
+            if (!sessionUser.isHasInitiatedSession()) {
                 userManager.setHasInitiatedUssdSession(sessionUser.getUid());
+            }
             USSDResponseTypes neededResponse = neededResponse(sessionUser);
-            openingMenu = neededResponse.equals(USSDResponseTypes.NONE) ? defaultStartMenu(sessionUser)
+            openingMenu = neededResponse.equals(USSDResponseTypes.NONE)
+                    ? defaultStartMenu(sessionUser)
                     : requestUserResponse(sessionUser, neededResponse);
         }
         Long endTime = System.currentTimeMillis();
@@ -373,14 +374,20 @@ public class USSDHomeController extends USSDController {
                 vote.getCreatedByUser().nameToDisplay(),
                 vote.getName()};
 
-        final String voteUri = "vote" + entityUidUrlSuffix + vote.getUid() + "&response=";
+        final String voteUri = voteMenus + "record?voteUid=" + vote.getUid() + "&response=";
         final String optionMsgKey = voteKey + "." + optionsKey;
 
         USSDMenu openingMenu = new USSDMenu(getMessage(thisSection, startMenu, promptKey + "-vote", promptFields, sessionUser));
 
-        openingMenu.addMenuOption(voteUri + "yes", getMessage(optionMsgKey + "yes", sessionUser));
-        openingMenu.addMenuOption(voteUri + "no", getMessage(optionMsgKey + "no", sessionUser));
-        openingMenu.addMenuOption(voteUri + "maybe", getMessage(optionMsgKey + "abstain", sessionUser));
+        if (vote.getVoteOptions().isEmpty()) {
+            openingMenu.addMenuOption(voteUri + "YES", getMessage(optionMsgKey + "yes", sessionUser));
+            openingMenu.addMenuOption(voteUri + "NO", getMessage(optionMsgKey + "no", sessionUser));
+            openingMenu.addMenuOption(voteUri + "ABSTAIN", getMessage(optionMsgKey + "abstain", sessionUser));
+        } else {
+            vote.getVoteOptions().forEach(o -> {
+               openingMenu.addMenuOption(voteUri + USSDUrlUtil.encodeParameter(o), o);
+            });
+        }
 
         return openingMenu;
     }
@@ -499,18 +506,6 @@ public class USSDHomeController extends USSDController {
 
         return menuBuilder(new USSDMenu(getMessage(welcomeKey, user), optionsHomeExit(user, false)));
 
-    }
-
-    @RequestMapping(value = path + "vote")
-    @ResponseBody
-    public Request voteAndWelcome(@RequestParam(value = phoneNumber) String inputNumber,
-                                  @RequestParam(value = entityUidParam) String voteUid,
-                                  @RequestParam(value = "response") String response) throws URISyntaxException {
-
-        User user = userManager.findByInputNumber(inputNumber);
-        eventLogBroker.rsvpForEvent(voteUid, user.getUid(), EventRSVPResponse.fromString(response));
-        String prompt = getMessage(thisSection, startMenu, promptKey + ".vote-recorded", user);
-        return menuBuilder(new USSDMenu(prompt, optionsHomeExit(user, false)));
     }
 
     // todo: move this into todo controller so we can request & log a location

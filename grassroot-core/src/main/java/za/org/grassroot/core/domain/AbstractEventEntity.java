@@ -3,11 +3,15 @@ package za.org.grassroot.core.domain;
 import org.hibernate.annotations.Type;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.core.util.StringArrayUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -207,9 +211,25 @@ public abstract class AbstractEventEntity {
 
 	public String[] getTags() { return tags; }
 
+	public List<String> getVoteOptions() {
+		return StringArrayUtil.arrayToList(getTags());
+	}
+
+	public void addVoteOption(String option) {
+		ArrayList<String> currentOptions = new ArrayList<>(Arrays.asList(getTags()));
+		currentOptions.add(option);
+		this.tags = StringArrayUtil.listToArrayRemoveDuplicates(currentOptions);
+	}
+
+	public void setVoteOptions(List<String> options) {
+		Objects.requireNonNull(options);
+		this.tags = StringArrayUtil.listToArray(options);
+	}
+
 	public void setTags(String[] tags) {
 		this.tags = tags;
 	}
+
 
 	@Override
 	public boolean equals(Object o) {

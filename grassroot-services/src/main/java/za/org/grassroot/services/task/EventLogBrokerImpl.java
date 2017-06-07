@@ -3,6 +3,7 @@ package za.org.grassroot.services.task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Event;
@@ -18,6 +19,7 @@ import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.core.repository.EventRepository;
 import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.specifications.EventLogSpecifications;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.util.CacheUtilService;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
@@ -58,12 +60,6 @@ public class EventLogBrokerImpl implements EventLogBroker {
         User user = userRepository.findOneByUid(userUid);
         EventLog eventLog = new EventLog(user, event, eventLogType, message);
         return eventLogRepository.save(eventLog);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public EventLog fetchResponseForEvent(Event event, User user) {
-        return eventLogRepository.findByEventAndUserAndEventLogType(event, user, EventLogType.RSVP);
     }
 
     @Override
@@ -112,8 +108,13 @@ public class EventLogBrokerImpl implements EventLogBroker {
 
     @Override
     public boolean hasUserRespondedToEvent(Event event, User user) {
-        EventLog rsvpEventLog = eventLogRepository.findByEventAndUserAndEventLogType(event, user, EventLogType.RSVP);
-        return rsvpEventLog != null;
+        log.info("Checking is user has responded to: {}", event.getName());
+        long count = eventLogRepository.count(Specifications
+                .where(EventLogSpecifications.forEvent(event))
+                .and(EventLogSpecifications.forUser(user))
+                .and(EventLogSpecifications.isResponseToAnEvent()));
+        log.info("Count of responses: {}", count);
+        return count > 0;
     }
 
     @Override

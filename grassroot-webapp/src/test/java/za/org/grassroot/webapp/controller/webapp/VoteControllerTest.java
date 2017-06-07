@@ -3,19 +3,21 @@ package za.org.grassroot.webapp.controller.webapp;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
+import za.org.grassroot.services.task.VoteBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.EventWrapper;
+import za.org.grassroot.webapp.model.web.VoteWrapper;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.beans.HasPropertyWithValue.hasProperty;
@@ -31,6 +33,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class VoteControllerTest extends WebAppAbstractUnitTest {
 
     private static final Logger logger = LoggerFactory.getLogger(MeetingControllerTest.class);
+
+    @Mock
+    private VoteBroker voteBrokerMock;
 
     @InjectMocks
     private VoteController voteController;
@@ -88,7 +93,7 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
 
         Group testGroup = new Group("Dummy Group3", new User("234345345"));
         LocalDateTime testTime = LocalDateTime.now().plusMinutes(7L);
-        EventWrapper testVote = EventWrapper.makeEmpty();
+        VoteWrapper testVote = VoteWrapper.makeEmpty();
         testVote.setTitle("test vote");
         testVote.setEventDateTime(testTime);
         testVote.setDescription("Abracadabra");
@@ -101,31 +106,36 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
                 .andExpect(redirectedUrl("/group/view?groupUid=" + testGroup.getUid()));
 
         verify(eventBrokerMock, times(1)).createVote(sessionTestUser.getUid(), testGroup.getUid(), JpaEntityType.GROUP, "test vote",
-                                                     testTime, false, "Abracadabra", Collections.emptySet());
+                                                     testTime, false, "Abracadabra", Collections.emptySet(), null);
         verifyNoMoreInteractions(groupBrokerMock);
         verifyNoMoreInteractions(eventBrokerMock);
     }
 
     @Test
     public void viewVoteWorks() throws Exception {
-
-        Vote testVote = new Vote("test", Instant.now(), sessionTestUser, new Group("tg1", sessionTestUser));
-        ResponseTotalsDTO testVoteResults = ResponseTotalsDTO.makeForTest(3, 7, 3, 0, 15);
-        when(eventBrokerMock.load(testVote.getUid())).thenReturn(testVote);
-        when(eventLogBrokerMock.getResponseCountForEvent(testVote)).thenReturn(testVoteResults);
+        Group testGroup = new Group("tg1", sessionTestUser);
+        List<User> testUsers = new ArrayList<>();
+        for (int i = 0; i < 25; i++) {
+            testUsers.add(new User("050111000" + i));
+        }
+        testUsers.forEach(testGroup::addMember);
+        Vote testVote = new Vote("test", Instant.now(), sessionTestUser, testGroup);
+        Map<String, Long> testVoteResults = new LinkedHashMap<>();
+        testVoteResults.put("yes", 5L);
+        testVoteResults.put("no", 10L);
+        testVoteResults.put("abstain", 7L);
+        when(voteBrokerMock.load(testVote.getUid())).thenReturn(testVote);
+        when(voteBrokerMock.fetchVoteResults(sessionTestUser.getUid(), testVote.getUid())).thenReturn(testVoteResults);
 
         mockMvc.perform(get("/vote/view").param("eventUid", testVote.getUid()))
                 .andExpect(status().isOk()).andExpect(view().name("vote/view"))
-                .andExpect(model().attribute("yes", is(testVoteResults.getYes())))
-                .andExpect(model().attribute("no", is(testVoteResults.getNo())))
-                .andExpect(model().attribute("abstained", is(testVoteResults.getMaybe())))
-                .andExpect(model().attribute("possible", is(testVoteResults.getNumberOfUsers())))
+                .andExpect(model().attribute("voteTotals", is(testVoteResults)))
+                .andExpect(model().attribute("possible", is((long) testGroup.getMembers().size())))
                 .andExpect(model().attribute("vote", hasProperty("uid", is(testVote.getUid()))));
 
-        verify(eventBrokerMock, times(1)).load(testVote.getUid());
-        verifyNoMoreInteractions(eventBrokerMock);
-        verify(eventLogBrokerMock, times(1)).getResponseCountForEvent(testVote);
-        verifyNoMoreInteractions(eventLogBrokerMock);
+        verify(voteBrokerMock, times(1)).load(testVote.getUid());
+        verify(voteBrokerMock, times(1)).fetchVoteResults(sessionTestUser.getUid(), testVote.getUid());
+        verifyNoMoreInteractions(voteBrokerMock);
     }
 
     @Test
@@ -133,7 +143,7 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
 
         Vote testVote = new Vote("test", Instant.now(), sessionTestUser, new Group("tg1", sessionTestUser));
 
-        when(eventBrokerMock.load(testVote.getUid())).thenReturn(testVote);
+        when(voteBrokerMock.load(testVote.getUid())).thenReturn(testVote);
 
         mockMvc.perform(get("/vote/answer").header("referer", "vote").param("eventUid", testVote.getUid()).param("answer", "yes"))
                 .andExpect(status().is3xxRedirection())
@@ -141,8 +151,8 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
                 .andExpect(flash().attributeExists(BaseController.MessageType.INFO.getMessageKey()))
                 .andExpect(redirectedUrl("/vote/view?eventUid=" + testVote.getUid()));
 
-        verify(eventBrokerMock, times(1)).load(testVote.getUid());
-        verify(eventLogBrokerMock, times(1)).rsvpForEvent(testVote.getUid(), sessionTestUser.getUid(), EventRSVPResponse.fromString("yes"));
+        verify(voteBrokerMock, times(1)).load(testVote.getUid());
+        verify(voteBrokerMock, times(1)).recordUserVote(sessionTestUser.getUid(), testVote.getUid(), "yes");
         verifyNoMoreInteractions(eventBrokerMock);
         verifyNoMoreInteractions(eventLogBrokerMock);
     }

@@ -48,9 +48,23 @@
 
             <div class="form-group">
               <label for="name" class="control-label">Subject for the vote?</label>
-              <p>Members will only be able to answer with "yes", "no" or "abstain"</p>
               <input th:field="*{title}" type="text" class="form-control input-lg" id="name" placeholder="The issue for the vote" maxlength="35" data-toggle="tooltip"
                        title="Issue description may not be longer than 35 characters. "/>
+            </div>
+
+            <div class="form-group">
+              <label for="type" class="control-label">Type of vote?</label>
+              <select th:field="*{type}" id="type" class="form-control input-lg">
+                <option th:each="option: ${T(za.org.grassroot.webapp.enums.VoteType).values()}"
+                        th:value="${option}"
+                        th:text="#{web.vote.creation.type.__${option}__}">
+                </option>
+              </select>
+            </div>
+
+            <div class="input-group" id="vote-option-0">
+              <input id="options-input-0" name="options[0]" type="text" class="form-control input-lg option-input" autocomplete="off" placeholder="Enter the vote option">
+              <span class="input-group-addon add-option-btn" onclick="addOptionRow(0)"><i class="fa fa-plus" aria-hidden="true"></i></span>
             </div>
 
             <div class="form-group">
@@ -90,9 +104,11 @@
 
   <script>
 
+    var voteForm = $("#voteForm");
+
     $(document).ready(function() {
 
-      $("#voteForm").validate({
+      voteForm.validate({
           errorClass: 'error-text',
           rules: {
               title: {
@@ -105,7 +121,27 @@
           }
       });
 
+      interceptEnterOnVoteOption(0);
+      $("#vote-option-0").hide();
+
+      $("#type").change(function() {
+        var selectedOption = $("#type").find("option:selected").val();
+        var voteOptions = $("[id^=vote-option-]");
+        if (selectedOption === "MULTI_OPTION") {
+          voteOptions.show();
+          voteOptions.each(function() {
+            $(this).find('input[type=text]').rules('add', voteOptionRules);
+          });
+        } else {
+          voteOptions.hide();
+          voteOptions.each(function() {
+            $(this).find('input[type=text]').rules('remove');
+          });
+        }
+      });
+
       $("#customReminder").hide();
+
 
       var defTime = new Date();
       defTime.setTime(defTime.getTime() + 5*60*1000);
@@ -120,9 +156,9 @@
       });
 
       $('#reminderType').change(function() {
-        var selected = $("#reminderType option:selected").val();
+        var selected = $("#reminderType").find("option:selected").val();
         console.log("Selected option: " + selected);
-        if (selected == "CUSTOM") {
+        if (selected === "CUSTOM") {
           $("#customReminder").show();
         } else {
           $("#customReminder").hide();
@@ -130,6 +166,108 @@
       });
 
     });
+
+    var lastOption = 0;
+
+    function addOptionRow(afterIndex) {
+      var currentInput = $("#vote-option-" + afterIndex);
+      currentInput.find('input[type=text]').rules("add", voteOptionRules);
+      if (voteForm.valid()) {
+        if (lastOption !== afterIndex) {
+          incrementOptionIndices(afterIndex);
+        } else {
+          lastOption++;
+        }
+        currentInput.after(assembleOptionRow(afterIndex + 1));
+        if (afterIndex === 0) {
+          insertRemoveButton(afterIndex);
+        }
+        insertRemoveButton(afterIndex + 1);
+        interceptEnterOnVoteOption(afterIndex + 1);
+      }
+    }
+
+    function removeOptionRow(removeIndex) {
+      var inputGroupToRemove = $("#vote-option-" + removeIndex);
+      inputGroupToRemove.remove();
+      reduceOptionIndices(removeIndex);
+    }
+
+    function incrementOptionIndices(forIndex) {
+      for (i = lastOption; i > forIndex; i--) {
+        var thisRow = $("#vote-option-" + i);
+        var newIndex = i + 1;
+        console.log("changing " + i + " to " + newIndex);
+        thisRow.find('input[type=text]').attr({
+          id: "options-input-" + newIndex,
+          name: "options[" + newIndex + "]"
+        });
+        thisRow.find('.add-option-btn').attr('onClick', 'addOptionRow(' + newIndex + ')');
+        thisRow.attr('id', 'vote-option-' + newIndex);
+      }
+    }
+
+    function reduceOptionIndices(untilIndex) {
+      console.log("removing rows above index " + untilIndex);
+      for (i = untilIndex + 1; i <= lastOption; i++) {
+        var thisRow = $("#vote-option-" + i);
+        var newIndex = i - 1;
+        console.log("changing " + i + " to " + newIndex);
+        thisRow.find('input[type=text]').attr({
+          id: "options-input-" + newIndex,
+          name: "options[" + newIndex + "]"
+        });
+        thisRow.find('.add-option-btn').attr('onClick', 'addOptionRow(' + newIndex + ')');
+        thisRow.find('.rem-option-btn').attr('onClick', 'removeOptionRow(' + newIndex + ')');
+        thisRow.attr("id", "vote-option-" + newIndex);
+      }
+
+      lastOption--;
+    }
+
+    function insertRemoveButton(rowIndex) {
+      var row = $("#vote-option-" + rowIndex);
+      if (row.find('.rem-option-btn').length === 0) {
+        row.find('.add-option-btn').after(
+          "<span class=\"input-group-addon rem-option-btn\" " +
+          "onclick='removeOptionRow(" + rowIndex + ")'>" +
+          "<i class=\"fa fa-minus\" aria-hidden=\"true\"></i></span>")
+      }
+    }
+
+    function assembleOptionRow(thisIndex) {
+      // note : we do not add validation to this so user can submit with a blank last option (just ignored)
+      return "<div class='input-group top-padding-sm' id='vote-option-" + thisIndex + "'>" +
+        "<input id=\"options-input-" + thisIndex + "\" name=\"options[" + thisIndex + "]\" " +
+        "type=\"text\" class=\"form-control input-lg\" autocomplete='off' placeholder=\"Enter the vote option\"> " +
+        "<span class=\"input-group-addon add-option-btn\" onclick='addOptionRow(" + thisIndex + ")'>" +
+        "<i class=\"fa fa-plus\" aria-hidden=\"true\"></i></span>" +
+        "</div>";
+    }
+
+    function interceptEnterOnVoteOption(index) {
+      $("#vote-option-" + index).find('input[type=text]').on('keypress', function(e) {
+        if (e.keyCode === 13) {
+          e.preventDefault();
+          addOptionRow(index);
+          $("#vote-option-" + (index + 1)).find('input[type=text]').focus();
+          return false;
+        }
+      });
+    }
+
+    // note: the abomination that is JS is making this fail, so am commenting out above -- todo: return to it
+    var voteOptionRules = {
+      required: true,
+      minlength: 1,
+      maxlength: 20,
+      messages: {
+        required: 'Please enter a vote option before adding another',
+        minlength: 'Please enter a vote option before adding another',
+        maxlength: 'Vote options can be a maximum of 20 characters'
+      }
+    }
+
   </script>
 
 </div>

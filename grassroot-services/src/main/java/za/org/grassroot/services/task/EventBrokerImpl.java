@@ -14,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.geo.GeoLocation;
-import za.org.grassroot.core.domain.EventLog;
 import za.org.grassroot.core.domain.notification.*;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.*;
@@ -354,7 +353,7 @@ public class EventBrokerImpl implements EventBroker {
 	@Override
 	@Transactional
 	public Vote createVote(String userUid, String parentUid, JpaEntityType parentType, String name, LocalDateTime eventStartDateTime,
-						   boolean includeSubGroups, String description, Set<String> assignMemberUids) {
+						   boolean includeSubGroups, String description, Set<String> assignMemberUids, List<String> options) {
 		Objects.requireNonNull(userUid);
 		Objects.requireNonNull(parentUid);
 		Objects.requireNonNull(parentType);
@@ -388,6 +387,9 @@ public class EventBrokerImpl implements EventBroker {
 			assignMemberUids.add(userUid); // enforce creating user part of vote
 		}
 		vote.assignMembers(assignMemberUids);
+		if (options != null && !options.isEmpty()) {
+			vote.setVoteOptions(options);
+		}
 
 		voteRepository.save(vote);
 
@@ -727,41 +729,6 @@ public class EventBrokerImpl implements EventBroker {
 
 	@Override
 	@Transactional
-	public void sendVoteResults(String voteUid) {
-		Objects.requireNonNull(voteUid);
-		Vote vote = voteRepository.findOneByUid(voteUid);
-
-		logger.info("Sending vote results for vote", vote);
-
-		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
-
-		EventLog eventLog = new EventLog(null, vote, RESULT);
-
-		ResponseTotalsDTO responseTotalsDTO = eventLogBroker.getResponseCountForEvent(vote);
-		Set<User> voteResultsNotificationSentMembers = new HashSet<>(userRepository.findNotificationTargetsForEvent(
-				vote, VoteResultsNotification.class));
-		for (User member : getAllEventMembers(vote)) {
-			if (!voteResultsNotificationSentMembers.contains(member)) {
-				String message = messageAssemblingService.createVoteResultsMessage(member, vote,
-						responseTotalsDTO.getYes(),
-						responseTotalsDTO.getNo(),
-						responseTotalsDTO.getMaybe(),
-						responseTotalsDTO.getNumberNoRSVP());
-				Notification notification = new VoteResultsNotification(member, message, eventLog);
-				bundle.addNotification(notification);
-			}
-		}
-
-		// we only want to include log if there are some notifications
-		if (!bundle.getNotifications().isEmpty()) {
-			bundle.addLog(eventLog);
-		}
-
-		logsAndNotificationsBroker.storeBundle(bundle);
-	}
-
-	@Override
-	@Transactional
 	@SuppressWarnings("unchecked") // for weirdness on event.getmembers
 	public void assignMembers(String userUid, String eventUid, Set<String> assignMemberUids) {
 		Objects.requireNonNull(userUid);
@@ -852,39 +819,32 @@ public class EventBrokerImpl implements EventBroker {
 	@Override
 	@Transactional(readOnly = true)
 	public List<Event> getOutstandingResponseForUser(User user, EventType eventType) {
-		logger.debug("getOutstandingResponseForUser..." + user.getPhoneNumber() + "...type..." + eventType.toString());
-		List<Event> outstandingRSVPs = cacheUtilService.getOutstandingResponseForUser(user, eventType);
-
-		if (outstandingRSVPs == null) {
+		long startTime = System.currentTimeMillis();
+	    List<Event> cachedRsvps = cacheUtilService.getOutstandingResponseForUser(user, eventType);
+		if (cachedRsvps != null) {
+			return cachedRsvps;
+		} else {
 			Map<Long, Long> eventMap = new HashMap<>();
-			outstandingRSVPs = new ArrayList<>();
-			List<Group> groups = groupRepository.findByMembershipsUserAndActiveTrue(user);
-
-			if (groups != null) {
-				logger.debug("getOutstandingResponseForUser...number of groups..." + groups.size());
-				for (Group group : groups) {
-					Predicate<Event> filter = event -> event.isRsvpRequired() && event.getEventType() == eventType
-							&& ((eventType == EventType.MEETING && event.getCreatedByUser().getId() != user.getId()) || eventType != EventType.MEETING);
-					Set<Event> upcomingEvents = group.getUpcomingEventsIncludingParents(filter);
-
-					for (Event event : upcomingEvents) {
-						if (eventType == EventType.VOTE && !checkUserJoinedBeforeVote(user, event, group)) {
-							logger.info(String.format("Excluding vote %s for %s as the user joined group %s after the vote was called", event.getName(), user.getPhoneNumber(), group.getId()));
-							continue;
-						}
-
-						if (!eventLogBroker.hasUserRespondedToEvent(event, user) && eventMap.get(event.getId()) == null) {
-							outstandingRSVPs.add(event);
-							eventMap.put(event.getId(), event.getId());
-						}
-					}
-
-				}
-				cacheUtilService.putOutstandingResponseForUser(user, eventType, outstandingRSVPs);
-			}
+			final List<Event> outstandingRSVPs = new ArrayList<>();
+			Predicate<Event> filter = event ->
+					event.isRsvpRequired()
+							&& event.getEventType() == eventType
+							&& ((eventType == EventType.MEETING && event.getCreatedByUser().getId() != user.getId())
+							|| eventType != EventType.MEETING);
+			// todo: well, fix this (consolidate into one criteria query)
+			groupRepository.findByMembershipsUserAndActiveTrue(user)
+					.forEach(g -> g.getUpcomingEventsIncludingParents(filter)
+							.stream()
+							.filter(e -> eventType == EventType.MEETING || checkUserJoinedBeforeVote(user, e, g))
+							.filter(e -> !eventLogBroker.hasUserRespondedToEvent(e, user) && eventMap.get(e.getId()) == null)
+							.forEach(e -> {
+								outstandingRSVPs.add(e);
+								eventMap.put(e.getId(), e.getId());
+							}));
+            cacheUtilService.putOutstandingResponseForUser(user, eventType, outstandingRSVPs);
+			logger.info("time to check for responses: {} msecs", System.currentTimeMillis() - startTime);
+			return outstandingRSVPs;
 		}
-
-		return outstandingRSVPs;
 	}
 
 	//N.B. remove this if statement if you want to allow votes for people that joined the group late
