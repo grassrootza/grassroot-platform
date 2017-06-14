@@ -185,7 +185,7 @@
       };
       // Add security
       var csrfHeader = $("meta[name='_csrf_header']").attr("content");
-			var csrfToken = $("meta[name='_csrf']").attr("content");
+      var csrfToken = $("meta[name='_csrf']").attr("content");
       var headers = {
         "Content-Type": "application/json"
       };
@@ -208,7 +208,7 @@
 	    });
 	  }
 
-    // Do the job whem ready
+    // Do the job when ready
     $(document).ready(function() {
       // -------------------------
       // Add callbacks to buttons
