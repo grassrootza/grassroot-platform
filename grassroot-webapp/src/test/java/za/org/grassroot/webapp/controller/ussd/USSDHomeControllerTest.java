@@ -3,6 +3,7 @@ package za.org.grassroot.webapp.controller.ussd;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -12,6 +13,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.Vote;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.services.task.VoteBroker;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -45,19 +47,26 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
 
     private List<User> languageUsers;
 
+    @Mock
+    private VoteBroker voteBrokerMock;
+
     @InjectMocks
     private USSDHomeController ussdHomeController;
+
+    @InjectMocks
+    private USSDVoteController voteController;
 
     @Before
     public void setUp() {
 
-        mockMvc = MockMvcBuilders.standaloneSetup(ussdHomeController)
+        mockMvc = MockMvcBuilders.standaloneSetup(ussdHomeController, voteController)
                 .setHandlerExceptionResolvers(exceptionResolver())
                 .setValidator(validator())
                 .setViewResolvers(viewResolver())
                 .build();
 
         wireUpMessageSourceAndGroupUtil(ussdHomeController);
+        wireUpMessageSourceAndGroupUtil(voteController);
         // todo : extend this parrent into method above, to remove public setters
         ReflectionTestUtils.setField(ussdHomeController, "safetyCode", "911");
         ReflectionTestUtils.setField(ussdHomeController, "livewireSuffix", "411");
@@ -164,8 +173,6 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
         testUser.setDisplayName(testUserName);
         testUser.setLanguageCode("en");
         Group testGroup = new Group(testGroupName, testUser);
-
-//        Event vote = new Event(testUser, EventType.VOTE, true);
         Vote vote = new Vote("are unit tests working?", Instant.now().plus(1, ChronoUnit.HOURS), testUser, testGroup);
 
         List<User> votingUsers = new ArrayList<>(languageUsers);
@@ -188,12 +195,12 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
 
             // note: the fact that message source accessor is not wired up may mean this is not actually testing
             mockMvc.perform(get("/ussd/start").param(phoneParameter, user.getPhoneNumber()));
-            mockMvc.perform(get("/ussd/vote").param(phoneParameter, user.getPhoneNumber()).
-                    param("entityUid", "" + vote.getUid()).
-                    param("response", "yes")).andExpect(status().isOk());
+            mockMvc.perform(get("/ussd/vote/record")
+                    .param(phoneParameter, user.getPhoneNumber())
+                    .param("voteUid", "" + vote.getUid())
+                    .param("response", "yes")).andExpect(status().isOk());
 
-            verify(eventLogBrokerMock, times(1)).rsvpForEvent(vote.getUid(), user.getUid(),
-                                                                         EventRSVPResponse.YES);
+            verify(voteBrokerMock, times(1)).recordUserVote(user.getUid(), vote.getUid(), "yes");
         }
     }
 

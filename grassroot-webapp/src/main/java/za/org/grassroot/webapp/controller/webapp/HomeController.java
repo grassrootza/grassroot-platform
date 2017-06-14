@@ -82,15 +82,15 @@ public class HomeController extends BaseController {
 
         Long startTime1 = System.currentTimeMillis();
         model.addAttribute("userGroups", permissionBroker.getActiveGroupsSorted(user, null));
-        log.info(String.format("Retrieved the active groups for the user ... took %d msecs", System.currentTimeMillis() - startTime1));
+        log.debug(String.format("Retrieved the active groups for the user ... took %d msecs", System.currentTimeMillis() - startTime1));
 
         Long startTime2 = System.currentTimeMillis();
         model.addAttribute("upcomingTasks", taskBroker.fetchUpcomingUserTasks(user.getUid()));
-        log.info(String.format("Retrieved the user's upcoming tasks ... took %d msecs", System.currentTimeMillis() - startTime2));
+        log.debug(String.format("Retrieved the user's upcoming tasks ... took %d msecs", System.currentTimeMillis() - startTime2));
 
         Long startTime3 = System.currentTimeMillis();
         model.addAttribute("joinRequestsPending", groupJoinRequestService.getPendingRequestsForUser(user.getUid()));
-        log.info(String.format("Checking join requests took %d msecs", System.currentTimeMillis() - startTime3));
+        log.debug(String.format("Checking join requests took %d msecs", System.currentTimeMillis() - startTime3));
 
         return new ModelAndView("home", model.asMap());
 

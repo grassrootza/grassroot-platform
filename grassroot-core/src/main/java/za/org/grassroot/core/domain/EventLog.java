@@ -49,6 +49,9 @@ public class EventLog implements TaskLog, LocationHolder {
     @Column(name = "start_time_changed")
     private Boolean startTimeChanged; // intended only for logs of type CHANGED
 
+    @Column(name = "tag")
+    private String tag;
+
     @Embedded
     @AttributeOverrides({
             @AttributeOverride(name="latitude", column = @Column(nullable = true)),
@@ -76,6 +79,7 @@ public class EventLog implements TaskLog, LocationHolder {
         this.eventLogType = Objects.requireNonNull(eventLogType);
         this.response = response;
         this.startTimeChanged = startTimeChanged;
+        this.tag = "";
     }
 
     public EventLog(User user, Event event, EventLogType eventLogType, EventRSVPResponse response) {
@@ -84,6 +88,13 @@ public class EventLog implements TaskLog, LocationHolder {
 
     public EventLog(User user, Event event, EventLogType eventLogType) {
         this(user, event, eventLogType, null);
+    }
+
+    public EventLog(User user, Vote vote, EventLogType eventLogType, String tag) {
+        this(user, vote, eventLogType, null, false);
+        this.tag = tag;
+        this.response = eventLogType.equals(EventLogType.VOTE_OPTION_RESPONSE) ?
+                EventRSVPResponse.VOTE_OPTION : null;
     }
 
     public Long getId() {
@@ -113,12 +124,21 @@ public class EventLog implements TaskLog, LocationHolder {
         return eventLogType;
     }
 
+    public boolean isResponseToEvent() {
+        return EventLogType.VOTE_OPTION_RESPONSE.equals(eventLogType) ||
+                EventLogType.RSVP.equals(eventLogType);
+    }
+
     public EventRSVPResponse getResponse() {
         return response;
     }
 
+    public boolean isVoteResponse() {
+        return EventLogType.VOTE_OPTION_RESPONSE.equals(eventLogType);
+    }
+
     public boolean hasValidResponse() {
-        return response != null && !response.equals(EventRSVPResponse.INVALID_RESPONSE);
+        return isVoteResponse() || (response != null && !response.equals(EventRSVPResponse.INVALID_RESPONSE));
     }
 
     public Boolean getStartTimeChanged() {
@@ -142,6 +162,14 @@ public class EventLog implements TaskLog, LocationHolder {
     public void setLocationWithSource(GeoLocation location, LocationSource source) {
         this.location = location;
         this.locationSource = source;
+    }
+
+    public String getTag() {
+        return tag;
+    }
+
+    public void setTag(String tag) {
+        this.tag = tag;
     }
 
     public boolean hasLocation() { return location != null; }

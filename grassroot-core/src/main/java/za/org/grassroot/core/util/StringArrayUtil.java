@@ -1,5 +1,7 @@
 package za.org.grassroot.core.util;
 
+import org.springframework.util.StringUtils;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
@@ -22,5 +24,14 @@ public class StringArrayUtil {
 
     public static List<String> arrayToList(String[] array) {
         return array != null ? Arrays.asList(array) : new ArrayList<>();
+    }
+
+    public static String joinStringList(List<String> strings, String joinChar, Integer maxLength) {
+        final String str = String.join(joinChar == null ? ", " : joinChar, strings);
+        return maxLength == null ? str : str.substring(maxLength);
+    }
+
+    public static boolean isAllEmptyOrNull(List<String> strings) {
+        return strings == null || strings.isEmpty() || strings.stream().allMatch(StringUtils::isEmpty);
     }
 }

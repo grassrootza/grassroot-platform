@@ -8,7 +8,6 @@ import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.association.GroupJoinRequest;
-import za.org.grassroot.core.domain.EventLog;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
@@ -19,6 +18,7 @@ import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import static za.org.grassroot.services.util.MessageUtils.getUserLocale;
 import static za.org.grassroot.services.util.MessageUtils.shortDateFormatter;
@@ -117,6 +117,27 @@ public class MessageAssemblingManager implements MessageAssemblingService {
         String messageKey = "sms.vote.send.results";
         String[] args = populateEventFields(event, yes, no, abstain, noReply);
         return messageSourceAccessor.getMessage(messageKey, args, locale);
+    }
+
+    @Override
+    public String createMultiOptionVoteResultsMessage(User user, Vote vote, Map<String, Long> optionsWithCount) {
+        Locale locale = getUserLocale(user);
+        String messagePrefix = messageSourceAccessor.getMessage("sms.vote.send.results.prefix",
+                new String[] { vote.getAncestorGroup().getName(), vote.getName() }, locale);
+        StringBuilder sb = new StringBuilder(messagePrefix);
+        optionsWithCount.forEach((option, count) -> {
+            sb.append(", ").append(option).append(" = ").append(String.valueOf(count));
+        });
+        sb.append(", ").append(
+                messageSourceAccessor.getMessage("sms.vote.send.results.noreply",
+                new String[] { countNoReply(optionsWithCount, vote) }));
+        return sb.toString();
+    }
+
+    // todo : watch TX counts here (on object graph)
+    private String countNoReply(Map<String, Long> count, Vote vote) {
+        long totalVotes = count.values().stream().mapToLong(Long::longValue).sum();
+        return String.valueOf(vote.getAllMembers().size() - totalVotes);
     }
 
     @Override

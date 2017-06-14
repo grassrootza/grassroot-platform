@@ -48,8 +48,9 @@ public interface EventBroker {
 	void updateMeeting(String userUid, String meetingUid, String name, String description, LocalDateTime eventStartDateTime, String eventLocation,
 	                   EventReminderType reminderType, int customReminderMinutes, Set<String> assignedMemberUids);
 
+	// note: keeping these here instead of moving to VoteBroker for now, given the intertwining with various elements of rest of eventbroker
 	Vote createVote(String userUid, String parentUid, JpaEntityType parentType, String name, LocalDateTime eventStartDateTime,
-					boolean includeSubGroups, String description, Set<String> assignMemberUids);
+					boolean includeSubGroups, String description, Set<String> assignMemberUids, List<String> options);
 
     // votes cannot change topic or scope (groups included or not) after creation, just closing time & description field
     Vote updateVote(String userUid, String voteUid, LocalDateTime eventStartDateTime, String description);
@@ -69,8 +70,6 @@ public interface EventBroker {
 	void sendMeetingRSVPsToDate(String meetingUid);
 
 	void sendMeetingAcknowledgements(String meetingUid);
-
-	void sendVoteResults(String voteUid);
 
 	void assignMembers(String userUid, String eventUid, Set<String> assignMemberUids);
 

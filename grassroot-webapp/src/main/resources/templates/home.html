@@ -29,7 +29,7 @@
   </div>
 </section>
 
-<div layout:fragment="content">
+<div layout:fragment="content" th:with="hasTasks = ${not #lists.isEmpty(upcomingTasks)}">
 
   <section class="grassroot-form">
     <div class="container">
@@ -89,7 +89,7 @@
     </div>
   </section>
 
-  <div th:if="${not #lists.isEmpty(joinRequestsPending)}" class="modal fade" id="joinReqDetailsModal"
+  <div th:if="${hasTasks}" class="modal fade" id="joinReqDetailsModal"
        tabindex="-1" role="dialog" aria-labelledby="joinModalLabel">
     <div class="modal-dialog" role="document">
       <div class="modal-content">
@@ -161,9 +161,18 @@
                             </a>
                           </div>
                           <div th:case="VOTE">
-                            <a th:href="@{vote/answer(eventUid=${task.taskUid},answer=yes)}" class="btn default-button btn-positive">Vote yes</a>
-                            <a th:href="@{vote/answer(eventUid=${task.taskUid},answer=no)}" class="btn default-button btn-negative">Vote no</a>
-                            <a th:href="@{vote/answer(eventUid=${task.taskUid},answer=maybe)}" class="btn default-button btn-neutral">Abstain</a>
+                            <div th:if="${#lists.isEmpty(task.getTags())}">
+                              <a th:href="@{vote/answer(eventUid=${task.taskUid},answer=YES)}" class="btn default-button btn-positive">Vote yes</a>
+                              <a th:href="@{vote/answer(eventUid=${task.taskUid},answer=NO)}" class="btn default-button btn-negative">Vote no</a>
+                              <a th:href="@{vote/answer(eventUid=${task.taskUid},answer=ABSTAIN)}" class="btn default-button btn-neutral">Abstain</a>
+                            </div>
+                            <div th:if="${not #lists.isEmpty(task.tags)}">
+                              <select name="answer" class="form-control vote-selector" data:uid="${task.taskUid}">
+                                <option value="NULL">Cast your vote ...</option>
+                                <option th:each="option: ${task.tags}" th:value="${option}" th:text="${option}">
+                                </option>
+                              </select>
+                            </div>
                           </div>
                           <div th:case="TODO">
                             <button type="button" class="btn default-button btn-positive" data-toggle="modal" data-target="#todoCompleteModal"
@@ -249,7 +258,7 @@
   </section>
 
   <!-- Skeleton of modal for displaying upcoming task (content filled by ajax method below) -->
-  <div th:if="${not #lists.isEmpty(upcomingTasks)}" class="modal fade" id="taskModal" tabindex="-1" role="dialog" aria-labelledby="taskModalTitle">
+  <div th:if="${hasTasks}" class="modal fade" id="taskModal" tabindex="-1" role="dialog" aria-labelledby="taskModalTitle">
     <div class="modal-dialog" role="document">
       <div class="modal-content">
         <div class="modal-header">
@@ -274,7 +283,7 @@
     </div>
   </div>
 
-  <div th:if="${not #lists.isEmpty(upcomingTasks)}" class="modal fade" id="todoCompleteModal" tabindex="-1" role="dialog" aria-labelledby="confirmTodoModalTitle">
+  <div th:if="${hasTasks}" class="modal fade" id="todoCompleteModal" tabindex="-1" role="dialog" aria-labelledby="confirmTodoModalTitle">
     <div class="modal-dialog" role="document">
       <div class="modal-content">
         <div class="modal-header">
@@ -301,6 +310,33 @@
     </div>
   </div>
 
+  <div th:if="${hasTasks}" class="modal fade" id="voteConfirmModal" tabindex="-1" role="dialog" aria-labelledby="voteConfirmModalLabel">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">x</span></button>
+          <h4 class="modal-title" id="voteConfirmModalTitle">Confirm vote</h4>
+        </div>
+        <form th:action="@{/vote/answer}" method="get">
+          <input type="hidden" id="eventUid" name="eventUid" />
+          <input type="hidden" id="answer" name="answer" />
+          <div class="modal-body">
+            <div class="form-group">
+              <p>
+                You are about to cast your vote for <span class="bold" id="responseText"></span>. Are you sure?
+              </p>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn default-button btn-neutral" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn default-button">Vote</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+
 </div>
 
 <div layout:fragment="script-container">
@@ -317,6 +353,18 @@
             grassrootJS.UID_VALUE, grassrootJS.PRIVATE_SEARCH, function() {
               $('#searchForm').submit();
             }));
+
+        $(".vote-selector").click(function() {
+          var optionSelected = $(this).find('option:selected').val();
+          console.log("optionSelected = " + optionSelected);
+          if (optionSelected !== "NULL") {
+            var confirmModal = $("#voteConfirmModal");
+            confirmModal.find("#eventUid").val($(this).data('uid'));
+            confirmModal.find("#answer").val(optionSelected);
+            confirmModal.find("#responseText").text(optionSelected);
+            confirmModal.modal();
+          }
+        });
     });
 
     function fetchTaskDescription(taskUid, taskType) {

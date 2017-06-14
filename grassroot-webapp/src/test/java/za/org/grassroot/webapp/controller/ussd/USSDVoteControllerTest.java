@@ -10,7 +10,6 @@ import za.org.grassroot.core.domain.Vote;
 import za.org.grassroot.core.domain.VoteRequest;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.services.enums.EventListTimeType;
-import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.util.USSDEventUtil;
 
 import java.time.*;
@@ -37,9 +36,7 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
 
     private static final String testUserPhone = "27701110000";
     private static final String phoneParam = "msisdn";
-
     private static final String path = "/ussd/vote/";
-
     private User testUser;
 
     @InjectMocks
@@ -62,27 +59,28 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
     }
 
     @Test
-    public void voteStartMenuHasGroupsNoUpcomingOrOldVotes() throws Exception {
+    public void yesNoVoteMenuShouldReturnGroupList() throws Exception {
 
         List<Group> testGroups = Arrays.asList(new Group("tg1", testUser),
                                                new Group("tg2", testUser),
                                                new Group("tg3", testUser));
 
-        testGroups.stream().forEach(tg -> tg.addMember(testUser));
+        testGroups.forEach(tg -> tg.addMember(testUser));
 
-        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
-        when(eventBrokerMock.userHasEventsToView(testUser, EventType.VOTE)).thenReturn(EventListTimeType.NONE);
+        when(userManagementServiceMock.findByInputNumber(eq(testUserPhone), anyString())).thenReturn(testUser);
         when(permissionBrokerMock.countActiveGroupsWithPermission(testUser, GROUP_PERMISSION_CREATE_GROUP_VOTE)).thenReturn(3);
         when(permissionBrokerMock.getPageOfGroups(testUser, GROUP_PERMISSION_CREATE_GROUP_VOTE, 0, 3)).thenReturn(testGroups);
 
-        mockMvc.perform(get(path + "start").param(phoneParam, testUserPhone)).andExpect(status().isOk());
-        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
+        mockMvc.perform(get(path + "yes_no")
+                .param(phoneParam, testUserPhone)
+                .param("requestUid", VoteRequest.makeEmpty().getUid()))
+                .andExpect(status().isOk());
+
+        verify(userManagementServiceMock, times(1)).findByInputNumber(eq(testUserPhone), anyString());
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(permissionBrokerMock, times(1)).countActiveGroupsWithPermission(testUser, GROUP_PERMISSION_CREATE_GROUP_VOTE);
+        verify(permissionBrokerMock, times(2)).countActiveGroupsWithPermission(testUser, GROUP_PERMISSION_CREATE_GROUP_VOTE);
         verify(permissionBrokerMock, times(1)).getPageOfGroups(testUser, GROUP_PERMISSION_CREATE_GROUP_VOTE, 0, 3);
         verifyNoMoreInteractions(permissionBrokerMock);
-        verify(eventBrokerMock, times(1)).userHasEventsToView(testUser, EventType.VOTE);
-        verifyNoMoreInteractions(eventBrokerMock);
     }
 
     @Test
@@ -91,52 +89,54 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
         when(eventBrokerMock.userHasEventsToView(testUser, EventType.VOTE)).thenReturn(EventListTimeType.NONE);
         when(permissionBrokerMock.countActiveGroupsWithPermission(testUser, GROUP_PERMISSION_CREATE_GROUP_VOTE)).thenReturn(0);
 
-        mockMvc.perform(get(path + "start").param(phoneParam, testUserPhone)).andExpect(status().isOk());
+        mockMvc.perform(get(path + "start")
+                .param(phoneParam, testUserPhone))
+                .andExpect(status().isOk());
+
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(permissionBrokerMock, times(1)).countActiveGroupsWithPermission(testUser, GROUP_PERMISSION_CREATE_GROUP_VOTE);
+        verify(permissionBrokerMock, times(2)).countActiveGroupsWithPermission(testUser, GROUP_PERMISSION_CREATE_GROUP_VOTE);
         verifyNoMoreInteractions(permissionBrokerMock);
-        verify(eventBrokerMock, times(1)).userHasEventsToView(testUser, EventType.VOTE);
-        verifyNoMoreInteractions(eventBrokerMock);
     }
 
     @Test
-    public void selectNewVoteWithGroupsShouldWork() throws Exception {
-        String urlToSave = USSDSection.VOTES.toPath() + "new";
+    public void selectVoteForMultiOptionVoteShouldWork() throws Exception {
+        VoteRequest voteRequest = VoteRequest.makeEmpty();
+        voteRequest.setVoteOptions(Arrays.asList("Option 1", "Option 2"));
+        String urlToSave = "vote/multi_option/add?requestUid=" + voteRequest.getUid() + "&interrupted=1&priorInput=0";
         List<Group> validGroups = Arrays.asList(new Group("tg1", testUser), new Group("tg2", testUser));
 
         // todo : add test for user with just one group
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
+        when(eventRequestBrokerMock.load(voteRequest.getUid())).thenReturn(voteRequest);
         when(permissionBrokerMock.countActiveGroupsWithPermission(testUser, GROUP_PERMISSION_CREATE_GROUP_VOTE)).thenReturn(2);
         when(permissionBrokerMock.getPageOfGroups(testUser, GROUP_PERMISSION_CREATE_GROUP_VOTE, 0, 3)).thenReturn(validGroups);
 
-        mockMvc.perform(get(path + "new").param(phoneParam, testUserPhone)).andExpect(status().isOk());
+        mockMvc.perform(get(path + "multi_option/add")
+                .param(phoneParam, testUserPhone)
+                .param("requestUid", voteRequest.getUid())
+                .param("request", "0")).andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(permissionBrokerMock, times(1)).countActiveGroupsWithPermission(testUser, GROUP_PERMISSION_CREATE_GROUP_VOTE);
+        verify(permissionBrokerMock, times(2)).countActiveGroupsWithPermission(testUser, GROUP_PERMISSION_CREATE_GROUP_VOTE);
         verify(permissionBrokerMock, times(1)).getPageOfGroups(testUser, GROUP_PERMISSION_CREATE_GROUP_VOTE, 0, 3);
         verifyNoMoreInteractions(permissionBrokerMock);
     }
 
     @Test
     public void askForIssueShouldWork() throws Exception {
-
-        Group testGroup = new Group("tg", testUser);
         VoteRequest testVote = VoteRequest.makeEmpty();
         testVote.setName("someVote");
-        testVote.setParent(testGroup);
 
-        String interruptedUrl = saveVoteMenu("issue", testVote.getUid());
-        String revisingUrl = backVoteUrl("issue", testVote.getUid());
+        String interruptedUrl = saveVoteMenu("subject", testVote.getUid());
+        String revisingUrl = backVoteUrl("subject", testVote.getUid());
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(userManagementServiceMock.findByInputNumber(testUserPhone, interruptedUrl)).thenReturn(testUser);
-        when(eventRequestBrokerMock.createEmptyVoteRequest(testUser.getUid(), testGroup.getUid())).thenReturn(testVote);
-        when(eventRequestBrokerMock.load(testVote.getUid())).thenReturn(testVote);
-        when(accountGroupBrokerMock.numberEventsLeftForGroup(testGroup.getUid())).thenReturn(99);
 
-        mockMvc.perform(get(path + "issue").param(phoneParam, testUserPhone).param("groupUid", "" + testGroup.getUid())).
+        mockMvc.perform(get(path + "subject")
+                .param(phoneParam, testUserPhone)).
                 andExpect(status().isOk());
         mockMvc.perform(get(base + interruptedUrl).param(phoneParam, testUserPhone).param("request", "1")).
                 andExpect(status().isOk());
@@ -145,45 +145,48 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
 
         verify(userManagementServiceMock, times(3)).findByInputNumber(testUserPhone);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(cacheUtilManagerMock, times(3)).putUssdMenuForUser(testUserPhone, interruptedUrl);
-        verify(eventRequestBrokerMock, times(1)).createEmptyVoteRequest(testUser.getUid(), testGroup.getUid());
-        verify(eventRequestBrokerMock, times(2)).load(testVote.getUid());
+        verify(cacheUtilManagerMock, times(2)).putUssdMenuForUser(testUserPhone, interruptedUrl);
         verifyNoMoreInteractions(eventBrokerMock);
     }
 
     @Test
     public void askForStandardTimeShouldWork() throws Exception {
-
+        Group testGroup = new Group("tg", testUser);
         VoteRequest testVote = VoteRequest.makeEmpty();
         String requestUid = testVote.getUid();
-        String interruptedUrl = saveVoteMenu("time", requestUid);
-        String revisingUrl = backVoteUrl("time", requestUid);
+        String interruptedUrl = saveVoteMenu("closing", requestUid) + "&groupUid=" + testGroup.getUid();
+        String revisingUrl = backVoteUrl("closing", requestUid);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, interruptedUrl)).thenReturn(testUser);
+        when(userManagementServiceMock.findByInputNumber(testUserPhone, saveVoteMenu("closing", requestUid))).thenReturn(testUser);
 
-        mockMvc.perform(get(path + "time").param(phoneParam, testUserPhone).param("entityUid", requestUid).
-                param("request", "test vote")).andExpect(status().isOk());
+        mockMvc.perform(get(path + "closing")
+                .param(phoneParam, testUserPhone)
+                .param("requestUid", requestUid)
+                .param("groupUid", testGroup.getUid()))
+                .andExpect(status().isOk());
         mockMvc.perform(get(base + interruptedUrl).param(phoneParam, testUserPhone).param("request", "1")).
                 andExpect(status().isOk());
         mockMvc.perform(get(base + revisingUrl).param(phoneParam, testUserPhone).param("request", "3")).
                 andExpect(status().isOk());
 
-        verify(userManagementServiceMock, times(3)).findByInputNumber(testUserPhone, interruptedUrl);
+        verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, interruptedUrl);
+        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, saveVoteMenu("closing", requestUid));
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(eventRequestBrokerMock, times(1)).updateName(testUser.getUid(), requestUid, "test vote");
+        verify(eventRequestBrokerMock, times(2)).updateVoteGroup(testUser.getUid(), requestUid, testGroup.getUid());
         verifyNoMoreInteractions(eventRequestBrokerMock);
-
     }
 
     @Test
     public void askForCustomTimeShouldWork() throws Exception {
-
         VoteRequest testVote = VoteRequest.makeEmpty();
         String interruptedUrl = saveVoteMenu("time_custom", testVote.getUid());
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, interruptedUrl)).thenReturn(testUser);
 
-        mockMvc.perform(get(path + "time_custom").param(phoneParam, testUserPhone).param("entityUid", testVote.getUid())).
+        mockMvc.perform(get(path + "time_custom")
+                .param(phoneParam, testUserPhone)
+                .param("requestUid", testVote.getUid())).
                 andExpect(status().isOk());
         mockMvc.perform(get("/ussd/" + interruptedUrl).param(phoneParam, testUserPhone).param("request", "1")).
                 andExpect(status().isOk());
@@ -208,26 +211,40 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
         when(learningServiceMock.parse("Tomorrow 5pm"))
                 .thenReturn(LocalDateTime.of(LocalDate.now().plusDays(1), LocalTime.of(17, 0)));
 
+        testVote.setEventStartDateTime(in7minutes.toInstant(ZoneOffset.UTC));
+        mockMvc.perform(get(path + "confirm")
+                .param(phoneParam, testUserPhone)
+                .param("requestUid", requestUid)
+                .param("request", "1")
+                .param("field", "standard")
+                .param("time", "INSTANT"))
+                .andExpect(status().isOk());
 
-        mockMvc.perform(get(path + "confirm").param(phoneParam, testUserPhone).param("entityUid", requestUid).
-                param("request", "1").param("field", "standard").param("time", "instant")).andExpect(status().isOk());
-        mockMvc.perform(get(path + "confirm").param(phoneParam, testUserPhone).param("entityUid", requestUid).
-                param("request", "Tomorrow 5pm").param("field", "custom")).andExpect(status().isOk());
+        mockMvc.perform(get(path + "confirm")
+                .param(phoneParam, testUserPhone)
+                .param("requestUid", requestUid)
+                .param("request", "Tomorrow 5pm")
+                .param("field", "custom"))
+                .andExpect(status().isOk());
+
         testVote.setEventStartDateTime(convertToSystemTime(tomorrow5pm, getSAST()));
-        mockMvc.perform(get(path + "confirm").param(phoneParam, testUserPhone).param("entityUid", requestUid).
-                param("request", "Revised subject").param("field", "issue")).andExpect(status().isOk());
+        mockMvc.perform(get(path + "confirm")
+                .param(phoneParam, testUserPhone)
+                .param("requestUid", requestUid)
+                .param("request", "Revised subject")
+                .param("field", "subject"))
+                .andExpect(status().isOk());
+
         mockMvc.perform(get(base + interruptedUrl).param(phoneParam, testUserPhone).param("request", "1")).
                 andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(4)).findByInputNumber(testUserPhone, interruptedUrl);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(eventRequestBrokerMock, times(4)).load(requestUid);
+        verify(eventRequestBrokerMock, times(5)).load(requestUid);
         verify(eventRequestBrokerMock, times(1)).updateEventDateTime(userUid, requestUid, in7minutes);
         verify(eventRequestBrokerMock, times(1)).updateEventDateTime(userUid, requestUid, tomorrow5pm);
         verify(eventRequestBrokerMock, times(1)).updateName(userUid, requestUid, "Revised subject");
         verifyNoMoreInteractions(eventRequestBrokerMock);
-
-
     }
 
     @Test
@@ -248,7 +265,9 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
         when(eventBrokerMock.load("fake-UID")).thenReturn(savedVote);
         when(accountGroupBrokerMock.numberEventsLeftForParent("fake-UID")).thenReturn(99);
 
-        mockMvc.perform(get(path + "send").param(phoneParam, testUserPhone).param("entityUid", "" + testVote.getUid()))
+        mockMvc.perform(get(path + "send")
+                .param(phoneParam, testUserPhone)
+                .param("requestUid", testVote.getUid()))
                 .andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);
