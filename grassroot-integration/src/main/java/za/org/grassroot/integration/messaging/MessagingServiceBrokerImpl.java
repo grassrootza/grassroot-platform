@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -13,6 +14,7 @@ import org.springframework.web.client.AsyncRestTemplate;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import javax.annotation.PostConstruct;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Set;
@@ -21,7 +23,7 @@ import java.util.Set;
  * Created by luke on 2017/05/23.
  */
 @Service
-public class MessagingServiceBrokerImpl implements MessagingServiceBroker {
+public class MessagingServiceBrokerImpl implements MessagingServiceBroker, CommandLineRunner {
 
     private static final Logger logger = LoggerFactory.getLogger(MessagingServiceBrokerImpl.class);
 
@@ -42,11 +44,21 @@ public class MessagingServiceBrokerImpl implements MessagingServiceBroker {
         this.jwtService = jwtService;
     }
 
+    // using this instead of @PostConstruct because that runs too early
     @Override
-    public void sendSMS(String message, String destinationNumber) {
+    public void run(String... args) throws Exception {
+        logger.info("HTTP servlet booted, telling messaging server to refresh keys");
+        asyncRestTemplate.getForEntity(baseUri().path("/jwt/public/refresh/trusted").toUriString(), Boolean.class);
+    }
+
+    @Override
+    public void sendSMS(String message, String destinationNumber, boolean userRequested) {
         String serviceCallUri = baseUri()
-                .pathSegment("/notification/push/normal/" + destinationNumber)
-                .queryParam("message", message).toUriString();
+                .path("/notification/push/system/{destinationNumber}")
+                .queryParam("message", message)
+                .queryParam("userRequested", userRequested)
+                .buildAndExpand(destinationNumber)
+                .toUriString();
         asyncRestTemplate
                 .exchange(
                         serviceCallUri,

@@ -10,9 +10,7 @@ public interface MessagingServiceBroker {
     /*
     First, pushing a notification right away (even if Async), instead of through notification, for OTPs and safety alerts
      */
-
-    // helper method async wrapper for methods that need to call SMS send directly (i.e., bypassing notification because of time criticality)
-    void sendSMS(String message, String destinationNumber);
+    void sendSMS(String message, String destinationNumber, boolean userRequested);
 
     MessageServicePushResponse sendPrioritySMS(String message, String destinationNumber);
 
