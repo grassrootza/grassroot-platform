@@ -91,7 +91,7 @@ public class AATIncomingSMSController {
 
     private void notifyUnableToProcessReply(User user) {
         String message = messageAssemblingService.createReplyFailureMessage(user);
-        messagingServiceBroker.sendSMS(message, user.getPhoneNumber());
+        messagingServiceBroker.sendSMS(message, user.getPhoneNumber(), true);
     }
 
     private boolean isValidInput(String message){

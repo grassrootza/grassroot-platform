@@ -59,6 +59,7 @@ public class JwtServiceImpl implements JwtService {
     public String createJwt(Map<String, Object> claims) {
         Instant now = Instant.now();
         Instant exp = now.plus(1L, ChronoUnit.MINUTES);
+        logger.debug("creating JWT with KUID: {}", kuid);
         return Jwts.builder()
                 .setHeaderParam("kid", kuid)
                 .setClaims(claims)
@@ -73,6 +74,7 @@ public class JwtServiceImpl implements JwtService {
 
     private PublicCredentials refreshPublicCredentials() {
         kuid = UUID.randomUUID().toString();
+        logger.debug("created KUID for main platform: {}", kuid);
         if (StringUtils.isEmpty(environment.getProperty("JWT_KEYSTORE_PATH"))) {
             keyPair = RsaProvider.generateKeyPair(1024);
         } else {
