@@ -1,5 +1,6 @@
 package za.org.grassroot.core.domain.geo;
 
+import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.JpaEntityType;
 
 import javax.persistence.Column;
@@ -148,6 +149,10 @@ public class ObjectLocation {
 
     public ObjectLocation (String uid, String name, double latitude, double longitude, float score, String type, String description, boolean isPublic) {
         this(uid, name, latitude, longitude, score, type, description, isPublic, 0, 0);
+    }
+
+    public ObjectLocation (String uid, String name, double latitude, double longitude, float score, String type, String description, boolean isPublic, Group group) {
+        this(uid, name, latitude, longitude, score, type, description, isPublic, group.getMemberships().size(), (group.getDescendantEvents().size() + group.getDescendantTodos().size()));
     }
 
     public ObjectLocation (String uid, String name, double latitude, double longitude, float score, String type, boolean isPublic,
