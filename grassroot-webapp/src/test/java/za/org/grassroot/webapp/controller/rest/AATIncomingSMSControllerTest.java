@@ -72,7 +72,7 @@ public class AATIncomingSMSControllerTest extends RestAbstractUnitTest {
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
         verify(messageAssemblingService, times(1)).createReplyFailureMessage(sessionTestUser);
-        verify(messagingServiceBroker, times(1)).sendSMS("Failed!", testUserPhone);
+        verify(messagingServiceBroker, times(1)).sendSMS("Failed!", testUserPhone, true);
 
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(eventBrokerMock);
