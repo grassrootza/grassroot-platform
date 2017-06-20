@@ -112,7 +112,6 @@
     console.log("loading map ...");
 
     // Get parameters
-    var filter = [[${filter}]];
     var latitude = [[${location.latitude}]];
     var longitude = [[${location.longitude}]];
 
@@ -149,16 +148,73 @@
       ,showSubunits: false
     }).addTo(this.map);
 
+    // Filter parameters
+    var minGroupSize = 1;
+    var maxGroupSize = 20;
+    var minGroupTasks = 1;
+    var maxGroupTasks = 20;
+
+    // Find the boundaries for the filters
+    function findLimits(markers) {
+        minGroupSize = arrayMin(markers, function (x) {
+            return x.groupSize;
+        });
+        maxGroupSize = arrayMax(markers, function (x) {
+            return x.groupSize;
+        });
+        minGroupTasks = arrayMin(markers, function (x) {
+            return x.groupTasks;
+        });
+        maxGroupTasks = arrayMax(markers, function (x) {
+            return x.groupTasks;
+        });
+    }
+
+    function arrayMin(arr, get) {
+        var len = arr.length, min = Infinity;
+        while (len--) {
+            if (get(arr[len]) < min) {
+                min = get(arr[len]);
+            }
+        }
+        return min;
+    }
+
+    function arrayMax(arr, get) {
+        var len = arr.length, max = -Infinity;
+        while (len--) {
+            if (get(arr[len]) > max) {
+                max = get(arr[len]);
+            }
+        }
+        return max;
+    }
+
+    // Apply the filters into the location marks
+    function applyFilter(markers) {
+        var result = markers.filter(function (item) {
+            return (
+                (item.groupSize >= minGroupSize && item.groupSize <= maxGroupSize)
+	            &&
+                (item.groupTasks >= minGroupTasks && item.groupTasks <= maxGroupTasks)
+            );
+        });
+        return result;
+    }
+
     // Function to create the markers into map
-    function CreateMarkers(markers) {
+    function createMarkers(markers) {
       // First clear old markers
       this.map.removeLayer(this.markersLayer);
 
+      // Apply the filter
+      var markersFilter = applyFilter(markers);
+
       // Create all marks
-      for (var i=0; i < markers.length; ++i)
+      for (var i=0; i < markersFilter.length; ++i)
       {
         // Get data
-        var m = markers[i];
+        var m = markersFilter[i];
 
         // Create marker
         var marker = L.marker([m.latitude, m.longitude]);
@@ -174,7 +230,7 @@
     }
 
     // Add to map the 'moveend' event
-    function LoadMarkers() {
+    function loadMarkers() {
       var url = '/api/location';
       // Get bounding box
       var min = this.map.getBounds().getSouthWest();
@@ -199,7 +255,8 @@
         headers: headers,
         success: function(response) {
           console.log("done");
-          CreateMarkers(response.data);
+          findLimits(response.data);
+          createMarkers(response.data);
         },
         error: function(jqxhr, status, error) {
           var err = status + ", " + error;
@@ -214,7 +271,7 @@
       // Add callbacks to buttons
       // -------------------------
       map.on('moveend', function(e) {
-        LoadMarkers();
+        loadMarkers();
       });
       // Hide sidebar
       $('#sidebar-hide-btn').click(function () {
@@ -229,7 +286,7 @@
       });
 
       // Load initial markers
-      LoadMarkers();
+      loadMarkers();
     });
   /*]]>*/
   </script>
