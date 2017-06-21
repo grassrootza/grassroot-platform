@@ -10,7 +10,6 @@ public enum USSDResponseTypes {
     RESPOND_SAFETY,
     RESPOND_TODO,
     RENAME_SELF,
-    NAME_GROUP,
     NONE
 
 }

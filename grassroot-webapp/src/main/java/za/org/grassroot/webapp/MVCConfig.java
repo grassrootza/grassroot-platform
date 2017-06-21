@@ -35,6 +35,7 @@ import java.util.concurrent.TimeUnit;
 @Configuration
 @ControllerAdvice
 public class MVCConfig extends WebMvcConfigurerAdapter {
+
     private PasswordTokenService passwordTokenService;
 
     @Bean
