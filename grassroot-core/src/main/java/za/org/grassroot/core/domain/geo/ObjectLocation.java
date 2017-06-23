@@ -2,6 +2,7 @@ package za.org.grassroot.core.domain.geo;
 
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.JpaEntityType;
+import za.org.grassroot.core.domain.Meeting;
 
 import javax.persistence.Column;
 import javax.persistence.Embeddable;
@@ -141,6 +142,19 @@ public class ObjectLocation {
             this.url = "/group/" + access + "view?groupUid=" + uid;
         else
             this.url = "/meeting/" + access + "view?eventUid=" + uid;
+    }
+
+    public ObjectLocation (Meeting meeting, MeetingLocation meetingLocation) {
+        this(meeting.getUid(),
+                meeting.getName(), meetingLocation.getLocation().getLatitude(),
+                meetingLocation.getLocation().getLongitude(), meetingLocation.getScore(),
+                "MEETING",
+                "<strong>Where: </strong>" + meeting.getEventLocation() +
+                "<br/><strong>Date and Time: </strong>" + meeting.getEventStartDateTime() +
+                "<br/><strong>Creation Date: </strong>" + meeting.getCreatedDateTime(),
+                meeting.isPublic(),
+                meeting.getAncestorGroup().getMemberships().size(),
+                (meeting.getAncestorGroup().getDescendantEvents().size() + meeting.getAncestorGroup().getDescendantTodos().size()));
     }
 
     public ObjectLocation (String uid, String name, double latitude, double longitude, float score, String type, boolean isPublic) {
