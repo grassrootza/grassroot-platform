@@ -444,17 +444,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
-    @Transactional
-    public Group fetchGroupUserMustRename(User user) {
-        Group lastCreatedGroup = groupRepository.findFirstByCreatedByUserAndActiveTrueOrderByIdDesc(user);
-        if (lastCreatedGroup != null && lastCreatedGroup.isActive() && !lastCreatedGroup.hasName()
-                && !asyncUserService.hasSkippedNamingGroup(user.getUid(), lastCreatedGroup.getUid()))
-            return lastCreatedGroup;
-        else
-            return null;
-    }
-
-    @Override
     @Transactional(readOnly = true)
     public List<String[]> findOthersInGraph(User user, String nameFragment) {
         // todo : fix this causing errors when groups is empty (and also profile that collection call on getGroups)

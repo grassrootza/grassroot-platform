@@ -770,7 +770,6 @@ public class USSDMeetingController extends USSDController {
 
     /*
     A couple of helper methods that are quite specific to flow & structure of this controller
-    todo: consider abstracting & moving to USSDUrlUtils
      */
 
     private String composeBackUri(String entityUid, String backMenu) {

@@ -82,8 +82,6 @@ public interface UserManagementService {
 
     void sendAndroidLinkSms(String userUid);
 
-    Group fetchGroupUserMustRename(User user);
-
     List<String[]> findOthersInGraph(User user, String nameFragment);
 
 }

@@ -209,7 +209,6 @@ public class DateTimeUtil {
         String reformattedDate;
 
         if (yearMatcher.find()) {
-
             String dateOnly = yearMatcher.group(0);
             log.info("reformDateInput ... valid date string with years: {}", dateOnly);
             List<String> dividedUp = Lists.newArrayList(
@@ -218,21 +217,20 @@ public class DateTimeUtil {
                     String.format("%02d", Integer.parseInt(dividedUp.get(0))), // day
                     String.format("%02d", Integer.parseInt(dividedUp.get(1))), // month
                     dividedUp.get(2)}); // year
-
         } else if (noYearMatcher.find()) {
-
             String dateOnly = noYearMatcher.group(0);
             log.info("reformDateInput .... valid dd-MM string found, extracted as: {}", dateOnly);
             List<String> dividedUp = Lists.newArrayList(
                     Splitter.on(CharMatcher.anyOf(possibleDateDelimiters)).omitEmptyStrings().split(dateOnly));
             String year = (Integer.parseInt(dividedUp.get(1)) >= LocalDateTime.now().getMonthValue()) ?
                     Year.now().toString() : Year.now().plusYears(1).toString();
-            reformattedDate = dateJoiner.join(new String[]{
-                    String.format("%02d", Integer.parseInt(dividedUp.get(0))),
-                    String.format("%02d", Integer.parseInt(dividedUp.get(1))), year});
-
+            LocalDate date = LocalDate.of(Year.now().getValue(), Integer.parseInt(dividedUp.get(1)),
+                    Integer.parseInt(dividedUp.get(0)));
+            if (date.isBefore(LocalDate.now())) {
+                date = date.plusYears(1);
+            }
+            reformattedDate = preferredDateFormat.format(date);
         } else if (noDelimMatcher.find()) {
-
             try {
                 log.info("reformDateInput ... no delimiter, found 3-4 digits in a row, assuming those are it ..");
                 String digitString = noDelimMatcher.group(0);

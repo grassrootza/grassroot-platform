@@ -25,7 +25,10 @@ public interface DataSubscriberBroker {
     void addPushEmails(final String userUid, final String subscriberUid, final List<String> pushEmails);
 
     // userUid can be null if owner of push email is not a user
+    // subscriberUid can be null if need to remove from any/all subscribers
     void removePushEmails(final String userUid, final String subscriberUid, final List<String> pushEmails);
+
+    void removeEmailFromAllSubscribers(final String pushEmail);
 
     void addUsersWithViewAccess(final String adminUid, final String subscriberUid, final Set<String> userUids);
 

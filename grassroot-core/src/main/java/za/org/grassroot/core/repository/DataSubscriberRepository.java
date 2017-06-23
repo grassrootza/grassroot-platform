@@ -33,4 +33,7 @@ public interface DataSubscriberRepository extends JpaRepository<DataSubscriber, 
     @Query(value = "select * from data_subscriber where ?1 = ANY(access_users)", nativeQuery = true)
     List<DataSubscriber> findSubscriberHoldingUser(String userUid);
 
+    @Query(value = "UPDATE data_subscriber SET push_emails = array_remove(push_emails, ?1)", nativeQuery = true)
+    void removeEmailFromAllSubscribers(String emailAddress);
+
 }
