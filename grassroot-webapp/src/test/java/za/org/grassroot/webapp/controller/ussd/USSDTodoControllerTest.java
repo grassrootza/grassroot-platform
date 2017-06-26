@@ -231,11 +231,13 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
                     .andExpect(status().isOk());
         }
 
-        verify(userManagementServiceMock, times(bloomVariations.size())).findByInputNumber(eq(testUserPhone), anyString());
+        verify(userManagementServiceMock, times(bloomVariations.size()))
+                .findByInputNumber(eq(testUserPhone), anyString());
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(todoRequestBrokerMock, times(bloomVariations.size())).load(dummyLogBook.getUid());
-        verify(todoRequestBrokerMock, times(bloomVariations.size())).updateDueDate(testUser.getUid(), dummyLogBook.getUid(),
-                                                                                      correctDueDate);
+        verify(todoRequestBrokerMock, times(bloomVariations.size()))
+                .load(dummyLogBook.getUid());
+        verify(todoRequestBrokerMock, times(bloomVariations.size()))
+                .updateDueDate(testUser.getUid(), dummyLogBook.getUid(), correctDueDate);
         verifyNoMoreInteractions(todoRequestBrokerMock);
 
     }

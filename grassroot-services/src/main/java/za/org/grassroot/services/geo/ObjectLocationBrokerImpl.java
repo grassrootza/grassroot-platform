@@ -239,22 +239,16 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
 
         // Mount query
         String query =
-            "SELECT NEW za.org.grassroot.core.domain.geo.ObjectLocation(" +
-            "  m.uid, m.name, l.location.latitude, l.location.longitude, l.score, 'MEETING', " +
-            "  CONCAT('<strong>Where: </strong>', m.eventLocation, '<br/><strong>Date and Time: </strong>', m.eventStartDateTime," +
-            "  '<br/><strong>Creation Date: </strong>', g.createdDateTime), m.isPublic, " +
-            "  size(g.memberships), (size(g.descendantEvents) + size(g.descendantTodos))) " +
+            "SELECT NEW za.org.grassroot.core.domain.geo.ObjectLocation(m, l)" +
             "FROM MeetingLocation l " +
             "INNER JOIN l.meeting m " +
-            "INNER JOIN m.parentGroup g " +
             "WHERE " + restrictionClause +
             "  l.calculatedDateTime <= :date " +
             "  AND l.calculatedDateTime = (SELECT MAX(ll.calculatedDateTime) FROM MeetingLocation ll WHERE ll.meeting = l.meeting) " +
             "  AND l.location.latitude " +
             "      BETWEEN :latMin AND :latMax " +
             "  AND l.location.longitude " +
-            "      BETWEEN :longMin AND :longMax " +
-		    "GROUP BY m.uid, m.name"
+            "      BETWEEN :longMin AND :longMax "
             ;
 
         logger.info(query);

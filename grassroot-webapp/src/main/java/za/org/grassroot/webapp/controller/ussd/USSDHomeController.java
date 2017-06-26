@@ -19,7 +19,6 @@ import za.org.grassroot.services.group.GroupQueryBroker;
 import za.org.grassroot.services.livewire.LiveWireAlertBroker;
 import za.org.grassroot.services.task.EventLogBroker;
 import za.org.grassroot.services.task.TodoBroker;
-import za.org.grassroot.services.task.VoteBroker;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDResponseTypes;
 import za.org.grassroot.webapp.enums.USSDSection;
@@ -38,8 +37,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
-import static za.org.grassroot.core.util.DateTimeUtil.convertToUserTimeZone;
-import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
 import static za.org.grassroot.webapp.enums.USSDSection.*;
 
 /**
@@ -77,12 +74,6 @@ public class USSDHomeController extends USSDController {
 
     private static final String path = homePath;
     private static final USSDSection thisSection = HOME;
-
-    private static final String rsvpMenu = "rsvp",
-            renameUserMenu = "rename-start",
-            renameGroupAndStart = "group-start",
-            promptGroupRename = "group-rename-prompt",
-            promptConfirmGroupInactive = "group-inactive-confirm";
 
     private int hashPosition;
 
@@ -216,7 +207,6 @@ public class USSDHomeController extends USSDController {
         if (eventBroker.userHasResponsesOutstanding(user, EventType.MEETING)) return USSDResponseTypes.MTG_RSVP;
         if (todoBroker.userHasTodosForResponse(user.getUid(), false)) return USSDResponseTypes.RESPOND_TODO;
         if (userManager.needsToRenameSelf(user)) return USSDResponseTypes.RENAME_SELF;
-        if (userManager.fetchGroupUserMustRename(user) != null) return USSDResponseTypes.NAME_GROUP;
 
         return USSDResponseTypes.NONE;
 
@@ -282,13 +272,7 @@ public class USSDHomeController extends USSDController {
             case RENAME_SELF:
                 openingMenu.setPromptMessage(getMessage(thisSection, USSDController.startMenu, promptKey + "-rename", user));
                 openingMenu.setFreeText(true);
-                openingMenu.setNextURI(renameUserMenu);
-                break;
-            case NAME_GROUP:
-                Group group = userManager.fetchGroupUserMustRename(user);
-                openingMenu = (groupBroker.isDeactivationAvailable(user, group, true)) ?
-                        renameGroupAllowInactive(user, group.getUid(), dateFormat.format(convertToUserTimeZone(group.getCreatedDateTime(), getSAST()))) :
-                        renameGroupNoInactiveOption(user, group.getUid(), dateFormat.format(convertToUserTimeZone(group.getCreatedDateTime(), getSAST())));
+                openingMenu.setNextURI("rename-start");
                 break;
             case NONE:
                 openingMenu = defaultStartMenu(user);
@@ -401,11 +385,11 @@ public class USSDHomeController extends USSDController {
                 meeting.getEventDateTimeAtSAST().format(dateTimeFormat)};
 
         // if the composed message is longer than 120 characters, we are going to go over, so return a shortened message
-        String defaultPrompt = getMessage(thisSection, startMenu, promptKey + "-" + rsvpMenu, meetingDetails, sessionUser);
+        String defaultPrompt = getMessage(thisSection, startMenu, promptKey + "-rsvp", meetingDetails, sessionUser);
         if (defaultPrompt.length() > 120)
-            defaultPrompt = getMessage(thisSection, startMenu, promptKey + "-" + rsvpMenu + ".short", meetingDetails, sessionUser);
+            defaultPrompt = getMessage(thisSection, startMenu, promptKey + "-rsvp.short", meetingDetails, sessionUser);
 
-        String optionUri = rsvpMenu + entityUidUrlSuffix + meeting.getUid();
+        String optionUri = "rsvp" + entityUidUrlSuffix + meeting.getUid();
         USSDMenu openingMenu = new USSDMenu(defaultPrompt);
         openingMenu.setMenuOptions(new LinkedHashMap<>(optionsYesNo(sessionUser, optionUri, optionUri)));
         return openingMenu;
@@ -426,29 +410,6 @@ public class USSDHomeController extends USSDController {
             menu.addMenuOption(completeUri + "&confirmed=unknown", getMessage(thisSection, startMenu, logKey + "." + optionsKey + "unknown", user));
             return menu;
         }
-    }
-
-    private USSDMenu renameGroupNoInactiveOption(User user, String groupUid, String dateCreated) {
-        USSDMenu thisMenu = new USSDMenu(getMessage(thisSection, startMenu, promptKey + "-group-rename", dateCreated, user));
-        thisMenu.setFreeText(true);
-        thisMenu.setNextURI(renameGroupAndStart + groupUidUrlSuffix + groupUid);
-        return thisMenu;
-    }
-
-
-    private USSDMenu renameGroupAllowInactive(User user, String groupUid, String dateCreated) {
-        USSDMenu thisMenu = new USSDMenu(getMessage(thisSection, startMenu, promptKey + "-group-options", dateCreated, user));
-        thisMenu.setFreeText(false);
-
-        thisMenu.addMenuOption(promptGroupRename + groupUidUrlSuffix + groupUid,
-                getMessage(thisSection, startMenu, "group.options.rename", user));
-        thisMenu.addMenuOption(promptConfirmGroupInactive + groupUidUrlSuffix + groupUid,
-                getMessage(thisSection, startMenu, "group.options.inactive", user));
-        thisMenu.addMenuOption(groupMenus + "merge" + groupUidUrlSuffix + groupUid,
-                getMessage(thisSection, startMenu, "group.options.merge", user));
-        thisMenu.addMenuOption(startMenu + "_force", getMessage(thisSection, startMenu, "interrupted.start", user));
-
-        return thisMenu;
     }
 
     private USSDMenu assemblePanicButtonActivationMenu(User user) {
@@ -486,7 +447,7 @@ public class USSDHomeController extends USSDController {
     Menus to process responses to votes and RSVPs,
      */
 
-    @RequestMapping(value = path + rsvpMenu)
+    @RequestMapping(value = path + "rsvp")
     @ResponseBody
     public Request rsvpAndWelcome(@RequestParam(value = phoneNumber) String inputNumber,
                                   @RequestParam(value = entityUidParam) String meetingUid,
@@ -527,7 +488,7 @@ public class USSDHomeController extends USSDController {
         return menuBuilder(welcomeMenu(prompt, user));
     }
 
-    @RequestMapping(value = path + renameUserMenu)
+    @RequestMapping(value = path + "rename-start")
     @ResponseBody
     public Request renameAndStart(@RequestParam(value = phoneNumber) String inputNumber,
                                   @RequestParam(value = userInputParam) String userName) throws URISyntaxException {
@@ -541,65 +502,6 @@ public class USSDHomeController extends USSDController {
             userManager.updateDisplayName(sessionUser.getUid(), userName);
             welcomeMessage = getMessage(thisSection, startMenu, promptKey + "-rename-do", sessionUser.nameToDisplay(), sessionUser);
         }
-        return menuBuilder(welcomeMenu(welcomeMessage, sessionUser));
-    }
-
-    @RequestMapping(value = path + renameGroupAndStart)
-    @ResponseBody
-    public Request groupNameAndStart(@RequestParam(value = phoneNumber) String inputNumber,
-                                     @RequestParam(value = groupUidParam) String groupUid,
-                                     @RequestParam(value = userInputParam) String groupName) throws URISyntaxException {
-
-        User user = userManager.findByInputNumber(inputNumber);
-        String welcomeMessage;
-        if ("0".equals(groupName) || "".equals(groupName.trim())) {
-            welcomeMessage = getMessage(thisSection, startMenu, promptKey, user);
-            userLogger.recordUserLog(user.getUid(), UserLogType.USER_SKIPPED_NAME, groupUid);
-        } else {
-            groupBroker.updateName(user.getUid(), groupUid, groupName);
-            welcomeMessage = getMessage(thisSection, startMenu, promptKey + "-group-do", user.nameToDisplay(), user);
-        }
-
-        return menuBuilder(welcomeMenu(welcomeMessage, user));
-
-    }
-
-    @RequestMapping(value = path + promptGroupRename)
-    @ResponseBody
-    public Request askForGroupName(@RequestParam(value = phoneNumber) String inputNumber,
-                                   @RequestParam(value = groupUidParam) String groupUid) throws URISyntaxException {
-        Group group = groupBroker.load(groupUid);
-        return menuBuilder(renameGroupNoInactiveOption(userManager.findByInputNumber(inputNumber), groupUid,
-                dateFormat.format(convertToUserTimeZone(group.getCreatedDateTime(), getSAST()))));
-    }
-
-    @RequestMapping(value = path + promptConfirmGroupInactive)
-    @ResponseBody
-    public Request confirmGroupInactive(@RequestParam(value = phoneNumber) String inputNumber,
-                                        @RequestParam(value = groupUidParam) String groupUid) throws URISyntaxException {
-        User user = userManager.findByInputNumber(inputNumber);
-        Group group = groupBroker.load(groupUid);
-        String sizeOfGroup = "" + (group.getMembers().size() - 1); // subtracting the group creator
-        String optionsPrefix = thisSection.toKey() + "group.inactive." + optionsKey;
-
-        USSDMenu thisMenu = new USSDMenu(getMessage(thisSection, "group", "inactive." + promptKey, sizeOfGroup, user));
-        thisMenu.addMenuOption(promptConfirmGroupInactive + doSuffix + groupUidUrlSuffix + groupUid,
-                getMessage(optionsPrefix + "confirm", user));
-        thisMenu.addMenuOption(groupMenus + "merge" + groupUidUrlSuffix + groupUid,
-                getMessage(optionsPrefix + "merge", user));
-        thisMenu.addMenuOption(startMenu + "_force", getMessage(optionsPrefix + "cancel", user));
-
-        return menuBuilder(thisMenu);
-    }
-
-    @RequestMapping(value = path + promptConfirmGroupInactive + doSuffix)
-    @ResponseBody
-    public Request setGroupInactiveAndStart(@RequestParam(value = phoneNumber) String inputNumber,
-                                            @RequestParam(value = groupUidParam) String groupUid) throws URISyntaxException {
-        User sessionUser = userManager.findByInputNumber(inputNumber);
-        log.info("At the request of user: " + sessionUser + ", we are setting inactive this group ... " + groupUid);
-        groupBroker.deactivate(sessionUser.getUid(), groupUid, true);
-        String welcomeMessage = getMessage(thisSection, "group", "inactive." + promptKey + ".done", sessionUser);
         return menuBuilder(welcomeMenu(welcomeMessage, sessionUser));
     }
 

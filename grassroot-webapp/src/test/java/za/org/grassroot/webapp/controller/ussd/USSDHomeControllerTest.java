@@ -274,35 +274,6 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
     }
 
     /*
-    Make sure groupRename works properly
-     */
-    @Test
-    public void groupRenameShouldWork() throws Exception {
-
-        resetTestUser();
-        testUser.setHasInitiatedSession(true);
-        Group testGroup = new Group("", testUser);
-
-        when(userManagementServiceMock.loadOrCreateUser(phoneForTests)).thenReturn(testUser);
-        when(userManagementServiceMock.findByInputNumber(phoneForTests)).thenReturn(testUser);
-        when(userManagementServiceMock.fetchGroupUserMustRename(testUser)).thenReturn(testGroup);
-
-        // todo: work out how to verify that it actually returned the prompt to rename the testGroup
-        mockMvc.perform(get(openingMenu).param(phoneParameter, testUser.getPhoneNumber())).
-                andExpect(status().isOk());
-
-        mockMvc.perform(get("/ussd/group-start").
-                param(phoneParameter, phoneForTests).
-                param("groupUid", "" + testGroup.getUid()).
-                param("request", testGroupName)).andExpect(status().isOk());
-
-        verify(userManagementServiceMock, times(1)).loadOrCreateUser(phoneForTests);
-        verify(userManagementServiceMock, times(1)).findByInputNumber(phoneForTests);
-        verify(groupBrokerMock, times(1)).updateName(testUser.getUid(), testGroup.getUid(), testGroupName);
-        verify(userManagementServiceMock, times(2)).fetchGroupUserMustRename(testUser);
-    }
-
-    /*
     User rename should work properly
      */
     @Test
