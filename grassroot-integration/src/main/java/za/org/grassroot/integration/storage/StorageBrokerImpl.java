@@ -20,6 +20,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import za.org.grassroot.core.domain.ImageRecord;
 import za.org.grassroot.core.enums.ActionLogType;
@@ -61,45 +62,55 @@ public class StorageBrokerImpl implements StorageBroker {
 
     @Override
     @Transactional
-    public boolean storeImage(ActionLogType actionLogType, String actionLogUid, MultipartFile image) {
+    public boolean storeImage(ActionLogType actionLogType, String imageKey, MultipartFile image) {
         Objects.requireNonNull(actionLogType);
-        Objects.requireNonNull(actionLogUid);
-        Objects.requireNonNull(image);
+        Objects.requireNonNull(imageKey);
 
         final AmazonS3 s3 = s3ClientFactory.createClient();
         final TransferManager transferManager = TransferManagerBuilder.standard().withS3Client(s3).build();
-
-        logger.info("storing image in bucket: {}", taskImagesBucket);
-
         boolean completed;
 
-        try {
-            ObjectMetadata metadata = new ObjectMetadata();
-            metadata.setContentLength(image.getSize());
-            metadata.setContentType(image.getContentType());
-
-            byte[] resultByte = DigestUtils.md5(image.getBytes());
-            String streamMD5 = new String(Base64.encodeBase64(resultByte));
-            metadata.setContentMD5(streamMD5);
-
-            ImageRecord imageRecord = imageRecordRepository.save(new ImageRecord.Builder()
-                    .actionLogType(actionLogType)
-                    .actionLogUid(actionLogUid)
-                    .md5(streamMD5)
-                    .bucket(taskImagesBucket)
-                    .build());
-
-            Upload upload = transferManager.upload(taskImagesBucket, actionLogUid, image.getInputStream(), metadata);
-            upload.waitForCompletion();
-            imageRecord.setStoredTime(Instant.now());
+        if (image != null) {
             completed = true;
-        } catch (AmazonServiceException|InterruptedException|IOException e) {
-            completed = false;
-            logger.error("Error uploading file: {}", e.toString());
+            storeImageRecord(actionLogType, imageKey, null);
+        } else {
+            logger.debug("storing image in bucket: {}", taskImagesBucket);
+            try {
+                ObjectMetadata metadata = new ObjectMetadata();
+                metadata.setContentLength(image.getSize());
+                metadata.setContentType(image.getContentType());
+
+                byte[] resultByte = DigestUtils.md5(image.getBytes());
+                String streamMD5 = new String(Base64.encodeBase64(resultByte));
+                metadata.setContentMD5(streamMD5);
+
+                Upload upload = transferManager.upload(taskImagesBucket, imageKey, image.getInputStream(), metadata);
+                upload.waitForCompletion();
+
+                ImageRecord imageRecord = storeImageRecord(actionLogType, imageKey, streamMD5);
+                imageRecord.setStoredTime(Instant.now());
+                completed = true;
+            } catch (AmazonServiceException | InterruptedException | IOException e) {
+                completed = false;
+                logger.error("Error uploading file: {}", e.toString());
+            }
         }
 
         transferManager.shutdownNow();
         return completed;
+    }
+
+    private ImageRecord storeImageRecord(ActionLogType actionLogType, String imageKey, String streamMd5) {
+        ImageRecord.Builder builder = new ImageRecord.Builder()
+                .actionLogType(actionLogType)
+                .actionLogUid(imageKey)
+                .bucket(taskImagesBucket);
+
+        if (!StringUtils.isEmpty(streamMd5)) {
+            builder.md5(streamMd5);
+        }
+
+        return imageRecordRepository.save(builder.build());
     }
 
     @Override

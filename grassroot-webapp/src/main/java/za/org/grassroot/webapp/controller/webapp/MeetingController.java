@@ -23,6 +23,7 @@ import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.EventLogBroker;
+import za.org.grassroot.services.task.MeetingBuilderHelper;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.enums.EntityPublicOption;
 import za.org.grassroot.webapp.model.web.MeetingWrapper;
@@ -138,10 +139,21 @@ public class MeetingController extends BaseController {
                 invitedMemberUids.add(getUserProfile().getUid()); // in future ask if they're sure
             }
 
-            Meeting createdMeeting = eventBroker.createMeeting(getUserProfile().getUid(), selectedGroupUid, JpaEntityType.GROUP,
-                    meeting.getTitle(), meeting.getEventDateTime(), meeting.getLocation(),
-                    meeting.isIncludeSubGroups(), meeting.getReminderType(), meeting.getCustomReminderMinutes(),
-                    meeting.getDescription(), invitedMemberUids, meeting.getImportance());
+            MeetingBuilderHelper helper = new MeetingBuilderHelper()
+                    .userUid(getUserProfile().getUid())
+                    .parentType(JpaEntityType.GROUP)
+                    .parentUid(selectedGroupUid)
+                    .name(meeting.getTitle())
+                    .startDateTime(meeting.getEventDateTime())
+                    .location(meeting.getLocation())
+                    .reminderType(meeting.getReminderType())
+                    .customReminderMinutes(meeting.getCustomReminderMinutes())
+                    .description(meeting.getDescription())
+                    .assignedMemberUids(invitedMemberUids)
+                    .importance(meeting.getImportance())
+                    .includeSubGroups(meeting.isIncludeSubGroups());
+
+            Meeting createdMeeting = eventBroker.createMeeting(helper);
 
             if (!EntityPublicOption.PRIVATE.equals(meeting.getPublicOption())) {
                 makeMeetingPublic(meeting, createdMeeting);

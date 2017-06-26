@@ -22,24 +22,21 @@ public interface EventBroker {
 	Meeting loadMeeting(String meetingUid);
 
 	/**
-	 * Create a meeting entity, also triggering notifications to be stored, and subsequently sent
-	 * @param userUid The UID of the user who is calling the meeting
-	 * @param parentUid The UID of the parent entity (group/meeting/etc)
-	 * @param parentType The type of the parent entity
-	 * @param name The "name", or "title", of the meeting (this will be included in the SMS/short notification that is sent)
-	 * @param eventStartDateTime The date and time when the meeting will take place
-	 * @param eventLocation The location of the meeting
-	 * @param includeSubGroups Whether the meeting notifications should be sent to the members of all subgroups (ignored if the parent is not a group)
-	 * @param reminderType The type of reminder time (group default / no reminder / custom time)
-	 * @param customReminderMinutes If the reminder type is custom, the number of minutes in advance to send the reminder
-	 * @param description An optional longer description -- can be null
-     * @param assignMemberUids The UIDs of the assigned members. If an empty set, then all members in the parent entity will be assigned.
-     * @param importance The meeting importance
-	 * @return
-     */
-	Meeting createMeeting(String userUid, String parentUid, JpaEntityType parentType, String name, LocalDateTime eventStartDateTime, String eventLocation,
-						  boolean includeSubGroups, EventReminderType reminderType, int customReminderMinutes, String description,
-						  Set<String> assignMemberUids, MeetingImportance importance);
+	 * Create a meeting entity, also triggering notifications to be stored, and subsequently sent. Fields in helper:
+	 * userUid The UID of the user who is calling the meeting
+	 * parentUid The UID of the parent entity (group/meeting/etc)
+	 * parentType The type of the parent entity
+	 * name The "name", or "title", of the meeting (this will be included in the SMS/short notification that is sent)
+	 * eventStartDateTime The date and time when the meeting will take place
+	 * eventLocation The location of the meeting
+	 * includeSubGroups Whether the meeting notifications should be sent to the members of all subgroups (ignored if the parent is not a group)
+	 * reminderType The type of reminder time (group default / no reminder / custom time)
+	 * customReminderMinutes If the reminder type is custom, the number of minutes in advance to send the reminder
+	 * description An optional longer description -- can be null
+     * assignMemberUids The UIDs of the assigned members. If an empty set, then all members in the parent entity will be assigned.
+     * importance The meeting importance
+	 */
+	Meeting createMeeting(MeetingBuilderHelper helper);
 
 	// for commonly updated fields (in particular, the only fields that can be changed via USSD) -- returns true if field actually changed ...
 	boolean updateMeeting(String userUid, String meetingUid, String name, LocalDateTime eventStartDateTime, String eventLocation);

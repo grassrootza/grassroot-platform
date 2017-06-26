@@ -14,7 +14,6 @@ import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
-import za.org.grassroot.core.enums.MeetingImportance;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.repository.EventLogRepository;
@@ -23,6 +22,7 @@ import za.org.grassroot.services.exception.AccountLimitExceededException;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.EventLogBroker;
+import za.org.grassroot.services.task.MeetingBuilderHelper;
 import za.org.grassroot.services.task.TaskBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.enums.RestMessage;
@@ -84,16 +84,27 @@ public class MeetingRestController {
                                                          @RequestParam LocalDateTime eventStartDateTime,
                                                          @RequestParam int reminderMinutes,
                                                          @RequestParam String location,
-                                                         @RequestParam(value="members", required = false) Set<String> members) {
+                                                         @RequestParam(value="members", required = false) Set<String> members,
+                                                         @RequestParam(required = false) String imageKey) {
 
         User user = userManagementService.findByInputNumber(phoneNumber);
         Set<String> assignedMemberUids = (members == null) ? new HashSet<>() : members;
         EventReminderType reminderType = reminderMinutes == -1 ? EventReminderType.GROUP_CONFIGURED : EventReminderType.CUSTOM;
 
         try {
-            Meeting meeting = eventBroker.createMeeting(user.getUid(), parentUid, JpaEntityType.GROUP, title, eventStartDateTime,
-                    location, false, reminderType, reminderMinutes, description,
-                    assignedMemberUids, MeetingImportance.ORDINARY);
+            MeetingBuilderHelper helper = new MeetingBuilderHelper()
+                    .userUid(user.getUid())
+                    .parentUid(parentUid)
+                    .parentType(JpaEntityType.GROUP)
+                    .name(title)
+                    .startDateTime(eventStartDateTime)
+                    .location(location)
+                    .reminderType(reminderType)
+                    .customReminderMinutes(reminderMinutes)
+                    .description(description)
+                    .assignedMemberUids(assignedMemberUids)
+                    .taskImageKey(imageKey);
+            Meeting meeting = eventBroker.createMeeting(helper);
             TaskDTO createdMeeting = taskBroker.load(user.getUid(), meeting.getUid(), TaskType.MEETING);
             return RestUtil.okayResponseWithData(RestMessage.MEETING_CREATED, Collections.singletonList(createdMeeting));
         } catch (EventStartTimeNotInFutureException e) {

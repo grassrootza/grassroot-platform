@@ -67,9 +67,10 @@ public class EventBrokerImpl implements EventBroker {
 	private final MessageAssemblingService messageAssemblingService;
 	private final AccountGroupBroker accountGroupBroker;
 	private final GeoLocationBroker geoLocationBroker;
+	private final TaskImageBroker taskImageBroker;
 
 	@Autowired
-	public EventBrokerImpl(MeetingRepository meetingRepository, EventLogBroker eventLogBroker, EventRepository eventRepository, VoteRepository voteRepository, UidIdentifiableRepository uidIdentifiableRepository, UserRepository userRepository, AccountGroupBroker accountGroupBroker, GroupRepository groupRepository, PermissionBroker permissionBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, CacheUtilService cacheUtilService, MessageAssemblingService messageAssemblingService, MeetingLocationRepository meetingLocationRepository, GeoLocationBroker geoLocationBroker) {
+	public EventBrokerImpl(MeetingRepository meetingRepository, EventLogBroker eventLogBroker, EventRepository eventRepository, VoteRepository voteRepository, UidIdentifiableRepository uidIdentifiableRepository, UserRepository userRepository, AccountGroupBroker accountGroupBroker, GroupRepository groupRepository, PermissionBroker permissionBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, CacheUtilService cacheUtilService, MessageAssemblingService messageAssemblingService, MeetingLocationRepository meetingLocationRepository, GeoLocationBroker geoLocationBroker, TaskImageBroker taskImageBroker) {
 		this.meetingRepository = meetingRepository;
 		this.eventLogBroker = eventLogBroker;
 		this.eventRepository = eventRepository;
@@ -83,6 +84,7 @@ public class EventBrokerImpl implements EventBroker {
 		this.cacheUtilService = cacheUtilService;
 		this.messageAssemblingService = messageAssemblingService;
 		this.geoLocationBroker = geoLocationBroker;
+		this.taskImageBroker = taskImageBroker;
 	}
 
 	@Override
@@ -96,54 +98,28 @@ public class EventBrokerImpl implements EventBroker {
 		return meetingRepository.findOneByUid(meetingUid);
 	}
 
-    @Override
-    @Transactional
-    public Meeting createMeeting(String userUid, String parentUid, JpaEntityType parentType, String name, LocalDateTime eventStartDateTime, String eventLocation,
-								 boolean includeSubGroups, EventReminderType reminderType, int customReminderMinutes,
-								 String description, Set<String> assignMemberUids, MeetingImportance importance) {
-        Objects.requireNonNull(userUid);
-        Objects.requireNonNull(parentUid);
-        Objects.requireNonNull(parentType);
-        Objects.requireNonNull(assignMemberUids);
 
-		Instant eventStartDateTimeInSystem = convertToSystemTime(eventStartDateTime, getSAST());
-		validateEventStartTime(eventStartDateTimeInSystem);
+	@Override
+	@Transactional
+	public Meeting createMeeting(MeetingBuilderHelper helper) {
+		helper.validateMeetingFields();
 
-		User user = userRepository.findOneByUid(userUid);
-		MeetingContainer parent = uidIdentifiableRepository.findOneByUid(MeetingContainer.class, parentType, parentUid);
+		User user = userRepository.findOneByUid(helper.getUserUid());
+		MeetingContainer parent = uidIdentifiableRepository.findOneByUid(MeetingContainer.class,
+				helper.getParentType(), helper.getParentUid());
 
-		// todo : implement for generic parent types, once have migrated to jpa specifications
-		if (parentType.equals(JpaEntityType.GROUP)) {
-			Event possibleDuplicate = checkForDuplicate(userUid, parentUid, name, eventStartDateTimeInSystem);
-			if (possibleDuplicate != null && possibleDuplicate.getEventType().equals(EventType.MEETING)) { // todo : hand over to update meeting if anything different in parameters
-				logger.info("Detected duplicate meeting creation, returning the already-created one ... ");
-				return (Meeting) possibleDuplicate;
-			}
-
-			logger.info("Event limits enabled? {}", eventMonthlyLimitActive);
-			if (eventMonthlyLimitActive && accountGroupBroker.numberEventsLeftForGroup(parentUid) < 1) {
-				throw new AccountLimitExceededException();
-			}
+		Event possibleDuplicate = checkForDuplicate(helper.getUserUid(), helper.getParentUid(),
+				helper.getName(), helper.getStartInstant());
+		if (possibleDuplicate != null) { // todo : hand over to update meeting if anything different in parameters
+			return (Meeting) possibleDuplicate;
 		}
 
+		checkForEventLimit(helper.getParentUid());
 		permissionBroker.validateGroupPermission(user, parent.getThisOrAncestorGroup(), Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING);
 
-
-		if (name.length() > 40) {
-			throw new TaskNameTooLongException();
-		}
-
-		Meeting meeting = new Meeting(name, eventStartDateTimeInSystem, user, parent, eventLocation,
-                                      includeSubGroups, reminderType, customReminderMinutes, description, importance);
-
-		if (!assignMemberUids.isEmpty()) {
-			assignMemberUids.add(userUid); // enforces creating user part of meeting, if partial selection
-		}
-
-		meeting.assignMembers(assignMemberUids);
-
+		Meeting meeting = helper.convertToBuilder(user, parent).createMeeting();
 		// else sometimes reminder setting will be in the past, causing duplication of meetings; defaulting to 1 hours
-		if (!reminderType.equals(DISABLED) && meeting.getScheduledReminderTime().isBefore(Instant.now())) {
+		if (!helper.getReminderType().equals(DISABLED) && meeting.getScheduledReminderTime().isBefore(Instant.now())) {
 			meeting.setCustomReminderMinutes(60);
 			meeting.setReminderType(CUSTOM);
 			meeting.updateScheduledReminderTime();
@@ -155,9 +131,14 @@ public class EventBrokerImpl implements EventBroker {
 		eventLogBroker.rsvpForEvent(meeting.getUid(), meeting.getCreatedByUser().getUid(), EventRSVPResponse.YES);
 
 		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
-
 		EventLog eventLog = new EventLog(user, meeting, CREATED);
 		bundle.addLog(eventLog);
+
+		if (!StringUtils.isEmpty(helper.getTaskImageKey())) {
+			taskImageBroker.recordImageForTask(helper.getUserUid(), meeting.getUid(), TaskType.MEETING,
+					helper.getTaskImageKey(), EventLogType.IMAGE_AT_CREATION);
+			meeting.setImageUrl(taskImageBroker.getShortUrl(helper.getTaskImageKey()));
+		}
 
 		Set<Notification> notifications = constructEventInfoNotifications(meeting, eventLog, meeting.getMembers());
 		bundle.addNotifications(notifications);
@@ -165,6 +146,12 @@ public class EventBrokerImpl implements EventBroker {
 		logsAndNotificationsBroker.storeBundle(bundle);
 
 		return meeting;
+	}
+
+	private void checkForEventLimit(String parentUid) {
+		if (eventMonthlyLimitActive && accountGroupBroker.numberEventsLeftForGroup(parentUid) < 1) {
+			throw new AccountLimitExceededException();
+		}
 	}
 
 	// introducing so that we can check catch & handle duplicate requests (e.g., from malfunctions on Android client offline->queue->sync function)

@@ -14,6 +14,7 @@ import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.MeetingImportance;
 import za.org.grassroot.core.specifications.EventLogSpecifications;
+import za.org.grassroot.services.task.MeetingBuilderHelper;
 import za.org.grassroot.webapp.controller.rest.android.MeetingRestController;
 
 import java.time.format.DateTimeFormatter;
@@ -45,14 +46,15 @@ public class MeetingRestControllerTest extends RestAbstractUnitTest {
 
     @Test
     public void creatingAMeetingShouldWork() throws Exception {
-
         Set<String> membersToAdd = new HashSet<>();
+        MeetingBuilderHelper helper = new MeetingBuilderHelper()
+                .userUid(sessionTestUser.getUid()).parentUid(testGroup.getUid())
+                .parentType(JpaEntityType.GROUP).name(testEventTitle).description(testEventDescription)
+                .location(testEventLocation).reminderType(EventReminderType.GROUP_CONFIGURED)
+                .customReminderMinutes(-1).assignedMemberUids(membersToAdd);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
-        when(eventBrokerMock.createMeeting(sessionTestUser.getUid(), testGroup.getUid(), JpaEntityType.GROUP,
-                                           testEventTitle, testDateTime, testEventLocation, false,
-                EventReminderType.GROUP_CONFIGURED, -1, testEventDescription, membersToAdd, MeetingImportance.ORDINARY))
-                .thenReturn(meetingEvent);
+        when(eventBrokerMock.createMeeting(helper)).thenReturn(meetingEvent);
 
         mockMvc.perform(post(path + "/create/{phoneNumber}/{code}/{parentUid}", testUserPhone, testUserCode, testGroup.getUid())
                                 .param("title", testEventTitle)
@@ -63,9 +65,7 @@ public class MeetingRestControllerTest extends RestAbstractUnitTest {
                 .andExpect(status().is2xxSuccessful());
 
         verify(userManagementServiceMock).findByInputNumber(testUserPhone);
-        verify(eventBrokerMock).createMeeting(sessionTestUser.getUid(), testGroup.getUid(), JpaEntityType.GROUP,
-                                              testEventTitle, testDateTime, testEventLocation, false,
-                EventReminderType.GROUP_CONFIGURED, -1, testEventDescription, membersToAdd, MeetingImportance.ORDINARY);
+        verify(eventBrokerMock).createMeeting(helper);
     }
 
     @Test

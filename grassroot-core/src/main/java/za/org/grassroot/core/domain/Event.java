@@ -4,6 +4,7 @@ package za.org.grassroot.core.domain;
  * Created by luke on 2015/07/16.
  */
 
+import org.springframework.util.StringUtils;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.DateTimeUtil;
 
@@ -67,6 +68,10 @@ public abstract class Event<P extends UidIdentifiable> extends AbstractEventEnti
 	// a vote, but need to use it on event specifications, hence defining here
 	@Column(name="public")
 	private boolean isPublic;
+
+	// we use these just to simplify some internal methods, hence transient - actual logic is to persist via eventlogs
+    @Transient
+    private String imageUrl;
 
 	public abstract EventType getEventType();
 
@@ -155,7 +160,23 @@ public abstract class Event<P extends UidIdentifiable> extends AbstractEventEnti
         }
 	}
 
-	@Override
+    public boolean isHasImage() {
+        return !StringUtils.isEmpty(imageUrl);
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
+
+    public boolean isHighImportance() {
+	    return false;
+    }
+
+    @Override
 	public Set<User> fetchAssignedMembersCollection() {
 		return assignedMembers;
 	}

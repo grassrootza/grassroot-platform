@@ -42,7 +42,7 @@ public class EventLogRepositoryTest {
         Group group = groupRepository.save(new Group("test eventlog", user));
         User user2 = userRepository.save(new User("00111112"));
         group.addMember(user2);
-        Event event = eventRepository.save(new Meeting("test meeting",Instant.now(),  user, group, "someLoc"));
+        Event event = eventRepository.save(new MeetingBuilder().setName("test meeting").setStartDateTime(Instant.now()).setUser(user).setParent(group).setEventLocation("someLoc").createMeeting());
         eventLogRepository.save(new EventLog(user, event, EventLogType.CREATED));
         assertEquals(1, eventLogRepository.count());
         EventLog eventLog = eventLogRepository.findByEventAndUserAndEventLogType(event, user, EventLogType.CREATED);
@@ -57,7 +57,7 @@ public class EventLogRepositoryTest {
         Group group = groupRepository.save(new Group("test eventlog 2", user));
         User user2 = userRepository.save(new User("00111114"));
         group.addMember(user2);
-        Event event = eventRepository.save(new Meeting("test meeting 2", Instant.now(), user, group, "someLoc"));
+        Event event = eventRepository.save(new MeetingBuilder().setName("test meeting 2").setStartDateTime(Instant.now()).setUser(user).setParent(group).setEventLocation("someLoc").createMeeting());
         eventLogRepository.save(new EventLog(user2, event, EventLogType.REMINDER));
         assertEquals(1, eventLogRepository.count());
         EventLog eventLog = eventLogRepository.findByEventAndUserAndEventLogType(event, user, EventLogType.REMINDER);
@@ -76,7 +76,7 @@ public class EventLogRepositoryTest {
         group.addMember(user);
         group.addMember(user2);
         groupRepository.save(group);
-        Event event = eventRepository.save(new Meeting("test meeting 5", Instant.now(), user, group, "someLoc"));
+        Event event = eventRepository.save(new MeetingBuilder().setName("test meeting 5").setStartDateTime(Instant.now()).setUser(user).setParent(group).setEventLocation("someLoc").createMeeting());
         EventLog eventLog = new EventLog(user, event, EventLogType.REMINDER);
         eventLogRepository.save(eventLog);
         Boolean reminderSent = eventLogRepository.findByEventAndUserAndEventLogType(event, user, EventLogType.REMINDER) != null;
@@ -90,7 +90,7 @@ public class EventLogRepositoryTest {
         Group group = groupRepository.save(new Group("test meeting 6", user));
         User user2 = userRepository.save(new User("00111110"));
         group.addMember(user2);
-        Event event = eventRepository.save(new Meeting("test meeting 6", Instant.now(), user, group, "someLoc"));
+        Event event = eventRepository.save(new MeetingBuilder().setName("test meeting 6").setStartDateTime(Instant.now()).setUser(user).setParent(group).setEventLocation("someLoc").createMeeting());
         Boolean aBoolean = eventLogRepository.findByEventAndUserAndEventLogType(event, user2, EventLogType.REMINDER) != null;
         assertEquals(false, Boolean.parseBoolean(aBoolean.toString()));
         eventLogRepository.save(new EventLog(user2, event, EventLogType.REMINDER));
@@ -104,7 +104,7 @@ public class EventLogRepositoryTest {
         Group group = groupRepository.save(new Group("test minutes 1", user));
         User user2 = userRepository.save(new User("001111121"));
         group.addMember(user2);
-        Event event = eventRepository.save(new Meeting("test meeting 7", Instant.now(), user, group, "someLoc"));
+        Event event = eventRepository.save(new MeetingBuilder().setName("test meeting 7").setStartDateTime(Instant.now()).setUser(user).setParent(group).setEventLocation("someLoc").createMeeting());
         event.setCanceled(true);
         eventRepository.save(event);
         eventLogRepository.save(new EventLog(user, event, EventLogType.CANCELLED));
