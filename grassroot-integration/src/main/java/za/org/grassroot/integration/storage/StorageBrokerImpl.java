@@ -65,39 +65,41 @@ public class StorageBrokerImpl implements StorageBroker {
     public boolean storeImage(ActionLogType actionLogType, String imageKey, MultipartFile image) {
         Objects.requireNonNull(actionLogType);
         Objects.requireNonNull(imageKey);
+        Objects.requireNonNull(image);
 
         final AmazonS3 s3 = s3ClientFactory.createClient();
         final TransferManager transferManager = TransferManagerBuilder.standard().withS3Client(s3).build();
         boolean completed;
 
-        if (image != null) {
+
+        logger.debug("storing image in bucket: {}", taskImagesBucket);
+        try {
+            ObjectMetadata metadata = new ObjectMetadata();
+            metadata.setContentLength(image.getSize());
+            metadata.setContentType(image.getContentType());
+
+            byte[] resultByte = DigestUtils.md5(image.getBytes());
+            String streamMD5 = new String(Base64.encodeBase64(resultByte));
+            metadata.setContentMD5(streamMD5);
+
+            Upload upload = transferManager.upload(taskImagesBucket, imageKey, image.getInputStream(), metadata);
+            upload.waitForCompletion();
+
+            ImageRecord imageRecord = storeImageRecord(actionLogType, imageKey, streamMD5);
+            imageRecord.setStoredTime(Instant.now());
             completed = true;
-            storeImageRecord(actionLogType, imageKey, null);
-        } else {
-            logger.debug("storing image in bucket: {}", taskImagesBucket);
-            try {
-                ObjectMetadata metadata = new ObjectMetadata();
-                metadata.setContentLength(image.getSize());
-                metadata.setContentType(image.getContentType());
-
-                byte[] resultByte = DigestUtils.md5(image.getBytes());
-                String streamMD5 = new String(Base64.encodeBase64(resultByte));
-                metadata.setContentMD5(streamMD5);
-
-                Upload upload = transferManager.upload(taskImagesBucket, imageKey, image.getInputStream(), metadata);
-                upload.waitForCompletion();
-
-                ImageRecord imageRecord = storeImageRecord(actionLogType, imageKey, streamMD5);
-                imageRecord.setStoredTime(Instant.now());
-                completed = true;
-            } catch (AmazonServiceException | InterruptedException | IOException e) {
-                completed = false;
-                logger.error("Error uploading file: {}", e.toString());
-            }
+        } catch (AmazonServiceException | InterruptedException | IOException e) {
+            completed = false;
+            logger.error("Error uploading file: {}", e.toString());
         }
 
         transferManager.shutdownNow();
         return completed;
+    }
+
+    @Override
+    public void recordImageAffiliation(ActionLogType actionLogType, String imageKey) {
+        storeImageRecord(actionLogType, imageKey, null);
     }
 
     private ImageRecord storeImageRecord(ActionLogType actionLogType, String imageKey, String streamMd5) {

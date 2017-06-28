@@ -1,5 +1,7 @@
 package za.org.grassroot.services.task;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.MeetingImportance;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
@@ -14,6 +16,8 @@ import static za.org.grassroot.core.util.DateTimeUtil.convertToSystemTime;
 import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
 
 public class MeetingBuilderHelper {
+
+    private static final Logger logger = LoggerFactory.getLogger(MeetingBuilderHelper.class);
 
     private String userUid;
     private String parentUid;
@@ -52,7 +56,7 @@ public class MeetingBuilderHelper {
         return this;
     }
 
-    public MeetingBuilderHelper parentType(JpaEntityType entityType) {
+    public MeetingBuilderHelper parentType(JpaEntityType parentType) {
         this.parentType = parentType;
         return this;
     }
@@ -118,7 +122,7 @@ public class MeetingBuilderHelper {
     }
 
     public EventReminderType getReminderType() {
-        return reminderType;
+        return reminderType == null ? EventReminderType.DISABLED : reminderType;
     }
 
     public Instant getStartInstant() {
@@ -145,6 +149,7 @@ public class MeetingBuilderHelper {
     }
 
     public MeetingBuilder convertToBuilder(User user, MeetingContainer parent) {
+        logger.debug("meeting helper, reminder type = {}", reminderType);
         MeetingBuilder meetingBuilder = new MeetingBuilder()
                 .setUser(user)
                 .setParent(parent)
@@ -207,5 +212,24 @@ public class MeetingBuilderHelper {
         result = 31 * result + (importance != null ? importance.hashCode() : 0);
         result = 31 * result + (assignedMemberUids != null ? assignedMemberUids.hashCode() : 0);
         return result;
+    }
+
+    @Override
+    public String toString() {
+        return "MeetingBuilderHelper{" +
+                "userUid='" + userUid + '\'' +
+                ", parentUid='" + parentUid + '\'' +
+                ", parentType=" + parentType +
+                ", name='" + name + '\'' +
+                ", startDateTime=" + startDateTime +
+                ", eventLocation='" + eventLocation + '\'' +
+                ", includeSubGroups=" + includeSubGroups +
+                ", reminderType=" + reminderType +
+                ", customReminderMinutes=" + customReminderMinutes +
+                ", description='" + description + '\'' +
+                ", importance=" + importance +
+                ", assignedMemberUids=" + assignedMemberUids +
+                ", taskImageKey='" + taskImageKey + '\'' +
+                '}';
     }
 }

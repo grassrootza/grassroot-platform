@@ -9,6 +9,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.ServletRequestDataBinder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
@@ -20,10 +21,7 @@ import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.AccountLimitExceededException;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
-import za.org.grassroot.services.task.EventBroker;
-import za.org.grassroot.services.task.EventLogBroker;
-import za.org.grassroot.services.task.MeetingBuilderHelper;
-import za.org.grassroot.services.task.TaskBroker;
+import za.org.grassroot.services.task.*;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.MeetingRsvpsDTO;
@@ -49,21 +47,24 @@ public class MeetingRestController {
 
     private static final Logger log = LoggerFactory.getLogger(MeetingRestController.class);
 
+    // todo: consolidate in this list
     private final UserManagementService userManagementService;
     private final EventLogBroker eventLogBroker;
     private final EventBroker eventBroker;
     private final TaskBroker taskBroker;
     private final PermissionBroker permissionBroker;
     private final EventLogRepository eventLogRepository;
+    private final TaskImageBroker taskImageBroker;
 
     @Autowired
-    public MeetingRestController(UserManagementService userManagementService, EventLogBroker eventLogBroker, EventBroker eventBroker, TaskBroker taskBroker, PermissionBroker permissionBroker, EventLogRepository eventLogRepository) {
+    public MeetingRestController(UserManagementService userManagementService, EventLogBroker eventLogBroker, EventBroker eventBroker, TaskBroker taskBroker, PermissionBroker permissionBroker, EventLogRepository eventLogRepository, TaskImageBroker taskImageBroker) {
         this.userManagementService = userManagementService;
         this.eventLogBroker = eventLogBroker;
         this.eventBroker = eventBroker;
         this.taskBroker = taskBroker;
         this.permissionBroker = permissionBroker;
         this.eventLogRepository = eventLogRepository;
+        this.taskImageBroker = taskImageBroker;
     }
 
     @InitBinder
@@ -85,7 +86,7 @@ public class MeetingRestController {
                                                          @RequestParam int reminderMinutes,
                                                          @RequestParam String location,
                                                          @RequestParam(value="members", required = false) Set<String> members,
-                                                         @RequestParam(required = false) String imageKey) {
+                                                         @RequestParam(required = false) MultipartFile image) {
 
         User user = userManagementService.findByInputNumber(phoneNumber);
         Set<String> assignedMemberUids = (members == null) ? new HashSet<>() : members;
@@ -102,8 +103,13 @@ public class MeetingRestController {
                     .reminderType(reminderType)
                     .customReminderMinutes(reminderMinutes)
                     .description(description)
-                    .assignedMemberUids(assignedMemberUids)
-                    .taskImageKey(imageKey);
+                    .assignedMemberUids(assignedMemberUids);
+
+            if (image != null) {
+                helper.taskImageKey(taskImageBroker.storeImagePreTask(TaskType.MEETING, image));
+            }
+
+            log.debug("meetingHelper: {}", helper);
             Meeting meeting = eventBroker.createMeeting(helper);
             TaskDTO createdMeeting = taskBroker.load(user.getUid(), meeting.getUid(), TaskType.MEETING);
             return RestUtil.okayResponseWithData(RestMessage.MEETING_CREATED, Collections.singletonList(createdMeeting));

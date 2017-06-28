@@ -3,6 +3,8 @@ package za.org.grassroot.webapp.controller.rest;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.EventLog;
@@ -33,6 +35,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 public class MeetingRestControllerTest extends RestAbstractUnitTest {
 
+    private static final Logger logger = LoggerFactory.getLogger(MeetingRestControllerTest.class);
+
     @InjectMocks
     private MeetingRestController meetingRestController;
 
@@ -40,7 +44,6 @@ public class MeetingRestControllerTest extends RestAbstractUnitTest {
 
     @Before
     public void setUp() {
-
         mockMvc = MockMvcBuilders.standaloneSetup(meetingRestController).build();
     }
 
@@ -48,12 +51,19 @@ public class MeetingRestControllerTest extends RestAbstractUnitTest {
     public void creatingAMeetingShouldWork() throws Exception {
         Set<String> membersToAdd = new HashSet<>();
         MeetingBuilderHelper helper = new MeetingBuilderHelper()
-                .userUid(sessionTestUser.getUid()).parentUid(testGroup.getUid())
-                .parentType(JpaEntityType.GROUP).name(testEventTitle).description(testEventDescription)
-                .location(testEventLocation).reminderType(EventReminderType.GROUP_CONFIGURED)
-                .customReminderMinutes(-1).assignedMemberUids(membersToAdd);
+                .userUid(sessionTestUser.getUid())
+                .startDateTime(testDateTime)
+                .parentUid(testGroup.getUid())
+                .parentType(JpaEntityType.GROUP)
+                .name(testEventTitle)
+                .description(testEventDescription)
+                .location(testEventLocation)
+                .reminderType(EventReminderType.GROUP_CONFIGURED)
+                .customReminderMinutes(-1)
+                .assignedMemberUids(membersToAdd);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
+        logger.debug("meetingHelperTest: {}", helper);
         when(eventBrokerMock.createMeeting(helper)).thenReturn(meetingEvent);
 
         mockMvc.perform(post(path + "/create/{phoneNumber}/{code}/{parentUid}", testUserPhone, testUserCode, testGroup.getUid())

@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URISyntaxException;
+import java.util.Map;
 
 /**
  * Created by luke on 2017/06/26.
@@ -18,11 +19,14 @@ public class UrlShortenerImpl implements UrlShortener {
 
     private static final Logger logger = LoggerFactory.getLogger(UrlShortenerImpl.class);
 
+    @Value("${grassroot.task.images.view.url:http://localhost:8080/image}")
+    private String imageViewUrl;
+
     @Value("${grassroot.shortener.images.host:https://s3.aws.com/")
     private String longHostUrl;
     @Value("${grassroot.shortener.api.url:https://bitly.com}")
     private String shortenerApi;
-    @Value("@{grassroot.shortener.api.key:thisismykey}")
+    @Value("${grassroot.shortener.api.key:thisismykey}")
     private String shortenerKey;
 
     private final RestTemplate restTemplate;
@@ -35,13 +39,14 @@ public class UrlShortenerImpl implements UrlShortener {
     @Override
     public String shortenImageUrl(String bucket, String imageUrl) {
         try {
-            String longUrl = longHostUrl + bucket + imageUrl;
+            String longUrl = imageViewUrl + "/" + bucket + "/" + imageUrl;
+            logger.info("encoding image view URL: {}", longUrl);
             URIBuilder builder = new URIBuilder(shortenerApi)
                     .addParameter("access_token", shortenerKey)
                     .addParameter("longUrl", longUrl);
             BitlyResponse response = restTemplate.getForObject(builder.build(), BitlyResponse.class);
             logger.info("response from Bitly: {}", response);
-            return response.url;
+            return (String) response.data.get("url");
         } catch (URISyntaxException e) {
             logger.error("Error shortening URL!", e);
             return null;
@@ -49,58 +54,33 @@ public class UrlShortenerImpl implements UrlShortener {
 
     }
 
-    private class BitlyResponse {
-        String global_hash;
-        String hash;
-        String long_url;
-        String new_hash;
-        String url;
+    private static class BitlyResponse {
+        String status_code;
+        String status_txt;
+        Map<String, Object> data;
 
-        public String getGlobal_hash() {
-            return global_hash;
+        public BitlyResponse() {
+            // for Jackson
         }
 
-        public void setGlobal_hash(String global_hash) {
-            this.global_hash = global_hash;
+        public String getStatus_code() {
+            return status_code;
         }
 
-        public String getHash() {
-            return hash;
+        public String getStatus_txt() {
+            return status_txt;
         }
 
-        public void setHash(String hash) {
-            this.hash = hash;
-        }
-
-        public String getLong_url() {
-            return long_url;
-        }
-
-        public void setLong_url(String long_url) {
-            this.long_url = long_url;
-        }
-
-        public String getNew_hash() {
-            return new_hash;
-        }
-
-        public void setNew_hash(String new_hash) {
-            this.new_hash = new_hash;
-        }
-
-        public String getUrl() {
-            return url;
-        }
-
-        public void setUrl(String url) {
-            this.url = url;
+        public Map<String, Object> getData() {
+            return data;
         }
 
         @Override
         public String toString() {
             return "BitlyResponse{" +
-                    "long_url='" + long_url + '\'' +
-                    ", url='" + url + '\'' +
+                    "status_code='" + status_code + '\'' +
+                    ", status_txt='" + status_txt + '\'' +
+                    ", data=" + data +
                     '}';
         }
     }

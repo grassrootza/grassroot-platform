@@ -14,9 +14,13 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
+import za.org.grassroot.core.enums.ActionLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
+import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.core.util.UIDGenerator;
+import za.org.grassroot.integration.storage.StorageBroker;
 import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.services.exception.AccountLimitExceededException;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
@@ -24,6 +28,7 @@ import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.EventLogBroker;
 import za.org.grassroot.services.task.MeetingBuilderHelper;
+import za.org.grassroot.services.task.TaskImageBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.enums.EntityPublicOption;
 import za.org.grassroot.webapp.model.web.MeetingWrapper;
@@ -50,20 +55,22 @@ import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
 @SessionAttributes("meeting")
 public class MeetingController extends BaseController {
 
-    Logger log = LoggerFactory.getLogger(MeetingController.class);
+    private static final Logger log = LoggerFactory.getLogger(MeetingController.class);
 
-    private GroupBroker groupBroker;
-    private EventBroker eventBroker;
-    private EventLogBroker eventLogBroker;
-    private AccountGroupBroker accountBroker;
+    private final GroupBroker groupBroker;
+    private final EventBroker eventBroker;
+    private final EventLogBroker eventLogBroker;
+    private final AccountGroupBroker accountBroker;
+    private final TaskImageBroker taskImageBroker;
 
     @Autowired
-    public MeetingController(GroupBroker groupBroker, EventBroker eventBroker,
-                             EventLogBroker eventLogBroker, AccountGroupBroker accountBroker) {
+    public MeetingController(GroupBroker groupBroker, EventBroker eventBroker, EventLogBroker eventLogBroker,
+                             AccountGroupBroker accountBroker, TaskImageBroker taskImageBroker) {
         this.groupBroker = groupBroker;
         this.eventBroker = eventBroker;
         this.eventLogBroker = eventLogBroker;
         this.accountBroker = accountBroker;
+        this.taskImageBroker = taskImageBroker;
     }
 
     @InitBinder
@@ -122,14 +129,14 @@ public class MeetingController extends BaseController {
     }
 
     @RequestMapping(value = "create", method = RequestMethod.POST)
-    public String createMeeting(Model model, @ModelAttribute("meeting") MeetingWrapper meeting, BindingResult bindingResult,
+    public String createMeeting(Model model,
+                                @ModelAttribute("meeting") MeetingWrapper meeting, BindingResult bindingResult,
                                 @RequestParam(value="selectedGroupUid", required=false) String selectedGroupUid,
                                 HttpServletRequest request, RedirectAttributes redirectAttributes) {
 
         // todo: move parent selection into MeetingWrapper when implement non-group meetings
-
-        log.info("Meeting long: {}, lat: {}, public option: {}", meeting.getLongitude(), meeting.getLatitude(),
-                meeting.getPublicOption());
+        log.info("Meeting long: {}, lat: {}, public option: {}, file incl: {}", meeting.getLongitude(), meeting.getLatitude(),
+                meeting.getPublicOption(), meeting.getMeetingImage() != null);
 
         try {
             Set<String> invitedMemberUids = "members".equalsIgnoreCase(meeting.getAssignmentType()) ?
@@ -152,6 +159,11 @@ public class MeetingController extends BaseController {
                     .assignedMemberUids(invitedMemberUids)
                     .importance(meeting.getImportance())
                     .includeSubGroups(meeting.isIncludeSubGroups());
+
+            // todo: move this into async when the user hits upload
+            if (meeting.getMeetingImage() != null) {
+                helper.taskImageKey(taskImageBroker.storeImagePreTask(TaskType.MEETING, meeting.getMeetingImage()));
+            }
 
             Meeting createdMeeting = eventBroker.createMeeting(helper);
 

@@ -19,6 +19,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 
 import static org.hamcrest.Matchers.*;
@@ -96,13 +97,20 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
                 .andExpect(view().name("redirect:/group/view"))
                 .andExpect(redirectedUrl("/group/view?groupUid=" + dummyGroup.getUid()));
 
-        MeetingBuilderHelper helper = new MeetingBuilderHelper().userUid(sessionTestUser.getUid())
-                .parentType(JpaEntityType.GROUP).parentUid(dummyGroup.getUid())
-                .name("test meeting").startDateTime(tomorrow).location("some place")
-                .reminderType(EventReminderType.GROUP_CONFIGURED).customReminderMinutes(60)
-                .description("This is a description").importance(MeetingImportance.ORDINARY);
-        verify(eventBrokerMock, times(1)).createMeeting(helper);
+        MeetingBuilderHelper helper = new MeetingBuilderHelper()
+                .userUid(sessionTestUser.getUid())
+                .parentType(JpaEntityType.GROUP)
+                .parentUid(dummyGroup.getUid())
+                .name("test meeting")
+                .startDateTime(tomorrow)
+                .location("some place")
+                .reminderType(EventReminderType.GROUP_CONFIGURED)
+                .customReminderMinutes(60)
+                .description("This is a description")
+                .importance(MeetingImportance.ORDINARY)
+                .assignedMemberUids(new HashSet<>());
 
+        verify(eventBrokerMock, times(1)).createMeeting(helper);
         verifyNoMoreInteractions(groupBrokerMock);
         verifyZeroInteractions(userManagementServiceMock);
     }

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:th="http://www.thymeleaf.org"
+      data-layout-decorate="~{layout}">
+<head>
+  <title>View Image</title>
+
+  <meta property="og:title" content="Grassroot"/>
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="/images/grassroot-logo.png"/>
+  <meta property="og:description" content="The Grassroot Platform"/>
+
+</head>
+<body>
+
+  <!-- todo : add some extra info, link to meeting, etc -->
+  <section layout:fragment="header" class="top-container narrow-vertical">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
+          <h2 class="text-center header-content-title" style="font-size: 2em; text-transform: none">
+            Grassroot Image View
+          </h2>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <main layout:fragment="content">
+    <section class="grassroot-form">
+      <div class="container task-details">
+        <div class="row">
+          <div class="col-md-8 col-md-offset-2 col-sm-10 col-sm-offset-1 col-xs-12">
+            <img class="img-responsive center-block" th:src="@{${image}}" />
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+</body>
+</html>

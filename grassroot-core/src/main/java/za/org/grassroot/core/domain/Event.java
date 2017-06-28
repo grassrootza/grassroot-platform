@@ -4,6 +4,8 @@ package za.org.grassroot.core.domain;
  * Created by luke on 2015/07/16.
  */
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.DateTimeUtil;
@@ -22,6 +24,8 @@ import java.util.Set;
 @DiscriminatorColumn(name = "type", discriminatorType = DiscriminatorType.STRING)
 public abstract class Event<P extends UidIdentifiable> extends AbstractEventEntity
 		implements TodoContainer, Task<P>, Serializable {
+
+	private static final Logger logger = LoggerFactory.getLogger(Event.class);
 
 	@Column(name = "canceled")
 	private boolean canceled;
@@ -143,6 +147,7 @@ public abstract class Event<P extends UidIdentifiable> extends AbstractEventEnti
 
 	public void updateScheduledReminderTime() {
 		Group group = getAncestorGroup();
+		logger.debug("updating scheduled reminder time, type: {}, group minutes: {}", getReminderType(), group.getReminderMinutes());
 		if (getReminderType().equals(EventReminderType.CUSTOM)) {
 			this.scheduledReminderTime = getEventStartDateTime().minus(getCustomReminderMinutes(), ChronoUnit.MINUTES);
 		} else if (getReminderType().equals(EventReminderType.GROUP_CONFIGURED) && group.getReminderMinutes() > 0) {
@@ -150,6 +155,8 @@ public abstract class Event<P extends UidIdentifiable> extends AbstractEventEnti
 		} else {
 			this.scheduledReminderTime = null;
 		}
+
+		logger.debug("inside meeting, scheduled reminder time: {}", scheduledReminderTime);
 
         if (this.scheduledReminderTime != null) {
             this.scheduledReminderTime = DateTimeUtil.restrictToDaytime(this.scheduledReminderTime, this.eventStartDateTime,

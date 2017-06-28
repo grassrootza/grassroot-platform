@@ -1,5 +1,7 @@
 package za.org.grassroot.services.task;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
@@ -11,6 +13,7 @@ import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.util.DebugUtil;
+import za.org.grassroot.core.util.UIDGenerator;
 import za.org.grassroot.integration.UrlShortener;
 import za.org.grassroot.integration.storage.ImageType;
 import za.org.grassroot.integration.storage.StorageBroker;
@@ -37,6 +40,8 @@ import static za.org.grassroot.core.specifications.TodoLogSpecifications.ofType;
  */
 @Service
 public class TaskImageBrokerImpl implements TaskImageBroker {
+
+    private static final Logger logger = LoggerFactory.getLogger(TaskImageBrokerImpl.class);
 
     @Value("${grassroot.task.images.bucket:null}")
     private String taskImagesBucket;
@@ -65,6 +70,14 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
         this.storageBroker = storageBroker;
         this.geoLocationBroker = geoLocationBroker;
         this.urlShortener = urlShortener;
+    }
+
+    @Override
+    public String storeImagePreTask(TaskType taskType, MultipartFile file) {
+        String imageKey = UIDGenerator.generateId();
+        storageBroker.storeImage(TaskType.TODO.equals(taskType) ?
+                ActionLogType.TODO_LOG : ActionLogType.EVENT_LOG, imageKey, file);
+        return imageKey;
     }
 
     @Override
@@ -100,8 +113,6 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
         Objects.requireNonNull(taskUid);
         Objects.requireNonNull(imageKey);
 
-        storageBroker.storeImage(ActionLogType.EVENT_LOG, imageKey, null);
-
         if (taskType.equals(TaskType.MEETING)) {
             User user = userRepository.findOneByUid(userUid);
             Event meeting = eventRepository.findOneByUid(taskUid);
@@ -113,7 +124,13 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
 
     @Override
     public String getShortUrl(String imageKey) {
-        return urlShortener.shortenImageUrl(taskImagesBucket, imageKey);
+        try {
+            return urlShortener.shortenImageUrl(taskImagesBucket, imageKey);
+        } catch (Exception e) {
+            // not great to have generic catch here but need robustness or have risk of notices not going out
+            logger.error("Error shortening URL! : {}", e);
+            return null;
+        }
     }
 
     @Override

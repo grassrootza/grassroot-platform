@@ -55,9 +55,7 @@ public class LocationController extends BaseController {
                           @RequestParam(required = false) Double longitude,
                           @RequestParam(required = false) Double zoom,
                           @RequestParam(required = false) Integer restriction,
-                          Model model,
-                          HttpServletRequest request,
-                          RedirectAttributes attributes) {
+                          Model model, HttpServletRequest request) {
 
         logger.info("Attempting to search events locations...");
 

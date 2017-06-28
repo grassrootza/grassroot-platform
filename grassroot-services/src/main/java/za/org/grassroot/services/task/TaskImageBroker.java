@@ -13,6 +13,8 @@ import java.util.List;
  */
 public interface TaskImageBroker {
 
+    String storeImagePreTask(TaskType taskType, MultipartFile file);
+
     // use this one for an image passed directly to us
     String storeImageForTask(String userUid, String taskUid, TaskType taskType, MultipartFile file, Double latitude, Double longitude);
 

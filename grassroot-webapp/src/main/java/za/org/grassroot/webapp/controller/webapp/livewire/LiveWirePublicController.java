@@ -26,9 +26,9 @@ public class LiveWirePublicController extends BaseController {
     }
 
     @RequestMapping(value = "/info", method = RequestMethod.GET)
-    public String viewLiveWireInfo(Model model, @RequestParam(required = false) String emailAddress) {
+    public String viewLiveWireInfo(Model model, @RequestParam(required = false) String email) {
         model.addAttribute("includeUnsubscribe", false);
-        model.addAttribute("emailAddress", emailAddress);
+        model.addAttribute("emailAddress", email);
         return "livewire/info_public";
     }
 

@@ -12,17 +12,21 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.livewire.DataSubscriber;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.core.util.PhoneNumberUtil;
+import za.org.grassroot.integration.DataImportBroker;
 import za.org.grassroot.services.exception.NoSuchUserException;
 import za.org.grassroot.services.livewire.DataSubscriberBroker;
 import za.org.grassroot.services.user.PasswordTokenService;
 import za.org.grassroot.webapp.controller.BaseController;
 
 import javax.servlet.http.HttpServletRequest;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -35,6 +39,7 @@ import java.util.stream.Collectors;
  */
 @Controller
 @RequestMapping("/livewire/")
+@PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
 public class LiveWireAdminController extends BaseController {
 
     private static final Logger logger = LoggerFactory.getLogger(LiveWireAdminController.class);
@@ -44,11 +49,13 @@ public class LiveWireAdminController extends BaseController {
 
     private final DataSubscriberBroker subscriberBroker;
     private final PasswordTokenService tokenService;
+    private final DataImportBroker dataImportBroker;
 
     @Autowired
-    public LiveWireAdminController(DataSubscriberBroker subscriberBroker, PasswordTokenService tokenService) {
+    public LiveWireAdminController(DataSubscriberBroker subscriberBroker, PasswordTokenService tokenService, DataImportBroker dataImportBroker) {
         this.subscriberBroker = subscriberBroker;
         this.tokenService = tokenService;
+        this.dataImportBroker = dataImportBroker;
     }
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
@@ -121,11 +128,24 @@ public class LiveWireAdminController extends BaseController {
     }
 
     @RequestMapping(value = "/subscriber/emails/add", method = RequestMethod.POST)
-    public String addPushEmailsToSubscriber(@RequestParam String subscriberUid, @RequestParam String emailsToAdd,
+    public String addPushEmailsToSubscriber(@RequestParam String subscriberUid,
+                                            @RequestParam(required = false) String emailsToAdd,
+                                            @RequestParam(required = false) MultipartFile emailsXls,
                                             RedirectAttributes attributes, HttpServletRequest request) {
         try {
             DataSubscriber subscriber = subscriberBroker.validateSubscriberAdmin(getUserProfile().getUid(), subscriberUid);
-            List<String> emails = splitEmailInput(emailsToAdd);
+            List<String> emails = new ArrayList<>();
+
+            if (emailsToAdd != null) {
+                emails.addAll(splitEmailInput(emailsToAdd));
+            }
+
+            logger.info("emailsXls exists? {}", emailsXls != null);
+            if (emailsXls != null) {
+                emails.addAll(extractEmailsFromXls(emailsXls));
+                logger.info("Extracted emails from spreadsheet, result: {}", emails);
+            }
+
             if (emails.isEmpty()) {
                 addMessage(attributes, MessageType.ERROR, "livewire.emails.add.empty", request);
             } else {
@@ -137,6 +157,17 @@ public class LiveWireAdminController extends BaseController {
         } catch (AccessDeniedException e) {
             addMessage(attributes, MessageType.ERROR, "livewire.emails.add.denied", request);
             return "livewire/access_denied";
+        }
+    }
+
+    private List<String> extractEmailsFromXls(MultipartFile file) {
+        try {
+            File tempStore = File.createTempFile("emails", "xls");
+            tempStore.deleteOnExit();
+            file.transferTo(tempStore);
+            return dataImportBroker.extractFirstColumnOfSheet(tempStore);
+        } catch (IOException e) {
+            return new ArrayList<>();
         }
     }
 

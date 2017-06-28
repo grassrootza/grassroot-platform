@@ -108,8 +108,7 @@ public class EventBrokerImpl implements EventBroker {
 		MeetingContainer parent = uidIdentifiableRepository.findOneByUid(MeetingContainer.class,
 				helper.getParentType(), helper.getParentUid());
 
-		Event possibleDuplicate = checkForDuplicate(helper.getUserUid(), helper.getParentUid(),
-				helper.getName(), helper.getStartInstant());
+		Event possibleDuplicate = checkForDuplicate(helper.getUserUid(), helper.getParentUid(), helper.getName(), helper.getStartInstant());
 		if (possibleDuplicate != null) { // todo : hand over to update meeting if anything different in parameters
 			return (Meeting) possibleDuplicate;
 		}
@@ -119,6 +118,7 @@ public class EventBrokerImpl implements EventBroker {
 
 		Meeting meeting = helper.convertToBuilder(user, parent).createMeeting();
 		// else sometimes reminder setting will be in the past, causing duplication of meetings; defaulting to 1 hours
+		logger.debug("helper reminder type: {}, meeting scheduled reminder time: {}", helper.getReminderType(), meeting.getScheduledReminderTime());
 		if (!helper.getReminderType().equals(DISABLED) && meeting.getScheduledReminderTime().isBefore(Instant.now())) {
 			meeting.setCustomReminderMinutes(60);
 			meeting.setReminderType(CUSTOM);
@@ -173,6 +173,7 @@ public class EventBrokerImpl implements EventBroker {
 
 	private Set<Notification> constructEventInfoNotifications(Event event, EventLog eventLog, Set<User> usersToNotify) {
 		Set<Notification> notifications = new HashSet<>();
+		logger.info("constructin event notifications ... has image URL? : {}", event.getImageUrl());
 		for (User member : usersToNotify) {
 			cacheUtilService.clearRsvpCacheForUser(member, event.getEventType());
 			String message = messageAssemblingService.createEventInfoMessage(member, event);

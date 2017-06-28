@@ -1,5 +1,7 @@
 package za.org.grassroot.core.domain;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import za.org.grassroot.core.enums.MeetingImportance;
 
 import java.time.Instant;
@@ -7,6 +9,8 @@ import java.util.Objects;
 import java.util.Set;
 
 public class MeetingBuilder {
+
+    private static final Logger logger = LoggerFactory.getLogger(MeetingBuilder.class);
 
     private String name;
     private Instant startDateTime;
@@ -82,12 +86,15 @@ public class MeetingBuilder {
     }
 
     public Meeting createMeeting() {
+        logger.debug("creating a meeting in builder, starting ... type = {}", reminderType);
+        validateMeetingFields();
         Meeting mtg = new Meeting(name, startDateTime, user, parent, eventLocation);
         mtg.setReminderType(reminderType == null ? EventReminderType.DISABLED : reminderType);
         mtg.setIncludeSubGroups(includeSubGroups);
         mtg.setCustomReminderMinutes(customReminderMinutes == null ? 0 : customReminderMinutes);
         mtg.setDescription(description);
         mtg.setImportance(importance == null ? MeetingImportance.ORDINARY : importance);
+        logger.debug("creating meeting from builder, reminder type = {}", reminderType);
         mtg.updateScheduledReminderTime();
 
         if (assignedMemberUids != null && !assignedMemberUids.isEmpty()) {
@@ -95,6 +102,6 @@ public class MeetingBuilder {
             mtg.assignMembers(assignedMemberUids);
         }
 
-        return new Meeting(name, startDateTime, user, parent, eventLocation);
+        return mtg;
     }
 }
