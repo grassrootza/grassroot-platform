@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.livewire.DataSubscriber;
@@ -132,6 +131,7 @@ public class DataSubscriberBrokerImpl implements DataSubscriberBroker {
     @Override
     @Transactional
     public void removeEmailFromAllSubscribers(String pushEmail) {
+        logger.info("removing email from subscribers: {}", pushEmail);
         // note: probably need some form of logging
         dataSubscriberRepository.removeEmailFromAllSubscribers(pushEmail);
     }

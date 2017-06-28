@@ -41,8 +41,8 @@ public class MessageAssemblingManager implements MessageAssemblingService {
     @Override
     public String createEventInfoMessage(User user, Event event) {
         String messageKey = event instanceof Vote ? "sms.vote.send.new" :
-                MeetingImportance.SPECIAL.equals(((Meeting) event).getImportance())
-                        ? "sms.mtg.send.special" : "sms.mtg.send.new.rsvp";
+                event.isHasImage() ? "sms.mtg.send.image" :
+                event.isHighImportance() ? "sms.mtg.send.special" : "sms.mtg.send.new.rsvp";
         return messageSourceAccessor.getMessage(messageKey, populateEventFields(event), getUserLocale(user));
     }
 
@@ -304,17 +304,30 @@ public class MessageAssemblingManager implements MessageAssemblingService {
 
         String subject = event.getName();
         subject = (subject.contains("&")) ? subject.replace("&", "and") : subject;
-        String[] eventVariables = new String[]{
-                salutation,
-                event.getCreatedByUser().nameToDisplay(),
-                subject,
-                location,
-                dateString,
-                FormatUtil.formatDoubleToString(yes),
-                FormatUtil.formatDoubleToString(no),
-                FormatUtil.formatDoubleToString(abstain),
-                FormatUtil.formatDoubleToString(noReply)
-        };
+
+        String[] eventVariables;
+        if (event.isHasImage()) {
+            eventVariables = new String[] {
+                    salutation,
+                    event.getCreatedByUser().nameToDisplay(),
+                    subject,
+                    location,
+                    dateString,
+                    event.getImageUrl()
+            };
+        } else {
+            eventVariables = new String[]{
+                    salutation,
+                    event.getCreatedByUser().nameToDisplay(),
+                    subject,
+                    location,
+                    dateString,
+                    FormatUtil.formatDoubleToString(yes),
+                    FormatUtil.formatDoubleToString(no),
+                    FormatUtil.formatDoubleToString(abstain),
+                    FormatUtil.formatDoubleToString(noReply)
+            };
+        }
 
         return eventVariables;
 

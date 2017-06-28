@@ -1,13 +1,13 @@
 package za.org.grassroot.webapp.controller.ussd;
 
 
-import com.google.common.base.Verify;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Meeting;
+import za.org.grassroot.core.domain.MeetingBuilder;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
 import za.org.grassroot.core.enums.LiveWireAlertType;
@@ -52,8 +52,7 @@ public class USSDLiveWireControllerTest extends USSDAbstractUnitTest {
     @Test
     public void shouldSelectContactForMeeting() throws Exception {
 
-        Meeting meeting = new Meeting("", Instant.now(),
-                testUser, groups, "");
+        Meeting meeting = new MeetingBuilder().setName("").setStartDateTime(Instant.now()).setUser(testUser).setParent(groups).setEventLocation("").createMeeting();
         LiveWireAlert alert = new LiveWireAlert.Builder()
                 .creatingUser(testUser)
                 .type(LiveWireAlertType.MEETING)

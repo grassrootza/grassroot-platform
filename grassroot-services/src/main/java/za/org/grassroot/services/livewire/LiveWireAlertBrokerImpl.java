@@ -75,6 +75,9 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
     @Value("${grassroot.livewire.contacts.expansive:false}")
     private boolean expansiveContactFind;
 
+    @Value("${grassroot.livewire.contacts.mingroup:10}")
+    private int mingGroupSizeForExpansiveContactFind;
+
     @Autowired
     public LiveWireAlertBrokerImpl(LiveWireAlertRepository alertRepository, UserRepository userRepository, GroupRepository groupRepository, MeetingRepository meetingRepository, EntityManager entityManager, DataSubscriberRepository dataSubscriberRepository, ObjectLocationBroker objectLocationBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, ApplicationEventPublisher applicationEventPublisher) {
         this.alertRepository = alertRepository;
@@ -182,6 +185,8 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
             users.addAll(fetchOrganizersOfPublicGroupsNearby(location, radius));
         }
 
+        logger.info("hunted livewire contacts, found {}", users.size());
+
         return new ArrayList<>(users);
     }
 
@@ -191,9 +196,11 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
                 "inner join m.group g " +
                 "inner join g.locations l " +
                 "where g.discoverable = true and " +
+                "size(g.memberships) >= :minMembership and " +
                 "m.role.name = 'ROLE_GROUP_ORGANIZER' and " +
                 "l.localDate = (SELECT MAX(ll.localDate) FROM GroupLocation ll WHERE ll.group = l.group) and " +
                 GeoLocationUtils.locationFilterSuffix("l.location"), User.class);
+        query.setParameter("minMembership", mingGroupSizeForExpansiveContactFind);
         GeoLocationUtils.addLocationParamsToQuery(query, location, radius);
 
         return new HashSet<>(query.getResultList());

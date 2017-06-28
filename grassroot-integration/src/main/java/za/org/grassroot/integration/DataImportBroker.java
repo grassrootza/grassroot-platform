@@ -15,4 +15,6 @@ public interface DataImportBroker {
 
     List<MembershipInfo> processMembers(File file, Integer phoneColumn, Integer nameColumn, Integer roleColumn, boolean headerRow);
 
+    List<String> extractFirstColumnOfSheet(File file);
+
 }

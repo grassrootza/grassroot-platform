@@ -7,10 +7,7 @@ import org.mockito.Mock;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.Meeting;
-import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.domain.Vote;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.services.task.VoteBroker;
@@ -208,7 +205,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
     public void meetingRsvpShouldWorkInAllLanguages() throws Exception {
         resetTestUser();
         Group testGroup = new Group(testGroupName, testUser);
-        Meeting meeting = new Meeting("Meeting about testing", Instant.now(), testUser, testGroup, "someLocation");
+        Meeting meeting = new MeetingBuilder().setName("Meeting about testing").setStartDateTime(Instant.now()).setUser(testUser).setParent(testGroup).setEventLocation("someLocation").createMeeting();
 
         List<User> groupMembers = new ArrayList<>(languageUsers);
         groupMembers.add(testUser);
@@ -238,8 +235,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
     @Test
     public void shouldAssembleLiveWire() throws Exception {
              Group group = new Group(testGroupName, testUser);
-             Meeting meeting = new Meeting("",Instant.now().plus(1,ChronoUnit.HOURS)
-                    ,testUser,group,"");
+             Meeting meeting = new MeetingBuilder().setName("").setStartDateTime(Instant.now().plus(1, ChronoUnit.HOURS)).setUser(testUser).setParent(group).setEventLocation("").createMeeting();
 
              List<Meeting> newMeeting  = Arrays.asList(meeting);
 

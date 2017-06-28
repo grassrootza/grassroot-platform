@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.domain.GroupLog;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.PermissionBroker;
@@ -169,13 +168,12 @@ public class USSDGroupController extends USSDController {
                         GroupPermissionTemplate.DEFAULT_GROUP, null, null, true);
             }
 
-            String joiningCode = "*134*1994*" + createdGroup.getGroupTokenCode() + "#";
             cacheManager.putUssdMenuForUser(inputNumber, saveGroupMenuWithInput(createGroupMenu + doSuffix, createdGroup.getUid(), groupName, false));
 
             if (!locationRequestEnabled) {
-                menu = postCreateOptionsNoLocation(createdGroup.getUid(), groupName, joiningCode, user);
+                menu = postCreateOptionsNoLocation(createdGroup.getUid(), groupName, createdGroup.getGroupTokenCode(), user);
             } else {
-                menu = postCreateOptionsWithLocation(createdGroup.getUid(), joiningCode, user);
+                menu = postCreateOptionsWithLocation(createdGroup.getUid(), createdGroup.getGroupTokenCode(), user);
             }
         }
         return menuBuilder(menu);

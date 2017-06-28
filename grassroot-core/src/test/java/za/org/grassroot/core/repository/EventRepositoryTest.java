@@ -63,9 +63,7 @@ public class EventRepositoryTest {
         groupRepository.save(groupToDoTests);
         Instant meetingStartDateTime = LocalDateTime.of(2015, 8, 18,
                 10, 0).toInstant(ZoneOffset.UTC);
-        Meeting eventToCreate = new Meeting("",
-                meetingStartDateTime, userToDoTests, groupToDoTests,
-                "The testing location");
+        Meeting eventToCreate = new MeetingBuilder().setName("").setStartDateTime(meetingStartDateTime).setUser(userToDoTests).setParent(groupToDoTests).setEventLocation("The testing location").createMeeting();
 
         assertNull(eventToCreate.getId());
         assertNotNull(eventToCreate.getUid());
@@ -86,7 +84,7 @@ public class EventRepositoryTest {
         Group newGroup = groupRepository.save(new Group("Test Group", newUser));
         Instant meetingTime = Instant.now().plus(1, ChronoUnit.MINUTES);
 
-        Event newEvent = new Meeting("new meeting", meetingTime, newUser, newGroup, "soweto");
+        Event newEvent = new MeetingBuilder().setName("new meeting").setStartDateTime(meetingTime).setUser(newUser).setParent(newGroup).setEventLocation("soweto").createMeeting();
 
         assertNull(newEvent.getId());
         assertNotNull(newEvent.getUid());
@@ -105,8 +103,7 @@ public class EventRepositoryTest {
         User newUser = userRepository.save(new User("12345"));
         Group newGroup = groupRepository.save(new Group("Test Group", newUser));
         Instant presentTime = Instant.now().plus(12, ChronoUnit.DAYS);
-        Event newEvent = eventRepository.save(new Meeting("new Meeting", presentTime,
-                newUser, newGroup, "soweto"));
+        Event newEvent = eventRepository.save(new MeetingBuilder().setName("new Meeting").setStartDateTime(presentTime).setUser(newUser).setParent(newGroup).setEventLocation("soweto").createMeeting());
 
         assertNotNull(newEvent.getId());
         assertNotNull(newEvent.getUid());
@@ -127,8 +124,7 @@ public class EventRepositoryTest {
         groupRepository.save(groupToCreate);
         Instant reminderTime = Instant.now().plus(8L, ChronoUnit.HOURS);
 
-        Meeting meetingToCreate = new Meeting("discussion", reminderTime, userToCreate,
-                groupToCreate, "jozi");
+        Meeting meetingToCreate = new MeetingBuilder().setName("discussion").setStartDateTime(reminderTime).setUser(userToCreate).setParent(groupToCreate).setEventLocation("jozi").createMeeting();
         assertNull(meetingToCreate.getId());
         assertNotNull(meetingToCreate.getUid());
         meetingToCreate.setScheduledReminderActive(true);
@@ -146,8 +142,7 @@ public class EventRepositoryTest {
         User user = userRepository.save(new User("09876"));
         Group group = groupRepository.save(new Group("New Event", user));
         Instant presentTime = Instant.now().plus(1L, ChronoUnit.HOURS);
-        Event event = eventRepository.save(new Meeting("new Ideas", presentTime,
-                user, group, "soweto"));
+        Event event = eventRepository.save(new MeetingBuilder().setName("new Ideas").setStartDateTime(presentTime).setUser(user).setParent(group).setEventLocation("soweto").createMeeting());
 
         assertNotNull(event.getId());
         assertNotNull(event.getUid());
@@ -214,8 +209,7 @@ public class EventRepositoryTest {
         Set<User> userList = new HashSet<>();
 
         Instant eventTime = Instant.now().plus(2L, ChronoUnit.DAYS);
-        Event newEvent = eventRepository.save(new Meeting("Discussion", eventTime
-                , user, group, "Soweto"));
+        Event newEvent = eventRepository.save(new MeetingBuilder().setName("Discussion").setStartDateTime(eventTime).setUser(user).setParent(group).setEventLocation("Soweto").createMeeting());
 
         assertNotNull(newEvent.getUid());
         userList.add(user);
@@ -238,9 +232,7 @@ public class EventRepositoryTest {
         groupToCheck = groupRepository.save(groupToCheck);
 
         Instant startTime = Instant.now().plus(2, ChronoUnit.DAYS);
-        Event event = eventRepository.save(new Meeting("", startTime
-                , userToCheck, groupToCheck
-                , ""));
+        Event event = eventRepository.save(new MeetingBuilder().setName("").setStartDateTime(startTime).setUser(userToCheck).setParent(groupToCheck).setEventLocation("").createMeeting());
 
         assertNotNull(event.getUid());
         event.setReminderType(EventReminderType.GROUP_CONFIGURED);
@@ -289,8 +281,7 @@ public class EventRepositoryTest {
         Group newGroup = groupRepository.save(new Group("Events", newUser));
 
         Instant newTime = Instant.now().plus(14, ChronoUnit.MINUTES);
-        Event newEvent = eventRepository.save(new Meeting("Welcome new Members", newTime, newUser
-                , newGroup, "Polokwane"));
+        Event newEvent = eventRepository.save(new MeetingBuilder().setName("Welcome new Members").setStartDateTime(newTime).setUser(newUser).setParent(newGroup).setEventLocation("Polokwane").createMeeting());
 
         assertNotNull(newEvent.getUid());
         assertThat(newEvent.getScheduledReminderTime(), is(nullValue()));
@@ -307,8 +298,7 @@ public class EventRepositoryTest {
         User users = userRepository.save(new User(""));
         Group groups = groupRepository.save(new Group("", users));
         Instant scheduleTime = Instant.now().plus(2, ChronoUnit.DAYS);
-        Event newEvent = eventRepository.save(new Meeting("", scheduleTime,
-                users, groups, ""));
+        Event newEvent = eventRepository.save(new MeetingBuilder().setName("").setStartDateTime(scheduleTime).setUser(users).setParent(groups).setEventLocation("").createMeeting());
         assertNotNull(newEvent.getUid());
         newEvent.setReminderType(EventReminderType.CUSTOM);
         newEvent.setCustomReminderMinutes(12);
@@ -338,8 +328,7 @@ public class EventRepositoryTest {
         User user = userRepository.save(new User("6734895"));
         Group groups = groupRepository.save(new Group("Test", user));
         Instant time = Instant.now();
-        Event event = eventRepository.save(new Meeting("",
-                time, user, groups, ""));
+        Event event = eventRepository.save(new MeetingBuilder().setName("").setStartDateTime(time).setUser(user).setParent(groups).setEventLocation("").createMeeting());
 
         assertNotNull(event.getUid());
         event.setVersion(1);
@@ -357,8 +346,7 @@ public class EventRepositoryTest {
         Group newGroup = groupRepository.save(new Group("", newUser));
         Instant newTime = Instant.now().plus(48, ChronoUnit.HOURS);
 
-        Event eventCreate = eventRepository.save(new Meeting("", newTime,
-                newUser, newGroup, ""));
+        Event eventCreate = eventRepository.save(new MeetingBuilder().setName("").setStartDateTime(newTime).setUser(newUser).setParent(newGroup).setEventLocation("").createMeeting());
         assertNotNull(eventCreate.getUid());
         newGroup.setReminderMinutes(30);
         assertThat(newGroup.getReminderMinutes(), is(30));
@@ -387,14 +375,14 @@ public class EventRepositoryTest {
         Group group = groupRepository.save(new Group("events for group test",user));
 
         Instant pastDate = Instant.now().minus(10, ChronoUnit.MINUTES);
-        Event pastEvent = eventRepository.save(new Meeting("past event", pastDate, user, group,"someLoc", false));
+        Event pastEvent = eventRepository.save(new MeetingBuilder().setName("past event").setStartDateTime(pastDate).setUser(user).setParent(group).setEventLocation("someLoc").setIncludeSubGroups(false).createMeeting());
         eventRepository.save(pastEvent);
 
         Instant futureDate = Instant.now().plus(20, ChronoUnit.MINUTES);
-        Event futureEvent = eventRepository.save(new Meeting("future event", futureDate, user, group, "someLoc"));
+        Event futureEvent = eventRepository.save(new MeetingBuilder().setName("future event").setStartDateTime(futureDate).setUser(user).setParent(group).setEventLocation("someLoc").createMeeting());
         eventRepository.save(futureEvent);
 
-        Event futureEventCancelled = eventRepository.save(new Meeting("future event cancelled", futureDate, user, group, "someLocation"));
+        Event futureEventCancelled = eventRepository.save(new MeetingBuilder().setName("future event cancelled").setStartDateTime(futureDate).setUser(user).setParent(group).setEventLocation("someLocation").createMeeting());
         futureEventCancelled.setCanceled(true);
         eventRepository.save(futureEventCancelled);
 
@@ -427,7 +415,7 @@ public class EventRepositoryTest {
     public void shouldReturnSameObjectOnSecondUpdate() {
         User user = userRepository.save(new User("085551234","test dup event user"));
         Group group = groupRepository.save(new Group("test dup event",user));
-        Meeting event = eventRepository.save(new Meeting("duplicate event test", Instant.now(), user, group, "someLoc"));
+        Meeting event = eventRepository.save(new MeetingBuilder().setName("duplicate event test").setStartDateTime(Instant.now()).setUser(user).setParent(group).setEventLocation("someLoc").createMeeting());
         event.setEventLocation("dup location");
         Event event2 = eventRepository.save(event);
         assertEquals(event.getId(),event2.getId());
@@ -467,7 +455,7 @@ public class EventRepositoryTest {
 
         Instant expiry = Instant.now().truncatedTo(HOURS).plus(1, HOURS);
 
-        Event meeting = eventRepository.save(new Meeting("testing vote query", expiry, user, group, "somewhere"));
+        Event meeting = eventRepository.save(new MeetingBuilder().setName("testing vote query").setStartDateTime(expiry).setUser(user).setParent(group).setEventLocation("somewhere").createMeeting());
         eventRepository.save(meeting);
         List<Event> list = eventRepository.findAllVotesAfterTimeStamp(Instant.now());
         assertEquals(0,list.size());
@@ -485,12 +473,12 @@ public class EventRepositoryTest {
         group.addMember(user2);
         group = groupRepository.save(group);
 
-        Event event1 = eventRepository.save(new Meeting("test", Instant.now(), user2, group, "someLoc"));
+        Event event1 = eventRepository.save(new MeetingBuilder().setName("test").setStartDateTime(Instant.now()).setUser(user2).setParent(group).setEventLocation("someLoc").createMeeting());
 
         Group group2 = groupRepository.save(new Group("tg2", user2));
         group2.addMember(user2);
         group2 = groupRepository.save(group2);
-        Event event2 = eventRepository.save(new Meeting("test2", Instant.now(), user2, group2, "someLoc"));
+        Event event2 = eventRepository.save(new MeetingBuilder().setName("test2").setStartDateTime(Instant.now()).setUser(user2).setParent(group2).setEventLocation("someLoc").createMeeting());
 
         List<Event> events = eventRepository.findByParentGroupMembershipsUser(user1);
         List<Event> events2 = eventRepository.findByParentGroupMembershipsUser(user2);
@@ -519,13 +507,13 @@ public class EventRepositoryTest {
         group.addMember(user);
         group = groupRepository.save(group);
 
-        Event event1 = eventRepository.save(new Meeting("test", Instant.now().plus(7, DAYS), user, group, "someLoc"));
+        Event event1 = eventRepository.save(new MeetingBuilder().setName("test").setStartDateTime(Instant.now().plus(7, DAYS)).setUser(user).setParent(group).setEventLocation("someLoc").createMeeting());
         eventRepository.save(event1);
 
         Event event2 = eventRepository.save(new Vote("test2", Instant.now().minus(7, DAYS), user, group));
         eventRepository.save(event2);
 
-        Event event3 = eventRepository.save(new Meeting("test3", Instant.now().plus(7, DAYS), user, group, "someLoc"));
+        Event event3 = eventRepository.save(new MeetingBuilder().setName("test3").setStartDateTime(Instant.now().plus(7, DAYS)).setUser(user).setParent(group).setEventLocation("someLoc").createMeeting());
         event3.setCanceled(true);
         eventRepository.save(event3);
 
@@ -555,8 +543,8 @@ public class EventRepositoryTest {
         group2.addMember(user2);
         group2 = groupRepository.save(group2);
 
-        Event event1 = new Meeting("count check", Instant.now().plus(2, DAYS), user, group, "someLoc");
-        Event event2 = new Meeting("count check 2", Instant.now().minus(2, DAYS), user, group2, "someLoc");
+        Event event1 = new MeetingBuilder().setName("count check").setStartDateTime(Instant.now().plus(2, DAYS)).setUser(user).setParent(group).setEventLocation("someLoc").createMeeting();
+        Event event2 = new MeetingBuilder().setName("count check 2").setStartDateTime(Instant.now().minus(2, DAYS)).setUser(user).setParent(group2).setEventLocation("someLoc").createMeeting();
 
         event1 = eventRepository.save(event1);
         event2 = eventRepository.save(event2);
@@ -590,8 +578,8 @@ public class EventRepositoryTest {
 	    Instant intervalStart1 = Instant.now().minus(1, ChronoUnit.MINUTES);
 	    Instant intervalStart2 = Instant.now().plus(1, ChronoUnit.MINUTES);
 
-	    Event event1 = new Meeting("count check", Instant.now().plus(2, DAYS), user, group, "someLoc");
-	    Event event2 = new Meeting("count check 2", Instant.now().minus(2, DAYS), user, group2, "someLoc");
+	    Event event1 = new MeetingBuilder().setName("count check").setStartDateTime(Instant.now().plus(2, DAYS)).setUser(user).setParent(group).setEventLocation("someLoc").createMeeting();
+	    Event event2 = new MeetingBuilder().setName("count check 2").setStartDateTime(Instant.now().minus(2, DAYS)).setUser(user).setParent(group2).setEventLocation("someLoc").createMeeting();
 
 	    event1 = eventRepository.save(event1);
 	    event2 = eventRepository.save(event2);

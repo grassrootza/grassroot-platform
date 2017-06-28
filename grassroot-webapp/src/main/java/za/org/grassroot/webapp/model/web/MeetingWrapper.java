@@ -1,5 +1,6 @@
 package za.org.grassroot.webapp.model.web;
 
+import org.springframework.web.multipart.MultipartFile;
 import za.org.grassroot.core.domain.EventReminderType;
 import za.org.grassroot.core.enums.MeetingImportance;
 import za.org.grassroot.webapp.enums.EntityPublicOption;
@@ -14,6 +15,8 @@ public class MeetingWrapper extends EventWrapper {
     private EntityPublicOption publicOption;
     private Double latitude;
     private Double longitude;
+
+    private MultipartFile meetingImage;
 
     private MeetingWrapper() {
     }
@@ -68,6 +71,14 @@ public class MeetingWrapper extends EventWrapper {
     }
 
     public boolean hasLongLat() { return latitude != null && longitude != null; }
+
+    public MultipartFile getMeetingImage() {
+        return meetingImage;
+    }
+
+    public void setMeetingImage(MultipartFile meetingImage) {
+        this.meetingImage = meetingImage;
+    }
 
     @Override
     public String toString() {
