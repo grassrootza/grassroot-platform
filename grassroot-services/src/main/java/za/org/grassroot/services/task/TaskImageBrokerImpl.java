@@ -1,18 +1,20 @@
 package za.org.grassroot.services.task;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.geo.GeoLocation;
-import za.org.grassroot.core.domain.EventLog;
-import za.org.grassroot.core.domain.TaskLog;
-import za.org.grassroot.core.domain.TodoLog;
 import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.util.DebugUtil;
+import za.org.grassroot.core.util.UIDGenerator;
+import za.org.grassroot.integration.UrlShortener;
 import za.org.grassroot.integration.storage.ImageType;
 import za.org.grassroot.integration.storage.StorageBroker;
 import za.org.grassroot.services.geo.GeoLocationBroker;
@@ -25,6 +27,7 @@ import java.util.stream.Collectors;
 
 import static org.springframework.data.jpa.domain.Specifications.where;
 import static za.org.grassroot.core.enums.ActionLogType.TODO_LOG;
+import static za.org.grassroot.core.enums.EventLogType.IMAGE_RECORDED;
 import static za.org.grassroot.core.specifications.EventLogSpecifications.forEvent;
 import static za.org.grassroot.core.specifications.EventLogSpecifications.ofType;
 import static za.org.grassroot.core.specifications.ImageRecordSpecifications.actionLogType;
@@ -38,6 +41,11 @@ import static za.org.grassroot.core.specifications.TodoLogSpecifications.ofType;
 @Service
 public class TaskImageBrokerImpl implements TaskImageBroker {
 
+    private static final Logger logger = LoggerFactory.getLogger(TaskImageBrokerImpl.class);
+
+    @Value("${grassroot.task.images.bucket:null}")
+    private String taskImagesBucket;
+
     private final UserRepository userRepository;
     private final EventRepository eventRepository;
     private final EventLogRepository eventLogRepository;
@@ -47,11 +55,12 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
 
     private final StorageBroker storageBroker;
     private final GeoLocationBroker geoLocationBroker;
+    private final UrlShortener urlShortener;
 
     @Autowired
     public TaskImageBrokerImpl(UserRepository userRepository, EventRepository eventRepository, EventLogRepository eventLogRepository,
                                TodoRepository todoRepository, TodoLogRepository todoLogRepository, ImageRecordRepository imageRecordRepository,
-                               StorageBroker storageBroker, GeoLocationBroker geoLocationBroker) {
+                               StorageBroker storageBroker, GeoLocationBroker geoLocationBroker, UrlShortener urlShortener) {
         this.userRepository = userRepository;
         this.eventRepository = eventRepository;
         this.eventLogRepository = eventLogRepository;
@@ -60,6 +69,15 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
         this.imageRecordRepository = imageRecordRepository;
         this.storageBroker = storageBroker;
         this.geoLocationBroker = geoLocationBroker;
+        this.urlShortener = urlShortener;
+    }
+
+    @Override
+    public String storeImagePreTask(TaskType taskType, MultipartFile file) {
+        String imageKey = UIDGenerator.generateId();
+        storageBroker.storeImage(TaskType.TODO.equals(taskType) ?
+                ActionLogType.TODO_LOG : ActionLogType.EVENT_LOG, imageKey, file);
+        return imageKey;
     }
 
     @Override
@@ -85,6 +103,33 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
                 return storeImageForTodo(user, taskUid, location, file);
             default: // throw an exception
                 return null;
+        }
+    }
+
+    @Override
+    @Transactional
+    public void recordImageForTask(String userUid, String taskUid, TaskType taskType, String imageKey, EventLogType logType) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(taskUid);
+        Objects.requireNonNull(imageKey);
+
+        if (taskType.equals(TaskType.MEETING)) {
+            User user = userRepository.findOneByUid(userUid);
+            Event meeting = eventRepository.findOneByUid(taskUid);
+            EventLog imageLog = new EventLog(user, meeting, logType == null ? IMAGE_RECORDED : logType);
+            imageLog.setTag(imageKey); // slight abuse of usage, but no other possible tag here
+            eventLogRepository.save(imageLog);
+        }
+    }
+
+    @Override
+    public String getShortUrl(String imageKey) {
+        try {
+            return urlShortener.shortenImageUrl(taskImagesBucket, imageKey);
+        } catch (Exception e) {
+            // not great to have generic catch here but need robustness or have risk of notices not going out
+            logger.error("Error shortening URL! : {}", e);
+            return null;
         }
     }
 
@@ -238,7 +283,6 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
         }
 
         EventLog eventLog = new EventLog(user, meeting, EventLogType.IMAGE_RECORDED);
-
         if (location != null) {
             eventLog.setLocation(location);
             geoLocationBroker.calculateMeetingLocationInstant(meeting.getUid(), location, UserInterfaceType.WEB);

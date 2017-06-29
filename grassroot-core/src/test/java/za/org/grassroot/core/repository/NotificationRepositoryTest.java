@@ -64,7 +64,7 @@ public class NotificationRepositoryTest {
         assertThat(notificationRepository.count(), is(0L));
         User user = userRepository.save(new User("08488754097"));
         Group group = groupRepository.save(new Group("test eventlog", user));
-        Event event = eventRepository.save(new Meeting("test meeting",Instant.now(),  user, group, "someLoc"));
+        Event event = eventRepository.save(new MeetingBuilder().setName("test meeting").setStartDateTime(Instant.now()).setUser(user).setParent(group).setEventLocation("someLoc").createMeeting());
         EventLog eventLog = eventLogRepository.save(new EventLog(user, event, EventLogType.CREATED));
         GcmRegistration gcmRegistration = gcmRegistrationRepository.save(new GcmRegistration(user, "33433"));
         notificationRepository.save(new EventCancelledNotification(user, "blah", eventLog));
@@ -78,7 +78,7 @@ public class NotificationRepositoryTest {
     public void shouldFindByUser() throws Exception{
         User user = userRepository.save(new User("0848835097"));
         Group group = groupRepository.save(new Group("test eventlog", user));
-        Event event = eventRepository.save(new Meeting("test meeting",Instant.now(),  user, group, "someLoc"));
+        Event event = eventRepository.save(new MeetingBuilder().setName("test meeting").setStartDateTime(Instant.now()).setUser(user).setParent(group).setEventLocation("someLoc").createMeeting());
         EventLog eventLog = eventLogRepository.save(new EventLog(user, event, EventLogType.CREATED));
         GcmRegistration gcmRegistration = gcmRegistrationRepository.save(new GcmRegistration(user, "33433"));
         notificationRepository.save(new EventCancelledNotification(user, "blah", eventLog));
@@ -93,7 +93,7 @@ public class NotificationRepositoryTest {
         Group group = groupRepository.save(new Group("test notification 3", user));
         User user2 = userRepository.save(new User("00111116"));
         group.addMember(user2);
-        Event event = eventRepository.save(new Meeting("test meeting 3", Instant.now(), user, group, "someLoc"));
+        Event event = eventRepository.save(new MeetingBuilder().setName("test meeting 3").setStartDateTime(Instant.now()).setUser(user).setParent(group).setEventLocation("someLoc").createMeeting());
         EventLog eventLog = eventLogRepository.save(new EventLog(user, event, EventLogType.CREATED));
         Notification notification = new EventInfoNotification(user, "test meeting called", eventLog);
         notification.markAsDelivered();

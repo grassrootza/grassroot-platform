@@ -28,7 +28,7 @@ public class ScheduledGeoCalculations {
 
     private static final Logger logger = LoggerFactory.getLogger(ScheduledGeoCalculations.class);
 
-    private long numberOfDaysBackToCalcMeetings;
+    private static final long DAYS_TO_CALC_MTGS = 7;
 
     @Autowired
     private GeoLocationBroker geoLocationBroker;
@@ -61,7 +61,7 @@ public class ScheduledGeoCalculations {
         LocalDate today = LocalDate.now();
         // first, we get all public meetings, then we calculate their positions
         // (but do need to include meetings in recent past, as may have taken photo etc)
-        Instant start = Instant.now().minus(numberOfDaysBackToCalcMeetings, ChronoUnit.DAYS);
+        Instant start = Instant.now().minus(DAYS_TO_CALC_MTGS, ChronoUnit.DAYS);
         Instant end = DateTimeUtil.getVeryLongAwayInstant(); // may change to 1 month in future
 
         List<Event> publicMeetings = meetingRepository.findAll(

@@ -40,9 +40,6 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 	private UserRepository userRepository;
 
 	@Autowired
-	private UserLogRepository userLogRepository;
-
-	@Autowired
 	private GroupRepository groupRepository;
 
 	@Autowired
@@ -121,7 +118,7 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 	public void calculatePreviousPeriodUserLocations(LocalDate localDate) {
 		Objects.requireNonNull(localDate);
 
-		logger.info("calculating user location for period of one month ending on date {} (inclusive)", localDate);
+		logger.info("calculating user locations for period of one month ending on date {} (inclusive)", localDate);
 		int periodDurationInMonths = 1;
 		Instant intervalStart = convertStartOfDayToSASTInstant(localDate.plusDays(1).minusMonths(periodDurationInMonths));
 		Instant intervalEnd = convertStartOfDayToSASTInstant(localDate.plusDays(1)); // since we want period date end to be inclusive...
@@ -134,7 +131,7 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 				.collect(Collectors.groupingBy(UserLocationLog::getUserUid,
 						Collectors.mapping(UserLocationLog::getLocation, Collectors.toList())));
 
-		logger.debug("Storing {} previous period user locations", locationsPerUserUid.size());
+		logger.info("Storing {} previous period user locations", locationsPerUserUid.size());
 
 		Set<PreviousPeriodUserLocation> userLocations = new HashSet<>();
 		for (Map.Entry<String, List<GeoLocation>> entry : locationsPerUserUid.entrySet()) {
@@ -167,9 +164,9 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 
 		Set<String> memberUids = group.getMembers().stream().map(User::getUid).collect(Collectors.toSet());
 		CenterCalculationResult result = calculateCenter(memberUids, localDate);
-		logger.info("in group location, center result: {}", result);
 		if (result.isDefined()) {
 			// for now, score is simply ratio of found member locations to total member count
+			logger.info("in group location, saving center result: {}", result);
 			float score = result.getEntityCount() / (float) memberUids.size();
 			GroupLocation groupLocation = new GroupLocation(group, localDate, result.getCenter(), score, LocationSource.CALCULATED);
 			groupLocationRepository.save(groupLocation);

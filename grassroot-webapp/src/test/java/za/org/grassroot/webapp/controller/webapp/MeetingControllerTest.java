@@ -10,7 +10,7 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.MeetingImportance;
-import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.services.task.MeetingBuilderHelper;
 import za.org.grassroot.webapp.model.web.MeetingWrapper;
 
 import java.time.Instant;
@@ -19,6 +19,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 
 import static org.hamcrest.Matchers.*;
@@ -47,7 +48,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
     public void shouldShowMeetingDetails() throws Exception {
 
         Group dummyGroup = new Group("Dummy Group3", new User("234345345"));
-        Meeting dummyMeeting = new Meeting("test meeting", oneDayAway, sessionTestUser, dummyGroup, "some place");
+        Meeting dummyMeeting = new MeetingBuilder().setName("test meeting").setStartDateTime(oneDayAway).setUser(sessionTestUser).setParent(dummyGroup).setEventLocation("some place").createMeeting();
 
          logger.info("ZOG: dummyMeetingIs: {} ", dummyMeeting);
 
@@ -96,11 +97,20 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
                 .andExpect(view().name("redirect:/group/view"))
                 .andExpect(redirectedUrl("/group/view?groupUid=" + dummyGroup.getUid()));
 
-        verify(eventBrokerMock, times(1))
-                .createMeeting(sessionTestUser.getUid(), dummyGroup.getUid(), JpaEntityType.GROUP, "test meeting",
-                        tomorrow, "some place", false, EventReminderType.GROUP_CONFIGURED, 60,
-                        "This is a description", Collections.emptySet(), MeetingImportance.ORDINARY);
+        MeetingBuilderHelper helper = new MeetingBuilderHelper()
+                .userUid(sessionTestUser.getUid())
+                .parentType(JpaEntityType.GROUP)
+                .parentUid(dummyGroup.getUid())
+                .name("test meeting")
+                .startDateTime(tomorrow)
+                .location("some place")
+                .reminderType(EventReminderType.GROUP_CONFIGURED)
+                .customReminderMinutes(60)
+                .description("This is a description")
+                .importance(MeetingImportance.ORDINARY)
+                .assignedMemberUids(new HashSet<>());
 
+        verify(eventBrokerMock, times(1)).createMeeting(helper);
         verifyNoMoreInteractions(groupBrokerMock);
         verifyZeroInteractions(userManagementServiceMock);
     }
@@ -152,7 +162,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
     public void meetingModificationWorks() throws Exception {
 
         Group testGroup = new Group("Dummy Group3", new User("234345345"));
-        Meeting dummyMeeting = new Meeting("test meeting", oneDayAway, sessionTestUser, testGroup, "some place");
+        Meeting dummyMeeting = new MeetingBuilder().setName("test meeting").setStartDateTime(oneDayAway).setUser(sessionTestUser).setParent(testGroup).setEventLocation("some place").createMeeting();
 
         LocalDateTime dateTime = LocalDateTime.now().plus(1, ChronoUnit.DAYS).truncatedTo(ChronoUnit.MINUTES);
 
@@ -189,8 +199,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
     public void rsvpNoShouldWork() throws Exception {
 
         Group testGroup = new Group("Dummy Group3", new User("234345345"));
-        Meeting dummyMeeting = new Meeting("test meeting", oneDayAway,
-                                           sessionTestUser, testGroup, "some place");
+        Meeting dummyMeeting = new MeetingBuilder().setName("test meeting").setStartDateTime(oneDayAway).setUser(sessionTestUser).setParent(testGroup).setEventLocation("some place").createMeeting();
 
         when(eventBrokerMock.loadMeeting(dummyMeeting.getUid())).thenReturn(dummyMeeting);
 
@@ -211,8 +220,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
     public void rsvpYesShouldWork() throws Exception {
 
         Group testGroup = new Group("Dummy Group3", new User("234345345"));
-        Meeting dummyMeeting = new Meeting("test meeting", oneDayAway,
-                                           sessionTestUser, testGroup, "some place");
+        Meeting dummyMeeting = new MeetingBuilder().setName("test meeting").setStartDateTime(oneDayAway).setUser(sessionTestUser).setParent(testGroup).setEventLocation("some place").createMeeting();
 
         ResponseTotalsDTO testCount = ResponseTotalsDTO.makeForTest(2, 0, 0, 0, 2);
         HashMap<User, EventRSVPResponse> dummyResponsesMap = mock(HashMap.class);
@@ -242,8 +250,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
     @Test
     public void changeReminderSettingShouldWork() throws Exception {
         Group testGroup = new Group("Dummy Group3", new User("234345345"));
-        Meeting dummyMeeting = new Meeting("test meeting", oneDayAway,
-                                           sessionTestUser, testGroup, "some place");
+        Meeting dummyMeeting = new MeetingBuilder().setName("test meeting").setStartDateTime(oneDayAway).setUser(sessionTestUser).setParent(testGroup).setEventLocation("some place").createMeeting();
         dummyMeeting.setReminderType(EventReminderType.CUSTOM);
         dummyMeeting.setCustomReminderMinutes(60 * 24);
 

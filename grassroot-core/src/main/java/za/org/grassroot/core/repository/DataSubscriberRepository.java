@@ -3,6 +3,7 @@ package za.org.grassroot.core.repository;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import za.org.grassroot.core.domain.livewire.DataSubscriber;
 
@@ -33,7 +34,8 @@ public interface DataSubscriberRepository extends JpaRepository<DataSubscriber, 
     @Query(value = "select * from data_subscriber where ?1 = ANY(access_users)", nativeQuery = true)
     List<DataSubscriber> findSubscriberHoldingUser(String userUid);
 
-    @Query(value = "UPDATE data_subscriber SET push_emails = array_remove(push_emails, ?1)", nativeQuery = true)
+    @Modifying
+    @Query(value = "UPDATE data_subscriber SET push_emails = array_remove(push_emails, CAST(?1 as text))", nativeQuery = true)
     void removeEmailFromAllSubscribers(String emailAddress);
 
 }

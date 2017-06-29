@@ -1,0 +1,67 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      data-layout-decorate="~{layout}">
+<head>
+  <meta charset="UTF-8" />
+  <title>LiveWire</title>
+
+  <meta name="_csrf" th:content="${_csrf.token}"/>
+  <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+
+<body>
+
+<section layout:fragment="header" class="top-container">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-6 col-md-offset-3 col-sm-10 col-sm-offset-1 col-xs-12">
+        <h2 class="text-center header-content-title">Grassroot LiveWire</h2>
+      </div>
+    </div>
+  </div>
+</section>
+
+<main layout:fragment="content">
+
+  <section class="grassroot-body">
+    <div class="row">
+      <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
+        <div th:if="${includeUnsubscribe}" class="text-center text-large">
+          <form th:action="@{/livewire/public/unsubscribe/confirm}" method="post">
+            <input type="hidden" name="emailAddress" th:value="${emailAddress}">
+            <button type="submit" class="btn btn-link btn-large">Unsubscribe from LiveWire alerts</button>
+          </form>
+        </div>
+        <p>
+          Grassroot LiveWire is a service that connects community leaders to newsrooms.
+        </p>
+        <p>
+          Grassroot is s set of tools for organizing in low-income and marginalized
+          communities. It works on any phone, with any connection. Having grown 10x in the last year,
+          it now reaches 35,000 users, with over 6,000 meetings, votes and actions called in total.
+        </p>
+        <p>
+          Grassroot LiveWire is a new service, built with the support of Code for Africa’s innovateAFRICA fund
+          and the Bill and Melinda Gates Foundation. It enables media to far more easily be informed of events
+          and organizing activity in communities and contact groups mobilizing about them.
+        </p>
+        <p>
+          LiveWire works by enabling community leaders, who organize groups of more than 100 people through
+          the Grassroot platform, to send out simple press notices and releases. Urgent releases by qualifying
+          groups are distributed automatically, while notices of upcoming meetings are reviewed by the Grassroot
+          team prior to distribution.
+        </p>
+        <p>
+          Grassroot LiveWire notices are distributed to newsrooms across the country. Full LiveWire subscribers
+          can also access lists of community leaders in various parts of the country to contact for news stories.
+          For more information, please email
+          <a href="mailto:livewire@grassroot.org.za?subject=LiveWire+Enquiry">livewire@grassroot.org.za</a>
+        </p>
+      </div>
+    </div>
+
+  </section>
+
+</main>
+
+</body>
+</html>

@@ -11,3 +11,7 @@ GRASSROOT LIVEWIRE FLASH ALERT
 [[ #{livewire.instant.groupdetails(${numberMembers}, ${lengthTime}, ${numberTasks})} ]]
 
 <!-- [[ #{livewire.instant.location(${groupCoord},${groupAddress},${alertCoord},${alertAddress})} ]] -->
+
+You are receiving this mail as part of Grassroot's LiveWire service. LiveWire connects community organizers
+to the media by enabling users of the Grassroot app to generate media alerts. For more information please
+go to [[ ${infoLink} ]], or [[ ${unsubLink} ]] to unsubscribe.

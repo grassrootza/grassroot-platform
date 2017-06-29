@@ -32,7 +32,7 @@ public class Meeting extends Event<MeetingContainer> implements VoteContainer {
 	}
 
 	// production constructor : above are only used in tests
-	public Meeting(String name, Instant startDateTime, User user, MeetingContainer parent, String eventLocation, boolean includeSubGroups,
+	private Meeting(String name, Instant startDateTime, User user, MeetingContainer parent, String eventLocation, boolean includeSubGroups,
 				   EventReminderType reminderType, int customReminderMinutes, String description, MeetingImportance importance) {
 		super(startDateTime, user, parent, name, includeSubGroups, reminderType, customReminderMinutes, description, true, false);
 		this.eventLocation = Objects.requireNonNull(eventLocation);
@@ -42,7 +42,7 @@ public class Meeting extends Event<MeetingContainer> implements VoteContainer {
 	}
 
 	public static Meeting makeEmpty(User user) {
-		Meeting meeting = new Meeting();
+		Meeting meeting = new MeetingBuilder().createMeeting();
 		meeting.uid = UIDGenerator.generateId();
 		meeting.setCreatedByUser(user);
 		return meeting;
@@ -71,6 +71,11 @@ public class Meeting extends Event<MeetingContainer> implements VoteContainer {
 	}
 
 	public void setImportance(MeetingImportance importance) { this.importance = importance; }
+
+	@Override
+	public boolean isHighImportance() {
+		return MeetingImportance.SPECIAL.equals(importance);
+	}
 
 	public MeetingContainer getParent() {
 		if (parentGroup != null) {

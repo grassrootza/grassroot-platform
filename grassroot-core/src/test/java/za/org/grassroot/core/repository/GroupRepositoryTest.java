@@ -60,9 +60,7 @@ public class GroupRepositoryTest {
 
         User user1 = userRepository.save(new User("3456"));
         Group group1 = groupRepository.save(new Group("Test Group", user1));
-        Event newEvent = eventRepository.save(new Meeting("new Meeting",
-                Instant.now().plus(1L, ChronoUnit.DAYS), user1, group1,
-                "limpopo"));
+        Event newEvent = eventRepository.save(new MeetingBuilder().setName("new Meeting").setStartDateTime(Instant.now().plus(1L, ChronoUnit.DAYS)).setUser(user1).setParent(group1).setEventLocation("limpopo").createMeeting());
 
         assertThat(eventRepository.count(), is(1L));
         assertNotNull(group1.getUpcomingEvents(Predicate.isEqual(newEvent), false));
@@ -390,9 +388,7 @@ public class GroupRepositoryTest {
 
         User newUser = userRepository.save(new User("12345"));
         Group testGroup = groupRepository.save(new Group("testGroup", newUser));
-        Event newEvent = eventRepository.save(new Meeting("test meeting",
-                Instant.now().plus(1L, ChronoUnit.DAYS), newUser, testGroup,
-                "somewhere in soweto"));
+        Event newEvent = eventRepository.save(new MeetingBuilder().setName("test meeting").setStartDateTime(Instant.now().plus(1L, ChronoUnit.DAYS)).setUser(newUser).setParent(testGroup).setEventLocation("somewhere in soweto").createMeeting());
 
         assertThat(eventRepository.count(), is(1L));
         assertNotNull(testGroup.getEvents());
@@ -420,8 +416,8 @@ public class GroupRepositoryTest {
 
         User userToCreate = userRepository.save(new User("56789"));
         Group testGroup = groupRepository.save(new Group("testGroup",userToCreate));
-        Event createEvent = eventRepository.save(new Meeting("new Event",Instant.now().plus(
-                1L,ChronoUnit.DAYS), userToCreate,testGroup,"limpopo"));
+        Event createEvent = eventRepository.save(new MeetingBuilder().setName("new Event").setStartDateTime(Instant.now().plus(
+                1L, ChronoUnit.DAYS)).setUser(userToCreate).setParent(testGroup).setEventLocation("limpopo").createMeeting());
 
         assertThat(eventRepository.count(),is(1L));
         assertNotNull(testGroup.getDescendantEvents());

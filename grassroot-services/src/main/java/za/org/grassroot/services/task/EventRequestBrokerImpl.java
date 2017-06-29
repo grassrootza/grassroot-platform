@@ -194,11 +194,22 @@ public class EventRequestBrokerImpl implements EventRequestBroker {
 		if (request instanceof MeetingRequest) {
 			MeetingRequest meetingRequest = (MeetingRequest) request;
 			MeetingContainer parent = meetingRequest.getParent();
-            if (meetingRequest.getReminderType() == null) meetingRequest.setReminderType(EventReminderType.GROUP_CONFIGURED);
-			createdEntityUid = eventBroker.createMeeting(userUid, parent.getUid(), parent.getJpaEntityType(), meetingRequest.getName(),
-					meetingRequest.getEventDateTimeAtSAST(), meetingRequest.getEventLocation(), meetingRequest.isIncludeSubGroups(),
-					meetingRequest.getReminderType(), meetingRequest.getCustomReminderMinutes(),
-					meetingRequest.getDescription(), assignedMemberUids, MeetingImportance.ORDINARY).getUid();
+            if (meetingRequest.getReminderType() == null) {
+            	meetingRequest.setReminderType(EventReminderType.GROUP_CONFIGURED);
+			}
+
+			createdEntityUid = eventBroker.createMeeting(new MeetingBuilderHelper()
+					.userUid(userUid)
+					.parentUid(parent.getUid())
+					.parentType(parent.getJpaEntityType())
+					.name(meetingRequest.getName())
+					.startDateTime(meetingRequest.getEventDateTimeAtSAST())
+					.location(meetingRequest.getEventLocation())
+					.includeSubGroups(meetingRequest.isIncludeSubGroups())
+					.reminderType(meetingRequest.getReminderType())
+					.customReminderMinutes(meetingRequest.getCustomReminderMinutes())
+					.description(meetingRequest.getDescription())
+					.assignedMemberUids(assignedMemberUids)).getUid();
 		} else {
 			VoteRequest voteRequest = (VoteRequest) request;
 			VoteContainer parent = voteRequest.getParent();

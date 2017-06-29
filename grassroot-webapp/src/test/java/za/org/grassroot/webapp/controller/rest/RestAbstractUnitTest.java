@@ -45,8 +45,7 @@ public class RestAbstractUnitTest {
 
     protected final static Vote voteEvent = new Vote(testEventTitle, testInstant, sessionTestUser, testGroup, true, testEventDescription);
 
-    protected final static Meeting meetingEvent = new Meeting(testEventTitle, testInstant, sessionTestUser, testGroup, testEventLocation,
-            true, EventReminderType.DISABLED, 15, testEventDescription, null);
+    protected final static Meeting meetingEvent = new MeetingBuilder().setName(testEventTitle).setStartDateTime(testInstant).setUser(sessionTestUser).setParent(testGroup).setEventLocation(testEventLocation).setIncludeSubGroups(true).setReminderType(EventReminderType.DISABLED).setCustomReminderMinutes(15).setDescription(testEventDescription).setImportance(null).createMeeting();
 
     protected final static Todo TEST_TO_DO = new Todo(sessionTestUser, testGroup, "A test log book", testInstant);
 
