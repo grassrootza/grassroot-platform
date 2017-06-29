@@ -123,27 +123,17 @@
     var groupSizeSlider = $("#groupSizeSlider").get(0);
     noUiSlider.create(groupSizeSlider, {
         connect: true,
-        start: [1, 10],
+        start: 5,
         step: 1,
         range: {
-            min: 1,
-            max: 10
+            min: 0,
+            max: 100
         },
         pips: {
             mode: 'range',
             density: 3
         }
     });
-
-    // Configure the slider limits
-    function updateSliderRange (slider, min, max) {
-        slider.noUiSlider.updateOptions({
-            range: {
-                'min': min,
-                'max': max
-            }
-        });
-    }
 
     // Get parameters
     var latitude = [[${location.latitude}]];
@@ -183,44 +173,12 @@
     }).addTo(this.map);
 
     // Filter parameters
-    var minGroupSize = 1;
-    var maxGroupSize = 10;
-    var minGroupTasks = 1;
-    var maxGroupTasks = 10;
-
-    // Find the boundaries for the filters
-    function findLimits(markers) {
-      var len = markers.length;
-      minGroupSize = Infinity;
-      maxGroupSize = -Infinity;
-      minGroupTasks = Infinity;
-      maxGroupTasks = -Infinity;
-      while (len--) {
-        var gs = markers[len].groupSize;
-        if (gs < minGroupSize) {
-          minGroupSize = gs;
-        }
-        if (gs > maxGroupSize) {
-          maxGroupSize = gs;
-        }
-        var gt = markers[len].groupTasks;
-        if (gt < minGroupTasks) {
-          minGroupTasks = gt;
-        }
-        if (gt > maxGroupSize) {
-          maxGroupTasks = gt;
-        }
-      }
-    }
+    var selectedGroupSize = 1;
 
     // Apply the filters into the location marks
     function applyFilter(markers) {
       var result = markers.filter(function (item) {
-        return (
-          (item.groupSize >= minGroupSize && item.groupSize <= maxGroupSize)
-          &&
-          (item.groupTasks >= minGroupTasks && item.groupTasks <= maxGroupTasks)
-        );
+        return (item.groupSize <= selectedGroupSize);
       });
       return result;
     }
@@ -280,9 +238,6 @@
           console.log("done");
           // Check limits, if exist
           if (response.data.length > 0) {
-            findLimits(response.data);
-            // Update Sliders
-            updateSliderRange(groupSizeSlider, minGroupSize, maxGroupSize);
             $('#filtersSliders').show();
           } else {
             $('#filtersSliders').hide();
@@ -320,12 +275,9 @@
       });
 
       // Register sliders callback
-      groupSizeSlider.noUiSlider.on('update', function( values, handle ) {
-        // Set the new limits
-        if (handle == 0)
-          minGroupSize = values[handle];
-        else
-          maxGroupSize = values[handle];
+      groupSizeSlider.noUiSlider.on('update', function(values, handle) {
+        // Save new value
+        selectedGroupSize = values[handle];
         // Update the pins
         createMarkers(markerList);
       });
