@@ -12,6 +12,7 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.repository.*;
+import za.org.grassroot.core.specifications.EventLogSpecifications;
 import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 import za.org.grassroot.integration.UrlShortener;
@@ -26,9 +27,11 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static org.springframework.data.jpa.domain.Specifications.where;
+import static za.org.grassroot.core.enums.ActionLogType.EVENT_LOG;
 import static za.org.grassroot.core.enums.ActionLogType.TODO_LOG;
 import static za.org.grassroot.core.enums.EventLogType.IMAGE_RECORDED;
 import static za.org.grassroot.core.specifications.EventLogSpecifications.forEvent;
+import static za.org.grassroot.core.specifications.EventLogSpecifications.isImageLog;
 import static za.org.grassroot.core.specifications.EventLogSpecifications.ofType;
 import static za.org.grassroot.core.specifications.ImageRecordSpecifications.actionLogType;
 import static za.org.grassroot.core.specifications.ImageRecordSpecifications.actionLogUid;
@@ -151,10 +154,11 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
         ActionLogType logType = isTodo ? TODO_LOG : ActionLogType.EVENT_LOG;
         List<String> imageLogUids = isTodo ?
                 todoLogRepository.findAll(where(forTodo((Todo) task)).and(ofType(TodoLogType.IMAGE_RECORDED)))
-                        .stream().map(TodoLog::getUid).collect(Collectors.toList()) :
-                eventLogRepository.findAll((where(forEvent((Event) task))).and(ofType(EventLogType.IMAGE_RECORDED)))
-                        .stream().map(EventLog::getUid).collect(Collectors.toList());
+                        .stream().map(l -> extractImageKey(l, logType)).collect(Collectors.toList()) :
+                eventLogRepository.findAll((where(forEvent((Event) task))).and(isImageLog()))
+                        .stream().map(l -> extractImageKey(l, logType)).collect(Collectors.toList());
 
+        logger.info("found this many UIDs: {}", imageLogUids.size());
         return imageLogUids
                 .stream()
                 .map(uid -> fetchLogImageDetails(uid, logType)) // in future we may have a log without a record, if image deleted
@@ -173,7 +177,7 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
     public TaskLog fetchLogForImage(String logUid, TaskType taskType) {
         return TaskType.TODO.equals(taskType) ?
                 todoLogRepository.findOneByUid(logUid):
-                eventLogRepository.findOneByUid(logUid);
+                eventLogRepository.findOne(EventLogSpecifications.isImageLogWithKey(logUid));
     }
 
     @Override
@@ -210,7 +214,7 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
     }
 
     private long countEventImages(Event event) {
-        return eventLogRepository.count(where(forEvent(event)).and(ofType(EventLogType.IMAGE_RECORDED)))
+        return eventLogRepository.count(where(forEvent(event)).and(isImageLog()))
                 - eventLogRepository.count(where(forEvent(event)).and(ofType(EventLogType.IMAGE_REMOVED)));
     }
 
@@ -269,8 +273,24 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
         return removedLogUid;
     }
 
+    private String extractImageKey(ActionLog actionLog, ActionLogType actionLogType) {
+        String uidToSearch;
+        if (!EVENT_LOG.equals(actionLogType)) {
+            uidToSearch = actionLog.getUid();
+        } else {
+            EventLog eventLog = (EventLog) actionLog;
+            if (EventLogType.IMAGE_AT_CREATION.equals(eventLog.getEventLogType())) {
+                uidToSearch = eventLog.getTag();
+            } else {
+                uidToSearch = actionLog.getUid();
+            }
+        }
+        return uidToSearch;
+    }
+
     private ImageRecord fetchLogImageDetails(String actionLogUid, ActionLogType actionLogType) {
-        return imageRecordRepository.findOne(where(actionLogUid(actionLogUid)).and(actionLogType(actionLogType)));
+        return imageRecordRepository.findOne(where(actionLogUid(actionLogUid))
+                .and(actionLogType(actionLogType)));
     }
 
     private String storeImageForMeeting(User user, String meetingUid, GeoLocation location, MultipartFile file) {
