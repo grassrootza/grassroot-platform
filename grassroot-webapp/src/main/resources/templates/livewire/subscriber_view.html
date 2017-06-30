@@ -151,15 +151,20 @@
           </button>
           <h4 class="modal-title" id="addEmailModalTitle">Add emails</h4>
         </div>
-        <form th:action="@{/livewire/subscriber/emails/add}" method="post">
+        <form th:action="@{/livewire/subscriber/emails/add}" method="post" enctype="multipart/form-data">
           <input type="hidden" name="subscriberUid" th:value="${subscriber.uid}" />
           <div class="modal-body">
             <div class="form-group">
               <p>
                 Please enter the emails to add, one after the other (separate with a ", ")
               </p>
-              <input type="text" class="form-control" id="push_email_field"
-                     name="emailsToAdd" autocomplete="off" />
+              <input type="text" class="form-control" id="push_email_field" name="emailsToAdd" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <p>
+                You can also upload an Excel spreadsheet with emails in the first column only
+              </p>
+              <input type="file" class="form-control" id="push_email_file" name="emailsXls" />
             </div>
           </div>
           <div class="modal-footer">

@@ -62,7 +62,6 @@ public class AdminController extends BaseController {
     private final PasswordTokenService passwordTokenService;
     private final AdminService adminService;
     private final AnalyticalService analyticalService;
-    private final DataSubscriberBroker dataSubscriberBroker;
 
     @Autowired
     public AdminController(GroupRepository groupRepository, GroupBroker groupBroker, PermissionBroker permissionBroker,
@@ -73,7 +72,6 @@ public class AdminController extends BaseController {
         this.passwordTokenService = passwordTokenService;
         this.adminService = adminService;
         this.analyticalService = analyticalService;
-        this.dataSubscriberBroker = dataSubscriberBroker;
     }
 
     @PostConstruct

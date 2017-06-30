@@ -1,6 +1,6 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      layout:decorator="layout">
+      data-layout-decorate="~{layout}">
 <head>
     <title>Grassroot Platform</title>
 
@@ -14,9 +14,18 @@
 <body>
 
 <div layout:fragment="header">
-    <!--<h2 th:text="#{home.welcome.message}">welcome headline</h2>-->
+    <div class="container">
+        <div class="row">
+            <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
+                <h2 class="text-center">Geostats</h2>
+                <h4 class="text-center header-content-subtitle">
+                    <a th:href="@{trigger/groups}">Trigger group calcs</a> |
+                    <a th:href="@{trigger/users}">Trigger user calcs</a>
+                </h4>
+            </div>
+        </div>
+    </div>
 </div>
-<div layout:fragment="overview"></div>
 
 <div layout:fragment="content">
     <!-- Central text header -->

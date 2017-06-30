@@ -3,6 +3,8 @@ package za.org.grassroot.webapp.controller.rest;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.EventLog;
@@ -14,6 +16,7 @@ import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.MeetingImportance;
 import za.org.grassroot.core.specifications.EventLogSpecifications;
+import za.org.grassroot.services.task.MeetingBuilderHelper;
 import za.org.grassroot.webapp.controller.rest.android.MeetingRestController;
 
 import java.time.format.DateTimeFormatter;
@@ -32,6 +35,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 public class MeetingRestControllerTest extends RestAbstractUnitTest {
 
+    private static final Logger logger = LoggerFactory.getLogger(MeetingRestControllerTest.class);
+
     @InjectMocks
     private MeetingRestController meetingRestController;
 
@@ -39,20 +44,27 @@ public class MeetingRestControllerTest extends RestAbstractUnitTest {
 
     @Before
     public void setUp() {
-
         mockMvc = MockMvcBuilders.standaloneSetup(meetingRestController).build();
     }
 
     @Test
     public void creatingAMeetingShouldWork() throws Exception {
-
         Set<String> membersToAdd = new HashSet<>();
+        MeetingBuilderHelper helper = new MeetingBuilderHelper()
+                .userUid(sessionTestUser.getUid())
+                .startDateTime(testDateTime)
+                .parentUid(testGroup.getUid())
+                .parentType(JpaEntityType.GROUP)
+                .name(testEventTitle)
+                .description(testEventDescription)
+                .location(testEventLocation)
+                .reminderType(EventReminderType.GROUP_CONFIGURED)
+                .customReminderMinutes(-1)
+                .assignedMemberUids(membersToAdd);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
-        when(eventBrokerMock.createMeeting(sessionTestUser.getUid(), testGroup.getUid(), JpaEntityType.GROUP,
-                                           testEventTitle, testDateTime, testEventLocation, false,
-                EventReminderType.GROUP_CONFIGURED, -1, testEventDescription, membersToAdd, MeetingImportance.ORDINARY))
-                .thenReturn(meetingEvent);
+        logger.debug("meetingHelperTest: {}", helper);
+        when(eventBrokerMock.createMeeting(helper)).thenReturn(meetingEvent);
 
         mockMvc.perform(post(path + "/create/{phoneNumber}/{code}/{parentUid}", testUserPhone, testUserCode, testGroup.getUid())
                                 .param("title", testEventTitle)
@@ -63,9 +75,7 @@ public class MeetingRestControllerTest extends RestAbstractUnitTest {
                 .andExpect(status().is2xxSuccessful());
 
         verify(userManagementServiceMock).findByInputNumber(testUserPhone);
-        verify(eventBrokerMock).createMeeting(sessionTestUser.getUid(), testGroup.getUid(), JpaEntityType.GROUP,
-                                              testEventTitle, testDateTime, testEventLocation, false,
-                EventReminderType.GROUP_CONFIGURED, -1, testEventDescription, membersToAdd, MeetingImportance.ORDINARY);
+        verify(eventBrokerMock).createMeeting(helper);
     }
 
     @Test

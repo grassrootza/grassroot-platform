@@ -73,6 +73,25 @@ public class DataImportBrokerImpl implements DataImportBroker {
         return importedMembers;
     }
 
+    @Override
+    public List<String> extractFirstColumnOfSheet(File file) {
+        List<String> firstColumn = new ArrayList<>();
+        try {
+            Workbook wb = WorkbookFactory.create(file);
+            formulaEvaluator = wb.getCreationHelper().createFormulaEvaluator();
+            Sheet sheet = wb.getSheetAt(0);
+            for (int i = 0; i < sheet.getPhysicalNumberOfRows(); i++) {
+                Row row = sheet.getRow(i);
+                firstColumn.add(dataFormatter.formatCellValue(row.getCell(0), formulaEvaluator));
+            };
+        } catch (IOException e) {
+            logger.info("Error, file input stream corrupted");
+        } catch (InvalidFormatException e) {
+            logger.info("Error, invalid file format");
+        }
+        return firstColumn;
+    }
+
     private MembershipInfo memberFromRow(Row row, int nameCol, int phoneCol, Integer roleCol) {
         String roleName = roleCol != null ? convertRoleName(row.getCell(roleCol).getStringCellValue())
                 : BaseRoles.ROLE_ORDINARY_MEMBER;

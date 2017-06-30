@@ -117,9 +117,9 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         Instant startTime = Instant.now();
 
         List<Event> upcomingMeetingList = Arrays.asList(
-                new Meeting("meeting1", startTime, testUser, group, "someLocation"),
-                new Meeting("meeting2", startTime, testUser, group, "someLocation"),
-                new Meeting("meeting3", startTime, testUser, group, "someLocation"));
+                new MeetingBuilder().setName("meeting1").setStartDateTime(startTime).setUser(testUser).setParent(group).setEventLocation("someLocation").createMeeting(),
+                new MeetingBuilder().setName("meeting2").setStartDateTime(startTime).setUser(testUser).setParent(group).setEventLocation("someLocation").createMeeting(),
+                new MeetingBuilder().setName("meeting3").setStartDateTime(startTime).setUser(testUser).setParent(group).setEventLocation("someLocation").createMeeting());
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(eventBrokerMock.userHasEventsToView(testUser, EventType.MEETING, EventListTimeType.FUTURE)).thenReturn(true);
@@ -514,7 +514,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 
         User testUser = new User(testUserPhone);
         Group somegroup = new Group("somegroup", testUser);
-        Event testMeeting = new Meeting("someMeeting", Instant.now(), testUser, somegroup, "someLoc");
+        Event testMeeting = new MeetingBuilder().setName("someMeeting").setStartDateTime(Instant.now()).setUser(testUser).setParent(somegroup).setEventLocation("someLoc").createMeeting();
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(eventBrokerMock.load(testMeeting.getUid())).thenReturn(testMeeting);
@@ -532,7 +532,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
 
         User testUser = new User(testUserPhone);
         Group somegroup = new Group("somegroup", testUser);
-        Meeting testMeeting = new Meeting("someMeeting", Instant.now(), testUser, somegroup, "someLoc");
+        Meeting testMeeting = new MeetingBuilder().setName("someMeeting").setStartDateTime(Instant.now()).setUser(testUser).setParent(somegroup).setEventLocation("someLoc").createMeeting();
         testMeeting.setRsvpRequired(true);
 
         Map<String, String> meetingDetails = new HashMap<>();
@@ -562,7 +562,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
     public void changeDateOnlyShouldWork() throws Exception {
 
         User testUser = new User(testUserPhone);
-        Meeting testMeeting = new Meeting("test meeeting", Instant.now(), testUser, new Group("somegroup", testUser), "someloc");
+        Meeting testMeeting = new MeetingBuilder().setName("test meeeting").setStartDateTime(Instant.now()).setUser(testUser).setParent(new Group("somegroup", testUser)).setEventLocation("someloc").createMeeting();
         MeetingRequest changeRequest = MeetingRequest.makeCopy(testMeeting);
         String urlToSave = editingMtgMenuUrl("new_date", testMeeting.getUid(), changeRequest.getUid(), null);
 
@@ -590,7 +590,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
     public void changeTimeOnlyShouldWork() throws Exception {
 
         User testUser = new User(testUserPhone);
-        Meeting testMeeting = new Meeting("test meeeting", Instant.now(), testUser, new Group("somegroup", testUser), "someloc");
+        Meeting testMeeting = new MeetingBuilder().setName("test meeeting").setStartDateTime(Instant.now()).setUser(testUser).setParent(new Group("somegroup", testUser)).setEventLocation("someloc").createMeeting();
         MeetingRequest changeRequest = MeetingRequest.makeCopy(testMeeting);
         String urlToSave = editingMtgMenuUrl("new_time", testMeeting.getUid(), changeRequest.getUid(), null);
 
@@ -621,7 +621,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         LocalDateTime original = LocalDateTime.of(testYear.getValue(), 06, 15, 10, 0);
         LocalDateTime changedDate = original.plusDays(1L);
         LocalDateTime changedTime = original.minusHours(1L);
-        Meeting testMeeting = new Meeting("test meeeting", convertToSystemTime(original, getSAST()), testUser, new Group("somegroup", testUser), "someloc");
+        Meeting testMeeting = new MeetingBuilder().setName("test meeeting").setStartDateTime(convertToSystemTime(original, getSAST())).setUser(testUser).setParent(new Group("somegroup", testUser)).setEventLocation("someloc").createMeeting();
         MeetingRequest changeRequest = MeetingRequest.makeCopy(testMeeting);
 
         String dateUrlToSave = editingMtgMenuUrl("modify", testMeeting.getUid(), changeRequest.getUid(), "new_date")
@@ -655,7 +655,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
     public void modifyDateTimeSendShouldWork() throws Exception {
 
         User testUser = new User(testUserPhone);
-        Meeting testMeeting = new Meeting("test meeeting", Instant.now(), testUser, new Group("somegroup", testUser), "someloc");
+        Meeting testMeeting = new MeetingBuilder().setName("test meeeting").setStartDateTime(Instant.now()).setUser(testUser).setParent(new Group("somegroup", testUser)).setEventLocation("someloc").createMeeting();
         MeetingRequest changeRequest = MeetingRequest.makeCopy(testMeeting);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
@@ -673,7 +673,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
     public void changeLocationPromptShouldWork() throws Exception {
 
         User testUser = new User(testUserPhone);
-        Meeting testMeeting = new Meeting("test meeeting", Instant.now(), testUser, new Group("somegroup", testUser), "JoziHub");
+        Meeting testMeeting = new MeetingBuilder().setName("test meeeting").setStartDateTime(Instant.now()).setUser(testUser).setParent(new Group("somegroup", testUser)).setEventLocation("JoziHub").createMeeting();
         MeetingRequest changeRequest = MeetingRequest.makeCopy(testMeeting);
         String urlToSave = editingMtgMenuUrl("changeLocation", testMeeting.getUid(), changeRequest.getUid(), null);
 
@@ -707,7 +707,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
                                                         new String[]{ "new_date", "09:00"});
 
         String urlToSave;
-        Meeting testMeeting = new Meeting("test meeeting", Instant.now(), testUser, new Group("somegroup", testUser), "someloc");
+        Meeting testMeeting = new MeetingBuilder().setName("test meeeting").setStartDateTime(Instant.now()).setUser(testUser).setParent(new Group("somegroup", testUser)).setEventLocation("someloc").createMeeting();
         MeetingRequest changeRequest = MeetingRequest.makeCopy(testMeeting);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
@@ -738,7 +738,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
     public void meetingModificationSendShouldWork() throws Exception {
 
         User testUser = new User(testUserPhone);
-        Meeting testMeeting = new Meeting("test meeeting", Instant.now(), testUser, new Group("somegroup", testUser), "JoziHub");
+        Meeting testMeeting = new MeetingBuilder().setName("test meeeting").setStartDateTime(Instant.now()).setUser(testUser).setParent(new Group("somegroup", testUser)).setEventLocation("JoziHub").createMeeting();
         MeetingRequest changeRequest = MeetingRequest.makeCopy(testMeeting);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
@@ -758,7 +758,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
     public void cancelMeetingPromptShouldWork() throws Exception {
 
         User testUser = new User(testUserPhone);
-        Event testMeeting = new Meeting("test meeting", Instant.now(), testUser, new Group("somegroup", testUser), "someloc");
+        Event testMeeting = new MeetingBuilder().setName("test meeting").setStartDateTime(Instant.now()).setUser(testUser).setParent(new Group("somegroup", testUser)).setEventLocation("someloc").createMeeting();
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         mockMvc.perform(get(path + "cancel").param(phoneParam, testUserPhone).param("entityUid", testMeeting.getUid())).
@@ -771,7 +771,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
     @Test
     public void cancelMeetingDoShouldWork() throws Exception {
         User testUser = new User(testUserPhone);
-        Event testMeeting = new Meeting("test meeting", Instant.now(), testUser, new Group("somegroup", testUser), "someloc");
+        Event testMeeting = new MeetingBuilder().setName("test meeting").setStartDateTime(Instant.now()).setUser(testUser).setParent(new Group("somegroup", testUser)).setEventLocation("someloc").createMeeting();
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
 

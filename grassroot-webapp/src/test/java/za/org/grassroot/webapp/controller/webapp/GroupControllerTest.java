@@ -385,7 +385,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         testGroup.addMember(sessionTestUser);
 
         List<Event> dummyEvents = Arrays.asList(
-                new Meeting("someMeeting", Instant.now(), sessionTestUser, testGroup, "someLoc"),
+                new MeetingBuilder().setName("someMeeting").setStartDateTime(Instant.now()).setUser(sessionTestUser).setParent(testGroup).setEventLocation("someLoc").createMeeting(),
                 new Vote("someMeeting", Instant.now(), sessionTestUser, testGroup));
         EventLog dummyLog = new EventLog(sessionTestUser, dummyEvents.get(0), EventLogType.RSVP);
 
@@ -441,7 +441,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         Group testGroup = new Group("someGroupname", new User("234345345"));
         testGroup.addMember(sessionTestUser);
 
-        List<Event> dummyEvents = Collections.singletonList(new Meeting("someMeeting", Instant.now(), sessionTestUser, testGroup, "someLoc"));
+        List<Event> dummyEvents = Collections.singletonList(new MeetingBuilder().setName("someMeeting").setStartDateTime(Instant.now()).setUser(sessionTestUser).setParent(testGroup).setEventLocation("someLoc").createMeeting());
         EventLog dummyLog = new EventLog(sessionTestUser, dummyEvents.get(0), EventLogType.RSVP);
 
         List<Todo> dummyTodos = Collections.singletonList(new Todo(sessionTestUser, testGroup, "do stuff", LocalDateTime.now().toInstant(ZoneOffset.ofHours(0))));
