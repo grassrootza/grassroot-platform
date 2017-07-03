@@ -27,7 +27,8 @@ public class AuthenticationController {
 
     @RequestMapping(value = "/login", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> login(@RequestParam("phoneNumber")String phoneNumber,
-                        @RequestParam("password")String password) {
+                                                 @RequestParam("password")String password,
+                                                 @RequestParam("clientType") String clientType) {
 
         //authenticate user before issuing token
         try {
@@ -44,11 +45,6 @@ public class AuthenticationController {
             return RestUtil.errorResponse(HttpStatus.UNAUTHORIZED, RestMessage.INVALID_OTP);
         }
 
-    }
-
-    @RequestMapping(value = "/logout", method = RequestMethod.GET)
-    public ResponseEntity<ResponseWrapper> logout(String token) {
-        return null;
     }
 
     @RequestMapping(value = "/validateToken", method = RequestMethod.GET)
