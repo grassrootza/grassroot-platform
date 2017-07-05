@@ -57,7 +57,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/test/**")
                 .antMatchers("/sms/**")
                 .antMatchers("/image/**")
-                .antMatchers("/auth/login/**");
+                .antMatchers("/auth/login/**")
+                .antMatchers("/auth/validateToken/**");
     }
 
     @Override

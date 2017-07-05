@@ -1,5 +1,6 @@
 package za.org.grassroot.webapp.controller.rest;
 
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.springframework.http.HttpStatus;
@@ -23,7 +24,7 @@ import java.util.Date;
 @RequestMapping("/auth")
 public class AuthenticationController {
 
-    private static KeyGenerator keyGenerator = null;
+    private static  Key key = null;
 
     @RequestMapping(value = "/login", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> login(@RequestParam("phoneNumber")String phoneNumber,
@@ -48,12 +49,22 @@ public class AuthenticationController {
     }
 
     @RequestMapping(value = "/validateToken", method = RequestMethod.GET)
-    public ResponseEntity<ResponseWrapper> validateToken(String token) {
-        return null;
+    public ResponseEntity<ResponseWrapper> validateToken(@RequestParam("token")String token) {
+        try {
+            Jwts.parser().setSigningKey(getKey()).parse(token);
+            return RestUtil.messageOkayResponse(RestMessage.TOKEN_STILL_VALID);
+        }
+         catch (ExpiredJwtException e) {
+             return RestUtil.errorResponse(HttpStatus.EXPECTATION_FAILED, RestMessage.TOKEN_EXPIRED);
+         }
+        catch (Exception e) {
+            return RestUtil.errorResponse(HttpStatus.EXPECTATION_FAILED, RestMessage.INVALID_TOKEN);
+        }
+
     }
 
     private String generateToken(String phoneNumber) throws NoSuchAlgorithmException {
-        Key key = getKeyGenerator().generateKey();
+        Key key = getKey();
         Instant now = Instant.now();
         Instant exp = now.plus(1L, ChronoUnit.MINUTES);
         String jwtToken = Jwts.builder()
@@ -65,10 +76,10 @@ public class AuthenticationController {
         return jwtToken;
     }
 
-    private static KeyGenerator getKeyGenerator() throws NoSuchAlgorithmException {
-        if(keyGenerator == null) {
-            keyGenerator = KeyGenerator.getInstance("AES");
+    private static Key getKey() throws NoSuchAlgorithmException {
+        if(key == null) {
+            key = KeyGenerator.getInstance("AES").generateKey();
         }
-        return keyGenerator;
+        return key;
     }
 }
