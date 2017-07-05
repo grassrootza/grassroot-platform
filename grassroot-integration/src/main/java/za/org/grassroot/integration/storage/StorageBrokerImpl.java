@@ -141,6 +141,15 @@ public class StorageBrokerImpl implements StorageBroker {
     }
 
     @Override
+    public byte[] fetchThumbnail(String uid, ImageType imageType) {
+        try {
+            return fetchImage(uid, imageType);
+        } catch (NoMicroVersionException|ImageRetrievalFailure e) {
+            return fetchImage(uid, ImageType.FULL_SIZE);
+        }
+    }
+
+    @Override
     public boolean doesImageExist(String uid, ImageType imageType) {
         AmazonS3 s3client = s3ClientFactory.createClient();
         logger.info("trying to find key in bucket: {}", selectBucket(imageType));

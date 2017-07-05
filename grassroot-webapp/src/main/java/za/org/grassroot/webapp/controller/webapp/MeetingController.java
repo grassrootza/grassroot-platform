@@ -223,6 +223,9 @@ public class MeetingController extends BaseController {
 
         model.addAttribute("canAlterDetails", canAlterDetails);
 
+        model.addAttribute("meetingImages",
+                taskImageBroker.countImagesForTask(getUserProfile().getUid(), eventUid, TaskType.MEETING));
+
         if (canViewRsvps) {
             // this is clunky, but it's for Thymeleaf
             Set<Map.Entry<User, EventRSVPResponse>> rsvpResponses = eventBroker.getRSVPResponses(meeting).entrySet();
