@@ -10,6 +10,6 @@ import java.util.Map;
 public interface JwtService {
 
     PublicCredentials getPublicCredentials();
-    String createJwt(Map<String, Object> claims);
-
+    String createJwt(CreateJwtTokenRequest request);
+    boolean isJwtTokenValid(String token);
 }

@@ -1,5 +1,6 @@
 package za.org.grassroot.integration.messaging;
 
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.impl.TextCodec;
@@ -7,10 +8,13 @@ import io.jsonwebtoken.impl.crypto.RsaProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.integration.PublicCredentials;
+import za.org.grassroot.integration.keyprovider.KeyPairProvider;
 
 import javax.annotation.PostConstruct;
 import java.io.File;
@@ -34,15 +38,11 @@ public class JwtServiceImpl implements JwtService {
 
     private static final Logger logger = LoggerFactory.getLogger(JwtServiceImpl.class);
 
-    private final Environment environment;
-
-    private KeyPair keyPair;
     private String kuid;
-
+    @Value("${grassroot.jwt.token-time-to-live.inMilliSeconds:600000}")
+    private Long jwtTimeToLiveInMilliSeconds;
     @Autowired
-    public JwtServiceImpl(Environment environment) {
-        this.environment = environment;
-    }
+    private KeyPairProvider keyPairProvider;
 
     @PostConstruct
     public void init() {
@@ -52,52 +52,46 @@ public class JwtServiceImpl implements JwtService {
 
     @Override
     public PublicCredentials getPublicCredentials() {
-        return createCredentialEntity(kuid, keyPair.getPublic());
+        return createCredentialEntity(kuid, keyPairProvider.getJWTKey().getPublic());
     }
 
     @Override
-    public String createJwt(Map<String, Object> claims) {
+    public String createJwt(CreateJwtTokenRequest request) {
         Instant now = Instant.now();
-        Instant exp = now.plus(1L, ChronoUnit.MINUTES);
-        logger.debug("creating JWT with KUID: {}", kuid);
+        Instant exp = now.plus(jwtTimeToLiveInMilliSeconds, ChronoUnit.MINUTES);
+        request.getHeaderParameters().put("kid", kuid);
         return Jwts.builder()
-                .setHeaderParam("kid", kuid)
-                .setClaims(claims)
+                .setHeaderParams(request.getHeaderParameters())
+                .setClaims(request.getClaims())
                 .setIssuedAt(Date.from(now))
                 .setExpiration(Date.from(exp))
                 .signWith(
                         SignatureAlgorithm.RS256,
-                        keyPair.getPrivate()
+                        keyPairProvider.getJWTKey().getPrivate()
                 )
                 .compact();
+    }
+
+    @Override
+    public boolean isJwtTokenValid(String token) {
+        try {
+            Jwts.parser().setSigningKey(keyPairProvider.getJWTKey().getPublic()).parse(token);
+            return true;
+        }
+        catch (ExpiredJwtException e) {
+            logger.error("Token validation failed. The token is expired.", e);
+            return false;
+        }
+        catch (Exception e) {
+            logger.error("Unexpected token validation error.", e);
+            return false;
+        }
     }
 
     private PublicCredentials refreshPublicCredentials() {
         kuid = UUID.randomUUID().toString();
         logger.debug("created KUID for main platform: {}", kuid);
-        if (StringUtils.isEmpty(environment.getProperty("JWT_KEYSTORE_PATH"))) {
-            keyPair = RsaProvider.generateKeyPair(1024);
-        } else {
-            try {
-                File file = new File(environment.getProperty("JWT_KEYSTORE_PATH"));
-                FileInputStream is = new FileInputStream(file);
-                KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-
-                final String password = environment.getProperty("JWT_KEYSTORE_PASS");
-                final String alias = environment.getProperty("JWT_KEY_ALIAS");
-                final String keypass = environment.getProperty("JWT_KEY_PASS", password);
-
-                keyStore.load(is, password.toCharArray());
-                PrivateKey privateKey = (PrivateKey) keyStore.getKey(alias, keypass.toCharArray());
-                Certificate certificate = keyStore.getCertificate(alias);
-                PublicKey publicKey = certificate.getPublicKey();
-                keyPair = new KeyPair(publicKey, privateKey);
-            } catch (Exception e) {
-                logger.error("Exception loading keystore, defaulting to in-memory generation");
-                keyPair = RsaProvider.generateKeyPair(1024);
-            }
-        }
-        return createCredentialEntity(kuid, keyPair.getPublic());
+        return createCredentialEntity(kuid, keyPairProvider.getJWTKey().getPublic());
     }
 
     private PublicCredentials createCredentialEntity(String kuid, PublicKey key) {
