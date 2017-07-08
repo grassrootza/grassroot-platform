@@ -3,19 +3,21 @@ package za.org.grassroot.webapp.controller.rest;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import za.org.grassroot.integration.keyprovider.KeyPairProvider;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
-import javax.crypto.KeyGenerator;
-import java.security.Key;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
@@ -24,7 +26,8 @@ import java.util.Date;
 @RequestMapping("/auth")
 public class AuthenticationController {
 
-    private static  Key key = null;
+    @Autowired
+    private KeyPairProvider keyPairProvider;
 
     @RequestMapping(value = "/login", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> login(@RequestParam("phoneNumber")String phoneNumber,
@@ -43,6 +46,7 @@ public class AuthenticationController {
             return RestUtil.okayResponseWithData(RestMessage.LOGIN_SUCCESS, token);
 
         } catch (Exception e) {
+            e.printStackTrace();
             return RestUtil.errorResponse(HttpStatus.UNAUTHORIZED, RestMessage.INVALID_OTP);
         }
 
@@ -51,7 +55,7 @@ public class AuthenticationController {
     @RequestMapping(value = "/validateToken", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> validateToken(@RequestParam("token")String token) {
         try {
-            Jwts.parser().setSigningKey(getKey()).parse(token);
+            Jwts.parser().setSigningKey(getJWTPublicKey()).parse(token);
             return RestUtil.messageOkayResponse(RestMessage.TOKEN_STILL_VALID);
         }
          catch (ExpiredJwtException e) {
@@ -64,22 +68,22 @@ public class AuthenticationController {
     }
 
     private String generateToken(String phoneNumber) throws NoSuchAlgorithmException {
-        Key key = getKey();
         Instant now = Instant.now();
-        Instant exp = now.plus(1L, ChronoUnit.MINUTES);
+        Instant exp = now.plus(10L, ChronoUnit.MINUTES);
         String jwtToken = Jwts.builder()
                 .setSubject(phoneNumber)
                 .setIssuedAt(new Date())
                 .setExpiration(Date.from(exp))
-                .signWith(SignatureAlgorithm.HS512, key)
+                .signWith(SignatureAlgorithm.RS256, getJWTPrivateKey())
                 .compact();
         return jwtToken;
     }
 
-    private static Key getKey() throws NoSuchAlgorithmException {
-        if(key == null) {
-            key = KeyGenerator.getInstance("AES").generateKey();
-        }
-        return key;
+    private PublicKey getJWTPublicKey() {
+        return keyPairProvider.getJWTKey().getPublic();
+    }
+
+    private PrivateKey getJWTPrivateKey() {
+        return keyPairProvider.getJWTKey().getPrivate();
     }
 }
