@@ -3,6 +3,8 @@ package za.org.grassroot.webapp.controller.rest;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +28,8 @@ import java.util.Date;
 @RequestMapping("/auth")
 public class AuthenticationController {
 
+    private static final Logger logger = LoggerFactory.getLogger(AuthenticationController.class);
+
     @Autowired
     private KeyPairProvider keyPairProvider;
 
@@ -46,7 +50,7 @@ public class AuthenticationController {
             return RestUtil.okayResponseWithData(RestMessage.LOGIN_SUCCESS, token);
 
         } catch (Exception e) {
-            e.printStackTrace();
+           logger.error("Failed to generate authentication token for:  " + phoneNumber);
             return RestUtil.errorResponse(HttpStatus.UNAUTHORIZED, RestMessage.INVALID_OTP);
         }
 
@@ -59,9 +63,11 @@ public class AuthenticationController {
             return RestUtil.messageOkayResponse(RestMessage.TOKEN_STILL_VALID);
         }
          catch (ExpiredJwtException e) {
+             logger.error("Token validation failed. The token is expired.", e);
              return RestUtil.errorResponse(HttpStatus.EXPECTATION_FAILED, RestMessage.TOKEN_EXPIRED);
          }
         catch (Exception e) {
+            logger.error("Unexpected token validation error.", e);
             return RestUtil.errorResponse(HttpStatus.EXPECTATION_FAILED, RestMessage.INVALID_TOKEN);
         }
 
