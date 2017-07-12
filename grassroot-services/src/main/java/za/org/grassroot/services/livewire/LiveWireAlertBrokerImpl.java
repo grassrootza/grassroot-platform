@@ -216,7 +216,8 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
         User user = userRepository.findOneByUid(userUid);
         LiveWireAlert.Builder builder = new LiveWireAlert.Builder()
                 .creatingUser(user)
-                .type(type);
+                .type(type)
+                .destType(LiveWireAlertDestType.PUBLIC_LIST); // default to public
 
         if (LiveWireAlertType.INSTANT.equals(type)) {
             Group group = groupRepository.findOneByUid(entityUid);
@@ -264,6 +265,27 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
         validateCreatingUser(user, alert);
 
         alert.setDescription(description);
+    }
+
+    @Override
+    @Transactional
+    public void updateAlertDestination(String userUid, String alertUid, String subscriberUid, LiveWireAlertDestType destType) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(alertUid);
+
+        User user = userRepository.findOneByUid(userUid);
+        LiveWireAlert alert = alertRepository.findOneByUid(alertUid);
+        validateCreatingUser(user, alert);
+
+        if (!LiveWireAlertDestType.PUBLIC_LIST.equals(destType) && subscriberUid == null) {
+            throw new IllegalArgumentException("Error! If destination type is not public list, must pass a subscriber UID");
+        }
+
+        alert.setDestinationType(destType);
+        if (subscriberUid != null) {
+            DataSubscriber targetSubscriber = dataSubscriberRepository.findOneByUid(subscriberUid);
+            alert.setTargetSubscriber(targetSubscriber);
+        }
     }
 
     @Override

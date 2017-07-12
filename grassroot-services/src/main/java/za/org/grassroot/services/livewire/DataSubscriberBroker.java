@@ -3,6 +3,8 @@ package za.org.grassroot.services.livewire;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import za.org.grassroot.core.domain.livewire.DataSubscriber;
+import za.org.grassroot.core.domain.livewire.LiveWireAlert;
+import za.org.grassroot.core.enums.DataSubscriberType;
 
 import java.util.List;
 import java.util.Set;
@@ -16,6 +18,10 @@ public interface DataSubscriberBroker {
     List<DataSubscriber> listSubscribers(final boolean activeOnly, final Sort sort);
 
     DataSubscriber validateSubscriberAdmin(final String viewingUserUid, final String subscriberUid);
+
+    boolean doesUserHaveCustomLiveWireList(final String userUid);
+
+    DataSubscriber fetchLiveWireListForSubscriber(final String userUid);
 
     void create(final String sysAdminUid, final String displayName, final String primaryEmail,
                 boolean addPrimaryEmailToPush, List<String> additionalPushEmails, boolean active);
@@ -37,6 +43,8 @@ public interface DataSubscriberBroker {
     void updateSubscriberPermissions(final String adminUid, final String subscriberUid,
                                      final boolean canTag, final boolean canRelease);
 
-    int countPushEmails();
+    void updateSubscriberType(String userUid, String subscriberUid, DataSubscriberType type);
+
+    int countPushEmails(LiveWireAlert alert);
 
 }

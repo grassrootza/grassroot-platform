@@ -3,6 +3,7 @@ package za.org.grassroot.core.domain.livewire;
 import org.hibernate.annotations.Type;
 import org.hibernate.validator.constraints.Email;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.DataSubscriberType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 
@@ -77,6 +78,10 @@ public class DataSubscriber {
     @Column(name = "can_release")
     private boolean canRelease;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "subscriber_type", length = 50, nullable = false)
+    private DataSubscriberType subscriberType;
+
     @Version
     private Integer version;
 
@@ -84,7 +89,7 @@ public class DataSubscriber {
         // for JPA
     }
 
-    public DataSubscriber(User creatingUser, User administrator, String displayName, String primaryEmail, boolean active) {
+    public DataSubscriber(User creatingUser, User administrator, String displayName, String primaryEmail, boolean active, DataSubscriberType subscriberType) {
         this.uid = UIDGenerator.generateId();
         this.creationTime = Instant.now();
         this.creatingUser = creatingUser;
@@ -95,6 +100,7 @@ public class DataSubscriber {
         this.emailsForPushNotifications = new String[0];
         this.userUidsWithAccess = new String[0];
         this.canTag = false;
+        this.subscriberType = subscriberType;
     }
 
     public String getUid() {
@@ -143,6 +149,10 @@ public class DataSubscriber {
 
     public void setPrimaryEmail(String primaryEmail) {
         this.primaryEmail = primaryEmail;
+    }
+
+    public boolean hasPushEmails() {
+        return emailsForPushNotifications != null && emailsForPushNotifications.length > 0;
     }
 
     public List<String> getPushEmails() {
@@ -220,6 +230,14 @@ public class DataSubscriber {
     }
 
     public Integer getVersion() { return version; }
+
+    public DataSubscriberType getSubscriberType() {
+        return subscriberType;
+    }
+
+    public void setSubscriberType(DataSubscriberType subscriberType) {
+        this.subscriberType = subscriberType;
+    }
 
     @Override
     public boolean equals(Object o) {

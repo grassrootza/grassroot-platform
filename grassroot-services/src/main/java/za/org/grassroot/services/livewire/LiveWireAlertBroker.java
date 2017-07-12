@@ -10,6 +10,7 @@ import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
 import za.org.grassroot.core.enums.LiveWireAlertType;
 import za.org.grassroot.core.enums.UserInterfaceType;
+import za.org.grassroot.core.enums.LiveWireAlertDestType;
 
 import java.time.Instant;
 import java.util.List;
@@ -38,6 +39,9 @@ public interface LiveWireAlertBroker {
     void updateContactUser(String userUid, String alertUid, String contactUserUid, String contactName);
 
     void updateDescription(String userUid, String alertUid, String description);
+
+    // pass null to have it be the public account
+    void updateAlertDestination(String userUid, String alertUid, String subscriberUid, LiveWireAlertDestType destType);
 
     void setAlertComplete(String userUid, String alertUid, Instant soonestTimeToSend);
 

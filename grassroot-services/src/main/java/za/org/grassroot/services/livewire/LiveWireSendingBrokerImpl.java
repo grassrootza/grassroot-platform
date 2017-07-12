@@ -14,6 +14,7 @@ import org.thymeleaf.context.Context;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Meeting;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
+import za.org.grassroot.core.enums.DataSubscriberType;
 import za.org.grassroot.core.enums.LiveWireAlertType;
 import za.org.grassroot.core.repository.DataSubscriberRepository;
 import za.org.grassroot.core.repository.LiveWireAlertRepository;
@@ -64,16 +65,30 @@ public class LiveWireSendingBrokerImpl implements LiveWireSendingBroker {
     @Override
     @Transactional
     public void sendLiveWireAlerts(Set<String> alertUids) {
-        final List<String> allPushEmails = subscriberRepository.findAllActiveSubscriberPushEmails();
-        logger.info("Processing {} alerts, to {} email addresses", alertUids.size(), allPushEmails.size());
-        alertUids.forEach(u -> sendAlert(alertRepository.findOneByUid(u), allPushEmails));
+        final List<String> publicPushMail = subscriberRepository.findAllActiveSubscriberPushEmails(DataSubscriberType.PUBLIC.name());
+        publicPushMail.addAll(subscriberRepository.findAllActiveSubscriberPushEmails(DataSubscriberType.SYSTEM.name()));
+        logger.debug("Processing {} alerts, to {} email addresses", alertUids.size(), publicPushMail.size());
+        alertUids.forEach(u -> sendAlert(alertRepository.findOneByUid(u), publicPushMail));
     }
 
-    private void sendAlert(LiveWireAlert alert, List<String> emailAddresses) {
+    private void sendAlert(LiveWireAlert alert, List<String> publicEmailAddresses) {
         DebugUtil.transactionRequired("");
         // send the alert (maybe add Twitter etc in future)
-        boolean sent = liveWirePushBroker.sendLiveWireEmails(generateEmailsForAlert(alert, emailAddresses));
-        logger.info("Sent out LiveWire alert! Description: {}. Setting to sent ...", alert.getDescription());
+        List<String> alertEmails = new ArrayList<>();
+        switch (alert.getDestinationType()) {
+            case SINGLE_LIST:
+                alertEmails.addAll(alert.getTargetSubscriber().getPushEmails());
+                break;
+            case PUBLIC_LIST:
+                alertEmails.addAll(publicEmailAddresses);
+                break;
+            case SINGLE_AND_PUBLIC:
+                alertEmails.addAll(alert.getTargetSubscriber().getPushEmails());
+                alertEmails.addAll(publicEmailAddresses);
+                break;
+        }
+        boolean sent = liveWirePushBroker.sendLiveWireEmails(generateEmailsForAlert(alert, alertEmails));
+        logger.info("LiveWire sent to {} emails! Description: {}. Setting to sent ...", alertEmails.size(), alert.getDescription());
         alert.setSent(sent);
     }
 

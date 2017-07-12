@@ -16,6 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.livewire.DataSubscriber;
+import za.org.grassroot.core.enums.DataSubscriberType;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.DataImportBroker;
@@ -243,6 +244,16 @@ public class LiveWireAdminController extends BaseController {
             emails.add(emailMatcher.group());
         }
         return emails;
+    }
+
+    @RequestMapping(value = "/subscriber/type/change", method = RequestMethod.POST)
+    public String alterDataSubscriberType(@RequestParam String subscriberUid,
+                                          @RequestParam DataSubscriberType subscriberType,
+                                          RedirectAttributes attributes, HttpServletRequest request) {
+        subscriberBroker.updateSubscriberType(getUserProfile().getUid(), subscriberUid, subscriberType);
+        addMessage(attributes, MessageType.SUCCESS, "livewire.subscriber.type.changed", request);
+        attributes.addAttribute("subscriberUid", subscriberUid);
+        return "redirect:/livewire/subscriber/view";
     }
 
 }

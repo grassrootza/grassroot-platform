@@ -11,7 +11,6 @@ import za.org.grassroot.core.domain.association.GroupJoinRequest;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
-import za.org.grassroot.core.enums.MeetingImportance;
 import za.org.grassroot.core.util.FormatUtil;
 
 import java.time.Instant;
@@ -29,7 +28,8 @@ import static za.org.grassroot.services.util.MessageUtils.shortDateFormatter;
 @Component
 public class MessageAssemblingManager implements MessageAssemblingService {
 
-    private Logger log = LoggerFactory.getLogger(MessageAssemblingManager.class);
+    private static final Logger log = LoggerFactory.getLogger(MessageAssemblingManager.class);
+    private static final DateTimeFormatter sdf = DateTimeFormatter.ofPattern("EEE d MMM, h:mm a");
 
     private final MessageSourceAccessor messageSourceAccessor;
 
@@ -97,7 +97,8 @@ public class MessageAssemblingManager implements MessageAssemblingService {
         Locale locale = getUserLocale(target);
         String[] args = populateTodoFields(todo);
         String messageKey = todo.isAllGroupMembersAssigned() ? "sms.todo.new.notassigned" :
-                (todo.getAssignedMembers().size()) == 1 ? "sms.todo.new.assigned.one" : "sms.todo.new.assigned.many";
+                (todo.getAssignedMembers().size()) == 1 ? "sms.todo.new.assigned.one"
+                        : "sms.todo.new.assigned.many";
         return messageSourceAccessor.getMessage(messageKey, args, locale);
     }
 
@@ -293,7 +294,6 @@ public class MessageAssemblingManager implements MessageAssemblingService {
 
     public String[] populateEventFields(Event event, double yes, double no, double abstain, double noReply) {
         String salutation = ((event.getParent()).hasName()) ? event.getParent().getName() : "Grassroot";
-        DateTimeFormatter sdf = DateTimeFormatter.ofPattern("EEE d MMM, h:mm a");
         String dateString = sdf.format(event.getEventDateTimeAtSAST());
 
         String location = null;
@@ -336,17 +336,15 @@ public class MessageAssemblingManager implements MessageAssemblingService {
     private String[] populateTodoFields(Todo todo) {
         Group group = todo.getAncestorGroup();
         String salutation = (group.hasName()) ? group.getGroupName() : "Grassroot";
-        DateTimeFormatter sdf = DateTimeFormatter.ofPattern("EEE, d MMM");
         String dateString = sdf.format(todo.getActionByDateAtSAST());
         String assignment = (todo.getAssignedMembers().size() == 1) ?
                 todo.getAssignedMembers().iterator().next().getDisplayName() : String.valueOf(todo.getAssignedMembers().size());
 
-        String[] variables = new String[]{
+        return new String[]{
                 salutation,
                 todo.getMessage(),
                 dateString,
                 assignment
         };
-        return variables;
     }
 }
