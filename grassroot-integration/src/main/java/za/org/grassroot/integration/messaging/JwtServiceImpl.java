@@ -15,7 +15,6 @@ import za.org.grassroot.integration.keyprovider.KeyPairProvider;
 import javax.annotation.PostConstruct;
 import java.security.PublicKey;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.UUID;
@@ -32,7 +31,7 @@ public class JwtServiceImpl implements JwtService {
     @Value("${grassroot.jwt.token-time-to-live.inMilliSeconds:600000}")
     private Long jwtTimeToLiveInMilliSeconds;
     @Value("${grassroot.jwt.token-expiry-grace-period.inMilliseconds:1209600000}")
-    private Long jwtTokenExpiryGracePeriodINMilliseconds;
+    private Long jwtTokenExpiryGracePeriodInMilliseconds;
     @Autowired
     private KeyPairProvider keyPairProvider;
 
@@ -94,7 +93,7 @@ public class JwtServiceImpl implements JwtService {
             expirationTime = e.getClaims().getExpiration();
         }
         if (isTokenStillValid || expirationTime != null
-                && expirationTime.toInstant().plus(1, ChronoUnit.MILLIS).isAfter(new Date().toInstant())) {
+                && expirationTime.toInstant().plus(jwtTokenExpiryGracePeriodInMilliseconds, ChronoUnit.MILLIS).isAfter(new Date().toInstant())) {
             newToken =  createJwt(new CreateJwtTokenRequest());
         }
 
