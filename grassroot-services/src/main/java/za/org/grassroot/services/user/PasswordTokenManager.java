@@ -12,6 +12,8 @@ import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.repository.VerificationTokenCodeRepository;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.core.util.PhoneNumberUtil;
+import za.org.grassroot.services.exception.InvalidOtpException;
+import za.org.grassroot.services.exception.InvalidTokenException;
 
 import java.math.BigInteger;
 import java.security.SecureRandom;
@@ -120,6 +122,17 @@ public class PasswordTokenManager implements PasswordTokenService {
             return true;
         } else {
             return false;
+        }
+    }
+
+    @Override
+    public void validateOtp(String username, String otp) {
+        Objects.requireNonNull(username);
+        Objects.requireNonNull(otp);
+
+        VerificationTokenCode token = verificationTokenCodeRepository.findByUsernameAndType(username, VerificationCodeType.SHORT_OTP);
+        if (token == null || Instant.now().isAfter(token.getExpiryDateTime()) || !token.getCode().equals(otp)) {
+            throw new InvalidOtpException();
         }
     }
 
