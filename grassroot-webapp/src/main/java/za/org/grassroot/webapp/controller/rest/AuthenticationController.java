@@ -61,4 +61,14 @@ public class AuthenticationController {
             return RestUtil.errorResponse(HttpStatus.EXPECTATION_FAILED, RestMessage.INVALID_TOKEN);
         }
     }
+
+    @RequestMapping(value = "/refreshToken", method = RequestMethod.GET)
+    public ResponseEntity<ResponseWrapper> refreshToken(@RequestParam("oldToken")String oldToken) {
+        String newToken = jwtService.refreshToken(oldToken);
+        if (newToken != null) {
+            return RestUtil.okayResponseWithData(RestMessage.LOGIN_SUCCESS, newToken);
+        } else {
+            return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.TOKEN_EXPIRED);
+        }
+    }
 }

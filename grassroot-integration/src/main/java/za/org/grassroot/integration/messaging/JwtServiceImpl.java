@@ -4,30 +4,20 @@ import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.impl.TextCodec;
-import io.jsonwebtoken.impl.crypto.RsaProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.env.Environment;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 import za.org.grassroot.integration.PublicCredentials;
 import za.org.grassroot.integration.keyprovider.KeyPairProvider;
 
 import javax.annotation.PostConstruct;
-import java.io.File;
-import java.io.FileInputStream;
-import java.security.KeyPair;
-import java.security.KeyStore;
-import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.cert.Certificate;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
-import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -41,6 +31,8 @@ public class JwtServiceImpl implements JwtService {
     private String kuid;
     @Value("${grassroot.jwt.token-time-to-live.inMilliSeconds:600000}")
     private Long jwtTimeToLiveInMilliSeconds;
+    @Value("${grassroot.jwt.token-expiry-grace-period.inMilliseconds:1209600000}")
+    private Long jwtTokenExpiryGracePeriodINMilliseconds;
     @Autowired
     private KeyPairProvider keyPairProvider;
 
@@ -58,7 +50,7 @@ public class JwtServiceImpl implements JwtService {
     @Override
     public String createJwt(CreateJwtTokenRequest request) {
         Instant now = Instant.now();
-        Instant exp = now.plus(jwtTimeToLiveInMilliSeconds, ChronoUnit.MINUTES);
+        Instant exp = now.plus(1, ChronoUnit.MILLIS);
         request.getHeaderParameters().put("kid", kuid);
         return Jwts.builder()
                 .setHeaderParams(request.getHeaderParameters())
@@ -86,6 +78,27 @@ public class JwtServiceImpl implements JwtService {
             logger.error("Unexpected token validation error.", e);
             return false;
         }
+    }
+
+    @Override
+    public String refreshToken(String oldToken) {
+        boolean isTokenStillValid = false;
+        Date expirationTime = null;
+        String newToken = null;
+        try {
+            Jwts.parser().setSigningKey(keyPairProvider.getJWTKey().getPublic()).parse(oldToken);
+            isTokenStillValid = true;
+        }
+        catch (ExpiredJwtException e) {
+            logger.error("Token validation failed. The token is expired.", e);
+            expirationTime = e.getClaims().getExpiration();
+        }
+        if (isTokenStillValid || expirationTime != null
+                && expirationTime.toInstant().plus(1, ChronoUnit.MILLIS).isAfter(new Date().toInstant())) {
+            newToken =  createJwt(new CreateJwtTokenRequest());
+        }
+
+        return newToken;
     }
 
     private PublicCredentials refreshPublicCredentials() {
