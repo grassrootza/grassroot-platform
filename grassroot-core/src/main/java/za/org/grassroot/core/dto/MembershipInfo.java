@@ -41,9 +41,9 @@ public class MembershipInfo implements Comparable<MembershipInfo> {
     }
 
     // constructor to create a membership info with an empty role
-    public MembershipInfo(User user, String roleName) {
+    public MembershipInfo(User user, String displayName, String roleName) {
         this.phoneNumber = user.getPhoneNumber();
-        this.displayName = user.getDisplayName();
+        this.displayName = displayName;
         this.userSetName = user.isHasSetOwnName();
         this.roleName = roleName;
     }
@@ -54,7 +54,7 @@ public class MembershipInfo implements Comparable<MembershipInfo> {
 
     public static Set<MembershipInfo> createFromMembers(Set<Membership> members) {
         Set<MembershipInfo> membershipInfoSet = new HashSet<>();
-        members.forEach(m -> membershipInfoSet.add(new MembershipInfo(m.getUser(), m.getRole().getName())));
+        members.forEach(m -> membershipInfoSet.add(new MembershipInfo(m.getUser(), m.getDisplayName(), m.getRole().getName())));
         return membershipInfoSet;
     }
 

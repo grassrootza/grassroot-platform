@@ -95,6 +95,10 @@ public class GroupController extends BaseController {
         Set<Permission> userPermissions = group.getMembership(user).getRole().getPermissions();
 
         model.addAttribute("group", group);
+
+        model.addAttribute("alias", group.getMembership(user).getAlias());
+        model.addAttribute("displayName", group.getMembership(user).getDisplayName());
+
         model.addAttribute("reminderOptions", reminderMinuteOptions(true));
         model.addAttribute("hasParent", (group.getParent() != null));
 
