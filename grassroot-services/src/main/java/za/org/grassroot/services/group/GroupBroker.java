@@ -61,6 +61,8 @@ public interface GroupBroker {
     void updateGroupPermissionsForRole(String userUid, String groupUid, String roleName, Set<Permission> permissionsToAdd,
                                        Set<Permission> permissionsToRemove);
 
+    void updateMemberAlias(String userUid, String groupUid, String alias);
+
     /*
     Method for conducting several edits at once, principally if those edits are done offline and sent as a bundle in a queue
     Passing null (or reference set) to any argument will just cause it to be skipped, as will passing the present value

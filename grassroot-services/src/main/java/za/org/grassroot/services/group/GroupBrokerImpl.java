@@ -728,6 +728,23 @@ public class GroupBrokerImpl implements GroupBroker {
 
     @Override
     @Transactional
+    public void updateMemberAlias(String userUid, String groupUid, String alias) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(groupUid);
+
+        User user = userRepository.findOneByUid(userUid);
+        Group group = groupRepository.findOneByUid(groupUid);
+
+        Membership membership = group.getMembership(user);
+        membership.setAlias(alias);
+
+        logActionLogsAfterCommit(Collections.singleton(
+                new GroupLog(group, user, GroupLogType.CHANGED_ALIAS, 0L, alias)
+        ));
+    }
+
+    @Override
+    @Transactional
     public void combinedEdits(String userUid, String groupUid, String groupName, String description, boolean resetToDefaultImage, GroupDefaultImage defaultImage,
                               boolean discoverable, boolean toCloseJoinCode, Set<String> membersToRemove, Set<String> organizersToAdd) {
         Objects.requireNonNull(userUid);
