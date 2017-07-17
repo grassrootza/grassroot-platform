@@ -305,11 +305,13 @@ public class MessageAssemblingManager implements MessageAssemblingService {
         String subject = event.getName();
         subject = (subject.contains("&")) ? subject.replace("&", "and") : subject;
 
+        String userAlias = event.getAncestorGroup().getMembership(event.getCreatedByUser()).getDisplayName();
+
         String[] eventVariables;
         if (event.isHasImage()) {
             eventVariables = new String[] {
                     salutation,
-                    event.getCreatedByUser().nameToDisplay(),
+                    userAlias,
                     subject,
                     location,
                     dateString,
@@ -318,7 +320,7 @@ public class MessageAssemblingManager implements MessageAssemblingService {
         } else {
             eventVariables = new String[]{
                     salutation,
-                    event.getCreatedByUser().nameToDisplay(),
+                    userAlias,
                     subject,
                     location,
                     dateString,

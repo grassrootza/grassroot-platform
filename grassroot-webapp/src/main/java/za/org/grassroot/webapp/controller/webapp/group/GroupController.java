@@ -160,6 +160,15 @@ public class GroupController extends BaseController {
     SECTION: Methods for handling group modification
      */
 
+    @RequestMapping(value = "alias", method = RequestMethod.POST)
+    public String setGroupAlias(@RequestParam String groupUid, @RequestParam String alias,
+                                RedirectAttributes attributes, HttpServletRequest request) {
+        groupBroker.updateMemberAlias(getUserProfile().getUid(), groupUid, alias);
+        addMessage(attributes, MessageType.SUCCESS, "group.member.alias.done", new String[] { alias }, request);
+        attributes.addAttribute("groupUid", groupUid);
+        return "redirect:/group/view";
+    }
+
     @RequestMapping(value = "remove", method = RequestMethod.POST)
     public String removeMember(Model model, @RequestParam String groupUid, @RequestParam String msisdn, HttpServletRequest request) {
         Set<String> memberToRemove = Sets.newHashSet(userManagementService.findByInputNumber(msisdn).getUid());
