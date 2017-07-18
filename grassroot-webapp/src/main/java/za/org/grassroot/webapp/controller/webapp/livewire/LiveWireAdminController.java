@@ -1,6 +1,7 @@
 package za.org.grassroot.webapp.controller.webapp.livewire;
 
 import liquibase.util.StringUtils;
+import org.apache.poi.EmptyFileException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -167,7 +168,7 @@ public class LiveWireAdminController extends BaseController {
             tempStore.deleteOnExit();
             file.transferTo(tempStore);
             return dataImportBroker.extractFirstColumnOfSheet(tempStore);
-        } catch (IOException e) {
+        } catch (IOException|EmptyFileException e) {
             return new ArrayList<>();
         }
     }

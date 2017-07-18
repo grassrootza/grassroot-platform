@@ -17,6 +17,8 @@ public interface DataSubscriberBroker {
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     List<DataSubscriber> listSubscribers(final boolean activeOnly, final Sort sort);
 
+    List<DataSubscriber> listPublicSubscribers();
+
     DataSubscriber validateSubscriberAdmin(final String viewingUserUid, final String subscriberUid);
 
     boolean doesUserHaveCustomLiveWireList(final String userUid);

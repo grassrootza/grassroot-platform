@@ -98,9 +98,15 @@ public class LiveWireAlert {
     @Column(name = "destination_type", length = 50)
     private LiveWireAlertDestType destinationType;
 
+    // this is the private list of the user, if they have one
     @ManyToOne
     @JoinColumn(name = "subscriber_id")
     private DataSubscriber targetSubscriber;
+
+    // these are the public lists selected by reviewer
+    @Column(name = "public_list_uids")
+    @Type(type = "za.org.grassroot.core.util.StringArrayUserType")
+    private String[] publicLists;
 
     @Embedded
     @AttributeOverrides({
@@ -216,6 +222,7 @@ public class LiveWireAlert {
         this.complete = false;
         this.sent = false;
         this.tags = new String[0];
+        this.publicLists = new String[0];
         this.destinationType = destType;
     }
 
@@ -392,6 +399,22 @@ public class LiveWireAlert {
 
     public void setTargetSubscriber(DataSubscriber targetSubscriber) {
         this.targetSubscriber = targetSubscriber;
+    }
+
+    public String[] getPublicLists() {
+        return publicLists;
+    }
+
+    public List<String> getPublicListUids() {
+        return StringArrayUtil.arrayToList(publicLists);
+    }
+
+    public void setPublicLists(String[] publicLists) {
+        this.publicLists = publicLists;
+    }
+
+    public void setPublicListUids(List<String> uids) {
+        this.publicLists = StringArrayUtil.listToArray(uids);
     }
 
     @Override

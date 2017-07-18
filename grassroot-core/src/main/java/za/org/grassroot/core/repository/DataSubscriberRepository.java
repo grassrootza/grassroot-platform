@@ -20,6 +20,8 @@ public interface DataSubscriberRepository extends JpaRepository<DataSubscriber, 
 
     List<DataSubscriber> findByActiveTrue(Sort sort);
 
+    List<DataSubscriber> findByActiveTrueAndSubscriberType(DataSubscriberType type, Sort sort);
+
     // note: for some reason JPA is refusing to convert this enum, so passing as string; todo: figure out why
     @Query(value = "select distinct unnest(push_emails) from data_subscriber " +
             "where active = true and subscriber_type = ?1", nativeQuery = true)

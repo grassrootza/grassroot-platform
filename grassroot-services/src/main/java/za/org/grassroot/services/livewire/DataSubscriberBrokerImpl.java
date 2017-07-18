@@ -49,6 +49,12 @@ public class DataSubscriberBrokerImpl implements DataSubscriberBroker {
     }
 
     @Override
+    public List<DataSubscriber> listPublicSubscribers() {
+        return dataSubscriberRepository.findByActiveTrueAndSubscriberType(DataSubscriberType.PUBLIC,
+                new Sort(Sort.Direction.ASC, "displayName"));
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public DataSubscriber validateSubscriberAdmin(String viewingUserUid, String subscriberUid) {
         Objects.requireNonNull(viewingUserUid);

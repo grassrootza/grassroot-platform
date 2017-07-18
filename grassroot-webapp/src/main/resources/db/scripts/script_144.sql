@@ -1,0 +1,1 @@
+alter table live_wire_alert add column public_list_uids text[] default '{}';
