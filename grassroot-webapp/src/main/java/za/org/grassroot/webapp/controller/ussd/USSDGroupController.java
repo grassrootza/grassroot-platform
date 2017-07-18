@@ -1,5 +1,6 @@
 package za.org.grassroot.webapp.controller.ussd;
 
+import org.h2.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -574,6 +575,39 @@ public class USSDGroupController extends USSDController {
         groupBroker.unsubscribeMember(sessionUser.getUid(), groupUid);
         String returnMessage = getMessage(thisSection, unsubscribePrompt + doSuffix, promptKey, sessionUser);
         return menuBuilder(new USSDMenu(returnMessage, optionsHomeExit(sessionUser, false)));
+    }
+
+    /*
+    SETTING ALIAS FOR GROUP
+     */
+    @RequestMapping(value = groupPath + "alias")
+    @ResponseBody
+    public Request promptForAlias(@RequestParam(value = phoneNumber) String msisdn, @RequestParam String groupUid) throws URISyntaxException {
+        User user = userManager.findByInputNumber(msisdn);
+        Group group = groupBroker.load(groupUid);
+        Membership membership = group.getMembership(user);
+        String prompt = StringUtils.isNullOrEmpty(membership.getAlias()) ?
+                getMessage(thisSection, "alias", promptKey, user) :
+                getMessage(thisSection, "alias", promptKey + ".existing", membership.getAlias(), user);
+        return menuBuilder(new USSDMenu(prompt, groupMenuWithId("alias-do", groupUid)));
+    }
+
+    @RequestMapping(value = groupPath + "alias-do")
+    @ResponseBody
+    public Request changeAlias(@RequestParam(value = phoneNumber) String msisdn,
+                               @RequestParam String groupUid,
+                               @RequestParam(value = userInputParam) String input) throws URISyntaxException {
+        User user = userManager.findByInputNumber(msisdn);
+        if (!StringUtils.isNullOrEmpty(input) && !"0".equals(input) && StringUtils.isNumber(input)) {
+            String prompt = getMessage(thisSection, "alias", promptKey + ".error", user);
+            return menuBuilder(new USSDMenu(prompt, groupMenuWithId("alias-do", groupUid)));
+        } else {
+            boolean resetName = StringUtils.isNullOrEmpty(input) || "0".equals(input);
+            groupBroker.updateMemberAlias(user.getUid(), groupUid, resetName ? null : input);
+            String renamed = resetName ? user.getDisplayName() : input;
+            String prompt = getMessage(thisSection, "alias", promptKey + ".done", renamed, user);
+            return menuBuilder(new USSDMenu(prompt, optionsHomeExit(user, true)));
+        }
     }
 
     /**

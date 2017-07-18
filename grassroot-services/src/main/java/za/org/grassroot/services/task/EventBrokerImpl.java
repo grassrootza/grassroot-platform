@@ -173,12 +173,21 @@ public class EventBrokerImpl implements EventBroker {
 
 	private Set<Notification> constructEventInfoNotifications(Event event, EventLog eventLog, Set<User> usersToNotify) {
 		Set<Notification> notifications = new HashSet<>();
-		logger.info("constructin event notifications ... has image URL? : {}", event.getImageUrl());
+		logger.debug("constructing event notifications ... has image URL? : {}", event.getImageUrl());
 		for (User member : usersToNotify) {
 			cacheUtilService.clearRsvpCacheForUser(member, event.getEventType());
 			String message = messageAssemblingService.createEventInfoMessage(member, event);
 			Notification notification = new EventInfoNotification(member, message, eventLog);
 			notifications.add(notification);
+		}
+		// check if creating user is on Android, in which case, add an explicit SMS
+		if (event.getCreatedByUser().getMessagingPreference().equals(UserMessagingPreference.ANDROID_APP)) {
+			logger.info("event creator on Android, sending an SMS so they know format");
+			User creator = event.getCreatedByUser();
+			String creatorMessage = messageAssemblingService.createEventInfoMessage(creator, event);
+			Notification smsNotification = new EventInfoNotification(creator, creatorMessage, eventLog);
+			smsNotification.setForAndroidTimeline(false);
+			notifications.add(smsNotification);
 		}
 		return notifications;
 	}
