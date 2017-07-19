@@ -28,7 +28,7 @@ public class JwtServiceImpl implements JwtService {
     private static final Logger logger = LoggerFactory.getLogger(JwtServiceImpl.class);
 
     private String kuid;
-    @Value("${grassroot.jwt.token-time-to-live.inMilliSeconds:600000}")
+    @Value("${grassroot.jwt.token-time-to-live.inMilliSeconds:6000000}")
     private Long jwtTimeToLiveInMilliSeconds;
     @Value("${grassroot.jwt.token-expiry-grace-period.inMilliseconds:1209600000}")
     private Long jwtTokenExpiryGracePeriodInMilliseconds;
@@ -72,6 +72,22 @@ public class JwtServiceImpl implements JwtService {
         catch (ExpiredJwtException e) {
             logger.error("Token validation failed. The token is expired.", e);
             return false;
+        }
+        catch (Exception e) {
+            logger.error("Unexpected token validation error.", e);
+            return false;
+        }
+    }
+
+    @Override
+    public boolean isJwtTokenExpired(String token) {
+        try {
+            Jwts.parser().setSigningKey(keyPairProvider.getJWTKey().getPublic()).parse(token);
+            return false;
+        }
+        catch (ExpiredJwtException e) {
+            logger.error("The token is expired.", e);
+            return true;
         }
         catch (Exception e) {
             logger.error("Unexpected token validation error.", e);

@@ -18,4 +18,5 @@ public interface JwtService {
      */
     String refreshToken(String oldToken);
     boolean isJwtTokenValid(String token);
+    boolean isJwtTokenExpired(String token);
 }
