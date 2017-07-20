@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
+import za.org.grassroot.core.enums.LiveWireAlertDestType;
 import za.org.grassroot.core.enums.LiveWireAlertType;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 
@@ -38,6 +39,8 @@ public class LiveWireAlertDTO {
     private boolean reviewed;
     private boolean sent;
 
+    private LiveWireAlertDestType destType;
+
     public LiveWireAlertDTO(LiveWireAlert alert) {
         this.uid = alert.getUid();
         this.creationTimeMillis = alert.getCreationTime().toEpochMilli();
@@ -48,6 +51,7 @@ public class LiveWireAlertDTO {
         this.contactUserPhone = PhoneNumberUtil.invertPhoneNumber(alert.getContactUser().getPhoneNumber());
         this.description = alert.getDescription();
         this.type = alert.getType();
+        this.destType = alert.getDestinationType();
         this.tags = alert.getTagList();
 
         Group group;
@@ -94,6 +98,8 @@ public class LiveWireAlertDTO {
     public LiveWireAlertType getType() {
         return type;
     }
+
+    public LiveWireAlertDestType getDestType() { return destType; }
 
     public String getMeetingName() {
         return meetingName;

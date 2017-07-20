@@ -346,6 +346,29 @@ public class GroupRestController extends GroupAbstractRestController {
         return response;
     }
 
+    @RequestMapping(value = "/alias/change/{phoneNumber}/{code}", method = RequestMethod.POST)
+    public ResponseEntity<ResponseWrapper> changeMemberAlias(@PathVariable String phoneNumber,
+                                                             @RequestParam String groupUid,
+                                                             @RequestParam String alias) {
+        User user = userManagementService.findByInputNumber(phoneNumber);
+        groupBroker.updateMemberAlias(user.getUid(), groupUid, alias);
+        return RestUtil.messageOkayResponse(RestMessage.MEMBER_ALIAS_CHANGED);
+    }
+
+    @RequestMapping(value = "/alias/check/{phoneNumber}/{code}", method = RequestMethod.GET)
+    public ResponseEntity<ResponseWrapper> queryMemberAlias(@PathVariable String phoneNumber,
+                                                            @PathVariable String groupUid) {
+        User user = userManagementService.findByInputNumber(phoneNumber);
+        Group group = groupBroker.load(groupUid);
+        return RestUtil.okayResponseWithData(RestMessage.MEMBER_ALIAS_RETURNED,
+                group.getMembership(user).getDisplayName());
+    }
+
+
+    /*
+    Below are legacy as Group chat is removed, but retaining for old clients
+     */
+
     @RequestMapping(value = "messenger/update/{phoneNumber}/{code}/{groupUid}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> updateMemberGroupChatSetting(@PathVariable String phoneNumber,
                                                                         @PathVariable String code,

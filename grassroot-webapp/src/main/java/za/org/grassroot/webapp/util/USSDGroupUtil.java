@@ -8,7 +8,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.Permission;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.association.GroupJoinRequest;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.util.PhoneNumberUtil;
@@ -68,7 +71,7 @@ public class USSDGroupUtil extends USSDUtil {
 
     public static final DateTimeFormatter unnamedGroupDate = DateTimeFormatter.ofPattern("d MMM");
 
-    private static final Map<USSDSection, Permission> SectionPermissionMap = ImmutableMap.of(
+    private static final Map<USSDSection, Permission> SECTION_PERMISSION_MAP = ImmutableMap.of(
             USSDSection.MEETINGS, Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING,
             USSDSection.VOTES, Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE,
             USSDSection.TODO, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY);
@@ -155,7 +158,7 @@ public class USSDGroupUtil extends USSDUtil {
         USSDMenu groupMenu;
         final User user = builder.user;
         final USSDSection section = builder.section;
-        final Permission filter = SectionPermissionMap.get(section); // returning null is what we want if key not present (e.g., for groups section)
+        final Permission filter = SECTION_PERMISSION_MAP.get(section); // returning null is what we want if key not present (e.g., for groups section)
 
         final int groupCount = builder.numberOfGroups == null ? permissionBroker.countActiveGroupsWithPermission(user, filter) : builder.numberOfGroups;
         final String messageKey = builder.messageKey == null ? groupKeyForMessages : builder.messageKey;
@@ -227,7 +230,7 @@ public class USSDGroupUtil extends USSDUtil {
                                            int pageNumber, Integer totalResults, USSDSection section) throws URISyntaxException {
 
         USSDMenu menu = new USSDMenu(prompt);
-        Permission filter = SectionPermissionMap.get(section); // returning null is what we want if key not present
+        Permission filter = SECTION_PERMISSION_MAP.get(section); // returning null is what we want if key not present
         long startTime = System.currentTimeMillis();
 
         List<Group> groupsPartOf = permissionBroker.getPageOfGroups(user, filter, pageNumber, PAGE_LENGTH);
@@ -346,6 +349,7 @@ public class USSDGroupUtil extends USSDUtil {
                 listMenu.addMenuOption(SAFETY_GROUP_MANAGER.toPath() + "start", getMessage(GROUP_MANAGER.toString() + ".safety.option", user));
 
         }
+
         if (permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER))
             listMenu.addMenuOption(groupMenuWithId(addMemberPrompt, groupUid), getMessage(menuKey + addMemberPrompt, user));
 
@@ -363,7 +367,7 @@ public class USSDGroupUtil extends USSDUtil {
         }
 
         if (listMenu.getMenuOptions().size() < 4) {
-            listMenu.addMenuOption(USSDSection.MEETINGS.toPath() + "start", getMessage(menuKey + "back-mtg", user));
+            listMenu.addMenuOption(groupMenuWithId("alias", groupUid), getMessage(menuKey + "alias", user));
         }
 
         listMenu.addMenuOption(skippedSelection ? "start" : GROUP_MANAGER.toPath() + "start", getMessage(menuKey + "back", user));
@@ -382,6 +386,8 @@ public class USSDGroupUtil extends USSDUtil {
         final String menuKey = GROUP_MANAGER.toKey() + advancedGroupMenu + "." + optionsKey;
         final String tokenKey = openToken ? menuKey + groupTokenMenu + ".exists" : menuKey + groupTokenMenu + ".create";
 
+        listMenu.addMenuOption(groupMenuWithId("alias", groupUid), menuKey + "alias");
+
         if (permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS)) {
             String visibilityMenuOptionPrompt = group.isDiscoverable() ? getMessage(menuKey + hideGroup, user)
                     : getMessage(menuKey + showGroup, user);
@@ -394,8 +400,6 @@ public class USSDGroupUtil extends USSDUtil {
 
         if (!group.getCreatedByUser().equals(user))
             listMenu.addMenuOption(groupMenuWithId(unsubscribePrompt, groupUid), getMessage(GROUP_MANAGER, existingGroupMenu, optionsKey + unsubscribePrompt, user));
-
-        listMenu.addMenuOption(groupMenuWithId(listGroupMembers, groupUid), getMessage(menuKey + listGroupMembers, user));
 
         listMenu.addMenuOption(groupMenuWithId(existingGroupMenu, groupUid), getMessage(menuKey + "back", user));
 

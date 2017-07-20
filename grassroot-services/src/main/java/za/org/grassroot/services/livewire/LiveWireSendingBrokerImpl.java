@@ -14,10 +14,10 @@ import org.thymeleaf.context.Context;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Meeting;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
+import za.org.grassroot.core.enums.DataSubscriberType;
 import za.org.grassroot.core.enums.LiveWireAlertType;
 import za.org.grassroot.core.repository.DataSubscriberRepository;
 import za.org.grassroot.core.repository.LiveWireAlertRepository;
-import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.email.GrassrootEmail;
 import za.org.grassroot.integration.livewire.LiveWirePushBroker;
@@ -62,35 +62,56 @@ public class LiveWireSendingBrokerImpl implements LiveWireSendingBroker {
     }
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public void sendLiveWireAlerts(Set<String> alertUids) {
-        final List<String> allPushEmails = subscriberRepository.findAllActiveSubscriberPushEmails();
-        logger.info("Processing {} alerts, to {} email addresses", alertUids.size(), allPushEmails.size());
-        alertUids.forEach(u -> sendAlert(alertRepository.findOneByUid(u), allPushEmails));
+        final List<String> publicPushMail = subscriberRepository.findAllActiveSubscriberPushEmails(DataSubscriberType.SYSTEM.name());
+        logger.debug("Processing {} LiveWire alerts", alertUids.size(), publicPushMail.size());
+        alertUids.forEach(u -> sendAlert(alertRepository.findOneByUid(u), publicPushMail));
     }
 
-    private void sendAlert(LiveWireAlert alert, List<String> emailAddresses) {
-        DebugUtil.transactionRequired("");
+    private void sendAlert(LiveWireAlert alert, List<String> systemEmailAddresses) {
+        logger.debug("starting to send alert, uids: {}", alert.getPublicListUids());
         // send the alert (maybe add Twitter etc in future)
-        boolean sent = liveWirePushBroker.sendLiveWireEmails(generateEmailsForAlert(alert, emailAddresses));
-        logger.info("Sent out LiveWire alert! Description: {}. Setting to sent ...", alert.getDescription());
-        alert.setSent(sent);
+        List<String> alertEmails = new ArrayList<>(systemEmailAddresses);
+        switch (alert.getDestinationType()) {
+            case SINGLE_LIST:
+                alertEmails.addAll(alert.getTargetSubscriber().getPushEmails());
+                break;
+            case PUBLIC_LIST:
+                alertEmails.addAll(collectPublicEmailAddresses(alert));
+                break;
+            case SINGLE_AND_PUBLIC:
+                alertEmails.addAll(alert.getTargetSubscriber().getPushEmails());
+                alertEmails.addAll(collectPublicEmailAddresses(alert));
+                break;
+        }
+        liveWirePushBroker.sendLiveWireEmails(alert.getUid(), generateEmailsForAlert(alert, alertEmails));
+        logger.info("LiveWire of type {} sent to {} emails! Description: {}. Setting to sent ...", alert.getDestinationType(), alertEmails.size(), alert.getDescription());
+    }
+
+    private List<String> collectPublicEmailAddresses(LiveWireAlert alert) {
+        // doing this in one query would be more efficient, but because of the unnest it can't be done with
+        // JPQL, and passing in the list of UIDs is then difficult in JPA, hence ...
+        return alert.getPublicListUids()
+                .stream()
+                .map(u -> subscriberRepository.findOneByUid(u).getPushEmails())
+                .flatMap(Collection::stream)
+                .distinct()
+                .collect(Collectors.toList());
     }
 
     private List<GrassrootEmail> generateEmailsForAlert(LiveWireAlert alert, List<String> emailAddresses) {
-        GrassrootEmail.EmailBuilder builder = new GrassrootEmail.EmailBuilder();
-
         String subject, template;
         Map<String, Object> emailVars = new HashedMap<>();
 
         emailVars.put("contactName", alert.getContactNameNullSafe());
-        logger.info("contactName, and from alert: {}", alert.getContactNameNullSafe(),
+        logger.debug("contactName, and from alert: {}", alert.getContactNameNullSafe(),
                 alert.getContactUser().getName());
         emailVars.put("contactNumber", PhoneNumberUtil.formattedNumber(
                 alert.getContactUser().getPhoneNumber()));
         emailVars.put("description", alert.getDescription());
 
-        logger.info("formatted number: {}", emailVars.get("contactNumber"));
+        logger.debug("formatted number: {}", emailVars.get("contactNumber"));
 
         // todo : check both for location
         if (LiveWireAlertType.INSTANT.equals(alert.getType())) {

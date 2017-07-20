@@ -1,5 +1,6 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity4"
       data-layout-decorate="~{layout}">
 <head>
   <meta charset="UTF-8" />
@@ -117,6 +118,30 @@
                 <label class="checkbox-inline">
                   <input th:checked="${subscriber.canRelease}" type="checkbox" name="canRelease" /><span>Users can release alerts</span>
                 </label>
+              </div>
+              <div class="col-md-3 col-sm-3 col-xs-12">
+                <button type="submit" class="btn default-button full-width-button">
+                  Update
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <hr sec:authorize="hasRole('ROLE_SYSTEM_ADMIN')">
+
+          <div class="row no-padding" sec:authorize="hasRole('ROLE_SYSTEM_ADMIN')">
+            <div class="col-md-3 col-sm-3 col-xs-12">
+              <label class="grassroot-sidebar">Type</label>
+            </div>
+            <form class="grassroot-form" th:action="@{/livewire/subscriber/type/change}" method="post">
+              <input type="hidden" name="subscriberUid" th:value="${subscriber.uid}" />
+              <div class="col-md-6 col-sm-6 col-xs-12">
+                <select name="subscriberType" class="form-control input-lg">
+                  <option th:each="option: ${T(za.org.grassroot.core.enums.DataSubscriberType).values()}"
+                          th:value="${option}"
+                          th:text="${option}"
+                          th:selected="${option == subscriber.subscriberType}"></option>
+                </select>
               </div>
               <div class="col-md-3 col-sm-3 col-xs-12">
                 <button type="submit" class="btn default-button full-width-button">

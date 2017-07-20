@@ -10,6 +10,7 @@ import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
 import za.org.grassroot.core.enums.LiveWireAlertType;
 import za.org.grassroot.core.enums.UserInterfaceType;
+import za.org.grassroot.core.enums.LiveWireAlertDestType;
 
 import java.time.Instant;
 import java.util.List;
@@ -39,6 +40,9 @@ public interface LiveWireAlertBroker {
 
     void updateDescription(String userUid, String alertUid, String description);
 
+    // pass null to have it be the public account
+    void updateAlertDestination(String userUid, String alertUid, String subscriberUid, LiveWireAlertDestType destType);
+
     void setAlertComplete(String userUid, String alertUid, Instant soonestTimeToSend);
 
     void addLocationToAlert(String userUid, String alertUid, GeoLocation location, UserInterfaceType interfaceType);
@@ -63,6 +67,6 @@ public interface LiveWireAlertBroker {
     void setTagsForAlert(String userUid, String alertUid, List<String> tags);
 
     @PreAuthorize("hasRole('ROLE_LIVEWIRE_USER')")
-    void reviewAlert(String userUid, String alertUid, List<String> tags, boolean send);
+    void reviewAlert(String userUid, String alertUid, List<String> tags, boolean send, List<String> publicListUids);
 
 }
