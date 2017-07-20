@@ -1,29 +1,22 @@
 package za.org.grassroot.integration.messaging;
 
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.impl.TextCodec;
-import io.jsonwebtoken.impl.crypto.RsaProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.env.Environment;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 import za.org.grassroot.integration.PublicCredentials;
+import za.org.grassroot.integration.keyprovider.KeyPairProvider;
 
 import javax.annotation.PostConstruct;
-import java.io.File;
-import java.io.FileInputStream;
-import java.security.KeyPair;
-import java.security.KeyStore;
-import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.cert.Certificate;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
-import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -34,15 +27,13 @@ public class JwtServiceImpl implements JwtService {
 
     private static final Logger logger = LoggerFactory.getLogger(JwtServiceImpl.class);
 
-    private final Environment environment;
-
-    private KeyPair keyPair;
     private String kuid;
-
+    @Value("${grassroot.jwt.token-time-to-live.inMilliSeconds:6000000}")
+    private Long jwtTimeToLiveInMilliSeconds;
+    @Value("${grassroot.jwt.token-expiry-grace-period.inMilliseconds:1209600000}")
+    private Long jwtTokenExpiryGracePeriodInMilliseconds;
     @Autowired
-    public JwtServiceImpl(Environment environment) {
-        this.environment = environment;
-    }
+    private KeyPairProvider keyPairProvider;
 
     @PostConstruct
     public void init() {
@@ -52,52 +43,83 @@ public class JwtServiceImpl implements JwtService {
 
     @Override
     public PublicCredentials getPublicCredentials() {
-        return createCredentialEntity(kuid, keyPair.getPublic());
+        return createCredentialEntity(kuid, keyPairProvider.getJWTKey().getPublic());
     }
 
     @Override
-    public String createJwt(Map<String, Object> claims) {
+    public String createJwt(CreateJwtTokenRequest request) {
         Instant now = Instant.now();
-        Instant exp = now.plus(1L, ChronoUnit.MINUTES);
-        logger.debug("creating JWT with KUID: {}", kuid);
+        Instant exp = now.plus(1, ChronoUnit.MILLIS);
+        request.getHeaderParameters().put("kid", kuid);
         return Jwts.builder()
-                .setHeaderParam("kid", kuid)
-                .setClaims(claims)
+                .setHeaderParams(request.getHeaderParameters())
+                .setClaims(request.getClaims())
                 .setIssuedAt(Date.from(now))
                 .setExpiration(Date.from(exp))
                 .signWith(
                         SignatureAlgorithm.RS256,
-                        keyPair.getPrivate()
+                        keyPairProvider.getJWTKey().getPrivate()
                 )
                 .compact();
+    }
+
+    @Override
+    public boolean isJwtTokenValid(String token) {
+        try {
+            Jwts.parser().setSigningKey(keyPairProvider.getJWTKey().getPublic()).parse(token);
+            return true;
+        }
+        catch (ExpiredJwtException e) {
+            logger.error("Token validation failed. The token is expired.", e);
+            return false;
+        }
+        catch (Exception e) {
+            logger.error("Unexpected token validation error.", e);
+            return false;
+        }
+    }
+
+    @Override
+    public boolean isJwtTokenExpired(String token) {
+        try {
+            Jwts.parser().setSigningKey(keyPairProvider.getJWTKey().getPublic()).parse(token);
+            return false;
+        }
+        catch (ExpiredJwtException e) {
+            logger.error("The token is expired.", e);
+            return true;
+        }
+        catch (Exception e) {
+            logger.error("Unexpected token validation error.", e);
+            return false;
+        }
+    }
+
+    @Override
+    public String refreshToken(String oldToken) {
+        boolean isTokenStillValid = false;
+        Date expirationTime = null;
+        String newToken = null;
+        try {
+            Jwts.parser().setSigningKey(keyPairProvider.getJWTKey().getPublic()).parse(oldToken);
+            isTokenStillValid = true;
+        }
+        catch (ExpiredJwtException e) {
+            logger.error("Token validation failed. The token is expired.", e);
+            expirationTime = e.getClaims().getExpiration();
+        }
+        if (isTokenStillValid || expirationTime != null
+                && expirationTime.toInstant().plus(jwtTokenExpiryGracePeriodInMilliseconds, ChronoUnit.MILLIS).isAfter(new Date().toInstant())) {
+            newToken =  createJwt(new CreateJwtTokenRequest());
+        }
+
+        return newToken;
     }
 
     private PublicCredentials refreshPublicCredentials() {
         kuid = UUID.randomUUID().toString();
         logger.debug("created KUID for main platform: {}", kuid);
-        if (StringUtils.isEmpty(environment.getProperty("JWT_KEYSTORE_PATH"))) {
-            keyPair = RsaProvider.generateKeyPair(1024);
-        } else {
-            try {
-                File file = new File(environment.getProperty("JWT_KEYSTORE_PATH"));
-                FileInputStream is = new FileInputStream(file);
-                KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-
-                final String password = environment.getProperty("JWT_KEYSTORE_PASS");
-                final String alias = environment.getProperty("JWT_KEY_ALIAS");
-                final String keypass = environment.getProperty("JWT_KEY_PASS", password);
-
-                keyStore.load(is, password.toCharArray());
-                PrivateKey privateKey = (PrivateKey) keyStore.getKey(alias, keypass.toCharArray());
-                Certificate certificate = keyStore.getCertificate(alias);
-                PublicKey publicKey = certificate.getPublicKey();
-                keyPair = new KeyPair(publicKey, privateKey);
-            } catch (Exception e) {
-                logger.error("Exception loading keystore, defaulting to in-memory generation");
-                keyPair = RsaProvider.generateKeyPair(1024);
-            }
-        }
-        return createCredentialEntity(kuid, keyPair.getPublic());
+        return createCredentialEntity(kuid, keyPairProvider.getJWTKey().getPublic());
     }
 
     private PublicCredentials createCredentialEntity(String kuid, PublicKey key) {

@@ -16,6 +16,8 @@ public interface PasswordTokenService {
 
     boolean extendAuthCodeIfExpiring(String phoneNumber, String code);
 
+    void validateOtp(String username, String otp);
+
     boolean isShortLivedOtpValid(String phoneNumber, String code);
 
     boolean isLongLiveAuthValid(String phoneNumber, String code);
