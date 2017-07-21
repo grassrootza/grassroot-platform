@@ -14,9 +14,7 @@ import org.springframework.web.client.AsyncRestTemplate;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import javax.annotation.PostConstruct;
 import java.net.URI;
-import java.util.HashMap;
 import java.util.Set;
 
 /**
@@ -141,7 +139,7 @@ public class MessagingServiceBrokerImpl implements MessagingServiceBroker, Comma
     // this means duplication but getting extreme weirdness on doing generic but
     private HttpHeaders jwtHeaders() {
         HttpHeaders headers = new HttpHeaders();
-        headers.add("Authorization", "Bearer " + jwtService.createJwt(new CreateJwtTokenRequest()));
+        headers.add("Authorization", "Bearer " + jwtService.createJwt(new CreateJwtTokenRequest(JwtType.GRASSROOT_MICROSERVICE)));
         return headers;
     }
 

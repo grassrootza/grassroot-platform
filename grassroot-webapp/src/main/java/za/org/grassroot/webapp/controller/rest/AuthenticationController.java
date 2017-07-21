@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.integration.messaging.CreateJwtTokenRequest;
 import za.org.grassroot.integration.messaging.JwtService;
+import za.org.grassroot.integration.messaging.JwtType;
 import za.org.grassroot.services.exception.InvalidOtpException;
 import za.org.grassroot.services.user.PasswordTokenService;
 import za.org.grassroot.webapp.enums.RestMessage;
@@ -40,8 +41,8 @@ public class AuthenticationController {
             // authenticate user before issuing token
             passwordTokenService.validateOtp(phoneNumber, otp);
 
-            // Generate a token for the user
-            String token = jwtService.createJwt(new CreateJwtTokenRequest());
+            // Generate a token for the user (for the moment assuming it is Android client)
+            String token = jwtService.createJwt(new CreateJwtTokenRequest(JwtType.ANDROID_CLIENT));
 
             // Return the token on the response
             return RestUtil.okayResponseWithData(RestMessage.LOGIN_SUCCESS, token);
@@ -64,7 +65,7 @@ public class AuthenticationController {
 
     @RequestMapping(value = "/refreshToken", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> refreshToken(@RequestParam("oldToken")String oldToken) {
-        String newToken = jwtService.refreshToken(oldToken);
+        String newToken = jwtService.refreshToken(oldToken, JwtType.ANDROID_CLIENT);
         if (newToken != null) {
             return RestUtil.okayResponseWithData(RestMessage.LOGIN_SUCCESS, newToken);
         } else {

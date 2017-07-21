@@ -14,6 +14,7 @@ import za.org.grassroot.integration.keyprovider.KeyPairProvider;
 
 import javax.annotation.PostConstruct;
 import java.security.PublicKey;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
@@ -32,8 +33,12 @@ public class JwtServiceImpl implements JwtService {
     private Long jwtTimeToLiveInMilliSeconds;
     @Value("${grassroot.jwt.token-expiry-grace-period.inMilliseconds:1209600000}")
     private Long jwtTokenExpiryGracePeriodInMilliseconds;
+    private final KeyPairProvider keyPairProvider;
+
     @Autowired
-    private KeyPairProvider keyPairProvider;
+    public JwtServiceImpl(KeyPairProvider keyPairProvider) {
+        this.keyPairProvider = keyPairProvider;
+    }
 
     @PostConstruct
     public void init() {
@@ -49,7 +54,7 @@ public class JwtServiceImpl implements JwtService {
     @Override
     public String createJwt(CreateJwtTokenRequest request) {
         Instant now = Instant.now();
-        Instant exp = now.plus(1, ChronoUnit.MILLIS);
+        Instant exp = now.plus(convertTypeToExpiryMillis(request.getJwtType()), ChronoUnit.MILLIS);
         request.getHeaderParameters().put("kid", kuid);
         return Jwts.builder()
                 .setHeaderParams(request.getHeaderParameters())
@@ -61,6 +66,17 @@ public class JwtServiceImpl implements JwtService {
                         keyPairProvider.getJWTKey().getPrivate()
                 )
                 .compact();
+    }
+
+    private long convertTypeToExpiryMillis(JwtType jwtType) {
+        switch (jwtType) {
+            case ANDROID_CLIENT:
+                return Duration.ofDays(7L).toMillis();
+            case GRASSROOT_MICROSERVICE:
+                return Duration.ofSeconds(1).toMillis();
+            default:
+                return 1L;
+        }
     }
 
     @Override
@@ -96,7 +112,7 @@ public class JwtServiceImpl implements JwtService {
     }
 
     @Override
-    public String refreshToken(String oldToken) {
+    public String refreshToken(String oldToken, JwtType jwtType) {
         boolean isTokenStillValid = false;
         Date expirationTime = null;
         String newToken = null;
@@ -110,7 +126,7 @@ public class JwtServiceImpl implements JwtService {
         }
         if (isTokenStillValid || expirationTime != null
                 && expirationTime.toInstant().plus(jwtTokenExpiryGracePeriodInMilliseconds, ChronoUnit.MILLIS).isAfter(new Date().toInstant())) {
-            newToken =  createJwt(new CreateJwtTokenRequest());
+            newToken =  createJwt(new CreateJwtTokenRequest(jwtType));
         }
 
         return newToken;

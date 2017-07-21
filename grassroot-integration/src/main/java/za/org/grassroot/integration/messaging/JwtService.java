@@ -13,10 +13,11 @@ public interface JwtService {
     /**
      * Refresh token if old token is still valid or has expired but is still within the expiration grace period.
      * @param oldToken
+     * @param jwtType
      * @return new token if old token is still valid or has expired but is still within the expiration grace period.
      * Otherwise, return <code></code>null.
      */
-    String refreshToken(String oldToken);
+    String refreshToken(String oldToken, JwtType jwtType);
     boolean isJwtTokenValid(String token);
     boolean isJwtTokenExpired(String token);
 }
