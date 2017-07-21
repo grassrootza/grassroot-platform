@@ -2,6 +2,7 @@ package za.org.grassroot.webapp.controller.rest.android;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
+import liquibase.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,6 +67,11 @@ public class GroupRestController extends GroupAbstractRestController {
     @Autowired(required = false)
     public void setGcmRegistrationBroker(GcmRegistrationBroker gcmRegistrationBroker) {
         this.gcmRegistrationBroker = gcmRegistrationBroker;
+    }
+
+    @Autowired(required = false)
+    public void setMessagingServiceBroker(MessagingServiceBroker messagingServiceBroker) {
+        this.messagingServiceBroker = messagingServiceBroker;
     }
 
     @Autowired(required = false)
@@ -351,7 +357,9 @@ public class GroupRestController extends GroupAbstractRestController {
                                                              @RequestParam String groupUid,
                                                              @RequestParam String alias) {
         User user = userManagementService.findByInputNumber(phoneNumber);
-        groupBroker.updateMemberAlias(user.getUid(), groupUid, alias);
+        if (!StringUtils.isEmpty(alias)) {
+            groupBroker.updateMemberAlias(user.getUid(), groupUid, alias);
+        }
         return RestUtil.messageOkayResponse(RestMessage.MEMBER_ALIAS_CHANGED);
     }
 
@@ -388,7 +396,6 @@ public class GroupRestController extends GroupAbstractRestController {
             gcmRegistrationBroker.changeTopicSubscription(user.getUid(), groupUid, active);
         }
         return RestUtil.messageOkayResponse((!active) ? RestMessage.CHAT_DEACTIVATED : RestMessage.CHAT_ACTIVATED);
-
     }
 
     @RequestMapping(value = "messenger/ping/{phoneNumber}/{code}/{groupUid}", method = RequestMethod.GET)
