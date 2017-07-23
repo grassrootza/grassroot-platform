@@ -352,6 +352,18 @@ public class GroupRestController extends GroupAbstractRestController {
         return response;
     }
 
+    @RequestMapping(value = "/edit/language/{phoneNumber}/{code}", method = RequestMethod.POST)
+    public ResponseEntity<ResponseWrapper> changeGroupLanguage(@PathVariable String phoneNumber, @RequestParam String groupUid,
+                                                               @RequestParam String language) {
+        User user = userManagementService.findByInputNumber(phoneNumber);
+        try {
+            groupBroker.updateGroupDefaultLanguage(user.getUid(), groupUid, language, false);
+            return RestUtil.messageOkayResponse(RestMessage.GROUP_LANGUAGE_CHANGED);
+        } catch (AccessDeniedException e) {
+            return RestUtil.accessDeniedResponse();
+        }
+    }
+
     @RequestMapping(value = "/alias/change/{phoneNumber}/{code}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> changeMemberAlias(@PathVariable String phoneNumber,
                                                              @RequestParam String groupUid,

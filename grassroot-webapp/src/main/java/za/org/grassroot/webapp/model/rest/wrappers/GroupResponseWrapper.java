@@ -46,6 +46,8 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
     private List<MembershipResponseWrapper> members;
     private List<String> invalidNumbers; // for added member / group creation error handling
 
+    private String language;
+
     private GroupResponseWrapper(Group group, Role role, boolean hasTasks) {
         Objects.requireNonNull(group);
         Objects.requireNonNull(role);
@@ -62,6 +64,7 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
         this.defaultImage = group.getDefaultImage();
         this.description = group.getDescription();
         this.paidFor = group.isPaidFor();
+        this.language = group.getDefaultLanguage();
 
         if (group.hasValidGroupTokenCode()) {
             this.joinCode = group.getGroupTokenCode();
@@ -156,6 +159,10 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
     }
 
     public boolean isPaidFor() { return paidFor; }
+
+    public String getLanguage() {
+        return language;
+    }
 
     @Override
     public int compareTo(GroupResponseWrapper g) {
