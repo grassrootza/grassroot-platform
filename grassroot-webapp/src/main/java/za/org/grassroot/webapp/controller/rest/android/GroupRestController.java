@@ -358,7 +358,8 @@ public class GroupRestController extends GroupAbstractRestController {
         User user = userManagementService.findByInputNumber(phoneNumber);
         try {
             groupBroker.updateGroupDefaultLanguage(user.getUid(), groupUid, language, false);
-            return RestUtil.messageOkayResponse(RestMessage.GROUP_LANGUAGE_CHANGED);
+            return RestUtil.okayResponseWithData(RestMessage.GROUP_LANGUAGE_CHANGED,
+                    createGroupWrapper(groupBroker.load(groupUid), user));
         } catch (AccessDeniedException e) {
             return RestUtil.accessDeniedResponse();
         }
@@ -384,6 +385,13 @@ public class GroupRestController extends GroupAbstractRestController {
                 group.getMembership(user).getDisplayName());
     }
 
+    @RequestMapping(value = "/alias/reset/{phoneNumber}/{code}", method = RequestMethod.POST)
+    public ResponseEntity<ResponseWrapper> resetMemberAlias(@PathVariable String phoneNumber,
+                                                            @RequestParam String groupUid) {
+        User user = userManagementService.findByInputNumber(phoneNumber);
+        groupBroker.updateMemberAlias(user.getUid(), groupUid, null);
+        return RestUtil.messageOkayResponse(RestMessage.MEMBER_ALIAS_CHANGED);
+    }
 
     /*
     Below are legacy as Group chat is removed, but retaining for old clients

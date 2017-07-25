@@ -11,6 +11,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.Membership;
 import za.org.grassroot.core.domain.association.GroupJoinRequest;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
@@ -105,6 +106,22 @@ public class GroupQueryRestController extends GroupAbstractRestController {
         log.info("From memberships : {}, created wrappers: {}", group.getMemberships(), members);
 
         return RestUtil.okayResponseWithData(RestMessage.GROUP_MEMBERS, members);
+    }
+
+    @RequestMapping(value = "/members/fetch/{phoneNumber}/{code}")
+    public ResponseEntity<ResponseWrapper> fetchSingleGroupMember(@PathVariable String phoneNumber,
+                                                                  @RequestParam String groupUid,
+                                                                  @RequestParam String userUid) {
+        User thisUser = userManagementService.findByInputNumber(phoneNumber);
+        Group group = groupBroker.load(groupUid);
+        User user = userManagementService.load(userUid);
+
+        if (!thisUser.equals(user)) {
+            permissionBroker.validateGroupPermission(thisUser, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
+        }
+
+        Membership m = group.getMembership(user);
+        return RestUtil.okayResponseWithData(RestMessage.GROUP_MEMBERS, new MembershipResponseWrapper(group, user, m.getRole(), false));
     }
 
     @RequestMapping(value = "/search/{phoneNumber}/{code}", method = RequestMethod.GET)
