@@ -9,12 +9,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.integration.messaging.CreateJwtTokenRequest;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.integration.messaging.JwtType;
 import za.org.grassroot.services.exception.InvalidOtpException;
 import za.org.grassroot.services.user.PasswordTokenService;
+import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.enums.RestMessage;
+import za.org.grassroot.webapp.model.rest.AndroidAuthToken;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
@@ -26,11 +29,13 @@ public class AuthenticationController {
 
     private final JwtService jwtService;
     private final PasswordTokenService passwordTokenService;
+    private final UserManagementService userService;
 
     @Autowired
-    public AuthenticationController(JwtService jwtService, PasswordTokenService passwordTokenService) {
+    public AuthenticationController(JwtService jwtService, PasswordTokenService passwordTokenService, UserManagementService userService) {
         this.jwtService = jwtService;
         this.passwordTokenService = passwordTokenService;
+        this.userService = userService;
     }
 
     @RequestMapping(value = "/login", method = RequestMethod.GET)
@@ -41,11 +46,17 @@ public class AuthenticationController {
             // authenticate user before issuing token
             passwordTokenService.validateOtp(phoneNumber, otp);
 
+            // get the user object
+            User user = userService.findByInputNumber(phoneNumber);
+
             // Generate a token for the user (for the moment assuming it is Android client)
             String token = jwtService.createJwt(new CreateJwtTokenRequest(JwtType.ANDROID_CLIENT));
 
+            // Assemble response entity
+            AndroidAuthToken response = new AndroidAuthToken(user, token);
+
             // Return the token on the response
-            return RestUtil.okayResponseWithData(RestMessage.LOGIN_SUCCESS, token);
+            return RestUtil.okayResponseWithData(RestMessage.LOGIN_SUCCESS, response);
         } catch (InvalidOtpException e) {
            logger.error("Failed to generate authentication token for:  " + phoneNumber);
             return RestUtil.errorResponse(HttpStatus.UNAUTHORIZED, RestMessage.INVALID_OTP);
@@ -53,8 +64,8 @@ public class AuthenticationController {
 
     }
 
-    @RequestMapping(value = "/validateToken", method = RequestMethod.GET)
-    public ResponseEntity<ResponseWrapper> validateToken(@RequestParam("token")String token) {
+    @RequestMapping(value = "/token/validate", method = RequestMethod.GET)
+    public ResponseEntity<ResponseWrapper> validateToken(@RequestParam("token") String token) {
         boolean isJwtTokenValid = jwtService.isJwtTokenValid(token);
         if (isJwtTokenValid) {
             return RestUtil.messageOkayResponse(RestMessage.TOKEN_STILL_VALID);
@@ -63,7 +74,7 @@ public class AuthenticationController {
         }
     }
 
-    @RequestMapping(value = "/refreshToken", method = RequestMethod.GET)
+    @RequestMapping(value = "/token/refresh", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> refreshToken(@RequestParam("oldToken")String oldToken) {
         String newToken = jwtService.refreshToken(oldToken, JwtType.ANDROID_CLIENT);
         if (newToken != null) {

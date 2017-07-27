@@ -12,9 +12,9 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Membership;
-import za.org.grassroot.core.domain.association.GroupJoinRequest;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.association.GroupJoinRequest;
 import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
 import za.org.grassroot.services.ChangedSinceData;
 import za.org.grassroot.services.exception.JoinRequestNotOpenException;
@@ -74,6 +74,19 @@ public class GroupQueryRestController extends GroupAbstractRestController {
 
         ChangedSinceData<GroupResponseWrapper> response = new ChangedSinceData<>(groupWrappers, changedSinceData.getRemovedUids());
         return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    // dummy method for now to avoid path variable (switched to JWT)
+    @RequestMapping(value = "/get/all")
+    public ResponseEntity<List<GroupResponseWrapper>> getAllUserGroups(@RequestParam String userUid) {
+        User user = userManagementService.load(userUid);
+        List<GroupResponseWrapper> allGroups = groupQueryBroker.getActiveGroups(user, null)
+                .getAddedAndUpdated()
+                .stream()
+                .map(g -> createGroupWrapper(g, user))
+                .sorted(Collections.reverseOrder())
+                .collect(Collectors.toList());
+        return new ResponseEntity<>(allGroups, HttpStatus.OK);
     }
 
     @RequestMapping(value = "/get/{phoneNumber}/{code}/{groupUid}", method = RequestMethod.GET)
