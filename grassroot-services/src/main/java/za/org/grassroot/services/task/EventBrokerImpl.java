@@ -182,7 +182,7 @@ public class EventBrokerImpl implements EventBroker {
 		}
 		// check if creating user is on Android, in which case, add an explicit SMS
 		if (event.getCreatedByUser().getMessagingPreference().equals(UserMessagingPreference.ANDROID_APP)) {
-			logger.info("event creator on Android, sending an SMS so they know format");
+			logger.debug("event creator on Android, sending an SMS so they know format");
 			User creator = event.getCreatedByUser();
 			String creatorMessage = messageAssemblingService.createEventInfoMessage(creator, event);
 			Notification smsNotification = new EventInfoNotification(creator, creatorMessage, eventLog);
