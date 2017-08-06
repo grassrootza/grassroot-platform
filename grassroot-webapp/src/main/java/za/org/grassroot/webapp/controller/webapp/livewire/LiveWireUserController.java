@@ -25,7 +25,9 @@ import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.geo.GeoLocationUtils;
+import za.org.grassroot.services.livewire.DataSubscriberBroker;
 import za.org.grassroot.services.livewire.LiveWireAlertBroker;
+import za.org.grassroot.services.livewire.LiveWireSendingBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.LiveWireAlertDTO;
 import za.org.grassroot.webapp.model.LiveWireContactDTO;
@@ -33,6 +35,7 @@ import za.org.grassroot.webapp.model.LiveWireContactDTO;
 import javax.servlet.http.HttpServletRequest;
 import java.security.InvalidParameterException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -49,15 +52,19 @@ public class LiveWireUserController extends BaseController {
     private static final GeoLocation defaultLocation = new GeoLocation(-26.277636, 27.889045); // Freedom Square
 
     private final LiveWireAlertBroker liveWireAlertBroker;
+    private final LiveWireSendingBroker liveWireSendingBroker;
     private final GeoLocationBroker geoLocationBroker;
+    private final DataSubscriberBroker dataSubscriberBroker;
 
     @Value("${grassroot.mapzen.api.key:mapzen-key}")
     private String mapZenApiKey;
 
     @Autowired
-    public LiveWireUserController(LiveWireAlertBroker liveWireAlertBroker, GeoLocationBroker geoLocationBroker) {
+    public LiveWireUserController(LiveWireAlertBroker liveWireAlertBroker, LiveWireSendingBroker liveWireSendingBroker, GeoLocationBroker geoLocationBroker, DataSubscriberBroker dataSubscriberBroker) {
         this.liveWireAlertBroker = liveWireAlertBroker;
+        this.liveWireSendingBroker = liveWireSendingBroker;
         this.geoLocationBroker = geoLocationBroker;
+        this.dataSubscriberBroker = dataSubscriberBroker;
     }
 
     @RequestMapping(value = {"/", ""}, method = RequestMethod.GET)
@@ -129,7 +136,11 @@ public class LiveWireUserController extends BaseController {
         model.addAttribute("pageable", pageable);
         model.addAttribute("sort", pageable.getSort().iterator().next());
         model.addAttribute("canTag", liveWireAlertBroker.canUserTag(getUserProfile().getUid()));
-        model.addAttribute("canRelease", liveWireAlertBroker.canUserRelease(getUserProfile().getUid()));
+        boolean canRelease = liveWireAlertBroker.canUserRelease(getUserProfile().getUid());
+        model.addAttribute("canRelease", canRelease);
+        if (canRelease) {
+            model.addAttribute("publicLists", dataSubscriberBroker.listPublicSubscribers());
+        }
     }
 
     @RequestMapping(value = "/alert/details", method = RequestMethod.GET)
@@ -157,12 +168,17 @@ public class LiveWireUserController extends BaseController {
     @RequestMapping(value = "/alert/review", method = RequestMethod.POST)
     public String releaseAlert(@RequestParam String alertUid,
                                @RequestParam boolean send,
+                               @RequestParam(required = false) String publicLists,
                                @RequestParam(required = false) String tags,
                                RedirectAttributes attributes, HttpServletRequest request) {
         try {
             List<String> tagList = tags != null ? Arrays.asList(tags.split(",")) : null;
-            logger.info("tags received: {}", tagList);
-            liveWireAlertBroker.reviewAlert(getUserProfile().getUid(), alertUid, tagList, send);
+            List<String> listOfLists = publicLists != null ? Arrays.asList(publicLists.split(",")) : null;
+            logger.debug("publicLists: {}, tags received: {}", listOfLists, tagList);
+            liveWireAlertBroker.reviewAlert(getUserProfile().getUid(), alertUid, tagList, send, listOfLists);
+            if (send) {
+                liveWireSendingBroker.sendLiveWireAlerts(Collections.singleton(alertUid));
+            }
             addMessage(attributes, MessageType.SUCCESS, send ?
                     "livewire.released.success" : "livewire.blocked.done", request);
         } catch (AccessDeniedException e) {

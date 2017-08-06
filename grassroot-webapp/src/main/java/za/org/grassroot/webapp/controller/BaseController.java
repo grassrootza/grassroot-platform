@@ -82,6 +82,7 @@ public class BaseController {
         languages.put("st", "Sesotho");
         languages.put("ts", "Tsonga");
         languages.put("zu", "Zulu");
+        languages.put("af", "Afrikaans");
 
         return languages;
     }

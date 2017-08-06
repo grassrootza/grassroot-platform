@@ -18,7 +18,7 @@ public class MembershipResponseWrapper {
 
     public MembershipResponseWrapper(Group group, User user, Role role, boolean selected) {
         this.memberUid = user.getUid();
-        this.displayName = user.nameToDisplay();
+        this.displayName = group.getMembership(user).getDisplayName();
         this.groupUid = group.getUid();
         this.phoneNumber = user.getPhoneNumber();
         this.roleName = role.getName();

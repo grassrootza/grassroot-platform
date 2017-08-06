@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.0.xsd">
+    <changeSet id="change_144" author="luke">
+        <comment>Added array of UIDs of public lists to alert, for targeting on release</comment>
+        <sqlFile path="db/scripts/script_144.sql" splitStatements="false"/>
+        <rollback>
+            <sqlFile path="db/scripts/script_144_rollback.sql"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

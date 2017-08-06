@@ -280,7 +280,7 @@ public class GroupBrokerImpl implements GroupBroker {
         logger.info("Adding members: group={}, memberships={}, user={}", group, membershipInfos, user);
         try {
             LogsAndNotificationsBundle bundle = addMemberships(user, group, membershipInfos, false);
-            logsAndNotificationsBroker.asyncStoreBundle(bundle);
+            storeBundleAfterCommit(bundle);
         } catch (InvalidPhoneNumberException e) {
             logger.info("Error! Invalid phone number : " + e.getMessage());
         }
@@ -728,6 +728,23 @@ public class GroupBrokerImpl implements GroupBroker {
 
     @Override
     @Transactional
+    public void updateMemberAlias(String userUid, String groupUid, String alias) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(groupUid);
+
+        User user = userRepository.findOneByUid(userUid);
+        Group group = groupRepository.findOneByUid(groupUid);
+
+        Membership membership = group.getMembership(user);
+        membership.setAlias(alias);
+
+        logActionLogsAfterCommit(Collections.singleton(
+                new GroupLog(group, user, GroupLogType.CHANGED_ALIAS, 0L, alias)
+        ));
+    }
+
+    @Override
+    @Transactional
     public void combinedEdits(String userUid, String groupUid, String groupName, String description, boolean resetToDefaultImage, GroupDefaultImage defaultImage,
                               boolean discoverable, boolean toCloseJoinCode, Set<String> membersToRemove, Set<String> organizersToAdd) {
         Objects.requireNonNull(userUid);
@@ -816,12 +833,7 @@ public class GroupBrokerImpl implements GroupBroker {
         Group group = load(groupUid);;
         User user = userRepository.findOneByUid(userUid);
 
-        // since this might be called from a parent, via recursion, on which this will throw an error, rather catch & throw
-        try {
-            permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
-        } catch (AccessDeniedException e) {
-            return;
-        }
+        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
 
         Set<User> groupMembers = group.getMembers();
 
@@ -834,12 +846,15 @@ public class GroupBrokerImpl implements GroupBroker {
         group.setDefaultLanguage(newLocale);
 
         if (includeSubGroups) {
-            List<Group> subGroups = groupRepository.findAll(Specifications.where(
-                    GroupSpecifications.hasParent(group)).and(GroupSpecifications.isActive()));
-            if (!subGroups.isEmpty()) {
-                for (Group subGroup : subGroups)
-                    updateGroupDefaultLanguage(userUid, subGroup.getUid(), newLocale, true);
-            }
+            groupRepository.findAll(Specifications.where(
+                    GroupSpecifications.hasParent(group)).and(GroupSpecifications.isActive()))
+            .forEach(g -> {
+                try {
+                    updateGroupDefaultLanguage(userUid, g.getUid(), newLocale, true);
+                } catch (AccessDeniedException e) {
+                    logger.info("Skipping subgroup as permissions don't apply");
+                }
+            });
         }
 
         logActionLogsAfterCommit(Collections.singleton(new GroupLog(group, user, GroupLogType.LANGUAGE_CHANGED,

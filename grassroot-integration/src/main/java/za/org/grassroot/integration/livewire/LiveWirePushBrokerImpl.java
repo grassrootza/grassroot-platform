@@ -9,7 +9,11 @@ import org.springframework.core.env.Environment;
 import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import za.org.grassroot.core.domain.livewire.LiveWireAlert;
+import za.org.grassroot.core.repository.LiveWireAlertRepository;
 import za.org.grassroot.integration.email.GrassrootEmail;
 import za.org.grassroot.integration.utils.EmailUtils;
 
@@ -17,6 +21,7 @@ import javax.annotation.PostConstruct;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
@@ -36,10 +41,12 @@ public class LiveWirePushBrokerImpl implements LiveWirePushBroker {
 
     private JavaMailSender mailSender;
     private final Environment environment;
+    private final LiveWireAlertRepository liveWireAlertRepository;
 
     @Autowired
-    public LiveWirePushBrokerImpl(Environment environment) {
+    public LiveWirePushBrokerImpl(Environment environment, LiveWireAlertRepository liveWireAlertRepository) {
         this.environment = environment;
+        this.liveWireAlertRepository = liveWireAlertRepository;
     }
 
     @PostConstruct
@@ -61,23 +68,32 @@ public class LiveWirePushBrokerImpl implements LiveWirePushBroker {
         this.mailSender = mailSenderConfig;
     }
 
+    @Async
     @Override
-    public boolean sendLiveWireEmails(List<GrassrootEmail> emails) {
+    @Transactional
+    public void sendLiveWireEmails(String alertUid, List<GrassrootEmail> emails) {
         MimeMessage[] messages = new MimeMessage[emails.size()];
+        LiveWireAlert alert = liveWireAlertRepository.findOneByUid(alertUid);
+        List<String> emailAddresses = new ArrayList<>();
         for (int i = 0; i < emails.size(); i++) {
             try {
                 MimeMessage mail = mailSender.createMimeMessage();
                 messages[i] = EmailUtils.transformEmailToMail(mail, emails.get(i), livewireEmailAddress);
+                emailAddresses.add(emails.get(i).getAddress());
             } catch (UnsupportedEncodingException|MessagingException e) {
                 logger.warn("Error encoding or creating one of the emails");
             }
         }
         try {
-            mailSender.send(messages);
-            return true;
+            logger.info("Sending LiveWire alert of dest type {}, to emails: {}",
+                    alert.getDestinationType(), emailAddresses);
+            if (!environment.acceptsProfiles("localpg")) {
+                mailSender.send(messages);
+            }
+            alert.setSent(true);
         } catch (MailException|NoSuchMessageException e) {
             logger.info("Error sending mails!: {}", e.toString());
-            return false;
+            alert.setSent(false);
         }
     }
 }
