@@ -24,7 +24,6 @@ import java.util.Map;
 /**
  * Created by paballo on 2016/03/15.
  */
-
 public class TokenValidationInterceptor extends HandlerInterceptorAdapter {
 
     private PasswordTokenService passwordTokenService;

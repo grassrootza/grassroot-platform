@@ -12,6 +12,8 @@ import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.FormatUtil;
+import za.org.grassroot.integration.experiments.ExperimentBroker;
+import za.org.grassroot.integration.experiments.VariationAssignment;
 
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
@@ -32,17 +34,21 @@ public class MessageAssemblingManager implements MessageAssemblingService {
     private static final DateTimeFormatter sdf = DateTimeFormatter.ofPattern("EEE d MMM, h:mm a");
 
     private final MessageSourceAccessor messageSourceAccessor;
+    private final ExperimentBroker experimentBroker;
 
     @Autowired
-    public MessageAssemblingManager(@Qualifier("servicesMessageSourceAccessor") MessageSourceAccessor messageSourceAccessor) {
+    public MessageAssemblingManager(@Qualifier("servicesMessageSourceAccessor") MessageSourceAccessor messageSourceAccessor, ExperimentBroker experimentBroker) {
         this.messageSourceAccessor = messageSourceAccessor;
+        this.experimentBroker = experimentBroker;
     }
 
     @Override
     public String createEventInfoMessage(User user, Event event) {
+        VariationAssignment assignment = experimentBroker.assignUser("test_experiment_meetings", user.getUid(), null);
         String messageKey = event instanceof Vote ? "sms.vote.send.new" :
                 event.isHasImage() ? "sms.mtg.send.image" :
-                event.isHighImportance() ? "sms.mtg.send.special" : "sms.mtg.send.new.rsvp";
+                event.isHighImportance() || assignment.equals(VariationAssignment.EXPERIMENT) ?
+                        "sms.mtg.send.special" : "sms.mtg.send.new.rsvp";
         return messageSourceAccessor.getMessage(messageKey, populateEventFields(event), getUserLocale(user));
     }
 
