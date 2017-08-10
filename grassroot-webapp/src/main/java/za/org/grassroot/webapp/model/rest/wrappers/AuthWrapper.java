@@ -12,29 +12,36 @@ import za.org.grassroot.webapp.enums.RestStatus;
  */
 public class AuthWrapper extends GenericResponseWrapper {
 
+    private String userUid;
     private String displayName;
     private String language;
     private boolean hasGroups;
     private int unreadNotificationCount;
 
-
     public static AuthWrapper create(boolean isNewRegistration, VerificationTokenCode token, User user,
                                      boolean hasGroups, int unreadNotificationCount) {
         RestMessage message = isNewRegistration ? RestMessage.USER_REGISTRATION_SUCCESSFUL : RestMessage.LOGIN_SUCCESS;
-        AuthWrapper wrapper = new AuthWrapper(HttpStatus.OK, message, RestStatus.SUCCESS,
-                new TokenDTO(token), user.nameToDisplay(), user.getLanguageCode(), hasGroups);
+        AuthWrapper wrapper = new AuthWrapper(HttpStatus.OK, message,
+                RestStatus.SUCCESS,
+                new TokenDTO(token),
+                user.getUid(),
+                user.nameToDisplay(),
+                user.getLanguageCode(),
+                hasGroups);
         wrapper.setUnreadNotificationCount(unreadNotificationCount);
         return wrapper;
     }
 
-    public AuthWrapper(HttpStatus code,
+    private AuthWrapper(HttpStatus code,
                        RestMessage message,
                        RestStatus status,
                        Object data,
+                       String userUid,
                        String displayName,
                        String language,
                        boolean hasGroups){
         super(code,message,status, data);
+        this.userUid = userUid;
         this.hasGroups = hasGroups;
         this.displayName =displayName;
         this.language = language;
@@ -51,6 +58,10 @@ public class AuthWrapper extends GenericResponseWrapper {
 
     public void setDisplayName(String displayName) {
         this.displayName = displayName;
+    }
+
+    public String getUserUid() {
+        return userUid;
     }
 
     public String getLanguage() {

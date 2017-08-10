@@ -16,6 +16,8 @@ public interface StorageBroker {
 
     byte[] fetchImage(String uid, ImageType imageType);
 
+    byte[] fetchThumbnail(String uid, ImageType imageType);
+
     boolean doesImageExist(String uid, ImageType imageType);
 
     void deleteImage(String uid);

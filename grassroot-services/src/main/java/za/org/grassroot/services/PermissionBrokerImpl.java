@@ -1,5 +1,6 @@
 package za.org.grassroot.services;
 
+import com.codahale.metrics.annotation.Timed;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -202,6 +203,7 @@ public class PermissionBrokerImpl implements PermissionBroker {
 
     @Override
     @Transactional(readOnly = true)
+    @Timed
     @SuppressWarnings("unchecked")
     public List<Group> getActiveGroupsSorted(User user, Permission requiredPermission) {
         Query resultQuery = requiredPermission == null ?

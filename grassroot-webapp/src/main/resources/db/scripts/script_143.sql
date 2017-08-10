@@ -1,0 +1,1 @@
+alter table group_user_membership add column alias varchar(50);

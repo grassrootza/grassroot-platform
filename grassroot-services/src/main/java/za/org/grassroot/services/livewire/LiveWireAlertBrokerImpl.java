@@ -60,6 +60,7 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
     private final MeetingRepository meetingRepository;
     private final DataSubscriberRepository dataSubscriberRepository;
 
+    private final LiveWireSendingBroker liveWireSendingBroker;
     private final EntityManager entityManager;
     private final LogsAndNotificationsBroker logsAndNotificationsBroker;
 
@@ -79,7 +80,7 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
     private int mingGroupSizeForExpansiveContactFind;
 
     @Autowired
-    public LiveWireAlertBrokerImpl(LiveWireAlertRepository alertRepository, UserRepository userRepository, GroupRepository groupRepository, MeetingRepository meetingRepository, EntityManager entityManager, DataSubscriberRepository dataSubscriberRepository, ObjectLocationBroker objectLocationBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, ApplicationEventPublisher applicationEventPublisher) {
+    public LiveWireAlertBrokerImpl(LiveWireAlertRepository alertRepository, UserRepository userRepository, GroupRepository groupRepository, MeetingRepository meetingRepository, EntityManager entityManager, DataSubscriberRepository dataSubscriberRepository, ObjectLocationBroker objectLocationBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, ApplicationEventPublisher applicationEventPublisher, LiveWireSendingBroker liveWireSendingBroker) {
         this.alertRepository = alertRepository;
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
@@ -87,6 +88,7 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
         this.entityManager = entityManager;
         this.dataSubscriberRepository = dataSubscriberRepository;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
+        this.liveWireSendingBroker = liveWireSendingBroker;
     }
 
     @Autowired
@@ -216,7 +218,8 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
         User user = userRepository.findOneByUid(userUid);
         LiveWireAlert.Builder builder = new LiveWireAlert.Builder()
                 .creatingUser(user)
-                .type(type);
+                .type(type)
+                .destType(LiveWireAlertDestType.PUBLIC_LIST); // default to public
 
         if (LiveWireAlertType.INSTANT.equals(type)) {
             Group group = groupRepository.findOneByUid(entityUid);
@@ -268,6 +271,27 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
 
     @Override
     @Transactional
+    public void updateAlertDestination(String userUid, String alertUid, String subscriberUid, LiveWireAlertDestType destType) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(alertUid);
+
+        User user = userRepository.findOneByUid(userUid);
+        LiveWireAlert alert = alertRepository.findOneByUid(alertUid);
+        validateCreatingUser(user, alert);
+
+        if (!LiveWireAlertDestType.PUBLIC_LIST.equals(destType) && subscriberUid == null) {
+            throw new IllegalArgumentException("Error! If destination type is not public list, must pass a subscriber UID");
+        }
+
+        alert.setDestinationType(destType);
+        if (subscriberUid != null) {
+            DataSubscriber targetSubscriber = dataSubscriberRepository.findOneByUid(subscriberUid);
+            alert.setTargetSubscriber(targetSubscriber);
+        }
+    }
+
+    @Override
+    @Transactional
     public void setAlertComplete(String userUid, String alertUid, Instant soonestTimeToSend) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(alertUid);
@@ -279,35 +303,26 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
         alert.setComplete(true);
-        if (LiveWireAlertType.INSTANT.equals(alert.getType())) {
-            alert.setSendTime(Instant.now());
-            bundle.addLog(new LiveWireLog.Builder()
-                    .alert(alert)
-                    .userTakingAction(user)
-                    .type(LiveWireLogType.ALERT_RELEASED)
-                    .notes("released immediately as instant alert")
-                    .build());
-        } else {
-            LiveWireLog log = new LiveWireLog.Builder()
-                    .alert(alert)
-                    .userTakingAction(user)
-                    .type(LiveWireLogType.ALERT_COMPLETED)
-                    .notes("alert completed and out for review")
-                    .build();
-            bundle.addLog(log);
-            bundle.addNotifications(generateToReviewNotifications(log));
-        }
+
+        LiveWireLog completedLog = new LiveWireLog.Builder()
+                .alert(alert)
+                .userTakingAction(user)
+                .type(LiveWireLogType.ALERT_COMPLETED)
+                .notes("alert completed and out for review")
+                .build();
+        bundle.addLog(completedLog);
+        bundle.addNotifications(generateToReviewNotifications(completedLog));
 
         if (alert.getContactUser() != null && !alert.getContactUser().equals(alert.getCreatingUser())) {
-            LiveWireLog log = new LiveWireLog.Builder()
+            LiveWireLog contactLog = new LiveWireLog.Builder()
                     .alert(alert)
                     .userTakingAction(user)
                     .userTargeted(alert.getContactUser())
                     .type(LiveWireLogType.USER_SET_AS_CONTACT)
                     .notes("user made a contact but not creating user")
                     .build();
-            bundle.addLog(log);
-            Notification notification = generateMadeContactNotification(log);
+            bundle.addLog(contactLog);
+            Notification notification = generateMadeContactNotification(contactLog);
             logger.info("adding other contact notification: {}", notification);
             bundle.addNotification(notification);
         }
@@ -426,7 +441,7 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
 
     @Override
     @Transactional
-    public void reviewAlert(String userUid, String alertUid, List<String> tags, boolean send) {
+    public void reviewAlert(String userUid, String alertUid, List<String> tags, boolean send, List<String> publicListUids) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(alertUid);
 
@@ -448,18 +463,19 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
                 .alert(alert)
                 .userTakingAction(user)
                 .type(send ? LiveWireLogType.ALERT_RELEASED : LiveWireLogType.ALERT_BLOCKED)
-                .notes("tags added: {}" + tags)
+                .notes("tags added: " + tags + ", lists: " + publicListUids)
                 .build();
         bundle.addLog(log);
 
         if (send) {
+            alert.setPublicListUids(publicListUids);
             alert.setSendTime(Instant.now());
+            logger.debug("set public list UIDs to: {}", alert.getPublicListUids());
             bundle.addNotification(new LiveWireAlertReleasedNotification(
                     alert.getCreatingUser(),
                     messageSource.getMessage("livewire.alert.released"),
                     log));
         }
-
         logsAndNotificationsBroker.asyncStoreBundle(bundle);
     }
 

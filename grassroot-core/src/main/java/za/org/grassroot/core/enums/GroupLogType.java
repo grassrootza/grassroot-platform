@@ -25,7 +25,8 @@ public enum GroupLogType {
     GROUP_AVATAR_REMOVED("Group avatar deleted"),
     GROUP_DEFAULT_IMAGE_CHANGED("Group default image changed"),
     ADDED_TO_ACCOUNT("Group added to account"),
-    REMOVED_FROM_ACCOUNT("Group removed from account");
+    REMOVED_FROM_ACCOUNT("Group removed from account"),
+    CHANGED_ALIAS("User changed their alias in the group");
 
     private final String text;
 

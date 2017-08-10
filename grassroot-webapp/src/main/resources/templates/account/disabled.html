@@ -85,6 +85,7 @@
           <h4 class="modal-title" id="payNowModalLabel">Choose payment method</h4>
         </div>
         <form th:action="@{/account/payment/trial}" method="get">
+          <input type="hidden" name="accountUid" th:value="${account.uid}" />
           <div class="modal-body">
             <div class="form-group">
               <p>Please select how you want to pay for the account:</p>

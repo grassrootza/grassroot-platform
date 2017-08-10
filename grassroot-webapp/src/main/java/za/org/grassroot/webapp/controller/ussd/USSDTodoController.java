@@ -261,7 +261,7 @@ public class USSDTodoController extends USSDController {
 
         if (!isInstant) {
             isInFuture = todoRequest.getActionByDate().isAfter(Instant.now());
-            String formattedDueDate = dateFormat.format(convertToUserTimeZone(todoRequest.getActionByDate(), getSAST()));
+            String formattedDueDate = dateTimeFormat.format(convertToUserTimeZone(todoRequest.getActionByDate(), getSAST()));
             String[] promptFields = new String[]{todoRequest.getMessage(), group.getName(""), formattedDueDate};
             prompt = isInFuture ? getMessage(thisSection, confirmMenu, promptKey + ".unassigned", promptFields, user)
                     : getMessage(thisSection, confirmMenu, promptKey + ".err.past", formattedDueDate, user);

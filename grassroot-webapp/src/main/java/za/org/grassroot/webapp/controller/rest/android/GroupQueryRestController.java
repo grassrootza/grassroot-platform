@@ -11,9 +11,10 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.association.GroupJoinRequest;
+import za.org.grassroot.core.domain.Membership;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.association.GroupJoinRequest;
 import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
 import za.org.grassroot.services.ChangedSinceData;
 import za.org.grassroot.services.exception.JoinRequestNotOpenException;
@@ -75,6 +76,19 @@ public class GroupQueryRestController extends GroupAbstractRestController {
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
+    // dummy method for now to avoid path variable (switched to JWT)
+    @RequestMapping(value = "/get/all")
+    public ResponseEntity<List<GroupResponseWrapper>> getAllUserGroups(@RequestParam String userUid) {
+        User user = userManagementService.load(userUid);
+        List<GroupResponseWrapper> allGroups = groupQueryBroker.getActiveGroups(user, null)
+                .getAddedAndUpdated()
+                .stream()
+                .map(g -> createGroupWrapper(g, user))
+                .sorted(Collections.reverseOrder())
+                .collect(Collectors.toList());
+        return new ResponseEntity<>(allGroups, HttpStatus.OK);
+    }
+
     @RequestMapping(value = "/get/{phoneNumber}/{code}/{groupUid}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> getGroups(@PathVariable String phoneNumber, @PathVariable String code,
                                                      @PathVariable String groupUid) {
@@ -105,6 +119,22 @@ public class GroupQueryRestController extends GroupAbstractRestController {
         log.info("From memberships : {}, created wrappers: {}", group.getMemberships(), members);
 
         return RestUtil.okayResponseWithData(RestMessage.GROUP_MEMBERS, members);
+    }
+
+    @RequestMapping(value = "/members/fetch/{phoneNumber}/{code}")
+    public ResponseEntity<ResponseWrapper> fetchSingleGroupMember(@PathVariable String phoneNumber,
+                                                                  @RequestParam String groupUid,
+                                                                  @RequestParam String userUid) {
+        User thisUser = userManagementService.findByInputNumber(phoneNumber);
+        Group group = groupBroker.load(groupUid);
+        User user = userManagementService.load(userUid);
+
+        if (!thisUser.equals(user)) {
+            permissionBroker.validateGroupPermission(thisUser, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
+        }
+
+        Membership m = group.getMembership(user);
+        return RestUtil.okayResponseWithData(RestMessage.GROUP_MEMBERS, new MembershipResponseWrapper(group, user, m.getRole(), false));
     }
 
     @RequestMapping(value = "/search/{phoneNumber}/{code}", method = RequestMethod.GET)

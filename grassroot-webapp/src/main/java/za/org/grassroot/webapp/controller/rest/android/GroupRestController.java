@@ -2,6 +2,7 @@ package za.org.grassroot.webapp.controller.rest.android;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
+import liquibase.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,6 +67,11 @@ public class GroupRestController extends GroupAbstractRestController {
     @Autowired(required = false)
     public void setGcmRegistrationBroker(GcmRegistrationBroker gcmRegistrationBroker) {
         this.gcmRegistrationBroker = gcmRegistrationBroker;
+    }
+
+    @Autowired(required = false)
+    public void setMessagingServiceBroker(MessagingServiceBroker messagingServiceBroker) {
+        this.messagingServiceBroker = messagingServiceBroker;
     }
 
     @Autowired(required = false)
@@ -346,6 +352,51 @@ public class GroupRestController extends GroupAbstractRestController {
         return response;
     }
 
+    @RequestMapping(value = "/edit/language/{phoneNumber}/{code}", method = RequestMethod.POST)
+    public ResponseEntity<ResponseWrapper> changeGroupLanguage(@PathVariable String phoneNumber, @RequestParam String groupUid,
+                                                               @RequestParam String language) {
+        User user = userManagementService.findByInputNumber(phoneNumber);
+        try {
+            groupBroker.updateGroupDefaultLanguage(user.getUid(), groupUid, language, false);
+            return RestUtil.okayResponseWithData(RestMessage.GROUP_LANGUAGE_CHANGED,
+                    createGroupWrapper(groupBroker.load(groupUid), user));
+        } catch (AccessDeniedException e) {
+            return RestUtil.accessDeniedResponse();
+        }
+    }
+
+    @RequestMapping(value = "/alias/change/{phoneNumber}/{code}", method = RequestMethod.POST)
+    public ResponseEntity<ResponseWrapper> changeMemberAlias(@PathVariable String phoneNumber,
+                                                             @RequestParam String groupUid,
+                                                             @RequestParam String alias) {
+        User user = userManagementService.findByInputNumber(phoneNumber);
+        if (!StringUtils.isEmpty(alias)) {
+            groupBroker.updateMemberAlias(user.getUid(), groupUid, alias);
+        }
+        return RestUtil.messageOkayResponse(RestMessage.MEMBER_ALIAS_CHANGED);
+    }
+
+    @RequestMapping(value = "/alias/check/{phoneNumber}/{code}", method = RequestMethod.GET)
+    public ResponseEntity<ResponseWrapper> queryMemberAlias(@PathVariable String phoneNumber,
+                                                            @PathVariable String groupUid) {
+        User user = userManagementService.findByInputNumber(phoneNumber);
+        Group group = groupBroker.load(groupUid);
+        return RestUtil.okayResponseWithData(RestMessage.MEMBER_ALIAS_RETURNED,
+                group.getMembership(user).getDisplayName());
+    }
+
+    @RequestMapping(value = "/alias/reset/{phoneNumber}/{code}", method = RequestMethod.POST)
+    public ResponseEntity<ResponseWrapper> resetMemberAlias(@PathVariable String phoneNumber,
+                                                            @RequestParam String groupUid) {
+        User user = userManagementService.findByInputNumber(phoneNumber);
+        groupBroker.updateMemberAlias(user.getUid(), groupUid, null);
+        return RestUtil.messageOkayResponse(RestMessage.MEMBER_ALIAS_CHANGED);
+    }
+
+    /*
+    Below are legacy as Group chat is removed, but retaining for old clients
+     */
+
     @RequestMapping(value = "messenger/update/{phoneNumber}/{code}/{groupUid}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> updateMemberGroupChatSetting(@PathVariable String phoneNumber,
                                                                         @PathVariable String code,
@@ -365,7 +416,6 @@ public class GroupRestController extends GroupAbstractRestController {
             gcmRegistrationBroker.changeTopicSubscription(user.getUid(), groupUid, active);
         }
         return RestUtil.messageOkayResponse((!active) ? RestMessage.CHAT_DEACTIVATED : RestMessage.CHAT_ACTIVATED);
-
     }
 
     @RequestMapping(value = "messenger/ping/{phoneNumber}/{code}/{groupUid}", method = RequestMethod.GET)

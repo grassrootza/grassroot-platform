@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:th="http://www.thymeleaf.org"
+      data-layout-decorate="~{layout}">
+<head>
+  <title>Image Gallery</title>
+
+  <meta property="og:title" content="Grassroot"/>
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="/images/grassroot-logo.png"/>
+  <meta property="og:description" content="The Grassroot Platform"/>
+
+</head>
+<body>
+
+  <section layout:fragment="header" class="top-container">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-8 col-md-offset-2 col-sm-8 col-sm-offset-2 col-xs-12">
+          <h2 class="text-center">
+            <p class="group-title">Image Gallery</p>
+          </h2>
+          <h4 class="text-center header-content-subtitle">
+            <a th:href="@{/task/view(taskUid=${taskUid})}">Back</a>
+          </h4>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <main layout:fragment="content">
+    <section class="grassroot-form">
+      <div class="container task-details">
+        <div class="row">
+          <div class="col-md-8 col-md-offset-2 col-sm-10 col-sm-offset-1 col-xs-12">
+            <div th:each="imageEntry: ${images}" class="col-md-4 col-sm-6 col-xs-12">
+              <a th:href="@{/image/grassroot-task-images/{imageKey}(imageKey=${imageEntry.key})}">
+                <img class="img-responsive center-block" th:src="@{${imageEntry.value}}" />
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+</body>
+</html>
