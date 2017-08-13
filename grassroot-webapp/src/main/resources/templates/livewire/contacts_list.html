@@ -15,7 +15,6 @@
 </section>
 
 <main layout:fragment="content">
-
   <section class="group-buttons">
     <div class="container">
       <div class="row">
@@ -27,9 +26,9 @@
           </a>
         </div>
         <div class="col-md-4 text-center">
-          <a th:href="@{/livewire/user/contacts/list}">
+          <a th:href="@{/livewire/user/contacts}">
             <button class="white-button group-button">
-              View LiveWire contacts
+              Find LiveWire contacts
             </button>
           </a>
         </div>
@@ -37,22 +36,9 @@
     </div>
   </section>
 
-  <!-- recycling group members class here -->
-  <!-- todo: add polling / refresh -->
-  <section th:replace="~{livewire/lw_fragments :: alert-list(${alerts}, ${pageable}, ${sort}, 'Alert list')}">
+  <section th:replace="~{livewire/lw_fragments :: contact-list(${contacts}, ${pageable}, ${sort}, 'Contact list')}">
   </section>
-
-  <div th:replace="~{livewire/lw_fragments :: alert-modal(${canTag}, ${canRelease})}">
-  </div>
-
 </main>
-
-<div layout:fragment="script-container">
-
-  <div th:replace="~{livewire/lw_fragments :: script-view-alert(${canTag})}">
-  </div>
-
-</div>
 
 </body>
 </html>

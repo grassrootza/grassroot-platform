@@ -155,6 +155,10 @@ public class Address implements LocationHolder {
         return !StringUtils.isEmpty(this.house) || !StringUtils.isEmpty(this.street);
     }
 
+    public boolean hasStreetAndArea() {
+        return !StringUtils.isEmpty(this.street) && !StringUtils.isEmpty(this.neighbourhood);
+    }
+
     @Override
     public String toString() {
         return "Address{" +

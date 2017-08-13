@@ -34,6 +34,8 @@ public interface UserManagementService {
 
     List<User> searchByGroupAndNameNumber(String groupUid, String nameOrNumber);
 
+    long countUserGraphSize(String userUid);
+
     /*
     Methods to create a user, for various interfaces
      */

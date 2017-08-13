@@ -22,8 +22,6 @@ import za.org.grassroot.integration.exception.LocationNotAvailableException;
 import za.org.grassroot.integration.exception.LocationTrackingImpossibleException;
 import za.org.grassroot.integration.location.UssdLocationServicesBroker;
 import za.org.grassroot.services.SafetyEventBroker;
-import za.org.grassroot.services.geo.GeoLocationUtils;
-import za.org.grassroot.services.geo.InvertGeoCodeResult;
 import za.org.grassroot.services.geo.ObjectLocationBroker;
 import za.org.grassroot.services.group.GroupPermissionTemplate;
 import za.org.grassroot.services.group.GroupQueryBroker;
@@ -227,21 +225,18 @@ public class USSDSafetyGroupController extends USSDController {
         User user = userManager.findByInputNumber(msisdn);
         try {
             GeoLocation location = locationServicesBroker.getUssdLocationForUser(user.getUid());
-            final InvertGeoCodeResult result = objectLocationBroker.getReviseGeoCodeAddressFullGeoLocation(location);
-            Address address = GeoLocationUtils.convertGeoCodeToAddress(result.getAddress(), user,
-                    location, UserInterfaceType.USSD, false);
-            log.info("Storing raw address ... ");
-            final String addressUid = addressBroker.storeAddressRaw(user.getUid(), address);
+            // todo: double check address is not null
+            Address address = addressBroker.getAndStoreAddressFromLocation(user.getUid(), location, UserInterfaceType.USSD, false);
             final NumberFormat coordFormat = new DecimalFormat("#.##");
             final String prompt = getMessage(thisSection, "tracking.current", promptKey, new String[] {
                     coordFormat.format(location.getLatitude()),
                     coordFormat.format(location.getLongitude()),
-                    getShortDescription(result)
+                    getShortDescription(address)
             }, user);
             USSDMenu menu = new USSDMenu(prompt);
-            menu.addMenuOption(locationUrl("current/confirm", addressUid, location),
+            menu.addMenuOption(locationUrl("current/confirm", address.getUid(), location),
                     getMessage("options.yes", user));
-            menu.addMenuOption(locationUrl("current/change", addressUid, location),
+            menu.addMenuOption(locationUrl("current/change", address.getUid(), location),
                     getMessage("options.no", user));
             return menuBuilder(menu);
         } catch (Exception e) {
@@ -292,13 +287,8 @@ public class USSDSafetyGroupController extends USSDController {
                 optionsHomeExit(user, false)));
     }
 
-    private String getShortDescription(InvertGeoCodeResult result) {
-        final String reverseGeoAddressFull = result.getDisplayName();
-        int firstComma = reverseGeoAddressFull.indexOf(",");
-        int secondComma = reverseGeoAddressFull.indexOf(",", firstComma + 1);
-        return firstComma == -1 ? reverseGeoAddressFull : firstComma < 10 ?
-                        reverseGeoAddressFull.substring(0, secondComma) :
-                        reverseGeoAddressFull.substring(0, firstComma);
+    private String getShortDescription(Address address) {
+        return address.getStreet() + ", " + address.getNeighbourhood();
     }
 
     /* @RequestMapping(value = safetyGroupPath + "location/current/response")

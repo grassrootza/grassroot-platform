@@ -11,10 +11,19 @@ public class LiveWireContactDTO {
     // todo: add group size etc
     private String contactName;
     private String contactNumber;
+    private String addressDescription;
+    private Integer groupSize;
 
     public LiveWireContactDTO(User user) {
         this.contactName = user.getName();
         this.contactNumber = PhoneNumberUtil.invertPhoneNumber(user.getPhoneNumber());
+    }
+
+    public LiveWireContactDTO(String contactName, String contactNumber, String addressDescription, Integer groupSize) {
+        this.contactName = contactName;
+        this.contactNumber = contactNumber;
+        this.addressDescription = addressDescription;
+        this.groupSize = groupSize;
     }
 
     public String getContactName() {
@@ -31,5 +40,13 @@ public class LiveWireContactDTO {
 
     public void setContactNumber(String contactNumber) {
         this.contactNumber = contactNumber;
+    }
+
+    public String getAddressDescription() {
+        return addressDescription;
+    }
+
+    public Integer getGroupSize() {
+        return groupSize;
     }
 }

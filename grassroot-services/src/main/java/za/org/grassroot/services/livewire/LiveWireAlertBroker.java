@@ -8,9 +8,9 @@ import za.org.grassroot.core.domain.Meeting;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
+import za.org.grassroot.core.enums.LiveWireAlertDestType;
 import za.org.grassroot.core.enums.LiveWireAlertType;
 import za.org.grassroot.core.enums.UserInterfaceType;
-import za.org.grassroot.core.enums.LiveWireAlertDestType;
 
 import java.time.Instant;
 import java.util.List;
@@ -27,6 +27,9 @@ public interface LiveWireAlertBroker {
     List<Group> groupsForInstantAlert(String userUid, Integer pageNumber, Integer pageSize);
 
     List<Meeting> meetingsForAlert(String userUid);
+
+    @PreAuthorize("hasRole('ROLE_LIVEWIRE_USER')")
+    Page<User> loadLiveWireContacts(String userUid, String filterTerm, Pageable pageable);
 
     List<User> fetchLiveWireContactsNearby(String queryingUserUid, GeoLocation location, Integer radius);
 

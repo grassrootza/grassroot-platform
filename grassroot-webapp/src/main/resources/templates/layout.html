@@ -106,8 +106,19 @@
   <section layout:fragment="header" class="top-container" >
     <div class="container">
       <div class="row">
-        <h1 class="text-center header-content-title">Title</h1>
-        <h4 class="text-center header-content-subtitle"></h4>
+        <h1 class="text-center header-content-title" th:text="${title}"></h1>
+        <h4 class="text-center header-content-subtitle" th:text="${subtitle}"></h4>
+      </div>
+    </div>
+  </section>
+
+  <section th:fragment="std_header(title, subtitle)" class="top-container">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
+          <h2 class="text-center header-content-title" th:text="${title}">Title</h2>
+          <h4 class="text-center header-content-subtitle" th:text="${subtitle}"></h4>
+        </div>
       </div>
     </div>
   </section>

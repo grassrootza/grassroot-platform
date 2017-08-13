@@ -14,7 +14,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.thymeleaf.util.StringUtils;
+import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.livewire.DataSubscriber;
@@ -77,7 +77,7 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
     private boolean expansiveContactFind;
 
     @Value("${grassroot.livewire.contacts.mingroup:10}")
-    private int mingGroupSizeForExpansiveContactFind;
+    private int minGroupSizeForExpansiveContactFind;
 
     @Autowired
     public LiveWireAlertBrokerImpl(LiveWireAlertRepository alertRepository, UserRepository userRepository, GroupRepository groupRepository, MeetingRepository meetingRepository, EntityManager entityManager, DataSubscriberRepository dataSubscriberRepository, ObjectLocationBroker objectLocationBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, ApplicationEventPublisher applicationEventPublisher, LiveWireSendingBroker liveWireSendingBroker) {
@@ -152,6 +152,42 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
     }
 
     @Override
+    public Page<User> loadLiveWireContacts(String userUid, String filterTerm, Pageable pageable) {
+        Objects.requireNonNull(userUid);
+        if (!dataSubscriberRepository.userUidsOfDataSubscriberUsers().contains(userUid)) {
+            throw new AccessDeniedException("Error! Querying user is not authorized");
+        }
+
+        // todo : a lot of work on the filtering, including incorporating the location
+        Specifications<User> lwireContactSpecs = Specifications.where(UserSpecifications.isLiveWireContact());
+        if (!StringUtils.isEmpty(filterTerm)) {
+            lwireContactSpecs = lwireContactSpecs.and(UserSpecifications.nameContains(filterTerm));
+        }
+
+        Set<String> userUids = userRepository.findAll(lwireContactSpecs).stream()
+                .map(User::getUid)
+                .collect(Collectors.toSet());
+
+        if (expansiveContactFind) {
+            userUids.addAll(fetchOrganizerUidsOfLargePublicGroups());
+        }
+
+        // todo : include their area, if we know it
+        return userRepository.findAll(Specifications.where(UserSpecifications.uidIn(userUids)), pageable);
+    }
+
+    private Set<String> fetchOrganizerUidsOfLargePublicGroups() {
+        TypedQuery<String> query = entityManager.createQuery("select u.uid from Membership m " +
+                "inner join m.user u " +
+                "inner join m.group g " +
+                "where g.discoverable = true and " +
+                "size(g.memberships) >= :minMembership and " +
+                "m.role.name = 'ROLE_GROUP_ORGANIZER'", String.class);
+        query.setParameter("minMembership", minGroupSizeForExpansiveContactFind);
+        return new HashSet<>(query.getResultList());
+    }
+
+    @Override
     public List<User> fetchLiveWireContactsNearby(String queryingUserUid, GeoLocation location, Integer radius) {
         Objects.requireNonNull(queryingUserUid);
         Objects.requireNonNull(location);
@@ -202,7 +238,7 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
                 "m.role.name = 'ROLE_GROUP_ORGANIZER' and " +
                 "l.localDate = (SELECT MAX(ll.localDate) FROM GroupLocation ll WHERE ll.group = l.group) and " +
                 GeoLocationUtils.locationFilterSuffix("l.location"), User.class);
-        query.setParameter("minMembership", mingGroupSizeForExpansiveContactFind);
+        query.setParameter("minMembership", minGroupSizeForExpansiveContactFind);
         GeoLocationUtils.addLocationParamsToQuery(query, location, radius);
 
         return new HashSet<>(query.getResultList());

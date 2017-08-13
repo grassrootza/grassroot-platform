@@ -20,6 +20,8 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import za.org.grassroot.core.domain.Address;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
@@ -28,6 +30,7 @@ import za.org.grassroot.services.geo.GeoLocationUtils;
 import za.org.grassroot.services.livewire.DataSubscriberBroker;
 import za.org.grassroot.services.livewire.LiveWireAlertBroker;
 import za.org.grassroot.services.livewire.LiveWireSendingBroker;
+import za.org.grassroot.services.user.AddressBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.LiveWireAlertDTO;
 import za.org.grassroot.webapp.model.LiveWireContactDTO;
@@ -54,16 +57,18 @@ public class LiveWireUserController extends BaseController {
     private final LiveWireAlertBroker liveWireAlertBroker;
     private final LiveWireSendingBroker liveWireSendingBroker;
     private final GeoLocationBroker geoLocationBroker;
+    private final AddressBroker addressBroker;
     private final DataSubscriberBroker dataSubscriberBroker;
 
     @Value("${grassroot.mapzen.api.key:mapzen-key}")
     private String mapZenApiKey;
 
     @Autowired
-    public LiveWireUserController(LiveWireAlertBroker liveWireAlertBroker, LiveWireSendingBroker liveWireSendingBroker, GeoLocationBroker geoLocationBroker, DataSubscriberBroker dataSubscriberBroker) {
+    public LiveWireUserController(LiveWireAlertBroker liveWireAlertBroker, LiveWireSendingBroker liveWireSendingBroker, GeoLocationBroker geoLocationBroker, AddressBroker addressBroker, DataSubscriberBroker dataSubscriberBroker) {
         this.liveWireAlertBroker = liveWireAlertBroker;
         this.liveWireSendingBroker = liveWireSendingBroker;
         this.geoLocationBroker = geoLocationBroker;
+        this.addressBroker = addressBroker;
         this.dataSubscriberBroker = dataSubscriberBroker;
     }
 
@@ -73,11 +78,57 @@ public class LiveWireUserController extends BaseController {
         return "livewire/user_home";
     }
 
-    @RequestMapping(value = "/contacts", method = RequestMethod.GET)
-    public String findLiveWireContacts(@RequestParam(required = false) Double longitude,
-                                       @RequestParam(required = false) Double latitude,
-                                       @RequestParam(required = false) Integer radius,
-                                       Model model) {
+    @RequestMapping(value = "/contacts/list", method = RequestMethod.GET)
+    public String liveWireContactsList(@RequestParam(required = false) String filter,
+            @PageableDefault(page = 0, size = 10)
+            @SortDefault.SortDefaults({
+                    @SortDefault(sort = "displayName", direction = Sort.Direction.ASC),
+                    @SortDefault(sort = "createdDateTime", direction = Sort.Direction.DESC)
+            }) Pageable pageable, Model model) {
+        populateContactsModel(pageable, filter, model);
+
+        return "livewire/contacts_list";
+    }
+
+    private void populateContactsModel(Pageable pageable, String filterTerm, Model model) {
+        List<LiveWireContactDTO> contacts = liveWireAlertBroker
+                .loadLiveWireContacts(getUserProfile().getUid(), filterTerm, pageable)
+                .getContent()
+                .stream()
+                .map(this::generateFromUser)
+                .collect(Collectors.toList());
+        model.addAttribute("contacts", contacts);
+        model.addAttribute("pageable", pageable);
+        model.addAttribute("sort", pageable.getSort().iterator().next());
+        model.addAttribute("filter", filterTerm);
+    }
+
+    // todo: move a lot of this into better / stronger queries
+    private LiveWireContactDTO generateFromUser(User user) {
+        return new LiveWireContactDTO(user.getName(), user.getNationalNumber(),
+                getAddressOfUser(user), getUserGraphSize(user));
+    }
+
+    private String getAddressOfUser(User user) {
+        // todo: use method that defaults to looking up group location too
+        PreviousPeriodUserLocation location = geoLocationBroker.fetchUserLocation(user.getUid());
+        if (location != null) {
+            Address address = addressBroker.fetchNearestAddress(user.getUid(), location.getLocation(), 1, true);
+            return address.getStreet() + ", " + address.getNeighbourhood();
+        } else {
+            return "Unknown";
+        }
+    }
+
+    private int getUserGraphSize(User user) {
+        return (int) userManagementService.countUserGraphSize(user.getUid());
+    }
+
+    @RequestMapping(value = "/contacts/map", method = RequestMethod.GET)
+    public String liveWireContactsMap(@RequestParam(required = false) Double longitude,
+                                      @RequestParam(required = false) Double latitude,
+                                      @RequestParam(required = false) Integer radius,
+                                      Model model) {
         GeoLocation thisLocation;
 
         long startTime = System.currentTimeMillis();
