@@ -19,9 +19,26 @@
                       </a>
                     </h4>
                   </div>
-                  <div class="col-md-6 col-sm-6 col-xs-12 pull-right text-right">
-                    <!-- introduce sorting stuff here -->
-                    Sorting
+                  <div class="col-md-6 col-sm-6 col-xs-12 pull-right text-right"
+                       th:with="thisPage=${pageable.pageNumber}, nextPage=${thisPage + 1},
+                       lastPage=${thisPage - 1}, pageSize=${pageable.pageSize},
+                       currentSort=${sort.property}, currentSortDir=${sort.direction}">
+                    <form id="sort_form" th:action="@{/livewire/user/contacts/list}" th:formaction="get">
+                      <input type="hidden" th:value="${pageSize}" name="size" />
+                      <input type="hidden" th:value="0" name="page" />
+                      <input type="hidden" id="sort_direction" />
+                      <select id="sort_select" name="sort" class="select-style">
+                        <option th:selected="${currentSort == 'contactName'}" th:value="contactName">Name</option>
+                        <option th:selected="${currentSort == 'addressDescription'}" th:value="sent">Area</option>
+                      </select>
+                    </form>
+                    <a th:if="${contacts.hasPrevious()}" class="header-link" href="#"
+                       th:href="@{/livewire/user/contacts/list(page=${lastPage},size=${pageSize}, sort=${currentSort},
+                      __${currentSort + '.dir'}__=${currentSortDir})}">Back</a>
+                    <!-- <span th:unless="${alerts.hasPrevious()}" class="disabled-link">Back</span>-->
+                    <a th:if="${contacts.hasNext()}" class="header-link" href="#"
+                       th:href="@{/livewire/user/contacts/list(page=${nextPage},size=${pageSize}, sort=${currentSort},
+                      __${currentSort + '.dir'}__=${currentSortDir})}">Next</a>
                   </div>
                 </div>
               </div>

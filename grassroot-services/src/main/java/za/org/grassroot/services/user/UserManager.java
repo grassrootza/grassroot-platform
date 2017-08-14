@@ -339,14 +339,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public long countUserGraphSize(String userUid) {
-        Objects.requireNonNull(userUid);
-        User user = userRepository.findOneByUid(userUid);
-        return userRepository.count(UserSpecifications.inGroups(user.getGroups()));
-    }
-
-    @Override
     @Transactional
     public String create(String phoneNumber, String displayName, String emailAddress) {
         Objects.requireNonNull(phoneNumber);
