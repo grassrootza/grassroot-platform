@@ -1,9 +1,9 @@
 package za.org.grassroot.core.specifications;
 
 import org.springframework.data.jpa.domain.Specification;
-import za.org.grassroot.core.domain.Account;
-import za.org.grassroot.core.domain.AccountBillingRecord;
-import za.org.grassroot.core.domain.AccountBillingRecord_;
+import za.org.grassroot.core.domain.account.Account;
+import za.org.grassroot.core.domain.account.AccountBillingRecord;
+import za.org.grassroot.core.domain.account.AccountBillingRecord_;
 import za.org.grassroot.core.enums.AccountPaymentType;
 
 import java.time.Instant;

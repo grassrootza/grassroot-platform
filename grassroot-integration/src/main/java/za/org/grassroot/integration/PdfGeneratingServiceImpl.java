@@ -11,8 +11,8 @@ import org.springframework.core.env.Environment;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.Account;
-import za.org.grassroot.core.domain.AccountBillingRecord;
+import za.org.grassroot.core.domain.account.Account;
+import za.org.grassroot.core.domain.account.AccountBillingRecord;
 import za.org.grassroot.core.repository.AccountBillingRecordRepository;
 
 import javax.annotation.PostConstruct;

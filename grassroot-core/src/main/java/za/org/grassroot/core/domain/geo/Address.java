@@ -1,6 +1,7 @@
-package za.org.grassroot.core.domain;
+package za.org.grassroot.core.domain.geo;
 
 import org.springframework.util.StringUtils;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.LocationHolder;
 import za.org.grassroot.core.enums.LocationSource;

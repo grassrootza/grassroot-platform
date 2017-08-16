@@ -1,6 +1,6 @@
 package za.org.grassroot.services.user;
 
-import za.org.grassroot.core.domain.Address;
+import za.org.grassroot.core.domain.geo.Address;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.enums.UserInterfaceType;
 

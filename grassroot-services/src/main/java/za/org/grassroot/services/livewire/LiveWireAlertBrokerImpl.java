@@ -17,6 +17,7 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.livewire.DataSubscriber;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
+import za.org.grassroot.core.domain.livewire.LiveWireLog;
 import za.org.grassroot.core.domain.notification.LiveWireAlertReleasedNotification;
 import za.org.grassroot.core.domain.notification.LiveWireMadeContactNotification;
 import za.org.grassroot.core.domain.notification.LiveWireToReviewNotification;

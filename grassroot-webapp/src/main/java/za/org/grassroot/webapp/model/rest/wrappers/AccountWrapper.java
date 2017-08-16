@@ -1,7 +1,7 @@
 package za.org.grassroot.webapp.model.rest.wrappers;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import za.org.grassroot.core.domain.Account;
+import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.AccountType;
 
