@@ -242,7 +242,7 @@ public class USSDLiveWireController extends USSDController {
                               @RequestParam(required = false) String priorInput) throws URISyntaxException {
         String userInput = StringUtils.isNullOrEmpty(priorInput) ? request : priorInput;
         User user = userManager.findByInputNumber(msisdn, uriForCache("destination", alertUid, userInput));
-        liveWireAlertBroker.updateDescription(user.getUid(), alertUid, userInput);
+        liveWireAlertBroker.updateHeadline(user.getUid(), alertUid, userInput);
         USSDMenu menu = new USSDMenu(getMessage(LIVEWIRE, "destination", promptKey, user));
         // make this either "general", or "just us"
         final String uriBase = menuUri("confirm", alertUid) + "&field=destination";
@@ -270,7 +270,7 @@ public class USSDLiveWireController extends USSDController {
         if ("description".equals(field)) {
             String description = StringUtils.isNullOrEmpty(priorInput) ? request : priorInput;
             cacheManager.putUssdMenuForUser(msisdn, uriForCache("confirm", alertUid, description) + "&field=" + field);
-            liveWireAlertBroker.updateDescription(user.getUid(), alertUid, description);
+            liveWireAlertBroker.updateHeadline(user.getUid(), alertUid, description);
         } else if ("contact".equals(field)) {
             Objects.requireNonNull(contactUid);
             String contactName = StringUtils.isNullOrEmpty(priorInput) ? request : priorInput;

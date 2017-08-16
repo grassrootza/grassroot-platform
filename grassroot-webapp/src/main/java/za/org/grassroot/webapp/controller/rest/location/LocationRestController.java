@@ -1,4 +1,4 @@
-package za.org.grassroot.webapp.controller.rest.livewire;
+package za.org.grassroot.webapp.controller.rest.location;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

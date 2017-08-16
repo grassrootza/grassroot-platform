@@ -1,4 +1,4 @@
-package za.org.grassroot.webapp.controller.rest.livewire;
+package za.org.grassroot.webapp.controller.rest.location;
 
 import com.jayway.jsonpath.JsonPath;
 import org.junit.Assert;

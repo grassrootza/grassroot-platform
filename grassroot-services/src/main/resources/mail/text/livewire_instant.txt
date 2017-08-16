@@ -4,7 +4,7 @@ GRASSROOT LIVEWIRE FLASH ALERT
 
 ====================
 
-[[ ${description} ]]
+[[ ${headline} ]]
 
 ====================
 

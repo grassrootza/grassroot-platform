@@ -1,4 +1,4 @@
-package za.org.grassroot.core.domain;
+package za.org.grassroot.core.domain.media;
 
 import za.org.grassroot.core.enums.ActionLogType;
 

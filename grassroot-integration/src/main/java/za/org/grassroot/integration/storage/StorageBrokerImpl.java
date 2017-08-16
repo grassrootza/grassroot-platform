@@ -22,9 +22,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
-import za.org.grassroot.core.domain.ImageRecord;
+import za.org.grassroot.core.domain.media.ImageRecord;
+import za.org.grassroot.core.domain.media.MediaFileRecord;
+import za.org.grassroot.core.domain.media.MediaFunction;
 import za.org.grassroot.core.enums.ActionLogType;
 import za.org.grassroot.core.repository.ImageRecordRepository;
+import za.org.grassroot.core.repository.MediaFileRecordRepository;
 import za.org.grassroot.integration.exception.ImageRetrievalFailure;
 import za.org.grassroot.integration.exception.NoMicroVersionException;
 
@@ -32,6 +35,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -51,12 +55,17 @@ public class StorageBrokerImpl implements StorageBroker {
     @Value("${grassroot.task.images.resized.bucket:null}")
     private String taskImagesResizedBucket;
 
+    @Value("${grassroot.media.general.bucket:null}")
+    private String generalMediaStorageBucket;
+
     private final S3ClientFactory s3ClientFactory;
-    private final ImageRecordRepository imageRecordRepository;
+    private final ImageRecordRepository imageRecordRepository; // for task images, which get analyzed etc
+    private final MediaFileRecordRepository mediaFileRepository; // for other media, which just get stored and retrieved
 
     @Autowired
-    public StorageBrokerImpl(ImageRecordRepository imageRecordRepository) {
+    public StorageBrokerImpl(ImageRecordRepository imageRecordRepository, MediaFileRecordRepository mediaFileRepository) {
         this.imageRecordRepository = imageRecordRepository;
+        this.mediaFileRepository = mediaFileRepository;
         this.s3ClientFactory = new S3ClientFactory();
     }
 
@@ -120,7 +129,7 @@ public class StorageBrokerImpl implements StorageBroker {
         Objects.requireNonNull(uid);
         Objects.requireNonNull(imageType);
 
-        final String bucket = selectBucket(imageType);
+        final String bucket = selectTaskBucketBySize(imageType);
         logger.info("for imageType {}, selected bucket {}", imageType, bucket);
 
         try {
@@ -152,12 +161,12 @@ public class StorageBrokerImpl implements StorageBroker {
     @Override
     public boolean doesImageExist(String uid, ImageType imageType) {
         AmazonS3 s3client = s3ClientFactory.createClient();
-        logger.info("trying to find key in bucket: {}", selectBucket(imageType));
+        logger.info("trying to find key in bucket: {}", selectTaskBucketBySize(imageType));
         try {
-            return s3client.doesObjectExist(selectBucket(imageType), composeKey(uid, imageType));
+            return s3client.doesObjectExist(selectTaskBucketBySize(imageType), composeKey(uid, imageType));
         } catch (AmazonS3Exception e) {
             logger.error("S3 exception, of code: {}, for bucket: {}, with key: {}", e.getErrorCode(),
-                    selectBucket(imageType), composeKey(uid, imageType));
+                    selectTaskBucketBySize(imageType), composeKey(uid, imageType));
             return false;
         }
     }
@@ -167,10 +176,10 @@ public class StorageBrokerImpl implements StorageBroker {
     public void deleteImage(String uid) {
         AmazonS3 s3client = s3ClientFactory.createClient();
         Stream.of(ImageType.values())
-                .filter(t -> s3client.doesObjectExist(selectBucket(t), composeKey(uid, t)))
+                .filter(t -> s3client.doesObjectExist(selectTaskBucketBySize(t), composeKey(uid, t)))
                 .forEach(t -> {
                     try {
-                        s3client.deleteObject(selectBucket(t), composeKey(uid, t));
+                        s3client.deleteObject(selectTaskBucketBySize(t), composeKey(uid, t));
                         logger.info("Deleted S3 object, with key: {}", composeKey(uid, t));
                     } catch (AmazonS3Exception e) {
                         logger.error("Error deleting objects! Error: {}", e.getErrorCode());
@@ -178,7 +187,17 @@ public class StorageBrokerImpl implements StorageBroker {
                 });
         }
 
-    private String selectBucket(ImageType size) {
+    @Override
+    public Set<MediaFileRecord> retrieveMediaRecordsForFunction(MediaFunction function, Set<String> mediaFileUids) {
+        return mediaFileRepository.findByBucketAndKeyIn(selectBucketByFunction(function), mediaFileUids);
+    }
+
+    private String selectBucketByFunction(MediaFunction function) {
+        return MediaFunction.TASK_IMAGE.equals(function) ? taskImagesAnalyzedBucket : generalMediaStorageBucket;
+
+    }
+
+    private String selectTaskBucketBySize(ImageType size) {
         return ImageType.ANALYZED.equals(size) ? taskImagesAnalyzedBucket :
                 ImageType.FULL_SIZE.equals(size) ? taskImagesBucket :
                         taskImagesResizedBucket;

@@ -109,6 +109,7 @@ public class LiveWireSendingBrokerImpl implements LiveWireSendingBroker {
                 alert.getContactUser().getName());
         emailVars.put("contactNumber", PhoneNumberUtil.formattedNumber(
                 alert.getContactUser().getPhoneNumber()));
+        emailVars.put("headline", alert.getHeadline());
         emailVars.put("description", alert.getDescription());
 
         logger.debug("formatted number: {}", emailVars.get("contactNumber"));
