@@ -1,4 +1,4 @@
-package za.org.grassroot.core.dto;
+package za.org.grassroot.core.dto.group;
 
 /**
  * Created by aakilomar on 11/28/15.

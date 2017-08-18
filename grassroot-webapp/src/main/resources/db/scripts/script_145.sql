@@ -27,3 +27,16 @@ alter table only livewire_media_files add constraint fk_lwire_mfiles_file foreig
 
 alter table only live_wire_alert rename column description to headline;
 alter table only live_wire_alert add column description text;
+
+-- denormalizing--given how often we use this property, alternative was very frequent, messy joins
+alter table only group_profile add column last_task_creation_time timestamp without time zone;
+alter table only group_profile add column last_log_creation_time timestamp without time zone;
+
+update group_profile set last_log_creation_time = (select max(gl.created_date_time) from group_log gl
+  where gl.group_id = group_profile.id);
+
+update group_profile set last_task_creation_time =
+(select max(t.created_date_time) from action_todo t where t.ancestor_group_id = group_profile.id);
+
+update group_profile set last_task_creation_time = greatest(last_task_creation_time,
+  (select max(e.created_date_time) from event e where e.ancestor_group_id = group_profile.id));

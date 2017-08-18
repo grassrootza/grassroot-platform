@@ -153,6 +153,11 @@ public class EventLog implements TaskLog, LocationHolder {
         return location;
     }
 
+    @Override
+    public boolean isCreationLog() {
+        return EventLogType.CREATED.equals(eventLogType);
+    }
+
     public void setLocation(GeoLocation location) {
         this.location = location;
     }
