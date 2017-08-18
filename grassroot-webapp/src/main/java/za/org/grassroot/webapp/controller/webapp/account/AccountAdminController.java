@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -12,9 +13,11 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.enums.AccountPaymentType;
+import za.org.grassroot.integration.PdfGeneratingService;
 import za.org.grassroot.integration.email.EmailSendingBroker;
 import za.org.grassroot.integration.email.GrassrootEmail;
 import za.org.grassroot.integration.payments.PaymentBroker;
@@ -23,9 +26,14 @@ import za.org.grassroot.services.account.AccountBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 
 import javax.servlet.http.HttpServletRequest;
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
 
 /**
  * Created by luke on 2016/12/01.
@@ -41,6 +49,8 @@ public class AccountAdminController extends BaseController {
     private final AccountBillingBroker billingBroker;
     private final Environment environment;
 
+
+
     private PaymentBroker paymentBroker;
     private EmailSendingBroker emailSendingBroker;
 
@@ -49,6 +59,7 @@ public class AccountAdminController extends BaseController {
         this.accountBroker = accountBroker;
         this.billingBroker = billingBroker;
         this.environment = environment;
+
     }
 
     @Autowired(required = false)
@@ -77,6 +88,10 @@ public class AccountAdminController extends BaseController {
         model.addAttribute("accounts", new ArrayList<>(accountBroker.loadAllAccounts(true, AccountPaymentType.DIRECT_DEPOSIT, null)));
         return "admin/accounts/home";
     }
+
+
+
+
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     @RequestMapping(value = "/disable", method = RequestMethod.POST)

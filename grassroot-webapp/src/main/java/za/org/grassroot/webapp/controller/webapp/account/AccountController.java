@@ -29,6 +29,8 @@ import za.org.grassroot.webapp.model.web.PrivateGroupWrapper;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -258,6 +260,30 @@ public class AccountController extends BaseController {
         return new FileSystemResource(pdfGeneratingService.generateInvoice(associatedRecords.stream()
                 .map(AccountBillingRecord::getUid).collect(Collectors.toList())));
     }
+
+    //--------------------------
+
+    /*@RequestMapping(value = "/statement",method = RequestMethod.GET,produces = "application/pdf")
+    @ResponseBody
+    public FileSystemResource genPdf(Model model)
+    {
+        FileSystemResource fsr = null;
+        try {
+            //File file = pdfGeneratingService.generateGroupFlyer("4a8dccda-d237-4add-8593-ecdff1f183ab",true , null);
+            //model.addAttribute("file",file);
+            fsr = new FileSystemResource(pdfGeneratingService.generateGroupFlyer("4a8dccda-d237-4add-8593-ecdff1f183ab",true,new Locale("zu")));
+        } catch (FileNotFoundException e) {
+        }
+        pdfGeneratingService.availableLanguages();
+        return fsr;
+    }*/
+
+
+
+
+    //--------------------------
+
+
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/admin/add", method = RequestMethod.GET)

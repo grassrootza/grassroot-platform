@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -19,6 +20,7 @@ import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.PhoneNumberUtil;
+import za.org.grassroot.integration.PdfGeneratingService;
 import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.services.exception.GroupSizeLimitExceededException;
 import za.org.grassroot.services.group.GroupBroker;
@@ -32,6 +34,7 @@ import za.org.grassroot.webapp.model.web.MemberWrapperList;
 import za.org.grassroot.webapp.util.BulkUserImportUtil;
 
 import javax.servlet.http.HttpServletRequest;
+import java.io.FileNotFoundException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -60,14 +63,16 @@ public class GroupController extends BaseController {
     private final GroupQueryBroker groupQueryBroker;
     private final AccountGroupBroker accountGroupBroker;
     private final Validator groupWrapperValidator;
+    private PdfGeneratingService generatingService;
 
     @Autowired
-    public GroupController(GroupBroker groupBroker, TaskBroker taskBroker, GroupQueryBroker groupQueryBroker, AccountGroupBroker accountBroker, @Qualifier("groupWrapperValidator") Validator groupWrapperValidator) {
+    public GroupController(GroupBroker groupBroker, TaskBroker taskBroker, GroupQueryBroker groupQueryBroker, AccountGroupBroker accountBroker, @Qualifier("groupWrapperValidator") Validator groupWrapperValidator,PdfGeneratingService generatingService) {
         this.groupBroker = groupBroker;
         this.taskBroker = taskBroker;
         this.groupQueryBroker = groupQueryBroker;
         this.accountGroupBroker = accountBroker;
         this.groupWrapperValidator = groupWrapperValidator;
+        this.generatingService = generatingService;
     }
 
     /*
@@ -147,6 +152,9 @@ public class GroupController extends BaseController {
             model.addAttribute("canMoveMembers", true);
             model.addAttribute("groupsForMove", permissionBroker.getActiveGroupsSorted(user, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER));
         }
+
+        List<Locale> languages = generatingService.availableLanguages();
+        model.addAttribute("languages",languages);
 
         model.addAttribute("atGroupSizeLimit", !groupBroker.canAddMember(groupUid));
         model.addAttribute("hasAccount", user.getPrimaryAccount() != null);
@@ -724,6 +732,37 @@ public class GroupController extends BaseController {
         model.addAttribute("monthsToView", monthsActive);
 
         return "group/history";
+    }
+
+    @RequestMapping(value = "/generatePdf",method = RequestMethod.GET,produces = "application/pdf")
+    @ResponseBody
+    public FileSystemResource genPdf(Model model, @RequestParam("groupUid") String groupUid,@RequestParam("color") String color,@RequestParam("language")String language)
+    {
+        FileSystemResource fsr = null;
+        boolean col = false;
+        try {
+            if(color.equals("true")) {
+                col = true;
+            }else if(color.equals("false")){
+                col = false;
+            }
+
+            Locale lang = new Locale(language);
+            fsr = new FileSystemResource(generatingService.generateGroupFlyer(groupUid,col,lang));
+        } catch (FileNotFoundException e) {
+        }
+        return fsr;
+    }
+
+    @RequestMapping(value = "/availableLanguages",method = RequestMethod.GET)
+    public void getAvailableLanguages(Model model)
+    {
+        List<Locale> languages = generatingService.availableLanguages();
+        List<String> strLanguages = new ArrayList<>();
+        for (Locale lang : languages ) {
+            strLanguages.add(lang.getISO3Language());
+        }
+        model.addAttribute("availableLanguages",strLanguages);
     }
 
     @RequestMapping(value = "view_event")

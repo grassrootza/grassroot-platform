@@ -1,9 +1,12 @@
 package za.org.grassroot.integration;
 
-import com.itextpdf.text.DocumentException;
+import com.itextpdf.forms.PdfAcroForm;
+import com.itextpdf.forms.fields.PdfFormField;
+import com.itextpdf.kernel.pdf.*;
+/*import com.itextpdf.text.DocumentException;
 import com.itextpdf.text.pdf.AcroFields;
-import com.itextpdf.text.pdf.PdfReader;
-import com.itextpdf.text.pdf.PdfStamper;
+import com.itextpdf.text.pdf.PdfStamper;*/
+//import com.itextpdf.text.pdf.PdfWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,18 +16,20 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Account;
 import za.org.grassroot.core.domain.AccountBillingRecord;
+import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.repository.AccountBillingRecordRepository;
+import za.org.grassroot.core.repository.GroupRepository;
 
 import javax.annotation.PostConstruct;
 import java.io.File;
-import java.io.FileOutputStream;
+//import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
+
 
 import static za.org.grassroot.core.specifications.BillingSpecifications.*;
 import static za.org.grassroot.core.util.DateTimeUtil.formatAtSAST;
@@ -41,21 +46,40 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
     private static final DateTimeFormatter paymentDateTimeFormat = DateTimeFormatter.ofPattern("HH:mm, d MMM");
     private static final DecimalFormat amountFormat = new DecimalFormat("#.00");
 
+    private static final String SEPARATOR = "_";
+    private static final int LANGUAGE_POSITION = 4;
+
     private String invoiceTemplatePath;
+    private String folderPath;
+
+    private String flyerPath;
+    private String editedFlyerPath;
+
+    private String flyerPath_grey;
+    private String editedFlyerPath_grey;
 
     private AccountBillingRecordRepository billingRepository;
     private Environment environment;
+    private GroupRepository groupRepository;
 
     @Autowired
-    public PdfGeneratingServiceImpl(AccountBillingRecordRepository billingRepository, Environment environment) {
+    public PdfGeneratingServiceImpl(AccountBillingRecordRepository billingRepository, Environment environment,GroupRepository groupRepository) {
         this.billingRepository = billingRepository;
         this.environment = environment;
+        this.groupRepository = groupRepository;
     }
 
     @PostConstruct
     private void init() {
         this.invoiceTemplatePath = environment.getProperty("grassroot.invoice.template.path", "no_invoice.pdf");
+        this.folderPath = environment.getProperty("grassroot.flyer.folder.path");
+        this.flyerPath = environment.getProperty("grassroot.flyer.colour.path");
+        this.editedFlyerPath = environment.getProperty("grassroot.edited.flyer.colour.path");
+        this.flyerPath_grey = environment.getProperty("grassroot.flyer.grey.path");
+        this.editedFlyerPath_grey = environment.getProperty("grassroot.edited.flyer.grey.path");
         logger.info("PDF GENERATOR: path = " + invoiceTemplatePath);
+        logger.info("PDF GENERATOR: color flyer path = " + flyerPath);
+        logger.info("PDF GENERATOR: grey flyer path = " + flyerPath_grey);
     }
 
     // major todo : switch to Guava temp handling & clean the temp folder periodically
@@ -63,12 +87,19 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
     @Transactional(readOnly = true)
     public File generateInvoice(List<String> billingRecordUids) {
         try {
-            PdfReader pdfReader = new PdfReader(invoiceTemplatePath);
+            PdfReader pdfReader = new PdfReader(invoiceTemplatePath);// Source File
+
+            String destFilePath = "/home/march/grassroot/grassroot-resources/edited_invoice_template.pdf";
+            File destinationFile = new File(destFilePath);
+            destinationFile.getParentFile().mkdir();
+
             File tempStore = File.createTempFile("invoice", "pdf");
             tempStore.deleteOnExit();
 
-            PdfStamper pdfOutput = new PdfStamper(pdfReader, new FileOutputStream(tempStore));
-            AcroFields fields = pdfOutput.getAcroFields();
+            PdfDocument myDocument = new PdfDocument(pdfReader,new PdfWriter(destFilePath));
+            PdfAcroForm pdfAcroForm = PdfAcroForm.getAcroForm(myDocument,true);
+
+            Map<String,PdfFormField> pdfFormFieldMap = pdfAcroForm.getFormFields();
 
             List<AccountBillingRecord> records = billingRepository.findByUidIn(billingRecordUids);
             records.sort(Comparator.reverseOrder());
@@ -90,47 +121,121 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
             if (priorPaidBills != null && !priorPaidBills.isEmpty()) {
                 priorPaidBills.sort(Comparator.reverseOrder());
                 AccountBillingRecord priorRecord = priorPaidBills.get(0);
-                fields.setField("lastBilledAmountDescription", String.format("Last invoice for R%s, dated %s",
+
+                pdfFormFieldMap.get("lastBilledAmountDescription").setValue(String.format("Last invoice for R%s, dated %s",
                         amountFormat.format((double) priorRecord.getTotalAmountToPay() / 100), formatAtSAST(priorRecord.getCreatedDateTime(), dateHeader)));
-                fields.setField("lastBilledAmount", amountFormat.format((double) priorRecord.getTotalAmountToPay() / 100)); // redundancy? with description?
+
+                pdfFormFieldMap.get("lastBilledAmount").setValue(amountFormat.format((double) priorRecord.getTotalAmountToPay() / 100));
                 if (priorRecord.getPaid() && priorRecord.getPaidAmount() != null) {
-                    fields.setField("lastPaymentAmountReceived", String.format("Payment received by credit card on %s, " +
+                    pdfFormFieldMap.get("lastPaymentAmountReceived").setValue(String.format("Payment received by credit card on %s, " +
                             "thank you", formatAtSAST(priorRecord.getPaidDate(), dateHeader)));
-                    fields.setField("lastPaidAmount", amountFormat.format((double) priorRecord.getPaidAmount() / 100));
+                    pdfFormFieldMap.get("lastPaidAmount").setValue(amountFormat.format((double) priorRecord.getPaidAmount() / 100));
                 }
             }
 
-            fields.setField("invoiceNumber", "INVOICE NO " + latest.getId());
-            fields.setField("invoiceDate", formatAtSAST(latest.getStatementDateTime(), dateHeader));
-            fields.setField("billedUserName", latest.getAccount().getBillingUser().getDisplayName());
-            fields.setField("emailAddress", String.format("Email: %s", account.getBillingUser().getEmailAddress()));
-
-            fields.setField("priorBalance", amountFormat.format((double) latest.getOpeningBalance() / 100));
-            fields.setField("thisBillItems1", String.format("Monthly subscription for '%s' account",
+            pdfFormFieldMap.get("invoiceNumber").setValue("INVOICE NO " + latest.getId());
+            pdfFormFieldMap.get("invoiceDate").setValue(formatAtSAST(latest.getStatementDateTime(), dateHeader));
+            pdfFormFieldMap.get("billedUserName").setValue(latest.getAccount().getBillingUser().getDisplayName());
+            pdfFormFieldMap.get("emailAddress").setValue(String.format("Email: %s", account.getBillingUser().getEmailAddress()));
+            pdfFormFieldMap.get("priorBalance").setValue(amountFormat.format((double) latest.getOpeningBalance() / 100));
+            pdfFormFieldMap.get("thisBillItems1").setValue(String.format("Monthly subscription for '%s' account",
                     latest.getAccount().getType().name().toLowerCase()));
-            fields.setField("billedAmount1", amountFormat.format((double) latest.getAmountBilledThisPeriod() / 100));
-            fields.setField("totalAmountToPay", amountFormat.format((double) latest.getTotalAmountToPay() / 100));
-            fields.setField("footerTextPaymentDate", String.format("The amount due will be automatically charged to " +
-                    "your card on %s", formatAtSAST(latest.getNextPaymentDate(), dateHeader)));
 
-            pdfOutput.setFormFlattening(true);
-            pdfOutput.setFullCompression();
+            pdfFormFieldMap.get("billedAmount1").setValue(amountFormat
+                    .format((double) latest.getAmountBilledThisPeriod() / 100));
 
-            pdfOutput.close();
+            pdfFormFieldMap.get("totalAmountToPay").setValue(amountFormat
+                    .format((double) latest.getTotalAmountToPay() / 100));
+
+            // todo: reintroduce these fields if needed
+            //pdfFormFieldMap.get("footerTextPaymentDate").setValue(String.format("The amount due will be automatically charged to " +
+                    //"your card on %s", formatAtSAST(latest.getNextPaymentDate(), dateHeader)));
+            //fields.setField("footerTextPaymentDate", String.format("The amount due will be automatically charged to " +
+                    //"your card on %s", formatAtSAST(latest.getNextPaymentDate(), dateHeader)));
+
+            pdfAcroForm.flattenFields();
+            myDocument.close();
             pdfReader.close();
 
             logger.info("Invoice PDF generated, returning ... ");
-
-            return tempStore;
+            return destinationFile;
 
         } catch (IOException e) {
             logger.warn("Could not find template path! Input: {}", invoiceTemplatePath);
             e.printStackTrace();
             return null;
-        } catch (DocumentException e) {
-            logger.warn("Error! Could not write PDF invoice document");
-            e.printStackTrace();
-            return null;
         }
+    }
+
+    @Override
+    public File generateGroupFlyer(String groupUid, boolean color, Locale language) {
+        // load group entity from group repository using uid
+        PdfDocument pdfdocument = null;
+        File fileToReturn = null;
+        Group grpEntity = groupRepository.findOneByUid(groupUid);
+
+        try {
+
+            String flyerPathToLoad = color ? flyerPath : flyerPath_grey;
+            String flyerPathToWrite = color ? editedFlyerPath : editedFlyerPath_grey;
+            fileToReturn = new File(flyerPathToWrite);
+            fileToReturn.getParentFile().mkdir();
+            pdfdocument = new PdfDocument(new PdfReader(flyerPathToLoad), new PdfWriter(flyerPathToWrite));
+
+            PdfAcroForm pdfAcroForm = PdfAcroForm.getAcroForm(pdfdocument,true);
+            Map<String,PdfFormField> pdfFormFieldMap = pdfAcroForm.getFormFields();
+
+            logger.debug("Fields Map = {}",pdfFormFieldMap);
+
+            pdfFormFieldMap.get("group_name").setValue(grpEntity.getGroupName());
+            pdfFormFieldMap.get("join_code_header").setValue(grpEntity.getGroupTokenCode());
+            pdfFormFieldMap.get("join_code_phone").setValue(grpEntity.getGroupTokenCode());
+
+            pdfAcroForm.flattenFields();
+
+            //pdfOutput.setFullCompression();
+
+            pdfdocument.close();
+            //file = new File(location);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // return the pdf as a java File
+        return fileToReturn;
+    }
+    @Override
+    public List<Locale> availableLanguages() {
+        List<Locale> languages = new ArrayList<>();
+        File[] filesInFolder = null;
+
+        File folder = new File(folderPath);
+
+        if(!folder.isDirectory()) {
+            //Throw exception
+
+        } else{
+            filesInFolder = folder.listFiles();
+
+            String[] names = new String[filesInFolder.length];
+
+            for(int x = 0;x < filesInFolder.length;x++) {
+                names[x] = filesInFolder[x].getName();
+            }
+
+            for(int x = 0;x < names.length;x++) {
+                String[] data = names[x].split(SEPARATOR);
+                String name = data[LANGUAGE_POSITION];//Check if is a valid name
+
+                if (Arrays.asList(Locale.getISOLanguages()).contains(name)) {
+                    Locale lang = new Locale(name);
+                    languages.add(lang);
+                }
+            }
+        }
+
+        logger.info("Languages = {}",languages);
+
+        return languages;
     }
 }
