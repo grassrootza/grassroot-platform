@@ -23,7 +23,7 @@
                        th:with="thisPage=${pageable.pageNumber}, nextPage=${thisPage + 1},
                        lastPage=${thisPage - 1}, pageSize=${pageable.pageSize},
                        currentSort=${sort.property}, currentSortDir=${sort.direction}">
-                    <form id="sort_form" th:action="@{/livewire/user/contacts/list}" th:formaction="get">
+                    <form id="sort_form" th:action="@{/livewire/contact/list}" th:formaction="get">
                       <input type="hidden" th:value="${pageSize}" name="size" />
                       <input type="hidden" th:value="0" name="page" />
                       <input type="hidden" id="sort_direction" />
@@ -33,11 +33,11 @@
                       </select>
                     </form>
                     <a th:if="${contacts.hasPrevious()}" class="header-link" href="#"
-                       th:href="@{/livewire/user/contacts/list(page=${lastPage},size=${pageSize}, sort=${currentSort},
+                       th:href="@{/livewire/contact/list(page=${lastPage},size=${pageSize}, sort=${currentSort},
                       __${currentSort + '.dir'}__=${currentSortDir})}">Back</a>
                     <!-- <span th:unless="${alerts.hasPrevious()}" class="disabled-link">Back</span>-->
                     <a th:if="${contacts.hasNext()}" class="header-link" href="#"
-                       th:href="@{/livewire/user/contacts/list(page=${nextPage},size=${pageSize}, sort=${currentSort},
+                       th:href="@{/livewire/contact/list(page=${nextPage},size=${pageSize}, sort=${currentSort},
                       __${currentSort + '.dir'}__=${currentSortDir})}">Next</a>
                   </div>
                 </div>
@@ -89,7 +89,7 @@
                        th:with="thisPage=${pageable.pageNumber}, nextPage=${thisPage + 1},
                        lastPage=${thisPage - 1}, pageSize=${pageable.pageSize},
                        currentSort=${sort.property}, currentSortDir=${sort.direction}">
-                    <form id="sort_form" th:action="@{/livewire/user/alert/list}" th:formaction="get">
+                    <form id="sort_form" th:action="@{/livewire/alert/list}" th:formaction="get">
                       <input type="hidden" th:value="${pageSize}" name="size" />
                       <input type="hidden" th:value="0" name="page" />
                       <input type="hidden" id="sort_direction" />
@@ -99,11 +99,11 @@
                       </select>
                     </form>
                     <a th:if="${alerts.hasPrevious()}" class="header-link" href="#"
-                      th:href="@{/livewire/user/alert/list(page=${lastPage},size=${pageSize}, sort=${currentSort},
+                      th:href="@{/livewire/alert/list(page=${lastPage},size=${pageSize}, sort=${currentSort},
                       __${currentSort + '.dir'}__=${currentSortDir})}">Back</a>
                     <!-- <span th:unless="${alerts.hasPrevious()}" class="disabled-link">Back</span>-->
                     <a th:if="${alerts.hasNext()}" class="header-link" href="#"
-                      th:href="@{/livewire/user/alert/list(page=${nextPage},size=${pageSize}, sort=${currentSort},
+                      th:href="@{/livewire/alert/list(page=${nextPage},size=${pageSize}, sort=${currentSort},
                       __${currentSort + '.dir'}__=${currentSortDir})}">Next</a>
                     <!-- <span th:unless="${alerts.hasNext()}" class="disabled-link">Next</span> -->
                   </div>
@@ -198,7 +198,7 @@
             <p class="no-vertical">
               <label for="tag_list" class="grassroot-lead">Tags:</label>
               <span th:unless="${canTag}" id="tag_list" class="grassroot-body"></span>
-              <form th:if="${canTag}" th:action="@{/livewire/user/alert/tag}" method="post">
+              <form th:if="${canTag}" th:action="@{/livewire/alert/tag}" method="post">
                 <input type="hidden" id="alert_uid_tag" name="alertUid" />
                 <input th:if="${canTag}" name="tags" id="tag_list" type="text" class="input-lg" />
                 <button type="submit" class="white-button">Change</button>
@@ -208,7 +208,7 @@
         </div>
         <div class="modal-footer">
           <button id="close_no_release" th:unless="${canRelease}" type="button" class="btn btn-default btn-lg default-button btn-neutral" data-dismiss="modal">Close</button>
-          <form id="release_form" th:if="${canRelease}" th:action="@{/livewire/user/alert/review}" method="post">
+          <form id="release_form" th:if="${canRelease}" th:action="@{/livewire/alert/review}" method="post">
             <input type="hidden" id="alert_uid_release" name="alertUid" />
             <input type="hidden" name="tags" id="release_tags_submit" />
             <input name="publicLists" id="public_lists_submit" type="hidden" />
@@ -247,7 +247,7 @@
 
         function fetchAlertDescription(alertUid) {
             console.log("fetching alert description, for uid: " + alertUid);
-            $.getJSON("/livewire/user/alert/details", {
+            $.getJSON("/livewire/alert/details", {
                 alertUid: alertUid
             }, function( data ) {
                 console.log("object returned: " + JSON.stringify(data));

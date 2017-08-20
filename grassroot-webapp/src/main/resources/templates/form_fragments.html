@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Form fragments</title>
+</head>
+<body>
+
+<div th:fragment="text-input (label, placeholder, maxlength, field_name)">
+  <div class="form-group">
+    <label th:for="${field_name}" th:text="${label}" class="control-label">Subject</label>
+    <input th:name="${field_name}" th:id="${field_name}" type="text" class="form-control input-lg"
+           th:placeholder="${placeholder}" th:maxlength="${maxlength}" />
+  </div>
+</div>
+
+</body>
+</html>

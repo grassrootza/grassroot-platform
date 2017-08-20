@@ -3,7 +3,7 @@
       data-layout-decorate="~{layout}">
 <head>
   <meta charset="UTF-8" />
-  <title>LiveWire</title>
+  <title>LiveWire Contacts</title>
 
   <meta name="_csrf" th:content="${_csrf.token}"/>
   <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
@@ -13,31 +13,10 @@
 <body>
 
 <section layout:fragment="header" class="top-container"
-         th:replace="~{layout :: std_header('LiveWire', 'Home')}">
+         th:replace="~{layout :: std_header('LiveWire', 'View Contacts')}">
 </section>
 
 <main layout:fragment="content">
-  <section class="group-buttons">
-    <div class="container">
-      <div class="row">
-        <div class="col-md-4 col-md-offset-2 text-center">
-          <a href="" th:href="@{/livewire/user/alert/list(onlyUnreviewed=false)}">
-            <button class="white-button group-button">
-              <i class="fa fa-comments-o" aria-hidden="true"></i>View all alerts
-            </button>
-          </a>
-        </div>
-        <div class="col-md-4 text-center">
-          <a th:href="@{/livewire/user/contacts}">
-            <button class="white-button group-button">
-              Find LiveWire contacts
-            </button>
-          </a>
-        </div>
-      </div>
-    </div>
-  </section>
-
   <section class="form-group">
     <section class="alert-list"><!-- was created first as 'alert list', so keeping -->
       <div class="row group-members-list">
@@ -96,7 +75,7 @@
 
       $("#contact-table").DataTable({
         ajax: {
-          url: '/livewire/contacts/list',
+          url: '/livewire/contact/fetch',
           dataSrc: ''
         },
         columns: [
