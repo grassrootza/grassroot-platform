@@ -1,5 +1,8 @@
-package za.org.grassroot.core.domain;
+package za.org.grassroot.core.domain.task;
 
+import za.org.grassroot.core.domain.UidIdentifiable;
+import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.task.AbstractEventEntity;
 import za.org.grassroot.core.enums.EventType;
 
 import javax.persistence.*;

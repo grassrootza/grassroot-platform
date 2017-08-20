@@ -13,7 +13,10 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.task.Meeting;
+import za.org.grassroot.core.domain.Notification;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.livewire.DataSubscriber;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
@@ -170,6 +173,18 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
 
     @Override
     @Transactional
+    public String create(LiveWireAlert.Builder builder) {
+        Objects.requireNonNull(builder);
+        if (!builder.areSufficientFieldsComplete()) {
+            throw new IllegalArgumentException("Error! This method requires a complete builder");
+        }
+
+        LiveWireAlert alert = alertRepository.save(builder.build());
+        return alert.getUid();
+    }
+
+    @Override
+    @Transactional
     public void updateContactUser(String userUid, String alertUid, String contactUserUid, String contactName) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(alertUid);
@@ -186,6 +201,19 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
         if (!contactUser.hasName()) {
             contactUser.setDisplayName(contactName);
         }
+    }
+
+    @Override
+    public void updateHeadline(String userUid, String alertUid, String headline) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(alertUid);
+        Objects.requireNonNull(headline);
+
+        User user = userRepository.findOneByUid(userUid);
+        LiveWireAlert alert = alertRepository.findOneByUid(alertUid);
+        validateCreatingUser(user, alert);
+
+        alert.setHeadline(headline);
     }
 
     @Override

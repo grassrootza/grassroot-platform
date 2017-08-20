@@ -5,6 +5,7 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.account.AccountLog;
 import za.org.grassroot.core.domain.account.AccountLog_;
 import za.org.grassroot.core.domain.account.Account;
+import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.enums.AccountLogType;
 
 import javax.persistence.criteria.Join;

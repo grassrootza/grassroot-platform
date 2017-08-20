@@ -14,6 +14,7 @@ import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.notification.EventInfoNotification;
+import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.GroupDefaultImage;

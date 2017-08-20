@@ -3,7 +3,7 @@ package za.org.grassroot.core.domain.livewire;
 import org.hibernate.annotations.Type;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.Meeting;
+import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.enums.LiveWireAlertDestType;

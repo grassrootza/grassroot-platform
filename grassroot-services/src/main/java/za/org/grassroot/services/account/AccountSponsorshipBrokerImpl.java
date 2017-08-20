@@ -27,7 +27,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.springframework.data.jpa.domain.Specifications.where;
-import static za.org.grassroot.services.specifications.SponsorRequestSpecifications.*;
+import static za.org.grassroot.core.specifications.SponsorRequestSpecifications.*;
 
 /**
  * Created by luke on 2017/02/06.

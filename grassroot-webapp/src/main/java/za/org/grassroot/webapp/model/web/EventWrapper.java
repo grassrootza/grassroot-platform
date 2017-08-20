@@ -1,6 +1,6 @@
 package za.org.grassroot.webapp.model.web;
 
-import za.org.grassroot.core.domain.EventReminderType;
+import za.org.grassroot.core.domain.task.EventReminderType;
 import za.org.grassroot.core.domain.JpaEntityType;
 
 import java.time.LocalDateTime;

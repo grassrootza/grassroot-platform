@@ -1,4 +1,4 @@
-package za.org.grassroot.core.domain;
+package za.org.grassroot.core.domain.task;
 
 /**
  * Created by luke on 2015/07/16.
@@ -7,6 +7,9 @@ package za.org.grassroot.core.domain;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.UidIdentifiable;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.DateTimeUtil;
 

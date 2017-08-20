@@ -14,7 +14,9 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.GroupLocation;
 import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
-import za.org.grassroot.core.dto.GroupTreeDTO;
+import za.org.grassroot.core.domain.task.Event;
+import za.org.grassroot.core.domain.task.EventLog;
+import za.org.grassroot.core.dto.group.GroupTreeDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.GroupSpecifications;
@@ -280,7 +282,7 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
     @Override
     @Transactional(readOnly = true)
     public Page<Group> fetchUserCreatedGroups(User user, int pageNumber, int pageSize) {
-        Objects.nonNull(user);
+        Objects.requireNonNull(user);
         return groupRepository.findByCreatedByUserAndActiveTrueOrderByCreatedDateTimeDesc(user, new PageRequest(pageNumber, pageSize));
     }
 

@@ -13,6 +13,9 @@ import org.springframework.test.context.junit4.SpringRunner;
 import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.task.Event;
+import za.org.grassroot.core.domain.task.MeetingBuilder;
+import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.core.enums.GroupLogType;
 
@@ -21,6 +24,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 import java.util.function.Predicate;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -563,6 +567,12 @@ public class GroupRepositoryTest {
         assertEquals(0, gc2Updated.getDirectChildren().size());
     }
 
+    private String genToken() {
+        int maxCodeInt = (int) Math.pow(10, 4);
+        int rndValue = new Random().nextInt(maxCodeInt);
+        return String.format("%04d", rndValue);
+    }
+
     @Test
     public void shouldGetMaxToken() {
         log.info(String.valueOf(groupRepository.getMaxTokenValue()));
@@ -572,9 +582,9 @@ public class GroupRepositoryTest {
     public void shouldCreateAndUseToken() {
         User user1 = userRepository.save(new User("3331118888"));
         Group group = groupRepository.save(new Group("token", user1));
-        Integer realToken = groupRepository.getMaxTokenValue();
-        Integer fakeToken = realToken - 10;
-        group.setGroupTokenCode(String.valueOf(realToken));
+        String realToken = genToken();
+        Integer fakeToken = Integer.parseInt(realToken) - 10;
+        group.setGroupTokenCode(realToken);
         groupRepository.save(group);
         Group groupFromDb1 = groupRepository.findOne(hasJoinCode(String.valueOf(realToken)));
         Group groupFromDb2 = groupRepository.findOne(hasJoinCode(String.valueOf(fakeToken)));
@@ -587,7 +597,7 @@ public class GroupRepositoryTest {
     public void shouldUseAndExtendToken() {
         User user = userRepository.save(new User("3335551111"));
         Group group = groupRepository.save(new Group("tg", user));
-        String token = String.valueOf(groupRepository.getMaxTokenValue());
+        String token = genToken();
         Instant testDate1 = Instant.now().plus(12L, ChronoUnit.HOURS);
         Instant testDate2 = Instant.now().plus(24L, ChronoUnit.HOURS);
         Instant testDate3 = Instant.now().plus(36L, ChronoUnit.HOURS);
@@ -612,7 +622,7 @@ public class GroupRepositoryTest {
     public void shouldCloseToken() {
         User user = userRepository.save(new User("3335550000"));
         Group group = groupRepository.save(new Group("tg", user));
-        String token = String.valueOf(groupRepository.getMaxTokenValue());
+        String token = genToken();
         Instant testDate1 = Instant.now().plus(12L, ChronoUnit.HOURS);
         Instant testDate2 = Instant.now().plus(24L, ChronoUnit.HOURS);
 

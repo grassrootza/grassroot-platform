@@ -5,13 +5,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import za.org.grassroot.core.domain.Event;
+import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.MeetingRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.geo.GeoLocationBroker;
-import za.org.grassroot.services.specifications.EventSpecifications;
+import za.org.grassroot.core.specifications.EventSpecifications;
 
 import java.time.Instant;
 import java.time.LocalDate;

@@ -1,6 +1,5 @@
 package za.org.grassroot.services.geo;
 
-import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,10 +7,12 @@ import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.geo.*;
+import za.org.grassroot.core.domain.task.Event;
+import za.org.grassroot.core.domain.task.EventLog;
+import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.LocationSource;
 import za.org.grassroot.core.enums.UserInterfaceType;
@@ -21,8 +22,6 @@ import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.integration.location.UssdLocationServicesBroker;
 
 import javax.persistence.EntityManager;
-import javax.persistence.TypedQuery;
-import java.net.URISyntaxException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.*;
