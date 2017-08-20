@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import za.org.grassroot.core.domain.Account;
+import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.services.account.AccountBroker;
 import za.org.grassroot.services.account.AccountGroupBroker;

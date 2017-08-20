@@ -132,10 +132,10 @@ public class USSDLiveWireControllerTest extends USSDAbstractUnitTest {
 
         verify(userManagementServiceMock,times(1)).
                 findByInputNumber(testPhone);
-        verify(liveWireBrokerMock,times(1)).
+        verify(liveWireContactBrokerMock,times(1)).
                 updateUserLiveWireContactStatus(testUser.getUid(),
                         true, UserInterfaceType.USSD);
-        verify(liveWireBrokerMock,times(1)).
+        verify(liveWireContactBrokerMock,times(1)).
                 trackLocationForLiveWireContact(testUser.getUid(),
                         UserInterfaceType.USSD);
         mockMvc.perform(get("/ussd/livewire/register/do").

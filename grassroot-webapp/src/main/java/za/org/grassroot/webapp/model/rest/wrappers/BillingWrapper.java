@@ -1,7 +1,7 @@
 package za.org.grassroot.webapp.model.rest.wrappers;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import za.org.grassroot.core.domain.AccountBillingRecord;
+import za.org.grassroot.core.domain.account.AccountBillingRecord;
 
 /**
  * Created by luke on 2017/01/19.

@@ -1,6 +1,6 @@
 package za.org.grassroot.services.user;
 
-import za.org.grassroot.core.domain.Address;
+import za.org.grassroot.core.domain.geo.Address;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.enums.UserInterfaceType;
 
@@ -17,10 +17,11 @@ public interface AddressBroker {
 
     boolean hasAddress(String userUid);
 
-    String storeAddressRaw(String userUid, Address address);
+    Address fetchNearestAddress(String userUid, GeoLocation location, int radiusKm, boolean storeForUser);
 
-    void confirmLocationAddress(String userUid, String addressUid,
-                                GeoLocation location, UserInterfaceType interfaceType);
+    Address getAndStoreAddressFromLocation(String userUid, GeoLocation location, UserInterfaceType userInterfaceType, boolean primary);
+
+    void confirmLocationAddress(String userUid, String addressUid, GeoLocation location, UserInterfaceType interfaceType);
 
     void reviseLocationAddress(String userUid, String addressUid, GeoLocation location,
                                String description, UserInterfaceType interfaceType);

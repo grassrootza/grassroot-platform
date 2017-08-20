@@ -1,5 +1,6 @@
-package za.org.grassroot.core.domain;
+package za.org.grassroot.core.domain.account;
 
+import za.org.grassroot.core.domain.ActionLog;
 import za.org.grassroot.core.enums.AccountLogType;
 import za.org.grassroot.core.util.UIDGenerator;
 

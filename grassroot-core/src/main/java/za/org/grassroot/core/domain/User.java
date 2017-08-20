@@ -4,6 +4,7 @@ import org.hibernate.validator.constraints.Email;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.util.StringUtils;
+import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.enums.AlertPreference;
 import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.core.util.PhoneNumberUtil;

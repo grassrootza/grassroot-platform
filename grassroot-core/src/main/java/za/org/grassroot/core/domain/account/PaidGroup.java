@@ -1,6 +1,8 @@
-package za.org.grassroot.core.domain;
+package za.org.grassroot.core.domain.account;
 
 import org.springframework.util.StringUtils;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.PaidGroupStatus;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.UIDGenerator;

@@ -12,12 +12,13 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.livewire.DataSubscriber;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
+import za.org.grassroot.core.enums.LiveWireAlertDestType;
 import za.org.grassroot.core.enums.LiveWireAlertType;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.util.PhoneNumberUtil;
-import za.org.grassroot.core.enums.LiveWireAlertDestType;
 import za.org.grassroot.services.livewire.DataSubscriberBroker;
 import za.org.grassroot.services.livewire.LiveWireAlertBroker;
+import za.org.grassroot.services.livewire.LiveWireContactBroker;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 import za.org.grassroot.webapp.util.USSDUrlUtil;
@@ -41,13 +42,18 @@ import static za.org.grassroot.webapp.enums.USSDSection.LIVEWIRE;
 public class USSDLiveWireController extends USSDController {
 
     private static final Logger logger = LoggerFactory.getLogger(USSDLiveWireController.class);
+
     private static final int listPageSize = 3;
 
     private final LiveWireAlertBroker liveWireAlertBroker;
+    private final LiveWireContactBroker liveWireContactBroker;
     private final DataSubscriberBroker dataSubscriberBroker;
 
-    public USSDLiveWireController(LiveWireAlertBroker liveWireAlertBroker, DataSubscriberBroker dataSubscriberBroker) {
+    public USSDLiveWireController(LiveWireAlertBroker liveWireAlertBroker,
+                                  LiveWireContactBroker liveWireContactBroker,
+                                  DataSubscriberBroker dataSubscriberBroker) {
         this.liveWireAlertBroker = liveWireAlertBroker;
+        this.liveWireContactBroker = liveWireContactBroker;
         this.dataSubscriberBroker = dataSubscriberBroker;
     }
 
@@ -112,13 +118,13 @@ public class USSDLiveWireController extends USSDController {
     public Request registerAsLiveWireContact(@RequestParam String msisdn,
                                              @RequestParam boolean location) throws URISyntaxException {
         User user = userManager.findByInputNumber(msisdn);
-        liveWireAlertBroker.updateUserLiveWireContactStatus(user.getUid(), true, UserInterfaceType.USSD);
+        liveWireContactBroker.updateUserLiveWireContactStatus(user.getUid(), true, UserInterfaceType.USSD);
         USSDMenu menu = new USSDMenu(getMessage(LIVEWIRE, "register.do", promptKey, user));
         menu.addMenuOption("start_livewire?page=0",
                 getMessage(LIVEWIRE, "register.do", optionsKey + "lwire", user));
         menu.addMenuOptions(optionsHomeExit(user, false));
         if (location) {
-            liveWireAlertBroker.trackLocationForLiveWireContact(user.getUid(), UserInterfaceType.USSD);
+            liveWireContactBroker.trackLocationForLiveWireContact(user.getUid(), UserInterfaceType.USSD);
         }
         return menuBuilder(menu);
     }

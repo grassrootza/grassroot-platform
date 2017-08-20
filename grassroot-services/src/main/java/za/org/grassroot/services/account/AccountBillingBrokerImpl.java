@@ -14,7 +14,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.domain.AccountLog;
+import za.org.grassroot.core.domain.account.AccountBillingRecord;
+import za.org.grassroot.core.domain.account.AccountLog;
+import za.org.grassroot.core.domain.account.Account;
+import za.org.grassroot.core.domain.account.PaidGroup;
 import za.org.grassroot.core.domain.notification.AccountBillingNotification;
 import za.org.grassroot.core.enums.AccountLogType;
 import za.org.grassroot.core.enums.AccountPaymentType;
@@ -39,7 +42,7 @@ import static org.springframework.util.StringUtils.isEmpty;
 import static za.org.grassroot.core.specifications.AccountSpecifications.isVisible;
 import static za.org.grassroot.core.specifications.AccountSpecifications.nextStatementBefore;
 import static za.org.grassroot.core.specifications.BillingSpecifications.*;
-import static za.org.grassroot.services.specifications.NotificationSpecifications.*;
+import static za.org.grassroot.core.specifications.NotificationSpecifications.*;
 
 /**
  * Created by luke on 2016/10/25.

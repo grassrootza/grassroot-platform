@@ -1,7 +1,7 @@
-package za.org.grassroot.core.domain;
+package za.org.grassroot.core.domain.livewire;
 
-import za.org.grassroot.core.domain.livewire.DataSubscriber;
-import za.org.grassroot.core.domain.livewire.LiveWireAlert;
+import za.org.grassroot.core.domain.ActionLog;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.LiveWireLogType;
 import za.org.grassroot.core.util.UIDGenerator;
 

@@ -1,7 +1,7 @@
 package za.org.grassroot.services.specifications;
 
 import org.springframework.data.jpa.domain.Specification;
-import za.org.grassroot.core.domain.Account;
+import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.association.AccountSponsorshipRequest;
 import za.org.grassroot.core.domain.association.AccountSponsorshipRequest_;

@@ -1,7 +1,7 @@
 package za.org.grassroot.services.account;
 
 import org.springframework.security.access.prepost.PreAuthorize;
-import za.org.grassroot.core.domain.Account;
+import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.enums.AccountBillingCycle;
 import za.org.grassroot.core.enums.AccountPaymentType;
 import za.org.grassroot.core.enums.AccountType;

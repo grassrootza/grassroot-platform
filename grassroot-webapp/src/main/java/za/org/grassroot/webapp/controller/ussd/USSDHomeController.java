@@ -337,14 +337,15 @@ public class USSDHomeController extends USSDController {
             if (page > 0) {
                 menu.addMenuOption(startMenu + "_livewire?page=" + (page - 1), getMessage("options.back", user));
             }
+        }
 
-            if (groupsForInstant != 0L) {
-                menu.addMenuOption("livewire/instant", getMessage(LIVEWIRE, startMenu, optionsKey + "instant", user));
-                if (!user.isLiveWireContact()) {
-                    menu.addMenuOption("livewire/register", getMessage(LIVEWIRE, startMenu, optionsKey + "register", user));
-                }
+        if (groupsForInstant != 0L) {
+            menu.addMenuOption("livewire/instant", getMessage(LIVEWIRE, startMenu, optionsKey + "instant", user));
+            if (!user.isLiveWireContact()) {
+                menu.addMenuOption("livewire/register", getMessage(LIVEWIRE, startMenu, optionsKey + "register", user));
             }
         }
+
         return menu;
     }
 
