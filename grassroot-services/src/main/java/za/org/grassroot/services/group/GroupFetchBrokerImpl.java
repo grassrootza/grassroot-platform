@@ -83,6 +83,9 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
     @Override
     @Transactional(readOnly = true)
     public Set<GroupMinimalDTO> fetchGroupMinimalInfo(String userUid, Set<String> groupUids) {
+        if (groupUids == null || groupUids.isEmpty()) {
+            return new HashSet<>();
+        }
         User user = userRepository.findOneByUid(userUid);
         List<GroupMinimalDTO> dtoList = entityManager.createQuery("" +
                         "select new za.org.grassroot.core.dto.group.GroupMinimalDTO(g, r) " +
@@ -123,6 +126,9 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
     @Override
     @Transactional(readOnly = true)
     public Set<GroupFullDTO> fetchGroupFullInfo(String userUid, Set<String> groupUids) {
+        if (groupUids == null || groupUids.isEmpty()) {
+            return new HashSet<>();
+        }
         User user = userRepository.findOneByUid(userUid);
         return new HashSet<>(entityManager.createQuery("" +
                 "select new za.org.grassroot.core.dto.group.GroupFullDTO(g, m) " +

@@ -52,7 +52,7 @@ public class GroupFetchController {
      */
     @RequestMapping(value = "/info/{userUid}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> fetchGroupInfo(@PathVariable String userUid,
-                                                          @RequestParam Set<String> groupUids) {
+                                                          @RequestParam(required = false) Set<String> groupUids) {
         return RestUtil.okayResponseWithData(RestMessage.USER_GROUPS,
                 groupFetchBroker.fetchGroupMinimalInfo(userUid, groupUids));
     }
@@ -65,7 +65,7 @@ public class GroupFetchController {
      */
     @RequestMapping(value = "/full/{userUid}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> fetchFullGroupInfo(@PathVariable String userUid,
-                                                              @RequestParam  Set<String> groupUids) {
+                                                              @RequestParam(required = false) Set<String> groupUids) {
         return RestUtil.okayResponseWithData(RestMessage.USER_GROUPS,
                 groupFetchBroker.fetchGroupFullInfo(userUid, groupUids));
     }
