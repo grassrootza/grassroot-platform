@@ -1,7 +1,7 @@
 package za.org.grassroot.services.task;
 
 import za.org.grassroot.core.domain.JpaEntityType;
-import za.org.grassroot.core.domain.TodoRequest;
+import za.org.grassroot.core.domain.task.TodoRequest;
 
 import java.time.LocalDateTime;
 

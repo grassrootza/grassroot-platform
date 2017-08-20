@@ -1,7 +1,11 @@
 package za.org.grassroot.core.specifications;
 
 import org.springframework.data.jpa.domain.Specification;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.task.EventLog_;
+import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.task.Event;
+import za.org.grassroot.core.domain.task.EventLog;
+import za.org.grassroot.core.domain.task.Vote;
 import za.org.grassroot.core.enums.EventLogType;
 
 /**

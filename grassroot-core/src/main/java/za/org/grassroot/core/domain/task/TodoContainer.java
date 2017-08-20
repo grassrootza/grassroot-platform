@@ -1,4 +1,6 @@
-package za.org.grassroot.core.domain;
+package za.org.grassroot.core.domain.task;
+
+import za.org.grassroot.core.domain.UidIdentifiable;
 
 import java.util.Set;
 

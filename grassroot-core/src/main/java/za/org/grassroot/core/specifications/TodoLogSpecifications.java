@@ -1,9 +1,9 @@
 package za.org.grassroot.core.specifications;
 
 import org.springframework.data.jpa.domain.Specification;
-import za.org.grassroot.core.domain.Todo;
-import za.org.grassroot.core.domain.TodoLog;
-import za.org.grassroot.core.domain.TodoLog_;
+import za.org.grassroot.core.domain.task.Todo;
+import za.org.grassroot.core.domain.task.TodoLog;
+import za.org.grassroot.core.domain.task.TodoLog_;
 import za.org.grassroot.core.enums.TodoLogType;
 
 /**

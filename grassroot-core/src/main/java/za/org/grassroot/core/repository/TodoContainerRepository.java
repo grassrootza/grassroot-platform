@@ -1,7 +1,7 @@
 package za.org.grassroot.core.repository;
 
 import za.org.grassroot.core.domain.JpaEntityType;
-import za.org.grassroot.core.domain.Todo;
+import za.org.grassroot.core.domain.task.Todo;
 
 import java.util.Set;
 

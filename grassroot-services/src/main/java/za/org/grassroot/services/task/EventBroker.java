@@ -3,9 +3,12 @@ package za.org.grassroot.services.task;
 import org.springframework.data.domain.Page;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.geo.GeoLocation;
+import za.org.grassroot.core.domain.task.Event;
+import za.org.grassroot.core.domain.task.EventReminderType;
+import za.org.grassroot.core.domain.task.Meeting;
+import za.org.grassroot.core.domain.task.Vote;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
-import za.org.grassroot.core.enums.MeetingImportance;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.services.enums.EventListTimeType;
 
@@ -47,7 +50,7 @@ public interface EventBroker {
 
 	// note: keeping these here instead of moving to VoteBroker for now, given the intertwining with various elements of rest of eventbroker
 	Vote createVote(String userUid, String parentUid, JpaEntityType parentType, String name, LocalDateTime eventStartDateTime,
-					boolean includeSubGroups, String description, Set<String> assignMemberUids, List<String> options);
+                    boolean includeSubGroups, String description, Set<String> assignMemberUids, List<String> options);
 
     // votes cannot change topic or scope (groups included or not) after creation, just closing time & description field
     Vote updateVote(String userUid, String voteUid, LocalDateTime eventStartDateTime, String description);

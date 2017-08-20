@@ -7,7 +7,7 @@ import org.mockito.InjectMocks;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.domain.EventLog;
+import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.domain.GroupLog;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.dto.TaskDTO;

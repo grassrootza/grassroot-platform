@@ -1,6 +1,7 @@
 package za.org.grassroot.webapp.model.web;
 
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.task.Task;
 
 import java.util.ArrayList;
 import java.util.List;

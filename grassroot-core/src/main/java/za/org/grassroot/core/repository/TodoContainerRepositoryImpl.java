@@ -4,8 +4,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.JpaEntityType;
-import za.org.grassroot.core.domain.Todo;
-import za.org.grassroot.core.domain.TodoContainer;
+import za.org.grassroot.core.domain.task.Todo;
+import za.org.grassroot.core.domain.task.TodoContainer;
 
 import java.util.Set;
 

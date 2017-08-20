@@ -1,9 +1,10 @@
-package za.org.grassroot.core.domain;
+package za.org.grassroot.core.domain.task;
 
 /**
  * Created by luke on 2015/07/16.
  * */
 
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.LocationHolder;
 import za.org.grassroot.core.enums.EventLogType;

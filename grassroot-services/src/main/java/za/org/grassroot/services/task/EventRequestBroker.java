@@ -1,9 +1,8 @@
 package za.org.grassroot.services.task;
 
-import za.org.grassroot.core.domain.EventRequest;
-import za.org.grassroot.core.domain.JpaEntityType;
-import za.org.grassroot.core.domain.MeetingRequest;
-import za.org.grassroot.core.domain.VoteRequest;
+import za.org.grassroot.core.domain.task.EventRequest;
+import za.org.grassroot.core.domain.task.MeetingRequest;
+import za.org.grassroot.core.domain.task.VoteRequest;
 
 import java.time.LocalDateTime;
 

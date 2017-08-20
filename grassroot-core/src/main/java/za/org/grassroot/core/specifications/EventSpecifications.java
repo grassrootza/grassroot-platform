@@ -1,7 +1,10 @@
-package za.org.grassroot.services.specifications;
+package za.org.grassroot.core.specifications;
 
 import org.springframework.data.jpa.domain.Specification;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.task.AbstractEventEntity_;
+import za.org.grassroot.core.domain.task.Event;
+import za.org.grassroot.core.domain.task.Event_;
 
 import javax.persistence.criteria.Join;
 import java.time.Instant;

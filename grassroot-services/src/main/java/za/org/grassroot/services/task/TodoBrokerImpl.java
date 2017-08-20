@@ -13,9 +13,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.domain.TodoLog;
+import za.org.grassroot.core.domain.task.TodoContainer;
+import za.org.grassroot.core.domain.task.TodoLog;
 import za.org.grassroot.core.domain.notification.TodoInfoNotification;
 import za.org.grassroot.core.domain.notification.TodoReminderNotification;
+import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.enums.TodoCompletionConfirmType;
 import za.org.grassroot.core.enums.TodoLogType;
 import za.org.grassroot.core.repository.GroupRepository;
@@ -29,7 +31,7 @@ import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.services.enums.TodoStatus;
 import za.org.grassroot.services.exception.AccountLimitExceededException;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
-import za.org.grassroot.services.specifications.TodoSpecifications;
+import za.org.grassroot.core.specifications.TodoSpecifications;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
@@ -41,7 +43,7 @@ import java.util.stream.Collectors;
 
 import static za.org.grassroot.core.util.DateTimeUtil.convertToSystemTime;
 import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
-import static za.org.grassroot.services.specifications.TodoSpecifications.*;
+import static za.org.grassroot.core.specifications.TodoSpecifications.*;
 
 @Service
 public class TodoBrokerImpl implements TodoBroker {
