@@ -104,7 +104,7 @@ public class LiveWireAlertReviewController extends BaseController {
         } catch (InvalidParameterException e) {
             addMessage(attributes, MessageType.ERROR, "livewire.tags.invalid", request);
         }
-        return "redirect:/livewire/user/";
+        return "redirect:/livewire/alert/list";
     }
 
     @RequestMapping(value = "review", method = RequestMethod.POST)
@@ -128,6 +128,6 @@ public class LiveWireAlertReviewController extends BaseController {
         } catch (IllegalArgumentException e) {
             addMessage(attributes, MessageType.ERROR, "livewire.released.error", request);
         }
-        return "redirect:/livewire/user/";
+        return "redirect:/livewire/alert/list";
     }
 }

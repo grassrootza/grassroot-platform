@@ -3,10 +3,10 @@ package za.org.grassroot.core.domain.livewire;
 import org.hibernate.annotations.Type;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.media.MediaFileRecord;
+import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.enums.LiveWireAlertDestType;
 import za.org.grassroot.core.enums.LiveWireAlertType;
 import za.org.grassroot.core.enums.LocationSource;
@@ -146,6 +146,7 @@ public class LiveWireAlert {
         private Instant sendTime;
         private boolean complete;
         private LiveWireAlertDestType destType;
+        private DataSubscriber destSubscriber;
         private Set<MediaFileRecord> mediaFiles;
         private GeoLocation location;
         private LocationSource locationSource;
@@ -205,6 +206,11 @@ public class LiveWireAlert {
             return this;
         }
 
+        public Builder destSubscriber(DataSubscriber destSubscriber) {
+            this.destSubscriber = destSubscriber;
+            return this;
+        }
+
         public Builder mediaFiles(Set<MediaFileRecord> mediaFiles) {
             this.mediaFiles = mediaFiles;
             return this;
@@ -254,6 +260,10 @@ public class LiveWireAlert {
             if (location != null) {
                 alert.setLocation(location);
                 alert.setLocationSource(locationSource == null ? LocationSource.UNKNOWN : locationSource);
+            }
+
+            if (destSubscriber != null) {
+                alert.setTargetSubscriber(destSubscriber);
             }
 
             alert.setComplete(complete);

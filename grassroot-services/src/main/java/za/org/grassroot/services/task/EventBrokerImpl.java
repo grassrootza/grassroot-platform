@@ -19,6 +19,7 @@ import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.repository.*;
+import za.org.grassroot.core.specifications.EventSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.PermissionBroker;
@@ -28,7 +29,6 @@ import za.org.grassroot.services.exception.AccountLimitExceededException;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.services.exception.TaskNameTooLongException;
 import za.org.grassroot.services.geo.GeoLocationBroker;
-import za.org.grassroot.core.specifications.EventSpecifications;
 import za.org.grassroot.services.util.CacheUtilService;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
@@ -156,7 +156,6 @@ public class EventBrokerImpl implements EventBroker {
 	}
 
 	// introducing so that we can check catch & handle duplicate requests (e.g., from malfunctions on Android client offline->queue->sync function)
-	@Transactional(readOnly = true)
 	private Event checkForDuplicate(String userUid, String parentGroupUid, String name, Instant startDateTime) {
 		Objects.requireNonNull(userUid);
 		Objects.requireNonNull(parentGroupUid);

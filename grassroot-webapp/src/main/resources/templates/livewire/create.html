@@ -18,13 +18,27 @@
 
 <main layout:fragment="content">
 
-  <section class="grassroot-form">
+  <section class="grassroot-form" th:with="types=${T(za.org.grassroot.core.enums.LiveWireAlertType).values()},
+        destinations=${T(za.org.grassroot.core.enums.LiveWireAlertDestType).values()}">
     <div class="container">
       <div class="row">
         <div class="col-md-8 col-md-offset-2 col-sm-6 col-sm-offset-3 col-xs-12">
-          <form>
-            <div th:replace="~{form_fragments :: text-input('Headline', 'Enter a short description of the alert', '40', 'headline')}">
+          <form th:action="@{/livewire/alert/create/submit}" method="post" enctype="multipart/form-data">
+            <div th:replace="~{form_fragments :: text_input('Headline', 'Enter a short description of the alert', '40', 'headline')}"></div>
+            <div th:replace="~{form_fragments :: list_selector('Contact person', ${contactOptions}, 'contact_person_type')}"></div>
+            <div id="other_contact_name" th:include="~{form_fragments :: text_input('Contact name', 'Enter the name of the contact person', '40', 'contact_name')}"></div>
+            <div id="other_contact_number" th:include="~{form_fragments :: text_input('Contact number', 'Enter the phone number of the contact', '40', 'contact_number')}"></div>
+            <div th:replace="~{form_fragments :: enum_selector('Alert type', 'type', ${types}, 'web.livewire.alert.type')}"></div>
+            <div id="group_selector" th:include="~{form_fragments :: entity_selector ('Group', 'group')}"></div>
+            <div id="mtg_selector" th:include="~{form_fragments :: entity_selector ('Meeting', 'meeting')}"></div>
+            <div th:replace="~{form_fragments :: file_upload('Image for the alert (optional)', 'image', 'image/*')}"></div>
+            <div th:replace="~{form_fragments :: enum_selector('Destination', 'destination', ${destinations}, 'web.livewire.alert.dest')}"></div>
+            <div th:replace="~{form_fragments :: collapse_header_title('Add article text', '#description_field')}"></div>
+            <div class="collapse" id="description_field">
+              <div th:replace="~{form_fragments :: text_area(false, '', 10, 1000, 'Add a (short) extra text, at most 100-150 words', 'description')}"></div>
             </div>
+
+            <div th:include="~{form_fragments :: submit_cancel_buttons('Create', '/home')}"></div>
           </form>
         </div>
       </div>
@@ -32,6 +46,45 @@
   </section>
 
 </main>
+
+<div layout:fragment="script-container">
+
+  <script>
+
+    $(document).ready(function() {
+      var contactSelect = $("#contact_person_type");
+      var contactName = $("#other_contact_name");
+      var contactNumber = $("#other_contact_number");
+
+      contactName.hide();
+      contactNumber.hide();
+      contactSelect.change(function() {
+        var showFields = $(this).val() === 'other';
+        contactName.toggle(showFields);
+        contactNumber.toggle(showFields);
+      });
+
+      var typeSel = $("#type");
+      var groupSel = $("#group_selector");
+      var meetingSel = $("#mtg_selector");
+
+      meetingSel.hide();
+      typeSel.change(function() {
+        var showGroup = $(this).val() === 'INSTANT';
+        groupSel.toggle(showGroup);
+        meetingSel.toggle(!showGroup);
+      });
+
+    })
+
+  </script>
+
+  <div th:replace="~{form_fragments :: entity_selector_fill(${_csrf.headerName}, ${_csrf.token}, 'group',
+                      '/livewire/alert/create/groups')}"></div>
+
+  <div th:replace="~{form_fragments :: entity_selector_fill(${_csrf.headerName}, ${_csrf.token}, 'meeting',
+                      '/livewire/alert/create/meetings')}"></div>
+</div>
 
 
 </body>

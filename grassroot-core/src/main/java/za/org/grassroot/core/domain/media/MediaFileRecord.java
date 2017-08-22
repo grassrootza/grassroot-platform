@@ -4,6 +4,7 @@ import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
 import java.time.Instant;
+import java.util.Objects;
 
 /**
  * Task to hold a media file that we can attach to various things, but which we do not compress or analyze in any way
@@ -60,9 +61,10 @@ public class MediaFileRecord {
     }
 
     public MediaFileRecord(String bucket, String key) {
+        Objects.requireNonNull(bucket);
         this.uid = UIDGenerator.generateId();
         this.bucket = bucket;
-        this.key = key;
+        this.key = key == null ? uid : key;
         this.creationTime = Instant.now();
         this.readRequests = 0;
     }

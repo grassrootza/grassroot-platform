@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.TaskType;
-import za.org.grassroot.integration.exception.ImageRetrievalFailure;
+import za.org.grassroot.integration.exception.StoredMediaRetrievalFailure;
 import za.org.grassroot.integration.exception.NoMicroVersionException;
 import za.org.grassroot.services.task.TaskImageBroker;
 import za.org.grassroot.services.user.UserManagementService;
@@ -105,7 +105,7 @@ public class TaskImageRestController {
                     .lastModified(24000)
                     .headers(headers)
                     .body(image);
-        } catch (ImageRetrievalFailure e) {
+        } catch (StoredMediaRetrievalFailure e) {
             return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.TASK_IMAGE_ERROR);
         }
     }

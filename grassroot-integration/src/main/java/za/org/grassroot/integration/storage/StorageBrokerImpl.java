@@ -3,10 +3,7 @@ package za.org.grassroot.integration.storage;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.SdkClientException;
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.AmazonS3Exception;
-import com.amazonaws.services.s3.model.GetObjectRequest;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.S3Object;
+import com.amazonaws.services.s3.model.*;
 import com.amazonaws.services.s3.transfer.TransferManager;
 import com.amazonaws.services.s3.transfer.TransferManagerBuilder;
 import com.amazonaws.services.s3.transfer.Upload;
@@ -28,9 +25,11 @@ import za.org.grassroot.core.domain.media.MediaFunction;
 import za.org.grassroot.core.enums.ActionLogType;
 import za.org.grassroot.core.repository.ImageRecordRepository;
 import za.org.grassroot.core.repository.MediaFileRecordRepository;
-import za.org.grassroot.integration.exception.ImageRetrievalFailure;
 import za.org.grassroot.integration.exception.NoMicroVersionException;
+import za.org.grassroot.integration.exception.StoredMediaRetrievalFailure;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
@@ -76,34 +75,55 @@ public class StorageBrokerImpl implements StorageBroker {
         Objects.requireNonNull(imageKey);
         Objects.requireNonNull(image);
 
+        logger.debug("storing image in bucket: {}", taskImagesBucket);
+
+        String md5result = uploadToS3(taskImagesBucket, imageKey, image);
+
+        if (md5result != null) {
+            ImageRecord imageRecord = storeImageRecord(actionLogType, imageKey, md5result);
+            imageRecord.setStoredTime(Instant.now());
+        }
+
+        return md5result != null;
+    }
+
+    @Override
+    @Transactional
+    public boolean storeMedia(MediaFileRecord record, MultipartFile file) {
+        Objects.requireNonNull(record);
+        Objects.requireNonNull(file);
+
+        String md5hash = uploadToS3(record.getBucket(), record.getKey(), file);
+
+        if (md5hash != null) {
+            record.setMd5(md5hash);
+            record.setStoredTime(Instant.now());
+        }
+
+        return md5hash != null;
+    }
+
+    private String uploadToS3(String bucket, String key, MultipartFile file) {
         final AmazonS3 s3 = s3ClientFactory.createClient();
         final TransferManager transferManager = TransferManagerBuilder.standard().withS3Client(s3).build();
-        boolean completed;
-
-
-        logger.debug("storing image in bucket: {}", taskImagesBucket);
         try {
             ObjectMetadata metadata = new ObjectMetadata();
-            metadata.setContentLength(image.getSize());
-            metadata.setContentType(image.getContentType());
+            metadata.setContentLength(file.getSize());
+            metadata.setContentType(file.getContentType());
 
-            byte[] resultByte = DigestUtils.md5(image.getBytes());
+            byte[] resultByte = DigestUtils.md5(file.getBytes());
             String streamMD5 = new String(Base64.encodeBase64(resultByte));
             metadata.setContentMD5(streamMD5);
 
-            Upload upload = transferManager.upload(taskImagesBucket, imageKey, image.getInputStream(), metadata);
+            Upload upload = transferManager.upload(bucket, key, file.getInputStream(), metadata);
             upload.waitForCompletion();
-
-            ImageRecord imageRecord = storeImageRecord(actionLogType, imageKey, streamMD5);
-            imageRecord.setStoredTime(Instant.now());
-            completed = true;
+            return streamMD5;
         } catch (AmazonServiceException | InterruptedException | IOException e) {
-            completed = false;
             logger.error("Error uploading file: {}", e.toString());
+            return null;
+        } finally {
+            transferManager.shutdownNow();
         }
-
-        transferManager.shutdownNow();
-        return completed;
     }
 
     @Override
@@ -130,22 +150,19 @@ public class StorageBrokerImpl implements StorageBroker {
         Objects.requireNonNull(imageType);
 
         final String bucket = selectTaskBucketBySize(imageType);
-        logger.info("for imageType {}, selected bucket {}", imageType, bucket);
+        logger.debug("for imageType {}, selected bucket {}", imageType, bucket);
 
         try {
-            // todo : optimize this (see SDK JavaDocs on possible performance issues)
-            AmazonS3 s3Client = s3ClientFactory.createClient();
-            S3Object s3Image = s3Client.getObject(new GetObjectRequest(bucket, composeKey(uid, imageType)));
-            InputStream imageData = s3Image.getObjectContent();
+            InputStream imageData = getObject(bucket, composeKey(uid, imageType)).getObjectContent();
             byte[] image = IOUtils.toByteArray(imageData);
             imageData.close();
             return image;
-        } catch (SdkClientException e) {
+        } catch (StoredMediaRetrievalFailure e) {
             // todo: try add a check if it's something other than file not found on the bucket, and use that to discriminate error type
             logger.info("error in retrieving file: {}", e.getMessage());
-            throw ImageType.MICRO.equals(imageType) ? new NoMicroVersionException() : new ImageRetrievalFailure();
+            throw ImageType.MICRO.equals(imageType) ? new NoMicroVersionException() : new StoredMediaRetrievalFailure();
         } catch (IOException e) {
-            throw new ImageRetrievalFailure();
+            throw new StoredMediaRetrievalFailure();
         }
     }
 
@@ -153,7 +170,7 @@ public class StorageBrokerImpl implements StorageBroker {
     public byte[] fetchThumbnail(String uid, ImageType imageType) {
         try {
             return fetchImage(uid, imageType);
-        } catch (NoMicroVersionException|ImageRetrievalFailure e) {
+        } catch (NoMicroVersionException|StoredMediaRetrievalFailure e) {
             return fetchImage(uid, ImageType.FULL_SIZE);
         }
     }
@@ -190,6 +207,42 @@ public class StorageBrokerImpl implements StorageBroker {
     @Override
     public Set<MediaFileRecord> retrieveMediaRecordsForFunction(MediaFunction function, Set<String> mediaFileUids) {
         return mediaFileRepository.findByBucketAndKeyIn(selectBucketByFunction(function), mediaFileUids);
+    }
+
+    @Override
+    public File fetchFileFromRecord(MediaFileRecord record) {
+        try {
+            S3Object s3Object = getObject(record.getBucket(), record.getKey());
+            S3ObjectInputStream s3is = s3Object.getObjectContent();
+            File outputFile = new File(record.getKey());
+            FileOutputStream fos = new FileOutputStream(outputFile);
+            byte[] read_buf = new byte[1024];
+            int read_len = 0;
+            while ((read_len = s3is.read(read_buf)) > 0) {
+                fos.write(read_buf, 0, read_len);
+            }
+            s3is.close();
+            fos.close();
+            return outputFile;
+        } catch (StoredMediaRetrievalFailure e) {
+            logger.error("Error fetching from S3", e);
+            return null;
+        } catch (IOException e) {
+            logger.error("Error handling file", e);
+            return null;
+        }
+
+    }
+
+    // todo : optimize this (see SDK JavaDocs on possible performance issues)
+    private S3Object getObject(String bucket, String key) {
+        try {
+            AmazonS3 s3Client = s3ClientFactory.createClient();
+            return s3Client.getObject(new GetObjectRequest(bucket, key));
+        } catch (SdkClientException e) {
+            logger.error("Error fetching from S3", e);
+            throw new StoredMediaRetrievalFailure();
+        }
     }
 
     private String selectBucketByFunction(MediaFunction function) {

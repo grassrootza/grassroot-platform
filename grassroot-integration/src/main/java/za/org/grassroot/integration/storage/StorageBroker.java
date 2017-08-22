@@ -5,6 +5,7 @@ import za.org.grassroot.core.domain.media.MediaFileRecord;
 import za.org.grassroot.core.domain.media.MediaFunction;
 import za.org.grassroot.core.enums.ActionLogType;
 
+import java.io.File;
 import java.util.Set;
 
 /**
@@ -13,6 +14,8 @@ import java.util.Set;
 public interface StorageBroker {
 
     boolean storeImage(ActionLogType actionLogType, String imageKey, MultipartFile image);
+
+    boolean storeMedia(MediaFileRecord record, MultipartFile image);
 
     void recordImageAffiliation(ActionLogType actionLogType, String imageKey);
 
@@ -25,5 +28,7 @@ public interface StorageBroker {
     void deleteImage(String uid);
 
     Set<MediaFileRecord> retrieveMediaRecordsForFunction(MediaFunction function, Set<String> mediaFileUids);
+
+    File fetchFileFromRecord(MediaFileRecord record);
 
 }

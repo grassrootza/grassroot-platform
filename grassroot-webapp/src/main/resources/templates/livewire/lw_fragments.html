@@ -123,8 +123,8 @@
                   <tbody>
                   <tr th:each="alert, idx : ${alerts}" th:with="unreviewed=${(not alert.reviewed and not alert.sent)}">
                     <td class="col-md-3">
-                    <span th:text="${alert.description}"
-                          th:classappend="${unreviewed ? 'error-text' : ''}">Description</span>
+                    <span th:text="${alert.headline}"
+                          th:classappend="${unreviewed ? 'error-text' : ''}">Headline</span>
                       <span th:if="${unreviewed}" class="error-text"> (unreviewed) </span>
                       <span th:if="${alert.instant}"> (instant alert) </span>
                     </td>
@@ -260,7 +260,7 @@
 
             var dateC = new Date(data.creationTimeMillis);
             dateCreated.text(moment(dateC).format("Do MMM YYYY"));
-            desc.text(data.description);
+            desc.text(data.headline);
             contact.text(data.contactUserName + ', ' + data.contactUserPhone);
             group.text(data.groupName + '(' + data.groupSize + ' members, ' + data.groupTasks + ')');
 

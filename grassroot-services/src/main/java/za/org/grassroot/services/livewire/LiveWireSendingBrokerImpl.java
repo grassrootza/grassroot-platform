@@ -12,8 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
+import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.enums.DataSubscriberType;
 import za.org.grassroot.core.enums.LiveWireAlertType;
 import za.org.grassroot.core.repository.DataSubscriberRepository;
@@ -86,7 +86,8 @@ public class LiveWireSendingBrokerImpl implements LiveWireSendingBroker {
                 break;
         }
         liveWirePushBroker.sendLiveWireEmails(alert.getUid(), generateEmailsForAlert(alert, alertEmails));
-        logger.info("LiveWire of type {} sent to {} emails! Description: {}. Setting to sent ...", alert.getDestinationType(), alertEmails.size(), alert.getDescription());
+        logger.info("LiveWire of type {} sent to {} emails! Headline : {}. Setting to sent ...",
+                alert.getDestinationType(), alertEmails.size(), alert.getHeadline());
     }
 
     private List<String> collectPublicEmailAddresses(LiveWireAlert alert) {
@@ -128,6 +129,11 @@ public class LiveWireSendingBrokerImpl implements LiveWireSendingBroker {
             emailVars.put("dateTime", mtgFormat.format(meeting.getEventDateTimeAtSAST()));
             emailVars.put("mtgSubject", meeting.getName());
             populateGroupVars(meeting.getAncestorGroup(), emailVars);
+        }
+
+        if (alert.getMediaFiles() != null && !alert.getMediaFiles().isEmpty()) {
+            // for the moment, we basically are just sending one as attachment (to change when gallery etc working)
+
         }
 
         final Context ctx = new Context(Locale.ENGLISH);
