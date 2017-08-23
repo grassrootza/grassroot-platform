@@ -27,4 +27,10 @@ dependencies {
     compile group: 'com.amazonaws', name: 'aws-java-sdk-s3', version: '1.11.93'
 
     compile group: 'io.jsonwebtoken', name: 'jjwt', version: '0.7.0'
+
+    compile group: 'org.apache.pdfbox', name: 'pdfbox', version: '2.0.7'
+
+    // https://mvnrepository.com/artifact/org.apache.pdfbox/pdfbox-tools
+    compile group: 'org.apache.pdfbox', name: 'pdfbox-tools', version: '2.0.2'
+
 }

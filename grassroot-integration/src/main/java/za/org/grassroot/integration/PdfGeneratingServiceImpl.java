@@ -2,11 +2,17 @@ package za.org.grassroot.integration;
 
 import com.itextpdf.forms.PdfAcroForm;
 import com.itextpdf.forms.fields.PdfFormField;
+import com.itextpdf.kernel.color.Color;
 import com.itextpdf.kernel.pdf.*;
+import com.itextpdf.kernel.pdf.PdfWriter;
 /*import com.itextpdf.text.DocumentException;
 import com.itextpdf.text.pdf.AcroFields;
 import com.itextpdf.text.pdf.PdfStamper;*/
 //import com.itextpdf.text.pdf.PdfWriter;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.rendering.ImageType;
+import org.apache.pdfbox.rendering.PDFRenderer;
+import org.apache.pdfbox.tools.imageio.ImageIOUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,14 +27,18 @@ import za.org.grassroot.core.repository.AccountBillingRecordRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 
 import javax.annotation.PostConstruct;
+
+import java.awt.image.BufferedImage;
 import java.io.File;
-//import java.io.FileOutputStream;
+//impo import java.io.FileOutputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.List;
 
 
 import static za.org.grassroot.core.specifications.BillingSpecifications.*;
@@ -52,12 +62,6 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
     private String invoiceTemplatePath;
     private String folderPath;
 
-    private String flyerPath;
-    private String editedFlyerPath;
-
-    private String flyerPath_grey;
-    private String editedFlyerPath_grey;
-
     private AccountBillingRecordRepository billingRepository;
     private Environment environment;
     private GroupRepository groupRepository;
@@ -73,13 +77,8 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
     private void init() {
         this.invoiceTemplatePath = environment.getProperty("grassroot.invoice.template.path", "no_invoice.pdf");
         this.folderPath = environment.getProperty("grassroot.flyer.folder.path");
-        this.flyerPath = environment.getProperty("grassroot.flyer.colour.path");
-        this.editedFlyerPath = environment.getProperty("grassroot.edited.flyer.colour.path");
-        this.flyerPath_grey = environment.getProperty("grassroot.flyer.grey.path");
-        this.editedFlyerPath_grey = environment.getProperty("grassroot.edited.flyer.grey.path");
+
         logger.info("PDF GENERATOR: path = " + invoiceTemplatePath);
-        logger.info("PDF GENERATOR: color flyer path = " + flyerPath);
-        logger.info("PDF GENERATOR: grey flyer path = " + flyerPath_grey);
     }
 
     // major todo : switch to Guava temp handling & clean the temp folder periodically
@@ -89,14 +88,10 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
         try {
             PdfReader pdfReader = new PdfReader(invoiceTemplatePath);// Source File
 
-            String destFilePath = "/home/march/grassroot/grassroot-resources/edited_invoice_template.pdf";
-            File destinationFile = new File(destFilePath);
-            destinationFile.getParentFile().mkdir();
+            File tempStorage = File.createTempFile("invoice","pdf");
+            tempStorage.deleteOnExit();
 
-            File tempStore = File.createTempFile("invoice", "pdf");
-            tempStore.deleteOnExit();
-
-            PdfDocument myDocument = new PdfDocument(pdfReader,new PdfWriter(destFilePath));
+            PdfDocument myDocument = new PdfDocument(pdfReader,new PdfWriter(tempStorage.getAbsolutePath()));
             PdfAcroForm pdfAcroForm = PdfAcroForm.getAcroForm(myDocument,true);
 
             Map<String,PdfFormField> pdfFormFieldMap = pdfAcroForm.getFormFields();
@@ -158,7 +153,7 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
             pdfReader.close();
 
             logger.info("Invoice PDF generated, returning ... ");
-            return destinationFile;
+            return tempStorage;
 
         } catch (IOException e) {
             logger.warn("Could not find template path! Input: {}", invoiceTemplatePath);
@@ -168,35 +163,51 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
     }
 
     @Override
-    public File generateGroupFlyer(String groupUid, boolean color, Locale language) {
+    public File generateGroupFlyer(String groupUid, boolean color, Locale language, String typeOfFile) {
         // load group entity from group repository using uid
         PdfDocument pdfdocument = null;
+        PDDocument pd = null;
         File fileToReturn = null;
         Group grpEntity = groupRepository.findOneByUid(groupUid);
 
         try {
 
-            String flyerPathToLoad = color ? flyerPath : flyerPath_grey;
-            String flyerPathToWrite = color ? editedFlyerPath : editedFlyerPath_grey;
-            fileToReturn = new File(flyerPathToWrite);
-            fileToReturn.getParentFile().mkdir();
-            pdfdocument = new PdfDocument(new PdfReader(flyerPathToLoad), new PdfWriter(flyerPathToWrite));
+            fileToReturn = File.createTempFile("flyer","pdf");
+            fileToReturn.deleteOnExit();
+
+            String flyerToLoad = folderPath + "/" + chooseFlyerToLoad(color, language);
+
+            pdfdocument = new PdfDocument(new PdfReader(flyerToLoad), new PdfWriter(fileToReturn.getAbsolutePath()));
 
             PdfAcroForm pdfAcroForm = PdfAcroForm.getAcroForm(pdfdocument,true);
             Map<String,PdfFormField> pdfFormFieldMap = pdfAcroForm.getFormFields();
 
             logger.debug("Fields Map = {}",pdfFormFieldMap);
 
-            pdfFormFieldMap.get("group_name").setValue(grpEntity.getGroupName());
-            pdfFormFieldMap.get("join_code_header").setValue(grpEntity.getGroupTokenCode());
-            pdfFormFieldMap.get("join_code_phone").setValue(grpEntity.getGroupTokenCode());
+            logger.info("Form Field = {}",pdfFormFieldMap.get("join_code_header").getValueAsString());
+
+            pdfFormFieldMap.get("group_name").setValue("HOW TO JOIN " + grpEntity.getGroupName().toUpperCase() + " ON GRASSROOT");//**
+            pdfFormFieldMap.get("join_code_header").setValue(grpEntity.getGroupTokenCode()).setColor(Color.BLACK);
+            pdfFormFieldMap.get("join_code_phone").setValue(grpEntity.getGroupTokenCode()).setColor(Color.BLACK);
+
+
+            pdfFormFieldMap.get("join_code_header");
+            logger.info("Form Field = {}",pdfFormFieldMap.get("join_code_header").getValueAsString());
+            logger.info("Form Field = {}",pdfFormFieldMap.get("join_code_phone").getValueAsString());
 
             pdfAcroForm.flattenFields();
 
             //pdfOutput.setFullCompression();
 
             pdfdocument.close();
-            //file = new File(location);
+
+            pd = PDDocument.load(fileToReturn);
+            //generateImage(pd);
+
+            if(typeOfFile.equals("JPEG Image")){
+                fileToReturn = generateImage(pd);
+            }
+
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -204,23 +215,54 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
         // return the pdf as a java File
         return fileToReturn;
     }
+
+    @Override
+    public File generateImage(PDDocument pdDocument) throws FileNotFoundException {
+        File imageFile = null;
+        try{
+            PDFRenderer pdfRenderer = new PDFRenderer(pdDocument);
+
+            for(int x = 0;x < pdDocument.getNumberOfPages();x++){
+                BufferedImage bImage = pdfRenderer.renderImageWithDPI(x,300, ImageType.RGB);
+                ImageIOUtil.writeImage(bImage,String.format(folderPath + "/template_image.%s" ,"jpg"),300);
+            }
+            pdDocument.close();
+
+            imageFile = new File(folderPath + "/template_image.jpg");
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+        return  imageFile;
+    }
+
     @Override
     public List<Locale> availableLanguages() {
         List<Locale> languages = new ArrayList<>();
         File[] filesInFolder = null;
+        List<File> tempListOfFiles = new ArrayList<>();
 
         File folder = new File(folderPath);
 
         if(!folder.isDirectory()) {
-            //Throw exception
-
+            //Throw exception-------------------------------------???????
+            throw new SecurityException("Invalid folder path");
         } else{
+
             filesInFolder = folder.listFiles();
+            logger.info("List of files in folder = {}",filesInFolder.length);
 
-            String[] names = new String[filesInFolder.length];
+            for(int x = 0;x < filesInFolder.length;x++){
+                if(filesInFolder[x].getName().startsWith("group")){
+                    tempListOfFiles.add(filesInFolder[x]);
+                }
+            }
 
-            for(int x = 0;x < filesInFolder.length;x++) {
-                names[x] = filesInFolder[x].getName();
+            logger.info("Filtered list of file = {}",tempListOfFiles.size());
+            String[] names = new String[tempListOfFiles.size()];
+
+            for(int x = 0;x < tempListOfFiles.size();x++) {
+                //names[x] = filesInFolder[x].getName();
+                names[x] = tempListOfFiles.get(x).getName();
             }
 
             for(int x = 0;x < names.length;x++) {
@@ -232,10 +274,84 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
                     languages.add(lang);
                 }
             }
+
         }
 
         logger.info("Languages = {}",languages);
 
         return languages;
+    }
+
+    @Override
+    public String chooseFlyerToLoad(boolean color, Locale language) {
+        List<Locale> languages = new ArrayList<>();
+        File folder = new File(folderPath);
+        File[] filesInFolder = null;
+        List<File> tempFiles = new ArrayList<>();
+        String desiredFlyer = "";
+        String flyerToReturn = "";
+
+        if(folder.isDirectory())
+        {
+            logger.info("Folder Path = {}",folderPath);
+            filesInFolder = folder.listFiles();
+            for(int x = 0;x < filesInFolder.length;x ++){
+                if(filesInFolder[x].getName().startsWith("group")){
+                    logger.info("File Name = {}",filesInFolder[x].getName());
+                    tempFiles.add(filesInFolder[x]);
+                }
+            }
+
+            String[] names = new String[tempFiles.size()];
+
+            for(int x = 0;x < tempFiles.size();x++) {
+                names[x] = tempFiles.get(x).getName();
+                logger.info("The Files = {}",tempFiles.get(x).getName());
+            }
+
+            for(int x = 0;x < names.length;x++) {
+                String[] data = names[x].split(SEPARATOR);
+                String name = data[LANGUAGE_POSITION];//Check if is a valid name
+
+                if (Arrays.asList(Locale.getISOLanguages()).contains(name)) {
+                    Locale lang = new Locale(name);
+                    languages.add(lang);
+                    logger.info("LANGUAGES = {}",languages.get(x));
+                }
+            }
+
+            String strLang = "";
+
+            for(int x = 0;x < languages.size();x++){
+                Locale l = new Locale(languages.get(x).getDisplayName());
+                logger.info("Language in my List of Languages = {}",languages.get(x).getDisplayName());
+                if(l.getDisplayName().equals(language.getDisplayName())){
+                    strLang = languages.get(x).toString();
+                    logger.info("-------------Lang = {}",strLang);
+                }
+            }
+
+            logger.info("ISO3 Language = {}",strLang);
+            desiredFlyer = String.format("group_join_code_template_%s_%s.pdf",strLang,color ? "colour" : "grey");
+            if(checkFileAvailability(tempFiles,desiredFlyer)){
+                flyerToReturn = desiredFlyer;
+            } else {
+                flyerToReturn = getFallbackFileName(color);
+            }
+
+            logger.info("DESIRED FILE = {}" ,desiredFlyer);
+        }else{
+            throw new SecurityException("Invalid Folder Path");
+        }
+
+        return flyerToReturn;
+    }
+
+    private String getFallbackFileName(boolean color) {
+        return String.format("group_join_code_template_en_%s.pdf", color ? "colour" : "grey");
+    }
+
+    public boolean checkFileAvailability(List<File> files, String desiredFlyer) {
+        return files.stream().map(File::getName).anyMatch(s -> s.equals(desiredFlyer));
     }
 }

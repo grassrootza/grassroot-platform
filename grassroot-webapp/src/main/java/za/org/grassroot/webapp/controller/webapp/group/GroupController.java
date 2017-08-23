@@ -7,6 +7,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -38,6 +40,7 @@ import java.io.FileNotFoundException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import static java.time.temporal.TemporalAdjusters.firstDayOfMonth;
@@ -734,10 +737,11 @@ public class GroupController extends BaseController {
         return "group/history";
     }
 
-    @RequestMapping(value = "/generatePdf",method = RequestMethod.GET,produces = "application/pdf")
-    @ResponseBody
-    public FileSystemResource genPdf(Model model, @RequestParam("groupUid") String groupUid,@RequestParam("color") String color,@RequestParam("language")String language)
-    {
+    @RequestMapping(value = "/generatePdf",method = RequestMethod.GET,params = "typeOfFile=PDF",produces = "application/pdf")
+    @ResponseBody //"application/pdf",
+    public FileSystemResource genPdf(@RequestParam("groupUid") String groupUid,
+                                     @RequestParam("color") String color,@RequestParam("language")String language,
+                                     @RequestParam("typeOfFile") String typeOfFile) {
         FileSystemResource fsr = null;
         boolean col = false;
         try {
@@ -748,11 +752,39 @@ public class GroupController extends BaseController {
             }
 
             Locale lang = new Locale(language);
-            fsr = new FileSystemResource(generatingService.generateGroupFlyer(groupUid,col,lang));
+            log.info("Type = {}",typeOfFile);
+
+            fsr = new FileSystemResource(generatingService.generateGroupFlyer(groupUid,col,lang,typeOfFile));
         } catch (FileNotFoundException e) {
+            e.printStackTrace();
         }
         return fsr;
     }
+
+    @RequestMapping(value = "/generatePdf",method = RequestMethod.GET,params = "typeOfFile=JPEG Image",produces = MediaType.IMAGE_JPEG_VALUE)
+    @ResponseBody
+    public FileSystemResource genImage(@RequestParam("groupUid") String groupUid,
+                                       @RequestParam("color") String color,@RequestParam("language")String language,
+                                       @RequestParam("typeOfFile") String typeOfFile){
+        FileSystemResource fsr = null;
+        boolean col = false;
+        try {
+            if(color.equals("true")) {
+                col = true;
+            }else if(color.equals("false")){
+                col = false;
+            }
+
+            Locale lang = new Locale(language);
+            log.info("Type = {}",typeOfFile);
+            fsr = new FileSystemResource(generatingService.generateGroupFlyer(groupUid,col,lang,typeOfFile));
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        return fsr;
+    }
+
 
     @RequestMapping(value = "/availableLanguages",method = RequestMethod.GET)
     public void getAvailableLanguages(Model model)
