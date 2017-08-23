@@ -164,6 +164,10 @@
         <div class="modal-body">
           <div class="form-group">
             <p class="no-vertical">
+              <label for="headline" class="grassroot-lead">Headline:</label>
+              <span id="headline" class="grassroot-body"></span>
+            </p>
+            <p class="no-vertical">
               <label for="date_created" class="grassroot-lead">Date created:</label>
               <span id="date_created" class="grassroot-body"></span>
             </p>
@@ -230,6 +234,7 @@
 
         var canTag = /*[[${canTag}]]*/ true;
 
+        var headline = $("#headline");
         var dateCreated = $("#date_created");
         var group = $("#group_description");
         var desc = $("#alert_description");
@@ -259,8 +264,9 @@
             var modal = $("#viewAlertModal");
 
             var dateC = new Date(data.creationTimeMillis);
+            headline.text(data.headline);
             dateCreated.text(moment(dateC).format("Do MMM YYYY"));
-            desc.text(data.headline);
+            desc.text(data.description);
             contact.text(data.contactUserName + ', ' + data.contactUserPhone);
             group.text(data.groupName + '(' + data.groupSize + ' members, ' + data.groupTasks + ')');
 
