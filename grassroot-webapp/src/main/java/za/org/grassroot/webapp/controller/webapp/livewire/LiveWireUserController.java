@@ -23,21 +23,21 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
+import za.org.grassroot.core.dto.LiveWireContactDTO;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.geo.GeoLocationUtils;
 import za.org.grassroot.services.livewire.DataSubscriberBroker;
 import za.org.grassroot.services.livewire.LiveWireAlertBroker;
+import za.org.grassroot.services.livewire.LiveWireContactBroker;
 import za.org.grassroot.services.livewire.LiveWireSendingBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.LiveWireAlertDTO;
-import za.org.grassroot.webapp.model.LiveWireContactDTO;
 
 import javax.servlet.http.HttpServletRequest;
 import java.security.InvalidParameterException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Created by luke on 2017/05/13.
@@ -52,6 +52,7 @@ public class LiveWireUserController extends BaseController {
     private static final GeoLocation defaultLocation = new GeoLocation(-26.277636, 27.889045); // Freedom Square
 
     private final LiveWireAlertBroker liveWireAlertBroker;
+    private final LiveWireContactBroker liveWireContactBroker;
     private final LiveWireSendingBroker liveWireSendingBroker;
     private final GeoLocationBroker geoLocationBroker;
     private final DataSubscriberBroker dataSubscriberBroker;
@@ -60,8 +61,9 @@ public class LiveWireUserController extends BaseController {
     private String mapZenApiKey;
 
     @Autowired
-    public LiveWireUserController(LiveWireAlertBroker liveWireAlertBroker, LiveWireSendingBroker liveWireSendingBroker, GeoLocationBroker geoLocationBroker, DataSubscriberBroker dataSubscriberBroker) {
+    public LiveWireUserController(LiveWireAlertBroker liveWireAlertBroker, LiveWireContactBroker liveWireContactBroker, LiveWireSendingBroker liveWireSendingBroker, GeoLocationBroker geoLocationBroker, DataSubscriberBroker dataSubscriberBroker) {
         this.liveWireAlertBroker = liveWireAlertBroker;
+        this.liveWireContactBroker = liveWireContactBroker;
         this.liveWireSendingBroker = liveWireSendingBroker;
         this.geoLocationBroker = geoLocationBroker;
         this.dataSubscriberBroker = dataSubscriberBroker;
@@ -73,11 +75,16 @@ public class LiveWireUserController extends BaseController {
         return "livewire/user_home";
     }
 
-    @RequestMapping(value = "/contacts", method = RequestMethod.GET)
-    public String findLiveWireContacts(@RequestParam(required = false) Double longitude,
-                                       @RequestParam(required = false) Double latitude,
-                                       @RequestParam(required = false) Integer radius,
-                                       Model model) {
+    @RequestMapping(value = "/contacts/list", method = RequestMethod.GET)
+    public String liveWireContactsList() {
+        return "livewire/contacts_list";
+    }
+
+    @RequestMapping(value = "/contacts/map", method = RequestMethod.GET)
+    public String liveWireContactsMap(@RequestParam(required = false) Double longitude,
+                                      @RequestParam(required = false) Double latitude,
+                                      @RequestParam(required = false) Integer radius,
+                                      Model model) {
         GeoLocation thisLocation;
 
         long startTime = System.currentTimeMillis();
@@ -90,11 +97,8 @@ public class LiveWireUserController extends BaseController {
 
         int searchRadius = radius != null ? radius : GeoLocationUtils.DEFAULT_RADIUS;
 
-        List<LiveWireContactDTO> contacts = liveWireAlertBroker
-                .fetchLiveWireContactsNearby(getUserProfile().getUid(), thisLocation, searchRadius)
-                .stream()
-                .map(LiveWireContactDTO::new)
-                .collect(Collectors.toList());
+        List<LiveWireContactDTO> contacts = liveWireContactBroker
+                .fetchLiveWireContactsNearby(getUserProfile().getUid(), thisLocation, searchRadius);
 
         logger.info("Time to execute query: {} msecs, for records: {}", System.currentTimeMillis() - startTime,
                 contacts.size());
@@ -110,11 +114,8 @@ public class LiveWireUserController extends BaseController {
     public @ResponseBody List<LiveWireContactDTO> updateLiveWireContacts(@RequestParam double longitude,
                                                                          @RequestParam double latitude,
                                                                          @RequestParam int radius) {
-        return liveWireAlertBroker
-                .fetchLiveWireContactsNearby(getUserProfile().getUid(), new GeoLocation(latitude, longitude), radius)
-                .stream()
-                .map(LiveWireContactDTO::new)
-                .collect(Collectors.toList());
+        return liveWireContactBroker
+                .fetchLiveWireContactsNearby(getUserProfile().getUid(), new GeoLocation(latitude, longitude), radius);
     }
 
     @RequestMapping(value = "/alert/list", method = RequestMethod.GET)
@@ -124,7 +125,6 @@ public class LiveWireUserController extends BaseController {
                                                 @SortDefault(sort = "creationTime", direction = Sort.Direction.DESC),
                                                 @SortDefault(sort = "type", direction = Sort.Direction.ASC)
                                         }) Pageable pageable, Model model) {
-
         populateModel(pageable, onlyUnreviewed == null ? false : onlyUnreviewed, model);
         return "livewire/alert_list";
     }

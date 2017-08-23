@@ -13,6 +13,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.StandaloneDatabaseConfig;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import javax.transaction.Transactional;

@@ -1,4 +1,4 @@
-package za.org.grassroot.core.domain;
+package za.org.grassroot.core.domain.account;
 
 import za.org.grassroot.core.enums.AccountPaymentType;
 import za.org.grassroot.core.util.UIDGenerator;

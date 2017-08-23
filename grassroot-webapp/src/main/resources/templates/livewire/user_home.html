@@ -10,15 +10,8 @@
 
 <body>
 
-<section layout:fragment="header" class="top-container">
-  <div class="container">
-    <div class="row">
-      <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
-        <h2 class="text-center header-content-title">LiveWire</h2>
-        <h4 class="text-center header-content-subtitle">Home</h4>
-      </div>
-    </div>
-  </div>
+<section layout:fragment="header" class="top-container"
+         th:replace="~{layout :: std_header('LiveWire', 'Home')}">
 </section>
 
 <main layout:fragment="content">
@@ -34,9 +27,9 @@
           </a>
         </div>
         <div class="col-md-4 text-center">
-          <a th:href="@{/livewire/user/contacts}">
+          <a th:href="@{/livewire/user/contacts/list}">
             <button class="white-button group-button">
-              Find LiveWire contacts
+              View LiveWire contacts
             </button>
           </a>
         </div>

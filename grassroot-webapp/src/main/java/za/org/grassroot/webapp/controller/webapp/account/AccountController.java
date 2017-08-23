@@ -12,7 +12,12 @@ import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.account.Account;
+import za.org.grassroot.core.domain.account.AccountBillingRecord;
+import za.org.grassroot.core.domain.account.PaidGroup;
 import za.org.grassroot.core.enums.AccountPaymentType;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.integration.PdfGeneratingService;
@@ -29,8 +34,6 @@ import za.org.grassroot.webapp.model.web.PrivateGroupWrapper;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -260,30 +263,6 @@ public class AccountController extends BaseController {
         return new FileSystemResource(pdfGeneratingService.generateInvoice(associatedRecords.stream()
                 .map(AccountBillingRecord::getUid).collect(Collectors.toList())));
     }
-
-    //--------------------------
-
-    /*@RequestMapping(value = "/statement",method = RequestMethod.GET,produces = "application/pdf")
-    @ResponseBody
-    public FileSystemResource genPdf(Model model)
-    {
-        FileSystemResource fsr = null;
-        try {
-            //File file = pdfGeneratingService.generateGroupFlyer("4a8dccda-d237-4add-8593-ecdff1f183ab",true , null);
-            //model.addAttribute("file",file);
-            fsr = new FileSystemResource(pdfGeneratingService.generateGroupFlyer("4a8dccda-d237-4add-8593-ecdff1f183ab",true,new Locale("zu")));
-        } catch (FileNotFoundException e) {
-        }
-        pdfGeneratingService.availableLanguages();
-        return fsr;
-    }*/
-
-
-
-
-    //--------------------------
-
-
 
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     @RequestMapping(value = "/admin/add", method = RequestMethod.GET)

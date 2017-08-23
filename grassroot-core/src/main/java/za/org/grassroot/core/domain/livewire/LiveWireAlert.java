@@ -67,6 +67,10 @@ public class LiveWireAlert {
     private String contactName;
 
     @Basic
+    @Column(name = "headline")
+    private String headline;
+
+    @Basic
     @Column(name = "description")
     private String description;
 

@@ -29,6 +29,4 @@ public interface ObjectLocationBroker {
 
     List<ObjectLocation> fetchLocationsWithFilter(GroupLocationFilter filter);
 
-    InvertGeoCodeResult getReviseGeoCodeAddressFullGeoLocation(GeoLocation location);
-
 }

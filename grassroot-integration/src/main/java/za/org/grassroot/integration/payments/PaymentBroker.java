@@ -1,6 +1,6 @@
 package za.org.grassroot.integration.payments;
 
-import za.org.grassroot.core.domain.AccountBillingRecord;
+import za.org.grassroot.core.domain.account.AccountBillingRecord;
 
 /**
  * Created by luke on 2016/10/26.

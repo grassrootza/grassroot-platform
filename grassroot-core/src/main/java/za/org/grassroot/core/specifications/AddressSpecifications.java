@@ -1,12 +1,9 @@
 package za.org.grassroot.core.specifications;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.jpa.domain.Specifications;
-import za.org.grassroot.core.domain.Address;
-import za.org.grassroot.core.domain.Address_;
+import za.org.grassroot.core.domain.geo.Address;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.geo.Address_;
 
 /**
  * Created by luke on 2017/05/12.

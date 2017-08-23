@@ -1,5 +1,11 @@
 package za.org.grassroot.services.geo;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.ObjectLocation;
@@ -8,20 +14,7 @@ import za.org.grassroot.core.repository.MeetingLocationRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.group.GroupLocationFilter;
 
-import org.apache.http.client.utils.URIBuilder;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.RestTemplate;
-
 import javax.persistence.EntityManager;
-import java.net.URISyntaxException;
 import java.security.InvalidParameterException;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -43,10 +36,6 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
     private final EntityManager entityManager;
     private final GroupLocationRepository groupLocationRepository;
     private final MeetingLocationRepository meetingLocationRepository;
-    private final RestTemplate restTemplate;
-
-    @Value("${grassroot.geocoding.api.url:http://nominatim.openstreetmap.org/reverse}")
-    private String geocodingApiUrl;
 
     @Autowired
     public ObjectLocationBrokerImpl(EntityManager entityManager, GroupLocationRepository groupLocationRepository,
@@ -54,7 +43,6 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
         this.entityManager = entityManager;
         this.groupLocationRepository = groupLocationRepository;
         this.meetingLocationRepository = meetingLocationRepository;
-        this.restTemplate = restTemplate;
     }
 
     @Override
@@ -202,16 +190,6 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
         locations.addAll(meetingLocationRepository.findAllLocationsWithDateAfterAndGroupIn(groupsToInclude));
 
         return locations;
-    }
-
-    @Override
-    public InvertGeoCodeResult getReviseGeoCodeAddressFullGeoLocation(GeoLocation location) {
-        try {
-            return restTemplate.getForObject(invertGeoCodeRequestURI(location).build(), InvertGeoCodeResult.class);
-        } catch (URISyntaxException|NullPointerException|HttpClientErrorException e) {
-            e.printStackTrace();
-            return null;
-        }
     }
 
     /**
@@ -395,14 +373,5 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
         if (location == null || !location.isValid()) {
             throw new InvalidParameterException("Invalid GeoLocation object.");
         }
-    }
-
-    private URIBuilder invertGeoCodeRequestURI(GeoLocation location) throws URISyntaxException {
-        URIBuilder uriBuilder = new URIBuilder(geocodingApiUrl);
-        uriBuilder.addParameter("format", "json");
-        uriBuilder.addParameter("lat", String.valueOf(location.getLatitude()));
-        uriBuilder.addParameter("lon", String.valueOf(location.getLongitude()));
-        uriBuilder.addParameter("zoom", "18");
-        return uriBuilder;
     }
 }

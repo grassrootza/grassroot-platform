@@ -1,6 +1,7 @@
-package za.org.grassroot.core.domain;
+package za.org.grassroot.core.domain.geo;
 
 import org.springframework.util.StringUtils;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.LocationHolder;
 import za.org.grassroot.core.enums.LocationSource;
@@ -153,6 +154,10 @@ public class Address implements LocationHolder {
 
     public boolean hasHouseAndStreet() {
         return !StringUtils.isEmpty(this.house) || !StringUtils.isEmpty(this.street);
+    }
+
+    public boolean hasStreetAndArea() {
+        return !StringUtils.isEmpty(this.street) && !StringUtils.isEmpty(this.neighbourhood);
     }
 
     @Override

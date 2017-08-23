@@ -5,12 +5,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Meeting;
-import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
+import za.org.grassroot.core.enums.LiveWireAlertDestType;
 import za.org.grassroot.core.enums.LiveWireAlertType;
 import za.org.grassroot.core.enums.UserInterfaceType;
-import za.org.grassroot.core.enums.LiveWireAlertDestType;
 
 import java.time.Instant;
 import java.util.List;
@@ -28,8 +27,6 @@ public interface LiveWireAlertBroker {
 
     List<Meeting> meetingsForAlert(String userUid);
 
-    List<User> fetchLiveWireContactsNearby(String queryingUserUid, GeoLocation location, Integer radius);
-
     /*
     Methods to create an alert or register as a contact person
      */
@@ -46,11 +43,6 @@ public interface LiveWireAlertBroker {
     void setAlertComplete(String userUid, String alertUid, Instant soonestTimeToSend);
 
     void addLocationToAlert(String userUid, String alertUid, GeoLocation location, UserInterfaceType interfaceType);
-
-    // set boolean to false to revoke
-    void updateUserLiveWireContactStatus(String userUid, boolean addingPermission, UserInterfaceType interfaceType);
-
-    void trackLocationForLiveWireContact(String userUid, UserInterfaceType type);
 
     /*
     Methods for loading, tagging, and releasing alerts

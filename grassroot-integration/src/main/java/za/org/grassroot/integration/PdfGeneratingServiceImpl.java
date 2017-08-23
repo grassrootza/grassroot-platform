@@ -2,6 +2,7 @@ package za.org.grassroot.integration;
 
 import com.itextpdf.forms.PdfAcroForm;
 import com.itextpdf.forms.fields.PdfFormField;
+<<<<<<< HEAD
 import com.itextpdf.kernel.color.Color;
 import com.itextpdf.kernel.pdf.*;
 import com.itextpdf.kernel.pdf.PdfWriter;
@@ -13,6 +14,11 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.ImageType;
 import org.apache.pdfbox.rendering.PDFRenderer;
 import org.apache.pdfbox.tools.imageio.ImageIOUtil;
+=======
+import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfReader;
+import com.itextpdf.kernel.pdf.PdfWriter;
+>>>>>>> 10b9ec4b76740f7fb86f81209207a7ac435d74f8
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,9 +26,9 @@ import org.springframework.core.env.Environment;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.Account;
-import za.org.grassroot.core.domain.AccountBillingRecord;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.account.Account;
+import za.org.grassroot.core.domain.account.AccountBillingRecord;
 import za.org.grassroot.core.repository.AccountBillingRecordRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 
@@ -30,8 +36,11 @@ import javax.annotation.PostConstruct;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
+<<<<<<< HEAD
 //impo import java.io.FileOutputStream;
 import java.io.FileNotFoundException;
+=======
+>>>>>>> 10b9ec4b76740f7fb86f81209207a7ac435d74f8
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.time.Instant;
@@ -39,7 +48,6 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.List;
-
 
 import static za.org.grassroot.core.specifications.BillingSpecifications.*;
 import static za.org.grassroot.core.util.DateTimeUtil.formatAtSAST;
@@ -75,13 +83,14 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
 
     @PostConstruct
     private void init() {
+        // todo: remove the properties for the specific files, and get them all from the folder
         this.invoiceTemplatePath = environment.getProperty("grassroot.invoice.template.path", "no_invoice.pdf");
         this.folderPath = environment.getProperty("grassroot.flyer.folder.path");
 
         logger.info("PDF GENERATOR: path = " + invoiceTemplatePath);
     }
 
-    // major todo : switch to Guava temp handling & clean the temp folder periodically
+    // major todo : switch to Guava temp file handling & clean the temp folder periodically
     @Override
     @Transactional(readOnly = true)
     public File generateInvoice(List<String> billingRecordUids) {
@@ -163,10 +172,15 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
     }
 
     @Override
+<<<<<<< HEAD
     public File generateGroupFlyer(String groupUid, boolean color, Locale language, String typeOfFile) {
         // load group entity from group repository using uid
         PdfDocument pdfdocument = null;
         PDDocument pd = null;
+=======
+    public File generateGroupFlyer(String groupUid, boolean color, Locale language) {
+        PdfDocument pdfdocument;
+>>>>>>> 10b9ec4b76740f7fb86f81209207a7ac435d74f8
         File fileToReturn = null;
         Group grpEntity = groupRepository.findOneByUid(groupUid);
 
@@ -197,9 +211,11 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
 
             pdfAcroForm.flattenFields();
 
+            // todo: make sure these are set
             //pdfOutput.setFullCompression();
 
             pdfdocument.close();
+<<<<<<< HEAD
 
             pd = PDDocument.load(fileToReturn);
             //generateImage(pd);
@@ -208,6 +224,8 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
                 fileToReturn = generateImage(pd);
             }
 
+=======
+>>>>>>> 10b9ec4b76740f7fb86f81209207a7ac435d74f8
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -238,6 +256,7 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
     @Override
     public List<Locale> availableLanguages() {
         List<Locale> languages = new ArrayList<>();
+<<<<<<< HEAD
         File[] filesInFolder = null;
         List<File> tempListOfFiles = new ArrayList<>();
 
@@ -263,11 +282,26 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
             for(int x = 0;x < tempListOfFiles.size();x++) {
                 //names[x] = filesInFolder[x].getName();
                 names[x] = tempListOfFiles.get(x).getName();
+=======
+        File folder = new File(folderPath);
+
+        if(!folder.isDirectory()) {
+            // todo: throw this exception
+            //Throw exception
+        } else{
+            File[] filesInFolder = folder.listFiles();
+
+            // todo: check that filesInFOlder is not null
+            String[] names = new String[filesInFolder.length];
+
+            for(int x = 0;x < filesInFolder.length; x++) {
+                names[x] = filesInFolder[x].getName();
+>>>>>>> 10b9ec4b76740f7fb86f81209207a7ac435d74f8
             }
 
             for(int x = 0;x < names.length;x++) {
                 String[] data = names[x].split(SEPARATOR);
-                String name = data[LANGUAGE_POSITION];//Check if is a valid name
+                String name = data[LANGUAGE_POSITION];// Check if is a valid name
 
                 if (Arrays.asList(Locale.getISOLanguages()).contains(name)) {
                     Locale lang = new Locale(name);
@@ -276,9 +310,7 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
             }
 
         }
-
-        logger.info("Languages = {}",languages);
-
+        logger.debug("Languages = {}",languages);
         return languages;
     }
 

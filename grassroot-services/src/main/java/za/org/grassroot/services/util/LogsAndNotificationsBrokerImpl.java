@@ -8,6 +8,8 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.account.AccountLog;
+import za.org.grassroot.core.domain.livewire.LiveWireLog;
 import za.org.grassroot.core.repository.*;
 
 import java.util.Objects;

@@ -1,6 +1,7 @@
-package za.org.grassroot.core.domain;
+package za.org.grassroot.core.domain.account;
 
-import org.springframework.stereotype.Controller;
+import za.org.grassroot.core.domain.GrassrootEntity;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.AccountBillingCycle;
 import za.org.grassroot.core.enums.AccountPaymentType;
 import za.org.grassroot.core.enums.AccountType;

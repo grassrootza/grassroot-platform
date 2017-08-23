@@ -1,7 +1,7 @@
 package za.org.grassroot.core.domain.association;
 
 
-import za.org.grassroot.core.domain.Account;
+import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.AssociationRequestType;
 import za.org.grassroot.core.util.DateTimeUtil;

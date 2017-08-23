@@ -1,11 +1,10 @@
-package za.org.grassroot.services.specifications;
+package za.org.grassroot.core.specifications;
 
 import org.springframework.data.jpa.domain.Specification;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.domain.AccountLog;
-import za.org.grassroot.core.domain.EventLog;
-import za.org.grassroot.core.domain.GroupLog;
-import za.org.grassroot.core.domain.TodoLog;
+import za.org.grassroot.core.domain.account.AccountLog;
+import za.org.grassroot.core.domain.account.AccountLog_;
+import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.enums.AccountLogType;
 
 import javax.persistence.criteria.Join;

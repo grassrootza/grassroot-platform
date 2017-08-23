@@ -17,6 +17,4 @@ public class Application {
          new GrassrootApplication(GrassrootWebApplicationConfig.class).run(args);
     }
 
-
-
 }
