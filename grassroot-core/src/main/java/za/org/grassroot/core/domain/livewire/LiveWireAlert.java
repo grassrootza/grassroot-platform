@@ -122,8 +122,8 @@ public class LiveWireAlert {
     private LocationSource locationSource;
 
     @ManyToMany(cascade = CascadeType.ALL)
-    @JoinTable(name = "livewire_media_files",
-            joinColumns = @JoinColumn(name = "livewire_alert_id", nullable = false),
+    @JoinTable(name = "live_wire_media_files",
+            joinColumns = @JoinColumn(name = "live_wire_alert_id", nullable = false),
             inverseJoinColumns = @JoinColumn(name = "media_file_id", nullable = false))
     private Set<MediaFileRecord> mediaFiles = new HashSet<>();
 
@@ -482,6 +482,10 @@ public class LiveWireAlert {
 
     public List<String> getPublicListUids() {
         return StringArrayUtil.arrayToList(publicLists);
+    }
+
+    public boolean hasPublicListUids() {
+        return !StringArrayUtil.isAllEmptyOrNull(getPublicListUids());
     }
 
     public void setPublicLists(String[] publicLists) {

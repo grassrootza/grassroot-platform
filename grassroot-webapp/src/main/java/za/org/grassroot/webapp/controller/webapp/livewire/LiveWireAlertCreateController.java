@@ -12,16 +12,20 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.livewire.DataSubscriber;
+import za.org.grassroot.core.domain.media.MediaFileRecord;
+import za.org.grassroot.core.domain.media.MediaFunction;
 import za.org.grassroot.core.enums.LiveWireAlertDestType;
 import za.org.grassroot.core.enums.LiveWireAlertType;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.core.util.PhoneNumberUtil;
+import za.org.grassroot.integration.MediaFileBroker;
 import za.org.grassroot.services.livewire.DataSubscriberBroker;
 import za.org.grassroot.services.livewire.LiveWireAlertBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.UidNameDTO;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,11 +42,13 @@ public class LiveWireAlertCreateController extends BaseController {
 
     private final LiveWireAlertBroker liveWireAlertBroker;
     private final DataSubscriberBroker dataSubscriberBroker;
+    private final MediaFileBroker mediaFileBroker;
 
     @Autowired
-    public LiveWireAlertCreateController(LiveWireAlertBroker liveWireAlertBroker, DataSubscriberBroker dataSubscriberBroker) {
+    public LiveWireAlertCreateController(LiveWireAlertBroker liveWireAlertBroker, DataSubscriberBroker dataSubscriberBroker, MediaFileBroker mediaFileBroker) {
         this.liveWireAlertBroker = liveWireAlertBroker;
         this.dataSubscriberBroker = dataSubscriberBroker;
+        this.mediaFileBroker = mediaFileBroker;
     }
 
     @RequestMapping(value = {"", "/"})
@@ -86,9 +92,16 @@ public class LiveWireAlertCreateController extends BaseController {
             final DataSubscriber dataSubscriber = (destination != null && !LiveWireAlertDestType.PUBLIC_LIST.equals(destination)) ?
                     dataSubscriberBroker.fetchLiveWireListForSubscriber(getUserProfile().getUid()) : null;
 
+            // todo: probably should handle the file upload async or in a different thread ...
+            // todo: proper MIME type handling
+            String mediaRecordUid = (image == null) ? null :
+                    mediaFileBroker.storeFile(image, MediaFunction.LIVEWIRE_MEDIA, "image/jpeg", null); // means UID will be used for key
+            List<MediaFileRecord> mediaRecords = mediaRecordUid == null ? null :
+                    Collections.singletonList(mediaFileBroker.load(mediaRecordUid));
+
             liveWireAlertBroker.createAsComplete(getUserProfile().getUid(), headline, description, type,
                     type.equals(LiveWireAlertType.INSTANT) ? groupUid : meetingUid,
-                    contactUserUid, contactName, destination, dataSubscriber, null);
+                    contactUserUid, contactName, destination, dataSubscriber, mediaRecords);
 
             addMessage(attributes, MessageType.SUCCESS, "livewire.alert.submitted.done", request);
             return "redirect:/home";

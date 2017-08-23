@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.support.MessageSourceAccessor;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.thymeleaf.TemplateEngine;
@@ -21,7 +22,9 @@ import za.org.grassroot.core.repository.LiveWireAlertRepository;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.email.GrassrootEmail;
 import za.org.grassroot.integration.livewire.LiveWirePushBroker;
+import za.org.grassroot.integration.storage.StorageBroker;
 
+import java.io.File;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.time.format.DateTimeFormatter;
@@ -45,22 +48,27 @@ public class LiveWireSendingBrokerImpl implements LiveWireSendingBroker {
     private final LiveWireAlertRepository alertRepository;
     private final DataSubscriberRepository subscriberRepository;
     private final LiveWirePushBroker liveWirePushBroker;
+
     private final MessageSourceAccessor messageSource;
     private final TemplateEngine templateEngine;
+    private final StorageBroker storageBroker;
 
     @Autowired
     public LiveWireSendingBrokerImpl(LiveWireAlertRepository alertRepository,
                                      DataSubscriberRepository subscriberRepository,
                                      LiveWirePushBroker liveWirePushBroker,
                                      @Qualifier("servicesMessageSourceAccessor") MessageSourceAccessor messageSource,
-                                     @Qualifier("emailTemplateEngine") TemplateEngine templateEngine) {
+                                     @Qualifier("emailTemplateEngine") TemplateEngine templateEngine,
+                                     StorageBroker storageBroker) {
         this.alertRepository = alertRepository;
         this.subscriberRepository = subscriberRepository;
         this.liveWirePushBroker = liveWirePushBroker;
         this.messageSource = messageSource;
         this.templateEngine = templateEngine;
+        this.storageBroker = storageBroker;
     }
 
+    @Async
     @Override
     @Transactional(readOnly = true)
     public void sendLiveWireAlerts(Set<String> alertUids) {
@@ -93,7 +101,9 @@ public class LiveWireSendingBrokerImpl implements LiveWireSendingBroker {
     private List<String> collectPublicEmailAddresses(LiveWireAlert alert) {
         // doing this in one query would be more efficient, but because of the unnest it can't be done with
         // JPQL, and passing in the list of UIDs is then difficult in JPA, hence ...
-        return alert.getPublicListUids()
+        // logger.info("alert public uids: {}, empty? : {}", alert.getPublicListUids(), !alert.hasPublicListUids());
+        return !alert.hasPublicListUids() ? Collections.emptyList() :
+                alert.getPublicListUids()
                 .stream()
                 .map(u -> subscriberRepository.findOneByUid(u).getPushEmails())
                 .flatMap(Collection::stream)
@@ -131,24 +141,30 @@ public class LiveWireSendingBrokerImpl implements LiveWireSendingBroker {
             populateGroupVars(meeting.getAncestorGroup(), emailVars);
         }
 
+        GrassrootEmail.EmailBuilder builder = new GrassrootEmail.EmailBuilder()
+                .from("Grassroot LiveWire")
+                .subject(messageSource.getMessage(subject));
+
         if (alert.getMediaFiles() != null && !alert.getMediaFiles().isEmpty()) {
             // for the moment, we basically are just sending one as attachment (to change when gallery etc working)
-
+            logger.info("trying to fetch the image ....");
+            File attachment = storageBroker.fetchFileFromRecord(alert.getMediaFiles().iterator().next());
+            logger.info("fetched the image, adding it to email ...");
+            builder.attachment("image.jpg", attachment);
         }
 
         final Context ctx = new Context(Locale.ENGLISH);
 
         return emailAddresses.stream()
-                .map(a -> finishAlert(ctx, emailVars, subject, template, a))
+                .map(a -> finishAlert(ctx, builder, emailVars, template, a))
                 .collect(Collectors.toList());
     }
 
     private GrassrootEmail finishAlert(final Context ctx,
+                                       GrassrootEmail.EmailBuilder builder,
                                        Map<String, Object> emailVars,
-                                       String subject,
                                        String template,
                                        String emailAddress) {
-        GrassrootEmail.EmailBuilder builder = new GrassrootEmail.EmailBuilder();
         try {
             final String encodedEmail = URLEncoder.encode(emailAddress, "UTF-8");
             emailVars.put("infoLink", publicInfoPath + "info?email=" + encodedEmail);
@@ -160,12 +176,11 @@ public class LiveWireSendingBrokerImpl implements LiveWireSendingBroker {
         }
 
         ctx.setVariables(emailVars);
-        builder.from("Grassroot LiveWire")
+        return builder
                 .address(emailAddress)
-                .subject(messageSource.getMessage(subject))
                 .content(templateEngine.process("text/" + template, ctx))
-                .htmlContent(templateEngine.process("html/" + template, ctx));
-        return builder.build();
+                .htmlContent(templateEngine.process("html/" + template, ctx))
+                .build();
     }
 
     private void populateGroupVars(Group group, Map<String, Object> emailVars) {

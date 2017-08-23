@@ -3,6 +3,7 @@ package za.org.grassroot.integration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import za.org.grassroot.core.domain.media.MediaFileRecord;
@@ -10,6 +11,7 @@ import za.org.grassroot.core.domain.media.MediaFunction;
 import za.org.grassroot.core.repository.MediaFileRecordRepository;
 import za.org.grassroot.integration.storage.StorageBroker;
 
+@Service
 public class MediaFileBrokerImpl implements MediaFileBroker {
 
     private static final Logger logger = LoggerFactory.getLogger(MediaFileBrokerImpl.class);
@@ -41,8 +43,10 @@ public class MediaFileBrokerImpl implements MediaFileBroker {
     @Transactional
     public String storeFile(MultipartFile file, MediaFunction function, String mimeType, String imageKey) {
         MediaFileRecord record = new MediaFileRecord(getBucketForFunction(function), imageKey);
+        logger.info("created media record ...");
         if (storageBroker.storeMedia(record, file)) {
             record.setMimeType(mimeType);
+            logger.info("media record stored and has mime type");
             recordRepository.save(record);
             return record.getUid();
         } else {

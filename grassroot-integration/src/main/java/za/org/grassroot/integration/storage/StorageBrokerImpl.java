@@ -214,7 +214,7 @@ public class StorageBrokerImpl implements StorageBroker {
         try {
             S3Object s3Object = getObject(record.getBucket(), record.getKey());
             S3ObjectInputStream s3is = s3Object.getObjectContent();
-            File outputFile = new File(record.getKey());
+            File outputFile = File.createTempFile(record.getKey(), "jpg"); // todo: extend to MIME types
             FileOutputStream fos = new FileOutputStream(outputFile);
             byte[] read_buf = new byte[1024];
             int read_len = 0;

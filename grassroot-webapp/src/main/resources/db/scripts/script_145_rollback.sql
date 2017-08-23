@@ -1,4 +1,4 @@
-drop table livewire_media_files;
+drop table live_wire_media_files;
 drop table media_file;
 
 alter table only live_wire_alert drop column description;
