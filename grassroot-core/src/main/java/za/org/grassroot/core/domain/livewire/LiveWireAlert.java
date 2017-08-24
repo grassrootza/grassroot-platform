@@ -3,9 +3,10 @@ package za.org.grassroot.core.domain.livewire;
 import org.hibernate.annotations.Type;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.Meeting;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
+import za.org.grassroot.core.domain.media.MediaFileRecord;
+import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.enums.LiveWireAlertDestType;
 import za.org.grassroot.core.enums.LiveWireAlertType;
 import za.org.grassroot.core.enums.LocationSource;
@@ -15,10 +16,7 @@ import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * Created by luke on 2017/05/07.
@@ -123,20 +121,35 @@ public class LiveWireAlert {
     @Column(name = "location_source", length = 50, nullable = true)
     private LocationSource locationSource;
 
+    @ManyToMany(cascade = CascadeType.ALL)
+    @JoinTable(name = "live_wire_media_files",
+            joinColumns = @JoinColumn(name = "live_wire_alert_id", nullable = false),
+            inverseJoinColumns = @JoinColumn(name = "media_file_id", nullable = false))
+    private Set<MediaFileRecord> mediaFiles = new HashSet<>();
+
     @Version
     private Integer version;
 
-    public static class Builder {
+    public static Builder newBuilder() {
+        return new Builder();
+    }
+
+    public static final class Builder {
         private User creatingUser;
         private LiveWireAlertType type;
         private User contactUser;
         private String contactName;
         private Meeting meeting;
         private Group group;
+        private String headline;
         private String description;
         private Instant sendTime;
         private boolean complete;
         private LiveWireAlertDestType destType;
+        private DataSubscriber destSubscriber;
+        private Set<MediaFileRecord> mediaFiles;
+        private GeoLocation location;
+        private LocationSource locationSource;
 
         public Builder creatingUser(User creatingUser) {
             this.creatingUser = creatingUser;
@@ -168,6 +181,11 @@ public class LiveWireAlert {
             return this;
         }
 
+        public Builder headline(String headline) {
+            this.headline = headline;
+            return this;
+        }
+
         public Builder description(String description) {
             this.description = description;
             return this;
@@ -188,12 +206,43 @@ public class LiveWireAlert {
             return this;
         }
 
+        public Builder destSubscriber(DataSubscriber destSubscriber) {
+            this.destSubscriber = destSubscriber;
+            return this;
+        }
+
+        public Builder mediaFiles(Set<MediaFileRecord> mediaFiles) {
+            this.mediaFiles = mediaFiles;
+            return this;
+        }
+
+        public Builder location(GeoLocation location, LocationSource locationSource) {
+            this.location = location;
+            this.locationSource = locationSource;
+            return this;
+        }
+
+        // checks if we have enough for a _complete_ alert (not called when generating via USSD, just Android/Web
+        public boolean areSufficientFieldsComplete() {
+            boolean fieldsPresent = creatingUser != null
+                    && type != null && destType != null
+                    && !StringUtils.isEmpty(headline);
+
+            if (LiveWireAlertType.MEETING.equals(type)) {
+                fieldsPresent &= meeting != null;
+            } else if (LiveWireAlertType.INSTANT.equals(type)) {
+                fieldsPresent &= group != null;
+            }
+
+            return fieldsPresent;
+        }
+
         public LiveWireAlert build() {
             LiveWireAlert alert = new LiveWireAlert(
                     Objects.requireNonNull(creatingUser),
                     Objects.requireNonNull(type),
                     Objects.requireNonNull(destType),
-                    meeting, group, description);
+                    meeting, group, description, headline);
 
             if (sendTime != null) {
                 alert.setSendTime(sendTime);
@@ -202,6 +251,19 @@ public class LiveWireAlert {
             if (contactUser != null) {
                 alert.setContactUser(contactUser);
                 alert.setContactName(contactName);
+            }
+
+            if (mediaFiles != null) {
+                alert.setMediaFiles(mediaFiles);
+            }
+
+            if (location != null) {
+                alert.setLocation(location);
+                alert.setLocationSource(locationSource == null ? LocationSource.UNKNOWN : locationSource);
+            }
+
+            if (destSubscriber != null) {
+                alert.setTargetSubscriber(destSubscriber);
             }
 
             alert.setComplete(complete);
@@ -215,13 +277,14 @@ public class LiveWireAlert {
     }
 
     private LiveWireAlert(User creatingUser, LiveWireAlertType type, LiveWireAlertDestType destType,
-                          Meeting meeting, Group group, String description) {
+                          Meeting meeting, Group group, String description, String headline) {
         this.uid = UIDGenerator.generateId();
         this.creationTime = Instant.now();
         this.creatingUser = creatingUser;
         this.type = type;
         this.meeting = meeting;
         this.group = group;
+        this.headline = headline;
         this.description = description;
         this.complete = false;
         this.sent = false;
@@ -274,6 +337,10 @@ public class LiveWireAlert {
         return group;
     }
 
+    public String getHeadline() {
+        return headline;
+    }
+
     public String getDescription() {
         return description;
     }
@@ -304,6 +371,10 @@ public class LiveWireAlert {
 
     public void setContactName(String contactName) {
         this.contactName = contactName;
+    }
+
+    public void setHeadline(String headline) {
+        this.headline = headline;
     }
 
     public void setDescription(String description) {
@@ -413,12 +484,31 @@ public class LiveWireAlert {
         return StringArrayUtil.arrayToList(publicLists);
     }
 
+    public boolean hasPublicListUids() {
+        return !StringArrayUtil.isAllEmptyOrNull(getPublicListUids());
+    }
+
     public void setPublicLists(String[] publicLists) {
         this.publicLists = publicLists;
     }
 
     public void setPublicListUids(List<String> uids) {
         this.publicLists = StringArrayUtil.listToArray(uids);
+    }
+
+    public Set<MediaFileRecord> getMediaFiles() {
+        if (mediaFiles == null) {
+            mediaFiles = new HashSet<>();
+        }
+        return mediaFiles;
+    }
+
+    public void setMediaFiles(Set<MediaFileRecord> mediaFiles) {
+        this.mediaFiles = mediaFiles;
+    }
+
+    public void addMediaFile(MediaFileRecord mediaFileRecord) {
+        getMediaFiles().add(mediaFileRecord);
     }
 
     @Override

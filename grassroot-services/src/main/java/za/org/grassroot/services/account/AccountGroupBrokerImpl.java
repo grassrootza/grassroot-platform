@@ -14,6 +14,7 @@ import za.org.grassroot.core.domain.GroupLog;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.PaidGroup;
 import za.org.grassroot.core.domain.notification.FreeFormMessageNotification;
+import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.enums.AccountLogType;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.repository.*;
@@ -21,7 +22,7 @@ import za.org.grassroot.core.specifications.GroupSpecifications;
 import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.*;
-import za.org.grassroot.services.specifications.EventSpecifications;
+import za.org.grassroot.core.specifications.EventSpecifications;
 import za.org.grassroot.services.util.FullTextSearchUtils;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
@@ -40,8 +41,8 @@ import static org.springframework.data.jpa.domain.Specifications.where;
 import static za.org.grassroot.core.specifications.PaidGroupSpecifications.expiresAfter;
 import static za.org.grassroot.core.specifications.PaidGroupSpecifications.isForAccount;
 import static za.org.grassroot.core.specifications.NotificationSpecifications.*;
-import static za.org.grassroot.services.specifications.TodoSpecifications.createdDateBetween;
-import static za.org.grassroot.services.specifications.TodoSpecifications.hasGroupAsAncestor;
+import static za.org.grassroot.core.specifications.TodoSpecifications.createdDateBetween;
+import static za.org.grassroot.core.specifications.TodoSpecifications.hasGroupAsAncestor;
 
 /**
  * Created by luke on 2016/10/25.

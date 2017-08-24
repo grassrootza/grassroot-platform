@@ -71,13 +71,6 @@ public interface GroupRepository extends JpaRepository<Group, Long>, JpaSpecific
             "where g.active = true and m.user_id = ?1 and to_tsvector('english', g.name) @@ to_tsquery('english', ?2)",
             nativeQuery = true)
     List<Group> findByActiveAndMembershipsUserWithNameContainsText(Long userId, String nameTsQuery);
-
-    /*
-    Find the max(groupTokenCode) in table
-    N.B. remove this when we stop using integer values
-     */
-    @Query(value = "SELECT COALESCE(MAX(CAST(group_token_code as INTEGER)),123) FROM group_profile g WHERE group_token_code NOT LIKE ''", nativeQuery = true)
-    int getMaxTokenValue();
     
     @Query(value = "select groupTokenCode from Group")
     List<String> findAllTokenCodes();

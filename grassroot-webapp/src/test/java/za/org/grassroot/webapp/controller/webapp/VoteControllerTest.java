@@ -8,11 +8,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.dto.ResponseTotalsDTO;
-import za.org.grassroot.core.enums.EventRSVPResponse;
+import za.org.grassroot.core.domain.task.Vote;
 import za.org.grassroot.services.task.VoteBroker;
 import za.org.grassroot.webapp.controller.BaseController;
-import za.org.grassroot.webapp.model.web.EventWrapper;
 import za.org.grassroot.webapp.model.web.VoteWrapper;
 
 import java.time.Instant;

@@ -1,7 +1,7 @@
 package za.org.grassroot.webapp.model.web;
 
 import org.springframework.web.multipart.MultipartFile;
-import za.org.grassroot.core.domain.EventReminderType;
+import za.org.grassroot.core.domain.task.EventReminderType;
 import za.org.grassroot.core.enums.MeetingImportance;
 import za.org.grassroot.webapp.enums.EntityPublicOption;
 

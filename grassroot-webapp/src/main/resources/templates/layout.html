@@ -46,15 +46,15 @@
             <li sec:authorize="!hasRole('ROLE_LIVEWIRE_USER')">
               <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/location}">Around Me</a></li>
             <li sec:authorize="!hasRole('ROLE_LIVEWIRE_USER')">
-              <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/livewire/alert}">LiveWire</a>
+              <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/livewire/create}">LiveWire</a>
             </li>
             <li sec:authorize="hasRole('ROLE_LIVEWIRE_USER')" class="dropdown">
               <a href="javascript:void(0)" data-target="#" class="dropdown-toggle gr-navbar-link" data-toggle="dropdown" aria-expanded="false">
                 LiveWire<b class="caret"></b></a>
               <ul class="dropdown-menu">
-                <li><a th:href="@{/livewire/alert}">Send alert</a></li>
-                <li><a th:href="@{/livewire/user/alerts/list}">View alerts</a></li>
-                <li><a th:href="@{/livewire/user/contacts/list}">View contacts</a></li>
+                <li><a th:href="@{/livewire/alert/create}">Send alert</a></li>
+                <li><a th:href="@{/livewire/alert/list}">View alerts</a></li>
+                <li><a th:href="@{/livewire/contact/list}">View contacts</a></li>
               </ul>
             </li>
 

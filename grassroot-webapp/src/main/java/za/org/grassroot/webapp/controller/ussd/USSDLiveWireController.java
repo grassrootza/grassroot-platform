@@ -143,7 +143,7 @@ public class USSDLiveWireController extends USSDController {
 
     private USSDMenu assembleContactChoiceMenu(User user, String alertUid, LiveWireAlertType type) {
         USSDMenu menu = new USSDMenu(getMessage(LIVEWIRE, "contact", promptKey, user));
-        menu.addMenuOption(menuUri("description", alertUid) + "&contactUid=" + user.getUid(),
+        menu.addMenuOption(menuUri("headline", alertUid) + "&contactUid=" + user.getUid(),
                 getMessage(LIVEWIRE, "contact", optionsKey + "me", new String[] {user.getName()}, user));
         menu.addMenuOption(menuUri("contact/name", alertUid) + "&contactUid=" + user.getUid(),
                 getMessage(LIVEWIRE, "contact", optionsKey + "me.change", user));
@@ -206,7 +206,7 @@ public class USSDLiveWireController extends USSDController {
             USSDMenu menu = new USSDMenu(prompt);
             menu.setFreeText(true);
             if (revising == null || !revising) {
-                menu.setNextURI(menuUri("description", alertUid) + "&contactUid=" + contactUser.getUid());
+                menu.setNextURI(menuUri("headline", alertUid) + "&contactUid=" + contactUser.getUid());
             } else {
                 menu.setNextURI(menuUri("confirm", alertUid) + "&contactUid=" + contactUser.getUid() +
                         "&revisingContact=true&field=contact");
@@ -215,23 +215,23 @@ public class USSDLiveWireController extends USSDController {
         }
     }
 
-    @RequestMapping("description")
+    @RequestMapping("headline")
     @ResponseBody
     public Request enterDescription(@RequestParam String msisdn, @RequestParam String alertUid,
                                     @RequestParam String request,
                                     @RequestParam(required = false) String contactUid,
                                     @RequestParam(required = false) String priorInput) throws URISyntaxException {
         String userInput = StringUtils.isNullOrEmpty(priorInput) ? request : priorInput;
-        User user = userManager.findByInputNumber(msisdn, uriForCache("description", alertUid, userInput)
+        User user = userManager.findByInputNumber(msisdn, uriForCache("headline", alertUid, userInput)
                 + (StringUtils.isNullOrEmpty(contactUid) ? "" : "&contactUid=" + contactUid));
         if (!StringUtils.isNullOrEmpty(contactUid)) {
             liveWireAlertBroker.updateContactUser(user.getUid(), alertUid, contactUid,
                     StringUtils.isNumber(userInput) ? null : userInput);
         }
-        USSDMenu menu = new USSDMenu(getMessage(LIVEWIRE, "description", promptKey, user));
+        USSDMenu menu = new USSDMenu(getMessage(LIVEWIRE, "headline", promptKey, user));
         menu.setFreeText(true);
         menu.setNextURI(menuUri(dataSubscriberBroker.doesUserHaveCustomLiveWireList(user.getUid()) ?
-                "destination" : "confirm", alertUid) + "&field=description");
+                "destination" : "confirm", alertUid) + "&field=headline");
         return menuBuilder(menu);
     }
 
@@ -242,7 +242,7 @@ public class USSDLiveWireController extends USSDController {
                               @RequestParam(required = false) String priorInput) throws URISyntaxException {
         String userInput = StringUtils.isNullOrEmpty(priorInput) ? request : priorInput;
         User user = userManager.findByInputNumber(msisdn, uriForCache("destination", alertUid, userInput));
-        liveWireAlertBroker.updateDescription(user.getUid(), alertUid, userInput);
+        liveWireAlertBroker.updateHeadline(user.getUid(), alertUid, userInput);
         USSDMenu menu = new USSDMenu(getMessage(LIVEWIRE, "destination", promptKey, user));
         // make this either "general", or "just us"
         final String uriBase = menuUri("confirm", alertUid) + "&field=destination";
@@ -267,10 +267,10 @@ public class USSDLiveWireController extends USSDController {
                                 @RequestParam(required = false) String contactUid) throws URISyntaxException {
         User user = userManager.findByInputNumber(msisdn);
 
-        if ("description".equals(field)) {
-            String description = StringUtils.isNullOrEmpty(priorInput) ? request : priorInput;
-            cacheManager.putUssdMenuForUser(msisdn, uriForCache("confirm", alertUid, description) + "&field=" + field);
-            liveWireAlertBroker.updateDescription(user.getUid(), alertUid, description);
+        if ("headline".equals(field)) {
+            String headline = StringUtils.isNullOrEmpty(priorInput) ? request : priorInput;
+            cacheManager.putUssdMenuForUser(msisdn, uriForCache("confirm", alertUid, headline) + "&field=" + field);
+            liveWireAlertBroker.updateHeadline(user.getUid(), alertUid, headline);
         } else if ("contact".equals(field)) {
             Objects.requireNonNull(contactUid);
             String contactName = StringUtils.isNullOrEmpty(priorInput) ? request : priorInput;
@@ -288,15 +288,15 @@ public class USSDLiveWireController extends USSDController {
         }
 
         LiveWireAlert alert = liveWireAlertBroker.load(alertUid);
-        String[] fields = new String[] { alert.getDescription(), alert.getContactNameNullSafe() };
+        String[] fields = new String[] { alert.getHeadline(), alert.getContactNameNullSafe() };
 
         USSDMenu menu = new USSDMenu(getMessage(LIVEWIRE, "confirm", promptKey, fields, user));
         menu.addMenuOption(menuUri("send", alertUid) + "&location=false",
                 getMessage(LIVEWIRE, "confirm", optionsKey + "send", user));
         menu.addMenuOption(menuUri("send", alertUid) + "&location=true",
                 getMessage(LIVEWIRE, "confirm", optionsKey + "location", user));
-        menu.addMenuOption(menuUri("description", alertUid),
-                getMessage(LIVEWIRE, "confirm", optionsKey + "description", user));
+        menu.addMenuOption(menuUri("headline", alertUid),
+                getMessage(LIVEWIRE, "confirm", optionsKey + "headline", user));
         menu.addMenuOption(menuUri("contact/phone", alertUid) + "&revising=1",
                 getMessage(LIVEWIRE, "confirm", optionsKey + "contact", user));
         return menuBuilder(menu);

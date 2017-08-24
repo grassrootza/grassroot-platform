@@ -30,7 +30,7 @@ import java.util.Map;
 
 import static org.springframework.data.jpa.domain.Specifications.where;
 import static za.org.grassroot.core.util.DateTimeUtil.*;
-import static za.org.grassroot.services.specifications.UserSpecifications.*;
+import static za.org.grassroot.core.specifications.UserSpecifications.*;
 
 /**
  * Created by luke on 2016/12/12.

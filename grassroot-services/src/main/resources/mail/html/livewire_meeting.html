@@ -2,17 +2,17 @@
 <html lang="en"
       xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{html/fragments :: header}"></head>
-<body>
+<body th:with="hasDescription=${not #strings.isEmpty(description)}">
 <h3>
   GRASSROOT LIVEWIRE ALERT: PUBLIC GATHERING
 </h3>
 <p>
   <b th:text="#{livewire.meeting.preamble.1(${contactName}, ${contactNumber})}"></b><span th:text="#{livewire.meeting.preamble.2}">
   <b>Sandile</b>, contact number <b>010 555 9123</b>, has issued a LiveWire alert about an upcoming gathering,
-  with the description:</span>
+  with the headline:</span>
 </p>
 <blockquote>
-  <p th:text="${description}">
+  <p th:text="${headline}">
     Enter description here
   </p>
 </blockquote>
@@ -26,6 +26,12 @@
 <p th:if="${hasLocation}" th:text="#{livewire.meeting.location(${groupLocation}, ${groupAddress}, ${mtgLocation}, ${mtgAddress})}">
   The group that is meeting is located at (coordinates), approximately (area), and declared that the meeting
   is taking place at (some other coord).
+</p>
+<p th:if="${hasDescription}">
+  <i>More details (from the user generating the alert):</i>
+</p>
+<p th:if="${hasDescription}" th:utext="${#strings.replace(#strings.escapeXml(description),T(java.lang.System).getProperty('line.separator'),'&lt;br /&gt;')}" >
+  Description
 </p>
 <span style="line-height: 5px; font-size: 5px;">&nbsp;<br></span>
 <span style="line-height: 5px; font-size: 5px;">&nbsp;<br></span>

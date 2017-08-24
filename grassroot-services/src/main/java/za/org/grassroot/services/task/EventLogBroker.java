@@ -1,7 +1,7 @@
 package za.org.grassroot.services.task;
 
-import za.org.grassroot.core.domain.Event;
-import za.org.grassroot.core.domain.EventLog;
+import za.org.grassroot.core.domain.task.Event;
+import za.org.grassroot.core.domain.task.EventLog;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventLogType;

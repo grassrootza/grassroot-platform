@@ -2,10 +2,10 @@ package za.org.grassroot.webapp.model.rest;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.google.common.collect.Sets;
-import za.org.grassroot.core.domain.Event;
+import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.Notification;
-import za.org.grassroot.core.domain.Task;
-import za.org.grassroot.core.domain.Todo;
+import za.org.grassroot.core.domain.task.Task;
+import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.domain.notification.EventNotification;
 import za.org.grassroot.core.domain.notification.TodoNotification;
 import za.org.grassroot.core.enums.EventLogType;

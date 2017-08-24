@@ -15,9 +15,11 @@ import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.notification.*;
+import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.repository.*;
+import za.org.grassroot.core.specifications.EventSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.PermissionBroker;
@@ -27,7 +29,6 @@ import za.org.grassroot.services.exception.AccountLimitExceededException;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.services.exception.TaskNameTooLongException;
 import za.org.grassroot.services.geo.GeoLocationBroker;
-import za.org.grassroot.services.specifications.EventSpecifications;
 import za.org.grassroot.services.util.CacheUtilService;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
@@ -40,8 +41,8 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static za.org.grassroot.core.domain.EventReminderType.CUSTOM;
-import static za.org.grassroot.core.domain.EventReminderType.DISABLED;
+import static za.org.grassroot.core.domain.task.EventReminderType.CUSTOM;
+import static za.org.grassroot.core.domain.task.EventReminderType.DISABLED;
 import static za.org.grassroot.core.enums.EventLogType.*;
 import static za.org.grassroot.core.util.DateTimeUtil.convertToSystemTime;
 import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
@@ -155,7 +156,6 @@ public class EventBrokerImpl implements EventBroker {
 	}
 
 	// introducing so that we can check catch & handle duplicate requests (e.g., from malfunctions on Android client offline->queue->sync function)
-	@Transactional(readOnly = true)
 	private Event checkForDuplicate(String userUid, String parentGroupUid, String name, Instant startDateTime) {
 		Objects.requireNonNull(userUid);
 		Objects.requireNonNull(parentGroupUid);
@@ -350,7 +350,7 @@ public class EventBrokerImpl implements EventBroker {
 	@Override
 	@Transactional
 	public Vote createVote(String userUid, String parentUid, JpaEntityType parentType, String name, LocalDateTime eventStartDateTime,
-						   boolean includeSubGroups, String description, Set<String> assignMemberUids, List<String> options) {
+                           boolean includeSubGroups, String description, Set<String> assignMemberUids, List<String> options) {
 		Objects.requireNonNull(userUid);
 		Objects.requireNonNull(parentUid);
 		Objects.requireNonNull(parentType);

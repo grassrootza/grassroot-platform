@@ -1,8 +1,8 @@
 package za.org.grassroot.core.specifications;
 
 import org.springframework.data.jpa.domain.Specification;
-import za.org.grassroot.core.domain.ImageRecord;
-import za.org.grassroot.core.domain.ImageRecord_;
+import za.org.grassroot.core.domain.media.ImageRecord_;
+import za.org.grassroot.core.domain.media.ImageRecord;
 import za.org.grassroot.core.enums.ActionLogType;
 
 /**

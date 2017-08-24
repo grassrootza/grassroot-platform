@@ -11,7 +11,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.Todo;
+import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.TodoCompletionConfirmType;
 import za.org.grassroot.core.specifications.GroupSpecifications;

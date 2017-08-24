@@ -22,10 +22,10 @@ import java.util.Set;
 public class MembershipInfo implements Comparable<MembershipInfo> {
 
     // note: removing 'final' so Thymeleaf can populate this (can find a better way if needed)
-    private String phoneNumber;
-    private String roleName; // optional
-    private String displayName; // optional
-    private boolean userSetName;
+    protected String phoneNumber;
+    protected String roleName; // optional
+    protected String displayName; // optional
+    protected boolean userSetName;
 
     public MembershipInfo() {
         // need empty constructor for Spring MVC form submission

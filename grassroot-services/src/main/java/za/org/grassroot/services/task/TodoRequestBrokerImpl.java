@@ -7,6 +7,8 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.task.TodoContainer;
+import za.org.grassroot.core.domain.task.TodoRequest;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.TodoRequestRepository;
 import za.org.grassroot.core.repository.UidIdentifiableRepository;
