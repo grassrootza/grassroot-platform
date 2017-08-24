@@ -17,6 +17,8 @@ import za.org.grassroot.integration.email.GrassrootEmail;
 import za.org.grassroot.services.util.MessageUtils;
 
 import java.text.DecimalFormat;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -53,8 +55,9 @@ public class AccountEmailServiceImpl implements AccountEmailService {
 
     @Override
     public String createAccountBillingNotification(AccountBillingRecord record) {
+        Instant nextPayDate = record.getNextPaymentDate() == null ? Instant.now().plus(7, ChronoUnit.DAYS) : record.getNextPaymentDate();
         return messageSource.getMessage("sms.statement.notification", new String[] {
-                billFormat.format((double) record.getTotalAmountToPay() / 100), formatAtSAST(record.getNextPaymentDate(), shortDateFormatter)
+                billFormat.format((double) record.getTotalAmountToPay() / 100), formatAtSAST(nextPayDate, shortDateFormatter)
         }, getUserLocale(record.getAccount().getBillingUser()));
     }
 
