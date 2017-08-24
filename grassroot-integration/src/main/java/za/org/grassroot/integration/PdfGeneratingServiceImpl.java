@@ -2,23 +2,16 @@ package za.org.grassroot.integration;
 
 import com.itextpdf.forms.PdfAcroForm;
 import com.itextpdf.forms.fields.PdfFormField;
-<<<<<<< HEAD
+
 import com.itextpdf.kernel.color.Color;
-import com.itextpdf.kernel.pdf.*;
 import com.itextpdf.kernel.pdf.PdfWriter;
-/*import com.itextpdf.text.DocumentException;
-import com.itextpdf.text.pdf.AcroFields;
-import com.itextpdf.text.pdf.PdfStamper;*/
-//import com.itextpdf.text.pdf.PdfWriter;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.ImageType;
 import org.apache.pdfbox.rendering.PDFRenderer;
 import org.apache.pdfbox.tools.imageio.ImageIOUtil;
-=======
+
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfReader;
-import com.itextpdf.kernel.pdf.PdfWriter;
->>>>>>> 10b9ec4b76740f7fb86f81209207a7ac435d74f8
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,11 +29,9 @@ import javax.annotation.PostConstruct;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
-<<<<<<< HEAD
-//impo import java.io.FileOutputStream;
+
 import java.io.FileNotFoundException;
-=======
->>>>>>> 10b9ec4b76740f7fb86f81209207a7ac435d74f8
+
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.time.Instant;
@@ -67,7 +58,6 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
     private static final String SEPARATOR = "_";
     private static final int LANGUAGE_POSITION = 4;
 
-    private String invoiceTemplatePath;
     private String folderPath;
 
     private AccountBillingRecordRepository billingRepository;
@@ -84,10 +74,7 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
     @PostConstruct
     private void init() {
         // todo: remove the properties for the specific files, and get them all from the folder
-        this.invoiceTemplatePath = environment.getProperty("grassroot.invoice.template.path", "no_invoice.pdf");
         this.folderPath = environment.getProperty("grassroot.flyer.folder.path");
-
-        logger.info("PDF GENERATOR: path = " + invoiceTemplatePath);
     }
 
     // major todo : switch to Guava temp file handling & clean the temp folder periodically
@@ -95,7 +82,7 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
     @Transactional(readOnly = true)
     public File generateInvoice(List<String> billingRecordUids) {
         try {
-            PdfReader pdfReader = new PdfReader(invoiceTemplatePath);// Source File
+            PdfReader pdfReader = new PdfReader(folderPath + "/invoice_template.pdf");// Source File
 
             File tempStorage = File.createTempFile("invoice","pdf");
             tempStorage.deleteOnExit();
@@ -165,22 +152,19 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
             return tempStorage;
 
         } catch (IOException e) {
-            logger.warn("Could not find template path! Input: {}", invoiceTemplatePath);
+            logger.warn("Could not find template path! Input: {}", folderPath);
             e.printStackTrace();
             return null;
         }
     }
 
     @Override
-<<<<<<< HEAD
-    public File generateGroupFlyer(String groupUid, boolean color, Locale language, String typeOfFile) {
+
+    public File generateGroupFlyer(String groupUid, boolean color, Locale language, String typeOfFile) {//Enum
         // load group entity from group repository using uid
         PdfDocument pdfdocument = null;
         PDDocument pd = null;
-=======
-    public File generateGroupFlyer(String groupUid, boolean color, Locale language) {
-        PdfDocument pdfdocument;
->>>>>>> 10b9ec4b76740f7fb86f81209207a7ac435d74f8
+
         File fileToReturn = null;
         Group grpEntity = groupRepository.findOneByUid(groupUid);
 
@@ -215,7 +199,7 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
             //pdfOutput.setFullCompression();
 
             pdfdocument.close();
-<<<<<<< HEAD
+
 
             pd = PDDocument.load(fileToReturn);
             //generateImage(pd);
@@ -224,8 +208,6 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
                 fileToReturn = generateImage(pd);
             }
 
-=======
->>>>>>> 10b9ec4b76740f7fb86f81209207a7ac435d74f8
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -256,57 +238,47 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
     @Override
     public List<Locale> availableLanguages() {
         List<Locale> languages = new ArrayList<>();
-<<<<<<< HEAD
+
         File[] filesInFolder = null;
         List<File> tempListOfFiles = new ArrayList<>();
 
         File folder = new File(folderPath);
 
         if(!folder.isDirectory()) {
-            //Throw exception-------------------------------------???????
-            throw new SecurityException("Invalid folder path");
+            throw new UnsupportedOperationException("Invalid folder");
         } else{
-
             filesInFolder = folder.listFiles();
-            logger.info("List of files in folder = {}",filesInFolder.length);
 
-            for(int x = 0;x < filesInFolder.length;x++){
-                if(filesInFolder[x].getName().startsWith("group")){
-                    tempListOfFiles.add(filesInFolder[x]);
+            if(filesInFolder != null){
+                logger.info("Files in Folder = {}",filesInFolder.length);
+
+                for(int x = 0;x < filesInFolder.length;x++){
+                    if(filesInFolder[x].getName().startsWith("group")){
+                        tempListOfFiles.add(filesInFolder[x]);
+                    }
                 }
-            }
 
-            logger.info("Filtered list of file = {}",tempListOfFiles.size());
-            String[] names = new String[tempListOfFiles.size()];
+                logger.info("Filtered List = {}",tempListOfFiles.size());
 
-            for(int x = 0;x < tempListOfFiles.size();x++) {
-                //names[x] = filesInFolder[x].getName();
-                names[x] = tempListOfFiles.get(x).getName();
-=======
-        File folder = new File(folderPath);
+                if(!tempListOfFiles.isEmpty()){
+                    String[] names = new String[tempListOfFiles.size()];
 
-        if(!folder.isDirectory()) {
-            // todo: throw this exception
-            //Throw exception
-        } else{
-            File[] filesInFolder = folder.listFiles();
+                    for(int x = 0;x < tempListOfFiles.size(); x++) {
+                        names[x] = tempListOfFiles.get(x).getName();
+                    }
 
-            // todo: check that filesInFOlder is not null
-            String[] names = new String[filesInFolder.length];
+                    for(int x = 0;x < names.length;x++) {
+                        String[] data = names[x].split(SEPARATOR);
+                        String name = data[LANGUAGE_POSITION];// Check if is a valid name
 
-            for(int x = 0;x < filesInFolder.length; x++) {
-                names[x] = filesInFolder[x].getName();
->>>>>>> 10b9ec4b76740f7fb86f81209207a7ac435d74f8
-            }
-
-            for(int x = 0;x < names.length;x++) {
-                String[] data = names[x].split(SEPARATOR);
-                String name = data[LANGUAGE_POSITION];// Check if is a valid name
-
-                if (Arrays.asList(Locale.getISOLanguages()).contains(name)) {
-                    Locale lang = new Locale(name);
-                    languages.add(lang);
+                        if (Arrays.asList(Locale.getISOLanguages()).contains(name)) {
+                            Locale lang = new Locale(name);
+                            languages.add(lang);
+                        }
+                    }
                 }
+            }else {
+                throw new UnsupportedOperationException("Invalid Folder path");
             }
 
         }
@@ -318,10 +290,10 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
     public String chooseFlyerToLoad(boolean color, Locale language) {
         List<Locale> languages = new ArrayList<>();
         File folder = new File(folderPath);
-        File[] filesInFolder = null;
+        File[] filesInFolder;
         List<File> tempFiles = new ArrayList<>();
-        String desiredFlyer = "";
-        String flyerToReturn = "";
+        String desiredFlyer;
+        String flyerToReturn;
 
         if(folder.isDirectory())
         {
@@ -383,7 +355,7 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
         return String.format("group_join_code_template_en_%s.pdf", color ? "colour" : "grey");
     }
 
-    public boolean checkFileAvailability(List<File> files, String desiredFlyer) {
+    private boolean checkFileAvailability(List<File> files, String desiredFlyer) {
         return files.stream().map(File::getName).anyMatch(s -> s.equals(desiredFlyer));
     }
 }
