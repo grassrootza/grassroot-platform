@@ -194,7 +194,7 @@ public class USSDLiveWireControllerTest extends USSDAbstractUnitTest {
         LiveWireAlert alert = new LiveWireAlert.Builder()
                 .creatingUser(testUser)
                 .type(LiveWireAlertType.MEETING)
-                .description("describe")
+                .headline("describe")
                 .destType(LiveWireAlertDestType.PUBLIC_LIST)
                 .contactUser(testUser).contactName("gaven")
                 .build();
@@ -278,12 +278,12 @@ public class USSDLiveWireControllerTest extends USSDAbstractUnitTest {
 
         when(userManagementServiceMock.
                 findByInputNumber(testPhone,"livewire/" +
-                        "description" + "?alertUid=" + "alert" + "&priorInput=" +
+                        "headline" + "?alertUid=" + "alert" + "&priorInput=" +
                         "gaven" +
                         "&contactUid=" + "0872345678")).
                 thenReturn(testUser);
 
-        mockMvc.perform(get("/ussd/livewire/description").
+        mockMvc.perform(get("/ussd/livewire/headline").
                 param(phoneInput,testPhone).
                 param("alertUid","alert").
                 param("request","1").
@@ -296,7 +296,7 @@ public class USSDLiveWireControllerTest extends USSDAbstractUnitTest {
                 ,"alert","0872345678","gaven");
         verify(userManagementServiceMock,times(1)).
                 findByInputNumber(testPhone,"livewire/" +
-                        "description" + "?alertUid=" + "alert" +
+                        "headline" + "?alertUid=" + "alert" +
                         "&priorInput=" + "gaven" + "&contactUid=" + "0872345678");
     }
 
