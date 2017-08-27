@@ -9,7 +9,22 @@ import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 
-import javax.persistence.*;
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
+import javax.persistence.PrePersist;
+import javax.persistence.PreUpdate;
+import javax.persistence.Table;
+import javax.persistence.Version;
 import java.io.Serializable;
 import java.time.Instant;
 import java.time.ZonedDateTime;
@@ -155,6 +170,10 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
     @Column(name = "tags")
     @Type(type = "za.org.grassroot.core.util.StringArrayUserType")
     private String[] tags;
+
+    @ManyToOne(cascade = CascadeType.PERSIST)
+    @JoinColumn(name = "group_id", nullable = false)
+    private Campaign campaign;
 
     private Group() {
         // for JPA
@@ -514,7 +533,6 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
     public String getDefaultLanguage() {
         return defaultLanguage;
     }
-
     public void setDefaultLanguage(String defaultLanguage) {
         this.defaultLanguage = defaultLanguage;
     }
@@ -675,5 +693,11 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
     }
 
 
+    public Campaign getCampaign() {
+        return campaign;
+    }
 
+    public void setCampaign(Campaign campaign) {
+        this.campaign = campaign;
+    }
 }
