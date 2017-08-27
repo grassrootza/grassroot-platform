@@ -14,9 +14,9 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.geo.Address;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.UserLog;
+import za.org.grassroot.core.domain.geo.Address;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
 import za.org.grassroot.core.dto.LiveWireContactDTO;
@@ -25,10 +25,10 @@ import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.DataSubscriberRepository;
 import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.specifications.UserSpecifications;
 import za.org.grassroot.integration.location.UssdLocationServicesBroker;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.geo.GeoLocationUtils;
-import za.org.grassroot.core.specifications.UserSpecifications;
 import za.org.grassroot.services.user.AddressBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
@@ -157,12 +157,13 @@ public class LiveWireContactBrokerImpl implements LiveWireContactBroker {
 
     // todo: use method that defaults to looking up group location too
     private String getAddressOfUser(User user) {
+        String unknown = "Unknown";
         PreviousPeriodUserLocation location = geoLocationBroker.fetchUserLocation(user.getUid());
         if (location != null) {
             Address address = addressBroker.fetchNearestAddress(user.getUid(), location.getLocation(), 1, true);
-            return address.getStreet() + ", " + address.getNeighbourhood();
+            return address == null ? unknown : address.getStreet() + ", " + address.getNeighbourhood();
         } else {
-            return "Unknown";
+            return unknown;
         }
     }
 

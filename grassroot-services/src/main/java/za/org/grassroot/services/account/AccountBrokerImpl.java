@@ -263,10 +263,8 @@ public class AccountBrokerImpl implements AccountBroker {
         DebugUtil.transactionRequired("AccountBilling: ");
 
         // note : not validating user is admin as this may be called by a responding sponsor prior to payment being complete
-        // todo : close this by checking in sponsor repository
 
         Account account = accountRepository.findOneByUid(accountUid);
-
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
         if (paymentType != null && !paymentType.equals(account.getDefaultPaymentType())) {
@@ -291,6 +289,25 @@ public class AccountBrokerImpl implements AccountBroker {
 
         logsAndNotificationsBroker.storeBundle(bundle);
 
+    }
+
+    @Override
+    @Transactional
+    public void updateAccountPaymentType(String userUid, String accountUid, AccountPaymentType paymentType) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(accountUid);
+        Objects.requireNonNull(paymentType);
+
+        Account account = accountRepository.findOneByUid(accountUid);
+        User user = userRepository.findOneByUid(userUid);
+        validateAdmin(user, account);
+
+        account.setDefaultPaymentType(paymentType);
+
+        createAndStoreSingleAccountLog(new AccountLog.Builder(account)
+                .accountLogType(AccountLogType.PAYMENT_METHOD_CHANGED)
+                .userUid(userUid)
+                .description("Changed to payment method: " + paymentType.name()).build());
     }
 
     @Override

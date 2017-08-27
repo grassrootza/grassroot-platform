@@ -33,6 +33,8 @@ public interface AccountBroker {
     void updateAccountPaymentCycleAndMethod(String userUid, String accountUid, AccountPaymentType paymentType,
                                             AccountBillingCycle billingCycle, boolean adjustNextBillingDate);
 
+    void updateAccountPaymentType(String userUid, String accountUid, AccountPaymentType paymentType);
+
     @PreAuthorize("hasAnyRole('ROLE_ACCOUNT_ADMIN, ROLE_SYSTEM_ADMIN')")
     void setAccountPrimary(String userUid, String accountUid);
 

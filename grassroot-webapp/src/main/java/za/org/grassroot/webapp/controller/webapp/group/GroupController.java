@@ -155,8 +155,7 @@ public class GroupController extends BaseController {
             model.addAttribute("groupsForMove", permissionBroker.getActiveGroupsSorted(user, Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER));
         }
 
-        List<Locale> languages = generatingService.availableLanguages();
-        model.addAttribute("languages",languages);
+        model.addAttribute("flyerLanguages", generatingService.availableLanguages());
 
         model.addAttribute("atGroupSizeLimit", !groupBroker.canAddMember(groupUid));
         model.addAttribute("hasAccount", user.getPrimaryAccount() != null);

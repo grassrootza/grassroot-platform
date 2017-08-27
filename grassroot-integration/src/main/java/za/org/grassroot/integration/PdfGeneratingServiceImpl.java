@@ -17,6 +17,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountBillingRecord;
@@ -226,11 +227,16 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
         File[] filesInFolder = null;
         List<File> tempListOfFiles = new ArrayList<>();
 
+        if (StringUtils.isEmpty(folderPath)) {
+            logger.error("No path for flyers");
+            return languages;
+        }
+
         File folder = new File(folderPath);
 
         if(!folder.isDirectory()) {
-            throw new UnsupportedOperationException("Invalid folder");
-        } else{
+            logger.error("Folder path does not point to a folder");
+        } else {
             filesInFolder = folder.listFiles();
 
             if(filesInFolder != null){
@@ -246,13 +252,12 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
 
                 if(!tempListOfFiles.isEmpty()){
                     String[] names = new String[tempListOfFiles.size()];
-
-                    for(int x = 0;x < tempListOfFiles.size(); x++) {
+                    for (int x = 0;x < tempListOfFiles.size(); x++) {
                         names[x] = tempListOfFiles.get(x).getName();
                     }
 
-                    for(int x = 0;x < names.length;x++) {
-                        String[] data = names[x].split(SEPARATOR);
+                    for (String name1 : names) {
+                        String[] data = name1.split(SEPARATOR);
                         String name = data[LANGUAGE_POSITION];// Check if is a valid name
 
                         if (Arrays.asList(Locale.getISOLanguages()).contains(name)) {
@@ -261,8 +266,8 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
                         }
                     }
                 }
-            }else {
-                throw new UnsupportedOperationException("Invalid Folder path");
+            } else {
+                logger.error("Invalid folder path specified");
             }
 
         }

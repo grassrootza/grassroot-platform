@@ -51,7 +51,7 @@
           <span th:unless="${group.discoverable}">Group is private. </span>
           <a th:if="${canAlter}" href="javascript:void(0)" th:text="${group.discoverable ? 'Make private.' : 'Make public.'}" data-toggle="modal" data-target="#publicModal">Change this</a>
         </h4>
-        <h4 th:if="${openToken}" class="text-center group-info">
+        <h4 th:if="${openToken and not #lists.isEmpty(flyerLanguages)}" class="text-center group-info">
           <a  href="javascript:void(0)" data-toggle="modal" data-target="#flyerModal">Generate flyer</a>
         </h4>
         <div th:if="${canAlter}" class="dropdown manage-container">
@@ -749,7 +749,8 @@
 
 
   <!-- Modal to generate flyer -->
-  <div th:if="${openToken}" class="modal fade" id="flyerModal" tabindex="-1" role="dialog" aria-labelledby="flyerModalLabel">
+  <div th:if="${openToken and not #lists.isEmpty(flyerLanguages)}"
+       class="modal fade" id="flyerModal" tabindex="-1" role="dialog" aria-labelledby="flyerModalLabel">
     <div class="modal-dialog" role="document">
       <div class="modal-content">
         <div class="modal-header">
@@ -767,7 +768,7 @@
             </div>
             <div class="form-group">
               <select class="form-control input-lg" name="language">
-                <option th:each="language : ${languages}"
+                <option th:each="language : ${flyerLanguages}"
                         th:value="${language.getDisplayLanguage()}"
                         th:text="${language.getDisplayLanguage()}"></option>
               </select>
