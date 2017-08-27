@@ -166,7 +166,8 @@ public class AddressBrokerImpl implements AddressBroker {
     private Address reverseGeoCodeLocation(GeoLocation location, User user, UserInterfaceType interfaceType, boolean primary) {
         try {
             InvertGeoCodeResult result = restTemplate.getForObject(invertGeoCodeRequestURI(location).build(), InvertGeoCodeResult.class);
-            return GeoLocationUtils.convertGeoCodeToAddress(result.getAddress(), user, location, interfaceType, primary);
+            return result.getAddress() == null ? null :
+                    GeoLocationUtils.convertGeoCodeToAddress(result.getAddress(), user, location, interfaceType, primary);
         } catch (URISyntaxException|HttpClientErrorException e) {
             log.error("Error!", e);
             return null;

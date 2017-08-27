@@ -46,7 +46,7 @@
             <li sec:authorize="!hasRole('ROLE_LIVEWIRE_USER')">
               <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/location}">Around Me</a></li>
             <li sec:authorize="!hasRole('ROLE_LIVEWIRE_USER')">
-              <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/livewire/create}">LiveWire</a>
+              <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/livewire/alert/create}">LiveWire</a>
             </li>
             <li sec:authorize="hasRole('ROLE_LIVEWIRE_USER')" class="dropdown">
               <a href="javascript:void(0)" data-target="#" class="dropdown-toggle gr-navbar-link" data-toggle="dropdown" aria-expanded="false">

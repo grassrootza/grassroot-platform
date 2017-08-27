@@ -7,7 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Controller;
@@ -41,7 +40,6 @@ import java.io.FileNotFoundException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.List;
 import java.util.stream.Collectors;
 
 import static java.time.temporal.TemporalAdjusters.firstDayOfMonth;
@@ -738,52 +736,32 @@ public class GroupController extends BaseController {
         return "group/history";
     }
 
-    @RequestMapping(value = "/generatePdf",method = RequestMethod.GET,params = "typeOfFile=PDF",produces = "application/pdf")
+    // need separate methods to specify produces
+    @RequestMapping(value = "/flyer",method = RequestMethod.GET,params = "typeOfFile=PDF",produces = MediaType.APPLICATION_PDF_VALUE)
     @ResponseBody //"application/pdf",
-    public FileSystemResource genPdf(@RequestParam("groupUid") String groupUid,
-                                     @RequestParam("color") String color,@RequestParam("language")String language,
-                                     @RequestParam("typeOfFile") String typeOfFile) {
-        FileSystemResource fsr = null;
-        boolean col = false;
-        try {
-            if(color.equals("true")) {
-                col = true;
-            }else if(color.equals("false")){
-                col = false;
-            }
-
-            Locale lang = new Locale(language);
-            log.info("Type = {}",typeOfFile);
-
-            fsr = new FileSystemResource(generatingService.generateGroupFlyer(groupUid,col,lang,typeOfFile));
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-        return fsr;
+    public FileSystemResource genPdf(@RequestParam String groupUid,
+                                     @RequestParam boolean color,
+                                     @RequestParam Locale language,
+                                     @RequestParam String typeOfFile) {
+        return generateFlyer(groupUid, color, language, typeOfFile);
     }
 
-    @RequestMapping(value = "/generatePdf",method = RequestMethod.GET,params = "typeOfFile=JPEG Image",produces = MediaType.IMAGE_JPEG_VALUE)
+    @RequestMapping(value = "/flyer",method = RequestMethod.GET,params = "typeOfFile=JPEG",produces = MediaType.IMAGE_JPEG_VALUE)
     @ResponseBody
-    public FileSystemResource genImage(@RequestParam("groupUid") String groupUid,
-                                       @RequestParam("color") String color,@RequestParam("language")String language,
-                                       @RequestParam("typeOfFile") String typeOfFile){
-        FileSystemResource fsr = null;
-        boolean col = false;
+    public FileSystemResource genImage(@RequestParam String groupUid,
+                                       @RequestParam boolean color,
+                                       @RequestParam Locale language,
+                                       @RequestParam String typeOfFile){
+        return generateFlyer(groupUid, color, language, typeOfFile);
+    }
+
+    private FileSystemResource generateFlyer(String groupUid, boolean color, Locale language, String typeOfFile) {
         try {
-            if(color.equals("true")) {
-                col = true;
-            }else if(color.equals("false")){
-                col = false;
-            }
-
-            Locale lang = new Locale(language);
-            log.info("Type = {}",typeOfFile);
-            fsr = new FileSystemResource(generatingService.generateGroupFlyer(groupUid,col,lang,typeOfFile));
+            return new FileSystemResource(generatingService.generateGroupFlyer(groupUid, color, language, typeOfFile));
         } catch (FileNotFoundException e) {
-            e.printStackTrace();
+            log.error("Could not generate flyer!", e);
+            return null;
         }
-
-        return fsr;
     }
 
 
