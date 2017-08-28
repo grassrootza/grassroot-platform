@@ -13,15 +13,18 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.Notification;
+import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountBillingRecord;
 import za.org.grassroot.core.domain.account.AccountLog;
-import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.PaidGroup;
 import za.org.grassroot.core.domain.notification.AccountBillingNotification;
 import za.org.grassroot.core.enums.AccountLogType;
 import za.org.grassroot.core.enums.AccountPaymentType;
 import za.org.grassroot.core.repository.AccountBillingRecordRepository;
+import za.org.grassroot.core.repository.AccountLogRepository;
 import za.org.grassroot.core.repository.AccountRepository;
 import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.core.util.DateTimeUtil;
@@ -39,8 +42,7 @@ import java.util.stream.Collectors;
 
 import static java.time.temporal.ChronoUnit.DAYS;
 import static org.springframework.util.StringUtils.isEmpty;
-import static za.org.grassroot.core.specifications.AccountSpecifications.isVisible;
-import static za.org.grassroot.core.specifications.AccountSpecifications.nextStatementBefore;
+import static za.org.grassroot.core.specifications.AccountSpecifications.*;
 import static za.org.grassroot.core.specifications.BillingSpecifications.*;
 import static za.org.grassroot.core.specifications.NotificationSpecifications.*;
 
@@ -64,6 +66,7 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
     protected static final LocalTime STD_BILLING_HOUR = LocalTime.of(10, 0);
 
     private final AccountRepository accountRepository;
+    private final AccountLogRepository accountLogRepository;
 
     private final AccountBillingRecordRepository billingRepository;
     private final LogsAndNotificationsBroker logsAndNotificationsBroker;
@@ -74,10 +77,11 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
     private EmailSendingBroker emailSendingBroker;
 
     @Autowired
-    public AccountBillingBrokerImpl(AccountRepository accountRepository, AccountBillingRecordRepository billingRepository,
+    public AccountBillingBrokerImpl(AccountRepository accountRepository, AccountLogRepository accountLogRepository, AccountBillingRecordRepository billingRepository,
                                     PaymentBroker paymentBroker, ApplicationEventPublisher eventPublisher,
                                     LogsAndNotificationsBroker logsAndNotificationsBroker, AccountEmailService accountEmailService) {
         this.accountRepository = accountRepository;
+        this.accountLogRepository = accountLogRepository;
         this.billingRepository = billingRepository;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
         this.accountEmailService = accountEmailService;
@@ -201,6 +205,7 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
         accountRepository.findAll(Specifications.where(isVisible())
+                .and(isEnabled())
                 .and(nextStatementBefore(Instant.now())))
                 .forEach(a -> {
                     if (AccountPaymentType.FREE_TRIAL.equals(a.getDefaultPaymentType())) {
@@ -370,16 +375,32 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
 
     private void handlePayment(AccountBillingRecord record) {
         DebugUtil.transactionRequired("");
-
         boolean transactionSucceeded = paymentBroker.triggerRecurringPayment(record);
         if (!transactionSucceeded) {
-            Account account = record.getAccount();
+            handlePaymentFailure(record);
+        }
+    }
+
+    // todo : send a warning email, on first failure, and also work out logic for when it's a direct deposit payment type
+    private void handlePaymentFailure(AccountBillingRecord record) {
+        Account account = record.getAccount();
+        long countFailures = accountLogRepository.countByAccountAndAccountLogTypeAndCreationTimeGreaterThan(
+                record.getAccount(),
+                AccountLogType.PAYMENT_FAILED,
+                record.getStatementDateTime());
+        if (countFailures > 2) {
             account.setEnabled(false);
             account.getCurrentPaidGroups().forEach(PaidGroup::suspend);
-
-            logsAndNotificationsBroker.asyncStoreBundle(new LogsAndNotificationsBundle(Collections.emptySet(),
-                    accountDisabledNotification(account, record)));
             sendDisabledEmails(account);
+        } else {
+            AccountLog accountLog = new AccountLog.Builder(account)
+                    .userUid(account.getBillingUser().getUid())
+                    .accountLogType(AccountLogType.PAYMENT_FAILED)
+                    .description("Payment failed")
+                    .build();
+            logsAndNotificationsBroker.asyncStoreBundle(new LogsAndNotificationsBundle(
+                    Collections.singleton(accountLog),
+                    Collections.emptySet()));
         }
     }
 
@@ -576,14 +597,6 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
                 .stream()
                 .filter(User::hasEmailAddress)
                 .forEach(u -> emailSendingBroker.sendMail(accountEmailService.createEndOfTrailEmail(account, u, formedPaymentLink)));
-    }
-
-    private Set<Notification> accountDisabledNotification(Account account, AccountBillingRecord bill) {
-        Set<Notification> notifications = new HashSet<>();
-        account.getAdministrators().forEach(user -> {
-
-        });
-        return notifications;
     }
 
     private void sendDisabledEmails(Account account) {

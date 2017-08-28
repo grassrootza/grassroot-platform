@@ -2,19 +2,27 @@ package za.org.grassroot.webapp.controller.rest.android2;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
 import za.org.grassroot.core.domain.media.MediaFunction;
+import za.org.grassroot.core.enums.LiveWireAlertDestType;
 import za.org.grassroot.core.enums.LiveWireAlertType;
 import za.org.grassroot.core.enums.LocationSource;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.integration.storage.StorageBroker;
 import za.org.grassroot.services.group.GroupBroker;
+import za.org.grassroot.services.livewire.DataSubscriberBroker;
 import za.org.grassroot.services.livewire.LiveWireAlertBroker;
 import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.user.UserManagementService;
+import za.org.grassroot.webapp.enums.RestMessage;
+import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
+import za.org.grassroot.webapp.util.RestUtil;
 
 import java.util.Set;
 
@@ -28,32 +36,43 @@ public class LiveWireController {
     private final GroupBroker groupBroker;
     private final EventBroker eventBroker;
     private final StorageBroker storageBroker;
-    private final LiveWireAlertBroker liveWireAlertBroker;
 
-    public LiveWireController(UserManagementService userManagementService, GroupBroker groupBroker, EventBroker eventBroker, StorageBroker storageBroker, LiveWireAlertBroker liveWireAlertBroker) {
+    private final LiveWireAlertBroker liveWireAlertBroker;
+    private final DataSubscriberBroker subscriberBroker;
+
+    @Autowired
+    public LiveWireController(UserManagementService userManagementService, GroupBroker groupBroker, EventBroker eventBroker, StorageBroker storageBroker, LiveWireAlertBroker liveWireAlertBroker, DataSubscriberBroker subscriberBroker) {
         this.userManagementService = userManagementService;
         this.groupBroker = groupBroker;
         this.eventBroker = eventBroker;
         this.storageBroker = storageBroker;
         this.liveWireAlertBroker = liveWireAlertBroker;
+        this.subscriberBroker = subscriberBroker;
     }
 
     @RequestMapping(value = "/create/{userUid}", method = RequestMethod.POST)
-    public ResponseEntity<String> createLiveWireAlert(@PathVariable String userUid,
-                                                      @RequestParam String headline,
-                                                      @RequestParam String description,
-                                                      @RequestParam LiveWireAlertType type,
-                                                      @RequestParam String groupUid,
-                                                      @RequestParam String taskUid,
-                                                      @RequestParam boolean addLocation,
-                                                      @RequestParam Double latitude,
-                                                      @RequestParam Double longitude,
-                                                      @RequestParam Set<String> mediaFileKeys) {
+    public ResponseEntity<ResponseWrapper> createLiveWireAlert(@PathVariable String userUid,
+                                                               @RequestParam String headline,
+                                                               @RequestParam String description,
+                                                               @RequestParam LiveWireAlertType type,
+                                                               @RequestParam(required = false) String groupUid,
+                                                               @RequestParam(required = false) String taskUid,
+                                                               @RequestParam boolean addLocation,
+                                                               @RequestParam(required = false) Double latitude,
+                                                               @RequestParam(required = false) Double longitude,
+                                                               @RequestParam(required = false) LiveWireAlertDestType destType,
+                                                               @RequestParam(required = false) String destUid,
+                                                               @RequestParam(required = false) Set<String> mediaFileKeys) {
+        User creatingUser = userManagementService.load(userUid);
         LiveWireAlert.Builder builder = LiveWireAlert.newBuilder();
-        builder.creatingUser(userManagementService.load(userUid))
-            .headline(headline)
-            .description(description)
-            .type(type);
+
+        builder.creatingUser(creatingUser)
+                .contactUser(creatingUser)
+                .headline(headline)
+                .description(description)
+                .type(type);
+
+        logger.info("do we have a groupUid? {}" + groupUid);
 
         if (LiveWireAlertType.INSTANT.equals(type)) {
             builder.group(groupBroker.load(groupUid));
@@ -65,10 +84,20 @@ public class LiveWireController {
             builder.location(new GeoLocation(latitude, longitude), LocationSource.convertFromInterface(UserInterfaceType.ANDROID));
         }
 
+        if (destType == null) {
+            builder.destType(LiveWireAlertDestType.PUBLIC_LIST);
+        } else {
+            builder.destType(destType);
+            if (!StringUtils.isEmpty(destUid)) {
+                builder.destSubscriber(subscriberBroker.load(destUid));
+            }
+        }
+
         if (mediaFileKeys != null && !mediaFileKeys.isEmpty()) {
             builder.mediaFiles(storageBroker.retrieveMediaRecordsForFunction(MediaFunction.LIVEWIRE_MEDIA, mediaFileKeys));
         }
 
-        return ResponseEntity.ok(liveWireAlertBroker.create(builder));
+        return RestUtil.okayResponseWithData(RestMessage.LIVEWIRE_ALERT_CREATED,
+                liveWireAlertBroker.createAsComplete(userUid, builder));
     }
 }

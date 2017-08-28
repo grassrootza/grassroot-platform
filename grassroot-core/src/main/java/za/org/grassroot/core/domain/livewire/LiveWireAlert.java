@@ -223,18 +223,17 @@ public class LiveWireAlert {
         }
 
         // checks if we have enough for a _complete_ alert (not called when generating via USSD, just Android/Web
-        public boolean areSufficientFieldsComplete() {
-            boolean fieldsPresent = creatingUser != null
-                    && type != null && destType != null
-                    && !StringUtils.isEmpty(headline);
+        public void validateSufficientFields() {
+            Objects.requireNonNull(creatingUser);
+            Objects.requireNonNull(type);
+            Objects.requireNonNull(destType);
+            Objects.requireNonNull(headline);
 
             if (LiveWireAlertType.MEETING.equals(type)) {
-                fieldsPresent &= meeting != null;
-            } else if (LiveWireAlertType.INSTANT.equals(type)) {
-                fieldsPresent &= group != null;
+                Objects.requireNonNull(meeting);
+            } else {
+                Objects.requireNonNull(group);
             }
-
-            return fieldsPresent;
         }
 
         public LiveWireAlert build() {
@@ -318,7 +317,7 @@ public class LiveWireAlert {
     }
 
     public String getContactNumberFormatted() {
-        return PhoneNumberUtil.invertPhoneNumber(contactUser.getPhoneNumber());
+        return contactUser == null ? "" : PhoneNumberUtil.invertPhoneNumber(contactUser.getPhoneNumber());
     }
 
     public String getContactName() {
@@ -326,7 +325,8 @@ public class LiveWireAlert {
     }
 
     public String getContactNameNullSafe() {
-        return StringUtils.isEmpty(contactName) ? contactUser.getName() : contactName;
+        return !StringUtils.isEmpty(contactName) ? contactName :
+                contactUser != null ? contactUser.getName() : creatingUser.getName();
     }
 
     public Meeting getMeeting() {

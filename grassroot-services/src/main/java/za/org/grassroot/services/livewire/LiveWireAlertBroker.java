@@ -43,7 +43,7 @@ public interface LiveWireAlertBroker {
 
     String create(String userUid, LiveWireAlertType type, String entityUid);
 
-    String create(LiveWireAlert.Builder builder);
+    String createAsComplete(String userUid, LiveWireAlert.Builder builder);
 
     void updateContactUser(String userUid, String alertUid, String contactUserUid, String contactName);
 

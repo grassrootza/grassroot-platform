@@ -23,12 +23,10 @@ public class MediaController {
     private static final Logger logger = LoggerFactory.getLogger(MediaController.class);
 
     private final MediaFileBroker mediaFileBroker;
-    private final StorageBroker storageBroker;
 
     @Autowired
-    public MediaController(MediaFileBroker mediaFileBroker, StorageBroker storageBroker) {
+    public MediaController(MediaFileBroker mediaFileBroker) {
         this.mediaFileBroker = mediaFileBroker;
-        this.storageBroker = storageBroker;
     }
 
     @RequestMapping(value = "/store/{userUid}")

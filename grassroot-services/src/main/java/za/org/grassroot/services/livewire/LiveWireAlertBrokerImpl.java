@@ -238,13 +238,18 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
 
     @Override
     @Transactional
-    public String create(LiveWireAlert.Builder builder) {
+    public String createAsComplete(String userUid, LiveWireAlert.Builder builder) {
         Objects.requireNonNull(builder);
-        if (!builder.areSufficientFieldsComplete()) {
-            throw new IllegalArgumentException("Error! This method requires a complete builder");
-        }
-
+        builder.validateSufficientFields();
         LiveWireAlert alert = alertRepository.save(builder.build());
+        alert.setComplete(true);
+
+        LogsAndNotificationsBundle bundle = alertCompleteBundle(userRepository.findOneByUid(userUid), alert);
+        logger.info("bundle notifications: {}", bundle.getNotifications());
+
+        AfterTxCommitTask task = () -> logsAndNotificationsBroker.asyncStoreBundle(bundle);
+        applicationEventPublisher.publishEvent(task);
+
         return alert.getUid();
     }
 
