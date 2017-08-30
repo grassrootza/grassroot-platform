@@ -16,22 +16,11 @@
 
 <main layout:fragment="content">
 
-  <!-- recycling group members class here -->
-  <!-- todo: add polling / refresh -->
+  <!-- todo: add polling / refresh, plus use data tables -->
   <section th:replace="~{livewire/lw_fragments :: alert-list(${alerts}, ${pageable}, ${sort}, 'Alert list')}">
   </section>
 
-  <div th:replace="~{livewire/lw_fragments :: alert-modal(${canTag}, ${canRelease})}">
-  </div>
-
 </main>
-
-<div layout:fragment="script-container">
-
-  <div th:replace="~{livewire/lw_fragments :: script-view-alert(${canTag})}">
-  </div>
-
-</div>
 
 </body>
 </html>

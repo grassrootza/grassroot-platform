@@ -143,7 +143,7 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
                 "where e.eventStartDateTime > :earliestTime " +
                 "and type(e) = Meeting " +
                 "and e.canceled = FALSE " +
-                "and (e.createdByUser = :user or (m.user = :user and m.role.name = 'ROLE_GROUP_ORGANIZER'))")
+                "and m.user = :user")
                 .setParameter("earliestTime", LocalDate.now().atStartOfDay().toInstant(ZoneOffset.UTC))
                 .setParameter("user", user)
                 .getResultList();
@@ -274,6 +274,7 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
     }
 
     @Override
+    @Transactional
     public void updateHeadline(String userUid, String alertUid, String headline) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(alertUid);

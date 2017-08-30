@@ -37,8 +37,11 @@ public class MediaController {
                                                           @RequestParam MultipartFile file) {
         // store the media, depending on its function (if task image stick in there so analysis etc is triggered)
         logger.info("storing a media file, with imageKey = {}, and mediaFunction = {}", imageKey, mediaFunction);
-        String storedFileUid = mediaFileBroker.storeFile(file, mediaFunction, null, imageKey);
-        return RestUtil.okayResponseWithData(RestMessage.UPLOADED, storedFileUid);
+        boolean duplicate = mediaFileBroker.doesFileExist(mediaFunction, imageKey);
+        String storedFileUid = duplicate ?
+                mediaFileBroker.load(mediaFunction, imageKey).getUid() :
+                mediaFileBroker.storeFile(file, mediaFunction, null, imageKey);
+        return RestUtil.okayResponseWithData(duplicate ? RestMessage.ALREADY_EXISTS : RestMessage.UPLOADED, storedFileUid);
     }
 
 }

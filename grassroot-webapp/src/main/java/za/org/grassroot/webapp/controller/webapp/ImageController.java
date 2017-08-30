@@ -39,12 +39,11 @@ public class ImageController {
 
     @RequestMapping(value = "/grassroot-task-images/{imageKey}", method = RequestMethod.GET)
     public String viewTaskImage(@PathVariable String imageKey, Model model) {
-        byte[] imageByteArray = storageBroker.fetchImage(imageKey, ImageType.FULL_SIZE);
+        byte[] imageByteArray = storageBroker.fetchTaskImage(imageKey, ImageType.FULL_SIZE);
         String image = "data:image/jpeg;base64," + Base64.getEncoder().encodeToString(imageByteArray);
         model.addAttribute("image", image);
         return "image_view";
     }
-
 
     /*
     Below is likely redundant, but leaving it in place for now in case of legacy

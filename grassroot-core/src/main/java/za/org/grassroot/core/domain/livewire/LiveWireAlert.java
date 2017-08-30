@@ -10,12 +10,14 @@ import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.enums.LiveWireAlertDestType;
 import za.org.grassroot.core.enums.LiveWireAlertType;
 import za.org.grassroot.core.enums.LocationSource;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.core.util.StringArrayUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
 import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.*;
 
 /**
@@ -304,6 +306,10 @@ public class LiveWireAlert {
         return creationTime;
     }
 
+    public ZonedDateTime getCreationTimeAtSAST() {
+        return DateTimeUtil.convertToUserTimeZone(creationTime, DateTimeUtil.getSAST());
+    }
+
     public User getCreatingUser() {
         return creatingUser;
     }
@@ -417,6 +423,10 @@ public class LiveWireAlert {
         return tags == null ? new ArrayList<>() : new ArrayList<>(Arrays.asList(tags));
     }
 
+    public String printTags() {
+        return String.join(", ", getTagList());
+    }
+
     public void setTags(String[] tags) {
         this.tags = tags;
     }
@@ -509,6 +519,10 @@ public class LiveWireAlert {
 
     public void addMediaFile(MediaFileRecord mediaFileRecord) {
         getMediaFiles().add(mediaFileRecord);
+    }
+
+    public boolean hasMediaFiles() {
+        return !getMediaFiles().isEmpty();
     }
 
     @Override

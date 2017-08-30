@@ -77,6 +77,32 @@
   </div>
 </div>
 
+<!-- todo : add in aria attributes -->
+<div th:fragment="confirm_cancel_modal (modal_id, header, text, uidFieldName, uidValue, action)">
+  <div class="modal fade" th:id="${modal_id}" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title" th:text="${header}" th:id="${modal_id + 'Label'}">Cancel meeting</h4>
+        </div>
+        <form th:action="@{${action}}" method="post">
+          <input type="hidden" th:name="${uidFieldName}" th:value="${uidValue}" />
+          <div class="modal-body">
+            <div class="form-group">
+              <label class="control-label" th:text="${text}">Are you sure? Cancelling a meeting cannot be undone.</label>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn default-button btn-neutral" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn default-button btn-negative">Confirmed</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- note: expects whatever URL it is given to return a map that is literally 'uid' as key and 'name' as value -->
 <div th:fragment="entity_selector_fill (csrf_header, csrf_token, field_name, url)">
   <script th:inline="javascript">
@@ -94,7 +120,8 @@
 
       var select = $('#' + field_name);
       $.getJSON(url, function ( data ) {
-        // console.log(JSON.stringify(data));
+        // adding this in for some debugging (differences btw prod and local)
+        console.log(JSON.stringify(data));
         var listItems = '';
         $.each(data, function(index, entry) {
           listItems += '<option value=\'' + entry.uid + '\'>' + entry.name + '</option>';

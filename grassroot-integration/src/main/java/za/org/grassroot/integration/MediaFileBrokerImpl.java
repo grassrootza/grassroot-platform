@@ -40,10 +40,21 @@ public class MediaFileBrokerImpl implements MediaFileBroker {
     }
 
     @Override
+    public MediaFileRecord load(MediaFunction function, String imageKey) {
+        return recordRepository.findByBucketAndKey(getBucketForFunction(function), imageKey);
+    }
+
+    @Override
+    public boolean doesFileExist(MediaFunction function, String imageKey) {
+        return recordRepository.findByBucketAndKey(getBucketForFunction(function), imageKey) != null;
+    }
+
+    @Override
     @Transactional
     public String storeFile(MultipartFile file, MediaFunction function, String mimeType, String imageKey) {
         MediaFileRecord record = new MediaFileRecord(getBucketForFunction(function), imageKey);
         logger.info("created media record ...");
+
         if (storageBroker.storeMedia(record, file)) {
             record.setMimeType(mimeType);
             logger.info("media record stored and has mime type");

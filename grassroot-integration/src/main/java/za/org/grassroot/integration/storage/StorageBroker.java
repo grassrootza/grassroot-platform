@@ -19,7 +19,7 @@ public interface StorageBroker {
 
     void recordImageAffiliation(ActionLogType actionLogType, String imageKey);
 
-    byte[] fetchImage(String uid, ImageType imageType);
+    byte[] fetchTaskImage(String uid, ImageType imageType);
 
     byte[] fetchThumbnail(String uid, ImageType imageType);
 

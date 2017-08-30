@@ -117,16 +117,17 @@
                     <th class="col-md-3">Contact name</th>
                     <th class="col-md-2">Number</th>
                     <th class="col-md-2">Tags</th>
-                    <th class="col-md-2"></th>
                   </tr>
                   </thead>
                   <tbody>
                   <tr th:each="alert, idx : ${alerts}" th:with="unreviewed=${(not alert.reviewed and not alert.sent)}">
                     <td class="col-md-3">
-                    <span th:text="${alert.headline}"
+                    <a th:href="@{view(alertUid=${alert.uid})}">
+                      <span th:text="${alert.headline}"
                           th:classappend="${unreviewed ? 'error-text' : ''}">Headline</span>
                       <span th:if="${unreviewed}" class="error-text"> (unreviewed) </span>
                       <span th:if="${alert.instant}"> (instant alert) </span>
+                    </a>
                     </td>
                     <td class="col-md-3">
                       <span th:text="${alert.contactNameNullSafe}" th:classappend="${unreviewed ? 'error-text' : ''}">Contact name</span>
@@ -135,13 +136,6 @@
                                                th:classappend="${unreviewed ? 'error-text' : ''}">Contact number</span></td>
                     <td class="col-md-2"><span th:text="${#strings.listJoin(alert.tagList, ',')}"
                                                th:classappend="${unreviewed ? 'error-text' : ''}">Tags</span></td>
-                    <td class="col-md-2 text-center">
-                      <button class="default-button btn-sm"
-                              th:onclick="'javascript:fetchAlertDescription(\'' + ${alert.uid} + '\')'"
-                              th:attr="data-alertUid=${alert.uid}, data-alertIndex=${idx.index}">
-                        Details
-                      </button>
-                    </td>
                   </tr>
                   </tbody>
                 </table>
@@ -152,191 +146,6 @@
       </div>
     </section>
   </section>
-
-  <div th:fragment="alert-modal (canTag, canRelease)"
-       class="modal fade" id="viewAlertModal" tabindex="-1" role="dialog" aria-labelledby="viewAlertModalLabel">
-    <div class="modal-dialog" role="document">
-      <div class="modal-content">
-        <div class="modal-header">
-          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-          <h4 class="modal-title" id="editNameModal">Alert Details</h4>
-        </div>
-        <div class="modal-body">
-          <div class="form-group">
-            <p class="no-vertical">
-              <label for="headline" class="grassroot-lead">Headline:</label>
-              <span id="headline" class="grassroot-body"></span>
-            </p>
-            <p class="no-vertical">
-              <label for="date_created" class="grassroot-lead">Date created:</label>
-              <span id="date_created" class="grassroot-body"></span>
-            </p>
-            <p class="no-vertical">
-              <label for="group_description" class="grassroot-lead">Group description:</label>
-              <span id="group_description" class="grassroot-body"></span>
-            </p>
-            <p class="no-vertical">
-              <label for="alert_description" class="grassroot-lead">Alert description:</label>
-              <span id="alert_description" class="grassroot-body"></span>
-            </p>
-            <p class="no-vertical">
-              <label for="contact_details" class="grassroot-lead">Contact details:</label>
-              <span id="contact_details" class="grassroot-body"></span>
-            </p>
-            <p class="no-vertical">
-              <label id="mtg_details_label" for="meeting_details" class="grassroot-lead">Meeting details:</label>
-              <span id="meeting_details" class="grassroot-body"></span>
-            </p>
-            <p class="no-vertical">
-              <span id="alert_status" class="grassroot-lead"></span>
-            </p>
-            <div class="no-vertical" id="release_lists" th:if="${canRelease and not #lists.isEmpty(publicLists)}">
-              <label class="grassroot-lead">Release to lists:</label>
-              <ul>
-                <li th:each="list: ${publicLists}">
-                  <input type="checkbox" name="publicLists" class="list-checkbox" th:value="${list.uid}" />
-                  <span th:text="${list.displayName}">List</span>
-                </li>
-              </ul>
-            </div>
-            <p class="no-vertical">
-              <label for="tag_list" class="grassroot-lead">Tags:</label>
-              <span th:unless="${canTag}" id="tag_list" class="grassroot-body"></span>
-              <form th:if="${canTag}" th:action="@{/livewire/alert/tag}" method="post">
-                <input type="hidden" id="alert_uid_tag" name="alertUid" />
-                <input th:if="${canTag}" name="tags" id="tag_list" type="text" class="input-lg" />
-                <button type="submit" class="white-button">Change</button>
-              </form>
-            </p>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button id="close_no_release" th:unless="${canRelease}" type="button" class="btn btn-default btn-lg default-button btn-neutral" data-dismiss="modal">Close</button>
-          <form id="release_form" th:if="${canRelease}" th:action="@{/livewire/alert/review}" method="post">
-            <input type="hidden" id="alert_uid_release" name="alertUid" />
-            <input type="hidden" name="tags" id="release_tags_submit" />
-            <input name="publicLists" id="public_lists_submit" type="hidden" />
-            <button type="button" class="btn btn-default btn-lg default-button btn-neutral" data-dismiss="modal">Close</button>
-            <button type="submit" id="block_button" name="send" value="false" class="btn default-button btn-negative">Block</button>
-            <button type="submit" name="send" value="true" class="btn default-button btn-positive">Release</button>
-          </form>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div th:fragment="script-view-alert (canTag)">
-
-    <script th:src="@{/js/lib/jquery-ui.min.js}"></script>
-    <script th:src="@{/js/lib/moment.min.js}"></script>
-
-    <script th:inline="javascript">
-
-        var canTag = /*[[${canTag}]]*/ true;
-
-        var headline = $("#headline");
-        var dateCreated = $("#date_created");
-        var group = $("#group_description");
-        var desc = $("#alert_description");
-        var contact = $("#contact_details");
-        var mtgLabel = $("#mtg_details_label");
-        var mtgText = $("#meeting_details");
-        var tagField = $("#tag_list");
-        var tagUid = $("#alert_uid_tag");
-        var statusDesc = $("#alert_status");
-        var releaseLists = $("#release_lists");
-
-        var releaseUid = $("#alert_uid_release");
-        var releaseForm = $("#release_form");
-        var blockBtn = $("#block_button");
-
-        function fetchAlertDescription(alertUid) {
-            console.log("fetching alert description, for uid: " + alertUid);
-            $.getJSON("/livewire/alert/details", {
-                alertUid: alertUid
-            }, function( data ) {
-                console.log("object returned: " + JSON.stringify(data));
-                showAlertModal(data);
-            });
-        }
-
-        function showAlertModal(data) {
-            var modal = $("#viewAlertModal");
-
-            var dateC = new Date(data.creationTimeMillis);
-            headline.text(data.headline);
-            dateCreated.text(moment(dateC).format("Do MMM YYYY"));
-            desc.text(data.description);
-            contact.text(data.contactUserName + ', ' + data.contactUserPhone);
-            group.text(data.groupName + '(' + data.groupSize + ' members, ' + data.groupTasks + ')');
-
-            if (data.type === 'INSTANT') {
-                mtgLabel.hide();
-                mtgText.hide();
-            } else {
-                mtgLabel.show();
-                mtgText.show();
-                var m = moment(data.meetingTimeMillis);
-                mtgText.text('Meeting about ' + data.meetingName + ', at ' + data.meetingLocation +
-                    m.format('MMMM Do YYYY, h:mm:ss a'));
-            }
-
-            if (releaseForm !== null) {
-                releaseForm.toggle(!data.sent);
-                blockBtn.toggle(!data.reviewed);
-                releaseForm.submit(function(event) {
-                    $("#release_tags_submit").val(tagField.val());
-                    $("#public_lists_submit").val($('.list-checkbox:checked').map(function() {
-                      return this.value;
-                    }).get().join(','));
-                });
-            }
-
-            if (data.sent) {
-              statusDesc.text("Alert sent");
-              releaseLists.hide();
-            } else {
-              statusDesc.text(data.reviewed ? "Alert has been blocked" : "Alert is awaiting review or send");
-              if (data.destType === 'SINGLE_LIST') {
-                releaseLists.hide();
-              } else {
-                releaseLists.show();
-              }
-            }
-
-            if (canTag) {
-                tagField.val(data.tags.join(", "));
-            } else {
-                tagField.text(data.tags.join(", "));
-            }
-
-            tagUid.val(data.uid);
-            releaseUid.val(data.uid);
-
-            modal.modal();
-        }
-
-        $(document).ready(function() {
-            var token = $("meta[name='_csrf']");
-            var header = $("meta[name='_csrf_header']");
-            grassrootJS.setUpAjax(token, header);
-
-            var sortForm = $("#sort_form");
-
-            $("#sort_select").change(function() {
-                var directionField = $("#sort_direction");
-                var sortField = $("#sort_select").val();
-                directionField.attr('name', sortField + '.dir');
-                directionField.val(sortField === 'sent' ? 'ASC' : 'DESC');
-                sortForm.find("[name=_csrf]").remove(); // a kludge, but all options to deal with this aren't good
-                sortForm.submit();
-            });
-
-        })
-
-    </script>
-
-  </div>
 
 </body>
 </html>

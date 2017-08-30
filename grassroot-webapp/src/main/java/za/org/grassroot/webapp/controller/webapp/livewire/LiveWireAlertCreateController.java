@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -94,7 +95,9 @@ public class LiveWireAlertCreateController extends BaseController {
 
             // todo: probably should handle the file upload async or in a different thread ...
             // todo: proper MIME type handling
-            String mediaRecordUid = (image == null) ? null :
+
+            logger.info("here is the supposed file: {}", isFileEmpty(image) ? "null" : image.getOriginalFilename());
+            String mediaRecordUid = isFileEmpty(image) ? null :
                     mediaFileBroker.storeFile(image, MediaFunction.LIVEWIRE_MEDIA, "image/jpeg", null); // means UID will be used for key
             List<MediaFileRecord> mediaRecords = mediaRecordUid == null ? null :
                     Collections.singletonList(mediaFileBroker.load(mediaRecordUid));
@@ -112,6 +115,10 @@ public class LiveWireAlertCreateController extends BaseController {
             addMessage(attributes, MessageType.ERROR, "livewire.alert.submitted.error", request);
             return "redirect:/livewire/alert/create";
         }
+    }
+
+    private boolean isFileEmpty(MultipartFile image) {
+        return image == null || image.isEmpty();
     }
 
 }

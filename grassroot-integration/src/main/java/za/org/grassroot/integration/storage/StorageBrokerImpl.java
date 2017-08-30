@@ -54,6 +54,9 @@ public class StorageBrokerImpl implements StorageBroker {
     @Value("${grassroot.task.images.resized.bucket:null}")
     private String taskImagesResizedBucket;
 
+    @Value("${grassroot.livewire.media.bucket:null}")
+    private String liveWireMediaBucket;
+
     @Value("${grassroot.media.general.bucket:null}")
     private String generalMediaStorageBucket;
 
@@ -145,7 +148,7 @@ public class StorageBrokerImpl implements StorageBroker {
     }
 
     @Override
-    public byte[] fetchImage(String uid, ImageType imageType) {
+    public byte[] fetchTaskImage(String uid, ImageType imageType) {
         Objects.requireNonNull(uid);
         Objects.requireNonNull(imageType);
 
@@ -169,9 +172,9 @@ public class StorageBrokerImpl implements StorageBroker {
     @Override
     public byte[] fetchThumbnail(String uid, ImageType imageType) {
         try {
-            return fetchImage(uid, imageType);
+            return fetchTaskImage(uid, imageType);
         } catch (NoMicroVersionException|StoredMediaRetrievalFailure e) {
-            return fetchImage(uid, ImageType.FULL_SIZE);
+            return fetchTaskImage(uid, ImageType.FULL_SIZE);
         }
     }
 
@@ -205,6 +208,7 @@ public class StorageBrokerImpl implements StorageBroker {
         }
 
     @Override
+    @Transactional(readOnly = true)
     public Set<MediaFileRecord> retrieveMediaRecordsForFunction(MediaFunction function, Set<String> mediaFileUids) {
         return mediaFileRepository.findByBucketAndKeyIn(selectBucketByFunction(function), mediaFileUids);
     }
@@ -246,8 +250,9 @@ public class StorageBrokerImpl implements StorageBroker {
     }
 
     private String selectBucketByFunction(MediaFunction function) {
-        return MediaFunction.TASK_IMAGE.equals(function) ? taskImagesAnalyzedBucket : generalMediaStorageBucket;
-
+        return MediaFunction.TASK_IMAGE.equals(function) ? taskImagesAnalyzedBucket :
+                MediaFunction.LIVEWIRE_MEDIA.equals(function) ? liveWireMediaBucket :
+                        generalMediaStorageBucket;
     }
 
     private String selectTaskBucketBySize(ImageType size) {

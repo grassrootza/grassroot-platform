@@ -8,6 +8,10 @@ public interface MediaFileBroker {
 
     MediaFileRecord load(String uid);
 
+    MediaFileRecord load(MediaFunction function, String imageKey);
+
+    boolean doesFileExist(MediaFunction function, String imageKey);
+
     String storeFile(MultipartFile file, MediaFunction function, String mimeType, String imageKey);
 
 }

@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
+import za.org.grassroot.core.domain.media.MediaFileRecord;
 import za.org.grassroot.core.domain.media.MediaFunction;
 import za.org.grassroot.core.enums.LiveWireAlertDestType;
 import za.org.grassroot.core.enums.LiveWireAlertType;
@@ -72,7 +73,7 @@ public class LiveWireController {
                 .description(description)
                 .type(type);
 
-        logger.info("do we have a groupUid? {}" + groupUid);
+        logger.info("do we have mediaFiles? {}", mediaFileKeys);
 
         if (LiveWireAlertType.INSTANT.equals(type)) {
             builder.group(groupBroker.load(groupUid));
@@ -94,7 +95,8 @@ public class LiveWireController {
         }
 
         if (mediaFileKeys != null && !mediaFileKeys.isEmpty()) {
-            builder.mediaFiles(storageBroker.retrieveMediaRecordsForFunction(MediaFunction.LIVEWIRE_MEDIA, mediaFileKeys));
+            Set<MediaFileRecord> records = storageBroker.retrieveMediaRecordsForFunction(MediaFunction.LIVEWIRE_MEDIA, mediaFileKeys);
+            builder.mediaFiles(records);
         }
 
         return RestUtil.okayResponseWithData(RestMessage.LIVEWIRE_ALERT_CREATED,

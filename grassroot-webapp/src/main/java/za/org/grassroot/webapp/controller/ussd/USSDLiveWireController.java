@@ -267,6 +267,7 @@ public class USSDLiveWireController extends USSDController {
                                 @RequestParam(required = false) String contactUid) throws URISyntaxException {
         User user = userManager.findByInputNumber(msisdn);
 
+        logger.info("field on alert confirmation: {}", field);
         if ("headline".equals(field)) {
             String headline = StringUtils.isNullOrEmpty(priorInput) ? request : priorInput;
             cacheManager.putUssdMenuForUser(msisdn, uriForCache("confirm", alertUid, headline) + "&field=" + field);
