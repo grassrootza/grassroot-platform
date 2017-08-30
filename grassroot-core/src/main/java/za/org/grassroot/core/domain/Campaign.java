@@ -12,8 +12,6 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
-import javax.persistence.PrePersist;
-import javax.persistence.PreUpdate;
 import javax.persistence.Table;
 import javax.persistence.Version;
 import java.io.Serializable;
@@ -43,6 +41,9 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
 
     @Column(name = "code", nullable = false, length = 3)
     private String campaignCode;
+
+    @Column(name = "description")
+    private String campaignDescription;
 
     @Column(name = "created_date_time", insertable = true, updatable = false)
     private Instant createdDateTime;
@@ -93,14 +94,6 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
 
         return (getUid() != null) ? getUid().equals(campaign.getUid()) : campaign.getUid() == null;
 
-    }
-
-    @PreUpdate
-    @PrePersist
-    public void updateCreateTime() {
-        if (createdDateTime == null) {
-            createdDateTime = Instant.now();
-        }
     }
 
     @Override
@@ -229,5 +222,13 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
 
     public void setVersion(Integer version) {
         this.version = version;
+    }
+
+    public String getCampaignDescription() {
+        return campaignDescription;
+    }
+
+    public void setCampaignDescription(String campaignDescription) {
+        this.campaignDescription = campaignDescription;
     }
 }

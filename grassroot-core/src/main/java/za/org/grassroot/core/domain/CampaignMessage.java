@@ -1,7 +1,12 @@
 package za.org.grassroot.core.domain;
 
+import org.hibernate.annotations.Type;
+import za.org.grassroot.core.enums.MessageVariationAssignment;
+
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -14,7 +19,7 @@ import java.time.Instant;
 
 @Entity
 @Table(name = "campaign_message")
-public class CampaignMessage implements Serializable, Comparable<CampaignMessage> {
+public class CampaignMessage implements Serializable, Comparable<CampaignMessage>, TagHolder {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -42,6 +47,27 @@ public class CampaignMessage implements Serializable, Comparable<CampaignMessage
     @JoinColumn(name = "campaign_id")
     private Campaign campaign;
 
+    @Column(name = "tags")
+    @Type(type = "za.org.grassroot.core.util.StringArrayUserType")
+    private String[] tags;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "variation")
+    private MessageVariationAssignment variation;
+
+    @Column(name = "locale")
+    private String locale;
+
+    @Override
+    public String[]getTags(){
+        return tags;
+    }
+
+    @Override
+    public void setTags(String[] tags) {
+        this.tags = tags;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -50,9 +76,7 @@ public class CampaignMessage implements Serializable, Comparable<CampaignMessage
         if (o == null || !(o instanceof CampaignMessage)) {
             return false;
         }
-
         CampaignMessage message = (CampaignMessage) o;
-
         return (getUid() != null) ? getUid().equals(message.getUid()) : message.getUid() == null;
 
     }
@@ -80,6 +104,8 @@ public class CampaignMessage implements Serializable, Comparable<CampaignMessage
         sb.append(", message='").append(message).append('\'');
         sb.append(", createdDateTime=").append(createdDateTime);
         sb.append(", createdBy=").append(createdByUser.getId());
+        sb.append(", locale=").append(locale);
+        sb.append(", variation=").append(variation.name());
         sb.append(", version=").append(version);
         sb.append('}');
         return sb.toString();
@@ -139,5 +165,21 @@ public class CampaignMessage implements Serializable, Comparable<CampaignMessage
 
     public void setVersion(Integer version) {
         this.version = version;
+    }
+
+    public MessageVariationAssignment getVariation() {
+        return variation;
+    }
+
+    public void setVariation(MessageVariationAssignment variation) {
+        this.variation = variation;
+    }
+
+    public String getLocale() {
+        return locale;
+    }
+
+    public void setLocale(String locale) {
+        this.locale = locale;
     }
 }
