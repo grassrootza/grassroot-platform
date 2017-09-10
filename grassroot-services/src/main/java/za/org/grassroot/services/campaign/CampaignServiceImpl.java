@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import za.org.grassroot.core.domain.Campaign;
 import za.org.grassroot.core.domain.CampaignMessage;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.MessageVariationAssignment;
 import za.org.grassroot.core.repository.CampaignRepository;
 import za.org.grassroot.services.campaign.util.CampaignUtil;
@@ -33,12 +34,6 @@ public class CampaignServiceImpl implements CampaignService {
     }
 
     @Override
-    public Campaign getCampaignByTag(String tag){
-        Objects.requireNonNull(tag);
-        return  campaignRepository.findByTagAndEndDateTimeBefore(tag, Instant.now());
-    }
-
-    @Override
     public Set<CampaignMessage> getCampaignMessagesByCampaignCode(String campaignCode, MessageVariationAssignment assignment){
         return findMessagesByCampaignCodeAndVariation(campaignCode,assignment);
     }
@@ -61,6 +56,27 @@ public class CampaignServiceImpl implements CampaignService {
         Set<CampaignMessage>messageSet = findMessagesByCampaignNameAndVariation(campaignName,assignment);
         return CampaignUtil.processCampaignMessagesByLocale(messageSet,locale);
     }
+
+    @Override
+    public Set<CampaignMessage> getCampaignMessagesByCampaignCodeAndMessageTag(String campaignCode, MessageVariationAssignment assignment, String messageTag){
+        Objects.requireNonNull(messageTag);
+        Set<CampaignMessage> messageSet = findMessagesByCampaignCodeAndVariation(campaignCode, assignment);
+        return CampaignUtil.processCampaignMessagesByTag(messageSet,messageTag);
+    }
+
+    @Override
+    public Set<CampaignMessage> getCampaignMessagesByCampaignNameAndMessageTag(String campaignName, MessageVariationAssignment assignment, String messageTag){
+        Objects.requireNonNull(messageTag);
+        Set<CampaignMessage> messageSet = findMessagesByCampaignNameAndVariation(campaignName, assignment);
+        return CampaignUtil.processCampaignMessagesByTag(messageSet, messageTag);
+    }
+
+    @Override
+    public Campaign createCampaign(String campaignName, String campaignCode, String description, User createUser, Instant startDate, Instant endDate){
+        Campaign newCampaign = new Campaign(campaignName, campaignCode, description,createUser, startDate, endDate);
+        return campaignRepository.saveAndFlush(newCampaign);
+    }
+
 
 
     private Campaign getCampaignByCampaignCode(String campaignCode){

@@ -9,6 +9,5 @@ import java.time.Instant;
 
 public interface CampaignRepository extends JpaRepository<Campaign, Long>, JpaSpecificationExecutor<Campaign> {
     Campaign findByCampaignCodeAndEndDateTimeBefore(String campaignCode, Instant date);
-    Campaign findByTagAndEndDateTimeBefore(String campaignCode, Instant date);
     Campaign findBycampaignNameAndEndDateTimeBefore(String campaignName, Instant date);
 }

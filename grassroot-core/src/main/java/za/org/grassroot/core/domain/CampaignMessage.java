@@ -2,6 +2,7 @@ package za.org.grassroot.core.domain;
 
 import org.hibernate.annotations.Type;
 import za.org.grassroot.core.enums.MessageVariationAssignment;
+import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -16,6 +17,7 @@ import javax.persistence.Table;
 import javax.persistence.Version;
 import java.io.Serializable;
 import java.time.Instant;
+import java.util.Objects;
 
 @Entity
 @Table(name = "campaign_message")
@@ -57,6 +59,15 @@ public class CampaignMessage implements Serializable, Comparable<CampaignMessage
 
     @Column(name = "locale")
     private String locale;
+
+    public CampaignMessage(String message, User createdByUser, MessageVariationAssignment variation, String locale){
+        this.uid = UIDGenerator.generateId();
+        this.createdDateTime = Instant.now();
+        this.variation = Objects.requireNonNull(variation);
+        this.message = Objects.requireNonNull(message);
+        this.createdByUser = Objects.requireNonNull(createdByUser);
+        this.locale = Objects.requireNonNull(locale);
+    }
 
     @Override
     public String[]getTags(){

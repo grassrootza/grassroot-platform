@@ -68,12 +68,15 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
     @Type(type = "za.org.grassroot.core.util.StringArrayUserType")
     private String[] tags;
 
-    public Campaign(String campaignName, String campaignCode, User createdByUser ){
+    public Campaign(String campaignName, String campaignCode,String campaignDescription, User createdByUser, Instant startDateTime, Instant endDateTime){
         this.uid = UIDGenerator.generateId();
         this.createdDateTime = Instant.now();
         this.campaignName = Objects.requireNonNull(campaignName);
         this.campaignCode = Objects.requireNonNull(campaignCode);
         this.createdByUser = Objects.requireNonNull(createdByUser);
+        this.campaignDescription = Objects.requireNonNull(campaignDescription);
+        this.startDateTime = Objects.requireNonNull(startDateTime);
+        this.endDateTime = Objects.requireNonNull(endDateTime);
     }
 
     @Override

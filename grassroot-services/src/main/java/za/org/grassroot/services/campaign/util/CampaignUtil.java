@@ -33,4 +33,20 @@ public class CampaignUtil {
         }
         return campaignMessageSet;
     }
+
+    public static Set<CampaignMessage> processCampaignMessagesByTag(Set<CampaignMessage> messageSet,String messageTag){
+        Set<CampaignMessage> campaignMessageSet = new HashSet<CampaignMessage>();
+        if(messageSet != null && !messageSet.isEmpty()){
+            for(CampaignMessage message : messageSet){
+                if(message.getTagList() != null && message.getTagList().isEmpty()){
+                    for(String tag : message.getTagList()){
+                        if(tag.trim().equalsIgnoreCase(messageTag.trim())){
+                            campaignMessageSet.add(message);
+                        }
+                    }
+                }
+            }
+        }
+        return campaignMessageSet;
+    }
 }
