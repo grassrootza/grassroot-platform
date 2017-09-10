@@ -22,6 +22,7 @@ create table campaign (
     tags text[] default '{}',
     variation varchar(35),
     locale varchar(35),
+    sequence_number integer,
     primary key (id));
 
 
