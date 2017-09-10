@@ -45,6 +45,9 @@ public class CampaignMessage implements Serializable, Comparable<CampaignMessage
     @JoinColumn(name = "created_by_user", nullable = false, updatable = false)
     private User createdByUser;
 
+    @Column(name = "sequence_number",nullable = false)
+    private Integer sequenceNumber;
+
     @ManyToOne
     @JoinColumn(name = "campaign_id")
     private Campaign campaign;
@@ -60,13 +63,14 @@ public class CampaignMessage implements Serializable, Comparable<CampaignMessage
     @Column(name = "locale")
     private String locale;
 
-    public CampaignMessage(String message, User createdByUser, MessageVariationAssignment variation, String locale){
+    public CampaignMessage(String message, User createdByUser, MessageVariationAssignment variation, String locale, Integer sequenceNumber){
         this.uid = UIDGenerator.generateId();
         this.createdDateTime = Instant.now();
         this.variation = Objects.requireNonNull(variation);
         this.message = Objects.requireNonNull(message);
         this.createdByUser = Objects.requireNonNull(createdByUser);
         this.locale = Objects.requireNonNull(locale);
+        this.sequenceNumber = Objects.requireNonNull(sequenceNumber);
     }
 
     @Override
@@ -116,6 +120,7 @@ public class CampaignMessage implements Serializable, Comparable<CampaignMessage
         sb.append(", createdDateTime=").append(createdDateTime);
         sb.append(", createdBy=").append(createdByUser.getId());
         sb.append(", locale=").append(locale);
+        sb.append(", sequence number").append(sequenceNumber);
         sb.append(", variation=").append(variation.name());
         sb.append(", version=").append(version);
         sb.append('}');
@@ -192,5 +197,13 @@ public class CampaignMessage implements Serializable, Comparable<CampaignMessage
 
     public void setLocale(String locale) {
         this.locale = locale;
+    }
+
+    public Integer getSequenceNumber() {
+        return sequenceNumber;
+    }
+
+    public void setSequenceNumber(Integer sequenceNumber) {
+        this.sequenceNumber = sequenceNumber;
     }
 }

@@ -18,7 +18,7 @@ public interface CampaignService {
     Campaign getCampaignDetailsByCode(String campaignCode);
 
     /**
-     * Get Campaign information by campaign name
+     * Get Campaign information by name of the campaign
      * @param campaignName
      * @return
      */
@@ -34,7 +34,7 @@ public interface CampaignService {
     Set<CampaignMessage> getCampaignMessagesByCampaignCode(String campaignCode, MessageVariationAssignment assignment);
 
     /**
-     *
+     * Get Campaign message using campaign name
      * @param campaignName
      * @param assignment
      * @return
@@ -42,7 +42,7 @@ public interface CampaignService {
     Set<CampaignMessage> getCampaignMessagesByCampaignName(String campaignName, MessageVariationAssignment assignment);
 
     /**
-     *
+     * Get campaign message using campaign code and language
      * @param campaignCode
      * @param assignment
      * @param locale
@@ -51,7 +51,7 @@ public interface CampaignService {
     Set<CampaignMessage> getCampaignMessagesByCampaignCodeAndLocale(String campaignCode, MessageVariationAssignment assignment, String locale);
 
     /**
-     *
+     * Get campaign message using campaign code and language
      * @param campaignCode - campaign code
      * @param assignment
      * @param locale

@@ -54,6 +54,7 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
     @Column(name = "end_date_time", insertable = true, updatable = false)
     private Instant endDateTime;
 
+
     @ManyToOne()
     @JoinColumn(name = "created_by_user", nullable = false, updatable = false)
     private User createdByUser;
@@ -234,4 +235,5 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
     public void setCampaignDescription(String campaignDescription) {
         this.campaignDescription = campaignDescription;
     }
+
 }
