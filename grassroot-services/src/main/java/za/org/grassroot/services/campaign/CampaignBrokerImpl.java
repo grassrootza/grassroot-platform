@@ -8,8 +8,10 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.MessageVariationAssignment;
 import za.org.grassroot.core.repository.CampaignRepository;
 import za.org.grassroot.services.campaign.util.CampaignUtil;
+import za.org.grassroot.services.exception.CampaignNotFoundException;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -72,21 +74,62 @@ public class CampaignBrokerImpl implements CampaignBroker {
     }
 
     @Override
-    public Campaign createCampaign(String campaignName, String campaignCode, String description, User createUser, Instant startDate, Instant endDate){
+    public Campaign createCampaign(String campaignName, String campaignCode, String description, User createUser, Instant startDate, Instant endDate, List<String> campaignTags){
         Campaign newCampaign = new Campaign(campaignName, campaignCode, description,createUser, startDate, endDate);
+        if(campaignTags != null && !campaignTags.isEmpty()){
+            newCampaign.getTagList().addAll(campaignTags);
+        }
         return campaignRepository.saveAndFlush(newCampaign);
+    }
+
+    @Override
+    public Campaign addCampaignMessage(String campaignCode, String campaignMessage,String messageLocale,MessageVariationAssignment assignment, Integer sequenceNumber, User createUser, List<String> messageTags){
+        Objects.requireNonNull(campaignCode);
+        Objects.requireNonNull(campaignMessage);
+        Objects.requireNonNull(messageLocale);
+        Objects.requireNonNull(sequenceNumber);
+        Objects.requireNonNull(createUser);
+        Objects.requireNonNull(assignment);
+        Objects.requireNonNull(messageTags);
+        Campaign campaign = campaignRepository.findByCampaignCodeAndEndDateTimeAfter(campaignCode,Instant.now());
+        if(campaign != null){
+            CampaignMessage message = new CampaignMessage(campaignMessage, createUser, assignment, messageLocale,sequenceNumber);
+            message.getTagList().addAll(messageTags);
+            campaign.getCampaignMessages().add(message);
+            return campaignRepository.saveAndFlush(campaign);
+        }
+        throw new CampaignNotFoundException("No Campaign found for code "+campaignCode);
+    }
+
+    @Override
+    public Campaign addCampaignTags(String campaignCode, List<String> tags){
+        Objects.requireNonNull(campaignCode);
+        Objects.requireNonNull(tags);
+        Campaign campaign = campaignRepository.findByCampaignCodeAndEndDateTimeAfter(campaignCode,Instant.now());
+        if(campaign != null){
+            campaign.getTagList().addAll(tags);
+            return campaignRepository.saveAndFlush(campaign);
+        }
+        throw new CampaignNotFoundException("No Campaign found for code "+campaignCode);
+    }
+
+    @Override
+    public void linkCampaigntoMasterGroup(String campaignCode, Integer groupId){
+        Objects.requireNonNull(campaignCode);
+        Objects.requireNonNull(groupId);
+
     }
 
 
 
     private Campaign getCampaignByCampaignCode(String campaignCode){
         Objects.requireNonNull(campaignCode);
-        return campaignRepository.findByCampaignCodeAndEndDateTimeBefore(campaignCode, Instant.now());
+        return campaignRepository.findByCampaignCodeAndEndDateTimeAfter(campaignCode, Instant.now());
     }
 
     private Campaign getCampaignByCampaignName(String campaignName){
         Objects.requireNonNull(campaignName);
-        return campaignRepository.findBycampaignNameAndEndDateTimeBefore(campaignName, Instant.now());
+        return campaignRepository.findByCampaignNameAndEndDateTimeAfter(campaignName, Instant.now());
     }
 
     private Set<CampaignMessage> findMessagesByCampaignCodeAndVariation(String campaignCode, MessageVariationAssignment assignment){
