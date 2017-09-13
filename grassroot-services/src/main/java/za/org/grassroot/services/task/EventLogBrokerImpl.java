@@ -34,23 +34,22 @@ public class EventLogBrokerImpl implements EventLogBroker {
 
     private Logger log = LoggerFactory.getLogger(EventLogBrokerImpl.class);
 
-    @Autowired
-    private EventLogRepository eventLogRepository;
+    private final EventLogRepository eventLogRepository;
+    private final EventRepository eventRepository;
+    private final UserRepository userRepository;
+    private final LogsAndNotificationsBroker logsAndNotificationsBroker;
+    private final MessageAssemblingService messageAssemblingService;
+    private final CacheUtilService cacheUtilService;
 
     @Autowired
-    private EventRepository eventRepository;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private LogsAndNotificationsBroker logsAndNotificationsBroker;
-
-    @Autowired
-    private MessageAssemblingService messageAssemblingService;
-
-    @Autowired
-    private CacheUtilService cacheUtilService;
+    public EventLogBrokerImpl(EventLogRepository eventLogRepository, EventRepository eventRepository, UserRepository userRepository, LogsAndNotificationsBroker logsAndNotificationsBroker, MessageAssemblingService messageAssemblingService, CacheUtilService cacheUtilService) {
+        this.eventLogRepository = eventLogRepository;
+        this.eventRepository = eventRepository;
+        this.userRepository = userRepository;
+        this.logsAndNotificationsBroker = logsAndNotificationsBroker;
+        this.messageAssemblingService = messageAssemblingService;
+        this.cacheUtilService = cacheUtilService;
+    }
 
     @Override
     @Transactional

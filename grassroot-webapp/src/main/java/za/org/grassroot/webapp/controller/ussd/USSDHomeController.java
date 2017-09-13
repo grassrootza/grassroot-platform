@@ -16,6 +16,7 @@ import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.domain.task.Vote;
 import za.org.grassroot.core.enums.*;
+import za.org.grassroot.integration.experiments.ExperimentBroker;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.SafetyEventBroker;
 import za.org.grassroot.services.enums.EventListTimeType;
@@ -70,6 +71,9 @@ public class USSDHomeController extends USSDController {
 
     @Autowired
     private LiveWireAlertBroker liveWireAlertBroker;
+
+    @Autowired
+    private ExperimentBroker experimentBroker;
 
     @Autowired
     private Environment environment;
@@ -476,8 +480,16 @@ public class USSDHomeController extends USSDController {
             welcomeKey = String.join(".", Arrays.asList(homeKey, startMenu, promptKey, "rsvp-no"));
         }
 
+        recordExperimentResult(user.getUid(), attending);
         return menuBuilder(new USSDMenu(getMessage(welcomeKey, user), optionsHomeExit(user, false)));
+    }
 
+    private void recordExperimentResult(final String userUid, final String response) {
+        Map<String, Object> tags = new HashMap<>();
+        tags.put("revenue", 1);
+        tags.put("meeting_response", 1);
+        tags.put("content", response);
+        experimentBroker.recordEvent("meeting_response", userUid, null, tags);
     }
 
     // todo: move this into todo controller so we can request & log a location

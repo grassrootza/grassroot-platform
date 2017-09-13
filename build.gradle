@@ -5,8 +5,8 @@ allprojects  {
 }
 
 ext.libs = [
-        springVersion: '4.3.9.RELEASE',
-        springBootVersion: '1.5.4.RELEASE',
+        springVersion: '4.3.10.RELEASE',
+        springBootVersion: '1.5.6.RELEASE',
         springSecurityVersion: '4.2.3.RELEASE',
         thymeleafVersion: '3.0.0.RELEASE',
         jacksonVersion: '2.8.7'
@@ -23,6 +23,9 @@ subprojects {
   repositories {
     mavenLocal()
     maven { url "http://repo.maven.apache.org/maven2" }
+    maven {
+      url "http://optimizely.bintray.com/optimizely"
+    }
   }
 
   test { // major todo : rewire integration tests
@@ -38,8 +41,10 @@ subprojects {
   }
   
   dependencies {
-
     compile group: 'com.google.guava', name: 'guava', version:'19.0'
+
+    compile 'com.optimizely.ab:core-api:1.7.0'
+    compile 'com.optimizely.ab:core-httpclient-impl:1.7.0'
 
     testCompile group: 'org.springframework', name: 'spring-test', version:libs.springVersion
     testCompile group: 'junit', name: 'junit', version:'4.12'

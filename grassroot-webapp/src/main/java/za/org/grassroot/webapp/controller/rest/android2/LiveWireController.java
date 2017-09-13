@@ -54,7 +54,7 @@ public class LiveWireController {
     @RequestMapping(value = "/create/{userUid}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> createLiveWireAlert(@PathVariable String userUid,
                                                                @RequestParam String headline,
-                                                               @RequestParam String description,
+                                                               @RequestParam(required = false) String description,
                                                                @RequestParam LiveWireAlertType type,
                                                                @RequestParam(required = false) String groupUid,
                                                                @RequestParam(required = false) String taskUid,

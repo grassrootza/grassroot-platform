@@ -1,5 +1,7 @@
 package za.org.grassroot.core.domain;
 
+import org.hibernate.annotations.Type;
+
 import javax.persistence.*;
 import java.io.Serializable;
 import java.time.Instant;
@@ -8,7 +10,7 @@ import java.util.Objects;
 @Entity
 @Table(name = "group_user_membership",
         uniqueConstraints = @UniqueConstraint(name = "uk_membership_group_user", columnNames = {"group_id", "user_id"}))
-public class Membership implements Serializable {
+public class Membership implements Serializable, TagHolder {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
@@ -33,6 +35,10 @@ public class Membership implements Serializable {
     @Column(name = "alias", length = 50, nullable = true)
     private String alias;
 
+    @Column(name = "tags")
+    @Type(type = "za.org.grassroot.core.util.StringArrayUserType")
+    private String[] tags;
+
     private Membership() {
         // for JPA
     }
@@ -42,6 +48,7 @@ public class Membership implements Serializable {
         this.user = Objects.requireNonNull(user);
         this.role = Objects.requireNonNull(role);
         this.joinTime = Objects.requireNonNull(joinTime);
+        this.tags = new String[0];
     }
 
     public Long getId() {
@@ -114,5 +121,14 @@ public class Membership implements Serializable {
         sb.append(", role=").append(role);
         sb.append('}');
         return sb.toString();
+    }
+
+    public String[] getTags() {
+        return tags == null ? new String[0] : tags;
+    }
+
+    @Override
+    public void setTags(String[] tags) {
+        this.tags = tags;
     }
 }
