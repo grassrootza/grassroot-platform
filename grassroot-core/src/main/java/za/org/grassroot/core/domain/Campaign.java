@@ -60,7 +60,7 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
     private User createdByUser;
 
     @OneToMany(mappedBy = "campaign")
-    private Set<Group> group = new HashSet<Group>();
+    private Set<Group> group = new HashSet<>();
 
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "campaign", orphanRemoval = true)
     private Set<CampaignMessage> campaignMessages;
@@ -211,7 +211,7 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
 
     public Set<CampaignMessage> getCampaignMessages() {
         if(this.campaignMessages == null){
-            this.campaignMessages = new HashSet<CampaignMessage>();
+            this.campaignMessages = new HashSet<>();
         }
         return campaignMessages;
     }

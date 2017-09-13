@@ -14,12 +14,12 @@ import java.util.Objects;
 import java.util.Set;
 
 @Service
-public class CampaignServiceImpl implements CampaignService {
+public class CampaignBrokerImpl implements CampaignBroker {
 
     private final CampaignRepository campaignRepository;
 
     @Autowired
-    public CampaignServiceImpl(CampaignRepository campaignRepository){
+    public CampaignBrokerImpl(CampaignRepository campaignRepository){
         this.campaignRepository = campaignRepository;
     }
 

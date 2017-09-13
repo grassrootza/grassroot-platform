@@ -9,7 +9,7 @@ import za.org.grassroot.core.enums.MessageVariationAssignment;
 import java.time.Instant;
 import java.util.Set;
 
-public interface CampaignService {
+public interface CampaignBroker {
     /**
      * Get Campaign information by campaign code
      * @param campaignCode
