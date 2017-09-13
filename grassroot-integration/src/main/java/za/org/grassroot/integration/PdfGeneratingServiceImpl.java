@@ -4,14 +4,12 @@ import com.itextpdf.forms.PdfAcroForm;
 import com.itextpdf.forms.fields.PdfFormField;
 
 import com.itextpdf.kernel.color.Color;
-import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.kernel.pdf.*;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.ImageType;
 import org.apache.pdfbox.rendering.PDFRenderer;
 import org.apache.pdfbox.tools.imageio.ImageIOUtil;
 
-import com.itextpdf.kernel.pdf.PdfDocument;
-import com.itextpdf.kernel.pdf.PdfReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +24,7 @@ import za.org.grassroot.core.repository.AccountBillingRecordRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 
 import javax.annotation.PostConstruct;
+import javax.print.attribute.standard.Compression;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -39,6 +38,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.List;
+import java.util.stream.Stream;
 
 import static za.org.grassroot.core.specifications.BillingSpecifications.*;
 import static za.org.grassroot.core.util.DateTimeUtil.formatAtSAST;
@@ -160,7 +160,7 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
 
     @Override
 
-    public File generateGroupFlyer(String groupUid, boolean color, Locale language, String typeOfFile) {//Enum
+    public File generateGroupFlyer(String groupUid, boolean color, Locale language, String typeOfFile) {
         // load group entity from group repository using uid
         PdfDocument pdfdocument = null;
         PDDocument pd = null;
@@ -175,7 +175,9 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
 
             String flyerToLoad = folderPath + "/" + chooseFlyerToLoad(color, language);
 
-            pdfdocument = new PdfDocument(new PdfReader(flyerToLoad), new PdfWriter(fileToReturn.getAbsolutePath()));
+            //Setting full compression
+            WriterProperties properties = new WriterProperties().setFullCompressionMode(true);
+            pdfdocument = new PdfDocument(new PdfReader(flyerToLoad), new PdfWriter(fileToReturn.getAbsolutePath(),properties));
 
             PdfAcroForm pdfAcroForm = PdfAcroForm.getAcroForm(pdfdocument,true);
             Map<String,PdfFormField> pdfFormFieldMap = pdfAcroForm.getFormFields();
@@ -184,7 +186,7 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
 
             logger.info("Form Field = {}",pdfFormFieldMap.get("join_code_header").getValueAsString());
 
-            pdfFormFieldMap.get("group_name").setValue("HOW TO JOIN " + grpEntity.getGroupName().toUpperCase() + " ON GRASSROOT");//**
+            pdfFormFieldMap.get("group_name").setValue("HOW TO JOIN " + grpEntity.getGroupName().toUpperCase() + " ON GRASSROOT");
             pdfFormFieldMap.get("join_code_header").setValue(grpEntity.getGroupTokenCode()).setColor(Color.BLACK);
             pdfFormFieldMap.get("join_code_phone").setValue(grpEntity.getGroupTokenCode()).setColor(Color.BLACK);
 
@@ -199,7 +201,6 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
             //pdfOutput.setFullCompression();
 
             pdfdocument.close();
-
 
             pd = PDDocument.load(fileToReturn);
             //generateImage(pd);
@@ -252,11 +253,22 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
             if(filesInFolder != null){
                 logger.info("Files in Folder = {}",filesInFolder.length);
 
-                for(int x = 0;x < filesInFolder.length;x++){
+                /*for(int x = 0;x < filesInFolder.length;x++){
                     if(filesInFolder[x].getName().startsWith("group")){
                         tempListOfFiles.add(filesInFolder[x]);
                     }
-                }
+                }*/
+
+                Stream<File> filteredFilesInFolder = Arrays.stream(filesInFolder).filter(f -> f.getName().startsWith("group"));
+
+                filteredFilesInFolder.forEach(file -> tempListOfFiles.add(file));
+
+                /*for (File f: filesInFolder) {
+                    if(f.getName().startsWith("group")){
+                        tempListOfFiles.add(f);
+                    }
+                }*/
+
 
                 logger.info("Filtered List = {}",tempListOfFiles.size());
 
@@ -280,7 +292,6 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
             }else {
                 throw new UnsupportedOperationException("Invalid Folder path");
             }
-
         }
         logger.debug("Languages = {}",languages);
         return languages;

@@ -1,5 +1,6 @@
 package za.org.grassroot.services.geo;
 
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.ObjectLocation;
 import za.org.grassroot.services.group.GroupLocationFilter;
@@ -28,5 +29,8 @@ public interface ObjectLocationBroker {
             throws InvalidParameterException;
 
     List<ObjectLocation> fetchLocationsWithFilter(GroupLocationFilter filter);
+
+    List<ObjectLocation> fetchMeetingsNearUser(double latitude, double longitude, Integer radius, User user)
+            throws InvalidParameterException;
 
 }

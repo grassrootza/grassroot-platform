@@ -12,15 +12,21 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.Meeting;
+import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.geo.ObjectLocation;
 import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.integration.LearningService;
 import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.exception.RequestorAlreadyPartOfGroupException;
+import za.org.grassroot.services.geo.ObjectLocationBroker;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.group.GroupJoinRequestService;
 import za.org.grassroot.services.group.GroupLocationFilter;
 import za.org.grassroot.services.group.GroupQueryBroker;
+import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.TaskBroker;
+import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.PublicGroupWrapper;
 
@@ -53,16 +59,24 @@ public class GroupSearchController extends BaseController {
 	private final GroupJoinRequestService groupJoinRequestService;
 	private final AsyncUserLogger userLogger;
 	private final LearningService learningService;
+	private final EventBroker eventBroker;
+	private final UserManagementService userManagementService;
+	private final ObjectLocationBroker objectLocationBroker;
 
 	@Autowired
 	public GroupSearchController(GroupBroker groupBroker, GroupQueryBroker groupQueryBroker, TaskBroker taskBroker,
-								 GroupJoinRequestService groupJoinRequestService, AsyncUserLogger userLogger, LearningService learningService) {
+								 GroupJoinRequestService groupJoinRequestService, AsyncUserLogger userLogger,
+								 LearningService learningService,EventBroker eventBroker,UserManagementService userManagementService,
+								 ObjectLocationBroker objectLocationBroker) {
 		this.groupBroker = groupBroker;
 		this.groupQueryBroker = groupQueryBroker;
 		this.taskBroker = taskBroker;
 		this.groupJoinRequestService = groupJoinRequestService;
 		this.userLogger = userLogger;
 		this.learningService = learningService;
+		this.eventBroker = eventBroker;
+		this.userManagementService = userManagementService;
+		this.objectLocationBroker = objectLocationBroker;
 	}
 
 
@@ -88,9 +102,9 @@ public class GroupSearchController extends BaseController {
 	}
 
 	@RequestMapping(value = "/search")
-	public String searchForGroup(@RequestParam String term, @RequestParam(required = false) String groupUid,
-								 Model model, RedirectAttributes attributes, HttpServletRequest request) {
-
+	public String searchForGroup(@RequestParam("currentUserContact")String currentUserContact,@RequestParam String term,
+								 @RequestParam(required = false) String groupUid, Model model, RedirectAttributes attributes, HttpServletRequest request,
+								 @RequestParam("locationLat") double latitude,@RequestParam("locationLon") double longitude) {
 		boolean resultFound = false;
 
 		if (!StringUtils.isEmpty(groupUid) && groupQueryBroker.groupExists(groupUid)) {
@@ -138,9 +152,20 @@ public class GroupSearchController extends BaseController {
 				model.addAttribute("foundTasks", memberTasks);
 
 				resultFound = !publicGroups.isEmpty() || !memberGroups.isEmpty() || !memberTasks.isEmpty();
+
+				User user = userManagementService.findByInputNumber(currentUserContact);
+				List<Meeting> meetings = eventBroker.publicMeetingsUserIsNotPartOf(term,user);
+				if(meetings != null){
+					model.addAttribute("publicMeetingsUserIsNotPartOf",meetings);
+				}
+
+				List<ObjectLocation> objectLocations = objectLocationBroker.fetchMeetingsNearUser(latitude,longitude,2,user );
+				log.info("Object Locations = {}" ,objectLocations.size());
+
+
+
 			}
 		}
-
 		model.addAttribute("resultFound", resultFound);
 		return "group/results";
 	}

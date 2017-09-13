@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.ObjectLocation;
 import za.org.grassroot.core.repository.GroupLocationRepository;
@@ -354,6 +355,49 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
 
         return (list.isEmpty() ? new ArrayList<>() : list);
     }
+
+
+    public List<ObjectLocation> fetchMeetingsNearUser(double latitude, double longitude, Integer radius, User user){
+
+        GeoLocation location = new GeoLocation(latitude,longitude);
+
+        assertRadius(radius);
+        assertGeolocation(location);
+
+        String query =
+                "SELECT NEW za.org.grassroot.core.domain.geo.ObjectLocation(" +
+                        "  m.uid, m.name, l.location.latitude, l.location.longitude, l.score, 'MEETING', " +
+                        "  CONCAT('<strong>Where: </strong>', m.eventLocation, '<br/><strong>Date and Time: </strong>', m.eventStartDateTime), m.isPublic) " +
+                        "FROM MeetingLocation l " +
+                        "INNER JOIN l.meeting m " +
+                        "WHERE m.isPublic = true " +
+                        "  AND l.location.latitude " +
+                        "      BETWEEN :latpoint  - (:radius / :distance_unit) " +
+                        "          AND :latpoint  + (:radius / :distance_unit) " +
+                        "  AND l.location.longitude " +
+                        "      BETWEEN :longpoint - (:radius / (:distance_unit * COS(RADIANS(:latpoint)))) " +
+                        "          AND :longpoint + (:radius / (:distance_unit * COS(RADIANS(:latpoint)))) " +
+                        "  AND :radius >= (:distance_unit " +
+                        "           * DEGREES(ACOS(COS(RADIANS(:latpoint)) " +
+                        "           * COS(RADIANS(l.location.latitude)) " +
+                        "           * COS(RADIANS(:longpoint - l.location.longitude)) " +
+                        "           + SIN(RADIANS(:latpoint)) " +
+                        "           * SIN(RADIANS(l.location.latitude))))) " +
+                        " AND m.ancestorGroup NOT IN(SELECT mm.group FROM Membership mm WHERE mm.user = :user)";
+
+        logger.info("query = {}",query);
+
+        List<ObjectLocation> list = entityManager.createQuery(query, ObjectLocation.class)
+                .setParameter("user",user)
+                .setParameter("radius", (double)radius)
+                .setParameter("distance_unit", KM_PER_DEGREE)
+                .setParameter("latpoint", location.getLatitude())
+                .setParameter("longpoint", location.getLongitude())
+                .getResultList();
+
+        return (list.isEmpty() ? new ArrayList<>() : list);
+    }
+
 
     private void assertRestriction (Integer restriction) throws InvalidParameterException {
         if (restriction == null) {

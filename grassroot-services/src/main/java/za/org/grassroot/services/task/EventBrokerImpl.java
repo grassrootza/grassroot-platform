@@ -128,6 +128,7 @@ public class EventBrokerImpl implements EventBroker {
 		logger.info("Created meeting, with importance={}, reminder type={} and time={}", meeting.getImportance(), meeting.getReminderType(), meeting.getScheduledReminderTime());
 
 		meetingRepository.save(meeting);
+
 		eventLogBroker.rsvpForEvent(meeting.getUid(), meeting.getCreatedByUser().getUid(), EventRSVPResponse.YES);
 
 		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
@@ -147,6 +148,48 @@ public class EventBrokerImpl implements EventBroker {
 
 		return meeting;
 	}
+
+
+	/*private List<Meeting> meetings(){
+		List<Meeting> meetings = meetingRepository.findAll();
+		List<Meeting> meetingsToReturn = new ArrayList<>();
+
+		if(meetings != null){
+			Stream<Meeting> filteredMeetings = meetings.stream().filter(m -> m.isPublic());
+			filteredMeetings.forEach(m -> meetingsToReturn.add(m));
+		}
+		return meetingsToReturn;
+	}*/
+
+
+	/*public List<Meeting> publicMeetingsUserIsNotPartOf(String searchTerm,String uid){
+		List<Meeting> publicMeetings = meetings();
+		List<Meeting> meetingsUserIsNotPartOf = new ArrayList<>();
+
+		if(publicMeetings != null){
+			for (Meeting meeting:publicMeetings) {
+				if(meeting.getParent().getName().contains(searchTerm)){
+					Set<User> users = meeting.getAllMembers();
+
+					//Stream<User> filteredUsers = users.stream().filter(u -> !u.getUid().equals(uid));
+					for (User user:users) {
+						if(!user.getUid().equals(uid)){
+							meetingsUserIsNotPartOf.add(meeting);
+						}
+					}
+				}
+			}
+		}
+		return meetingsUserIsNotPartOf;
+	}*/
+
+	@Override
+	public List<Meeting> publicMeetingsUserIsNotPartOf(String term, User user){
+		List<Meeting> meetings = meetingRepository.publicMeetingsUserIsNotPartOfWithsSearchTerm(term, user);
+		return meetings;
+	}
+
+
 
 	private void checkForEventLimit(String parentUid) {
 		if (eventMonthlyLimitActive && accountGroupBroker.numberEventsLeftForGroup(parentUid) < 1) {

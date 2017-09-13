@@ -46,4 +46,11 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long>, JpaSpec
     List<Meeting> meetingsForResponseTotals(Instant startTimeAfter, Instant intervalStart, Instant intervalEnd);
 
 
+    @Query(value = "SELECT e FROM Event e " +
+		"WHERE e.isPublic = TRUE " +
+		"AND e.class = 'MEETING' " +
+		"AND LOWER(e.name) LIKE LOWER (CONCAT('%', ?1, '%')) " +
+        "AND e.ancestorGroup NOT IN(SELECT m.group FROM Membership m WHERE m.user = ?2)")
+    List<Meeting> publicMeetingsUserIsNotPartOfWithsSearchTerm(String searchTerm, User user);
+
 }

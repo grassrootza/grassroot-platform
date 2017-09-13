@@ -5,7 +5,6 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
-import za.org.grassroot.core.enums.MeetingImportance;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.services.enums.EventListTimeType;
 
@@ -20,6 +19,8 @@ public interface EventBroker {
 	Event load(String eventUid);
 
 	Meeting loadMeeting(String meetingUid);
+
+	List<Meeting> publicMeetingsUserIsNotPartOf(String term, User user);
 
 	/**
 	 * Create a meeting entity, also triggering notifications to be stored, and subsequently sent. Fields in helper:
