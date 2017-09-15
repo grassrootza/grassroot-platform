@@ -30,6 +30,7 @@ import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -171,9 +172,8 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
     @Type(type = "za.org.grassroot.core.util.StringArrayUserType")
     private String[] tags;
 
-    @ManyToOne(cascade = CascadeType.PERSIST)
-    @JoinColumn(name = "group_id", nullable = false)
-    private Campaign campaign;
+    @OneToMany(mappedBy = "masterGroup")
+    private List<Campaign> campaign;
 
     private Group() {
         // for JPA
@@ -693,11 +693,11 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
     }
 
 
-    public Campaign getCampaign() {
+    public List<Campaign> getCampaign() {
         return campaign;
     }
 
-    public void setCampaign(Campaign campaign) {
+    public void setCampaign(List<Campaign> campaign) {
         this.campaign = campaign;
     }
 }

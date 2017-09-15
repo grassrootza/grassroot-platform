@@ -8,19 +8,20 @@ import za.org.grassroot.core.enums.MessageVariationAssignment;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 public interface CampaignBroker {
     /**
      * Get Campaign information by campaign code
      * @param campaignCode
-     * @return
+     * @return - Campaign details
      */
     Campaign getCampaignDetailsByCode(String campaignCode);
 
     /**
      * Get Campaign information by name of the campaign
-     * @param campaignName
+     * @param campaignName -name ofcampaign
      * @return
      */
     Campaign getCampaignDetailsByName(String campaignName);
@@ -28,25 +29,25 @@ public interface CampaignBroker {
 
     /**
      * Get Campaign message by campaign code
-     * @param campaignCode
-     * @param assignment
+     * @param campaignCode campign code
+     * @param assignment - different message use cases
      * @return
      */
     Set<CampaignMessage> getCampaignMessagesByCampaignCode(String campaignCode, MessageVariationAssignment assignment);
 
     /**
      * Get Campaign message using campaign name
-     * @param campaignName
-     * @param assignment
+     * @param campaignName - name
+     * @param assignment - message use case,eg. test
      * @return
      */
     Set<CampaignMessage> getCampaignMessagesByCampaignName(String campaignName, MessageVariationAssignment assignment);
 
     /**
      * Get campaign message using campaign code and language
-     * @param campaignCode
-     * @param assignment
-     * @param locale
+     * @param campaignCode - campaign code
+     * @param assignment - message use cases
+     * @param locale - locale  for message
      * @return
      */
     Set<CampaignMessage> getCampaignMessagesByCampaignCodeAndLocale(String campaignCode, MessageVariationAssignment assignment, String locale);
@@ -54,7 +55,7 @@ public interface CampaignBroker {
     /**
      * Get campaign message using campaign code and language
      * @param campaignCode - campaign code
-     * @param assignment
+     * @param assignment - message use case test, production etc
      * @param locale
      * @return
      */
@@ -92,6 +93,19 @@ public interface CampaignBroker {
 
     /**
      *
+     * @param campaignName
+     * @param campaignCode
+     * @param description
+     * @param createUser
+     * @param groupId
+     * @param startDate
+     * @param endDate
+     * @param campaignTags
+     * @return
+     */
+    Campaign createCampaign(String campaignName, String campaignCode, String description, User createUser, Long groupId, Instant startDate, Instant endDate, List<String> campaignTags);
+    /**
+     *
      * @param campaignCode
      * @param campaignMessage
      * @param messageLocale
@@ -100,7 +114,7 @@ public interface CampaignBroker {
      * @param createUser
      * @return
      */
-    Campaign addCampaignMessage(String campaignCode, String campaignMessage,String messageLocale,MessageVariationAssignment assignment, Integer sequenceNumber, User createUser, List<String> messageTags);
+    Campaign addCampaignMessage(String campaignCode, String campaignMessage, Locale messageLocale, MessageVariationAssignment assignment, Integer sequenceNumber, User createUser, List<String> messageTags);
 
     /**
      *
@@ -110,6 +124,19 @@ public interface CampaignBroker {
      */
     Campaign addCampaignTags(String campaignCode, List<String> tags);
 
-    void linkCampaigntoMasterGroup(String campaignCode, Integer groupId);
+    /**
+     *
+     * @param tag
+     * @return
+     */
+    Campaign getCampaignByTag(String tag);
+
+    /**
+     *
+     * @param campaignCode
+     * @param groupId
+     * @return
+     */
+    Campaign linkCampaignToMasterGroup(String campaignCode, Long groupId);
 
 }

@@ -10,6 +10,7 @@ create table campaign (
   code varchar(10),
   created_by_user bigint,
   tags text[] default '{}',
+  ancestor_group_id bigint,
   primary key (id));
 
   create table campaign_message (

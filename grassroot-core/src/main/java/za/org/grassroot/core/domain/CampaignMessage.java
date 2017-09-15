@@ -2,9 +2,11 @@ package za.org.grassroot.core.domain;
 
 import org.hibernate.annotations.Type;
 import za.org.grassroot.core.enums.MessageVariationAssignment;
+import za.org.grassroot.core.util.LocaleConverter;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.Column;
+import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
@@ -17,6 +19,7 @@ import javax.persistence.Table;
 import javax.persistence.Version;
 import java.io.Serializable;
 import java.time.Instant;
+import java.util.Locale;
 import java.util.Objects;
 
 @Entity
@@ -60,10 +63,11 @@ public class CampaignMessage implements Serializable, Comparable<CampaignMessage
     @Column(name = "variation")
     private MessageVariationAssignment variation;
 
+    @Convert(converter = LocaleConverter.class)
     @Column(name = "locale")
-    private String locale;
+    private Locale locale;
 
-    public CampaignMessage(String message, User createdByUser, MessageVariationAssignment variation, String locale, Integer sequenceNumber){
+    public CampaignMessage(String message, User createdByUser, MessageVariationAssignment variation, Locale locale, Integer sequenceNumber){
         this.uid = UIDGenerator.generateId();
         this.createdDateTime = Instant.now();
         this.variation = Objects.requireNonNull(variation);
@@ -191,11 +195,11 @@ public class CampaignMessage implements Serializable, Comparable<CampaignMessage
         this.variation = variation;
     }
 
-    public String getLocale() {
+    public Locale getLocale() {
         return locale;
     }
 
-    public void setLocale(String locale) {
+    public void setLocale(Locale locale) {
         this.locale = locale;
     }
 
