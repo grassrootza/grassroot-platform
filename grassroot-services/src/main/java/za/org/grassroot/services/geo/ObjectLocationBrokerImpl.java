@@ -9,10 +9,12 @@ import org.springframework.web.client.RestTemplate;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
+import za.org.grassroot.core.domain.geo.GroupLocation;
 import za.org.grassroot.core.domain.geo.ObjectLocation;
 import za.org.grassroot.core.repository.GroupLocationRepository;
 import za.org.grassroot.core.repository.MeetingLocationRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.integration.location.UssdLocationServicesBroker;
 import za.org.grassroot.services.group.GroupLocationFilter;
 
 import javax.persistence.EntityManager;
@@ -37,13 +39,16 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
     private final EntityManager entityManager;
     private final GroupLocationRepository groupLocationRepository;
     private final MeetingLocationRepository meetingLocationRepository;
+    private final UssdLocationServicesBroker ussdLocationServicesBroker;
 
     @Autowired
     public ObjectLocationBrokerImpl(EntityManager entityManager, GroupLocationRepository groupLocationRepository,
-                                    MeetingLocationRepository meetingLocationRepository, RestTemplate restTemplate) {
+                                    MeetingLocationRepository meetingLocationRepository, RestTemplate restTemplate,
+                                    UssdLocationServicesBroker ussdLocationServicesBroker) {
         this.entityManager = entityManager;
         this.groupLocationRepository = groupLocationRepository;
         this.meetingLocationRepository = meetingLocationRepository;
+        this.ussdLocationServicesBroker = ussdLocationServicesBroker;
     }
 
     @Override
@@ -367,7 +372,7 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
         String query =
                 "SELECT NEW za.org.grassroot.core.domain.geo.ObjectLocation(" +
                         "  m.uid, m.name, l.location.latitude, l.location.longitude, l.score, 'MEETING', " +
-                        "  CONCAT('<strong>Where: </strong>', m.eventLocation, '<br/><strong>Date and Time: </strong>', m.eventStartDateTime), m.isPublic) " +
+                        "  CONCAT('Where: ', m.eventLocation, 'Date and Time: ', m.eventStartDateTime), m.isPublic) " +
                         "FROM MeetingLocation l " +
                         "INNER JOIN l.meeting m " +
                         "WHERE m.isPublic = true " +
@@ -398,6 +403,27 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
         return (list.isEmpty() ? new ArrayList<>() : list);
     }
 
+    @Override
+    public List<ObjectLocation> fetchMeetingsNearUserUssd(Integer radius, User user) throws InvalidParameterException {
+
+        GeoLocation location = ussdLocationServicesBroker.getUssdLocationForUser(user.getUid());
+        List<ObjectLocation> meetingLocations = new ArrayList<>();
+        if(location != null){
+            meetingLocations = fetchMeetingsNearUser(location.getLatitude(),location.getLongitude(),radius,user);
+        }else{
+            GroupLocation groupLocation = (GroupLocation) entityManager.createNamedQuery("SELECT * FROM GroupLocation g" +
+                                                                "WHERE g.group = (SELECT gm.group FROM Membership gm" +
+                                                                                "WHERE gm.user = : user)").getSingleResult();
+
+            logger.info("Group Location = {}",groupLocation.getLocation().getLatitude() + " " + groupLocation.getLocation().getLongitude());
+            if(groupLocation != null){
+                meetingLocations = fetchMeetingsNearUser(groupLocation.getLocation().getLatitude(),groupLocation.getLocation().getLongitude(),radius,user);
+            }else{
+                throw new InvalidParameterException("Invalid Location");
+            }
+        }
+        return meetingLocations;
+    }
 
     private void assertRestriction (Integer restriction) throws InvalidParameterException {
         if (restriction == null) {

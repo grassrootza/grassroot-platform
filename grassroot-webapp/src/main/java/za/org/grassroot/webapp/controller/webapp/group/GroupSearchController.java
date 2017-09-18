@@ -46,6 +46,7 @@ public class GroupSearchController extends BaseController {
 
 	private static final Logger log = LoggerFactory.getLogger(GroupSearchController.class);
 	private static final Pattern tokenPattern = Pattern.compile("[^a-zA-Z\\s]+");
+	private static final Integer searchRadius = 2;
 
 	@Value("${grassroot.ussd.dialcode:*134*1994*}")
 	private String ussdDialCode;
@@ -159,11 +160,8 @@ public class GroupSearchController extends BaseController {
 					model.addAttribute("publicMeetingsUserIsNotPartOf",meetings);
 				}
 
-				List<ObjectLocation> objectLocations = objectLocationBroker.fetchMeetingsNearUser(latitude,longitude,2,user );
+				List<ObjectLocation> objectLocations = objectLocationBroker.fetchMeetingsNearUser(latitude,longitude,searchRadius,user );
 				log.info("Object Locations = {}" ,objectLocations.size());
-
-
-
 			}
 		}
 		model.addAttribute("resultFound", resultFound);

@@ -33,4 +33,7 @@ public interface ObjectLocationBroker {
     List<ObjectLocation> fetchMeetingsNearUser(double latitude, double longitude, Integer radius, User user)
             throws InvalidParameterException;
 
+    List<ObjectLocation> fetchMeetingsNearUserUssd(Integer radius,User user)
+            throws InvalidParameterException;
+
 }

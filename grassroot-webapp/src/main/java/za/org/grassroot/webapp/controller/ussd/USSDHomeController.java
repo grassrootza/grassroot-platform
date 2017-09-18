@@ -11,10 +11,14 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.geo.GeoLocation;
+import za.org.grassroot.core.domain.geo.ObjectLocation;
 import za.org.grassroot.core.enums.*;
+import za.org.grassroot.integration.location.UssdLocationServicesBroker;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.SafetyEventBroker;
 import za.org.grassroot.services.enums.EventListTimeType;
+import za.org.grassroot.services.geo.ObjectLocationBroker;
 import za.org.grassroot.services.group.GroupQueryBroker;
 import za.org.grassroot.services.livewire.LiveWireAlertBroker;
 import za.org.grassroot.services.task.EventLogBroker;
@@ -70,6 +74,12 @@ public class USSDHomeController extends USSDController {
     @Autowired
     private Environment environment;
 
+    @Autowired
+    private UssdLocationServicesBroker ussdLocationServicesBroker;
+
+    @Autowired
+    private ObjectLocationBroker objectLocationBroker;
+
     private static final Logger log = LoggerFactory.getLogger(USSDHomeController.class);
 
     private static final String path = homePath;
@@ -97,11 +107,12 @@ public class USSDHomeController extends USSDController {
             new SimpleEntry<>(TODO, new String[]{todoMenus + startMenu, openingMenuKey + logKey}),
             new SimpleEntry<>(GROUP_MANAGER, new String[]{groupMenus + startMenu, openingMenuKey + groupKey}),
             new SimpleEntry<>(USER_PROFILE, new String[]{userMenus + startMenu, openingMenuKey + userKey}),
-            new SimpleEntry<>(SAFETY_GROUP_MANAGER, new String[]{safetyMenus + startMenu, openingMenuKey + safetyKey})).
+            new SimpleEntry<>(MORE, new String[]{moreMenus + startMenu,openingMenuKey + moreKey})).
+            //new SimpleEntry<>(SAFETY_GROUP_MANAGER, new String[]{safetyMenus + startMenu, openingMenuKey + safetyKey})).
             collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue)));
 
     private static final List<USSDSection> openingSequenceWithGroups = Arrays.asList(
-            MEETINGS, VOTES, TODO, GROUP_MANAGER, USER_PROFILE, SAFETY_GROUP_MANAGER);
+            MEETINGS, VOTES, TODO, GROUP_MANAGER, USER_PROFILE, MORE);
     private static final List<USSDSection> openingSequenceWithoutGroups = Arrays.asList(
             USER_PROFILE, GROUP_MANAGER, MEETINGS, VOTES, TODO);
 
