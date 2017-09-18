@@ -37,11 +37,17 @@ public class USSDHomeMoreController extends USSDController{
     private static final  String keyStart = "start";
     private static final Integer searchRadius = 2;
 
-    @Autowired
+
     private UssdLocationServicesBroker ussdLocationServicesBroker;
 
-    @Autowired
+
     private ObjectLocationBroker objectLocationBroker;
+
+    @Autowired
+    public USSDHomeMoreController(UssdLocationServicesBroker ussdLocationServicesBroker,ObjectLocationBroker objectLocationBroker){
+        this.ussdLocationServicesBroker = ussdLocationServicesBroker;
+        this.objectLocationBroker = objectLocationBroker;
+    }
 
 
     @RequestMapping(value = homePath + moreMenus + startMenu)
