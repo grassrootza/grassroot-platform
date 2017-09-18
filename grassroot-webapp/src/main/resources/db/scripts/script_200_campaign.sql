@@ -27,6 +27,18 @@ create table campaign (
     primary key (id));
 
 
+  CREATE TABLE campaign_log(
+    id bigserial NOT NULL,
+    uid varchar(50) NOT NULL,
+    creation_time timestamp without time zone not null,
+    user_uid varchar(50) NOT NULL,
+    campaign_log_type varchar(50) NOT NULL,
+    description character varying(255),
+    campaign_id bigserial NOT NULL,
+    CONSTRAINT uk_campaign_log_uid unique (uid),
+    PRIMARY KEY (id));
+
+
   CREATE SEQUENCE campaign_id_seq
     START WITH 1
     INCREMENT BY 1
