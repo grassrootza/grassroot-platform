@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.servlet.HandlerMapping;
 import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
 import za.org.grassroot.core.domain.VerificationTokenCode;
@@ -47,6 +48,9 @@ public class TokenValidationInterceptor extends HandlerInterceptorAdapter {
     @Override
     public boolean preHandle(HttpServletRequest request,
                              HttpServletResponse response, Object handler) throws Exception {
+
+        if (request.getMethod().equalsIgnoreCase(RequestMethod.OPTIONS.toString()))
+            return true;
 
         AuthorizationHeader authorizationHeader = new AuthorizationHeader(request);
 

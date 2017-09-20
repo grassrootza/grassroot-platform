@@ -39,6 +39,7 @@ import java.util.stream.Collectors;
  */
 @RestController
 @RequestMapping(value = "/api/group", produces = MediaType.APPLICATION_JSON_VALUE)
+@CrossOrigin(origins = "*")
 public class GroupQueryRestController extends GroupAbstractRestController {
 
     private static final Logger log = LoggerFactory.getLogger(GroupQueryRestController.class);
