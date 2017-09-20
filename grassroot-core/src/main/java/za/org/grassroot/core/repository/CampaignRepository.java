@@ -4,8 +4,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
-import za.org.grassroot.core.domain.Campaign;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.campaign.Campaign;
 
 import java.time.Instant;
 import java.util.List;

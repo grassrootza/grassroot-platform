@@ -1,10 +1,14 @@
-package za.org.grassroot.core.domain;
+package za.org.grassroot.core.domain.campaign;
 
 import org.hibernate.annotations.Type;
+import za.org.grassroot.core.domain.TagHolder;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.MessageVariationAssignment;
+import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.util.LocaleConverter;
 import za.org.grassroot.core.util.UIDGenerator;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
@@ -15,12 +19,15 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
+import javax.persistence.OneToOne;
 import javax.persistence.Table;
 import javax.persistence.Version;
 import java.io.Serializable;
 import java.time.Instant;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Set;
 
 @Entity
 @Table(name = "campaign_message")
@@ -48,8 +55,9 @@ public class CampaignMessage implements Serializable, Comparable<CampaignMessage
     @JoinColumn(name = "created_by_user", nullable = false, updatable = false)
     private User createdByUser;
 
-    @Column(name = "sequence_number",nullable = false)
-    private Integer sequenceNumber;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "channel",nullable = false)
+    private UserInterfaceType channel;
 
     @ManyToOne
     @JoinColumn(name = "campaign_id")
@@ -67,15 +75,23 @@ public class CampaignMessage implements Serializable, Comparable<CampaignMessage
     @Column(name = "locale")
     private Locale locale;
 
-    public CampaignMessage(String message, User createdByUser, MessageVariationAssignment variation, Locale locale, Integer sequenceNumber){
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "parent_action_id")
+    private CampaignMessageAction parentAction;
+
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "parentCampaignMessage", orphanRemoval = true)
+    private Set<CampaignMessageAction> campaignMessageActionSet;
+
+    public CampaignMessage(String message, User createdByUser, MessageVariationAssignment variation, Locale locale, UserInterfaceType channel){
         this.uid = UIDGenerator.generateId();
         this.createdDateTime = Instant.now();
         this.variation = Objects.requireNonNull(variation);
         this.message = Objects.requireNonNull(message);
         this.createdByUser = Objects.requireNonNull(createdByUser);
         this.locale = Objects.requireNonNull(locale);
-        this.sequenceNumber = Objects.requireNonNull(sequenceNumber);
+        this.channel = Objects.requireNonNull(channel);
     }
+
 
     @Override
     public String[]getTags(){
@@ -124,7 +140,8 @@ public class CampaignMessage implements Serializable, Comparable<CampaignMessage
         sb.append(", createdDateTime=").append(createdDateTime);
         sb.append(", createdBy=").append(createdByUser.getId());
         sb.append(", locale=").append(locale);
-        sb.append(", sequence number").append(sequenceNumber);
+        sb.append(", channel=").append(channel);
+        sb.append(", sequence number").append(channel);
         sb.append(", variation=").append(variation.name());
         sb.append(", version=").append(version);
         sb.append('}');
@@ -203,11 +220,27 @@ public class CampaignMessage implements Serializable, Comparable<CampaignMessage
         this.locale = locale;
     }
 
-    public Integer getSequenceNumber() {
-        return sequenceNumber;
+    public UserInterfaceType getChannel() {
+        return channel;
     }
 
-    public void setSequenceNumber(Integer sequenceNumber) {
-        this.sequenceNumber = sequenceNumber;
+    public void setChannel(UserInterfaceType channel) {
+        this.channel = channel;
+    }
+
+    public Set<CampaignMessageAction> getCampaignMessageActionSet() {
+        return campaignMessageActionSet;
+    }
+
+    public void setCampaignMessageActionSet(Set<CampaignMessageAction> campaignMessageActionSet) {
+        this.campaignMessageActionSet = campaignMessageActionSet;
+    }
+
+    public CampaignMessageAction getParentAction() {
+        return parentAction;
+    }
+
+    public void setParentAction(CampaignMessageAction parentAction) {
+        this.parentAction = parentAction;
     }
 }

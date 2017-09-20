@@ -2,7 +2,6 @@ package za.org.grassroot.core.repository;
 
 
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,10 +10,11 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
-import za.org.grassroot.core.domain.Campaign;
-import za.org.grassroot.core.domain.CampaignMessage;
+import za.org.grassroot.core.domain.campaign.Campaign;
+import za.org.grassroot.core.domain.campaign.CampaignMessage;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.MessageVariationAssignment;
+import za.org.grassroot.core.enums.UserInterfaceType;
 
 import javax.transaction.Transactional;
 import java.time.Instant;
@@ -53,7 +53,7 @@ public class CampaignRepositoryTest {
     public void testCampaignMessages(){
         User user = userRepository.save(new User("3456"));
         Set<CampaignMessage> messageSet = new HashSet<>();
-        CampaignMessage campaignMessage = new CampaignMessage("Please join Campaign", user, MessageVariationAssignment.CONTROL, Locale.forLanguageTag("en-US"),1);
+        CampaignMessage campaignMessage = new CampaignMessage("Please join Campaign", user, MessageVariationAssignment.CONTROL, Locale.forLanguageTag("en-US"), UserInterfaceType.USSD);
         messageSet.add(campaignMessage);
         Campaign campaign =  new Campaign("Test","234","Durban campaign",user, Instant.now(), Instant.now());
         campaign.setCampaignMessages(messageSet);
@@ -64,15 +64,13 @@ public class CampaignRepositoryTest {
     }
 
     @Test
-    @Ignore //need to test this on POSTGRES. Inmemory has no support for []
     public void testGetCampaignByTag(){
         List<String> tags = new ArrayList<>();
         tags.add("braamfontein");
-        User user = userRepository.save(new User("3456"));
+        User user = userRepository.findByPhoneNumber("27839770654");
         Set<CampaignMessage> messageSet = new HashSet<>();
-        CampaignMessage campaignMessage = new CampaignMessage("Please join Campaign", user, MessageVariationAssignment.CONTROL,Locale.forLanguageTag("en-US"),1);
+        CampaignMessage campaignMessage = new CampaignMessage("Please join Campaign", user, MessageVariationAssignment.CONTROL,Locale.forLanguageTag("en-US"),UserInterfaceType.USSD);
         messageSet.add(campaignMessage);
-        //Instant endDate = Instant.now().plus(40, TemporalUn)
         Campaign campaign =  new Campaign("Test","234","Durban campaign",user, Instant.now(), Instant.MAX);
         campaign.setCampaignMessages(messageSet);
         campaign.setTags(tags);

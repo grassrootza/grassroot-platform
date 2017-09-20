@@ -23,9 +23,20 @@ create table campaign (
     tags text[] default '{}',
     variation varchar(35),
     locale varchar(35),
-    sequence_number integer,
+    channel varchar(35),
+    campaign_id varchar(50),
+    parent_action_id varchar(50),
     primary key (id));
 
+  create table campaign_message_action (
+    id bigserial not null,
+    version integer,
+    uid varchar(50) not null,
+    created_date_time timestamp not null,
+    parent_message_id varchar(255),
+    created_by_user bigint,
+    action varchar(35),
+    primary key (id));
 
   CREATE TABLE campaign_log(
     id bigserial NOT NULL,
@@ -53,6 +64,15 @@ create table campaign (
     NO MAXVALUE
     CACHE 1;
 
+  CREATE SEQUENCE campaign_message_action_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
   ALTER SEQUENCE campaign_id_seq OWNED BY campaign.id;
 
   ALTER SEQUENCE campaign_message_id_seq OWNED BY campaign_message.id;
+
+  ALTER SEQUENCE campaign_message_action_id_seq OWNED BY campaign_message_action.id;

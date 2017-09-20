@@ -1,6 +1,7 @@
-package za.org.grassroot.core.domain;
+package za.org.grassroot.core.domain.campaign;
 
 
+import za.org.grassroot.core.domain.ActionLog;
 import za.org.grassroot.core.enums.CampaignLogType;
 import za.org.grassroot.core.util.UIDGenerator;
 
@@ -41,19 +42,15 @@ public class CampaignLog implements ActionLog {
     @Column(name="user_uid", nullable = false)
     private String userUid;
 
-    @Column(name="description", length = 255)
-    private String description;
-
     @ManyToOne
     @JoinColumn(name="campaign_id", nullable = false)
     private Campaign campaign;
 
-    public CampaignLog(String userUid, CampaignLogType campaignLogType, String description, Campaign campaign) {
+    public CampaignLog(String userUid, CampaignLogType campaignLogType,Campaign campaign) {
         this.uid = UIDGenerator.generateId();
         this.creationTime = Instant.now();
         this.userUid = userUid;
         this.campaignLogType = Objects.requireNonNull(campaignLogType);
-        this.description = description;
         this.campaign = Objects.requireNonNull(campaign);
     }
 
@@ -80,7 +77,6 @@ public class CampaignLog implements ActionLog {
                 "id=" + id +
                 ", campaignLogType=" + campaignLogType +
                 ", userUid=" + userUid +
-                ", description='" + description + '\'' +
                 ", creationTime =" + creationTime +
                 '}';
     }
@@ -117,14 +113,6 @@ public class CampaignLog implements ActionLog {
 
     public void setUserUid(String userUid) {
         this.userUid = userUid;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
     }
 
     public CampaignLogType getCampaignLogType() {

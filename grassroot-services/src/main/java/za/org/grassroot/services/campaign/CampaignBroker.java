@@ -1,10 +1,12 @@
 package za.org.grassroot.services.campaign;
 
 
-import za.org.grassroot.core.domain.Campaign;
-import za.org.grassroot.core.domain.CampaignMessage;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.campaign.Campaign;
+import za.org.grassroot.core.domain.campaign.CampaignActionType;
+import za.org.grassroot.core.domain.campaign.CampaignMessage;
 import za.org.grassroot.core.enums.MessageVariationAssignment;
+import za.org.grassroot.core.enums.UserInterfaceType;
 
 import java.time.Instant;
 import java.util.List;
@@ -54,7 +56,7 @@ public interface CampaignBroker {
      * @param locale - locale  for message
      * @return
      */
-    Set<CampaignMessage> getCampaignMessagesByCampaignCodeAndLocale(String campaignCode, MessageVariationAssignment assignment, String locale);
+    Set<CampaignMessage> getCampaignMessagesByCampaignCodeAndLocale(String campaignCode, MessageVariationAssignment assignment, Locale locale);
 
     /**
      * Get campaign message using campaign code and language
@@ -63,7 +65,7 @@ public interface CampaignBroker {
      * @param locale
      * @return
      */
-    Set<CampaignMessage> getCampaignMessagesByCampaignNameAndLocale(String campaignCode, MessageVariationAssignment assignment, String locale);
+    Set<CampaignMessage> getCampaignMessagesByCampaignNameAndLocale(String campaignCode, MessageVariationAssignment assignment, Locale locale);
 
     /**
      *
@@ -114,11 +116,20 @@ public interface CampaignBroker {
      * @param campaignMessage
      * @param messageLocale
      * @param assignment
-     * @param sequenceNumber
+     * @param interfaceType
      * @param createUser
      * @return
      */
-    Campaign addCampaignMessage(String campaignCode, String campaignMessage, Locale messageLocale, MessageVariationAssignment assignment, Integer sequenceNumber, User createUser, List<String> messageTags);
+    Campaign addCampaignMessage(String campaignCode, String campaignMessage, Locale messageLocale, MessageVariationAssignment assignment, UserInterfaceType interfaceType, User createUser, List<String> messageTags);
+
+    /**
+     *
+     * @param campaignCode
+     * @param messageUid
+     * @param campaignActionTypes
+     * @return
+     */
+    Campaign addActionsToCampaignMessage(String campaignCode, String messageUid, List<CampaignActionType> campaignActionTypes);
 
     /**
      *

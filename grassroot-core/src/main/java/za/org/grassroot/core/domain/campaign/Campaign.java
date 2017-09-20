@@ -1,6 +1,9 @@
-package za.org.grassroot.core.domain;
+package za.org.grassroot.core.domain.campaign;
 
 import org.hibernate.annotations.Type;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.TagHolder;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.CascadeType;
@@ -53,7 +56,6 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
 
     @Column(name = "end_date_time", insertable = true, updatable = false)
     private Instant endDateTime;
-
 
     @ManyToOne()
     @JoinColumn(name = "created_by_user", nullable = false, updatable = false)
