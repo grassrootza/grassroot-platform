@@ -6,11 +6,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import za.org.grassroot.core.domain.Meeting;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.ObjectLocation;
 import za.org.grassroot.integration.location.UssdLocationServicesBroker;
 import za.org.grassroot.services.geo.ObjectLocationBroker;
+import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
@@ -41,11 +43,13 @@ public class USSDHomeMoreController extends USSDController{
 
 
     private ObjectLocationBroker objectLocationBroker;
+    private final EventBroker eventBroker;
 
     @Autowired
-    public USSDHomeMoreController(UssdLocationServicesBroker ussdLocationServicesBroker,ObjectLocationBroker objectLocationBroker){
+    public USSDHomeMoreController(UssdLocationServicesBroker ussdLocationServicesBroker,ObjectLocationBroker objectLocationBroker,EventBroker eventBroker){
         this.ussdLocationServicesBroker = ussdLocationServicesBroker;
         this.objectLocationBroker = objectLocationBroker;
+        this.eventBroker = eventBroker;
     }
 
 
@@ -81,7 +85,7 @@ public class USSDHomeMoreController extends USSDController{
                 }else{
 
                     for (ObjectLocation objectLocation:listOfPublicMeetingsNearUser) {
-                        ussdMenu.addMenuOption(moreMenus + startMenu + "/meeting-details",objectLocation.getDescription());
+                        ussdMenu.addMenuOption(moreMenus + startMenu + "/meeting-details?meetingUid=" + objectLocation.getUid(),objectLocation.getDescription());
                     }
                     ussdMenu.addMenuOption("more/start","Back");
                 }
@@ -100,9 +104,12 @@ public class USSDHomeMoreController extends USSDController{
     */
     @RequestMapping(value = homePath + moreMenus + startMenu + "/meeting-details")
     @ResponseBody
-    public Request meetingDetails(@RequestParam(value = phoneNumber) String inputNumber)throws URISyntaxException {
-        USSDMenu ussdMenu = new USSDMenu(messageSource.getMessage("ussd.meeting.details",null,new Locale("en")));
-
+    public Request meetingDetails(@RequestParam(value = phoneNumber) String inputNumber,@RequestParam("meetingUid")String meetingUid)throws URISyntaxException {
+        Meeting meeting = eventBroker.getMeeting(meetingUid);
+        USSDMenu ussdMenu = new USSDMenu(messageSource.getMessage("ussd.meeting.details",null,new Locale("en")) + "\nMeeting Name:" +
+                                            meeting.getName() + "\nTime:" +
+                                            meeting.getDeadlineTime());
+        logger.info("Meeting UID = {}",meetingUid);
         ussdMenu.addMenuOption("more/start","Back");
 
         return menuBuilder(ussdMenu);

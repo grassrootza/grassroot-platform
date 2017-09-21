@@ -8,15 +8,13 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.domain.geo.GeoLocation;
-import za.org.grassroot.core.domain.geo.GroupLocation;
-import za.org.grassroot.core.domain.geo.ObjectLocation;
-import za.org.grassroot.core.domain.geo.UserLocationLog;
+import za.org.grassroot.core.domain.geo.*;
 import za.org.grassroot.core.repository.GroupLocationRepository;
 import za.org.grassroot.core.repository.MeetingLocationRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.integration.location.UssdLocationServicesBroker;
 import za.org.grassroot.services.group.GroupLocationFilter;
+import za.org.grassroot.services.task.EventBroker;
 
 import javax.persistence.EntityManager;
 import java.security.InvalidParameterException;
@@ -41,15 +39,17 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
     private final GroupLocationRepository groupLocationRepository;
     private final MeetingLocationRepository meetingLocationRepository;
     private final UssdLocationServicesBroker ussdLocationServicesBroker;
+    private final EventBroker eventBroker;
 
     @Autowired
     public ObjectLocationBrokerImpl(EntityManager entityManager, GroupLocationRepository groupLocationRepository,
                                     MeetingLocationRepository meetingLocationRepository, RestTemplate restTemplate,
-                                    UssdLocationServicesBroker ussdLocationServicesBroker) {
+                                    UssdLocationServicesBroker ussdLocationServicesBroker,EventBroker eventBroker) {
         this.entityManager = entityManager;
         this.groupLocationRepository = groupLocationRepository;
         this.meetingLocationRepository = meetingLocationRepository;
         this.ussdLocationServicesBroker = ussdLocationServicesBroker;
+        this.eventBroker = eventBroker;
     }
 
     @Override
@@ -413,15 +413,18 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
             meetingLocations = fetchMeetingsNearUser(location.getLatitude(),location.getLongitude(),radius,user);
         }else{
             String userUid = user.getUid();
+            //typed query
             UserLocationLog userLocationLog = (UserLocationLog)entityManager.createNamedQuery("SELECT * FROM UserLocationLog u" +
                                                                                                 "WHERE u.uid = :user" +
                                                                                                 "AND u.timestamp BETWEEN DATE_SUB(NOW(),INTERVAL 5 DAY) AND NOW()").getSingleResult();
 
             location = new GeoLocation(userLocationLog.getLocation().getLatitude(),userLocationLog.getLocation().getLongitude());
+            //PreviousPeriodUserLocation
 
             if(location != null){
                 meetingLocations = fetchMeetingsNearUser(location.getLatitude(),location.getLongitude(),radius,user);
             }else{
+                //get previous
                 GroupLocation groupLocation = (GroupLocation) entityManager.createNamedQuery("SELECT * FROM GroupLocation g" +
                         "WHERE g.group = (SELECT gm.group FROM Membership gm" +
                         "WHERE gm.user = : user)").getSingleResult();

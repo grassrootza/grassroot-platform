@@ -32,6 +32,7 @@ import za.org.grassroot.services.util.CacheUtilService;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
+import javax.persistence.EntityManager;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -69,8 +70,10 @@ public class EventBrokerImpl implements EventBroker {
 	private final GeoLocationBroker geoLocationBroker;
 	private final TaskImageBroker taskImageBroker;
 
+	private final EntityManager entityManager;
+
 	@Autowired
-	public EventBrokerImpl(MeetingRepository meetingRepository, EventLogBroker eventLogBroker, EventRepository eventRepository, VoteRepository voteRepository, UidIdentifiableRepository uidIdentifiableRepository, UserRepository userRepository, AccountGroupBroker accountGroupBroker, GroupRepository groupRepository, PermissionBroker permissionBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, CacheUtilService cacheUtilService, MessageAssemblingService messageAssemblingService, MeetingLocationRepository meetingLocationRepository, GeoLocationBroker geoLocationBroker, TaskImageBroker taskImageBroker) {
+	public EventBrokerImpl(MeetingRepository meetingRepository, EventLogBroker eventLogBroker, EventRepository eventRepository, VoteRepository voteRepository, UidIdentifiableRepository uidIdentifiableRepository, UserRepository userRepository, AccountGroupBroker accountGroupBroker, GroupRepository groupRepository, PermissionBroker permissionBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, CacheUtilService cacheUtilService, MessageAssemblingService messageAssemblingService, MeetingLocationRepository meetingLocationRepository, GeoLocationBroker geoLocationBroker, TaskImageBroker taskImageBroker,EntityManager entityManager) {
 		this.meetingRepository = meetingRepository;
 		this.eventLogBroker = eventLogBroker;
 		this.eventRepository = eventRepository;
@@ -85,6 +88,7 @@ public class EventBrokerImpl implements EventBroker {
 		this.messageAssemblingService = messageAssemblingService;
 		this.geoLocationBroker = geoLocationBroker;
 		this.taskImageBroker = taskImageBroker;
+		this.entityManager = entityManager;
 	}
 
 	@Override
@@ -187,6 +191,19 @@ public class EventBrokerImpl implements EventBroker {
 	public List<Meeting> publicMeetingsUserIsNotPartOf(String term, User user){
 		List<Meeting> meetings = meetingRepository.publicMeetingsUserIsNotPartOfWithsSearchTerm(term, user);
 		return meetings;
+	}
+
+	public Meeting getMeeting(String uid){
+
+		Meeting meeting = (Meeting)entityManager.createNamedQuery("SELECT * FROM Event WHERE uid = :uid").getSingleResult();
+
+		if(meeting != null){
+
+			return meeting;
+		}else {
+			return null;
+		}
+
 	}
 
 
