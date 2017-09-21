@@ -148,6 +148,7 @@ public class LiveWireAlert {
         private Instant sendTime;
         private boolean complete;
         private LiveWireAlertDestType destType;
+
         private DataSubscriber destSubscriber;
         private Set<MediaFileRecord> mediaFiles;
         private GeoLocation location;

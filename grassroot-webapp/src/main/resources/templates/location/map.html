@@ -30,10 +30,13 @@
   <link rel="stylesheet" th:href="@{/assets/leaflet-css/leaflet.css}"/>
   <link rel="stylesheet" th:href="@{/assets/leaflet-css/Leaflet.GraphicScale.min.css}"/>
   <link rel="stylesheet" th:href="@{/assets/bootleaf.css}"/>
+  <!-- noUiSlider JavaScript Range Slider [https://refreshless.com/nouislider/] -->
+  <link rel="stylesheet" th:href="@{/assets/noUiSlider/nouislider.min.css}"/>
 
   <script th:src="@{/js/lib/leaflet.js}"></script>
   <script th:src="@{/js/lib/Leaflet.GraphicScale.min.js}"></script>
   <script th:src="@{/js/lib/jquery-2.2.4.min.js}"></script>
+  <script th:src="@{/js/lib/nouislider.min.js}"></script>
 
 </head>
 <body>
@@ -64,17 +67,19 @@
           <div class="sidebar-table">
             <table class="table table-hover" id="feature-list">
               <thead class="hidden">
-              <tr>
-                <th>Icon</th>
-              <tr>
-              <tr>
-                <th>Name</th>
-              <tr>
-              <tr>
-                <th>Chevron</th>
-              <tr>
               </thead>
-              <tbody class="list"></tbody>
+              <tbody id="filtersSliders" class="list" hidden>
+              <tr>
+                <th>
+                  Group Size:
+                </th>
+              </tr>
+              <tr>
+               <th style="width: auto;">
+                 <div id="groupSizeSlider"></div>
+               </th>
+              </tr>
+              </tbody>
             </table>
           </div>
         </div>
@@ -111,6 +116,25 @@
     /*<![CDATA[*/
     console.log("loading map ...");
 
+    // Create the marker list
+    var markerList = [];
+
+    // Create slider
+    var groupSizeSlider = $("#groupSizeSlider").get(0);
+    noUiSlider.create(groupSizeSlider, {
+        connect: true,
+        start: 5,
+        step: 1,
+        range: {
+            min: 0,
+            max: 100
+        },
+        pips: {
+            mode: 'range',
+            density: 3
+        }
+    });
+
     // Get parameters
     var latitude = [[${location.latitude}]];
     var longitude = [[${location.longitude}]];
@@ -132,7 +156,7 @@
       attributionControl: false
     }).addTo(this.map);
 
-    // setup a marker group
+    // Setup a marker group
     var markersLayer = L.layerGroup();
 
     // Radius in Km, convert to meters
@@ -148,16 +172,30 @@
       ,showSubunits: false
     }).addTo(this.map);
 
+    // Filter parameters
+    var selectedGroupSize = 1;
+
+    // Apply the filters into the location marks
+    function applyFilter(markers) {
+      var result = markers.filter(function (item) {
+        return (item.groupSize <= selectedGroupSize);
+      });
+      return result;
+    }
+
     // Function to create the markers into map
-    function CreateMarkers(markers) {
+    function createMarkers(markers) {
       // First clear old markers
       this.map.removeLayer(this.markersLayer);
 
+      // Apply the filter
+      var markersFilter = applyFilter(markers);
+
       // Create all marks
-      for (var i=0; i < markers.length; ++i)
+      for (var i=0; i < markersFilter.length; ++i)
       {
         // Get data
-        var m = markers[i];
+        var m = markersFilter[i];
 
         // Create marker
         var marker = L.marker([m.latitude, m.longitude]);
@@ -173,7 +211,7 @@
     }
 
     // Add to map the 'moveend' event
-    function LoadMarkers() {
+    function loadMarkers() {
       var url = '/api/location';
       // Get bounding box
       var min = this.map.getBounds().getSouthWest();
@@ -184,11 +222,11 @@
       };
       // Add security
       var csrfHeader = $("meta[name='_csrf_header']").attr("content");
-			var csrfToken = $("meta[name='_csrf']").attr("content");
+      var csrfToken = $("meta[name='_csrf']").attr("content");
       var headers = {
         "Content-Type": "application/json"
       };
-			headers[csrfHeader] = csrfToken;
+            headers[csrfHeader] = csrfToken;
       // Load new data
       $.ajax({
         url: url,
@@ -198,37 +236,54 @@
         headers: headers,
         success: function(response) {
           console.log("done");
-          CreateMarkers(response.data);
+          // Check limits, if exist
+          if (response.data.length > 0) {
+            $('#filtersSliders').show();
+          } else {
+            $('#filtersSliders').hide();
+          }
+          // Save list
+          markerList = response.data;
+          // Create the pins
+          createMarkers(markerList);
         },
         error: function(jqxhr, status, error) {
           var err = status + ", " + error;
           console.log( "Request Failed: " + err );  
         }
-	    });
-	  }
+        });
+      }
 
-    // Do the job whem ready
+    // Do the job when ready
     $(document).ready(function() {
       // -------------------------
       // Add callbacks to buttons
       // -------------------------
       map.on('moveend', function(e) {
-        LoadMarkers();
+        loadMarkers();
       });
       // Hide sidebar
       $('#sidebar-hide-btn').click(function () {
-          $('#filter').hide();
-          $('#show-sidebar').show();
+        $('#filter').hide();
+        $('#show-sidebar').show();
       });
 
       // Show sidebar
       $('#sidebar-show-btn').click(function () {
-          $('#filter').show();
-          $('#show-sidebar').hide();
+        $('#filter').show();
+        $('#show-sidebar').hide();
+      });
+
+      // Register sliders callback
+      groupSizeSlider.noUiSlider.on('update', function(values, handle) {
+        // Save new value
+        selectedGroupSize = values[handle];
+        // Update the pins
+        createMarkers(markerList);
       });
 
       // Load initial markers
-      LoadMarkers();
+      loadMarkers();
     });
   /*]]>*/
   </script>

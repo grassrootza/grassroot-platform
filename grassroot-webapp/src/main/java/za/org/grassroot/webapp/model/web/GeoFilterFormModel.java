@@ -3,9 +3,6 @@ package za.org.grassroot.webapp.model.web;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.services.group.GroupLocationFilter;
 
-/**
- * Created by luke on 2017/04/19.
- */
 public class GeoFilterFormModel {
 
     private boolean filterByGroupSize;
@@ -18,6 +15,10 @@ public class GeoFilterFormModel {
     private int minTaskNumber;
     private int searchRadius;
     private GeoLocation location;
+
+    public GeoFilterFormModel() {
+        // For JPA
+    }
 
     public GeoFilterFormModel(GeoLocation location, int searchRadius) {
         this.location = location;

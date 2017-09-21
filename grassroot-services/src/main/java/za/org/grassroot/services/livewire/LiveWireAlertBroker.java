@@ -12,6 +12,7 @@ import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.enums.LiveWireAlertDestType;
 import za.org.grassroot.core.enums.LiveWireAlertType;
 import za.org.grassroot.core.enums.UserInterfaceType;
+import za.org.grassroot.core.enums.LiveWireAlertDestType;
 
 import java.time.Instant;
 import java.util.List;

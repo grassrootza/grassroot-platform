@@ -1,12 +1,15 @@
 package za.org.grassroot.core.domain.geo;
 
+import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.JpaEntityType;
+import za.org.grassroot.core.domain.task.Meeting;
 
 import javax.persistence.Column;
 import javax.persistence.Embeddable;
 
 @Embeddable
 public class ObjectLocation {
+
     @Column(name = "uid", nullable = false)
     private String uid;
 
@@ -33,6 +36,10 @@ public class ObjectLocation {
 
     @Column(name = "canAccess")
     private boolean canAccess;
+
+    private int groupSize;
+
+    private int groupTasks;
 
     public String getUid () {
         return uid;
@@ -106,6 +113,22 @@ public class ObjectLocation {
         this.canAccess = canAccess;
     }
 
+    public int getGroupSize() {
+        return groupSize;
+    }
+
+    public void setGroupSize(int groupSize) {
+        this.groupSize = groupSize;
+    }
+
+    public int getGroupTasks() {
+        return groupTasks;
+    }
+
+    public void setGroupTasks(int groupTasks) {
+        this.groupTasks = groupTasks;
+    }
+
     private ObjectLocation () {
         // for JPA
     }
@@ -121,16 +144,38 @@ public class ObjectLocation {
             this.url = "/meeting/" + access + "view?eventUid=" + uid;
     }
 
+    public ObjectLocation (Meeting meeting, MeetingLocation meetingLocation) {
+        this(meeting.getUid(),
+                meeting.getName(), meetingLocation.getLocation().getLatitude(),
+                meetingLocation.getLocation().getLongitude(), meetingLocation.getScore(),
+                "MEETING",
+                "<strong>Where: </strong>" + meeting.getEventLocation() +
+                "<br/><strong>Date and Time: </strong>" + meeting.getEventStartDateTime() +
+                "<br/><strong>Creation Date: </strong>" + meeting.getCreatedDateTime(),
+                meeting.isPublic(),
+                meeting.getAncestorGroup().getMemberships().size(),
+                (meeting.getAncestorGroup().getDescendantEvents().size() + meeting.getAncestorGroup().getDescendantTodos().size()));
+    }
+
     public ObjectLocation (String uid, String name, double latitude, double longitude, float score, String type, boolean isPublic) {
-        this(uid, type, isPublic);
-        this.name = name;
-        this.latitude = latitude;
-        this.longitude = longitude;
-        this.score = score;
-        this.description = "";
+        this(uid, name, latitude, longitude, score, type, isPublic, 0, 0);
     }
 
     public ObjectLocation (String uid, String name, double latitude, double longitude, float score, String type, String description, boolean isPublic) {
+        this(uid, name, latitude, longitude, score, type, description, isPublic, 0, 0);
+    }
+
+    public ObjectLocation (String uid, String name, double latitude, double longitude, float score, String type, String description, boolean isPublic, Group group) {
+        this(uid, name, latitude, longitude, score, type, description, isPublic, group.getMemberships().size(), (group.getDescendantEvents().size() + group.getDescendantTodos().size()));
+    }
+
+    public ObjectLocation (String uid, String name, double latitude, double longitude, float score, String type, boolean isPublic,
+                           int groupSize, int groupTasks) {
+        this(uid, name, latitude, longitude, score, type, "", isPublic,  groupSize, groupTasks);
+    }
+
+    public ObjectLocation (String uid, String name, double latitude, double longitude, float score, String type, String description, boolean isPublic,
+                           int groupSize, int groupTasks) {
         this(uid, type, isPublic);
         this.name = name;
         this.latitude = latitude;
@@ -138,6 +183,8 @@ public class ObjectLocation {
         this.score = score;
         this.type = type;
         this.description = description;
+        this.groupSize = groupSize;
+        this.groupTasks = groupTasks;
     }
 
     @Override
@@ -152,6 +199,8 @@ public class ObjectLocation {
         sb.append(", canAccess=").append(canAccess);
         sb.append(", url='").append(url).append('\'');
         sb.append(", description='").append(description).append('\'');
+        sb.append(", groupSize=").append(groupSize);
+        sb.append(", groupTasks=").append(groupTasks);
         sb.append('}');
         return sb.toString();
     }
