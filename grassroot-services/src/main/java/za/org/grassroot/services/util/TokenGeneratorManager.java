@@ -15,10 +15,13 @@ import java.util.Set;
 public class TokenGeneratorManager implements TokenGeneratorService {
     private static final int retryLimit = 3000;
 
-    @Autowired
-    private GroupRepository groupRepository;
-
+    private final GroupRepository groupRepository;
     private final Random random = new Random();
+
+    @Autowired
+    public TokenGeneratorManager(GroupRepository groupRepository) {
+        this.groupRepository = groupRepository;
+    }
 
     @Override
     public String getNextToken() {
@@ -42,7 +45,7 @@ public class TokenGeneratorManager implements TokenGeneratorService {
         int maxCodeInt = (int) Math.pow(10, numberOfDigits);
         int rndValue = random.nextInt(maxCodeInt);
         //exclude 911 as it reserved for safety button activation
-        while(rndValue == 911){
+        while(rndValue == 911) {
             rndValue =random.nextInt(maxCodeInt);
         }
 

@@ -14,7 +14,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.UserCreateRequest;
+import za.org.grassroot.core.domain.UserLog;
+import za.org.grassroot.core.domain.VerificationTokenCode;
 import za.org.grassroot.core.domain.notification.WelcomeNotification;
 import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.enums.*;
@@ -42,8 +45,8 @@ import java.util.Objects;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
 
-import static za.org.grassroot.services.specifications.UserSpecifications.inGroups;
-import static za.org.grassroot.services.specifications.UserSpecifications.nameContains;
+import static za.org.grassroot.core.specifications.UserSpecifications.inGroups;
+import static za.org.grassroot.core.specifications.UserSpecifications.nameContains;
 
 /**
  * @author Lesetse Kimwaga

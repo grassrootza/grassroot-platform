@@ -13,7 +13,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.domain.EventLog;
+import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.enums.EventLogType;
 
 import javax.transaction.Transactional;

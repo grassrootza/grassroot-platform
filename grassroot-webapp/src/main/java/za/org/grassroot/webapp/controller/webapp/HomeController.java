@@ -13,6 +13,7 @@ import org.springframework.web.servlet.ModelAndView;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.services.async.AsyncUserLogger;
+import za.org.grassroot.services.group.GroupFetchBroker;
 import za.org.grassroot.services.group.GroupJoinRequestService;
 import za.org.grassroot.services.task.TaskBroker;
 import za.org.grassroot.webapp.controller.BaseController;
@@ -27,14 +28,16 @@ public class HomeController extends BaseController {
 
     private static final Logger log = LoggerFactory.getLogger(HomeController.class);
 
-    private TaskBroker taskBroker;
-    private GroupJoinRequestService groupJoinRequestService;
-    private AsyncUserLogger userLogger;
+    private final TaskBroker taskBroker;
+    private final GroupFetchBroker groupFetchBroker;
+    private final GroupJoinRequestService groupJoinRequestService;
+    private final AsyncUserLogger userLogger;
 
     @Autowired
-    public HomeController(TaskBroker taskBroker, GroupJoinRequestService groupJoinRequestService,
+    public HomeController(TaskBroker taskBroker, GroupFetchBroker groupFetchBroker, GroupJoinRequestService groupJoinRequestService,
                           AsyncUserLogger userLogger) {
         this.taskBroker = taskBroker;
+        this.groupFetchBroker = groupFetchBroker;
         this.groupJoinRequestService = groupJoinRequestService;
         this.userLogger = userLogger;
     }
@@ -81,8 +84,8 @@ public class HomeController extends BaseController {
     private ModelAndView getHomePageUserHasGroups(Model model, User user) {
 
         Long startTime1 = System.currentTimeMillis();
-        model.addAttribute("userGroups", permissionBroker.getActiveGroupsSorted(user, null));
-        log.debug(String.format("Retrieved the active groups for the user ... took %d msecs", System.currentTimeMillis() - startTime1));
+        model.addAttribute("userGroups", groupFetchBroker.fetchAllUserGroupsSortByLatestTime(user.getUid()));
+        log.info(String.format("Retrieved the active groups for the user ... took %d msecs", System.currentTimeMillis() - startTime1));
 
         Long startTime2 = System.currentTimeMillis();
         model.addAttribute("upcomingTasks", taskBroker.fetchUpcomingUserTasks(user.getUid()));

@@ -37,14 +37,18 @@ public class USSDEmulatorController extends BaseController {
 
 	private static final Logger logger = LoggerFactory.getLogger(USSDEmulatorController.class);
 
-	@Autowired
-	Environment environment;
+	private final Environment environment;
 
     private static final String phoneNumberParam = "msisdn";
     private static final String inputStringParam = "request";
     private static final String linkParam = "link";
 
-	private String getBaseUrl() {
+    @Autowired
+    public USSDEmulatorController(Environment environment) {
+        this.environment = environment;
+    }
+
+    private String getBaseUrl() {
 		if (environment.acceptsProfiles("staging")) {
 			return "https://staging.grassroot.org.za:443/";
 		} else {
@@ -57,7 +61,6 @@ public class USSDEmulatorController extends BaseController {
                                @RequestParam(value = inputStringParam, required = false) String inputString) {
 
 	    // note : this should not be accessible on production environment, hence ...
-
 	    if (environment.acceptsProfiles("production")) {
 		    throw new AccessDeniedException("Error! Emulator not accessible on production");
 	    }
@@ -71,7 +74,7 @@ public class USSDEmulatorController extends BaseController {
         try {
             model.addAttribute("url", targetUrl.toURL());
         } catch (MalformedURLException e) {
-            e.printStackTrace();
+            logger.error("Error with URL: ", e);
         }
 
         try {
@@ -91,23 +94,26 @@ public class USSDEmulatorController extends BaseController {
 		        return "emulator/error";
 	        }
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Error in emulator!", e);
 	        return "emulator/error";
         }
     }
 
     private Request getRequestObject(URI url) {
-        NullHostnameVerifier verifier = new NullHostnameVerifier();
-        MySimpleClientHttpRequestFactory requestFactory = new MySimpleClientHttpRequestFactory(verifier);
-        RestTemplate template = new RestTemplate();
-        template.setRequestFactory(requestFactory);
-	    Request returnedObject;
+        Request returnedObject;
 	    try {
+            NullHostnameVerifier verifier = new NullHostnameVerifier();
+            MySimpleClientHttpRequestFactory requestFactory = new MySimpleClientHttpRequestFactory(verifier);
+            RestTemplate template = new RestTemplate();
+            template.setRequestFactory(requestFactory);
 		    returnedObject = template.getForObject(url, Request.class);
 	    } catch (RestClientException e) {
 		    returnedObject = null;
-		    e.printStackTrace();
-	    }
+		    logger.error("Error with rest client", e);
+	    } catch (Exception e) {
+	        returnedObject = null;
+	        logger.error("Generic error in emulator", e);
+        }
 	    return returnedObject;
     }
 

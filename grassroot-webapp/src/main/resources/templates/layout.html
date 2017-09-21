@@ -43,10 +43,19 @@
               <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/vote/create}">Take Vote</a></li>
             <li>
               <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/todo/create}">Create to-do</a></li>
-            <li>
+            <li sec:authorize="!hasRole('ROLE_LIVEWIRE_USER')">
               <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/location}">Around Me</a></li>
-            <li sec:authorize="hasRole('ROLE_LIVEWIRE_USER')">
-              <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/livewire/user}">LiveWire</a>
+            <li sec:authorize="!hasRole('ROLE_LIVEWIRE_USER')">
+              <a class="gr-navbar-link" href="javascript:void(0)" th:href="@{/livewire/alert/create}">LiveWire</a>
+            </li>
+            <li sec:authorize="hasRole('ROLE_LIVEWIRE_USER')" class="dropdown">
+              <a href="javascript:void(0)" data-target="#" class="dropdown-toggle gr-navbar-link" data-toggle="dropdown" aria-expanded="false">
+                LiveWire<b class="caret"></b></a>
+              <ul class="dropdown-menu">
+                <li><a th:href="@{/livewire/alert/create}">Send alert</a></li>
+                <li><a th:href="@{/livewire/alert/list}">View alerts</a></li>
+                <li><a th:href="@{/livewire/contact/list}">View contacts</a></li>
+              </ul>
             </li>
 
             <li th:if="${@environment.getProperty('grassroot.accounts.active')}" sec:authorize="!hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')">
@@ -106,11 +115,48 @@
   <section layout:fragment="header" class="top-container" >
     <div class="container">
       <div class="row">
-        <h1 class="text-center header-content-title">Title</h1>
-        <h4 class="text-center header-content-subtitle"></h4>
+        <h1 class="text-center header-content-title" th:text="${title}"></h1>
+        <h4 class="text-center header-content-subtitle" th:text="${subtitle}"></h4>
       </div>
     </div>
   </section>
+
+  <section th:fragment="std_header(title, subtitle)" class="top-container">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
+          <h2 class="text-center header-content-title" th:text="${title}">Title</h2>
+          <h4 class="text-center header-content-subtitle" th:text="${subtitle}"></h4>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section th:fragment="std_header_back(title, back_text, back_url)" class="top-container">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
+          <h2 class="text-center header-content-title" th:text="${title}">Title</h2>
+          <h4 class="text-center header-content-subtitle">
+            <a th:href="@{${back_url}}" th:text="${back_text}">Back</a>
+          </h4>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div th:fragment="block_row(fieldname, label, text)" class="row">
+    <div class="col-md-8 col-md-offset-2 col-sm-10 col-sm-offset-1 col-xs-12">
+      <div class="row detail-row">
+        <div class="col-md-3 col-sm-4 col-xs-12">
+          <label class="grassroot-sidebar" th:for="${fieldname}" th:text="${label}">Subject</label>
+        </div>
+        <div class="col-md-9 col-sm-8 col-xs-12">
+          <p class="description" th:text="${text}">Text</p>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <main layout:fragment="content" class="body-container container-fluid ">
     <div id="footer-push-down"></div>

@@ -9,4 +9,5 @@ public interface LogsAndNotificationsBroker {
 	void storeBundle(LogsAndNotificationsBundle bundle);
 
 	long countNotifications(Specifications<Notification> specifications);
+
 }

@@ -13,11 +13,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import za.org.grassroot.core.domain.Account;
+import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.enums.AccountPaymentType;
 import za.org.grassroot.integration.email.EmailSendingBroker;
 import za.org.grassroot.integration.email.GrassrootEmail;
 import za.org.grassroot.integration.payments.PaymentBroker;
+import za.org.grassroot.integration.payments.PaymentMethod;
 import za.org.grassroot.services.account.AccountBillingBroker;
 import za.org.grassroot.services.account.AccountBroker;
 import za.org.grassroot.webapp.controller.BaseController;
@@ -49,6 +50,7 @@ public class AccountAdminController extends BaseController {
         this.accountBroker = accountBroker;
         this.billingBroker = billingBroker;
         this.environment = environment;
+
     }
 
     @Autowired(required = false)
@@ -137,6 +139,15 @@ public class AccountAdminController extends BaseController {
         billingBroker.generateBillOutOfCycle(accountUid, generateStatement, triggerPayment, billAmount, true);
         addMessage(attributes, MessageType.INFO, "admin.accounts.bill.generated", request);
         return "redirect:home";
+    }
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    @RequestMapping(value = "/change/payment/method", method = RequestMethod.POST)
+    public String changePaymentMethod(@RequestParam String accountUid, @RequestParam AccountPaymentType paymentType,
+                                      RedirectAttributes attributes, HttpServletRequest request) {
+        accountBroker.updateAccountPaymentType(getUserProfile().getUid(), accountUid, paymentType);
+        addMessage(attributes, MessageType.SUCCESS, "admin.accounts.payment.type.changed", request);
+        return "redirect:/admin/accounts/home";
     }
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")

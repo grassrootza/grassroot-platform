@@ -128,6 +128,7 @@ public class GroupSearchController extends BaseController {
 				// testing line (remove once related terms operational)
 				// relatedTerms = Arrays.asList("Water", "Taps", "Pipes");
 
+
 				model.addAttribute("groupCandidates", publicGroups);
 				model.addAttribute("relatedTerms", relatedTerms);
 

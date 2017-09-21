@@ -1,10 +1,10 @@
 package za.org.grassroot.core.specifications;
 
 import org.springframework.data.jpa.domain.Specification;
-import za.org.grassroot.core.domain.Account;
+import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.PaidGroup;
-import za.org.grassroot.core.domain.PaidGroup_;
+import za.org.grassroot.core.domain.account.PaidGroup;
+import za.org.grassroot.core.domain.account.PaidGroup_;
 import za.org.grassroot.core.enums.PaidGroupStatus;
 
 import java.time.Instant;

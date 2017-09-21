@@ -18,9 +18,13 @@ dependencies {
 
     compile group: 'org.apache.poi', name: 'poi', version: '3.15'
     compile group: 'org.apache.poi', name: 'poi-ooxml', version: '3.15'
-    compile group: 'com.itextpdf', name: 'itextpdf', version: '5.5.10'
+    compile group: 'com.itextpdf', name: 'itext7-core', version: '7.0.2'
 
     compile group: 'com.amazonaws', name: 'aws-java-sdk-s3', version: '1.11.93'
 
     compile group: 'io.jsonwebtoken', name: 'jjwt', version: '0.7.0'
+
+    compile group: 'org.apache.pdfbox', name: 'pdfbox', version: '2.0.7'
+    compile group: 'org.apache.pdfbox', name: 'pdfbox-tools', version: '2.0.7'
+
 }

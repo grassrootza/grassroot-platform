@@ -4,10 +4,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.Meeting;
-import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
+import za.org.grassroot.core.domain.livewire.DataSubscriber;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
+import za.org.grassroot.core.domain.media.MediaFileRecord;
+import za.org.grassroot.core.domain.task.Meeting;
+import za.org.grassroot.core.enums.LiveWireAlertDestType;
 import za.org.grassroot.core.enums.LiveWireAlertType;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.LiveWireAlertDestType;
@@ -28,15 +30,25 @@ public interface LiveWireAlertBroker {
 
     List<Meeting> meetingsForAlert(String userUid);
 
-    List<User> fetchLiveWireContactsNearby(String queryingUserUid, GeoLocation location, Integer radius);
+    /*
+    Methods to create an alert via web app or controller
+     */
+    String createAsComplete(String userUid, String headline, String description,
+                            LiveWireAlertType type, String entityUid,
+                            String contactUserUid, String contactName,
+                            LiveWireAlertDestType destType, DataSubscriber destSubscriber, List<MediaFileRecord> mediaFiles);
 
     /*
-    Methods to create an alert or register as a contact person
+    Methods to create an alert or register as a contact person, via USSD
      */
 
     String create(String userUid, LiveWireAlertType type, String entityUid);
 
+    String createAsComplete(String userUid, LiveWireAlert.Builder builder);
+
     void updateContactUser(String userUid, String alertUid, String contactUserUid, String contactName);
+
+    void updateHeadline(String userUid, String alertUid, String headline);
 
     void updateDescription(String userUid, String alertUid, String description);
 
@@ -46,11 +58,6 @@ public interface LiveWireAlertBroker {
     void setAlertComplete(String userUid, String alertUid, Instant soonestTimeToSend);
 
     void addLocationToAlert(String userUid, String alertUid, GeoLocation location, UserInterfaceType interfaceType);
-
-    // set boolean to false to revoke
-    void updateUserLiveWireContactStatus(String userUid, boolean addingPermission, UserInterfaceType interfaceType);
-
-    void trackLocationForLiveWireContact(String userUid, UserInterfaceType type);
 
     /*
     Methods for loading, tagging, and releasing alerts

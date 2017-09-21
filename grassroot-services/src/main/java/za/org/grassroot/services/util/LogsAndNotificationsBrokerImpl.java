@@ -8,8 +8,15 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.account.AccountLog;
+import za.org.grassroot.core.domain.livewire.LiveWireLog;
+import za.org.grassroot.core.domain.task.EventLog;
+import za.org.grassroot.core.domain.task.TaskLog;
+import za.org.grassroot.core.domain.task.TodoLog;
 import za.org.grassroot.core.repository.*;
 
+import java.time.Instant;
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
@@ -51,11 +58,16 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 
 		Set<ActionLog> logs = bundle.getLogs();
 		if (!logs.isEmpty()) {
-			logger.info("Storing {} logs", logs.size());
+			logger.debug("Storing {} logs", logs.size());
 		}
+
+		Set<Group> groupsToUpdateLogTimestamp = new HashSet<>();
+		Set<Group> groupsToUpdateTaskTimestamp = new HashSet<>();
 		for (ActionLog log : logs) {
-			logger.info("Saving log {}", log);
+			logger.debug("Saving log {}", log);
 			saveLog(log);
+			checkForGroupLogUpdate(log, groupsToUpdateLogTimestamp);
+			checkForTaskUpdate(log, groupsToUpdateTaskTimestamp);
 		}
 
 		Set<Notification> notifications = bundle.getNotifications();
@@ -66,6 +78,10 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 		for (Notification notification : notifications) {
 			notificationRepository.save(notification);
 		}
+
+		Instant now = Instant.now();
+		groupsToUpdateLogTimestamp.forEach(g -> g.setLastGroupChangeTime(now));
+		groupsToUpdateTaskTimestamp.forEach(g -> g.setLastTaskCreationTime(now));
 	}
 
     @Override
@@ -76,6 +92,7 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
     private void saveLog(ActionLog actionLog) {
 		if (actionLog instanceof GroupLog) {
 			groupLogRepository.save((GroupLog) actionLog);
+			((GroupLog) actionLog).getGroup().setLastGroupChangeTime(Instant.now());
 		} else if (actionLog instanceof UserLog) {
 			userLogRepository.save((UserLog) actionLog);
 		} else if (actionLog instanceof EventLog) {
@@ -88,6 +105,18 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 			liveWireLogRepository.save((LiveWireLog) actionLog);
 		} else {
 			throw new UnsupportedOperationException("Unsupported log: " + actionLog);
+		}
+	}
+
+	private void checkForGroupLogUpdate(ActionLog log, Set<Group> groups) {
+		if (log instanceof GroupLog) {
+			groups.add(((GroupLog) log).getGroup());
+		}
+	}
+
+	private void checkForTaskUpdate(ActionLog log, Set<Group> groups) {
+		if (log instanceof TaskLog && ((TaskLog) log).isCreationLog()) {
+			groups.add(((TaskLog) log).getTask().getAncestorGroup());
 		}
 	}
 }

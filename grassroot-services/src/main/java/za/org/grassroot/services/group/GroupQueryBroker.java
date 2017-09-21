@@ -4,7 +4,7 @@ import org.springframework.data.domain.Page;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.GroupLog;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.dto.GroupTreeDTO;
+import za.org.grassroot.core.dto.group.GroupTreeDTO;
 import za.org.grassroot.services.ChangedSinceData;
 
 import java.time.Instant;

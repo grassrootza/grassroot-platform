@@ -11,6 +11,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.task.Event;
+import za.org.grassroot.core.domain.task.Meeting;
+import za.org.grassroot.core.domain.task.Todo;
+import za.org.grassroot.core.domain.task.Vote;
 import za.org.grassroot.core.enums.*;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.SafetyEventBroker;
@@ -337,14 +341,15 @@ public class USSDHomeController extends USSDController {
             if (page > 0) {
                 menu.addMenuOption(startMenu + "_livewire?page=" + (page - 1), getMessage("options.back", user));
             }
+        }
 
-            if (groupsForInstant != 0L) {
-                menu.addMenuOption("livewire/instant", getMessage(LIVEWIRE, startMenu, optionsKey + "instant", user));
-                if (!user.isLiveWireContact()) {
-                    menu.addMenuOption("livewire/register", getMessage(LIVEWIRE, startMenu, optionsKey + "register", user));
-                }
+        if (groupsForInstant != 0L) {
+            menu.addMenuOption("livewire/instant", getMessage(LIVEWIRE, startMenu, optionsKey + "instant", user));
+            if (!user.isLiveWireContact()) {
+                menu.addMenuOption("livewire/register", getMessage(LIVEWIRE, startMenu, optionsKey + "register", user));
             }
         }
+
         return menu;
     }
 

@@ -13,8 +13,8 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
-import za.org.grassroot.core.domain.Account;
-import za.org.grassroot.core.domain.AccountBillingRecord;
+import za.org.grassroot.core.domain.account.Account;
+import za.org.grassroot.core.domain.account.AccountBillingRecord;
 import za.org.grassroot.core.repository.AccountBillingRecordRepository;
 import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.integration.email.EmailSendingBroker;
@@ -385,7 +385,7 @@ public class PaymentBrokerImpl implements PaymentBroker {
 
     private void handlePaymentError(AccountBillingRecord record, String errorCode, String description) {
         DebugUtil.transactionRequired("");
-        record.setNextPaymentDate(Instant.now().plus(1L, ChronoUnit.DAYS)); // so it doesn't try again  immediately
+        record.setNextPaymentDate(Instant.now().plus(3L, ChronoUnit.DAYS)); // so it doesn't try again  immediately
         final String errorDescription = errorCode + ": " + description;
         logger.info("Payment Error!: {}", errorDescription);
         record.setPaymentDescription(errorDescription);

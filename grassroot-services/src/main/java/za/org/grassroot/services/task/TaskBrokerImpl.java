@@ -8,8 +8,7 @@ import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.domain.EventLog;
-import za.org.grassroot.core.domain.TodoLog;
+import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventType;
@@ -20,7 +19,7 @@ import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.ChangedSinceData;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.group.GroupBroker;
-import za.org.grassroot.services.specifications.TodoSpecifications;
+import za.org.grassroot.core.specifications.TodoSpecifications;
 import za.org.grassroot.services.util.FullTextSearchUtils;
 
 import java.time.Instant;
@@ -32,7 +31,7 @@ import static org.springframework.data.jpa.domain.Specifications.where;
 import static za.org.grassroot.core.specifications.EventLogSpecifications.forEvent;
 import static za.org.grassroot.core.specifications.EventLogSpecifications.forUser;
 import static za.org.grassroot.core.specifications.EventLogSpecifications.isResponseToAnEvent;
-import static za.org.grassroot.services.specifications.TodoSpecifications.*;
+import static za.org.grassroot.core.specifications.TodoSpecifications.*;
 
 /**
  * Created by luke on 2016/04/26.

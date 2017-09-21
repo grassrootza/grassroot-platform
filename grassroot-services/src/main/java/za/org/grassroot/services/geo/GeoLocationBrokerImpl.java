@@ -7,9 +7,12 @@ import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.geo.*;
-import za.org.grassroot.core.domain.EventLog;
+import za.org.grassroot.core.domain.task.Event;
+import za.org.grassroot.core.domain.task.EventLog;
+import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.LocationSource;
 import za.org.grassroot.core.enums.UserInterfaceType;
@@ -58,6 +61,9 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 	private UssdLocationServicesBroker ussdLocationServicesBroker;
 
 	@Autowired
+	private RestTemplate restTemplate;
+
+	@Autowired
 	private EntityManager entityManager;
 
 	@Override
@@ -74,7 +80,26 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 		userLocationLogRepository.save(userLocationLog);
 	}
 
-	@Async
+	/*
+	Logic sequence, for the moment (really need to overhaul most of this):
+	* (1) First, look for an address of the user, via safety broker, that has a location
+	* (2) If not, look for a stored / average user location
+	* (3) If not that, look for a group / event with a stored user location
+	* On each of the above, look for an address / address log in the vicinity, and return it
+	* Otherwise, call the geolocator, then store the address so we don't need it again in future
+	 */
+    @Override
+	@Transactional(readOnly = true)
+    public String describeUserLocation(String userUid) {
+
+		PreviousPeriodUserLocation avgLocation = fetchUserLocation(userUid);
+		if (avgLocation != null) {
+
+		}
+		return null;
+    }
+
+    @Async
     @Override
 	@Transactional
     public void logUserUssdPermission(String userUid, String entityToUpdateUid,
@@ -113,6 +138,7 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 		}
     }
 
+    // todo: include any/all logs by user that also have this
     @Override
 	@Transactional
 	public void calculatePreviousPeriodUserLocations(LocalDate localDate) {

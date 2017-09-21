@@ -14,6 +14,8 @@ import java.util.Set;
  */
 public interface DataSubscriberBroker {
 
+    DataSubscriber load(String dataSubcriberUid);
+
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     List<DataSubscriber> listSubscribers(final boolean activeOnly, final Sort sort);
 

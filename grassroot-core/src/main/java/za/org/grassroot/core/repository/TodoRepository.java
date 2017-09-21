@@ -4,9 +4,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.Todo;
+import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.domain.User;
 
 import java.time.Instant;

@@ -1,6 +1,10 @@
 package za.org.grassroot.core.domain;
 
 
+import za.org.grassroot.core.domain.account.AccountLog;
+import za.org.grassroot.core.domain.livewire.LiveWireLog;
+import za.org.grassroot.core.domain.task.EventLog;
+import za.org.grassroot.core.domain.task.TodoLog;
 import za.org.grassroot.core.enums.NotificationDetailedType;
 import za.org.grassroot.core.enums.NotificationType;
 import za.org.grassroot.core.util.UIDGenerator;

@@ -1,15 +1,19 @@
 package za.org.grassroot.services.user;
 
+import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.Address;
-import za.org.grassroot.core.domain.AddressLog;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestTemplate;
+import za.org.grassroot.core.domain.geo.Address;
+import za.org.grassroot.core.domain.geo.AddressLog;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.enums.AddressLogType;
@@ -20,7 +24,12 @@ import za.org.grassroot.core.repository.AddressLogRepository;
 import za.org.grassroot.core.repository.AddressRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.async.AsyncUserLogger;
+import za.org.grassroot.services.geo.GeoLocationUtils;
+import za.org.grassroot.services.geo.InvertGeoCodeResult;
 
+import javax.persistence.EntityManager;
+import javax.persistence.TypedQuery;
+import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Objects;
 
@@ -40,13 +49,20 @@ public class AddressBrokerImpl implements AddressBroker {
     private final AsyncUserLogger asyncUserLogger;
     private final AddressLogRepository addressLogRepository;
 
+    private final EntityManager entityManager;
+    private final RestTemplate restTemplate;
+
+    @Value("${grassroot.geocoding.api.url:http://nominatim.openstreetmap.org/reverse}")
+    private String geocodingApiUrl;
+
     @Autowired
-    public AddressBrokerImpl(UserRepository userRepository, AddressRepository addressRepository, AsyncUserLogger asyncUserLogger, AddressLogRepository addressLogRepository) {
+    public AddressBrokerImpl(UserRepository userRepository, AddressRepository addressRepository, AsyncUserLogger asyncUserLogger, AddressLogRepository addressLogRepository, EntityManager entityManager, RestTemplate restTemplate) {
         this.userRepository = userRepository;
         this.addressRepository = addressRepository;
         this.asyncUserLogger = asyncUserLogger;
-
         this.addressLogRepository = addressLogRepository;
+        this.entityManager = entityManager;
+        this.restTemplate = restTemplate;
     }
 
     @Override
@@ -105,9 +121,60 @@ public class AddressBrokerImpl implements AddressBroker {
         return address != null && address.hasHouseAndStreet();
     }
 
+
     @Override
     @Transactional
-    public String storeAddressRaw(String userUid, Address address) {
+    public Address fetchNearestAddress(String userUid, GeoLocation location, int radiusKm, boolean storeForUser) {
+        Address returnAddress;
+        User user = userRepository.findOneByUid(userUid);
+        Address storedPrimary = addressRepository.findTopByResidentAndPrimaryTrueOrderByCreatedDateTimeDesc(user);
+        if (storedPrimary != null) {
+            returnAddress = storedPrimary;
+        } else {
+            TypedQuery<Address> addressQuery = entityManager.createQuery("" +
+                    "select a from Address a where "
+                    + GeoLocationUtils.locationFilterSuffix("a.location") + " " +
+                    "order by a.createdDateTime desc", Address.class);
+            GeoLocationUtils.addLocationParamsToQuery(addressQuery, location, radiusKm);
+            List<Address> potentialAddresses = addressQuery.getResultList();
+            log.info("How many addresses?" + potentialAddresses);
+            returnAddress = potentialAddresses != null && !potentialAddresses.isEmpty() && potentialAddresses.get(0).hasStreetAndArea()
+                    ? potentialAddresses.get(0) : reverseGeoCodeLocation(location, user, UserInterfaceType.SYSTEM, false);
+            if (returnAddress != null && storeForUser) {
+                storeAddressRawAfterDuplicateCheck(returnAddress);
+            }
+        }
+        return returnAddress;
+    }
+
+    @Override
+    @Transactional
+    public Address getAndStoreAddressFromLocation(String userUid, GeoLocation location, UserInterfaceType userInterfaceType, boolean primary) {
+        User user = userRepository.findOneByUid(userUid);
+        Address address = reverseGeoCodeLocation(location, user, userInterfaceType, primary);
+        if (address != null) {
+            Address storedAddress = storeAddressRawAfterDuplicateCheck(address);
+            if (primary) {
+                address.setPrimary(true);
+            }
+            return storedAddress;
+        } else {
+            return null;
+        }
+    }
+
+    private Address reverseGeoCodeLocation(GeoLocation location, User user, UserInterfaceType interfaceType, boolean primary) {
+        try {
+            InvertGeoCodeResult result = restTemplate.getForObject(invertGeoCodeRequestURI(location).build(), InvertGeoCodeResult.class);
+            return result.getAddress() == null ? null :
+                    GeoLocationUtils.convertGeoCodeToAddress(result.getAddress(), user, location, interfaceType, primary);
+        } catch (URISyntaxException|HttpClientErrorException e) {
+            log.error("Error!", e);
+            return null;
+        }
+    }
+
+    private Address storeAddressRawAfterDuplicateCheck(Address address) {
         address.setPrimary(false); // to make sure we never accidentally override
         Address storedAddress;
         List<Address> duplicateCheck = addressRepository.findAll(Specifications
@@ -117,7 +184,16 @@ public class AddressBrokerImpl implements AddressBroker {
         log.info("size of returned address: {}", duplicateCheck.size());
         storedAddress = duplicateCheck.isEmpty() ?
                 addressRepository.save(address) : duplicateCheck.iterator().next();
-        return storedAddress.getUid();
+        return storedAddress;
+    }
+
+    private URIBuilder invertGeoCodeRequestURI(GeoLocation location) throws URISyntaxException {
+        URIBuilder uriBuilder = new URIBuilder(geocodingApiUrl);
+        uriBuilder.addParameter("format", "json");
+        uriBuilder.addParameter("lat", String.valueOf(location.getLatitude()));
+        uriBuilder.addParameter("lon", String.valueOf(location.getLongitude()));
+        uriBuilder.addParameter("zoom", "18");
+        return uriBuilder;
     }
 
     @Override

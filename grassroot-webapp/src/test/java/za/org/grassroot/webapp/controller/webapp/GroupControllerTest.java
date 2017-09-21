@@ -4,16 +4,18 @@ import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.domain.EventLog;
+import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.domain.GroupLog;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.integration.PdfGeneratingService;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.controller.webapp.group.GroupController;
 import za.org.grassroot.webapp.model.web.MemberWrapperList;
@@ -40,6 +42,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class GroupControllerTest extends WebAppAbstractUnitTest {
 
     private static final Logger logger = LoggerFactory.getLogger(MeetingControllerTest.class);
+
+    @Mock
+    private PdfGeneratingService generatingService;
 
     @InjectMocks
     private GroupController groupController;
@@ -73,6 +78,8 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         when(groupQueryBrokerMock.subGroups(dummyGroup.getUid())).thenReturn(subGroups);
         when(groupBrokerMock.isDeactivationAvailable(sessionTestUser, dummyGroup, true)).thenReturn(true);
         when(groupQueryBrokerMock.getLastTimeGroupActiveOrModified(dummyGroup.getUid())).thenReturn(LocalDateTime.now());
+
+        when(generatingService.availableLanguages()).thenReturn(Arrays.asList(new Locale("en")));
 
         mockMvc.perform(get("/group/view").param("groupUid", dummyGroup.getUid())).
                 andExpect(view().name("group/view")).

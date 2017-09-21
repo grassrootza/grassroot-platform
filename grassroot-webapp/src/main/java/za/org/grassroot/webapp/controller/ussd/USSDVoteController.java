@@ -10,8 +10,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
-import za.org.grassroot.core.domain.Event;
-import za.org.grassroot.core.domain.EventRequest;
+import za.org.grassroot.core.domain.task.Event;
+import za.org.grassroot.core.domain.task.EventRequest;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventType;
@@ -39,8 +39,7 @@ import java.time.temporal.ChronoUnit;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static za.org.grassroot.core.domain.Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE;
 import static za.org.grassroot.webapp.enums.VoteTime.*;
-import static za.org.grassroot.webapp.util.USSDUrlUtil.backVoteUrl;
-import static za.org.grassroot.webapp.util.USSDUrlUtil.saveVoteMenu;
+import static za.org.grassroot.webapp.util.USSDUrlUtil.*;
 
 /**
  * Created by luke on 2015/10/28.
@@ -175,7 +174,7 @@ public class USSDVoteController extends USSDController {
                                  @RequestParam(required = false) String priorInput) throws URISyntaxException {
         String userInput = StringUtils.isEmpty(priorInput) ? request : priorInput;
         User user = userManager.findByInputNumber(msisdn,
-                saveVoteMenu("multi_option/add", requestUid) + "&priorInput=" + userInput);
+                saveVoteMenu("multi_option/add", requestUid) + "&priorInput=" + encodeParameter(userInput));
         // watch for duplication but service & core should both catch it
         int numberOptions = eventRequestBroker.load(requestUid).getVoteOptions().size();
         if (numberOptions > 1 && "0".equals(userInput.trim())) {

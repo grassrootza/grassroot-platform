@@ -9,6 +9,7 @@ public enum ActionLogType {
     GROUP_LOG,
     EVENT_LOG,
     TODO_LOG,
-    ACCOUNT_LOG
+    ACCOUNT_LOG,
+    LIVEWIRE_LOG
 
 }

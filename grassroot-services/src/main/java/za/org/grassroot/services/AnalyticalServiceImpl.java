@@ -15,7 +15,7 @@ import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.GroupSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.geo.GeoLocationBroker;
-import za.org.grassroot.services.specifications.NotificationSpecifications;
+import za.org.grassroot.core.specifications.NotificationSpecifications;
 
 import javax.persistence.EntityManager;
 import java.time.Instant;
@@ -30,7 +30,7 @@ import java.util.Map;
 
 import static org.springframework.data.jpa.domain.Specifications.where;
 import static za.org.grassroot.core.util.DateTimeUtil.*;
-import static za.org.grassroot.services.specifications.UserSpecifications.*;
+import static za.org.grassroot.core.specifications.UserSpecifications.*;
 
 /**
  * Created by luke on 2016/12/12.

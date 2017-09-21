@@ -29,8 +29,12 @@ public class UserProfileController extends BaseController {
 
     private static final Logger log = LoggerFactory.getLogger(UserProfileController.class);
 
+    private final UserManagementService userManagementService;
+
     @Autowired
-    private UserManagementService userManagementService;
+    public UserProfileController(UserManagementService userManagementService) {
+        this.userManagementService = userManagementService;
+    }
 
     @ModelAttribute("sessionUser")
     public User getCurrentUser(Authentication authentication) {

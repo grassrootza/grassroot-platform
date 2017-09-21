@@ -9,27 +9,29 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.thymeleaf.util.StringUtils;
-import za.org.grassroot.core.domain.*;
+import org.springframework.util.StringUtils;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.Notification;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.livewire.DataSubscriber;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
+import za.org.grassroot.core.domain.livewire.LiveWireLog;
+import za.org.grassroot.core.domain.media.MediaFileRecord;
 import za.org.grassroot.core.domain.notification.LiveWireAlertReleasedNotification;
 import za.org.grassroot.core.domain.notification.LiveWireMadeContactNotification;
 import za.org.grassroot.core.domain.notification.LiveWireToReviewNotification;
+import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.repository.*;
+import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.location.UssdLocationServicesBroker;
-import za.org.grassroot.services.geo.GeoLocationUtils;
-import za.org.grassroot.services.geo.ObjectLocationBroker;
-import za.org.grassroot.services.specifications.UserSpecifications;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
@@ -41,8 +43,10 @@ import java.security.InvalidParameterException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
-import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -60,8 +64,8 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
     private final MeetingRepository meetingRepository;
     private final DataSubscriberRepository dataSubscriberRepository;
 
-    private final LiveWireSendingBroker liveWireSendingBroker;
     private final EntityManager entityManager;
+    private final ApplicationEventPublisher applicationEventPublisher;
     private final LogsAndNotificationsBroker logsAndNotificationsBroker;
 
     private MessageSourceAccessor messageSource;
@@ -73,22 +77,16 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
     @Value("${grassroot.livewire.instant.mintasks:5}")
     private int minGroupTasksForInstantAlert;
 
-    @Value("${grassroot.livewire.contacts.expansive:false}")
-    private boolean expansiveContactFind;
-
-    @Value("${grassroot.livewire.contacts.mingroup:10}")
-    private int mingGroupSizeForExpansiveContactFind;
-
     @Autowired
-    public LiveWireAlertBrokerImpl(LiveWireAlertRepository alertRepository, UserRepository userRepository, GroupRepository groupRepository, MeetingRepository meetingRepository, EntityManager entityManager, DataSubscriberRepository dataSubscriberRepository, ObjectLocationBroker objectLocationBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, ApplicationEventPublisher applicationEventPublisher, LiveWireSendingBroker liveWireSendingBroker) {
+    public LiveWireAlertBrokerImpl(LiveWireAlertRepository alertRepository, UserRepository userRepository, GroupRepository groupRepository, MeetingRepository meetingRepository, EntityManager entityManager, DataSubscriberRepository dataSubscriberRepository, ApplicationEventPublisher applicationEventPublisher, LogsAndNotificationsBroker logsAndNotificationsBroker) {
         this.alertRepository = alertRepository;
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
         this.meetingRepository = meetingRepository;
         this.entityManager = entityManager;
         this.dataSubscriberRepository = dataSubscriberRepository;
+        this.applicationEventPublisher = applicationEventPublisher;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
-        this.liveWireSendingBroker = liveWireSendingBroker;
     }
 
     @Autowired
@@ -145,67 +143,67 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
                 "where e.eventStartDateTime > :earliestTime " +
                 "and type(e) = Meeting " +
                 "and e.canceled = FALSE " +
-                "and (e.createdByUser = :user or (m.user = :user and m.role.name = 'ROLE_GROUP_ORGANIZER'))")
+                "and m.user = :user")
                 .setParameter("earliestTime", LocalDate.now().atStartOfDay().toInstant(ZoneOffset.UTC))
                 .setParameter("user", user)
                 .getResultList();
     }
 
     @Override
-    public List<User> fetchLiveWireContactsNearby(String queryingUserUid, GeoLocation location, Integer radius) {
-        Objects.requireNonNull(queryingUserUid);
-        Objects.requireNonNull(location);
-
-        List<String> userUidsWithAccess = dataSubscriberRepository.userUidsOfDataSubscriberUsers();
-
-        if (!userUidsWithAccess.contains(queryingUserUid)) {
-            throw new AccessDeniedException("Error! Querying user is not authorized");
+    @Transactional
+    public String createAsComplete(String userUid, String headline, String description,
+                                   LiveWireAlertType type, String entityUid,
+                                   String contactUserUid, String contactName,
+                                   LiveWireAlertDestType destType, DataSubscriber destSubscriber,
+                                   List<MediaFileRecord> mediaFiles) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(type);
+        Objects.requireNonNull(entityUid);
+        if (destType != null && !LiveWireAlertDestType.PUBLIC_LIST.equals(destType)) {
+            Objects.requireNonNull(destSubscriber);
         }
 
-        // todo : think about how to sort
-        Set<User> users = new HashSet<>();
+        User user = userRepository.findOneByUid(userUid);
+        LiveWireAlert.Builder builder = new LiveWireAlert.Builder()
+                .creatingUser(user)
+                .type(type)
+                .destType(destType == null ? LiveWireAlertDestType.PUBLIC_LIST : destType)
+                .destSubscriber(destSubscriber)
+                .headline(headline);
 
-        // note: there may be a way to do this in one using HQL, but can't figure out all mapping, hence just
-        // using a second one, which anyway as a straight select on unique key will have little performance problem
-        // note: also not restricting to single calculated location, in case user has been moving around (at present
-        // prefer too many records rather than too few)
-        TypedQuery<String> locationQuery = entityManager.createQuery("" +
-                "select distinct ppl.key.userUid from PreviousPeriodUserLocation ppl where " +
-                "ppl.key.localDate >= :oldestRecord and " +
-                GeoLocationUtils.locationFilterSuffix("ppl.location"), String.class);
-        locationQuery.setParameter("oldestRecord", LocalDate.now().minus(3, ChronoUnit.MONTHS));
-        GeoLocationUtils.addLocationParamsToQuery(locationQuery, location, radius);
+        builder = setTypeAndEntity(type, entityUid, builder);
 
-        List<String> userUids = locationQuery.getResultList();
-        if (userUids != null && !userUids.isEmpty()) {
-            users.addAll(userRepository.findAll(Specifications
-                    .where(UserSpecifications.isLiveWireContact())
-                    .and(UserSpecifications.uidIn(locationQuery.getResultList()))));
+        if (!StringUtils.isEmpty(description)) {
+            builder.description(description);
         }
 
-        if (expansiveContactFind) {
-            users.addAll(fetchOrganizersOfPublicGroupsNearby(location, radius));
+        if (StringUtils.isEmpty(contactUserUid)) {
+            builder.contactUser(user);
+        } else {
+            User contactUser = userRepository.findOneByUid(contactUserUid);
+            if (contactUser == null) {
+                throw new IllegalArgumentException("Contact user must have been created before entering here");
+            }
+            builder.contactUser(user);
         }
 
-        logger.info("hunted livewire contacts, found {}", users.size());
+        if (!StringUtils.isEmpty(contactName)) {
+            builder.contactName(contactName);
+        }
 
-        return new ArrayList<>(users);
-    }
+        if (mediaFiles != null && !mediaFiles.isEmpty()) {
+            builder.mediaFiles(new HashSet<>(mediaFiles));
+        }
 
-    private Set<User> fetchOrganizersOfPublicGroupsNearby(GeoLocation location, Integer radius) {
-        TypedQuery<User> query = entityManager.createQuery("select u from Membership m " +
-                "inner join m.user u " +
-                "inner join m.group g " +
-                "inner join g.locations l " +
-                "where g.discoverable = true and " +
-                "size(g.memberships) >= :minMembership and " +
-                "m.role.name = 'ROLE_GROUP_ORGANIZER' and " +
-                "l.localDate = (SELECT MAX(ll.localDate) FROM GroupLocation ll WHERE ll.group = l.group) and " +
-                GeoLocationUtils.locationFilterSuffix("l.location"), User.class);
-        query.setParameter("minMembership", mingGroupSizeForExpansiveContactFind);
-        GeoLocationUtils.addLocationParamsToQuery(query, location, radius);
+        builder.complete(true);
+        LiveWireAlert alert = alertRepository.save(builder.build());
 
-        return new HashSet<>(query.getResultList());
+        final LogsAndNotificationsBundle bundle = alertCompleteBundle(user, alert);
+
+        AfterTxCommitTask afterTxCommitTask = () -> logsAndNotificationsBroker.asyncStoreBundle(bundle);
+        applicationEventPublisher.publishEvent(afterTxCommitTask);
+
+        return alert.getUid();
     }
 
     @Override
@@ -221,17 +219,37 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
                 .type(type)
                 .destType(LiveWireAlertDestType.PUBLIC_LIST); // default to public
 
-        if (LiveWireAlertType.INSTANT.equals(type)) {
-            Group group = groupRepository.findOneByUid(entityUid);
-            builder = builder.group(group);
-        } else {
-            Meeting meeting = meetingRepository.findOneByUid(entityUid);
-            builder = builder.meeting(meeting);
-        }
-
-        LiveWireAlert alert = builder.build();
+        LiveWireAlert alert = setTypeAndEntity(type, entityUid, builder)
+                .build();
 
         alertRepository.save(alert);
+        return alert.getUid();
+    }
+
+    private LiveWireAlert.Builder setTypeAndEntity(LiveWireAlertType type, String entityUid, LiveWireAlert.Builder builder) {
+        if (LiveWireAlertType.INSTANT.equals(type)) {
+            Group group = groupRepository.findOneByUid(entityUid);
+            return builder.group(group);
+        } else {
+            Meeting meeting = meetingRepository.findOneByUid(entityUid);
+            return builder.meeting(meeting);
+        }
+    }
+
+    @Override
+    @Transactional
+    public String createAsComplete(String userUid, LiveWireAlert.Builder builder) {
+        Objects.requireNonNull(builder);
+        builder.validateSufficientFields();
+        LiveWireAlert alert = alertRepository.save(builder.build());
+        alert.setComplete(true);
+
+        LogsAndNotificationsBundle bundle = alertCompleteBundle(userRepository.findOneByUid(userUid), alert);
+        logger.info("bundle notifications: {}", bundle.getNotifications());
+
+        AfterTxCommitTask task = () -> logsAndNotificationsBroker.asyncStoreBundle(bundle);
+        applicationEventPublisher.publishEvent(task);
+
         return alert.getUid();
     }
 
@@ -253,6 +271,20 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
         if (!contactUser.hasName()) {
             contactUser.setDisplayName(contactName);
         }
+    }
+
+    @Override
+    @Transactional
+    public void updateHeadline(String userUid, String alertUid, String headline) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(alertUid);
+        Objects.requireNonNull(headline);
+
+        User user = userRepository.findOneByUid(userUid);
+        LiveWireAlert alert = alertRepository.findOneByUid(alertUid);
+        validateCreatingUser(user, alert);
+
+        alert.setHeadline(headline);
     }
 
     @Override
@@ -300,10 +332,15 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
         LiveWireAlert alert = alertRepository.findOneByUid(alertUid);
         validateCreatingUser(user, alert);
 
-        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
-
         alert.setComplete(true);
+        LogsAndNotificationsBundle bundle = alertCompleteBundle(user, alert);
 
+        logger.info("bundle notifications: {}", bundle.getNotifications());
+        logsAndNotificationsBroker.asyncStoreBundle(bundle);
+    }
+
+    private LogsAndNotificationsBundle alertCompleteBundle(User user, LiveWireAlert alert) {
+        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
         LiveWireLog completedLog = new LiveWireLog.Builder()
                 .alert(alert)
                 .userTakingAction(user)
@@ -326,9 +363,7 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
             logger.info("adding other contact notification: {}", notification);
             bundle.addNotification(notification);
         }
-
-        logger.info("bundle notifications: {}", bundle.getNotifications());
-        logsAndNotificationsBroker.asyncStoreBundle(bundle);
+        return bundle;
     }
 
     @Async
@@ -352,36 +387,6 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
             GeoLocation ussdLocation = locationServicesBroker.getUssdLocationForUser(userUid);
             alert.setLocation(ussdLocation);
             alert.setLocationSource(LocationSource.LOGGED_APPROX);
-        }
-    }
-
-    @Override
-    @Transactional
-    public void updateUserLiveWireContactStatus(String userUid, boolean addingPermission,
-                                                UserInterfaceType interfaceType) {
-        Objects.requireNonNull(userUid);
-        User user = userRepository.findOneByUid(userUid);
-        user.setLiveWireContact(addingPermission);
-
-        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
-        bundle.addLog(new UserLog(userUid,
-                addingPermission ? UserLogType.LIVEWIRE_CONTACT_GRANTED : UserLogType.LIVEWIRE_CONTACT_REVOKED,
-                (addingPermission ? "added " : "removed ") + " livewire contact status",
-                interfaceType));
-        logsAndNotificationsBroker.asyncStoreBundle(bundle);
-    }
-
-    @Async
-    @Override
-    @Transactional
-    public void trackLocationForLiveWireContact(String userUid, UserInterfaceType type) {
-        logger.info("tracking user location for livewire contact");
-        User user = userRepository.findOneByUid(userUid);
-        if (!user.isLiveWireContact()) {
-            logger.info("Error! Location track called for user not yet set as contact");
-        } else if (locationServicesBroker != null) {
-            locationServicesBroker.addUssdLocationLookupAllowed(userUid, type);
-            locationServicesBroker.getUssdLocationForUser(userUid); // will save a user log (though prev period will wait)
         }
     }
 

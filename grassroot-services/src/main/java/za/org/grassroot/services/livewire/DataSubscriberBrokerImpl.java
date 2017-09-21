@@ -42,6 +42,11 @@ public class DataSubscriberBrokerImpl implements DataSubscriberBroker {
     }
 
     @Override
+    public DataSubscriber load(String dataSubcriberUid) {
+        return dataSubscriberRepository.findOneByUid(dataSubcriberUid);
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public List<DataSubscriber> listSubscribers(final boolean activeOnly, final Sort sort) {
         return activeOnly ? dataSubscriberRepository.findByActiveTrue(sort) :

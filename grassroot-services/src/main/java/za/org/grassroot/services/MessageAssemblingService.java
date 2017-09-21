@@ -2,7 +2,8 @@ package za.org.grassroot.services;
 
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.association.GroupJoinRequest;
-import za.org.grassroot.core.domain.EventLog;
+import za.org.grassroot.core.domain.task.*;
+import za.org.grassroot.core.domain.geo.Address;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 

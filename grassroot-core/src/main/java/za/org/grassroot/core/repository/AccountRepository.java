@@ -6,8 +6,8 @@ package za.org.grassroot.core.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
-import za.org.grassroot.core.domain.Account;
-import za.org.grassroot.core.domain.PaidGroup;
+import za.org.grassroot.core.domain.account.Account;
+import za.org.grassroot.core.domain.account.PaidGroup;
 import za.org.grassroot.core.domain.User;
 
 import java.time.Instant;
