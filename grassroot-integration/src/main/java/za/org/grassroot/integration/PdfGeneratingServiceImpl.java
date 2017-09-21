@@ -253,22 +253,9 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
             if(filesInFolder != null){
                 logger.info("Files in Folder = {}",filesInFolder.length);
 
-                /*for(int x = 0;x < filesInFolder.length;x++){
-                    if(filesInFolder[x].getName().startsWith("group")){
-                        tempListOfFiles.add(filesInFolder[x]);
-                    }
-                }*/
-
                 Stream<File> filteredFilesInFolder = Arrays.stream(filesInFolder).filter(f -> f.getName().startsWith("group"));
 
                 filteredFilesInFolder.forEach(file -> tempListOfFiles.add(file));
-
-                /*for (File f: filesInFolder) {
-                    if(f.getName().startsWith("group")){
-                        tempListOfFiles.add(f);
-                    }
-                }*/
-
 
                 logger.info("Filtered List = {}",tempListOfFiles.size());
 

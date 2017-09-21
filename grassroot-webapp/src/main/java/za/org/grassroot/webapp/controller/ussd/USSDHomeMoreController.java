@@ -4,11 +4,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.RestController;
-import za.org.grassroot.core.domain.Meeting;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.ObjectLocation;
@@ -19,8 +16,10 @@ import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 
 import java.net.URISyntaxException;
+import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 
@@ -63,36 +62,49 @@ public class USSDHomeMoreController extends USSDController{
 
     @RequestMapping(value = homePath + moreMenus + startMenu + "/near-me")
     @ResponseBody
-    public Request getPublicMeetingsNearUser(@RequestParam(value = phoneNumber) String inputNumber) throws URISyntaxException {
+    public Request getPublicMeetingsNearUser(Model model, @RequestParam(value = phoneNumber) String inputNumber) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber);
 
-        USSDMenu ussdMenu = new USSDMenu("Meetings Near you");
+        USSDMenu ussdMenu = new USSDMenu(messageSource.getMessage("ussd.info.public.meetings",null,new Locale("en")));
 
         GeoLocation location = ussdLocationServicesBroker.getUssdLocationForUser(user.getUid());
         //Check if is not null
         List<ObjectLocation> listOfPublicMeetingsNearUser = new ArrayList<>();
         if(location != null){
-            //listOfPublicMeetingsNearUser = objectLocationBroker.fetchMeetingsNearUser(location.getLatitude(),location.getLongitude(),2,user);
+            //listOfPublicMeetingsNearUser = objectLocationBroker.fetchMeetingsNearUser(-26.1934863,28.036417399999998,10,user);
             listOfPublicMeetingsNearUser = objectLocationBroker.fetchMeetingsNearUserUssd(searchRadius,user);
-            logger.info("Size of meetings array = {}",listOfPublicMeetingsNearUser.size());
+            logger.info("Size of meetings array in home more Controller= {}",listOfPublicMeetingsNearUser.size());
             if(listOfPublicMeetingsNearUser != null){
                 if(listOfPublicMeetingsNearUser.size() == 0){
-                    ussdMenu.setPromptMessage("No Meetings near you");
+                    ussdMenu.setPromptMessage(messageSource.getMessage("ussd.error.public.meetings",null,new Locale("en")));
                     ussdMenu.addMenuOption("more/start","Back");
                 }else{
+
                     for (ObjectLocation objectLocation:listOfPublicMeetingsNearUser) {
-                        ussdMenu.addMenuOption("",objectLocation.getDescription());
+                        ussdMenu.addMenuOption(moreMenus + startMenu + "/meeting-details",objectLocation.getDescription());
                     }
                     ussdMenu.addMenuOption("more/start","Back");
                 }
             }else{
-
+                throw new InvalidParameterException("Invalid location coordinates");
             }
         }else{
-
+            throw new InvalidParameterException("Invalid location coordinates");
         }
 
         return menuBuilder(ussdMenu);
-        //return menuBuilder(new USSDMenu("Number of Public meeting near you" + listOfPublicMeetingsNearUser.size()));
+    }
+
+    /*
+        Method to display meeting details
+    */
+    @RequestMapping(value = homePath + moreMenus + startMenu + "/meeting-details")
+    @ResponseBody
+    public Request meetingDetails(@RequestParam(value = phoneNumber) String inputNumber)throws URISyntaxException {
+        USSDMenu ussdMenu = new USSDMenu(messageSource.getMessage("ussd.meeting.details",null,new Locale("en")));
+
+        ussdMenu.addMenuOption("more/start","Back");
+
+        return menuBuilder(ussdMenu);
     }
 }

@@ -11,6 +11,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.GroupLocation;
 import za.org.grassroot.core.domain.geo.ObjectLocation;
+import za.org.grassroot.core.domain.geo.UserLocationLog;
 import za.org.grassroot.core.repository.GroupLocationRepository;
 import za.org.grassroot.core.repository.MeetingLocationRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
@@ -411,15 +412,26 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
         if(location != null){
             meetingLocations = fetchMeetingsNearUser(location.getLatitude(),location.getLongitude(),radius,user);
         }else{
-            GroupLocation groupLocation = (GroupLocation) entityManager.createNamedQuery("SELECT * FROM GroupLocation g" +
-                                                                "WHERE g.group = (SELECT gm.group FROM Membership gm" +
-                                                                                "WHERE gm.user = : user)").getSingleResult();
+            String userUid = user.getUid();
+            UserLocationLog userLocationLog = (UserLocationLog)entityManager.createNamedQuery("SELECT * FROM UserLocationLog u" +
+                                                                                                "WHERE u.uid = :user" +
+                                                                                                "AND u.timestamp BETWEEN DATE_SUB(NOW(),INTERVAL 5 DAY) AND NOW()").getSingleResult();
 
-            logger.info("Group Location = {}",groupLocation.getLocation().getLatitude() + " " + groupLocation.getLocation().getLongitude());
-            if(groupLocation != null){
-                meetingLocations = fetchMeetingsNearUser(groupLocation.getLocation().getLatitude(),groupLocation.getLocation().getLongitude(),radius,user);
+            location = new GeoLocation(userLocationLog.getLocation().getLatitude(),userLocationLog.getLocation().getLongitude());
+
+            if(location != null){
+                meetingLocations = fetchMeetingsNearUser(location.getLatitude(),location.getLongitude(),radius,user);
             }else{
-                throw new InvalidParameterException("Invalid Location");
+                GroupLocation groupLocation = (GroupLocation) entityManager.createNamedQuery("SELECT * FROM GroupLocation g" +
+                        "WHERE g.group = (SELECT gm.group FROM Membership gm" +
+                        "WHERE gm.user = : user)").getSingleResult();
+
+                logger.info("Group Location = {}",groupLocation.getLocation().getLatitude() + " " + groupLocation.getLocation().getLongitude());
+                if(groupLocation != null){
+                    meetingLocations = fetchMeetingsNearUser(groupLocation.getLocation().getLatitude(),groupLocation.getLocation().getLongitude(),radius,user);
+                }else{
+                    throw new InvalidParameterException("Invalid Location");
+                }
             }
         }
         return meetingLocations;
