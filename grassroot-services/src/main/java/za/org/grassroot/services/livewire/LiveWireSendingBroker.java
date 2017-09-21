@@ -8,5 +8,4 @@ import java.util.Set;
 public interface LiveWireSendingBroker {
     // note: using a set to avoid possible duplicate mails, but watch ordering
     void sendLiveWireAlerts(Set<String> alertUids);
-
 }

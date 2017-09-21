@@ -31,7 +31,6 @@ import javax.sql.DataSource;
  */
 @Configuration
 @EnableGlobalMethodSecurity(prePostEnabled = true, securedEnabled = true)
-@Order(SecurityProperties.ACCESS_OVERRIDE_ORDER)
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     private final UserDetailsService userDetailsService;
@@ -56,7 +55,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/api/**")
                 .antMatchers("/test/**")
                 .antMatchers("/sms/**")
-                .antMatchers("/image/**");
+                .antMatchers("/image/**")
+                .antMatchers("/auth/login/**")
+                .antMatchers("/auth/validateToken/**");
     }
 
     @Override

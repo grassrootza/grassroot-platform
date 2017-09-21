@@ -10,10 +10,12 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.livewire.DataSubscriber;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
 import za.org.grassroot.core.enums.LiveWireAlertType;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.util.PhoneNumberUtil;
+import za.org.grassroot.core.enums.LiveWireAlertDestType;
 import za.org.grassroot.services.livewire.DataSubscriberBroker;
 import za.org.grassroot.services.livewire.LiveWireAlertBroker;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
@@ -201,7 +203,7 @@ public class USSDLiveWireController extends USSDController {
                 menu.setNextURI(menuUri("description", alertUid) + "&contactUid=" + contactUser.getUid());
             } else {
                 menu.setNextURI(menuUri("confirm", alertUid) + "&contactUid=" + contactUser.getUid() +
-                        "&revisingContact=true");
+                        "&revisingContact=true&field=contact");
             }
             return menuBuilder(menu);
         }
@@ -222,7 +224,28 @@ public class USSDLiveWireController extends USSDController {
         }
         USSDMenu menu = new USSDMenu(getMessage(LIVEWIRE, "description", promptKey, user));
         menu.setFreeText(true);
-        menu.setNextURI(menuUri("confirm", alertUid));
+        menu.setNextURI(menuUri(dataSubscriberBroker.doesUserHaveCustomLiveWireList(user.getUid()) ?
+                "destination" : "confirm", alertUid) + "&field=description");
+        return menuBuilder(menu);
+    }
+
+    @RequestMapping("destination")
+    @ResponseBody
+    public Request chooseList(@RequestParam String msisdn, @RequestParam String alertUid,
+                              @RequestParam String request,
+                              @RequestParam(required = false) String priorInput) throws URISyntaxException {
+        String userInput = StringUtils.isNullOrEmpty(priorInput) ? request : priorInput;
+        User user = userManager.findByInputNumber(msisdn, uriForCache("destination", alertUid, userInput));
+        liveWireAlertBroker.updateDescription(user.getUid(), alertUid, userInput);
+        USSDMenu menu = new USSDMenu(getMessage(LIVEWIRE, "destination", promptKey, user));
+        // make this either "general", or "just us"
+        final String uriBase = menuUri("confirm", alertUid) + "&field=destination";
+        final DataSubscriber destination = dataSubscriberBroker.fetchLiveWireListForSubscriber(user.getUid());
+        menu.addMenuOption(uriBase + "&destType=GENERAL", getMessage(LIVEWIRE, "destination", optionsKey + "general", user));
+        menu.addMenuOption(uriBase + "&destType=SINGLE_LIST&destinationUid=" + destination.getUid(),
+                getMessage(LIVEWIRE, "destination", optionsKey + "ownlist", destination.getDisplayName(), user));
+        menu.addMenuOption(uriBase + "&destType=BOTH&destinationUid=" + destination.getUid(),
+                getMessage(LIVEWIRE, "destination", optionsKey + "both", user));
         return menuBuilder(menu);
     }
 
@@ -230,23 +253,34 @@ public class USSDLiveWireController extends USSDController {
     @ResponseBody
     public Request confirmAlert(@RequestParam String msisdn, @RequestParam String alertUid,
                                 @RequestParam String request,
+                                @RequestParam String field,
                                 @RequestParam(required = false) String priorInput,
+                                @RequestParam(required = false) String destType,
+                                @RequestParam(required = false) String destinationUid,
                                 @RequestParam(required = false) Boolean revisingContact,
                                 @RequestParam(required = false) String contactUid) throws URISyntaxException {
         User user = userManager.findByInputNumber(msisdn);
-        if (revisingContact == null || !revisingContact) {
+
+        if ("description".equals(field)) {
             String description = StringUtils.isNullOrEmpty(priorInput) ? request : priorInput;
-            cacheManager.putUssdMenuForUser(msisdn, uriForCache("confirm", alertUid, description));
+            cacheManager.putUssdMenuForUser(msisdn, uriForCache("confirm", alertUid, description) + "&field=" + field);
             liveWireAlertBroker.updateDescription(user.getUid(), alertUid, description);
-        } else {
+        } else if ("contact".equals(field)) {
             Objects.requireNonNull(contactUid);
             String contactName = StringUtils.isNullOrEmpty(priorInput) ? request : priorInput;
             cacheManager.putUssdMenuForUser(msisdn, uriForCache("confirm", alertUid, contactName) +
-                "&revisingContact=true&contactUid=" + contactUid);
+                    "&field=" + field + "&revisingContact=true&contactUid=" + contactUid);
             if (!StringUtils.isNumber(contactName)) {
                 liveWireAlertBroker.updateContactUser(user.getUid(), alertUid, contactUid, contactName);
             }
+        } else if ("destination".equals(field)) {
+            cacheManager.putUssdMenuForUser(msisdn, uriForCache("confirm", alertUid, destType) +
+                    "&field=" + field + "&destType=" + destType + (destinationUid != null ? "&destinationUid=" + destinationUid : ""));
+            LiveWireAlertDestType dest = "BOTH".equals(destType) ? LiveWireAlertDestType.SINGLE_AND_PUBLIC :
+                    "SINGLE_LIST".equals(destType) ? LiveWireAlertDestType.SINGLE_LIST : LiveWireAlertDestType.PUBLIC_LIST;
+            liveWireAlertBroker.updateAlertDestination(user.getUid(), alertUid, destinationUid, dest);
         }
+
         LiveWireAlert alert = liveWireAlertBroker.load(alertUid);
         String[] fields = new String[] { alert.getDescription(), alert.getContactNameNullSafe() };
 
@@ -274,7 +308,7 @@ public class USSDLiveWireController extends USSDController {
         }
         LiveWireAlert alert = liveWireAlertBroker.load(alertUid);
         USSDMenu menu = new USSDMenu(getMessage(LIVEWIRE, "send", alert.getType().name().toLowerCase() + ".success",
-                new String[] { String.valueOf(dataSubscriberBroker.countPushEmails()) }, user));
+                new String[] { String.valueOf(dataSubscriberBroker.countPushEmails(alert)) }, user));
         menu.addMenuOptions(optionsHomeExit(user, false));
         return menuBuilder(menu);
     }

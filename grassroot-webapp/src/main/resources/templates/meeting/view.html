@@ -166,6 +166,17 @@
                 <a th:href="@{/group/view(groupUid=${parentUid})}" th:text="${meeting.parent.name}">Parent name</a></p>
             </div>
           </div>
+          <div class="row detail-row" th:if="${meetingImages > 0}">
+            <div class="col-md-3 col-sm-4 col-xs-12">
+              <label class="grassroot-sidebar">Images</label>
+            </div>
+            <div class="col-md-9 col-sm-4 col-xs-12">
+              <p class="description">
+                <a th:href="@{/task/gallery(taskUid=${meeting.uid},taskType='MEETING')}"
+                   th:text="#{web.meeting.images.count(${meetingImages})}">Number of images</a>
+              </p>
+            </div>
+          </div>
           <div class="row detail-row" th:unless="${#strings.isEmpty(meeting.description) and not canAlterDetails}">
             <div class="col-md-3 col-sm-4 col-xs-12">
               <label class="grassroot-sidebar">Notes</label>

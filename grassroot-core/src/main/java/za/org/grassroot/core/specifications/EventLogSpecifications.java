@@ -21,6 +21,20 @@ public final class EventLogSpecifications {
         return (root, query, cb) -> cb.equal(root.get(EventLog_.eventLogType), type);
     }
 
+    public static Specification<EventLog> isImageLog() {
+        return (root, query, cb) -> cb.or(
+                cb.equal(root.get(EventLog_.eventLogType), EventLogType.IMAGE_RECORDED),
+                cb.equal(root.get(EventLog_.eventLogType), EventLogType.IMAGE_AT_CREATION));
+    }
+
+    public static Specification<EventLog> isImageLogWithKey(String key) {
+        return (root, query, cb) -> cb.or(
+                cb.and(cb.equal(root.get(EventLog_.uid), key),
+                        cb.equal(root.get(EventLog_.eventLogType), EventLogType.IMAGE_RECORDED)),
+                cb.and(cb.equal(root.get(EventLog_.tag), key),
+                        cb.equal(root.get(EventLog_.eventLogType), EventLogType.IMAGE_AT_CREATION)));
+    }
+
     public static Specification<EventLog> hasLocation() {
         return (root, query, cb) -> cb.isNotNull(root.get(EventLog_.location));
     }

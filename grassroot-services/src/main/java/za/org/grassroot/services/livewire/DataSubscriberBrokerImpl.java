@@ -9,15 +9,14 @@ import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.livewire.DataSubscriber;
+import za.org.grassroot.core.domain.livewire.LiveWireAlert;
+import za.org.grassroot.core.enums.DataSubscriberType;
 import za.org.grassroot.core.repository.DataSubscriberRepository;
 import za.org.grassroot.core.repository.RoleRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.PermissionBroker;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by luke on 2017/05/05.
@@ -50,6 +49,12 @@ public class DataSubscriberBrokerImpl implements DataSubscriberBroker {
     }
 
     @Override
+    public List<DataSubscriber> listPublicSubscribers() {
+        return dataSubscriberRepository.findByActiveTrueAndSubscriberType(DataSubscriberType.PUBLIC,
+                new Sort(Sort.Direction.ASC, "displayName"));
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public DataSubscriber validateSubscriberAdmin(String viewingUserUid, String subscriberUid) {
         Objects.requireNonNull(viewingUserUid);
@@ -64,6 +69,27 @@ public class DataSubscriberBrokerImpl implements DataSubscriberBroker {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public boolean doesUserHaveCustomLiveWireList(String userUid) {
+        return dataSubscriberRepository.findSubscriberHoldingUser(userUid)
+                .stream()
+                .filter(DataSubscriber::isActive)
+                .anyMatch(DataSubscriber::hasPushEmails);
+    }
+
+    // note: could also do this with Specifications but for moment that would be premature optimization
+    @Override
+    @Transactional
+    public DataSubscriber fetchLiveWireListForSubscriber(String userUid) {
+        return dataSubscriberRepository.findSubscriberHoldingUser(userUid)
+                .stream()
+                .filter(DataSubscriber::isActive)
+                .filter(DataSubscriber::hasPushEmails)
+                .sorted(Comparator.comparing(DataSubscriber::getCreationTime, Comparator.reverseOrder()))
+                .findFirst().orElse(null);
+    }
+
+    @Override
     @Transactional
     public void create(final String sysAdminUid, final String displayName, final String primaryEmail, boolean addPrimaryEmailToPush, List<String> additionalPushEmails, boolean active) {
         Objects.requireNonNull(sysAdminUid);
@@ -75,7 +101,7 @@ public class DataSubscriberBrokerImpl implements DataSubscriberBroker {
         User sysAdmin = userRepository.findOneByUid(sysAdminUid);
         permissionBroker.validateSystemRole(sysAdmin, "ROLE_SYSTEM_ADMIN");
 
-        DataSubscriber subscriber = new DataSubscriber(sysAdmin, sysAdmin, displayName, primaryEmail, active);
+        DataSubscriber subscriber = new DataSubscriber(sysAdmin, sysAdmin, displayName, primaryEmail, active, DataSubscriberType.PRIVATE);
 
         if (addPrimaryEmailToPush) {
             subscriber.addEmailsForPushNotification(Collections.singletonList(primaryEmail));
@@ -186,9 +212,36 @@ public class DataSubscriberBrokerImpl implements DataSubscriberBroker {
     }
 
     @Override
-    @Transactional // todo : figure out read only
-    public int countPushEmails() {
-        return dataSubscriberRepository.findAllActiveSubscriberPushEmails().size();
+    @Transactional
+    public void updateSubscriberType(String userUid, String subscriberUid, DataSubscriberType type) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(subscriberUid);
+
+        User user = userRepository.findOneByUid(userUid);
+        DataSubscriber subscriber = dataSubscriberRepository.findOneByUid(subscriberUid);
+        validateAdminUser(user, subscriber);
+
+        subscriber.setSubscriberType(type);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public int countPushEmails(LiveWireAlert alert) {
+        if (alert == null) {
+            return dataSubscriberRepository.findAllActiveSubscriberPushEmails(DataSubscriberType.PUBLIC.name()).size();
+        } else {
+            switch (alert.getDestinationType()) {
+                case SINGLE_LIST:
+                    return alert.getTargetSubscriber().getPushEmails().size();
+                case SINGLE_AND_PUBLIC:
+                    return alert.getTargetSubscriber().getPushEmails().size() +
+                            dataSubscriberRepository.findAllActiveSubscriberPushEmails(DataSubscriberType.PUBLIC.name()).size();
+                case PUBLIC_LIST:
+                    return dataSubscriberRepository.findAllActiveSubscriberPushEmails(DataSubscriberType.PUBLIC.name()).size();
+                default:
+                    return dataSubscriberRepository.findAllActiveSubscriberPushEmails(DataSubscriberType.PUBLIC.name()).size();
+            }
+        }
     }
 
     private void validateAdminUser(User user, DataSubscriber subscriber) {

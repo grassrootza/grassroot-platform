@@ -97,6 +97,16 @@
       </div>
     </div>
 
+    <div class="row tight-vertical">
+      <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offest-2 col-xs-12">
+        <h4 class="group-info text-center">
+          <a href="javascript:void(0)" data-toggle="modal" data-target="#aliasModal">
+            Change your name in this group
+          </a>
+        </h4>
+      </div>
+    </div>
+
   </div>
 
 </section>
@@ -320,6 +330,35 @@
   </section>
 
   <!-- MODALS -->
+
+  <!-- alias modal -->
+  <div class="modal fade" id="aliasModal" tabindex="-1" role="dialog" aria-labelledby="aliasModalLabel">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title" id="aliasModalLabel">Change my name in group</h4>
+        </div>
+        <form th:action="@{/group/alias}" method="post">
+          <input type="hidden" name="groupUid" th:value="${group.uid}" />
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="new-group-name" class="control-label">What name will you use in this group? (leave it
+              blank to reset to your normal name)</label>
+            </div>
+            <div class="form-group">
+              <input type="text" class="form-control input-lg" id="alias" name="alias"
+                     th:placeholder="${displayName}"/>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default btn-lg default-button btn-neutral" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary btn-lg default-button">Rename</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
 
   <!-- Joining code modal -->
   <div th:if="${canAlter}" class="modal fade" id="joiningModal" tabindex="-1" role="dialog" aria-labelledby="joiningModalLabel">

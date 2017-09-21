@@ -161,7 +161,8 @@ public class MeetingController extends BaseController {
                     .includeSubGroups(meeting.isIncludeSubGroups());
 
             // todo: move this into async when the user hits upload
-            if (meeting.getMeetingImage() != null) {
+            if (meeting.getMeetingImage() != null && meeting.getMeetingImage().getSize() > 0) {
+                log.info("meeting image not null! size: {} bytes", meeting.getMeetingImage().getSize());
                 helper.taskImageKey(taskImageBroker.storeImagePreTask(TaskType.MEETING, meeting.getMeetingImage()));
             }
 
@@ -222,6 +223,9 @@ public class MeetingController extends BaseController {
         model.addAttribute("canViewRsvps", canViewRsvps);
 
         model.addAttribute("canAlterDetails", canAlterDetails);
+
+        model.addAttribute("meetingImages",
+                taskImageBroker.countImagesForTask(getUserProfile().getUid(), eventUid, TaskType.MEETING));
 
         if (canViewRsvps) {
             // this is clunky, but it's for Thymeleaf

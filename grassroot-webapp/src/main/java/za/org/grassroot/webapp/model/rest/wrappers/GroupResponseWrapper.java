@@ -2,7 +2,6 @@ package za.org.grassroot.webapp.model.rest.wrappers;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.domain.GroupLog;
 import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.webapp.enums.GroupChangeType;
@@ -47,6 +46,8 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
     private List<MembershipResponseWrapper> members;
     private List<String> invalidNumbers; // for added member / group creation error handling
 
+    private String language;
+
     private GroupResponseWrapper(Group group, Role role, boolean hasTasks) {
         Objects.requireNonNull(group);
         Objects.requireNonNull(role);
@@ -63,6 +64,7 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
         this.defaultImage = group.getDefaultImage();
         this.description = group.getDescription();
         this.paidFor = group.isPaidFor();
+        this.language = group.getDefaultLanguage();
 
         if (group.hasValidGroupTokenCode()) {
             this.joinCode = group.getGroupTokenCode();
@@ -157,6 +159,10 @@ public class GroupResponseWrapper implements Comparable<GroupResponseWrapper> {
     }
 
     public boolean isPaidFor() { return paidFor; }
+
+    public String getLanguage() {
+        return language;
+    }
 
     @Override
     public int compareTo(GroupResponseWrapper g) {

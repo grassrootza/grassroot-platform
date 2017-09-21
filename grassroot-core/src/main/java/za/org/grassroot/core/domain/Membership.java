@@ -29,6 +29,10 @@ public class Membership implements Serializable {
     @Column(name = "join_time", nullable = false)
     private Instant joinTime;
 
+    @Basic
+    @Column(name = "alias", length = 50, nullable = true)
+    private String alias;
+
     private Membership() {
         // for JPA
     }
@@ -62,6 +66,18 @@ public class Membership implements Serializable {
 
     public Instant getJoinTime() {
         return joinTime;
+    }
+
+    public String getAlias() {
+        return alias;
+    }
+
+    public void setAlias(String alias) {
+        this.alias = alias;
+    }
+
+    public String getDisplayName() {
+        return alias == null || alias.trim().isEmpty() ? user.getDisplayName() : alias;
     }
 
     @Override

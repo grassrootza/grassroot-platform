@@ -151,7 +151,8 @@ public class USSDHomeController extends USSDController {
         if (trailingDigitsPresent) {
             String trailingDigits = enteredUSSD.substring(hashPosition + 1, enteredUSSD.length() - 1);
             // check for livewire & interruption (as user may have been in middle of alert)
-            openingMenu = userInterrupted(inputNumber) && livewireSuffix.equals(trailingDigits) ?
+            // but since some users keep using join code, and get interrupted, use that in case
+            openingMenu = userInterrupted(inputNumber) && !safetyCode.equals(trailingDigits) ?
                     interruptedPrompt(inputNumber) : processTrailingDigits(trailingDigits, sessionUser);
         } else {
             if (!sessionUser.isHasInitiatedSession()) {
@@ -322,8 +323,8 @@ public class USSDHomeController extends USSDController {
             int pageStart = page == 0 ? 0 : (page * 3) - 1;
             for (int i = pageStart; i < pageLimit && i < meetingList.size(); i++) {
                 Meeting meeting = meetingList.get(i);
-                String[] fields = new String[] { meeting.getAncestorGroup().getName(),
-                        meeting.getName(),
+                String[] fields = new String[] {
+                        trimMtgName(meeting.getName()),
                         meeting.getEventDateTimeAtSAST().format(shortDateFormat) };
                 menu.addMenuOption("livewire/mtg?mtgUid=" + meeting.getUid(),
                         getMessage(LIVEWIRE, startMenu, optionsKey + "meeting", fields, user));
@@ -347,15 +348,20 @@ public class USSDHomeController extends USSDController {
         return menu;
     }
 
+    private String trimMtgName(String name) {
+        return name.length() < 20 ? name : name.substring(0, 20) + "...";
+    }
+
     /*
     Section of helper methods for opening menu response handling
+    todo: add timing aspect to these and use DTOs to get the fields in fewer queries
      */
 
     private USSDMenu assembleVoteMenu(User sessionUser) {
         Vote vote = (Vote) eventBroker.getOutstandingResponseForUser(sessionUser, EventType.VOTE).get(0);
 
         final String[] promptFields = new String[]{vote.getAncestorGroup().getName(""),
-                vote.getCreatedByUser().nameToDisplay(),
+                vote.getAncestorGroup().getMembership(vote.getCreatedByUser()).getDisplayName(),
                 vote.getName()};
 
         final String voteUri = voteMenus + "record?voteUid=" + vote.getUid() + "&response=";
@@ -380,7 +386,7 @@ public class USSDHomeController extends USSDController {
         Event meeting = eventBroker.getOutstandingResponseForUser(sessionUser, EventType.MEETING).get(0);
 
         String[] meetingDetails = new String[]{meeting.getAncestorGroup().getName(""),
-                meeting.getCreatedByUser().nameToDisplay(),
+                meeting.getAncestorGroup().getMembership(meeting.getCreatedByUser()).getDisplayName(),
                 meeting.getName(),
                 meeting.getEventDateTimeAtSAST().format(dateTimeFormat)};
 

@@ -3,6 +3,7 @@ package za.org.grassroot.webapp.controller.webapp;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
@@ -11,6 +12,7 @@ import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.MeetingImportance;
 import za.org.grassroot.services.task.MeetingBuilderHelper;
+import za.org.grassroot.services.task.TaskImageBroker;
 import za.org.grassroot.webapp.model.web.MeetingWrapper;
 
 import java.time.Instant;
@@ -35,6 +37,9 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
 
     private static final Logger logger = LoggerFactory.getLogger(MeetingControllerTest.class);
     private static final Instant oneDayAway = Instant.now().plus(1, ChronoUnit.DAYS);
+
+    @Mock
+    private TaskImageBroker taskImageBrokerMock;
 
     @InjectMocks
     private MeetingController meetingController;

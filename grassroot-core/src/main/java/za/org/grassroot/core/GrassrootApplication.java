@@ -8,11 +8,14 @@ import org.springframework.core.env.ConfigurableEnvironment;
 import static java.lang.String.format;
 import static org.springframework.util.StringUtils.arrayToCommaDelimitedString;
 
+import com.ryantenney.metrics.spring.config.annotation.EnableMetrics;
+
 /**
  *
  * Enforces Profile Semantics
  * @author Lesetse Kimwaga
  */
+@EnableMetrics(proxyTargetClass = true)
 public class GrassrootApplication extends SpringApplication {
 
     private static final Logger logger = LoggerFactory.getLogger(GrassrootApplication.class);

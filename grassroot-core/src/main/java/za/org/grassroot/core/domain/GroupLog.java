@@ -62,6 +62,9 @@ public class GroupLog implements Serializable, ActionLog {
         return id;
     }
 
+    // nasty bit of legacy here
+    public String getUid() { return null; }
+
     public Instant getCreatedDateTime() {
         return createdDateTime;
     }

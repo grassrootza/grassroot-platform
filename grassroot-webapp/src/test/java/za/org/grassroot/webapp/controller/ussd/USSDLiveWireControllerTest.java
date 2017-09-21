@@ -10,6 +10,7 @@ import za.org.grassroot.core.domain.Meeting;
 import za.org.grassroot.core.domain.MeetingBuilder;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
+import za.org.grassroot.core.enums.LiveWireAlertDestType;
 import za.org.grassroot.core.enums.LiveWireAlertType;
 import za.org.grassroot.core.enums.UserInterfaceType;
 
@@ -57,6 +58,7 @@ public class USSDLiveWireControllerTest extends USSDAbstractUnitTest {
                 .creatingUser(testUser)
                 .type(LiveWireAlertType.MEETING)
                 .meeting(meeting)
+                .destType(LiveWireAlertDestType.PUBLIC_LIST)
                 .build();
 
         when(userManagementServiceMock.findByInputNumber(testPhone)).
@@ -193,45 +195,38 @@ public class USSDLiveWireControllerTest extends USSDAbstractUnitTest {
                 .creatingUser(testUser)
                 .type(LiveWireAlertType.MEETING)
                 .description("describe")
+                .destType(LiveWireAlertDestType.PUBLIC_LIST)
                 .contactUser(testUser).contactName("gaven")
                 .build();
 
-        String[] alerts = new String[]{alert.getDescription(), alert.getContactUser().getName()
-        };
-        when(userManagementServiceMock.findByInputNumber(testPhone)).
-                thenReturn(testUser);
-
-        when(liveWireBrokerMock.load(alert.getUid()))
-                .thenReturn(alert);
-
-        mockMvc.perform(get("/ussd/livewire/confirm").
-                param(phoneInput, testPhone).
-                param("alertUid", alert.getUid()).
-                param("request", "1")).
-                andExpect(status().isOk());
-
-        verify(cacheUtilManagerMock, times(1)).
-                putUssdMenuForUser(testPhone, "livewire/" + "confirm" +
-                        "?alertUid=" + alert.getUid() + "&priorInput="
-                         + "1");
-
-        verify(liveWireBrokerMock, times(1)).
-                updateDescription(testUser.getUid(), alert.getUid(),
-                        "1");
+        when(userManagementServiceMock.findByInputNumber(testPhone)).thenReturn(testUser);
+        when(liveWireBrokerMock.load(alert.getUid())).thenReturn(alert);
 
         mockMvc.perform(get("/ussd/livewire/confirm").
                 param(phoneInput, testPhone).
                 param("alertUid", alert.getUid()).
                 param("request", "1").
+                param("field", "destination").
+                param("destType", "GENERAL")).
+                andExpect(status().isOk());
+
+        verify(cacheUtilManagerMock, times(1)).putUssdMenuForUser(testPhone, "livewire/confirm" +
+                        "?alertUid=" + alert.getUid() + "&priorInput=GENERAL&field=destination&destType=GENERAL");
+        verify(liveWireBrokerMock, times(1)).updateAlertDestination(testUser.getUid(), alert.getUid(), null, LiveWireAlertDestType.PUBLIC_LIST);
+
+        mockMvc.perform(get("/ussd/livewire/confirm").
+                param(phoneInput, testPhone).
+                param("alertUid", alert.getUid()).
+                param("request", "1").
+                param("field", "contact").
                 param("priorInput","priorInput").
                 param("revisingContact", "on").
                 param("contactUid", "0872345678")).
                 andExpect(status().isOk());
 
         verify(cacheUtilManagerMock,times(1)).
-                putUssdMenuForUser(testPhone,"livewire/"
-                        + "confirm" + "?alertUid=" + alert.getUid() +
-                        "&priorInput=" + "priorInput" + "&revisingContact=true&contactUid=" +
+                putUssdMenuForUser(testPhone,"livewire/confirm?alertUid=" + alert.getUid() +
+                        "&priorInput=priorInput&field=contact&revisingContact=true&contactUid=" +
                          "0872345678");
 
         verify(liveWireBrokerMock,times(1)).
@@ -248,10 +243,10 @@ public class USSDLiveWireControllerTest extends USSDAbstractUnitTest {
         LiveWireAlert alert = new LiveWireAlert.Builder()
                  .creatingUser(testUser)
                  .type(LiveWireAlertType.MEETING)
+                .destType(LiveWireAlertDestType.PUBLIC_LIST)
                  .build();
 
-        when(userManagementServiceMock.findByInputNumber(testPhone,
-                null))
+        when(userManagementServiceMock.findByInputNumber(testPhone, null))
                 .thenReturn(testUser);
         when(liveWireBrokerMock.load(alert.getUid())).
                 thenReturn(alert);
@@ -262,18 +257,14 @@ public class USSDLiveWireControllerTest extends USSDAbstractUnitTest {
                 param("location", "on")).
                 andExpect(status().isOk());
 
-        verify(userManagementServiceMock, times(1)).
-                findByInputNumber(testPhone, null);
-        verify(liveWireBrokerMock, times(1))
-                .setAlertComplete(eq(testUser.getUid()),
+        verify(userManagementServiceMock, times(1)).findByInputNumber(testPhone, null);
+        verify(liveWireBrokerMock, times(1)).setAlertComplete(eq(testUser.getUid()),
                         eq(alert.getUid()), any(Instant.class));
-        verify(liveWireBrokerMock,times(1)).
-                load(alert.getUid());
-        verify(liveWireBrokerMock, times(1)).
-                addLocationToAlert(testUser.getUid(),
+        verify(liveWireBrokerMock,times(1)).load(alert.getUid());
+        verify(liveWireBrokerMock, times(1)).addLocationToAlert(testUser.getUid(),
                 alert.getUid(), null, UserInterfaceType.USSD);
         verify(dataSubscriberBrokerMock, times(1)).
-                countPushEmails();
+                countPushEmails(alert);
 
         mockMvc.perform(get("/ussd/livewire/send").
                 param(phoneInput, testPhone).
