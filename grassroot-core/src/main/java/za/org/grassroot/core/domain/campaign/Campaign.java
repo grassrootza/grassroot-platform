@@ -62,7 +62,7 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
     private User createdByUser;
 
     @ManyToOne
-    @JoinColumn(name = "ancestor_group_id", nullable = false)
+    @JoinColumn(name = "ancestor_group_id", nullable = true)
     private Group masterGroup ;
 
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "campaign", orphanRemoval = true)
