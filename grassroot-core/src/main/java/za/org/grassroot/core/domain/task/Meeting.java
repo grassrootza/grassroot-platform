@@ -3,6 +3,7 @@ package za.org.grassroot.core.domain.task;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.MeetingImportance;
+import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
@@ -88,7 +89,12 @@ public class Meeting extends Event<MeetingContainer> implements VoteContainer {
 		}
 	}
 
-	public void setParent(MeetingContainer parent) {
+    @Override
+    public TaskType getTaskType() {
+        return TaskType.MEETING;
+    }
+
+    public void setParent(MeetingContainer parent) {
 		if (parent instanceof Group) {
 			this.parentGroup = (Group) parent;
 			this.parentGroup.addChildEvent(this); // needed for double sided relationship in JPA

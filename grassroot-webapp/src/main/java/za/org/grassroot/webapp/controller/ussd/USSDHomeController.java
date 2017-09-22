@@ -19,7 +19,7 @@ import za.org.grassroot.core.enums.*;
 import za.org.grassroot.integration.experiments.ExperimentBroker;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.SafetyEventBroker;
-import za.org.grassroot.services.enums.EventListTimeType;
+import za.org.grassroot.services.task.enums.EventListTimeType;
 import za.org.grassroot.services.group.GroupQueryBroker;
 import za.org.grassroot.services.livewire.LiveWireAlertBroker;
 import za.org.grassroot.services.task.EventLogBroker;

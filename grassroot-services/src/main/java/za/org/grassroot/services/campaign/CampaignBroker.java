@@ -12,6 +12,10 @@ import java.util.Locale;
 import java.util.Set;
 
 public interface CampaignBroker {
+
+    List<Campaign> getCampaignsCreatedByUser(String userUid);
+
+
     /**
      * Get Campaign information by campaign code
      * @param campaignCode
@@ -138,5 +142,4 @@ public interface CampaignBroker {
      * @return
      */
     Campaign linkCampaignToMasterGroup(String campaignCode, Long groupId);
-
 }

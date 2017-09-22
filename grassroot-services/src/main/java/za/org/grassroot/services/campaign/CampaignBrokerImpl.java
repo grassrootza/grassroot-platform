@@ -1,6 +1,7 @@
 package za.org.grassroot.services.campaign;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Campaign;
@@ -10,6 +11,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.MessageVariationAssignment;
 import za.org.grassroot.core.repository.CampaignRepository;
 import za.org.grassroot.core.repository.GroupRepository;
+import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.campaign.util.CampaignUtil;
 import za.org.grassroot.services.exception.CampaignNotFoundException;
 import za.org.grassroot.services.exception.GroupNotFoundException;
@@ -24,12 +26,21 @@ import java.util.Set;
 public class CampaignBrokerImpl implements CampaignBroker {
 
     private final CampaignRepository campaignRepository;
+    private final UserRepository userRepository;
     private final GroupRepository groupRepository;
 
     @Autowired
-    public CampaignBrokerImpl(CampaignRepository campaignRepository, GroupRepository groupRepository){
+    public CampaignBrokerImpl(CampaignRepository campaignRepository, UserRepository userRepository, GroupRepository groupRepository){
         this.campaignRepository = campaignRepository;
+        this.userRepository = userRepository;
         this.groupRepository = groupRepository;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Campaign> getCampaignsCreatedByUser(String userUid) {
+        User user = userRepository.findOneByUid(userUid);
+        return campaignRepository.findByCreatedByUser(user, new Sort("createdDateTime"));
     }
 
     @Override

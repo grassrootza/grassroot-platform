@@ -1,4 +1,4 @@
-package za.org.grassroot.webapp.controller.rest.android2;
+package za.org.grassroot.webapp.controller.rest.livewire;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,7 +28,7 @@ import za.org.grassroot.webapp.util.RestUtil;
 import java.util.Set;
 
 @RestController
-@RequestMapping(value = "/api/mobile/livewire")
+@RequestMapping(value = "/api/livewire")
 public class LiveWireController {
 
     private static final Logger logger = LoggerFactory.getLogger(LiveWireController.class);

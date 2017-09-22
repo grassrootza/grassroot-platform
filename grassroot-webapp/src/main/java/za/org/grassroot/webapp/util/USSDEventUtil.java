@@ -13,7 +13,7 @@ import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.integration.LearningService;
 import za.org.grassroot.integration.exception.SeloParseDateTimeFailure;
 import za.org.grassroot.services.async.AsyncUserLogger;
-import za.org.grassroot.services.enums.EventListTimeType;
+import za.org.grassroot.services.task.enums.EventListTimeType;
 import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.EventRequestBroker;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
