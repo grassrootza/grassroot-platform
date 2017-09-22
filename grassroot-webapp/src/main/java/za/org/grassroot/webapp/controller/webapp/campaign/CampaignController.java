@@ -13,10 +13,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.SessionAttributes;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.services.campaign.CampaignBroker;
-import za.org.grassroot.services.user.UserManager;
+import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.CampaignMessageWrapper;
 import za.org.grassroot.webapp.model.web.CampaignWrapper;
@@ -45,10 +45,10 @@ public class CampaignController extends BaseController{
     private final static String CAMPAIGN_MODEL_ATTRIBUTE = "campaign";
 
     private final CampaignBroker campaignBroker;
-    private final UserManager userManager;
+    private final UserManagementService userManager;
 
     @Autowired
-    public CampaignController(CampaignBroker campaignBroker, UserManager userManager){
+    public CampaignController(CampaignBroker campaignBroker, UserManagementService userManager) {
         this.campaignBroker = campaignBroker;
         this.userManager = userManager;
     }
