@@ -1,4 +1,4 @@
-package za.org.grassroot.webapp.controller.rest.android2;
+package za.org.grassroot.webapp.controller.rest.group;
 
 import com.codahale.metrics.annotation.Timed;
 import org.slf4j.Logger;
@@ -15,7 +15,7 @@ import java.util.Map;
 import java.util.Set;
 
 @RestController
-@RequestMapping(value = "/api/mobile/group/fetch")
+@RequestMapping(value = "/api/group/fetch")
 public class GroupFetchController {
 
     private static final Logger logger = LoggerFactory.getLogger(GroupFetchController.class);
