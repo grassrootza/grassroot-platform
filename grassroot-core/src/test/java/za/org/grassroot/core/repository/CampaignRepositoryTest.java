@@ -2,6 +2,7 @@ package za.org.grassroot.core.repository;
 
 
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +18,10 @@ import za.org.grassroot.core.enums.MessageVariationAssignment;
 
 import javax.transaction.Transactional;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 @RunWith(SpringRunner.class)
@@ -49,7 +53,7 @@ public class CampaignRepositoryTest {
     public void testCampaignMessages(){
         User user = userRepository.save(new User("3456"));
         Set<CampaignMessage> messageSet = new HashSet<>();
-        CampaignMessage campaignMessage = new CampaignMessage("Please join Campaign", user, MessageVariationAssignment.CONTROL,"en",1);
+        CampaignMessage campaignMessage = new CampaignMessage("Please join Campaign", user, MessageVariationAssignment.CONTROL, Locale.forLanguageTag("en-US"),1);
         messageSet.add(campaignMessage);
         Campaign campaign =  new Campaign("Test","234","Durban campaign",user, Instant.now(), Instant.now());
         campaign.setCampaignMessages(messageSet);
@@ -57,6 +61,27 @@ public class CampaignRepositoryTest {
         Assert.assertNotNull(persistedCampaign);
         Assert.assertNotNull(persistedCampaign.getCampaignMessages());
         Assert.assertEquals(persistedCampaign.getCampaignMessages().size(), 1);
+    }
+
+    @Test
+    @Ignore //need to test this on POSTGRES. Inmemory has no support for []
+    public void testGetCampaignByTag(){
+        List<String> tags = new ArrayList<>();
+        tags.add("braamfontein");
+        User user = userRepository.save(new User("3456"));
+        Set<CampaignMessage> messageSet = new HashSet<>();
+        CampaignMessage campaignMessage = new CampaignMessage("Please join Campaign", user, MessageVariationAssignment.CONTROL,Locale.forLanguageTag("en-US"),1);
+        messageSet.add(campaignMessage);
+        //Instant endDate = Instant.now().plus(40, TemporalUn)
+        Campaign campaign =  new Campaign("Test","234","Durban campaign",user, Instant.now(), Instant.MAX);
+        campaign.setCampaignMessages(messageSet);
+        campaign.setTags(tags);
+        Campaign persistedCampaign = campaignRepository.saveAndFlush(campaign);
+        Assert.assertNotNull(persistedCampaign);
+        Assert.assertNotNull(persistedCampaign.getCampaignMessages());
+        Assert.assertEquals(persistedCampaign.getCampaignMessages().size(), 1);
+        Campaign camp = campaignRepository.findActiveCampaignByTag("braamfontein");
+        Assert.assertNotNull(camp);
     }
 
 }

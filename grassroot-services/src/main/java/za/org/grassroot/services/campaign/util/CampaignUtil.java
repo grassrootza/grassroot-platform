@@ -22,11 +22,11 @@ public class CampaignUtil {
         return messageSet;
     }
 
-    public static Set<CampaignMessage> processCampaignMessagesByLocale(Set<CampaignMessage> messageSet,String locale){
+    public static Set<CampaignMessage> processCampaignMessagesByLocale(Set<CampaignMessage> messageSet, String locale) {
         Set<CampaignMessage> campaignMessageSet = new HashSet<CampaignMessage>();
         if(messageSet != null && !messageSet.isEmpty()){
             for(CampaignMessage message : messageSet){
-                if(message.getLocale().equalsIgnoreCase(locale)){
+                if (message.getLocale().getLanguage().equalsIgnoreCase(locale)) {
                     campaignMessageSet.add(message);
                 }
             }

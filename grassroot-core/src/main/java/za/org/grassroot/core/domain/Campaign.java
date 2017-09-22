@@ -59,8 +59,9 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
     @JoinColumn(name = "created_by_user", nullable = false, updatable = false)
     private User createdByUser;
 
-    @OneToMany(mappedBy = "campaign")
-    private Set<Group> group = new HashSet<>();
+    @ManyToOne
+    @JoinColumn(name = "ancestor_group_id", nullable = false)
+    private Group masterGroup ;
 
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "campaign", orphanRemoval = true)
     private Set<CampaignMessage> campaignMessages;
@@ -201,13 +202,6 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
         this.tags = tags;
     }
 
-    public Set<Group> getGroup() {
-        return group;
-    }
-
-    public void setGroup(Set<Group> group) {
-        this.group = group;
-    }
 
     public Set<CampaignMessage> getCampaignMessages() {
         if(this.campaignMessages == null){
@@ -236,4 +230,11 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
         this.campaignDescription = campaignDescription;
     }
 
+    public Group getMasterGroup() {
+        return masterGroup;
+    }
+
+    public void setMasterGroup(Group masterGroup) {
+        this.masterGroup = masterGroup;
+    }
 }
