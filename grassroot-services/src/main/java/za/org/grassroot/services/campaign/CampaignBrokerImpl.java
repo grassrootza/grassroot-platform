@@ -1,5 +1,7 @@
 package za.org.grassroot.services.campaign;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -10,6 +12,7 @@ import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignActionType;
 import za.org.grassroot.core.domain.campaign.CampaignLog;
 import za.org.grassroot.core.domain.campaign.CampaignMessage;
+import za.org.grassroot.core.domain.campaign.CampaignMessageAction;
 import za.org.grassroot.core.enums.CampaignLogType;
 import za.org.grassroot.core.enums.MessageVariationAssignment;
 import za.org.grassroot.core.enums.UserInterfaceType;
@@ -20,6 +23,7 @@ import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.campaign.util.CampaignUtil;
 import za.org.grassroot.services.exception.CampaignNotFoundException;
 import za.org.grassroot.services.exception.GroupNotFoundException;
+import za.org.grassroot.services.user.UserManager;
 
 import java.time.Instant;
 import java.util.List;
@@ -30,17 +34,21 @@ import java.util.Set;
 @Service
 public class CampaignBrokerImpl implements CampaignBroker {
 
+    private static final Logger LOG = LoggerFactory.getLogger(CampaignBrokerImpl.class);
+    private static final String CAMPAIGN_NOT_FOUND_CODE = "campaign.not.found";
     private final CampaignRepository campaignRepository;
     private final UserRepository userRepository;
     private final GroupRepository groupRepository;
     private final CampaignLogRepository campaignLogRepository;
+    private final UserManager userManager;
 
     @Autowired
-    public CampaignBrokerImpl(CampaignRepository campaignRepository, UserRepository userRepository, GroupRepository groupRepository, CampaignLogRepository campaignLogRepository){
+    public CampaignBrokerImpl(CampaignRepository campaignRepository, UserRepository userRepository, GroupRepository groupRepository, CampaignLogRepository campaignLogRepository, UserManager userManager){
         this.campaignRepository = campaignRepository;
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
         this.campaignLogRepository = campaignLogRepository;
+        this.userManager = userManager;
     }
 
     @Override
@@ -108,11 +116,14 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
     @Override
     @Transactional
-    public Campaign createCampaign(String campaignName, String campaignCode, String description, User createUser, Instant startDate, Instant endDate, List<String> campaignTags){
-        Campaign newCampaign = new Campaign(campaignName, campaignCode, description,createUser, startDate, endDate);
+    public Campaign createCampaign(String campaignName, String campaignCode, String description, String userUid, Instant startDate, Instant endDate, List<String> campaignTags){
+        User user = userManager.load(userUid);
+        Campaign newCampaign = new Campaign(campaignName, campaignCode, description,user, startDate, endDate);
         if(campaignTags != null && !campaignTags.isEmpty()){
             newCampaign.getTagList().addAll(campaignTags);
         }
+        CampaignLog campaignLog = new CampaignLog(newCampaign.getCreatedByUser().getUid(), CampaignLogType.CREATED_IN_DB,newCampaign);
+        campaignLogRepository.saveAndFlush(campaignLog);
         return campaignRepository.saveAndFlush(newCampaign);
     }
 
@@ -153,7 +164,8 @@ public class CampaignBrokerImpl implements CampaignBroker {
             campaignLogRepository.saveAndFlush(campaignLog);
             return campaignRepository.saveAndFlush(campaign);
         }
-        throw new CampaignNotFoundException("No Campaign found for code "+campaignCode);
+        LOG.error("No Campaign found for code {}" + campaignCode);
+        throw new CampaignNotFoundException(CAMPAIGN_NOT_FOUND_CODE);
     }
 
     @Override
@@ -168,7 +180,8 @@ public class CampaignBrokerImpl implements CampaignBroker {
             campaignLogRepository.saveAndFlush(campaignLog);
             return campaignRepository.saveAndFlush(campaign);
         }
-        throw new CampaignNotFoundException("No Campaign found for code "+campaignCode);
+        LOG.error("No Campaign found for code = {}" + campaignCode);
+        throw new CampaignNotFoundException(CAMPAIGN_NOT_FOUND_CODE);
     }
 
     @Override
@@ -184,7 +197,8 @@ public class CampaignBrokerImpl implements CampaignBroker {
             campaignLogRepository.saveAndFlush(campaignLog);
             return campaignRepository.saveAndFlush(campaign);
         }
-        throw new CampaignNotFoundException("No Campaign found for code "+campaignCode);
+        LOG.error("No Campaign found for code = {}" + campaignCode);
+        throw new CampaignNotFoundException(CAMPAIGN_NOT_FOUND_CODE);
     }
 
     @Override
@@ -201,13 +215,39 @@ public class CampaignBrokerImpl implements CampaignBroker {
                     break;
                 }
             }
+            CampaignLog campaignLog = new CampaignLog(campaign.getCreatedByUser().getUid(), CampaignLogType.CAMPAIGN_MESSAGE_ACTION_ADDED,campaign);
+            campaignLogRepository.saveAndFlush(campaignLog);
             return campaignRepository.saveAndFlush(campaign);
         }
-        throw new CampaignNotFoundException("No Campaign found for code "+campaignCode);
+        LOG.error("No Campaign found for code = {}" + campaignCode);
+        throw new CampaignNotFoundException(CAMPAIGN_NOT_FOUND_CODE);
+    }
+
+    @Override
+    @Transactional
+    public Campaign addMessageActionsToCampaignMessage(String campaignCode, String messageUid, List<CampaignMessageAction> campaignMessageActionList){
+        Objects.requireNonNull(campaignCode);
+        Objects.requireNonNull(messageUid);
+        Objects.requireNonNull(campaignMessageActionList);
+        Campaign campaign = campaignRepository.findByCampaignCodeAndEndDateTimeAfter(campaignCode,Instant.now());
+        if(campaign != null && campaign.getCampaignMessages() != null && !campaign.getCampaignMessages().isEmpty()){
+            for(CampaignMessage message: campaign.getCampaignMessages()){
+                if(message.getUid().equalsIgnoreCase(messageUid)){
+                    message.getCampaignMessageActionSet().addAll(campaignMessageActionList);
+                    break;
+                }
+            }
+            CampaignLog campaignLog = new CampaignLog(campaign.getCreatedByUser().getUid(), CampaignLogType.CAMPAIGN_MESSAGE_ACTION_ADDED,campaign);
+            campaignLogRepository.saveAndFlush(campaignLog);
+            return campaignRepository.saveAndFlush(campaign);
+        }
+        LOG.error("No Campaign found for code = {}" + campaignCode);
+        throw new CampaignNotFoundException(CAMPAIGN_NOT_FOUND_CODE);
     }
 
 
     @Override
+    @Transactional(readOnly = true)
     public Campaign getCampaignByTag(String tag){
         Objects.requireNonNull(tag);
         return campaignRepository.findActiveCampaignByTag(tag);

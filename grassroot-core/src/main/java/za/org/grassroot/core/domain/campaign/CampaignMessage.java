@@ -82,6 +82,8 @@ public class CampaignMessage implements Serializable, Comparable<CampaignMessage
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "parentCampaignMessage", orphanRemoval = true)
     private Set<CampaignMessageAction> campaignMessageActionSet;
 
+    public CampaignMessage(){}
+
     public CampaignMessage(String message, User createdByUser, MessageVariationAssignment variation, Locale locale, UserInterfaceType channel){
         this.uid = UIDGenerator.generateId();
         this.createdDateTime = Instant.now();

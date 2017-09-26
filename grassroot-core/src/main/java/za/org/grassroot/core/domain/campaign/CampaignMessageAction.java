@@ -52,6 +52,8 @@ public class CampaignMessageAction implements Serializable, Comparable<CampaignM
     @JoinColumn(name = "parent_message_id")
     private CampaignMessage parentCampaignMessage;
 
+    public CampaignMessageAction(){}
+
     public CampaignMessageAction(CampaignMessage parentCampaignMessage,CampaignMessage actionMessage,CampaignActionType actionType){
         this.uid = UIDGenerator.generateId();
         this.createdDateTime = Instant.now();

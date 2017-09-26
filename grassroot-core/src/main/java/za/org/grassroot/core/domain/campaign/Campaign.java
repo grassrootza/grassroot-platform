@@ -72,6 +72,8 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
     @Type(type = "za.org.grassroot.core.util.StringArrayUserType")
     private String[] tags;
 
+    public Campaign(){}
+
     public Campaign(String campaignName, String campaignCode,String campaignDescription, User createdByUser, Instant startDateTime, Instant endDateTime){
         this.uid = UIDGenerator.generateId();
         this.createdDateTime = Instant.now();
