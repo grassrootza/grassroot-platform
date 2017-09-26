@@ -1,5 +1,6 @@
 package za.org.grassroot.webapp.controller.webapp;
 
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -7,6 +8,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -14,10 +16,14 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.services.exception.InvalidTokenException;
+import za.org.grassroot.services.group.GroupExportBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.BaseController;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.Arrays;
 import java.util.Locale;
 
 /**
@@ -30,10 +36,13 @@ public class UserProfileController extends BaseController {
     private static final Logger log = LoggerFactory.getLogger(UserProfileController.class);
 
     private final UserManagementService userManagementService;
+    private GroupExportBroker groupExportBroker;
+
 
     @Autowired
-    public UserProfileController(UserManagementService userManagementService) {
+    public UserProfileController(UserManagementService userManagementService, GroupExportBroker groupExportBroker) {
         this.userManagementService = userManagementService;
+        this.groupExportBroker = groupExportBroker;
     }
 
     @ModelAttribute("sessionUser")
@@ -81,5 +90,32 @@ public class UserProfileController extends BaseController {
             return "user/password";
         }
     }
+
+
+    @RequestMapping(value = "export-groups", method = RequestMethod.GET)
+    public String exportGroupsPrompt(Model model) {
+
+        User user = getUserProfile();
+        model.addAttribute("groups", user.getGroups());
+        return "user/export-groups";
+    }
+
+    @RequestMapping(value = "export-groups", method = RequestMethod.POST)
+    public void exportGroupsDo(@RequestParam String[] selectedGroupUids, HttpServletResponse response) throws IOException {
+
+        XSSFWorkbook xls = groupExportBroker.exportMultipleGroupMembers(Arrays.asList(selectedGroupUids));
+
+        String fileName = "multiple_group_members.xlsx";
+        response.setContentType(MimeTypeUtils.APPLICATION_OCTET_STREAM_VALUE);
+        response.setHeader("Content-Disposition", "attachment; filename=\"" + fileName + "\"");
+        response.setHeader("Cache-Control", "no-cache");
+        response.setHeader("Pragma", "no-cache");
+        response.setDateHeader("Expires", 0);
+
+        xls.write(response.getOutputStream());
+        response.flushBuffer();
+    }
+
+
 
 }
