@@ -28,7 +28,7 @@ public interface CampaignBroker {
 
     /**
      * Get Campaign information by name of the campaign
-     * @param campaignName -name ofcampaign
+     * @param campaignName -name of campaign
      * @return
      */
     Campaign getCampaignDetailsByName(String campaignName);
@@ -38,7 +38,7 @@ public interface CampaignBroker {
      * Get Campaign message by campaign code
      * @param campaignCode campign code
      * @param assignment - different message use cases
-     * @return
+     * @return - Set of messages linked to campaign
      */
     Set<CampaignMessage> getCampaignMessagesByCampaignCode(String campaignCode, MessageVariationAssignment assignment);
 
@@ -46,7 +46,7 @@ public interface CampaignBroker {
      * Get Campaign message using campaign name
      * @param campaignName - name
      * @param assignment - message use case,eg. test
-     * @return
+     * @return - set of messages linked to campaign
      */
     Set<CampaignMessage> getCampaignMessagesByCampaignName(String campaignName, MessageVariationAssignment assignment);
 
@@ -132,10 +132,14 @@ public interface CampaignBroker {
      */
     Campaign addActionsToCampaignMessage(String campaignCode, String messageUid, List<CampaignActionType> campaignActionTypes);
 
-
+    /**
+     *
+     * @param campaignCode
+     * @param messageUid
+     * @param campaignMessageActionList
+     * @return
+     */
     Campaign addMessageActionsToCampaignMessage(String campaignCode, String messageUid, List<CampaignMessageAction> campaignMessageActionList);
-
-
 
     /**
      *

@@ -21,6 +21,7 @@ import za.org.grassroot.core.repository.CampaignRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.campaign.util.CampaignUtil;
+import za.org.grassroot.services.exception.CampaignMessageNotFoundException;
 import za.org.grassroot.services.exception.CampaignNotFoundException;
 import za.org.grassroot.services.exception.GroupNotFoundException;
 import za.org.grassroot.services.user.UserManager;
@@ -35,7 +36,8 @@ import java.util.Set;
 public class CampaignBrokerImpl implements CampaignBroker {
 
     private static final Logger LOG = LoggerFactory.getLogger(CampaignBrokerImpl.class);
-    private static final String CAMPAIGN_NOT_FOUND_CODE = "campaign.not.found";
+    private static final String CAMPAIGN_NOT_FOUND_CODE = "campaign.not.found.error";
+    private static final String CAMPAIGN_MESSAGE_NOT_FOUND_CODE = "campaign.message.not.found.error";
     private final CampaignRepository campaignRepository;
     private final UserRepository userRepository;
     private final GroupRepository groupRepository;
@@ -164,7 +166,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
             campaignLogRepository.saveAndFlush(campaignLog);
             return campaignRepository.saveAndFlush(campaign);
         }
-        LOG.error("No Campaign found for code {}" + campaignCode);
+        LOG.error("No Campaign found for code = {}" + campaignCode);
         throw new CampaignNotFoundException(CAMPAIGN_NOT_FOUND_CODE);
     }
 
@@ -208,7 +210,11 @@ public class CampaignBrokerImpl implements CampaignBroker {
         Objects.requireNonNull(messageUid);
         Objects.requireNonNull(campaignActionTypes);
         Campaign campaign = campaignRepository.findByCampaignCodeAndEndDateTimeAfter(campaignCode,Instant.now());
-        if(campaign != null && campaign.getCampaignMessages() != null && !campaign.getCampaignMessages().isEmpty()){
+        if(campaign == null){
+            LOG.error("No Campaign found for code = {}" + campaignCode);
+            throw new CampaignNotFoundException(CAMPAIGN_NOT_FOUND_CODE);
+        }
+        if(campaign.getCampaignMessages() != null && !campaign.getCampaignMessages().isEmpty()){
             for(CampaignMessage message: campaign.getCampaignMessages()){
                 if(message.getUid().equalsIgnoreCase(messageUid)){
                     message.getCampaignMessageActionSet().addAll(CampaignUtil.createCampaignMessageActionSet(message,campaignActionTypes));
@@ -219,8 +225,8 @@ public class CampaignBrokerImpl implements CampaignBroker {
             campaignLogRepository.saveAndFlush(campaignLog);
             return campaignRepository.saveAndFlush(campaign);
         }
-        LOG.error("No Campaign found for code = {}" + campaignCode);
-        throw new CampaignNotFoundException(CAMPAIGN_NOT_FOUND_CODE);
+        LOG.error("No Campaign message found for uid = {}" + messageUid);
+        throw new CampaignMessageNotFoundException(CAMPAIGN_MESSAGE_NOT_FOUND_CODE);
     }
 
     @Override
@@ -230,7 +236,11 @@ public class CampaignBrokerImpl implements CampaignBroker {
         Objects.requireNonNull(messageUid);
         Objects.requireNonNull(campaignMessageActionList);
         Campaign campaign = campaignRepository.findByCampaignCodeAndEndDateTimeAfter(campaignCode,Instant.now());
-        if(campaign != null && campaign.getCampaignMessages() != null && !campaign.getCampaignMessages().isEmpty()){
+        if(campaign == null){
+            LOG.error("No Campaign found for code = {}" + campaignCode);
+            throw new CampaignNotFoundException(CAMPAIGN_NOT_FOUND_CODE);
+        }
+        if(campaign.getCampaignMessages() != null && !campaign.getCampaignMessages().isEmpty()){
             for(CampaignMessage message: campaign.getCampaignMessages()){
                 if(message.getUid().equalsIgnoreCase(messageUid)){
                     message.getCampaignMessageActionSet().addAll(campaignMessageActionList);
@@ -241,8 +251,8 @@ public class CampaignBrokerImpl implements CampaignBroker {
             campaignLogRepository.saveAndFlush(campaignLog);
             return campaignRepository.saveAndFlush(campaign);
         }
-        LOG.error("No Campaign found for code = {}" + campaignCode);
-        throw new CampaignNotFoundException(CAMPAIGN_NOT_FOUND_CODE);
+        LOG.error("No Campaign message found for message uid = {}" + messageUid);
+        throw new CampaignMessageNotFoundException(CAMPAIGN_MESSAGE_NOT_FOUND_CODE);
     }
 
 
