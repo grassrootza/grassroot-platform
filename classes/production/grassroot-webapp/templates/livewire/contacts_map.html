@@ -1,0 +1,181 @@
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      data-layout-decorate="~{layout}">
+<head>
+  <title>LiveWire Contacts</title>
+
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#000000">
+  <meta name="description" content="">
+  <meta name="author" content="">
+
+  <meta property="og:title" content="grassroot.org.za"/>
+  <meta property="og:image" content="/img/horizontal-logo.png"/>
+  <meta property="og:description" content="The Grassroot Platform"/>
+
+  <meta name="_csrf" th:content="${_csrf.token}"/>
+  <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+
+  <link rel="stylesheet" th:href="@{/assets/leaflet-css/leaflet.css}"/>
+  <link rel="stylesheet" href="https://mapzen.com/js/mapzen.standalone.css">
+  <link rel="stylesheet" th:href="@{/assets/bootleaf.css}"/>
+
+  <script th:src="@{/js/lib/jquery-2.2.4.min.js}"></script>
+  <script th:src="@{/js/lib/leaflet.js}"></script>
+  <script th:src="@{/js/lib/leaflet-geocoder-mapzen.min.js}"></script>
+
+</head>
+<body>
+
+<section layout:fragment="header" class="top-container">
+
+</section>
+
+<main layout:fragment="content" class="map-container" style="position: fixed; outline: none; overflow: visible;">
+  <div class="container map-container" id="map_container" style="overflow: visible;padding-left: 0px;padding-bottom: 150px;">
+    <div id="sidebar">
+      <div class="sidebar-wrapper">
+        <div class="panel panel-default" id="features">
+          <div class="panel-heading">
+            <h3 class="panel-title">LiveWire Contacts Nearby</h3>
+          </div>
+          <!-- todo: restore this for filtering if a lot of contacts, and fix the spacing
+          <div class="panel-body">
+            <div class="row">
+              <div class="col-xs-8 col-md-8">
+                <input type="text" class="form-control search" placeholder="Filter" />
+              </div>
+              <div class="col-xs-4 col-md-4">
+                <button type="button" class="btn btn-primary pull-right sort" data-sort="feature-name" id="sort-btn"><i class="fa fa-sort"></i>&nbsp;&nbsp;Sort</button>
+              </div>
+            </div>
+          </div> -->
+          <div class="sidebar-table">
+            <table class="table table-hover" id="contact-list-table">
+              <thead>
+              <tr>
+                <th>Name</th>
+              <tr>
+              <tr>
+                <th>Phone</th>
+              <tr>
+              <!-- <tr>
+                <th>Group size</th>
+              <tr> -->
+              </thead>
+              <tbody id="contact-list-body" class="list">
+
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="map"></div>
+  </div>
+
+  <script type='text/javascript' th:inline="javascript">
+
+    $(document).ready(function() {
+
+        var token = $("meta[name='_csrf']");
+        var header = $("meta[name='_csrf_header']");
+        var contactBody = $("#contact-list-body");
+
+        grassrootJS.setUpAjax(token, header);
+
+        var apiKey = [[${mapzenKey}]];
+        var openingContacts = [[${contacts}]];
+
+        var latitude = [[${location.latitude}]];
+        var longitude = [[${location.longitude}]];
+        var originalRadius = [[${radius}]];
+
+        var zoom = 13;
+
+        var map = L.map('map').setView([latitude, longitude], zoom);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            attributionControl: true
+        }).addTo(map);
+
+        updateContactList(openingContacts);
+
+        var geocoderOptions = {
+            expanded: true,
+            place: true,
+            fullWidth: false,
+            position: 'topright',
+            placeholder: 'Search to find contacts',
+            params: {
+                sources: 'osm',
+                  'boundary.country': 'ZAF'
+            }
+        };
+
+        var geocoder = L.control.geocoder(apiKey, geocoderOptions).addTo(map);
+        geocoder.addTo(map);
+
+        geocoder.on('results', function (e) {
+            // showResults();
+            var latLng = L.GeoJSON.coordsToLatLng(e.results.features[0].geometry.coordinates);
+            console.log("latLng retrieved: " + latLng.toString());
+            if (latLng !== undefined) {
+                refreshContactsNearby(latLng, originalRadius);
+            }
+        });
+
+        // todo: hide the results box when this triggers
+        geocoder.on('select', function(e) {
+            refreshContactsNearby(e.latlng, originalRadius);
+            // hideResults();
+        });
+
+        map.on('click', function(e) {
+            var clickLocation = e.latlng;
+            console.log("clicked on this location: lat: " + clickLocation.lat + ", long: " + clickLocation.lng);
+            L.marker(clickLocation).addTo(map);
+            refreshContactsNearby(clickLocation, originalRadius);
+        });
+
+        function refreshContactsNearby( latLng, radius ) {
+            $.getJSON("/livewire/user/contacts/pull", {
+                longitude: latLng.lng,
+                latitude: latLng.lat,
+                radius: radius
+            }, function( data ) {
+                updateContactList(data);
+            });
+        }
+
+        // todo: fix up UI here
+        function updateContactList( contacts ) {
+            clearContacts();
+            for (var i = 0; i < contacts.length; i++) {
+                console.log("adding contact: " + JSON.stringify(contacts[i]));
+                contactBody.append(
+                    "<tr>" +
+                    "<td>" + contacts[i].contactName + "</td>" +
+                    "<td>" + contacts[i].contactNumber + "</td>" +
+                    "</tr>"
+                );
+            }
+        }
+
+        function clearContacts() {
+            contactBody.empty();
+        }
+
+    });
+
+  </script>
+
+</main>
+
+</body>
+</html>

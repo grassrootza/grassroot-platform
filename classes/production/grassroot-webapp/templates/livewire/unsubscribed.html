@@ -1,0 +1,41 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      data-layout-decorate="~{layout}">
+<head>
+  <meta charset="UTF-8" />
+  <title>LiveWire</title>
+
+  <meta name="_csrf" th:content="${_csrf.token}"/>
+  <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+
+<body>
+
+<section layout:fragment="header" class="top-container">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-6 col-md-offset-3 col-sm-10 col-sm-offset-1 col-xs-12">
+        <h2 class="text-center header-content-title">Grassroot LiveWire</h2>
+        <h4 class="text-center header-content-subtitle">Unsubscribed</h4>
+      </div>
+    </div>
+  </div>
+</section>
+
+<main layout:fragment="content">
+
+  <section class="grassroot-body">
+    <div class="row">
+      <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
+        <p>
+          You have unsubscribed from Grassroot LiveWire alerts. To rejoin, just send an email to
+          <a href="mailto:livewire@grassroot.org.za?subject=LiveWire+Resubscribe">livewire@grassroot.org.za</a>
+        </p>
+      </div>
+    </div>
+
+  </section>
+
+</main>
+
+</body>
+</html>

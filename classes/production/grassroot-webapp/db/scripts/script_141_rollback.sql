@@ -1,0 +1,1 @@
+alter table event_log drop column tag;

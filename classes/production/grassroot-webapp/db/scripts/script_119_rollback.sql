@@ -1,0 +1,1 @@
+alter table messenger_settings drop constraint if exists uk_chat_settings_user_group;

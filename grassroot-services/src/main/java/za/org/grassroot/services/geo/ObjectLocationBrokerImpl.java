@@ -7,6 +7,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.Membership;
+import za.org.grassroot.core.domain.Membership_;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.*;
 import za.org.grassroot.core.repository.GroupLocationRepository;
@@ -17,6 +19,13 @@ import za.org.grassroot.services.group.GroupLocationFilter;
 import za.org.grassroot.services.task.EventBroker;
 
 import javax.persistence.EntityManager;
+import javax.persistence.TypedQuery;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Root;
+import javax.persistence.criteria.Subquery;
+import javax.persistence.metamodel.EntityType;
+import javax.persistence.metamodel.Metamodel;
 import java.security.InvalidParameterException;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -406,6 +415,7 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
 
     @Override
     public List<ObjectLocation> fetchMeetingsNearUserUssd(Integer radius, User user) throws InvalidParameterException {
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
 
         GeoLocation location = ussdLocationServicesBroker.getUssdLocationForUser(user.getUid());
         List<ObjectLocation> meetingLocations = new ArrayList<>();
@@ -414,20 +424,27 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
         }else{
             String userUid = user.getUid();
             //typed query
-            UserLocationLog userLocationLog = (UserLocationLog)entityManager.createNamedQuery("SELECT * FROM UserLocationLog u" +
-                                                                                                "WHERE u.uid = :user" +
-                                                                                                "AND u.timestamp BETWEEN DATE_SUB(NOW(),INTERVAL 5 DAY) AND NOW()").getSingleResult();
+            TypedQuery<UserLocationLog> userLocationLogTypedQuery =
+                    entityManager.createQuery("SELECT * FROM UserLocationLog u" +
+                                                        "WHERE u.uid = :user" +
+                                                        "AND u.timestamp BETWEEN DATE_SUB(NOW(),INTERVAL 5 DAY) AND NOW()",UserLocationLog.class);
 
-            location = new GeoLocation(userLocationLog.getLocation().getLatitude(),userLocationLog.getLocation().getLongitude());
+
+            UserLocationLog userLocationLog = userLocationLogTypedQuery.getSingleResult();
+
             //PreviousPeriodUserLocation
 
-            if(location != null){
-                meetingLocations = fetchMeetingsNearUser(location.getLatitude(),location.getLongitude(),radius,user);
+            if(userLocationLog != null){
+                meetingLocations = fetchMeetingsNearUser(userLocationLog.getLocation().getLatitude(),userLocationLog.getLocation().getLongitude(),radius,user);
             }else{
                 //get previous
-                GroupLocation groupLocation = (GroupLocation) entityManager.createNamedQuery("SELECT * FROM GroupLocation g" +
-                        "WHERE g.group = (SELECT gm.group FROM Membership gm" +
-                        "WHERE gm.user = : user)").getSingleResult();
+
+                TypedQuery<GroupLocation> groupLocationTypedQuery =
+                        entityManager.createQuery("SELECT * FROM GroupLocation g" +
+                                                            "WHERE g.group = (SELECT gm.group FROM Membership gm" +
+                                                                    "WHERE gm.user = : user)",GroupLocation.class);
+
+                GroupLocation groupLocation = groupLocationTypedQuery.getSingleResult();
 
                 logger.info("Group Location = {}",groupLocation.getLocation().getLatitude() + " " + groupLocation.getLocation().getLongitude());
                 if(groupLocation != null){

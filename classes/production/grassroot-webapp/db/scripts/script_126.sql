@@ -1,0 +1,1 @@
+alter table paid_account_billing add column payment_desc VARCHAR(255);
