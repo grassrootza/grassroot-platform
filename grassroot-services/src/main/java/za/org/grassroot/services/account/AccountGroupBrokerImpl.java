@@ -8,21 +8,24 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.domain.account.AccountLog;
+import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.GroupLog;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
+import za.org.grassroot.core.domain.account.AccountLog;
 import za.org.grassroot.core.domain.account.PaidGroup;
 import za.org.grassroot.core.domain.notification.FreeFormMessageNotification;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.enums.AccountLogType;
 import za.org.grassroot.core.enums.GroupLogType;
+import za.org.grassroot.core.enums.PaidGroupStatus;
 import za.org.grassroot.core.repository.*;
+import za.org.grassroot.core.specifications.EventSpecifications;
 import za.org.grassroot.core.specifications.GroupSpecifications;
 import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.*;
-import za.org.grassroot.core.specifications.EventSpecifications;
 import za.org.grassroot.services.util.FullTextSearchUtils;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
@@ -38,9 +41,9 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.springframework.data.jpa.domain.Specifications.where;
+import static za.org.grassroot.core.specifications.NotificationSpecifications.*;
 import static za.org.grassroot.core.specifications.PaidGroupSpecifications.expiresAfter;
 import static za.org.grassroot.core.specifications.PaidGroupSpecifications.isForAccount;
-import static za.org.grassroot.core.specifications.NotificationSpecifications.*;
 import static za.org.grassroot.core.specifications.TodoSpecifications.createdDateBetween;
 import static za.org.grassroot.core.specifications.TodoSpecifications.hasGroupAsAncestor;
 
@@ -373,7 +376,7 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
         User user = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
         Account account = user.getPrimaryAccount();
-        PaidGroup paidGroup = paidGroupRepository.findTopByGroupOrderByExpireDateTimeDesc(group);
+        PaidGroup paidGroup = paidGroupRepository.findTopByGroupAndStatusOrderByActiveDateTimeDesc(group, PaidGroupStatus.ACTIVE);
 
         Objects.requireNonNull(user);
         Objects.requireNonNull(group);

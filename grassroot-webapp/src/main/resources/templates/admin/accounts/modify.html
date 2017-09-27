@@ -7,7 +7,7 @@
 <body>
 
 <section layout:fragment="header" class="top-container"
-         th:replace="~{layout :: std_header('Modify account', ${account.accountName})}">
+         th:replace="~{layout :: std_header_back('Modify ' + ${account.accountName}, 'Back to list', '/admin/accounts/home')}">
 </section>
 
 <main layout:fragment="content">
@@ -18,10 +18,10 @@
         <div class="col-md-8 col-md-offset-2 col-sm-6 col-sm-offset-3 col-xs-12">
           <form th:action="@{/admin/accounts/modify/do}" method="post">
             <input type="hidden" name="accountUid" th:value="${account.uid}" />
-            <div th:replace="~{form_fragments :: list_selector('Visible', ${onOffOptions}, 'visible')}"></div>
-            <div th:replace="~{form_fragments :: enum_selector('Account type', 'accountType', ${accountTypes}, 'web.account.type')}"></div>
+            <div th:replace="~{form_fragments :: list_selector_with_default('Visible', ${onOffOptions}, 'visible', true)}"></div>
+            <div th:replace="~{form_fragments :: enum_selector_with_default('Account type', 'accountType', ${accountTypes}, 'web.account.type', ${account.type})}"></div>
             <div th:include="~{form_fragments :: number_input('Monthly subscription (cents)', ${account.subscriptionFee}, 'subscriptionFee')}"></div>
-            <div th:replace="~{form_fragments :: list_selector('Charged per message', ${onOffOptions}, 'chargePerMessage')}"></div>
+            <div th:replace="~{form_fragments :: list_selector_with_default('Charged per message', ${onOffOptions}, 'chargePerMessage', ${account.billPerMessage})}"></div>
             <div th:include="~{form_fragments :: number_input('Cost per message (cents)', ${account.freeFormCost}, 'costPerMessage')}"></div>
             <div th:include="~{form_fragments :: submit_cancel_buttons('Submit', '/admin/accounts/home')}"></div>
           </form>

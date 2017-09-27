@@ -92,9 +92,18 @@ public class AccountAdminController extends BaseController {
                                   @RequestParam boolean visible,
                                   @RequestParam boolean chargePerMessage,
                                   @RequestParam long costPerMessage,
-                                  RedirectAttributes attributes) {
+                                  RedirectAttributes attributes, HttpServletRequest request) {
         attributes.addAttribute("accountUid", accountUid);
-        // todo : wire up
+
+        Account account = accountBroker.loadAccount(accountUid);
+        if (!account.isVisible() == visible) {
+            accountBroker.setAccountVisibility(getUserProfile().getUid(), accountUid, visible);
+        }
+
+        accountBroker.modifyAccount(getUserProfile().getUid(), accountUid, accountType, subscriptionFee,
+                chargePerMessage, costPerMessage);
+
+        addMessage(attributes, MessageType.SUCCESS, "admin.accounts.modified", request);
         return "redirect:/admin/accounts/modify";
     }
 
