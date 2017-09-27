@@ -31,14 +31,22 @@
 
                         <div class="form-group">
                             <label class="control-label">Select groups</label>
-                            <ul>
-                                <li th:each="gr : ${groups}">
+                            <div>
+                                <div>
+                                    <input type="checkbox" checked="checked" name="selectAllGroups"
+                                           id="selectAllGroups"/>
+                                    <label for="selectAllGroups">Select all</label>
+                                </div>
+                                <hr/>
+                                <div th:each="gr : ${groups}">
                                     <input type="checkbox" checked="checked" name="selectedGroupUids"
                                            th:id="${'group-' + gr.id}" th:value="${gr.uid}"/>
                                     <label th:for="${'group-' + gr.id}"
                                            th:text="${gr.groupName}">Group</label>
-                                </li>
-                            </ul>
+                                </div>
+                                <div><label style="display: none" id="groupSelectError" class="error-text">Please select
+                                    at least one group for export.</label></div>
+                            </div>
                         </div>
 
                         <div class="form-group pull-right">
@@ -55,26 +63,35 @@
 
 <div layout:fragment="script-container">
 
-    <!--<script th:src="@{/js/jquery.validate.min.js}"></script>-->
+    <script th:src="@{/js/lib/jquery.validate.min.js}"></script>
 
-    <!--<script>-->
+    <script th:inline="javascript">
 
-    <!--$(document).ready(function() {-->
+        $(document).ready(function () {
 
-    <!--$("#exportGroupsForm").validate({-->
-    <!--rules: {-->
-    <!--selectedGroupUids: {-->
-    <!--required: true-->
-    <!--},-->
-    <!--emailAddress: {-->
-    <!--required: false,-->
-    <!--email: true-->
-    <!--}-->
-    <!--}-->
-    <!--})-->
-    <!--});-->
+            $('#selectAllGroups').click(function () {
+                $("input[name='selectedGroupUids']").prop('checked', this.checked);
+            });
 
-    <!--</script>-->
+            $('#exportGroupsForm').validate({
+                rules: {
+                    "selectedGroupUids": {
+                        required: true,
+                        minlength: 1
+                    }
+                },
+                showErrors: function (errorMap, errorList) {
+                    if (errorList.length > 0) {
+                        $('#groupSelectError').show();
+                        setTimeout(function () {
+                            $('#groupSelectError').hide();
+                        }, 2000);
+                    }
+                }
+            });
+        });
+
+    </script>
 
 </div>
 

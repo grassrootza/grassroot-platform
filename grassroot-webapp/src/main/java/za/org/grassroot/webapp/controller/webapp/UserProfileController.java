@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.services.exception.InvalidTokenException;
 import za.org.grassroot.services.group.GroupExportBroker;
@@ -24,7 +25,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
 /**
  * @author Lesetse Kimwaga
@@ -96,7 +100,9 @@ public class UserProfileController extends BaseController {
     public String exportGroupsPrompt(Model model) {
 
         User user = getUserProfile();
-        model.addAttribute("groups", user.getGroups());
+        user = userManagementService.load(user.getUid()); // take fresh copy in order to have groups added since login
+        List<Group> sorted = user.getGroups().stream().sorted(Comparator.comparing(Group::getGroupName)).collect(Collectors.toList());
+        model.addAttribute("groups", sorted);
         return "user/export-groups";
     }
 
