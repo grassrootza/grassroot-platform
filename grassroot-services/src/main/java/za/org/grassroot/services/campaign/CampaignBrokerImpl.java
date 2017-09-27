@@ -8,11 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.domain.campaign.Campaign;
-import za.org.grassroot.core.domain.campaign.CampaignActionType;
-import za.org.grassroot.core.domain.campaign.CampaignLog;
-import za.org.grassroot.core.domain.campaign.CampaignMessage;
-import za.org.grassroot.core.domain.campaign.CampaignMessageAction;
+import za.org.grassroot.core.domain.campaign.*;
 import za.org.grassroot.core.enums.CampaignLogType;
 import za.org.grassroot.core.enums.MessageVariationAssignment;
 import za.org.grassroot.core.enums.UserInterfaceType;
@@ -24,7 +20,6 @@ import za.org.grassroot.services.campaign.util.CampaignUtil;
 import za.org.grassroot.services.exception.CampaignMessageNotFoundException;
 import za.org.grassroot.services.exception.CampaignNotFoundException;
 import za.org.grassroot.services.exception.GroupNotFoundException;
-import za.org.grassroot.services.user.UserManager;
 
 import java.time.Instant;
 import java.util.List;
@@ -38,19 +33,18 @@ public class CampaignBrokerImpl implements CampaignBroker {
     private static final Logger LOG = LoggerFactory.getLogger(CampaignBrokerImpl.class);
     private static final String CAMPAIGN_NOT_FOUND_CODE = "campaign.not.found.error";
     private static final String CAMPAIGN_MESSAGE_NOT_FOUND_CODE = "campaign.message.not.found.error";
+
     private final CampaignRepository campaignRepository;
     private final UserRepository userRepository;
     private final GroupRepository groupRepository;
     private final CampaignLogRepository campaignLogRepository;
-    private final UserManager userManager;
 
     @Autowired
-    public CampaignBrokerImpl(CampaignRepository campaignRepository, UserRepository userRepository, GroupRepository groupRepository, CampaignLogRepository campaignLogRepository, UserManager userManager){
+    public CampaignBrokerImpl(CampaignRepository campaignRepository, UserRepository userRepository, GroupRepository groupRepository, CampaignLogRepository campaignLogRepository){
         this.campaignRepository = campaignRepository;
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
         this.campaignLogRepository = campaignLogRepository;
-        this.userManager = userManager;
     }
 
     @Override
@@ -119,7 +113,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
     @Override
     @Transactional
     public Campaign createCampaign(String campaignName, String campaignCode, String description, String userUid, Instant startDate, Instant endDate, List<String> campaignTags){
-        User user = userManager.load(userUid);
+        User user = userRepository.findOneByUid(userUid);
         Campaign newCampaign = new Campaign(campaignName, campaignCode, description,user, startDate, endDate);
         if(campaignTags != null && !campaignTags.isEmpty()){
             newCampaign.getTagList().addAll(campaignTags);

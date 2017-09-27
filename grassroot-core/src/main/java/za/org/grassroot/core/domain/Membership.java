@@ -48,7 +48,7 @@ public class Membership implements Serializable, TagHolder {
         this.user = Objects.requireNonNull(user);
         this.role = Objects.requireNonNull(role);
         this.joinTime = Objects.requireNonNull(joinTime);
-        this.tags = new String[0];
+        // this.tags = new String[0];
     }
 
     public Long getId() {
