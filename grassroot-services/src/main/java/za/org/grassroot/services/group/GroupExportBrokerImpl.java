@@ -41,7 +41,7 @@ public class GroupExportBrokerImpl implements GroupExportBroker {
         int rowIndex = 1;
 
         for (User user : group.getMembers()) {
-            addRow(sheet, rowIndex, new String[]{user.getName(), user.getPhoneNumber(), user.getEmailAddress()});
+            addRow(sheet, rowIndex, new String[]{user.getDisplayName(), user.getPhoneNumber(), user.getEmailAddress()});
             rowIndex++;
         }
 
@@ -88,7 +88,7 @@ public class GroupExportBrokerImpl implements GroupExportBroker {
             String groupList = sb.toString();
             if (groupList.endsWith(","))
                 groupList = groupList.substring(0, groupList.length() - 1);
-            addRow(sheet, rowIndex, new String[]{user.getName(), user.getPhoneNumber(), user.getEmailAddress(), groupList});
+            addRow(sheet, rowIndex, new String[]{user.getDisplayName(), user.getPhoneNumber(), user.getEmailAddress(), groupList});
         }
 
 
