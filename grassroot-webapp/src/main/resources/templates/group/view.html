@@ -67,6 +67,9 @@
             <li><a href="javascript:void(0)" data-toggle="modal" data-target="#renameModal">Rename group</a></li>
             <li><a href="javascript:void(0)" data-toggle="modal" data-target="#languageModal">Set default language</a></li>
             <li><a href="" th:href="@{/group/consolidate/select(groupUid=${group.uid})}">Merge with another group</a></li>
+
+            <li><a href="" th:href="@{/group/export/xls(groupUid=${group.uid})}">Export members to excel</a></li>
+
             <li class="divider"></li>
             <li th:if="${canAddToAccount}" sec:authorize="hasAnyRole('ROLE_ACCOUNT_ADMIN')">
               <a href="javascript:void(0)" data-toggle="modal" data-target="#accountModal">Add group to account</a>
