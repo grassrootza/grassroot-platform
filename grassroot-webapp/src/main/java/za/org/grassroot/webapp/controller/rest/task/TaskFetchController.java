@@ -13,6 +13,7 @@ import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
+import java.time.Instant;
 import java.util.Map;
 
 @RestController
@@ -49,5 +50,14 @@ public class TaskFetchController {
                                                              @RequestParam TaskSortType taskSortType) {
         return RestUtil.okayResponseWithData(RestMessage.TASK_DETAILS,
                 taskBroker.fetchAllUserTasksSorted(userUid, taskSortType));
+    }
+
+    @RequestMapping(value = "/group/{userUid}/{groupUid}")
+    public ResponseEntity<ResponseWrapper> fetchUserGroupTasks(@PathVariable String userUid,
+                                                               @PathVariable String groupUid,
+                                                               @RequestParam long changedSinceMillis) {
+        return RestUtil.okayResponseWithData(RestMessage.TASK_DETAILS,
+                taskBroker.fetchGroupTasks(userUid, groupUid,
+                        changedSinceMillis == 0 ? null : Instant.ofEpochMilli(changedSinceMillis)));
     }
 }
