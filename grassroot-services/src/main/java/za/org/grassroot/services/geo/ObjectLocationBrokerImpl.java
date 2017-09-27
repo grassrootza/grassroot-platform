@@ -52,8 +52,9 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
 
     @Autowired
     public ObjectLocationBrokerImpl(EntityManager entityManager, GroupLocationRepository groupLocationRepository,
-                                    MeetingLocationRepository meetingLocationRepository, RestTemplate restTemplate,
-                                    UssdLocationServicesBroker ussdLocationServicesBroker,EventBroker eventBroker) {
+                                    MeetingLocationRepository meetingLocationRepository,
+                                    UssdLocationServicesBroker ussdLocationServicesBroker,
+                                    EventBroker eventBroker) {
         this.entityManager = entityManager;
         this.groupLocationRepository = groupLocationRepository;
         this.meetingLocationRepository = meetingLocationRepository;

@@ -107,7 +107,7 @@ public class USSDHomeController extends USSDController {
             new SimpleEntry<>(TODO, new String[]{todoMenus + startMenu, openingMenuKey + logKey}),
             new SimpleEntry<>(GROUP_MANAGER, new String[]{groupMenus + startMenu, openingMenuKey + groupKey}),
             new SimpleEntry<>(USER_PROFILE, new String[]{userMenus + startMenu, openingMenuKey + userKey}),
-            new SimpleEntry<>(MORE, new String[]{moreMenus + startMenu,openingMenuKey + moreKey})).
+            new SimpleEntry<>(MORE, new String[]{moreMenus + startMenu, openingMenuKey + moreKey})).
             //new SimpleEntry<>(SAFETY_GROUP_MANAGER, new String[]{safetyMenus + startMenu, openingMenuKey + safetyKey})).
             collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue)));
 

@@ -15,8 +15,7 @@ public enum USSDSection {
     USER_PROFILE ("user"),
     LIVEWIRE("livewire"),
     U404 ("error"),
-    MORE("more");
-
+    MORE ("more");
 
     private final String section;
 

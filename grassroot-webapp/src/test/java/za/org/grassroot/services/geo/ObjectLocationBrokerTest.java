@@ -38,7 +38,7 @@ public class ObjectLocationBrokerTest {
     private MeetingLocationRepository mockMeetingLocationRepository;
 
     @Mock
-    private RestTemplate mockRestTemplate;
+    private EventBroker mockEventBroker;
 
     private ObjectLocationBrokerImpl objectLocationBroker;
 
@@ -48,8 +48,13 @@ public class ObjectLocationBrokerTest {
 
     @Before
     public void setUp () {
+
         objectLocationBroker = new ObjectLocationBrokerImpl(mockEntityManager, mockGroupLocationRepository,
+<<<<<<< HEAD
                 mockMeetingLocationRepository, mockRestTemplate,ussdLocationServicesBroker,eventBroker);
+=======
+                mockMeetingLocationRepository, ussdLocationServicesBroker, mockEventBroker);
+>>>>>>> 521e92bbbf87cc881a75ba75bfc7256079e0e71e
 
         given(mockQuery.setParameter(anyString(), any())).willReturn(mockQuery);
         given(mockQuery.getResultList()).willAnswer(i->Arrays.asList());
