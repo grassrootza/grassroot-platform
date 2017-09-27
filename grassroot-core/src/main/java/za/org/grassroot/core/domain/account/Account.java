@@ -150,11 +150,15 @@ public class Account implements GrassrootEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "payment_type", length = 50, nullable = true)
-    protected AccountPaymentType defaultPaymentType;
+    private AccountPaymentType defaultPaymentType;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "billing_cycle", length = 50, nullable = false)
-    protected AccountBillingCycle billingCycle;
+    private AccountBillingCycle billingCycle;
+
+    @Basic
+    @Column(name="charge_per_message")
+    private boolean billPerMessage;
 
     @Version
     private Integer version;
@@ -486,6 +490,14 @@ public class Account implements GrassrootEntity {
 
     public void setBillingCycle(AccountBillingCycle billingCycle) {
         this.billingCycle = billingCycle;
+    }
+
+    public boolean isBillPerMessage() {
+        return billPerMessage;
+    }
+
+    public void setBillPerMessage(boolean billPerMessage) {
+        this.billPerMessage = billPerMessage;
     }
 
     @Override
