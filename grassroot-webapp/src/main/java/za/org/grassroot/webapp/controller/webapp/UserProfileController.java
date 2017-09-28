@@ -101,15 +101,20 @@ public class UserProfileController extends BaseController {
 
         User user = getUserProfile();
         user = userManagementService.load(user.getUid()); // take fresh copy in order to have groups added since login
-        List<Group> sorted = user.getGroups().stream().filter(Group::isActive).sorted(Comparator.comparing(Group::getGroupName)).collect(Collectors.toList());
-        model.addAttribute("groups", sorted);
+        List<Group> activeGroups = user.getGroups().stream().filter(Group::isActive).sorted(Comparator.comparing(Group::getGroupName)).collect(Collectors.toList());
+        model.addAttribute("groups", activeGroups);
         return "user/export-groups";
     }
 
     @RequestMapping(value = "export-groups", method = RequestMethod.POST)
     public void exportGroupsDo(@RequestParam String[] selectedGroupUids, HttpServletResponse response) throws IOException {
 
-        XSSFWorkbook xls = groupExportBroker.exportMultipleGroupMembers(Arrays.asList(selectedGroupUids));
+        User user = getUserProfile();
+        user = userManagementService.load(user.getUid()); // take fresh copy in order to have groups added since login
+        List<Group> userGroups = user.getGroups().stream().filter(Group::isActive).sorted(Comparator.comparing(Group::getGroupName)).collect(Collectors.toList());
+        List<String> userGroupUids = userGroups.stream().map(Group::getUid).collect(Collectors.toList());
+
+        XSSFWorkbook xls = groupExportBroker.exportMultipleGroupMembers(userGroupUids, Arrays.asList(selectedGroupUids));
 
         String fileName = "multiple_group_members.xlsx";
         response.setContentType(MimeTypeUtils.APPLICATION_OCTET_STREAM_VALUE);

@@ -8,5 +8,5 @@ public interface GroupExportBroker {
 
     XSSFWorkbook exportGroup(String groupUid);
 
-    XSSFWorkbook exportMultipleGroupMembers(List<String> groupUids);
+    XSSFWorkbook exportMultipleGroupMembers(List<String> userGroupUids, List<String> groupUidsToExport);
 }

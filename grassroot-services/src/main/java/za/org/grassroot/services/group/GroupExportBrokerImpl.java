@@ -6,9 +6,11 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Membership;
 import za.org.grassroot.core.domain.User;
 
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class GroupExportBrokerImpl implements GroupExportBroker {
@@ -50,10 +52,10 @@ public class GroupExportBrokerImpl implements GroupExportBroker {
 
 
     @Override
-    public XSSFWorkbook exportMultipleGroupMembers(List<String> groupUids) {
+    public XSSFWorkbook exportMultipleGroupMembers(List<String> userGroupUids, List<String> groupsToExportUids) {
 
         Set<User> uniqueUsers = new HashSet<>();
-        for (String uid : groupUids) {
+        for (String uid : groupsToExportUids) {
             Group group = groupBroker.load(uid);
             for (User user : group.getMembers()) {
                 uniqueUsers.add(user);
@@ -78,16 +80,17 @@ public class GroupExportBrokerImpl implements GroupExportBroker {
         int rowIndex = 1;
         for (User user : uniqueUsers) {
             StringBuilder sb = new StringBuilder();
-            for (Membership membership : user.getMemberships()) {
+            List<Membership> memberships = user.getMemberships().stream().sorted(Comparator.comparing(o -> o.getGroup().getGroupName())).collect(Collectors.toList());
+            for (Membership membership : memberships) {
                 Group gr = membership.getGroup();
-                if (groupUids.contains(gr.getUid())) {
+                if (gr.isActive() && userGroupUids.contains(gr.getUid())) {
                     sb.append(gr.getGroupName());
-                    sb.append(",");
+                    sb.append(", ");
                 }
             }
             String groupList = sb.toString();
-            if (groupList.endsWith(","))
-                groupList = groupList.substring(0, groupList.length() - 1);
+            if (groupList.endsWith(", "))
+                groupList = groupList.substring(0, groupList.length() - 2);
             addRow(sheet, rowIndex, new String[]{user.getDisplayName(), user.getPhoneNumber(), user.getEmailAddress(), groupList});
             rowIndex++;
         }
