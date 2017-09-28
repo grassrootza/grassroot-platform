@@ -17,6 +17,7 @@ import za.org.grassroot.services.group.GroupLocationFilter;
 import za.org.grassroot.services.task.EventBroker;
 
 import javax.persistence.EntityManager;
+import javax.persistence.TypedQuery;
 import java.security.InvalidParameterException;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -408,15 +409,18 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
     public List<ObjectLocation> fetchMeetingsNearUserUssd(Integer radius, User user) throws InvalidParameterException {
 
         GeoLocation location = ussdLocationServicesBroker.getUssdLocationForUser(user.getUid());
-        List<ObjectLocation> meetingLocations = new ArrayList<>();
+        List<ObjectLocation> meetingLocations;
         if(location != null){
             meetingLocations = fetchMeetingsNearUser(location.getLatitude(),location.getLongitude(),radius,user);
         }else{
             String userUid = user.getUid();
             //typed query
-            UserLocationLog userLocationLog = (UserLocationLog)entityManager.createNamedQuery("SELECT * FROM UserLocationLog u" +
-                                                                                                "WHERE u.uid = :user" +
-                                                                                                "AND u.timestamp BETWEEN DATE_SUB(NOW(),INTERVAL 5 DAY) AND NOW()").getSingleResult();
+            TypedQuery<UserLocationLog> userLocationLogTypedQuery =
+                    entityManager.createQuery("SELECT * FROM UserLocationLog u" +
+                                                "WHERE u.uid = :user" +
+                                                "AND u.timestamp BETWEEN DATE_SUB(NOW(),INTERVAL 5 DAY) AND NOW()",UserLocationLog.class);
+
+            UserLocationLog userLocationLog = userLocationLogTypedQuery.getSingleResult();
 
             location = new GeoLocation(userLocationLog.getLocation().getLatitude(),userLocationLog.getLocation().getLongitude());
             //PreviousPeriodUserLocation
@@ -425,9 +429,12 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
                 meetingLocations = fetchMeetingsNearUser(location.getLatitude(),location.getLongitude(),radius,user);
             }else{
                 //get previous
-                GroupLocation groupLocation = (GroupLocation) entityManager.createNamedQuery("SELECT * FROM GroupLocation g" +
-                        "WHERE g.group = (SELECT gm.group FROM Membership gm" +
-                        "WHERE gm.user = : user)").getSingleResult();
+                TypedQuery<GroupLocation> groupLocationTypedQuery =
+                        entityManager.createQuery("SELECT * FROM GroupLocation g" +
+                                                    "WHERE g.group = (SELECT gm.group FROM Membership gm" +
+                                                    "WHERE gm.user = : user)",GroupLocation.class);
+
+                GroupLocation groupLocation = groupLocationTypedQuery.getSingleResult();
 
                 logger.info("Group Location = {}",groupLocation.getLocation().getLatitude() + " " + groupLocation.getLocation().getLongitude());
                 if(groupLocation != null){
