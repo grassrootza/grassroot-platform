@@ -89,6 +89,7 @@ public class GroupExportBrokerImpl implements GroupExportBroker {
             if (groupList.endsWith(","))
                 groupList = groupList.substring(0, groupList.length() - 1);
             addRow(sheet, rowIndex, new String[]{user.getDisplayName(), user.getPhoneNumber(), user.getEmailAddress(), groupList});
+            rowIndex++;
         }
 
 

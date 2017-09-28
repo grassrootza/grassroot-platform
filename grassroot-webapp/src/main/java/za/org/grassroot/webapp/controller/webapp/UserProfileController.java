@@ -101,7 +101,7 @@ public class UserProfileController extends BaseController {
 
         User user = getUserProfile();
         user = userManagementService.load(user.getUid()); // take fresh copy in order to have groups added since login
-        List<Group> sorted = user.getGroups().stream().sorted(Comparator.comparing(Group::getGroupName)).collect(Collectors.toList());
+        List<Group> sorted = user.getGroups().stream().filter(Group::isActive).sorted(Comparator.comparing(Group::getGroupName)).collect(Collectors.toList());
         model.addAttribute("groups", sorted);
         return "user/export-groups";
     }
