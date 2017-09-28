@@ -1,4 +1,4 @@
-package za.org.grassroot.webapp.controller.rest.android2;
+package za.org.grassroot.webapp.controller.rest.file;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,13 +11,12 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import za.org.grassroot.core.domain.media.MediaFunction;
 import za.org.grassroot.integration.MediaFileBroker;
-import za.org.grassroot.integration.storage.StorageBroker;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
 @RestController
-@RequestMapping(value = "/api/mobile/media")
+@RequestMapping(value = "/api/media")
 public class MediaController {
 
     private static final Logger logger = LoggerFactory.getLogger(MediaController.class);

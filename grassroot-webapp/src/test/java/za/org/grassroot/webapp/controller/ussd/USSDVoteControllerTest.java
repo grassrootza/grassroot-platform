@@ -9,7 +9,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Vote;
 import za.org.grassroot.core.domain.task.VoteRequest;
 import za.org.grassroot.core.enums.EventType;
-import za.org.grassroot.services.enums.EventListTimeType;
+import za.org.grassroot.services.task.enums.EventListTimeType;
 import za.org.grassroot.webapp.util.USSDEventUtil;
 
 import java.time.*;

@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.dto.TaskDTO;
+import za.org.grassroot.core.dto.TaskMinimalDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.TaskType;
@@ -20,6 +21,7 @@ import za.org.grassroot.services.ChangedSinceData;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.core.specifications.TodoSpecifications;
+import za.org.grassroot.services.task.enums.TaskSortType;
 import za.org.grassroot.services.util.FullTextSearchUtils;
 
 import java.time.Instant;
@@ -290,7 +292,22 @@ public class TaskBrokerImpl implements TaskBroker {
 		return tasks;
 	}
 
-	private Set<TaskDTO> resolveEventTaskDtos(List<Event> events, User user, Instant changedSince) {
+    @Override
+    public List<TaskMinimalDTO> findNewlyChangedTasks(String userUid, Map<String, Long> knownTasksByTimeChanged) {
+        return null;
+    }
+
+    @Override
+    public List<TaskDTO> fetchAllUserTasksSorted(String userUid, TaskSortType sortType) {
+        return null;
+    }
+
+    @Override
+    public List<TaskDTO> fetchSpecifiedTasks(String userUid, Map<String, TaskType> taskUidsAndTypes, TaskSortType taskSortType) {
+        return null;
+    }
+
+    private Set<TaskDTO> resolveEventTaskDtos(List<Event> events, User user, Instant changedSince) {
         Set<TaskDTO> taskDtos = new HashSet<>();
         for (Event event : events) {
             EventLog userResponseLog = eventLogRepository.findOne(where(forEvent(event))
