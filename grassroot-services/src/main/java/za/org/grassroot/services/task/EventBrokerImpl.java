@@ -32,6 +32,7 @@ import za.org.grassroot.services.util.CacheUtilService;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
+import javax.persistence.EntityManager;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -69,8 +70,10 @@ public class EventBrokerImpl implements EventBroker {
 	private final GeoLocationBroker geoLocationBroker;
 	private final TaskImageBroker taskImageBroker;
 
+	private final EntityManager entityManager;
+
 	@Autowired
-	public EventBrokerImpl(MeetingRepository meetingRepository, EventLogBroker eventLogBroker, EventRepository eventRepository, VoteRepository voteRepository, UidIdentifiableRepository uidIdentifiableRepository, UserRepository userRepository, AccountGroupBroker accountGroupBroker, GroupRepository groupRepository, PermissionBroker permissionBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, CacheUtilService cacheUtilService, MessageAssemblingService messageAssemblingService, MeetingLocationRepository meetingLocationRepository, GeoLocationBroker geoLocationBroker, TaskImageBroker taskImageBroker) {
+	public EventBrokerImpl(MeetingRepository meetingRepository, EventLogBroker eventLogBroker, EventRepository eventRepository, VoteRepository voteRepository, UidIdentifiableRepository uidIdentifiableRepository, UserRepository userRepository, AccountGroupBroker accountGroupBroker, GroupRepository groupRepository, PermissionBroker permissionBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, CacheUtilService cacheUtilService, MessageAssemblingService messageAssemblingService, MeetingLocationRepository meetingLocationRepository, GeoLocationBroker geoLocationBroker, TaskImageBroker taskImageBroker,EntityManager entityManager) {
 		this.meetingRepository = meetingRepository;
 		this.eventLogBroker = eventLogBroker;
 		this.eventRepository = eventRepository;
@@ -85,6 +88,7 @@ public class EventBrokerImpl implements EventBroker {
 		this.messageAssemblingService = messageAssemblingService;
 		this.geoLocationBroker = geoLocationBroker;
 		this.taskImageBroker = taskImageBroker;
+		this.entityManager = entityManager;
 	}
 
 	@Override
@@ -149,47 +153,10 @@ public class EventBrokerImpl implements EventBroker {
 		return meeting;
 	}
 
-
-	/*private List<Meeting> meetings(){
-		List<Meeting> meetings = meetingRepository.findAll();
-		List<Meeting> meetingsToReturn = new ArrayList<>();
-
-		if(meetings != null){
-			Stream<Meeting> filteredMeetings = meetings.stream().filter(m -> m.isPublic());
-			filteredMeetings.forEach(m -> meetingsToReturn.add(m));
-		}
-		return meetingsToReturn;
-	}*/
-
-
-	/*public List<Meeting> publicMeetingsUserIsNotPartOf(String searchTerm,String uid){
-		List<Meeting> publicMeetings = meetings();
-		List<Meeting> meetingsUserIsNotPartOf = new ArrayList<>();
-
-		if(publicMeetings != null){
-			for (Meeting meeting:publicMeetings) {
-				if(meeting.getParent().getName().contains(searchTerm)){
-					Set<User> users = meeting.getAllMembers();
-
-					//Stream<User> filteredUsers = users.stream().filter(u -> !u.getUid().equals(uid));
-					for (User user:users) {
-						if(!user.getUid().equals(uid)){
-							meetingsUserIsNotPartOf.add(meeting);
-						}
-					}
-				}
-			}
-		}
-		return meetingsUserIsNotPartOf;
-	}*/
-
 	@Override
 	public List<Meeting> publicMeetingsUserIsNotPartOf(String term, User user){
-		List<Meeting> meetings = meetingRepository.publicMeetingsUserIsNotPartOfWithsSearchTerm(term, user);
-		return meetings;
+		return meetingRepository.publicMeetingsUserIsNotPartOfWithsSearchTerm(term, user);
 	}
-
-
 
 	private void checkForEventLimit(String parentUid) {
 		if (eventMonthlyLimitActive && accountGroupBroker.numberEventsLeftForGroup(parentUid) < 1) {
@@ -198,7 +165,6 @@ public class EventBrokerImpl implements EventBroker {
 	}
 
 	// introducing so that we can check catch & handle duplicate requests (e.g., from malfunctions on Android client offline->queue->sync function)
-	@Transactional(readOnly = true)
 	private Event checkForDuplicate(String userUid, String parentGroupUid, String name, Instant startDateTime) {
 		Objects.requireNonNull(userUid);
 		Objects.requireNonNull(parentGroupUid);

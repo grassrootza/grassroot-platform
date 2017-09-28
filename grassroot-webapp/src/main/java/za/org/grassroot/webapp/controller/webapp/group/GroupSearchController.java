@@ -159,7 +159,6 @@ public class GroupSearchController extends BaseController {
 				if(meetings != null){
 					model.addAttribute("publicMeetingsUserIsNotPartOf",meetings);
 				}
-
 				List<ObjectLocation> objectLocations = objectLocationBroker.fetchMeetingsNearUser(latitude,longitude,searchRadius,user );
 				log.info("Object Locations = {}" ,objectLocations.size());
 			}
