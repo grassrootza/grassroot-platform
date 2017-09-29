@@ -1,13 +1,10 @@
 package za.org.grassroot.core.specifications;
 
 import org.springframework.data.jpa.domain.Specification;
-import za.org.grassroot.core.domain.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Group_;
 import za.org.grassroot.core.domain.User;
 
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Join;
 import java.time.Instant;
 import java.util.Set;
 
