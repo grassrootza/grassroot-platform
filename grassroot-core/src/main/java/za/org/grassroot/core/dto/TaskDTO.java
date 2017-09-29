@@ -3,6 +3,7 @@ package za.org.grassroot.core.dto;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.google.common.collect.ComparisonChain;
+import io.swagger.annotations.ApiModel;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.enums.EventType;
@@ -24,6 +25,7 @@ import static za.org.grassroot.core.specifications.EventLogSpecifications.*;
 /**
  * Created by paballo on 2016/03/02.
  */
+@ApiModel(value = "Task", description = "Generic DTO for meetings, votes, and actions")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class TaskDTO implements Comparable<TaskDTO> {
 

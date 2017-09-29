@@ -1,11 +1,13 @@
 package za.org.grassroot.core.dto;
 
+import io.swagger.annotations.ApiModel;
 import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.task.Task;
 import za.org.grassroot.core.enums.TaskType;
 
 import java.time.Instant;
 
+@ApiModel
 public class TaskMinimalDTO {
 
     private final String taskUid;

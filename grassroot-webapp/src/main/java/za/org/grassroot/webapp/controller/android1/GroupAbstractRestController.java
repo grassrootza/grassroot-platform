@@ -1,4 +1,4 @@
-package za.org.grassroot.webapp.controller.rest.android;
+package za.org.grassroot.webapp.controller.android1;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;

@@ -1,5 +1,6 @@
 package za.org.grassroot.webapp.controller.rest.request;
 
+import io.swagger.annotations.Api;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +14,7 @@ import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
 @RestController
+@Api("/api/request/fetch")
 @RequestMapping(value = "/api/request/fetch")
 public class RequestFetchController {
 

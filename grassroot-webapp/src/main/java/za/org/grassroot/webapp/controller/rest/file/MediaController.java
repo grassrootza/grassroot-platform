@@ -1,5 +1,6 @@
 package za.org.grassroot.webapp.controller.rest.file;
 
+import io.swagger.annotations.Api;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +17,7 @@ import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
 @RestController
+@Api("/api/media")
 @RequestMapping(value = "/api/media")
 public class MediaController {
 

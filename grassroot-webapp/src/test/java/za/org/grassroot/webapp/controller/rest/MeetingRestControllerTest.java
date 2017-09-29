@@ -15,7 +15,7 @@ import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.services.task.MeetingBuilderHelper;
-import za.org.grassroot.webapp.controller.rest.android.MeetingRestController;
+import za.org.grassroot.webapp.controller.android1.MeetingRestController;
 
 import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
