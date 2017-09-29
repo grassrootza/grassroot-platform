@@ -5,17 +5,16 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Sort;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.BaseRoles;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.GroupLog;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountLog;
 import za.org.grassroot.core.domain.account.PaidGroup;
 import za.org.grassroot.core.domain.notification.FreeFormMessageNotification;
+import za.org.grassroot.core.domain.notification.WelcomeNotification;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.enums.AccountLogType;
 import za.org.grassroot.core.enums.GroupLogType;
@@ -31,10 +30,7 @@ import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import javax.annotation.PostConstruct;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.*;
@@ -73,20 +69,21 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
     private static final String addedDescription = "Group added to Grassroot Extra";
     private static final String removedDescription = "Group removed from Grassroot Extra";
 
-    private UserRepository userRepository;
-    private GroupRepository groupRepository;
-    private PermissionBroker permissionBroker;
-    private TodoRepository todoRepository;
-    private EventRepository eventRepository;
+    private final UserRepository userRepository;
+    private final GroupRepository groupRepository;
+    private final PermissionBroker permissionBroker;
+    private final TodoRepository todoRepository;
+    private final EventRepository eventRepository;
 
-    private AccountRepository accountRepository;
-    private PaidGroupRepository paidGroupRepository;
+    private final AccountRepository accountRepository;
+    private final PaidGroupRepository paidGroupRepository;
+    private final NotificationTemplateRepository templateRepository;
     private LogsAndNotificationsBroker logsAndNotificationsBroker;
 
     @Autowired
     public AccountGroupBrokerImpl(UserRepository userRepository, GroupRepository groupRepository, TodoRepository todoRepository,
                                   EventRepository eventRepository, PermissionBroker permissionBroker, AccountRepository accountRepository,
-                                  PaidGroupRepository paidGroupRepository, LogsAndNotificationsBroker logsAndNotificationsBroker) {
+                                  PaidGroupRepository paidGroupRepository, NotificationTemplateRepository templateRepository, LogsAndNotificationsBroker logsAndNotificationsBroker) {
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
         this.todoRepository = todoRepository;
@@ -94,6 +91,7 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
         this.permissionBroker = permissionBroker;
         this.accountRepository = accountRepository;
         this.paidGroupRepository = paidGroupRepository;
+        this.templateRepository = templateRepository;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
     }
 
@@ -473,6 +471,95 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
     public int numberEventsLeftForParent(String eventUid) {
         Event event = eventRepository.findOneByUid(eventUid);
         return numberEventsLeftForGroup(event.getAncestorGroup().getUid());
+    }
+
+    @Override
+    @Transactional
+    public void createGroupWelcomeMessages(String userUid, String accountUid, String groupUid,
+                                           List<String> messages, Duration delayToSend, Locale language, boolean sendViaSms) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(accountUid);
+        Objects.requireNonNull(groupUid);
+        Objects.requireNonNull(messages);
+        Objects.requireNonNull(delayToSend);
+
+        User user = userRepository.findOneByUid(userUid);
+        Account account = accountRepository.findOneByUid(accountUid);
+        Group group = groupRepository.findOneByUid(groupUid);
+        PaidGroup paidGroup = getOrCreatePaidGroup(user, account, group);
+
+        if (messages.isEmpty()) {
+            throw new IllegalArgumentException("Notification templates need at least one message");
+        }
+
+        if (messages.size() > NotificationTemplate.MAX_MESSAGES) {
+            throw new IllegalArgumentException("Notification templates can only store up to 3 messages");
+        }
+
+        // todo : also check if there is an existing one and if so deactivate it
+
+        NotificationTemplate template = NotificationTemplate.builder()
+                .account(account)
+                .group(group)
+                .createdByUser(user)
+                .active(true)
+                .creationTime(Instant.now())
+                .delayIntervalMillis(delayToSend.toMillis())
+                .language(language)
+                .messageTemplate(messages.get(0))
+                .sendViaSms(sendViaSms)
+                .build();
+
+        if (messages.size() > 1) {
+            template.setMessageTemplate2(messages.get(1));
+        }
+
+        if (messages.size() > 2) {
+            template.setMessageTemplate3(messages.get(2));
+        }
+
+        templateRepository.save(template);
+    }
+
+    @Async
+    @Override
+    @Transactional
+    public void generateGroupWelcomeNotifications(String groupUid, String addedMemberUid) {
+        Objects.requireNonNull(groupUid);
+        Objects.requireNonNull(addedMemberUid);
+
+        Group group = groupRepository.findOneByUid(groupUid);
+        User destination = userRepository.findOneByUid(addedMemberUid);
+
+        NotificationTemplate template = templateRepository.findTopByGroupAndActiveTrue(group);
+
+        if (template != null) {
+            // create the notification
+            // we need a syntax, like __name__ and __date__ or something.
+            String message = String.format(template.getMessageTemplate(), destination.getName());
+
+
+        }
+    }
+
+    /*private Notification generateFromTemplate(String messageTemplate, User destination) {
+
+    }*/
+
+    private PaidGroup getOrCreatePaidGroup(User user, Account account, Group group) {
+        PaidGroup paidGroup = fetchLatestPaidGroup(group);
+        if (paidGroup == null) {
+            addGroupToAccount(account.getUid(), group.getUid(), user.getUid());
+            paidGroup = fetchLatestPaidGroup(group);
+        } else if (!paidGroup.getAccount().equals(account)) {
+            throw new GroupAlreadyPaidForException();
+        }
+
+        return paidGroup;
+    }
+
+    private PaidGroup fetchLatestPaidGroup(Group group) {
+        return paidGroupRepository.findTopByGroupAndStatusOrderByActiveDateTimeDesc(group, PaidGroupStatus.ACTIVE);
     }
 
     @Override
