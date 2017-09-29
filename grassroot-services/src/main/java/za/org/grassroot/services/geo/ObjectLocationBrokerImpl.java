@@ -413,8 +413,6 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
         if(location != null){
             meetingLocations = fetchMeetingsNearUser(location.getLatitude(),location.getLongitude(),radius,user);
         }else{
-            String userUid = user.getUid();
-            //typed query
             TypedQuery<UserLocationLog> userLocationLogTypedQuery =
                     entityManager.createQuery("SELECT * FROM UserLocationLog u" +
                                                 "WHERE u.uid = :user" +
