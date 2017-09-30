@@ -1,7 +1,7 @@
 package za.org.grassroot.services.task;
 
-import za.org.grassroot.core.dto.TaskDTO;
-import za.org.grassroot.core.dto.TaskMinimalDTO;
+import za.org.grassroot.core.dto.task.TaskDTO;
+import za.org.grassroot.core.dto.task.TaskMinimalDTO;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.services.ChangedSinceData;
 import za.org.grassroot.services.task.enums.TaskSortType;
@@ -44,6 +44,9 @@ public interface TaskBroker {
      * @return List of minimal info on tasks (all needed to call for more data)
      */
     List<TaskMinimalDTO> findNewlyChangedTasks(String userUid, Map<String, Long> knownTasksByTimeChanged);
+
+    List<TaskMinimalDTO> fetchNewlyChangedTasksForGroup(String userUid, String groupUid,
+                                                        Map<String, Long> knownTasksByTimeChanged);
 
     /**
      * Fetches all the tasks that the user has, with a specified sort--heavy call, both in processing and return size, use with care

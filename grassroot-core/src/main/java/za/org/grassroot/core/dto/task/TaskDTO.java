@@ -1,4 +1,4 @@
-package za.org.grassroot.core.dto;
+package za.org.grassroot.core.dto.task;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;

@@ -7,32 +7,34 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.Membership;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.*;
-import za.org.grassroot.core.dto.TaskDTO;
-import za.org.grassroot.core.dto.TaskMinimalDTO;
+import za.org.grassroot.core.dto.task.TaskDTO;
+import za.org.grassroot.core.dto.task.TaskMinimalDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.enums.TodoLogType;
 import za.org.grassroot.core.repository.*;
+import za.org.grassroot.core.specifications.EventSpecifications;
+import za.org.grassroot.core.specifications.TodoSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.ChangedSinceData;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.group.GroupBroker;
-import za.org.grassroot.core.specifications.TodoSpecifications;
 import za.org.grassroot.services.task.enums.TaskSortType;
 import za.org.grassroot.services.util.FullTextSearchUtils;
 
+import javax.persistence.EntityManager;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.springframework.data.jpa.domain.Specifications.where;
-import static za.org.grassroot.core.specifications.EventLogSpecifications.forEvent;
-import static za.org.grassroot.core.specifications.EventLogSpecifications.forUser;
-import static za.org.grassroot.core.specifications.EventLogSpecifications.isResponseToAnEvent;
+import static za.org.grassroot.core.specifications.EventLogSpecifications.*;
 import static za.org.grassroot.core.specifications.TodoSpecifications.*;
 
 /**
@@ -49,32 +51,30 @@ public class TaskBrokerImpl implements TaskBroker {
     @Value("${grassroot.todos.days_over.prompt:7}")
     private int DAYS_PAST_FOR_TODO_CHECKING;
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
+    private final GroupBroker groupBroker;
+    private final EventBroker eventBroker;
+    private final EventRepository eventRepository;
+    private final TodoRepository todoRepository;
+    private final EventLogRepository eventLogRepository;
+    private final TodoLogRepository todoLogRepository;
+    private final TodoBroker todoBroker;
+    private final PermissionBroker permissionBroker;
+    private final EntityManager entityManager;
 
     @Autowired
-    private GroupBroker groupBroker;
-
-    @Autowired
-    private EventBroker eventBroker;
-
-    @Autowired
-    private EventRepository eventRepository;
-
-    @Autowired
-    private TodoRepository todoRepository;
-
-    @Autowired
-    private EventLogRepository eventLogRepository;
-
-    @Autowired
-    private TodoLogRepository todoLogRepository;
-
-    @Autowired
-    private TodoBroker todoBroker;
-
-    @Autowired
-    private PermissionBroker permissionBroker;
+    public TaskBrokerImpl(UserRepository userRepository, GroupBroker groupBroker, EventBroker eventBroker, EventRepository eventRepository, TodoRepository todoRepository, EventLogRepository eventLogRepository, TodoLogRepository todoLogRepository, TodoBroker todoBroker, PermissionBroker permissionBroker, EntityManager entityManager) {
+        this.userRepository = userRepository;
+        this.groupBroker = groupBroker;
+        this.eventBroker = eventBroker;
+        this.eventRepository = eventRepository;
+        this.todoRepository = todoRepository;
+        this.eventLogRepository = eventLogRepository;
+        this.todoLogRepository = todoLogRepository;
+        this.todoBroker = todoBroker;
+        this.permissionBroker = permissionBroker;
+        this.entityManager = entityManager;
+    }
 
     @Override
     public TaskDTO load(String userUid, String taskUid) {
@@ -298,6 +298,41 @@ public class TaskBrokerImpl implements TaskBroker {
     }
 
     @Override
+    public List<TaskMinimalDTO> fetchNewlyChangedTasksForGroup(String userUid, String groupUid, Map<String, Long> knownTasksByTimeChanged) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(groupUid);
+        Objects.requireNonNull(knownTasksByTimeChanged);
+
+        User user = userRepository.findOneByUid(userUid);
+        Group group = groupBroker.load(groupUid);
+
+        permissionBroker.validateGroupPermission(user, group, null);
+
+        Set<TaskDTO> taskDtos = new HashSet<>();
+
+        Set<String> knownUids = knownTasksByTimeChanged.keySet();
+        Set<String> updatedEventUids = eventRepository
+                .findAll(Specifications
+                        .where(EventSpecifications.hasGroupAsAncestor(group))
+                        .and(EventSpecifications.uidNotIn(knownUids)))
+                .stream().map(Event::getUid).collect(Collectors.toSet());
+
+        eventRepository.fetchEventsWithTimeChanged(knownUids)
+                .stream()
+                .filter(td -> td.getLastTaskChange().toEpochMilli() > knownTasksByTimeChanged.get(td.getTaskUid()))
+                .forEach(td -> updatedEventUids.add(td.getTaskUid()));
+
+        List<TaskMinimalDTO> updatedEvents = eventRepository.findAll(EventSpecifications.uidIn(updatedEventUids))
+                .stream()
+                .map(e -> new TaskMinimalDTO(e, e.getCreatedDateTime())) // todo : make proper
+                .collect(Collectors.toList());
+
+        // todo : put in todos
+
+        return updatedEvents;
+    }
+
+    @Override
     public List<TaskDTO> fetchAllUserTasksSorted(String userUid, TaskSortType sortType) {
         return null;
     }
@@ -359,4 +394,5 @@ public class TaskBrokerImpl implements TaskBroker {
             return (lastChangeLog != null && lastChangeLog.getCreatedDateTime().isAfter(changedSince));
         }
     }
+
 }

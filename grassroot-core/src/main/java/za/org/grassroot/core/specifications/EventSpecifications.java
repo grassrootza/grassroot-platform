@@ -8,6 +8,7 @@ import za.org.grassroot.core.domain.task.Event_;
 
 import javax.persistence.criteria.Join;
 import java.time.Instant;
+import java.util.Collection;
 
 /**
  * Created by luke on 2016/09/26.
@@ -37,6 +38,14 @@ public final class EventSpecifications {
 
     public static Specification<Event> isPublic() {
         return (root, query, cb) -> cb.equal(root.get(Event_.isPublic), true);
+    }
+
+    public static Specification<Event> uidIn(Collection<String> uids) {
+        return (root, query, cb) -> root.get(Event_.uid).in(uids);
+    }
+
+    public static Specification<Event> uidNotIn(Collection<String> uids) {
+        return (root, query, cb) -> cb.not(root.get(Event_.uid).in(uids));
     }
 
     public static Specification<Event> userPartOfGroup(User user) {

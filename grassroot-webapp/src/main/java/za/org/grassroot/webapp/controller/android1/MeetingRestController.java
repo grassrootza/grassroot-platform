@@ -16,7 +16,7 @@ import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.EventReminderType;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
-import za.org.grassroot.core.dto.TaskDTO;
+import za.org.grassroot.core.dto.task.TaskDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.enums.UserInterfaceType;

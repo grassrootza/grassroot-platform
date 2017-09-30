@@ -12,8 +12,6 @@ import springfox.documentation.service.ApiInfo;
 import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spring.web.plugins.Docket;
 import springfox.documentation.swagger2.annotations.EnableSwagger2;
-import za.org.grassroot.core.dto.TaskDTO;
-import za.org.grassroot.core.dto.TaskMinimalDTO;
 
 @Configuration
 @EnableSwagger2
@@ -29,8 +27,7 @@ public class Swagger2Config {
                     .apis(RequestHandlerSelectors.withClassAnnotation(Api.class))
                     .paths(PathSelectors.any())
                 .build()
-                    .additionalModels(typeResolver.resolve(TaskDTO.class),
-                            typeResolver.resolve(TaskMinimalDTO.class))
+                    .useDefaultResponseMessages(false)
                     .apiInfo(apiInfo());
     }
 

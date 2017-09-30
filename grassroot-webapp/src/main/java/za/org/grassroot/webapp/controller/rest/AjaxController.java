@@ -8,7 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.JpaEntityType;
-import za.org.grassroot.core.dto.TaskDTO;
+import za.org.grassroot.core.dto.task.TaskDTO;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.geo.GeoLocationBroker;

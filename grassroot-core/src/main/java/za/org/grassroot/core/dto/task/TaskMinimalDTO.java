@@ -1,5 +1,6 @@
-package za.org.grassroot.core.dto;
+package za.org.grassroot.core.dto.task;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.annotations.ApiModel;
 import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.task.Task;
@@ -7,7 +8,8 @@ import za.org.grassroot.core.enums.TaskType;
 
 import java.time.Instant;
 
-@ApiModel
+@ApiModel(value = "Minimal Task", description = "A stripped down set of information about a task")
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class TaskMinimalDTO {
 
     private final String taskUid;

@@ -12,7 +12,7 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.EventReminderType;
 import za.org.grassroot.core.domain.task.Vote;
-import za.org.grassroot.core.dto.TaskDTO;
+import za.org.grassroot.core.dto.task.TaskDTO;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.repository.EventLogRepository;
