@@ -60,7 +60,6 @@ public class TaskBrokerImpl implements TaskBroker {
     private final TodoLogRepository todoLogRepository;
     private final TodoBroker todoBroker;
     private final PermissionBroker permissionBroker;
-    private final EntityManager entityManager;
 
     @Autowired
     public TaskBrokerImpl(UserRepository userRepository, GroupBroker groupBroker, EventBroker eventBroker, EventRepository eventRepository, TodoRepository todoRepository, EventLogRepository eventLogRepository, TodoLogRepository todoLogRepository, TodoBroker todoBroker, PermissionBroker permissionBroker, EntityManager entityManager) {
@@ -73,7 +72,6 @@ public class TaskBrokerImpl implements TaskBroker {
         this.todoLogRepository = todoLogRepository;
         this.todoBroker = todoBroker;
         this.permissionBroker = permissionBroker;
-        this.entityManager = entityManager;
     }
 
     @Override
