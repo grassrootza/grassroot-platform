@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.dto.group.GroupChangeTimeDTO;
+import za.org.grassroot.core.dto.group.GroupTimeChangedDTO;
 import za.org.grassroot.core.dto.group.GroupFullDTO;
 import za.org.grassroot.core.dto.group.GroupMinimalDTO;
 import za.org.grassroot.core.repository.GroupRepository;
@@ -43,7 +43,7 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
     @Timed
     @Override
     @Transactional(readOnly = true)
-    public Set<GroupChangeTimeDTO> findNewlyChangedGroups(String userUid, Map<String, Long> excludedGroupsByTimeChanged) {
+    public Set<GroupTimeChangedDTO> findNewlyChangedGroups(String userUid, Map<String, Long> excludedGroupsByTimeChanged) {
         User user = userRepository.findOneByUid(userUid);
 
         // major todo: do all this through specifications instead of typed query, and consolidate to one query
@@ -64,9 +64,9 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
         Set<String> uidsToLookUp = new HashSet<>(excludedGroupsByTimeChanged.keySet());
         uidsToLookUp.addAll(newGroupUids);
 
-        TypedQuery<GroupChangeTimeDTO> changedGroupQuery = entityManager.createQuery("" +
-                "select new za.org.grassroot.core.dto.group.GroupChangeTimeDTO(g.uid, g.lastGroupChangeTime) " +
-                "from Group g where g.uid in :groupUids", GroupChangeTimeDTO.class)
+        TypedQuery<GroupTimeChangedDTO> changedGroupQuery = entityManager.createQuery("" +
+                "select new za.org.grassroot.core.dto.group.GroupTimeChangedDTO(g.uid, g.lastGroupChangeTime) " +
+                "from Group g where g.uid in :groupUids", GroupTimeChangedDTO.class)
                 .setParameter("groupUids", uidsToLookUp);
 
         return changedGroupQuery.getResultList()

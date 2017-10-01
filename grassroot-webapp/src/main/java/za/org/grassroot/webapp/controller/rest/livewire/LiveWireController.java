@@ -1,5 +1,6 @@
 package za.org.grassroot.webapp.controller.rest.livewire;
 
+import io.swagger.annotations.Api;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +29,7 @@ import za.org.grassroot.webapp.util.RestUtil;
 import java.util.Set;
 
 @RestController
+@Api("/api/livewire")
 @RequestMapping(value = "/api/livewire")
 public class LiveWireController {
 

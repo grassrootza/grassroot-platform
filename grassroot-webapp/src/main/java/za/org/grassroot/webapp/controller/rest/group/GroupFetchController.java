@@ -1,6 +1,7 @@
 package za.org.grassroot.webapp.controller.rest.group;
 
 import com.codahale.metrics.annotation.Timed;
+import io.swagger.annotations.Api;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +16,7 @@ import java.util.Map;
 import java.util.Set;
 
 @RestController
+@Api("/api/group/fetch")
 @RequestMapping(value = "/api/group/fetch")
 public class GroupFetchController {
 

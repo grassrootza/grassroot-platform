@@ -10,7 +10,7 @@ import za.org.grassroot.core.util.InstantToMilliSerializer;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 
-public class GroupMinimalDTO extends GroupChangeTimeDTO {
+public class GroupMinimalDTO extends GroupTimeChangedDTO {
 
     private final String name;
     private final String userRole;

@@ -1,4 +1,4 @@
-package za.org.grassroot.webapp.controller.rest.android;
+package za.org.grassroot.webapp.controller.android1;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,7 +12,7 @@ import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.Task;
 import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.dto.TaskDTO;
+import za.org.grassroot.core.dto.task.TaskDTO;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.services.ChangedSinceData;
 import za.org.grassroot.services.PermissionBroker;

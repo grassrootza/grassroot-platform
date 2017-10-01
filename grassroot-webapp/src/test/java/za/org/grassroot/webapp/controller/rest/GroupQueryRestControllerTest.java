@@ -15,7 +15,7 @@ import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.services.ChangedSinceData;
 import za.org.grassroot.core.dto.MembershipInfo;
-import za.org.grassroot.webapp.controller.rest.android.GroupQueryRestController;
+import za.org.grassroot.webapp.controller.android1.GroupQueryRestController;
 
 import java.util.*;
 

@@ -1,7 +1,8 @@
 package za.org.grassroot.services.task;
 
-import za.org.grassroot.core.dto.TaskDTO;
-import za.org.grassroot.core.dto.TaskMinimalDTO;
+import za.org.grassroot.core.dto.task.TaskDTO;
+import za.org.grassroot.core.dto.task.TaskFullDTO;
+import za.org.grassroot.core.dto.task.TaskMinimalDTO;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.services.ChangedSinceData;
 import za.org.grassroot.services.task.enums.TaskSortType;
@@ -45,13 +46,16 @@ public interface TaskBroker {
      */
     List<TaskMinimalDTO> findNewlyChangedTasks(String userUid, Map<String, Long> knownTasksByTimeChanged);
 
+    List<TaskMinimalDTO> fetchNewlyChangedTasksForGroup(String userUid, String groupUid,
+                                                        Map<String, Long> knownTasksByTimeChanged);
+
     /**
      * Fetches all the tasks that the user has, with a specified sort--heavy call, both in processing and return size, use with care
      * @param userUid UID of the user
      * @param sortType The sort type (can't use JPA Sort because of differences in entities)
      * @return List of relatively full set of info on tasks
      */
-    List<TaskDTO> fetchAllUserTasksSorted(String userUid, TaskSortType sortType);
+    List<TaskFullDTO> fetchAllUserTasksSorted(String userUid, TaskSortType sortType);
 
     /**
      * Fetches full information on a set of tasks that have known UIDs and types
@@ -60,6 +64,6 @@ public interface TaskBroker {
      * @param taskSortType Optional: whether to sort in a specified manner, sorts by date created if null
      * @return Full information on the tasks
      */
-    List<TaskDTO> fetchSpecifiedTasks(String userUid, Map<String, TaskType> taskUidsAndTypes, TaskSortType taskSortType);
+    List<TaskFullDTO> fetchSpecifiedTasks(String userUid, Map<String, TaskType> taskUidsAndTypes, TaskSortType taskSortType);
 
 }
