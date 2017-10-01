@@ -44,7 +44,7 @@ public class TaskFetchController {
     }
 
     @Timed
-    @RequestMapping(value = "/specified/{userUid}")
+    @RequestMapping(value = "/specified/{userUid}", method = RequestMethod.POST)
     @ApiOperation(value = "Full details on specified task", notes = "Fetches full details on tasks specified in the " +
             "map of tasks and their type")
     public ResponseEntity<ResponseWrapper> fetchSpecificTasks(@PathVariable String userUid,
@@ -54,14 +54,14 @@ public class TaskFetchController {
     }
 
     @Timed
-    @RequestMapping(value = "/all/{userUid}")
+    @RequestMapping(value = "/all/{userUid}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> fetchAllUserTasks(@PathVariable String userUid,
                                                              @RequestParam(required = false) TaskSortType taskSortType) {
         return RestUtil.okayResponseWithData(RestMessage.TASK_DETAILS,
                 taskBroker.fetchAllUserTasksSorted(userUid, taskSortType));
     }
 
-    @RequestMapping(value = "/group/{userUid}/{groupUid}")
+    @RequestMapping(value = "/group/{userUid}/{groupUid}", method = RequestMethod.GET)
     @ApiOperation(value = "All tasks for a group", notes = "Fetch tasks for a group", response = ChangedSinceData.class)
     public ResponseEntity<ResponseWrapper> fetchUserGroupTasks(@PathVariable String userUid,
                                                                @PathVariable String groupUid,
