@@ -5,10 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import za.org.grassroot.core.domain.media.MediaFunction;
 import za.org.grassroot.integration.MediaFileBroker;
@@ -30,7 +27,7 @@ public class MediaController {
         this.mediaFileBroker = mediaFileBroker;
     }
 
-    @RequestMapping(value = "/store/{userUid}")
+    @RequestMapping(value = "/store/{userUid}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> storeMediaFile(@PathVariable String userUid,
                                                           @RequestParam String imageKey,
                                                           @RequestParam MediaFunction mediaFunction,
