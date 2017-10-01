@@ -5,6 +5,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -15,6 +16,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.dto.task.TaskTimeChangedDTO;
 import za.org.grassroot.core.enums.EventLogType;
+import za.org.grassroot.core.specifications.EventSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
 
 import javax.transaction.Transactional;
@@ -476,8 +478,8 @@ public class EventRepositoryTest {
         group2 = groupRepository.save(group2);
         Event event2 = eventRepository.save(new MeetingBuilder().setName("test2").setStartDateTime(Instant.now()).setUser(user2).setParent(group2).setEventLocation("someLoc").createMeeting());
 
-        List<Event> events = eventRepository.findByParentGroupMembershipsUser(user1);
-        List<Event> events2 = eventRepository.findByParentGroupMembershipsUser(user2);
+        List<Event> events = eventRepository.findAll(EventSpecifications.userPartOfGroup(user1));
+        List<Event> events2 = eventRepository.findAll(EventSpecifications.userPartOfGroup(user2));
 
         assertThat(userRepository.count(), is(2L));
         assertThat(groupRepository.count(), is(2L));
@@ -513,7 +515,11 @@ public class EventRepositoryTest {
         event3.setCanceled(true);
         eventRepository.save(event3);
 
-        List<Event> events = eventRepository.findByParentGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceledFalse(user, Instant.now());
+        List<Event> events = eventRepository.findAll(Specifications
+                .where(EventSpecifications.userPartOfGroup(user))
+                .and(EventSpecifications.notCancelled())
+                .and(EventSpecifications.startDateTimeAfter(Instant.now())));
+
         assertNotNull(events);
         assertEquals(1, events.size());
         assertFalse(events.contains(event2));

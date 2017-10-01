@@ -11,6 +11,7 @@ import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.dto.task.TaskTimeChangedDTO;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -18,6 +19,8 @@ import java.util.Set;
 public interface EventRepository extends JpaRepository<Event, Long>, JpaSpecificationExecutor<Event> {
 
 	Event findOneByUid(String uid);
+
+	Set<Event> findByUidIn(Collection<String> uids);
 
 	Event findTopByParentGroupAndEventStartDateTimeNotNullOrderByEventStartDateTimeDesc(Group group);
 
@@ -28,13 +31,6 @@ public interface EventRepository extends JpaRepository<Event, Long>, JpaSpecific
     int countByParentGroupMembershipsUserAndEventStartDateTimeGreaterThan(User user, Instant instant);
 
 	Event findOneByCreatedByUserAndParentGroupAndNameAndEventStartDateTimeBetweenAndCanceledFalse(User user, Group group, String name, Instant startDateTime, Instant endDateTime);
-
-    /*
-    A set of queries to use in fetching events related to a user (different flavors exist)
-     */
-	List<Event> findByParentGroupMembershipsUser(User user);
-
-	List<Event> findByParentGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceledFalse(User user, Instant start);
 
 	@Query(value = "select e.* from event e " +
 			"inner join group_profile g on e.parent_group_id = g.id " +
@@ -77,7 +73,22 @@ where e.canceled = FALSE
 			"where el.eventLogType = 'CANCELLED' and m.user = ?1 and el.createdDateTime >= ?2")
 	List<Event> findByMemberAndCanceledSince(User user, Instant since);
 
-	// could be more elegant and avoid duplication on type, but gets difficult with params, etc (legacy stuff)
+	// todo : if assignment filtering gets heavy, integrate it in this query
+	@Query("select new za.org.grassroot.core.dto.task.TaskTimeChangedDTO(" +
+			"e.uid, type(e), el.createdDateTime) from " +
+			"EventLog el inner join el.event e " +
+			"inner join e.ancestorGroup g inner join g.memberships m " +
+			"where m.user = ?1 and " +
+			"(el.createdDateTime = (select max(ell.createdDateTime) from EventLog ell where ell.event = e))")
+	List<TaskTimeChangedDTO> fetchEventsWithTimeChangedForUser(User user);
+
+	@Query("select new za.org.grassroot.core.dto.task.TaskTimeChangedDTO(" +
+			"e.uid, type(e), el.createdDateTime) from " +
+			"EventLog el inner join el.event e " +
+			"where e.ancestorGroup = ?1 and " +
+			"(el.createdDateTime = (select max(ell.createdDateTime) from EventLog ell where ell.event = e))")
+	List<TaskTimeChangedDTO> fetchGroupEventsWithTimeChanged(Group group);
+
 	@Query("select new za.org.grassroot.core.dto.task.TaskTimeChangedDTO(" +
 			"e.uid, type(e), el.createdDateTime) from " +
 			"EventLog el " +

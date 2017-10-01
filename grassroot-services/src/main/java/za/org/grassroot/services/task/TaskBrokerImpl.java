@@ -12,7 +12,9 @@ import za.org.grassroot.core.domain.Membership;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.dto.task.TaskDTO;
+import za.org.grassroot.core.dto.task.TaskFullDTO;
 import za.org.grassroot.core.dto.task.TaskMinimalDTO;
+import za.org.grassroot.core.dto.task.TaskTimeChangedDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.TaskType;
@@ -31,7 +33,10 @@ import javax.persistence.EntityManager;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.function.Predicate;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.springframework.data.jpa.domain.Specifications.where;
 import static za.org.grassroot.core.specifications.EventLogSpecifications.*;
@@ -216,9 +221,11 @@ public class TaskBrokerImpl implements TaskBroker {
         User user = userRepository.findOneByUid(userUid);
         Instant now = Instant.now();
 
-        // todo : switch all of these to using assignment instead of just group
-        // todo : use specifications when those are wired up properly
-        List<Event> events = eventRepository.findByParentGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceledFalse(user, now);
+        // todo : switch most of these to using assignment instead of just group
+        List<Event> events = eventRepository.findAll(Specifications
+                .where(EventSpecifications.userPartOfGroup(user))
+                .and(EventSpecifications.notCancelled())
+                .and(EventSpecifications.startDateTimeAfter(now)));
 
         if (events != null) {
             events = events.stream()
@@ -291,12 +298,29 @@ public class TaskBrokerImpl implements TaskBroker {
 	}
 
     @Override
+    @Transactional(readOnly = true)
     public List<TaskMinimalDTO> findNewlyChangedTasks(String userUid, Map<String, Long> knownTasksByTimeChanged) {
-        return null;
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(knownTasksByTimeChanged);
+
+        User user = userRepository.findOneByUid(userUid);
+
+        List<TaskTimeChangedDTO> userEvents = eventRepository.fetchEventsWithTimeChangedForUser(user);
+        List<TaskTimeChangedDTO> userTodos = todoRepository.fetchTodosWithTimeChangedForUser(user);
+
+        Set<Event> events = loadChangedOrNewEvents(userEvents, knownTasksByTimeChanged);
+        Set<Todo> todos = loadChangedOrNewTodos(userTodos, knownTasksByTimeChanged);
+
+        Map<String, Instant> uidInstantMap = Stream.concat(userEvents.stream(), userTodos.stream())
+                .collect(taskTimeChangedCollector());
+
+        return combineTasks(events, todos, uidInstantMap);
     }
 
     @Override
-    public List<TaskMinimalDTO> fetchNewlyChangedTasksForGroup(String userUid, String groupUid, Map<String, Long> knownTasksByTimeChanged) {
+    @Transactional(readOnly = true)
+    public List<TaskMinimalDTO> fetchNewlyChangedTasksForGroup(String userUid, String groupUid,
+                                                               Map<String, Long> knownTasksByTimeChanged) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(groupUid);
         Objects.requireNonNull(knownTasksByTimeChanged);
@@ -306,38 +330,127 @@ public class TaskBrokerImpl implements TaskBroker {
 
         permissionBroker.validateGroupPermission(user, group, null);
 
-        Set<TaskDTO> taskDtos = new HashSet<>();
+        List<TaskTimeChangedDTO> groupEvents = eventRepository.fetchGroupEventsWithTimeChanged(group);
+        Set<Event> newOrUpdatedEvents = loadChangedOrNewEvents(groupEvents, knownTasksByTimeChanged);
 
-        Set<String> knownUids = knownTasksByTimeChanged.keySet();
-        Set<String> updatedEventUids = eventRepository
-                .findAll(Specifications
-                        .where(EventSpecifications.hasGroupAsAncestor(group))
-                        .and(EventSpecifications.uidNotIn(knownUids)))
-                .stream().map(Event::getUid).collect(Collectors.toSet());
+        List<TaskTimeChangedDTO> groupTodos = todoRepository.fetchGroupTodosWithTimeChanged(group);
+        Set<Todo> newOrUpdatedTodos = loadChangedOrNewTodos(groupTodos, knownTasksByTimeChanged);
 
-        eventRepository.fetchEventsWithTimeChanged(knownUids)
-                .stream()
-                .filter(td -> td.getLastTaskChange().toEpochMilli() > knownTasksByTimeChanged.get(td.getTaskUid()))
-                .forEach(td -> updatedEventUids.add(td.getTaskUid()));
+        Map<String, Instant> uidInstantMap = Stream.concat(groupEvents.stream(), groupTodos.stream())
+                .collect(taskTimeChangedCollector());
 
-        List<TaskMinimalDTO> updatedEvents = eventRepository.findAll(EventSpecifications.uidIn(updatedEventUids))
-                .stream()
-                .map(e -> new TaskMinimalDTO(e, e.getCreatedDateTime())) // todo : make proper
+        return combineTasks(newOrUpdatedEvents, newOrUpdatedTodos, uidInstantMap);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<TaskFullDTO> fetchAllUserTasksSorted(String userUid, TaskSortType sortType) {
+        Objects.requireNonNull(userUid);
+
+        User user = userRepository.findOneByUid(userUid);
+
+        Set<Task> userEvents = eventRepository
+                .findAll(Specifications.where(
+                        EventSpecifications.notCancelled()).and(
+                        EventSpecifications.userPartOfGroup(user)))
+                .stream().map(e -> (Task) e).collect(Collectors.toSet());
+        Set<Task> userTodos = todoRepository.findAll(Specifications.where(
+                TodoSpecifications.notCancelled()).and(TodoSpecifications.userPartOfGroup(user)))
+                .stream().map(t -> (Task) t).collect(Collectors.toSet());
+
+        Map<String, Instant> uidTimeMap = Stream.concat(
+                eventRepository.fetchEventsWithTimeChangedForUser(user).stream(),
+                todoRepository.fetchTodosWithTimeChangedForUser(user).stream()).
+                collect(taskTimeChangedCollector());
+
+        return Stream.concat(userEvents.stream(), userTodos.stream())
+                .map(t -> new TaskFullDTO(t, user, uidTimeMap.get(t.getUid()), hasUserResponded(t, user)))
+                .sorted(compareByType(sortType))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<TaskFullDTO> fetchSpecifiedTasks(String userUid, Map<String, TaskType> taskUidsAndTypes, TaskSortType taskSortType) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(taskUidsAndTypes);
+
+        User user = userRepository.findOneByUid(userUid);
+
+        Set<String> eventUids = taskUidsAndTypes.keySet().stream()
+                .filter(uid -> !taskUidsAndTypes.get(uid).equals(TaskType.TODO)).collect(Collectors.toSet());
+        Set<String> todoUids = taskUidsAndTypes.keySet().stream()
+                .filter(uid -> taskUidsAndTypes.get(uid).equals(TaskType.TODO)).collect(Collectors.toSet());
+
+        Set<Event> events = eventRepository.findByUidIn(eventUids);
+        Set<Todo> todos = todoRepository.findByUidIn(todoUids);
+
+        Map<String, Instant> uidTimeMap = Stream.concat(
+                eventRepository.fetchEventsWithTimeChanged(eventUids).stream(),
+                todoRepository.fetchTodosWithTimeChanged(todoUids).stream()).
+                collect(taskTimeChangedCollector());
+
+        return Stream.concat(events.stream().map(e -> (Task) e), todos.stream().map(t -> (Task) t))
+                .map(t -> new TaskFullDTO(t, user, uidTimeMap.get(t.getUid()), hasUserResponded(t, user)))
+                .sorted(compareByType(taskSortType))
+                .collect(Collectors.toList());
+    }
+
+    private Comparator<TaskFullDTO> compareByType(TaskSortType type) {
+        switch (type) {
+            case TIME_CREATED:
+                return Comparator.comparing(TaskFullDTO::getCreatedTimeMillis);
+            case TIME_CHANGED:
+                return Comparator.comparing(TaskFullDTO::getLastServerChangeMillis);
+            case DEADLINE:
+                return Comparator.comparing(TaskFullDTO::getDeadlineMillis);
+            case RESPONSE_NEEDED:
+                return Comparator.comparing(TaskFullDTO::isHasResponded);
+            default:
+                return Comparator.comparing(TaskFullDTO::getLastServerChangeMillis);
+        }
+    }
+
+    private Set<Event> loadChangedOrNewEvents(List<TaskTimeChangedDTO> events, Map<String, Long> knownTasksByTimeChanged) {
+        return eventRepository.findByUidIn(events.stream()
+                .filter(newOrUpdatedTask(knownTasksByTimeChanged))
+                .map(TaskTimeChangedDTO::getTaskUid)
+                .collect(Collectors.toList()));
+    }
+
+    private Set<Todo> loadChangedOrNewTodos(List<TaskTimeChangedDTO> todos, Map<String, Long> knownTasksByTimeChanged) {
+        return todoRepository.findByUidIn(todos.stream()
+                .filter(newOrUpdatedTask(knownTasksByTimeChanged))
+                .map(TaskTimeChangedDTO::getTaskUid)
+                .collect(Collectors.toSet()));
+    }
+
+    private List<TaskMinimalDTO> combineTasks(Set<Event> events, Set<Todo> todos, Map<String, Instant> uidInstantMap) {
+        List<TaskMinimalDTO> tasksToReturn = events.stream()
+                .map(e -> new TaskMinimalDTO(e, uidInstantMap.get(e.getUid())))
                 .collect(Collectors.toList());
 
-        // todo : put in todos
+        tasksToReturn.addAll(todos.stream()
+                .map(t -> new TaskMinimalDTO(t, uidInstantMap.get(t.getUid())))
+                .collect(Collectors.toList()));
 
-        return updatedEvents;
+        tasksToReturn.sort(Comparator.comparing(TaskMinimalDTO::getLastChangeTimeServerMillis));
+        return tasksToReturn;
     }
 
-    @Override
-    public List<TaskDTO> fetchAllUserTasksSorted(String userUid, TaskSortType sortType) {
-        return null;
+    private Predicate<TaskTimeChangedDTO> newOrUpdatedTask(Map<String, Long> knownTasksByTimeChanged) {
+        return tC -> !knownTasksByTimeChanged.containsKey(tC.getTaskUid()) ||
+                knownTasksByTimeChanged.get(tC.getTaskUid()) < tC.getLastTaskChange().toEpochMilli();
     }
 
-    @Override
-    public List<TaskDTO> fetchSpecifiedTasks(String userUid, Map<String, TaskType> taskUidsAndTypes, TaskSortType taskSortType) {
-        return null;
+    private Collector<TaskTimeChangedDTO, ?, Map<String, Instant>> taskTimeChangedCollector() {
+        return Collectors.toMap(TaskTimeChangedDTO::getTaskUid, TaskTimeChangedDTO::getLastTaskChange);
+    }
+
+    private boolean hasUserResponded(Task task, User user) {
+        return task.getTaskType().equals(TaskType.TODO) ? ((Todo) task).hasUserResponded(user) :
+                eventLogRepository.count(Specifications.where(forEvent((Event) task))
+                .and(forUser(user)).and(isResponseToAnEvent())) > 0;
     }
 
     private Set<TaskDTO> resolveEventTaskDtos(List<Event> events, User user, Instant changedSince) {

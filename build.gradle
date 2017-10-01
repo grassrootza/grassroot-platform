@@ -43,6 +43,8 @@ subprojects {
     compile group: 'io.springfox', name: 'springfox-swagger2', version: '2.7.0'
     compile group: 'io.springfox', name: 'springfox-swagger-ui', version: '2.7.0'
 
+    compile group: 'org.projectlombok', name: 'lombok', version: '1.16.18'
+
     testCompile group: 'org.springframework', name: 'spring-test', version:libs.springVersion
     testCompile group: 'junit', name: 'junit', version:'4.12'
     testCompile group: 'org.dbunit', name: 'dbunit', version:'2.5.3'

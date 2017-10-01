@@ -28,6 +28,10 @@ public final class EventSpecifications {
         return (root, query, cb) -> cb.between(root.get(AbstractEventEntity_.eventStartDateTime), start, end);
     }
 
+    public static Specification<Event> startDateTimeAfter(Instant start) {
+        return (root, query, cb) -> cb.greaterThan(root.get(AbstractEventEntity_.eventStartDateTime), start);
+    }
+
     public static Specification<Event> createdDateTimeBetween(Instant start, Instant end) {
         return (root, query, cb) -> cb.between(root.get(AbstractEventEntity_.createdDateTime), start, end);
     }

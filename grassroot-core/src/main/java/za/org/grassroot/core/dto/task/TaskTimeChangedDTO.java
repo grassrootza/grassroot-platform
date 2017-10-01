@@ -1,12 +1,14 @@
 package za.org.grassroot.core.dto.task;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import lombok.Getter;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.util.InstantToMilliSerializer;
 
 import java.time.Instant;
 
+@Getter
 public class TaskTimeChangedDTO {
 
     private String taskUid;
@@ -21,11 +23,9 @@ public class TaskTimeChangedDTO {
         this.lastTaskChange = lastTaskChange;
     }
 
-    public String getTaskUid() {
-        return taskUid;
-    }
-
-    public Instant getLastTaskChange() {
-        return lastTaskChange;
+    public TaskTimeChangedDTO(String taskUid, String taskType, Instant lastTaskChange) {
+        this.taskUid = taskUid;
+        this.taskType = TaskType.valueOf(taskType);
+        this.lastTaskChange = lastTaskChange;
     }
 }

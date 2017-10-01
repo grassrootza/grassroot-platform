@@ -2,12 +2,14 @@ package za.org.grassroot.core.dto.task;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.annotations.ApiModel;
+import lombok.Getter;
 import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.task.Task;
 import za.org.grassroot.core.enums.TaskType;
 
 import java.time.Instant;
 
+@Getter
 @ApiModel(value = "Minimal Task", description = "A stripped down set of information about a task")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class TaskMinimalDTO {
