@@ -159,7 +159,7 @@ public class LiveWireAlertReviewController extends BaseController {
                                RedirectAttributes attributes, HttpServletRequest request) {
         try {
             List<String> listOfLists = publicLists != null ? Arrays.asList(publicLists.split(",")) : null;
-            liveWireAlertBroker.reviewAlert(getUserProfile().getUid(), alertUid, null, false, listOfLists);
+            liveWireAlertBroker.reviewAlert(getUserProfile().getUid(), alertUid, null, true, listOfLists);
             liveWireSendingBroker.sendLiveWireAlerts(Collections.singleton(alertUid));
             addMessage(attributes, MessageType.SUCCESS, "livewire.released.success", request);
         } catch (AccessDeniedException e) {

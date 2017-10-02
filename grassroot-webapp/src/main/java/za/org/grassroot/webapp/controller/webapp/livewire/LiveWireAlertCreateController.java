@@ -5,7 +5,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -87,8 +86,13 @@ public class LiveWireAlertCreateController extends BaseController {
                                       @RequestParam(value = "description", required = false) String description,
                                       RedirectAttributes attributes, HttpServletRequest request) {
         try {
+            logger.info("contact person type = {}, name = {}, number = {}", contactType, contactName, contactNumber);
+
+            final String contactUserNumber = PhoneNumberUtil.convertPhoneNumber(contactNumber);
             final String contactUserUid = CONTACT_SELF.equals(contactType) ? null :
-                    userManagementService.loadOrCreateUser(PhoneNumberUtil.convertPhoneNumber(contactNumber)).getUid();
+                    userManagementService.loadOrCreateUser(contactUserNumber).getUid();
+
+            logger.info("contact user = {}", userManagementService.load(contactUserUid));
 
             final DataSubscriber dataSubscriber = (destination != null && !LiveWireAlertDestType.PUBLIC_LIST.equals(destination)) ?
                     dataSubscriberBroker.fetchLiveWireListForSubscriber(getUserProfile().getUid()) : null;
@@ -96,7 +100,7 @@ public class LiveWireAlertCreateController extends BaseController {
             // todo: probably should handle the file upload async or in a different thread ...
             // todo: proper MIME type handling
 
-            logger.info("here is the supposed file: {}", isFileEmpty(image) ? "null" : image.getOriginalFilename());
+            logger.debug("here is the supposed file: {}", isFileEmpty(image) ? "null" : image.getOriginalFilename());
             String mediaRecordUid = isFileEmpty(image) ? null :
                     mediaFileBroker.storeFile(image, MediaFunction.LIVEWIRE_MEDIA, "image/jpeg", null); // means UID will be used for key
             List<MediaFileRecord> mediaRecords = mediaRecordUid == null ? null :
@@ -104,7 +108,7 @@ public class LiveWireAlertCreateController extends BaseController {
 
             liveWireAlertBroker.createAsComplete(getUserProfile().getUid(), headline, description, type,
                     type.equals(LiveWireAlertType.INSTANT) ? groupUid : meetingUid,
-                    contactUserUid, contactName, destination, dataSubscriber, mediaRecords);
+                    contactUserUid, contactName, null, destination, dataSubscriber, mediaRecords);
 
             addMessage(attributes, MessageType.SUCCESS, "livewire.alert.submitted.done", request);
             return "redirect:/home";

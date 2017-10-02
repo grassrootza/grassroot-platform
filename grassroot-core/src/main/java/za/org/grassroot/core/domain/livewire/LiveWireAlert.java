@@ -1,6 +1,8 @@
 package za.org.grassroot.core.domain.livewire;
 
 import org.hibernate.annotations.Type;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
@@ -28,6 +30,8 @@ import java.util.*;
 @Entity
 @Table(name = "live_wire_alert")
 public class LiveWireAlert {
+
+    private static final Logger logger = LoggerFactory.getLogger(LiveWireAlert.class);
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -141,6 +145,7 @@ public class LiveWireAlert {
         private LiveWireAlertType type;
         private User contactUser;
         private String contactName;
+        private String contactNumber;
         private Meeting meeting;
         private Group group;
         private String headline;
@@ -175,12 +180,18 @@ public class LiveWireAlert {
         }
 
         public Builder contactUser(User user) {
+            logger.info("setting contact user to: {}", user);
             this.contactUser = user;
             return this;
         }
 
         public Builder contactName(String contactName) {
             this.contactName = contactName;
+            return this;
+        }
+
+        public Builder contactNumber(String contactNumber) {
+            this.contactNumber = contactNumber;
             return this;
         }
 
@@ -251,6 +262,7 @@ public class LiveWireAlert {
             }
 
             if (contactUser != null) {
+                logger.info("setting contact user in build to = {}", contactUser);
                 alert.setContactUser(contactUser);
                 alert.setContactName(contactName);
             }
