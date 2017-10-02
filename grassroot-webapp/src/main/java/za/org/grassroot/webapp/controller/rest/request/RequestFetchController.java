@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.services.group.GroupJoinRequestService;
 import za.org.grassroot.webapp.enums.RestMessage;
@@ -27,7 +28,7 @@ public class RequestFetchController {
         this.groupJoinRequestService = groupJoinRequestService;
     }
 
-    @RequestMapping(value = "/group/{userUid}/{groupUid}")
+    @RequestMapping(value = "/group/{userUid}/{groupUid}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> fetchGroupJoinRequests(@PathVariable String userUid,
                                                                   @PathVariable String groupUid) {
         return RestUtil.okayResponseWithData(RestMessage.JOIN_REQUESTS,
