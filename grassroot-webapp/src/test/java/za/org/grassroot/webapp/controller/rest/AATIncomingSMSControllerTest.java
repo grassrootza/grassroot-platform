@@ -7,7 +7,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.task.Event;
+import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.integration.NotificationService;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.MessageAssemblingService;
 
@@ -32,8 +34,12 @@ public class AATIncomingSMSControllerTest extends RestAbstractUnitTest {
     @Mock
     private MessagingServiceBroker messagingServiceBroker;
 
+    @Mock
+    private NotificationService notificationService;
+
     @InjectMocks
     private AATIncomingSMSController aatIncomingSMSController;
+
 
     @Before
     public void setUp() {
@@ -48,16 +54,13 @@ public class AATIncomingSMSControllerTest extends RestAbstractUnitTest {
         List<Event> meetings = Collections.singletonList(meeting);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
-        when(eventBrokerMock.userHasResponsesOutstanding(sessionTestUser, EventType.VOTE)).thenReturn(false);
-        when(eventBrokerMock.userHasResponsesOutstanding(sessionTestUser, EventType.MEETING)).thenReturn(true);
         when(eventBrokerMock.getOutstandingResponseForUser(sessionTestUser, EventType.MEETING)).thenReturn(meetings);
 
         mockMvc.perform(get(path+"incoming").param("fn", testUserPhone).param("ms", "yes"))
                 .andExpect(status().isOk());
 
         verify(userManagementServiceMock).findByInputNumber(testUserPhone);
-        verify(eventBrokerMock).userHasResponsesOutstanding(sessionTestUser, EventType.MEETING);
-        verify(eventBrokerMock).userHasResponsesOutstanding(sessionTestUser, EventType.VOTE);
+        verify(eventBrokerMock).getOutstandingResponseForUser(sessionTestUser, EventType.VOTE);
         verify(eventBrokerMock).getOutstandingResponseForUser(sessionTestUser, EventType.MEETING);
     }
 
@@ -76,7 +79,28 @@ public class AATIncomingSMSControllerTest extends RestAbstractUnitTest {
 
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(eventBrokerMock);
+    }
 
+
+    @Test
+    public void verifyYesAnswerAndOutStandingMeeting() throws Exception {
+
+        meeting = meetingEvent;
+        meeting.setRsvpRequired(true);
+        List<Event> meetings = Collections.singletonList(meeting);
+
+        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
+        when(eventBrokerMock.getOutstandingResponseForUser(sessionTestUser, EventType.MEETING)).thenReturn(meetings);
+
+        mockMvc.perform(get(path + "incoming").param("fn", testUserPhone).param("ms", "yes"))
+                .andExpect(status().isOk());
+
+        verify(userManagementServiceMock).findByInputNumber(testUserPhone);
+        verify(eventBrokerMock).getOutstandingResponseForUser(sessionTestUser, EventType.VOTE);
+        verify(eventBrokerMock).getOutstandingResponseForUser(sessionTestUser, EventType.MEETING);
+
+        //eventLogManager.rsvpForEvent(outstandingMeetings.get(0).getUid(), user.getUid(), response);
+        verify(eventLogBrokerMock, times(1)).rsvpForEvent(meeting.getUid(), sessionTestUser.getUid(), EventRSVPResponse.YES);
     }
 
 

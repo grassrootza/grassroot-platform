@@ -50,7 +50,7 @@ public class AATIncomingSMSController {
     private final VoteBroker voteBroker;
     private final UserLogRepository userLogRepository;
     private final NotificationService notificationService;
-    private GroupLogRepository groupLogRepository;
+    private final GroupLogRepository groupLogRepository;
     private final UserManagementService userManager;
     private final EventLogBroker eventLogManager;
     private final MessageAssemblingService messageAssemblingService;
@@ -93,7 +93,7 @@ public class AATIncomingSMSController {
             return;
         }
 
-        EventRSVPResponse response = EventRSVPResponse.fromString(message);
+        EventRSVPResponse response = EventRSVPResponse.fromString(msg);
         boolean isYesNoResponse = response == EventRSVPResponse.YES || response == EventRSVPResponse.NO || response == EventRSVPResponse.MAYBE;
 
         List<Event> outstandingVotes = eventBroker.getOutstandingResponseForUser(user, EventType.VOTE);
@@ -127,7 +127,7 @@ public class AATIncomingSMSController {
         notifyUnableToProcessReply(user);
 
         //todo(beegor), what interface type should be used here
-        UserLog userLog = new UserLog(user.getUid(), UserLogType.SENT_INVALID_SMS_MESSAGE, trimmedMsg, UserInterfaceType.ANDROID);
+        UserLog userLog = new UserLog(user.getUid(), UserLogType.SENT_INVALID_SMS_MESSAGE, trimmedMsg, UserInterfaceType.INCOMING_SMS);
         userLogRepository.save(userLog);
 
 
@@ -139,14 +139,13 @@ public class AATIncomingSMSController {
 
             for (Map.Entry<ActionLog, Group> entry : logs.entrySet()) {
                 ActionLog aLog = entry.getKey();
+
                 Group group = entry.getValue();
 
-                if (user.getGroups().contains(group)) { // todo(beegor) check with Luke: this check might not be necessary, if user got notification regarding this group, he must be a member of it, right ?
-                    String notificationType = getNotificationType(aLog);
-                    String description = MessageFormat.format("User {0} sent response we can't understand after being sent a notification of type: {} in this group", user.getName(), notificationType);
-                    GroupLog groupLog = new GroupLog(group, user, GroupLogType.USER_SENT_UNKNOWN_RESPONSE, user.getId(), description);
-                    groupLogRepository.save(groupLog);
-                }
+                String notificationType = getNotificationType(aLog);
+                String description = MessageFormat.format("User {0} sent response we can't understand after being sent a notification of type: {} in this group", user.getName(), notificationType);
+                GroupLog groupLog = new GroupLog(group, user, GroupLogType.USER_SENT_UNKNOWN_RESPONSE, user.getId(), description);
+                groupLogRepository.save(groupLog);
             }
         }
     }
@@ -170,6 +169,7 @@ public class AATIncomingSMSController {
     }
 
     private Map<ActionLog, Group> getNotificationLog(Notification notification) {
+
         Map<ActionLog, Group> logGroupMap = new HashMap<>();
 
         if (notification.getEventLog() != null)

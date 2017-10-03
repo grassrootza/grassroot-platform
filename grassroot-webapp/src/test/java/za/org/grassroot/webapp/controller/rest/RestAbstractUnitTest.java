@@ -6,9 +6,11 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.repository.EventLogRepository;
+import za.org.grassroot.core.repository.UserLogRepository;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.group.GroupJoinRequestService;
@@ -82,6 +84,9 @@ public class RestAbstractUnitTest {
 
     @Mock
     protected GcmRegistrationBroker gcmRegistrationBrokerMock;
+
+    @Mock
+    protected UserLogRepository userLogRepository;
 
     @Test
     public void dummyTest () throws Exception {
