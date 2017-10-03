@@ -47,7 +47,6 @@ public class RestAbstractUnitTest {
 
     protected MockMvc mockMvc;
 
-    protected final static Vote voteEvent = new Vote(testEventTitle, testInstant, sessionTestUser, testGroup, true, testEventDescription);
 
     protected final static Meeting meetingEvent = new MeetingBuilder().setName(testEventTitle).setStartDateTime(testInstant).setUser(sessionTestUser).setParent(testGroup).setEventLocation(testEventLocation).setIncludeSubGroups(true).setReminderType(EventReminderType.DISABLED).setCustomReminderMinutes(15).setDescription(testEventDescription).setImportance(null).createMeeting();
 
@@ -91,6 +90,14 @@ public class RestAbstractUnitTest {
 
     @Mock
     protected UserLogRepository userLogRepositoryMock;
+
+
+    Vote createVote(String[] options) {
+        Vote voteEvent = new Vote(testEventTitle, testInstant, sessionTestUser, testGroup, true, testEventDescription);
+        voteEvent.setTags(options);
+        return voteEvent;
+    }
+
 
     @Test
     public void dummyTest () throws Exception {
