@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.UserLocationLog;
+import za.org.grassroot.core.enums.LocationSource;
 
 import java.time.Instant;
 import java.util.List;
@@ -17,6 +18,8 @@ public interface UserLocationLogRepository extends JpaRepository<UserLocationLog
 	List<UserLocationLog> findByUserUidAndTimestampBetweenAndTimestampNot(String userUid, Instant start, Instant end, Instant endAgain);
 
 	UserLocationLog findFirstByTimestampBeforeOrderByTimestampDesc(Instant timestamp);
+
+	List<UserLocationLog> findByUserUidOrderByCreationTimeDesc(String userUid);
 
 	@Query(value = "SELECT u.* FROM UserLocationLog u" +
 			"WHERE u.uid = :user" +

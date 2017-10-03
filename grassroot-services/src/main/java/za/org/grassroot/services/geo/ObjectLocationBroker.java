@@ -34,6 +34,8 @@ public interface ObjectLocationBroker {
     List<ObjectLocation> fetchMeetingsNearUser(Integer radius, User user, GeoLocation geoLocation)
             throws InvalidParameterException;
 
+    GeoLocation fetchBestGuessUserLocation(String userUid);
+
     //List<ObjectLocation> fetchMeetingsNearUserUssd(Integer radius,User user)
             //throws InvalidParameterException;
 

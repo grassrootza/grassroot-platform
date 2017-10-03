@@ -12,6 +12,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.ObjectLocation;
 import za.org.grassroot.core.domain.task.Meeting;
+import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.repository.UserLocationLogRepository;
 import za.org.grassroot.integration.location.UssdLocationServicesBroker;
 import za.org.grassroot.services.geo.ObjectLocationBroker;
@@ -41,7 +42,6 @@ public class USSDAdvancedHomeController extends USSDController {
     private final UssdLocationServicesBroker ussdLocationServicesBroker;
     private final ObjectLocationBroker objectLocationBroker;
     private final EventBroker eventBroker;
-    private final UserLocationLogRepository userLocationLogRepository;
 
     @Autowired
     public USSDAdvancedHomeController(UssdLocationServicesBroker ussdLocationServicesBroker, ObjectLocationBroker objectLocationBroker,
@@ -49,7 +49,6 @@ public class USSDAdvancedHomeController extends USSDController {
         this.ussdLocationServicesBroker = ussdLocationServicesBroker;
         this.objectLocationBroker = objectLocationBroker;
         this.eventBroker = eventBroker;
-        this.userLocationLogRepository = userLocationLogRepository;
     }
 
     @RequestMapping(value = homePath + moreMenus + startMenu)
@@ -65,37 +64,66 @@ public class USSDAdvancedHomeController extends USSDController {
 
     @RequestMapping(value = homePath + moreMenus + startMenu + "/near-me")
     @ResponseBody
-    public Request getPublicMeetingsNearUser(@RequestParam(value = phoneNumber) String inputNumber) throws URISyntaxException {
+    public Request getPublicMeetingsNearUser(@RequestParam(value = phoneNumber) String inputNumber,
+                                             @RequestParam(required = false) boolean repeat) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber);
+        GeoLocation guessedLocation = objectLocationBroker.fetchBestGuessUserLocation(user.getUid());
 
-        USSDMenu ussdMenu = new USSDMenu();
+        USSDMenu ussdMenu;
 
-        GeoLocation location = ussdLocationServicesBroker.getUssdLocationForUser(user.getUid());
-
-        if (location != null){
-            List<ObjectLocation> listOfPublicMeetingsNearUser = objectLocationBroker.fetchMeetingsNearUser(searchRadius,user,location);
+        if (guessedLocation != null) {
+            List<ObjectLocation> listOfPublicMeetingsNearUser = objectLocationBroker.fetchMeetingsNearUser(searchRadius, user, guessedLocation);
             logger.info("Size of meetings array in home more controller= {}",listOfPublicMeetingsNearUser.size());
-            if (listOfPublicMeetingsNearUser.isEmpty()){
-                ussdMenu.setPromptMessage(getMessage(thisSection, "public", promptKey + ".none", user));
-                // todo: add an option "check again trying to use my location" - then use USSD Location Broker
-                ussdMenu.addMenuOption("more/start", getMessage(optionsKey + "back", user));
-            } else {
-                ussdMenu.setPromptMessage(getMessage(thisSection, "public", promptKey + ".list", user));
-                listOfPublicMeetingsNearUser.forEach(pm -> {
-                    ussdMenu.addMenuOption(moreMenus + "/public-meeting/details?meetingUid=" +pm.getUid(),
-                            pm.getDescription());
-                });
-                ussdMenu.addMenuOption(moreMenus + startMenu + "/use-my-location","Check again trying to use my location");
-                ussdMenu.addMenuOption("more/start", getMessage(optionsKey + "back", user));
-            }
+            ussdMenu = listOfPublicMeetingsNearUser.isEmpty() ?
+                    haveLocationButNoMeetings(user, repeat) :
+                    haveLocationAndMeetings(user, repeat, listOfPublicMeetingsNearUser);
         } else {
-            // todo : request permission to track them, and try track them
-            ussdMenu.setPromptMessage(getMessage(thisSection, "public", promptKey + ".nolocation", user));
-            ussdMenu.addMenuOption(moreMenus + startMenu + "/track-me","Track me");
+            ussdMenu = haveNoLocation(user, repeat);
         }
-
-        ussdMenu.addMenuOption(moreMenus + startMenu,"Back");
         return menuBuilder(ussdMenu);
+    }
+
+    private USSDMenu haveLocationAndMeetings(User user, boolean repeat, List<ObjectLocation> publicMeetings) {
+        final USSDMenu ussdMenu = new USSDMenu(repeat ? "Now we found some meetings:" :
+                getMessage(thisSection, "public", promptKey + ".list", user));
+        publicMeetings.forEach(pm -> {
+            ussdMenu.addMenuOption(moreMenus + "/public-meeting/details?meetingUid=" +pm.getUid(),
+                    pm.getDescription());
+        });
+        ussdMenu.addMenuOption("more/start", getMessage(optionsKey + "back", user));
+        return ussdMenu;
+    }
+
+    private USSDMenu haveLocationButNoMeetings(User user, boolean repeat) {
+        USSDMenu ussdMenu = new USSDMenu(repeat ? "Sorry we still couldn't find any public meetings" :
+                getMessage(thisSection, "public", promptKey + ".none", user));
+        if (!repeat) {
+            addTryTrackMeOptions(ussdMenu, user);
+        } else {
+            ussdMenu.addMenuOption("back", "back");
+        }
+        return ussdMenu;
+    }
+
+    private USSDMenu haveNoLocation(User user, boolean repeat) {
+        USSDMenu ussdMenu = new USSDMenu(repeat ? "Sorry we still don't know where you are" :
+                getMessage(thisSection, "public", promptKey + ".nolocation", user));
+        if (!repeat) {
+            addTryTrackMeOptions(ussdMenu, user);
+        } else {
+            // add only back option
+        }
+        return ussdMenu;
+    }
+
+    private void addTryTrackMeOptions(USSDMenu menu, User user) {
+        menu.addMenuOption(moreMenus + startMenu + "/use-my-location","Check again trying to use my location");
+        // ussdMenu.addMenuOption(moreMenus + startMenu + "/track-me","Track me");
+        menu.addMenuOption("more/start", getMessage(optionsKey + "back", user));
+    }
+
+    private void addBackOption() {
+        // todo : create
     }
 
     /*
@@ -117,24 +145,22 @@ public class USSDAdvancedHomeController extends USSDController {
         return menuBuilder(ussdMenu);
     }
 
-    @RequestMapping(value = homePath + moreMenus + startMenu + "/use-my-location")
-    @ResponseBody
-    public Request tryUsingMyLocation(@RequestParam(value = phoneNumber) String inputNumber)throws URISyntaxException{
-        USSDMenu ussdMenu = new USSDMenu();
-        User user = userManager.findByInputNumber(inputNumber);
-
-
-        return menuBuilder(ussdMenu);
-    }
-
     @RequestMapping(value = homePath + moreMenus + startMenu + "/track-me")
     @ResponseBody
     public Request trackMe(@RequestParam(value = phoneNumber) String inputNumber)throws URISyntaxException{
         User user = userManager.findByInputNumber(inputNumber);
-        USSDMenu ussdMenu = new USSDMenu(getMessage(thisSection, "start", optionsKey + "track", user));
-        ussdMenu.addMenuOption(moreMenus + startMenu + "/confirm",getMessage(optionsKey + "confirm",user));
-        ussdMenu.addMenuOption("more/start",getMessage(optionsKey + "cancel",user));
-
-        return menuBuilder(ussdMenu);
+        boolean tracking = ussdLocationServicesBroker.addUssdLocationLookupAllowed(user.getUid(), UserInterfaceType.USSD);
+        USSDMenu menu;
+        if (tracking) {
+            menu = new USSDMenu("Great, it looks like we can work out your location, let's try searching meetings again");
+            menu.addMenuOption("/near-me?repeat=true", "Look for meetings");
+            menu.addMenuOption("/start", "No"); // todo : go back to advanced menu start
+            ussdLocationServicesBroker.asyncUssdLocationLookupAndStorage(user.getUid());
+        } else {
+            menu = new USSDMenu("Sorry, we aren't able to determine your location");
+            // todo : add back to advanced screen, back to home, exit
+        }
+        return menuBuilder(menu);
     }
+
 }

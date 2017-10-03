@@ -5,31 +5,26 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestTemplate;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.domain.geo.GeoLocation;
-import za.org.grassroot.core.domain.geo.GroupLocation;
-import za.org.grassroot.core.domain.geo.ObjectLocation;
-import za.org.grassroot.core.domain.geo.UserLocationLog;
+import za.org.grassroot.core.domain.geo.*;
+import za.org.grassroot.core.enums.LocationSource;
 import za.org.grassroot.core.repository.GroupLocationRepository;
 import za.org.grassroot.core.repository.MeetingLocationRepository;
+import za.org.grassroot.core.repository.PreviousPeriodUserLocationRepository;
 import za.org.grassroot.core.repository.UserLocationLogRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
-import za.org.grassroot.integration.location.UssdLocationServicesBroker;
 import za.org.grassroot.services.group.GroupLocationFilter;
-import za.org.grassroot.services.task.EventBroker;
 
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
-import javax.persistence.criteria.CriteriaBuilder;
 import java.security.InvalidParameterException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.function.Predicate;
 
 import static za.org.grassroot.services.geo.GeoLocationUtils.KM_PER_DEGREE;
 
@@ -44,20 +39,20 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
     private final EntityManager entityManager;
     private final GroupLocationRepository groupLocationRepository;
     private final MeetingLocationRepository meetingLocationRepository;
-    private final UssdLocationServicesBroker ussdLocationServicesBroker;
     private final UserLocationLogRepository userLocationLogRepository;
+    private final PreviousPeriodUserLocationRepository avgLocationRepository;
 
 
     @Autowired
     public ObjectLocationBrokerImpl(EntityManager entityManager, GroupLocationRepository groupLocationRepository,
                                     MeetingLocationRepository meetingLocationRepository,
-                                    UssdLocationServicesBroker ussdLocationServicesBroker,
-                                    UserLocationLogRepository userLocationLogRepository) {
+                                    UserLocationLogRepository userLocationLogRepository,
+                                    PreviousPeriodUserLocationRepository avgLocationRepository) {
         this.entityManager = entityManager;
         this.groupLocationRepository = groupLocationRepository;
         this.meetingLocationRepository = meetingLocationRepository;
-        this.ussdLocationServicesBroker = ussdLocationServicesBroker;
         this.userLocationLogRepository = userLocationLogRepository;
+        this.avgLocationRepository = avgLocationRepository;
     }
 
     @Override
@@ -420,6 +415,7 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
 
                 list = query.getResultList();
             }else{
+
                 GroupLocation groupLocation = groupLocationRepository.findByUserUid(user);
 
                 geoLocation = new GeoLocation(groupLocation.getLocation().getLatitude(),groupLocation.getLocation().getLongitude());
@@ -434,6 +430,47 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
         return (list.isEmpty() ? new ArrayList<>() : list);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public GeoLocation fetchBestGuessUserLocation(String userUid) {
+        GeoLocation bestGuess = null;
+
+        Instant cutOffAge = Instant.now().minus(30, ChronoUnit.DAYS);
+        List<UserLocationLog> locationLogs = userLocationLogRepository.findByUserUidOrderByCreationTimeDesc(userUid);
+
+        if (!locationLogs.isEmpty()) {
+
+            Optional<UserLocationLog> bestMatch = locationLogs.stream()
+                    .filter(ofSourceNewerThan(cutOffAge, LocationSource.LOGGED_PRECISE))
+                    .findFirst();
+
+            bestGuess = bestMatch.isPresent() ? bestMatch.get().getLocation() : null;
+
+            if (bestGuess == null) {
+                Optional<UserLocationLog> nextTry = locationLogs.stream()
+                        .filter(ofSourceNewerThan(cutOffAge, LocationSource.LOGGED_APPROX)).findFirst();
+                bestGuess = nextTry.isPresent() ? nextTry.get().getLocation() : null;
+            }
+
+            if (bestGuess == null) {
+                bestGuess = locationLogs.get(0).getLocation();
+            }
+
+        } else {
+            PreviousPeriodUserLocation avgUserLocation = avgLocationRepository
+                    .findTopByKeyUserUidOrderByKeyLocalDateDesc(userUid);
+
+            if (avgUserLocation != null) {
+                bestGuess = avgUserLocation.getLocation();
+            }
+        }
+
+        return bestGuess;
+    }
+
+    private Predicate<UserLocationLog> ofSourceNewerThan(Instant threshold, LocationSource source) {
+        return log -> log.getTimestamp().isAfter(threshold) && log.getLocationSource().equals(source);
+    }
 
 
     private void assertRestriction (Integer restriction) throws InvalidParameterException {
