@@ -39,14 +39,22 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
     @Column(name = "name", nullable = false, length = 50)
     private String groupName;
 
-    @Column(name = "created_date_time", insertable = true, updatable = false)
+    @Column(name = "created_date_time", updatable = false)
     private Instant createdDateTime;
+
+    // so, the next two are denormalizing, but we access this property _a lot_, and the joins are starting to bite
+    // never use it for anything core or that requires a lot of data integrity, only for sorting etc
+    @Column(name = "last_task_creation_time")
+    private Instant lastTaskCreationTime;
+
+    @Column(name = "last_log_creation_time")
+    private Instant lastGroupChangeTime;
 
     @ManyToOne()
     @JoinColumn(name = "created_by_user", nullable = false, updatable = false)
     private User createdByUser;
 
-    // todo : add @LazyCollection(LazyCollectionOption.EXTRA) [needs a lot of testing...]
+    // todo : maybe add @LazyCollection(LazyCollectionOption.EXTRA) [needs a lot of testing...]
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "group", orphanRemoval = true)
     private Set<Membership> memberships = new HashSet<>();
 
@@ -170,6 +178,7 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         this.groupName = Objects.requireNonNull(groupName);
         this.createdByUser = Objects.requireNonNull(createdByUser);
         this.createdDateTime = Instant.now();
+        this.lastGroupChangeTime = this.createdDateTime;
         this.active = true;
         this.discoverable = true; // make groups discoverable by default
         this.joinApprover = createdByUser; // discoverable groups need a join approver, defaulting to creating user
@@ -397,6 +406,27 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
 
     public void setTokenExpiryDateTime(Instant tokenExpiryDateTime) {
         this.tokenExpiryDateTime = tokenExpiryDateTime;
+    }
+
+    public Instant getLastTaskCreationTime() {
+        return lastTaskCreationTime;
+    }
+
+    public void setLastTaskCreationTime(Instant lastTaskCreationTime) {
+        this.lastTaskCreationTime = lastTaskCreationTime;
+    }
+
+    public Instant getLastGroupChangeTime() {
+        return lastGroupChangeTime;
+    }
+
+    public void setLastGroupChangeTime(Instant lastGroupChangeTime) {
+        this.lastGroupChangeTime = lastGroupChangeTime;
+    }
+
+    public Instant getLatestChangeOrTaskTime() {
+        return lastTaskCreationTime == null || lastTaskCreationTime.isBefore(lastGroupChangeTime) ?
+                lastGroupChangeTime : lastTaskCreationTime;
     }
 
     public boolean hasValidGroupTokenCode() {

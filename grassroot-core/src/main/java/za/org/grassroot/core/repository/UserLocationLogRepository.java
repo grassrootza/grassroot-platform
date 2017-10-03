@@ -19,7 +19,7 @@ public interface UserLocationLogRepository extends JpaRepository<UserLocationLog
 
 	UserLocationLog findFirstByTimestampBeforeOrderByTimestampDesc(Instant timestamp);
 
-	List<UserLocationLog> findByUserUidOrderByCreationTimeDesc(String userUid);
+	List<UserLocationLog> findByUserUidOrderByTimestampDesc(String userUid);
 
 	@Query(value = "SELECT u.* FROM UserLocationLog u" +
 			"WHERE u.uid = :user" +

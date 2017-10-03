@@ -6,9 +6,10 @@ package za.org.grassroot.core.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
-import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.PaidGroup;
+import za.org.grassroot.core.enums.PaidGroupStatus;
 
 import java.time.Instant;
 import java.util.List;
@@ -22,5 +23,7 @@ public interface PaidGroupRepository extends JpaRepository<PaidGroup, Long>, Jpa
     List<PaidGroup> findByAccount(Account account);
 
     PaidGroup findTopByGroupOrderByExpireDateTimeDesc(Group group);
+
+    PaidGroup findTopByGroupAndStatusOrderByActiveDateTimeDesc(Group group, PaidGroupStatus status);
 
 }

@@ -16,7 +16,7 @@ import za.org.grassroot.core.domain.task.EventReminderType;
 import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.domain.task.TodoContainer;
 import za.org.grassroot.core.enums.TodoCompletionConfirmType;
-import za.org.grassroot.services.enums.TodoStatus;
+import za.org.grassroot.services.task.enums.TodoStatus;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.TodoBroker;

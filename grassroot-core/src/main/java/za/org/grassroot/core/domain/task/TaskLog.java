@@ -17,4 +17,6 @@ public interface TaskLog<T extends Task> extends ActionLog {
 
     GeoLocation getLocation();
 
+    boolean isCreationLog();
+
 }

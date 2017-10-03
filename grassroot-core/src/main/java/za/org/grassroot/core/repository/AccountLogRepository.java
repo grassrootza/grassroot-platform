@@ -14,8 +14,5 @@ import java.util.Set;
  * Created by luke on 2016/04/03.
  */
 public interface AccountLogRepository extends JpaRepository<AccountLog, Long> {
-    AccountLog findOneByUserUid(String userUid);
-    Set<AccountLog> findByGroupUid(String groupUid);
-    List<AccountLog> findByAccountAndAccountLogTypeAndCreationTimeBetween(Account account, AccountLogType accountLogType,
-                                                                          Instant start, Instant end, Sort sort);
+    int countByAccountAndAccountLogTypeAndCreationTimeGreaterThan(Account account, AccountLogType accountLogType, Instant time);
 }

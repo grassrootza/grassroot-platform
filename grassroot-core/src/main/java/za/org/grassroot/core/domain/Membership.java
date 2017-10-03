@@ -77,7 +77,7 @@ public class Membership implements Serializable {
     }
 
     public String getDisplayName() {
-        return alias == null || alias.trim().isEmpty() ? user.getDisplayName() : alias;
+        return alias == null || alias.trim().isEmpty() ? user.getName() : alias;
     }
 
     @Override

@@ -17,6 +17,7 @@ import java.util.List;
 public class LiveWireAlertDTO {
 
     private String uid;
+    private String headline;
     private Long creationTimeMillis;
     private String creatingUserName;
     private String creatingUserPhone;
@@ -43,6 +44,7 @@ public class LiveWireAlertDTO {
 
     public LiveWireAlertDTO(LiveWireAlert alert) {
         this.uid = alert.getUid();
+        this.headline = alert.getHeadline();
         this.creationTimeMillis = alert.getCreationTime().toEpochMilli();
         this.creatingUserName = alert.getCreatingUser().getName();
         this.creatingUserPhone = PhoneNumberUtil.invertPhoneNumber(alert.getCreatingUser().getPhoneNumber());
@@ -74,6 +76,10 @@ public class LiveWireAlertDTO {
     }
 
     public String getUid() { return uid; }
+
+    public String getHeadline() {
+        return headline;
+    }
 
     public String getCreatingUserName() {
         return creatingUserName;

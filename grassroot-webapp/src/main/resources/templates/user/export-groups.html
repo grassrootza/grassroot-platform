@@ -1,0 +1,99 @@
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:th="http://www.w3.org/1999/xhtml"
+      data-layout-decorate="~{layout}">
+<head>
+    <title>Groups export</title>
+</head>
+<body>
+
+<section layout:fragment="header" class="top-container">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
+                <h2 class="text-center header-content-title"><span
+                        th:text="${sessionUser.nameToDisplay()}">User name</span></h2>
+                <h4 class="text-center header-content-subtitle">
+                    <a th:href="@{settings}">Change settings</a> | <a th:href="@{/home}">Back home</a>
+                </h4>
+            </div>
+        </div>
+    </div>
+</section>
+
+<main layout:fragment="content">
+    <section class="grassroot-form">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-8 col-md-offset-2 col-sm-6 col-sm-offset-3 col-xs-12">
+
+                    <form id="exportGroupsForm" th:action="@{export-groups}" method="post">
+
+                        <div class="form-group">
+                            <label class="control-label">Select groups</label>
+                            <div>
+                                <div>
+                                    <input type="checkbox" checked="checked" name="selectAllGroups"
+                                           id="selectAllGroups"/>
+                                    <label for="selectAllGroups">Select all</label>
+                                </div>
+                                <hr/>
+                                <div th:each="gr : ${groups}">
+                                    <input type="checkbox" checked="checked" name="selectedGroupUids"
+                                           th:id="${'group-' + gr.id}" th:value="${gr.uid}"/>
+                                    <label th:for="${'group-' + gr.id}"
+                                           th:text="${gr.groupName}">Group</label>
+                                </div>
+                                <div><label style="display: none" id="groupSelectError" class="error-text">Please select
+                                    at least one group for export.</label></div>
+                            </div>
+                        </div>
+
+                        <div class="form-group pull-right">
+                            <button type="submit" class="btn btn-primary btn-lg">Export</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+    </section>
+
+</main>
+
+<div layout:fragment="script-container">
+
+    <script th:src="@{/js/lib/jquery.validate.min.js}"></script>
+
+    <script th:inline="javascript">
+
+        $(document).ready(function () {
+
+            $('#selectAllGroups').click(function () {
+                $("input[name='selectedGroupUids']").prop('checked', this.checked);
+            });
+
+            $('#exportGroupsForm').validate({
+                rules: {
+                    "selectedGroupUids": {
+                        required: true,
+                        minlength: 1
+                    }
+                },
+                showErrors: function (errorMap, errorList) {
+                    if (errorList.length > 0) {
+                        $('#groupSelectError').show();
+                        setTimeout(function () {
+                            $('#groupSelectError').hide();
+                        }, 2000);
+                    }
+                }
+            });
+        });
+
+    </script>
+
+</div>
+
+</body>
+</html>

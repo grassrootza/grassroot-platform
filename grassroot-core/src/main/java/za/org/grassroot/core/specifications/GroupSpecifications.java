@@ -1,10 +1,9 @@
 package za.org.grassroot.core.specifications;
 
 import org.springframework.data.jpa.domain.Specification;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.Group_;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 
+import javax.persistence.criteria.Join;
 import java.time.Instant;
 import java.util.Set;
 
@@ -15,6 +14,13 @@ public final class GroupSpecifications {
 
     public static Specification<Group> createdByUser(User user) {
         return (root, query, cb) -> cb.equal(root.get(Group_.createdByUser), user);
+    }
+
+    public static Specification<Group> userIsMember(User user) {
+        return (root, query, cb) -> {
+            Join<Group, Membership> members = root.join(Group_.memberships);
+            return cb.equal(members.get(Membership_.user), user);
+        };
     }
 
     public static Specification<Group> paidForStatus(boolean isPaidFor) {

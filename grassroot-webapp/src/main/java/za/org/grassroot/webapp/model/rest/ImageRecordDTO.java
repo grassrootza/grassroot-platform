@@ -2,7 +2,7 @@ package za.org.grassroot.webapp.model.rest;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import za.org.grassroot.core.domain.ImageRecord;
+import za.org.grassroot.core.domain.media.ImageRecord;
 import za.org.grassroot.core.domain.task.TaskLog;
 import za.org.grassroot.core.enums.ActionLogType;
 

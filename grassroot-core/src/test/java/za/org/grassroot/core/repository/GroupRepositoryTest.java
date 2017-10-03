@@ -574,11 +574,6 @@ public class GroupRepositoryTest {
     }
 
     @Test
-    public void shouldGetMaxToken() {
-        log.info(String.valueOf(groupRepository.getMaxTokenValue()));
-    }
-
-    @Test
     public void shouldCreateAndUseToken() {
         User user1 = userRepository.save(new User("3331118888"));
         Group group = groupRepository.save(new Group("token", user1));

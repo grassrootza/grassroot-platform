@@ -1,7 +1,7 @@
 package za.org.grassroot.services.task;
 
 import org.springframework.web.multipart.MultipartFile;
-import za.org.grassroot.core.domain.ImageRecord;
+import za.org.grassroot.core.domain.media.ImageRecord;
 import za.org.grassroot.core.domain.task.TaskLog;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.TaskType;

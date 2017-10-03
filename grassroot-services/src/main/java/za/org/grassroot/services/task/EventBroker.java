@@ -10,7 +10,7 @@ import za.org.grassroot.core.domain.task.Vote;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.UserInterfaceType;
-import za.org.grassroot.services.enums.EventListTimeType;
+import za.org.grassroot.services.task.enums.EventListTimeType;
 
 import java.time.Instant;
 import java.time.LocalDateTime;

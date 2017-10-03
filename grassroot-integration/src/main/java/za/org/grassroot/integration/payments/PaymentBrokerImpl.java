@@ -385,7 +385,7 @@ public class PaymentBrokerImpl implements PaymentBroker {
 
     private void handlePaymentError(AccountBillingRecord record, String errorCode, String description) {
         DebugUtil.transactionRequired("");
-        record.setNextPaymentDate(Instant.now().plus(1L, ChronoUnit.DAYS)); // so it doesn't try again  immediately
+        record.setNextPaymentDate(Instant.now().plus(3L, ChronoUnit.DAYS)); // so it doesn't try again  immediately
         final String errorDescription = errorCode + ": " + description;
         logger.info("Payment Error!: {}", errorDescription);
         record.setPaymentDescription(errorDescription);

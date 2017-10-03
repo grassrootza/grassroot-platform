@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.enums.AccountPaymentType;
+import za.org.grassroot.core.enums.AccountType;
 import za.org.grassroot.integration.email.EmailSendingBroker;
 import za.org.grassroot.integration.email.GrassrootEmail;
 import za.org.grassroot.integration.payments.PaymentBroker;
@@ -26,6 +27,8 @@ import javax.servlet.http.HttpServletRequest;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created by luke on 2016/12/01.
@@ -70,6 +73,38 @@ public class AccountAdminController extends BaseController {
     public String listAccounts(Model model, @RequestParam(required = false) Boolean showClosed) {
         model.addAttribute("accounts", new ArrayList<>(accountBroker.loadAllAccounts(showClosed == null ? true : showClosed, null, null)));
         return "admin/accounts/home";
+    }
+
+    @RequestMapping(value = "/modify", method = RequestMethod.GET)
+    public String modifyAccountGeneral(Model model, @RequestParam String accountUid) {
+        model.addAttribute("account", accountBroker.loadAccount(accountUid));
+        Map<Boolean, String> onOffOptions = new HashMap<>(); // slightly kludgy, but least bad option
+        onOffOptions.put(true, "Yes");
+        onOffOptions.put(false, "No");
+        model.addAttribute("onOffOptions", onOffOptions);
+        return "admin/accounts/modify";
+    }
+
+    @RequestMapping(value = "/modify/do", method = RequestMethod.POST)
+    public String modifyAccountDo(@RequestParam String accountUid,
+                                  @RequestParam AccountType accountType,
+                                  @RequestParam long subscriptionFee,
+                                  @RequestParam boolean visible,
+                                  @RequestParam boolean chargePerMessage,
+                                  @RequestParam long costPerMessage,
+                                  RedirectAttributes attributes, HttpServletRequest request) {
+        attributes.addAttribute("accountUid", accountUid);
+
+        Account account = accountBroker.loadAccount(accountUid);
+        if (!account.isVisible() == visible) {
+            accountBroker.setAccountVisibility(getUserProfile().getUid(), accountUid, visible);
+        }
+
+        accountBroker.modifyAccount(getUserProfile().getUid(), accountUid, accountType, subscriptionFee,
+                chargePerMessage, costPerMessage);
+
+        addMessage(attributes, MessageType.SUCCESS, "admin.accounts.modified", request);
+        return "redirect:/admin/accounts/modify";
     }
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
@@ -142,6 +177,15 @@ public class AccountAdminController extends BaseController {
         billingBroker.generateBillOutOfCycle(accountUid, generateStatement, triggerPayment, billAmount, true);
         addMessage(attributes, MessageType.INFO, "admin.accounts.bill.generated", request);
         return "redirect:home";
+    }
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    @RequestMapping(value = "/change/payment/method", method = RequestMethod.POST)
+    public String changePaymentMethod(@RequestParam String accountUid, @RequestParam AccountPaymentType paymentType,
+                                      RedirectAttributes attributes, HttpServletRequest request) {
+        accountBroker.updateAccountPaymentType(getUserProfile().getUid(), accountUid, paymentType);
+        addMessage(attributes, MessageType.SUCCESS, "admin.accounts.payment.type.changed", request);
+        return "redirect:/admin/accounts/home";
     }
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")

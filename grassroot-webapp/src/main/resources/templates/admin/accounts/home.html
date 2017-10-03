@@ -55,7 +55,7 @@
             <th>Type</th>
             <th>Balance</th>
             <th>Monthly</th>
-            <th>Last payment</th>
+            <th>Payment type</th>
             <th>Next bill</th>
             <th></th>
             <th></th>
@@ -66,7 +66,7 @@
             <tbody>
             <tr th:each="account : ${accounts}">
               <td>
-                <a href="" th:href="@{/account/view(accountUid=${account.uid})}" class="form-link"><span th:text="${account.accountName}">Account name</span></a>
+                <a th:href="@{/admin/accounts/modify(accountUid=${account.uid})}" class="form-link"><span th:text="${account.accountName}">Account name</span></a>
               </td>
               <td><span th:text="${account.type}">Type</span></td>
               <td><a href="#adjustBalanceModal" data-toggle="modal" data-target="#adjustBalanceModal"
@@ -78,8 +78,10 @@
                 <span th:text="${#numbers.formatDecimal(account.subscriptionFee / 100, 0, 'COMMA', 2, 'POINT')}"></span>
               </a></td>
               <td>
-                <span th:if="${account.hasPaidInPast()}" th:text="${#temporals.format(account.getLastPaymentDateAtSAST(), 'd MMM yyyy')}"></span>
-                <span th:unless="${account.hasPaidInPast()}">Never</span>
+                <a href="#changePaymentTypeModal" data-toggle="modal" data-target="#changePaymentTypeModal" data:uid="${account.uid}"
+                   data:type="${account.defaultPaymentType}">
+                <span th:text="#{web.admin.accounts.payment.type.__${account.defaultPaymentType}__}">Credit card</span>
+                </a>
               </td>
               <td>
                 <a href="#changeBillingDateModal" data-toggle="modal" data-target="#changeBillingDateModal" data:uid="${account.uid}">
@@ -110,6 +112,29 @@
             </tbody>
           </table>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="changePaymentTypeModal" tabindex="-1" role="dialog" aria-labelledby="changePaymentTypeModalLabel">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title" id="changePaymentTypeModalLabel">Adjust subscription</h4>
+        </div>
+        <form th:action="@{/admin/accounts/change/payment/method}" method="post">
+          <input type="hidden" name="accountUid" id="accountUidChangePaymentType" />
+          <select id="paymentType" name="paymentType" class="form-control">
+            <option th:each="type: ${T(za.org.grassroot.core.enums.AccountPaymentType).values()}"
+                    th:text="#{web.admin.accounts.payment.type.__${type}__}"
+                    th:value="${type}"></option>
+          </select>
+          <div class="modal-footer">
+            <button type="button" class="btn default-button btn-neutral" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn default-button btn-negative">Confirmed</button>
+          </div>
+        </form>
       </div>
     </div>
   </div>
@@ -355,6 +380,14 @@
               var link = $(event.relatedTarget);
               var uid = link.data('uid');
               $(this).find('#accountUid').val(uid);
+          });
+
+          $('#changePaymentTypeModal').on('show.bs.modal', function(event) {
+            var link = $(event.relatedTarget);
+            var uid = link.data('uid');
+            var type = link.data('type');
+            $(this).find('#accountUidChangePaymentType').val(uid);
+            $(this).find('#paymentType').val(type);
           });
 
           $('#adjustBalanceModal').on('show.bs.modal', function(event) {

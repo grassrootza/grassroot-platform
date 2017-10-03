@@ -4,13 +4,17 @@ GRASSROOT LIVEWIRE FLASH ALERT
 
 ====================
 
-[[ ${description} ]]
+[[ ${headline} ]]
 
 ====================
 
 [[ #{livewire.instant.groupdetails(${numberMembers}, ${lengthTime}, ${numberTasks})} ]]
 
 <!-- [[ #{livewire.instant.location(${groupCoord},${groupAddress},${alertCoord},${alertAddress})} ]] -->
+
+Further details:
+
+[[ ${description} ]]
 
 You are receiving this mail as part of Grassroot's LiveWire service. LiveWire connects community organizers
 to the media by enabling users of the Grassroot app to generate media alerts. For more information please

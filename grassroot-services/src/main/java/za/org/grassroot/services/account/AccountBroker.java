@@ -1,6 +1,7 @@
 package za.org.grassroot.services.account;
 
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.RequestParam;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.enums.AccountBillingCycle;
 import za.org.grassroot.core.enums.AccountPaymentType;
@@ -32,6 +33,8 @@ public interface AccountBroker {
     // note: should only adjust billing date if this is called at end of successful payment cycle
     void updateAccountPaymentCycleAndMethod(String userUid, String accountUid, AccountPaymentType paymentType,
                                             AccountBillingCycle billingCycle, boolean adjustNextBillingDate);
+
+    void updateAccountPaymentType(String userUid, String accountUid, AccountPaymentType paymentType);
 
     @PreAuthorize("hasAnyRole('ROLE_ACCOUNT_ADMIN, ROLE_SYSTEM_ADMIN')")
     void setAccountPrimary(String userUid, String accountUid);
@@ -80,5 +83,12 @@ public interface AccountBroker {
 
     @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
     void updateAccountFee(String adminUid, String accountUid, long newFee);
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    void modifyAccount(String adminUid, String accountUid, AccountType accountType,
+                       long subscriptionFee, boolean chargePerMessage, long costPerMessage);
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    void setAccountVisibility(String adminUid, String accountUid, boolean visible);
 
 }

@@ -43,18 +43,17 @@
           <span th:unless="${openToken}">No open join code
           <a href="javascript:void(0)" data-toggle="modal" data-target="#joiningModal">(create one)</a></span>
         </h4>
+        <h4 class="text-center group-infp" th:if="${openToken and not canAlter}">
+          Join code: *134*1994*<span th:text="${group.groupTokenCode}">1234</span>#
+        </h4>
         <h4 class="text-center group-info">
           <span th:if="${group.discoverable}">Group is public. </span>
           <span th:unless="${group.discoverable}">Group is private. </span>
           <a th:if="${canAlter}" href="javascript:void(0)" th:text="${group.discoverable ? 'Make private.' : 'Make public.'}" data-toggle="modal" data-target="#publicModal">Change this</a>
         </h4>
-
-        <h4 class="text-center group-info">
-          <a  href="javascript:void(0)" data-toggle="modal" data-target="#languagesModal">Generate Flyer.</a>
-          <!-- th:href="@{/group/generatePdf(groupUid=${group.uid})}" -->
-          <!--<a th:href="@{/group/history(groupUid=${group.uid})}">Generate Flyer.</a> -->
+        <h4 th:if="${openToken and not #lists.isEmpty(flyerLanguages)}" class="text-center group-info">
+          <a  href="javascript:void(0)" data-toggle="modal" data-target="#flyerModal">Generate flyer</a>
         </h4>
-
         <div th:if="${canAlter}" class="dropdown manage-container">
           <button class="dropdown-toggle white-button group-center-button" type="button" data-toggle="dropdown">Manage and modify group<i class="fa fa-caret-down" aria-hidden="true"></i></button>
           <ul class="dropdown-menu">
@@ -68,6 +67,9 @@
             <li><a href="javascript:void(0)" data-toggle="modal" data-target="#renameModal">Rename group</a></li>
             <li><a href="javascript:void(0)" data-toggle="modal" data-target="#languageModal">Set default language</a></li>
             <li><a href="" th:href="@{/group/consolidate/select(groupUid=${group.uid})}">Merge with another group</a></li>
+
+            <li><a href="" th:href="@{/group/export/xls(groupUid=${group.uid})}">Export group</a></li>
+
             <li class="divider"></li>
             <li th:if="${canAddToAccount}" sec:authorize="hasAnyRole('ROLE_ACCOUNT_ADMIN')">
               <a href="javascript:void(0)" data-toggle="modal" data-target="#accountModal">Add group to account</a>
@@ -749,51 +751,47 @@
   </div>
 
 
-  <!-- Available Languages modal -->
-  <div th:if="${canAlter}" class="modal fade" id="languagesModal" tabindex="-1" role="dialog" aria-labelledby="joiningModalLabel">
+  <!-- Modal to generate flyer -->
+  <div th:if="${openToken and not #lists.isEmpty(flyerLanguages)}"
+       class="modal fade" id="flyerModal" tabindex="-1" role="dialog" aria-labelledby="flyerModalLabel">
     <div class="modal-dialog" role="document">
       <div class="modal-content">
         <div class="modal-header">
           <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-          <h4 class="modal-title" id="languagesModalLabel">Manage Flyer Language and Color</h4>
+          <h4 class="modal-title" id="flyerModalLabel">Generate group flyer</h4>
         </div>
-
-        <form th:action="@{/group/generatePdf}" method="get">
-          <input type="hidden" name="groupUid" th:value="${group.getUid()}" />
-          <select class="form-control" name="color">
-
-            <option  value="true">Colored</option>
-            <option  value="false">Black and White</option>
-          </select>
-
-          <!--<input type="radio" name="color" value="true" checked/> Color <br>
-          <input type="radio" name="color" value="false"/> Black and White-->
-
-          <div class="form-group">
-            <select class="form-control" name="language">
-             <!-- <option value="0" th:text="select language" ></option>-->
-              <option th:each="language : ${languages}" th:value="${language.getDisplayLanguage()}" th:text="${language.getDisplayLanguage()}"></option>
-            </select>
+        <form th:action="@{/group/flyer}" method="get">
+          <div class="modal-body">
+            <input type="hidden" name="groupUid" th:value="${group.getUid()}" />
+            <div class="form-group">
+              <select class="form-control input-lg" name="color">
+                <option value="true">Colour</option>
+                <option value="false">Black and white</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <select class="form-control input-lg" name="language">
+                <option th:each="language : ${flyerLanguages}"
+                        th:value="${language.getDisplayLanguage()}"
+                        th:text="${language.getDisplayLanguage()}"></option>
+              </select>
+            </div>
+            <div class="form-group">
+              <select class="form-control input-lg" name="typeOfFile">
+                <option value="PDF">PDF</option>
+                <option value="JPEG">Image (jpg)</option>
+              </select>
+            </div>
           </div>
-
-          <div class="form-group">
-            <select class="form-control" name="typeOfFile">
-              <option>PDF</option>
-              <option>JPEG Image</option>
-            </select>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default btn-lg default-button btn-neutral" data-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary btn-lg default-button">Generate</button>
           </div>
-          <button type="button" class="btn btn-default btn-lg default-button btn-neutral" data-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-primary btn-lg default-button">Generate</button>
-
         </form>
 
       </div>
     </div>
   </div>
-
-
-
-
 
   <div th:if="${not #lists.isEmpty(groupTasks)}" class="modal fade" id="voteConfirmModal" tabindex="-1" role="dialog" aria-labelledby="voteConfirmModalLabel">
     <div class="modal-dialog" role="document">

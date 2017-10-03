@@ -10,9 +10,10 @@ import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.domain.account.AccountLog;
+import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
+import za.org.grassroot.core.domain.account.AccountLog;
 import za.org.grassroot.core.domain.account.PaidGroup;
 import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.repository.AccountRepository;
@@ -212,6 +213,7 @@ public class AccountBrokerImpl implements AccountBroker {
         account.setEnabled(true);
         account.setEnabledDateTime(Instant.now());
         account.setEnabledByUser(user);
+        account.setDisabledDateTime(DateTimeUtil.getVeryLongAwayInstant());
         account.incrementBillingDate(STD_BILLING_HOUR, AccountBillingBrokerImpl.BILLING_TZ);
 
         // re-enable any groups that were disabled when the account expired
@@ -263,10 +265,8 @@ public class AccountBrokerImpl implements AccountBroker {
         DebugUtil.transactionRequired("AccountBilling: ");
 
         // note : not validating user is admin as this may be called by a responding sponsor prior to payment being complete
-        // todo : close this by checking in sponsor repository
 
         Account account = accountRepository.findOneByUid(accountUid);
-
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
         if (paymentType != null && !paymentType.equals(account.getDefaultPaymentType())) {
@@ -291,6 +291,25 @@ public class AccountBrokerImpl implements AccountBroker {
 
         logsAndNotificationsBroker.storeBundle(bundle);
 
+    }
+
+    @Override
+    @Transactional
+    public void updateAccountPaymentType(String userUid, String accountUid, AccountPaymentType paymentType) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(accountUid);
+        Objects.requireNonNull(paymentType);
+
+        Account account = accountRepository.findOneByUid(accountUid);
+        User user = userRepository.findOneByUid(userUid);
+        validateAdmin(user, account);
+
+        account.setDefaultPaymentType(paymentType);
+
+        createAndStoreSingleAccountLog(new AccountLog.Builder(account)
+                .accountLogType(AccountLogType.PAYMENT_METHOD_CHANGED)
+                .userUid(userUid)
+                .description("Changed to payment method: " + paymentType.name()).build());
     }
 
     @Override
@@ -650,6 +669,64 @@ public class AccountBrokerImpl implements AccountBroker {
                 .userUid(adminUid)
                 .billedOrPaid(newFee)
                 .description("Admin manually adjusted account fee").build());
+    }
+
+    @Override
+    @Transactional
+    public void modifyAccount(String adminUid, String accountUid, AccountType accountType,
+                              long subscriptionFee, boolean chargePerMessage, long costPerMessage) {
+        Objects.requireNonNull(adminUid);
+        Objects.requireNonNull(accountUid);
+
+        User user = userRepository.findOneByUid(adminUid);
+        permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
+
+        Account account = accountRepository.findOneByUid(accountUid);
+        StringBuilder sb = new StringBuilder("Changes: ");
+
+        if (!account.getType().equals(accountType)) {
+            account.setType(accountType);
+            sb.append(" account type = ").append(accountType).append(";");
+        }
+
+        if (account.getSubscriptionFee() != (int) subscriptionFee) {
+            account.setSubscriptionFee((int) subscriptionFee);
+            sb.append(" subscription fee = ").append(subscriptionFee).append(";");
+        }
+
+        if (account.isBillPerMessage() != chargePerMessage) {
+            account.setBillPerMessage(chargePerMessage);
+            sb.append(" per message billing = ").append(chargePerMessage).append(";");
+        }
+
+        if (account.getFreeFormCost() != (int) costPerMessage) {
+            account.setFreeFormMessages((int) costPerMessage);
+            sb.append(" cost per message = ").append(costPerMessage).append(";");
+        }
+
+        createAndStoreSingleAccountLog(new AccountLog.Builder(account)
+                .accountLogType(AccountLogType.SYSADMIN_MODIFIED_MULTIPLE)
+                .userUid(adminUid)
+                .description(sb.toString()).build());
+    }
+
+    @Override
+    @Transactional
+    public void setAccountVisibility(String adminUid, String accountUid, boolean visible) {
+        Objects.requireNonNull(adminUid);
+        Objects.requireNonNull(accountUid);
+
+        User user = userRepository.findOneByUid(adminUid);
+        permissionBroker.validateSystemRole(user, BaseRoles.ROLE_SYSTEM_ADMIN);
+
+        Account account = accountRepository.findOneByUid(accountUid);
+        account.setEnabled(false);
+        account.setVisible(false);
+
+        createAndStoreSingleAccountLog(new AccountLog.Builder(account)
+                .accountLogType(AccountLogType.ACCOUNT_INVISIBLE)
+                .userUid(adminUid)
+                .description("System admin set account invisible").build());
     }
 
     private void createAndStoreSingleAccountLog(AccountLog accountLog) {

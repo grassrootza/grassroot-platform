@@ -16,7 +16,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.ObjectLocation;
 import za.org.grassroot.core.domain.task.Meeting;
-import za.org.grassroot.core.dto.TaskDTO;
+import za.org.grassroot.core.dto.task.TaskDTO;
 import za.org.grassroot.integration.LearningService;
 import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.exception.RequestorAlreadyPartOfGroupException;
@@ -143,6 +143,7 @@ public class GroupSearchController extends BaseController {
 
 				// testing line (remove once related terms operational)
 				// relatedTerms = Arrays.asList("Water", "Taps", "Pipes");
+
 
 				model.addAttribute("groupCandidates", publicGroups);
 				model.addAttribute("relatedTerms", relatedTerms);

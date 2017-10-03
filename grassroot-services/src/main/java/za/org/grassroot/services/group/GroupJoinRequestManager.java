@@ -258,6 +258,19 @@ public class GroupJoinRequestManager implements GroupJoinRequestService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<GroupJoinRequest> getPendingRequestsForGroup(String userUid, String groupUid) {
+        User user = userRepository.findOneByUid(userUid);
+        Group group = groupRepository.findOneByUid(groupUid);
+
+        if (!group.getMembers().contains(user)) {
+            throw new AccessDeniedException("Only users can see requests in group");
+        }
+
+        return groupJoinRequestRepository.findByGroupAndStatus(group, AssocRequestStatus.PENDING);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<GroupJoinRequest> getPendingRequestsFromUser(String userUid) {
         User user = userRepository.findOneByUid(userUid);
         return groupJoinRequestRepository.findByRequestorAndStatus(user, AssocRequestStatus.PENDING,

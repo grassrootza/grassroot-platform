@@ -11,7 +11,7 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.domain.GroupLog;
 import za.org.grassroot.core.dto.MembershipInfo;
-import za.org.grassroot.core.dto.TaskDTO;
+import za.org.grassroot.core.dto.task.TaskDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.util.DateTimeUtil;

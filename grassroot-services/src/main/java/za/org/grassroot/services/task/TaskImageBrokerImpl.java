@@ -8,10 +8,9 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import za.org.grassroot.core.domain.ActionLog;
-import za.org.grassroot.core.domain.ImageRecord;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.geo.GeoLocation;
+import za.org.grassroot.core.domain.media.ImageRecord;
 import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.repository.*;
@@ -229,7 +228,7 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
 
         ImageType imageType = checkAnalyzed && storageBroker.doesImageExist(logUid, ImageType.ANALYZED) ?
                 ImageType.ANALYZED : ImageType.FULL_SIZE;
-        return storageBroker.fetchImage(logUid, imageType);
+        return storageBroker.fetchTaskImage(logUid, imageType);
     }
 
     @Override
@@ -238,7 +237,7 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
         Objects.requireNonNull(logUid);
 
         // as above, add a membership check in the future
-        return storageBroker.fetchImage(logUid, ImageType.MICRO);
+        return storageBroker.fetchTaskImage(logUid, ImageType.MICRO);
     }
 
     @Override

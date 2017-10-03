@@ -386,7 +386,7 @@ public class USSDGroupUtil extends USSDUtil {
         final String menuKey = GROUP_MANAGER.toKey() + advancedGroupMenu + "." + optionsKey;
         final String tokenKey = openToken ? menuKey + groupTokenMenu + ".exists" : menuKey + groupTokenMenu + ".create";
 
-        listMenu.addMenuOption(groupMenuWithId("alias", groupUid), menuKey + "alias");
+        listMenu.addMenuOption(groupMenuWithId("alias", groupUid), getMessage(menuKey + "alias", user));
 
         if (permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS)) {
             String visibilityMenuOptionPrompt = group.isDiscoverable() ? getMessage(menuKey + hideGroup, user)

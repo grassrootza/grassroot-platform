@@ -10,23 +10,21 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
-import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.domain.geo.GeoLocation;
-import za.org.grassroot.core.domain.geo.ObjectLocation;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.SafetyEvent;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.domain.task.Vote;
 import za.org.grassroot.core.enums.*;
-import za.org.grassroot.integration.location.UssdLocationServicesBroker;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.SafetyEventBroker;
-import za.org.grassroot.services.enums.EventListTimeType;
-import za.org.grassroot.services.geo.ObjectLocationBroker;
 import za.org.grassroot.services.group.GroupQueryBroker;
 import za.org.grassroot.services.livewire.LiveWireAlertBroker;
 import za.org.grassroot.services.task.EventLogBroker;
 import za.org.grassroot.services.task.TodoBroker;
+import za.org.grassroot.services.task.enums.EventListTimeType;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDResponseTypes;
 import za.org.grassroot.webapp.enums.USSDSection;
@@ -77,12 +75,6 @@ public class USSDHomeController extends USSDController {
 
     @Autowired
     private Environment environment;
-
-    @Autowired
-    private UssdLocationServicesBroker ussdLocationServicesBroker;
-
-    @Autowired
-    private ObjectLocationBroker objectLocationBroker;
 
     private static final Logger log = LoggerFactory.getLogger(USSDHomeController.class);
 
