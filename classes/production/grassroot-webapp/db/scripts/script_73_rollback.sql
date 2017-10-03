@@ -1,1 +1,0 @@
-ALTER TABLE user_log DROP COLUMN user_interface;

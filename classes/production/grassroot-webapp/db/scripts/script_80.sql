@@ -1,1 +1,0 @@
-ALTER TABLE group_join_request ADD COLUMN description varchar(255);

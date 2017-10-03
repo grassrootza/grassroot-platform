@@ -1,1 +1,0 @@
-ALTER TABLE group_profile DROP COLUMN avatar, DROP COLUMN avatar_format;

@@ -1,1 +1,0 @@
-ALTER TABLE event ALTER COLUMN start_date_time DROP NOT NULL;

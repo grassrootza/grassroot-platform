@@ -1,1 +1,0 @@
-DELETE FROM paid_account WHERE id=0;

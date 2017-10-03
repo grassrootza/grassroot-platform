@@ -1,1 +1,0 @@
-alter table paid_account_billing drop column payment_desc;

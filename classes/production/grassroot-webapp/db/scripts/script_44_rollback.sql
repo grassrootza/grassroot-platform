@@ -1,3 +1,0 @@
-﻿DROP FUNCTION getusergroupswithmembercount(bigint);
-
-
