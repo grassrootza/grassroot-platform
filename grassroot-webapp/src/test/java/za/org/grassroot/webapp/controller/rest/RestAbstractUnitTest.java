@@ -10,6 +10,7 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.repository.EventLogRepository;
+import za.org.grassroot.core.repository.GroupLogRepository;
 import za.org.grassroot.core.repository.UserLogRepository;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.group.GroupBroker;
@@ -77,6 +78,9 @@ public class RestAbstractUnitTest {
     protected GroupQueryBroker groupQueryBrokerMock;
 
     @Mock
+    protected GroupLogRepository groupLogRepositoryMock;
+
+    @Mock
     protected EventBroker eventBrokerMock;
 
     @Mock
@@ -86,7 +90,7 @@ public class RestAbstractUnitTest {
     protected GcmRegistrationBroker gcmRegistrationBrokerMock;
 
     @Mock
-    protected UserLogRepository userLogRepository;
+    protected UserLogRepository userLogRepositoryMock;
 
     @Test
     public void dummyTest () throws Exception {

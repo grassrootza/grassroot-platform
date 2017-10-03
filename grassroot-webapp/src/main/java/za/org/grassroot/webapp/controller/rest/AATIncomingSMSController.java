@@ -31,8 +31,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -86,19 +84,18 @@ public class AATIncomingSMSController {
         User user = userManager.findByInputNumber(phoneNumber);
         String trimmedMsg =  msg.toLowerCase().trim();
 
-        if (user == null || !isValidInput(trimmedMsg)) {
-            if (user != null) {
-                notifyUnableToProcessReply(user);
-            }
+        if (user == null) {
+            log.warn("Message from unknown user: " + phoneNumber);
             return;
         }
+
 
         EventRSVPResponse response = EventRSVPResponse.fromString(msg);
         boolean isYesNoResponse = response == EventRSVPResponse.YES || response == EventRSVPResponse.NO || response == EventRSVPResponse.MAYBE;
 
         List<Event> outstandingVotes = eventBroker.getOutstandingResponseForUser(user, EventType.VOTE);
         List<Event> outstandingYesNoVotes = outstandingVotes.stream()
-                .filter(vote -> vote.getTags().length == 0)
+                .filter(vote -> vote.getTags() == null || vote.getTags().length == 0)
                 .collect(Collectors.toList());
 
         List<Event> outstandingOptionsVotes = outstandingVotes.stream()
@@ -114,8 +111,11 @@ public class AATIncomingSMSController {
         else if (isYesNoResponse && !outstandingYesNoVotes.isEmpty()) // user sent yes-no response and there is a vote awaiting yes-no response
             voteBroker.recordUserVote(user.getUid(), outstandingYesNoVotes.get(0).getUid(), trimmedMsg); // recording user vote
 
-        else if (!outstandingOptionsVotes.isEmpty()) // user sent something other then yes-no, and there is a vote that has this option (tag)
-            voteBroker.recordUserVote(user.getUid(), outstandingOptionsVotes.get(0).getUid(), trimmedMsg); // recording user vote
+        else if (!outstandingOptionsVotes.isEmpty()) { // user sent something other then yes-no, and there is a vote that has this option (tag)
+            Event vote = outstandingOptionsVotes.get(0);
+            String option = getVoteOption(trimmedMsg, vote);
+            voteBroker.recordUserVote(user.getUid(), vote.getUid(), option); // recording user vote
+        }
 
         else // we have not found any meetings or votes that this could be response to
             handleUnknownResponse(user, trimmedMsg);
@@ -127,7 +127,7 @@ public class AATIncomingSMSController {
         notifyUnableToProcessReply(user);
 
         //todo(beegor), what interface type should be used here
-        UserLog userLog = new UserLog(user.getUid(), UserLogType.SENT_INVALID_SMS_MESSAGE, trimmedMsg, UserInterfaceType.INCOMING_SMS);
+        UserLog userLog = new UserLog(user.getUid(), UserLogType.SENT_UNEXPECTED_SMS_MESSAGE, trimmedMsg, UserInterfaceType.INCOMING_SMS);
         userLogRepository.save(userLog);
 
 
@@ -190,14 +190,24 @@ public class AATIncomingSMSController {
         return logGroupMap;
     }
 
-    private boolean hasVoteOption(String responseMsg, Event vote) {
+    private boolean hasVoteOption(String option, Event vote) {
         if (vote.getTags() != null) {
             for (String tag : vote.getTags()) {
-                if (tag.equalsIgnoreCase(responseMsg))
+                if (tag.equalsIgnoreCase(option))
                     return true;
             }
         }
         return false;
+    }
+
+    private String getVoteOption(String option, Event vote) {
+        if (vote.getTags() != null) {
+            for (String tag : vote.getTags()) {
+                if (tag.equalsIgnoreCase(option))
+                    return tag;
+            }
+        }
+        return null;
     }
 
 
@@ -206,11 +216,11 @@ public class AATIncomingSMSController {
         messagingServiceBroker.sendSMS(message, user.getPhoneNumber(), true);
     }
 
-    private boolean isValidInput(String message){
-        Pattern regex = Pattern.compile(patternToMatch);
-        Matcher regexMatcher = regex.matcher(message);
-        return  regexMatcher.find();
-    }
+//    private boolean isValidInput(String message){
+//        Pattern regex = Pattern.compile(patternToMatch);
+//        Matcher regexMatcher = regex.matcher(message);
+//        return  regexMatcher.find();
+//    }
 
 
 }
