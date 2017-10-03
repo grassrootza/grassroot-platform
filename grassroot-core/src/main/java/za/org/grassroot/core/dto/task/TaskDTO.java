@@ -4,7 +4,11 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.google.common.collect.ComparisonChain;
 import io.swagger.annotations.ApiModel;
-import za.org.grassroot.core.domain.*;
+import lombok.Getter;
+import lombok.Setter;
+import za.org.grassroot.core.domain.JpaEntityType;
+import za.org.grassroot.core.domain.Membership;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.TaskType;
@@ -18,6 +22,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static org.springframework.data.jpa.domain.Specifications.where;
 import static za.org.grassroot.core.specifications.EventLogSpecifications.*;
@@ -55,6 +60,7 @@ public class TaskDTO implements Comparable<TaskDTO> {
     private boolean canEdit;
 
     private List<String> tags;
+    @Getter @Setter private Map<String, Long> voteCount;
 
     @JsonIgnore
     private final Instant instant;

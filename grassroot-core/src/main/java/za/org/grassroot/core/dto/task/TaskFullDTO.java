@@ -3,12 +3,14 @@ package za.org.grassroot.core.dto.task;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.annotations.ApiModel;
 import lombok.Getter;
+import lombok.Setter;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.domain.task.Task;
 import za.org.grassroot.core.enums.TaskType;
 
 import java.time.Instant;
+import java.util.Map;
 
 @Getter
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -39,6 +41,8 @@ public class TaskFullDTO {
 
     private final boolean hasResponded;
     private final boolean canEdit;
+
+    @Setter private Map<String, Long> voteResults;
 
     public TaskFullDTO(Task task, User user, Instant lastChangedTime, boolean hasResponded) {
         this.taskUid = task.getUid();
