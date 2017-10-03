@@ -46,12 +46,23 @@ public class CampaignLog implements ActionLog {
     @JoinColumn(name="campaign_id", nullable = false)
     private Campaign campaign;
 
+    @Column(name="description", nullable = false)
+    private String description;
+
     public CampaignLog(String userUid, CampaignLogType campaignLogType,Campaign campaign) {
         this.uid = UIDGenerator.generateId();
         this.creationTime = Instant.now();
         this.userUid = userUid;
         this.campaignLogType = Objects.requireNonNull(campaignLogType);
         this.campaign = Objects.requireNonNull(campaign);
+    }
+
+    public CampaignLog(String userUid, CampaignLogType campaignLogType, String searchValue) {
+        this.uid = UIDGenerator.generateId();
+        this.creationTime = Instant.now();
+        this.userUid = userUid;
+        this.campaignLogType = Objects.requireNonNull(campaignLogType);
+        this.description = Objects.requireNonNull(searchValue);
     }
 
 
@@ -129,5 +140,13 @@ public class CampaignLog implements ActionLog {
 
     public void setCampaign(Campaign campaign) {
         this.campaign = campaign;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 }

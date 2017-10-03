@@ -162,5 +162,5 @@ public interface CampaignBroker {
      * @param groupId
      * @return
      */
-    Campaign linkCampaignToMasterGroup(String campaignCode, Long groupId);
+    Campaign linkCampaignToMasterGroup(String campaignCode, Long groupId, String userUid);
 }
