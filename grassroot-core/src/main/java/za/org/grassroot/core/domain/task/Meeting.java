@@ -1,5 +1,6 @@
-package za.org.grassroot.core.domain;
+package za.org.grassroot.core.domain.task;
 
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.MeetingImportance;
 import za.org.grassroot.core.util.UIDGenerator;

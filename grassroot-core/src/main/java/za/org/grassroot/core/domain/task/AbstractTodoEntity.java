@@ -1,5 +1,7 @@
-package za.org.grassroot.core.domain;
+package za.org.grassroot.core.domain.task;
 
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 
@@ -82,7 +84,7 @@ public abstract class AbstractTodoEntity {
 	}
 
 	protected AbstractTodoEntity(User createdByUser, TodoContainer parent, String message, Instant actionByDate,
-	                             int reminderMinutes, boolean reminderActive) {
+								 int reminderMinutes, boolean reminderActive) {
 
 		this.uid = UIDGenerator.generateId();
 		this.createdByUser = Objects.requireNonNull(createdByUser);

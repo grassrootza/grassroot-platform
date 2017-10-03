@@ -2,8 +2,8 @@ package za.org.grassroot.core.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
-import za.org.grassroot.core.domain.Todo;
-import za.org.grassroot.core.domain.TodoLog;
+import za.org.grassroot.core.domain.task.Todo;
+import za.org.grassroot.core.domain.task.TodoLog;
 import za.org.grassroot.core.enums.TodoLogType;
 
 /**

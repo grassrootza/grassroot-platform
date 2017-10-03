@@ -13,7 +13,12 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.*;
+
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.task.Meeting;
+import za.org.grassroot.core.domain.Notification;
+import za.org.grassroot.core.domain.User;
+
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.livewire.DataSubscriber;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;

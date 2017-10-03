@@ -1,5 +1,8 @@
-package za.org.grassroot.core.domain;
+package za.org.grassroot.core.domain.task;
 
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.UidIdentifiable;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.DateTimeUtil;
 
 import java.time.Instant;

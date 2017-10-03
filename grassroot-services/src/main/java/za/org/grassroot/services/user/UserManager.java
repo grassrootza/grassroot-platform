@@ -32,7 +32,6 @@ import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.exception.InvalidTokenException;
 import za.org.grassroot.services.exception.NoSuchUserException;
 import za.org.grassroot.services.exception.UserExistsException;
-import za.org.grassroot.services.specifications.UserSpecifications;
 import za.org.grassroot.services.util.CacheUtilService;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
@@ -46,8 +45,8 @@ import java.util.Objects;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
 
-import static za.org.grassroot.services.specifications.UserSpecifications.inGroups;
-import static za.org.grassroot.services.specifications.UserSpecifications.nameContains;
+import static za.org.grassroot.core.specifications.UserSpecifications.inGroups;
+import static za.org.grassroot.core.specifications.UserSpecifications.nameContains;
 
 /**
  * @author Lesetse Kimwaga

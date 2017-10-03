@@ -1,7 +1,8 @@
-package za.org.grassroot.core.domain;
+package za.org.grassroot.core.domain.task;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.StringUtils;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.TodoCompletionConfirmType;
 import za.org.grassroot.core.util.UIDGenerator;
 

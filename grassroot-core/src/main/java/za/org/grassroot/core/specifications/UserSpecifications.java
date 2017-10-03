@@ -1,4 +1,4 @@
-package za.org.grassroot.services.specifications;
+package za.org.grassroot.core.specifications;
 
 import org.springframework.data.jpa.domain.Specification;
 import za.org.grassroot.core.domain.*;

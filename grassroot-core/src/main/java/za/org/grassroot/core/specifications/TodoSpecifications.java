@@ -1,7 +1,8 @@
-package za.org.grassroot.services.specifications;
+package za.org.grassroot.core.specifications;
 
 import org.springframework.data.jpa.domain.Specification;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.enums.TodoCompletionConfirmType;
 
 import javax.persistence.criteria.Join;
@@ -78,9 +79,6 @@ public final class TodoSpecifications {
             query.distinct(true);
             Join<Todo, TodoCompletionConfirmation> join = root.join(Todo_.completionConfirmations, JoinType.LEFT);
 
-            /*return cb.not(cb.and(
-                    cb.equal(root.get(Todo_.createdByUser), join.get(TodoCompletionConfirmation_.member)),
-                    cb.equal(join.get(TodoCompletionConfirmation_.confirmType), TodoCompletionConfirmType.COMPLETED)));*/
             return cb.or(cb.or(cb.isNull(join.get(TodoCompletionConfirmation_.member)),
                     cb.or(cb.notEqual(root.get(Todo_.createdByUser), join.get(TodoCompletionConfirmation_.member))),
                     cb.notEqual(join.get(TodoCompletionConfirmation_.confirmType), TodoCompletionConfirmType.COMPLETED)));

@@ -14,7 +14,7 @@
 
 </head>
 
-<body onload="getLocation()">
+<body>
 
 <section layout:fragment="header" class="top-container">
   <div class="container">
@@ -43,7 +43,7 @@
                 <input type="hidden" id="locationLon" name="locationLon"/>
               <input type="hidden" name="currentUserContact" th:value="${currentUser.phoneNumber}"/>
               <span class="input-group-btn">
-                <button type="submit" class="btn btn-primary"><i class="fa fa-search" aria-hidden="true"></i>Search</button>
+                <button type="submit" class="btn btn-primary" id="searchButton" name="searchButton"><i class="fa fa-search" aria-hidden="true"></i>Search</button>
               </span>
             </div>
           </form>
@@ -500,18 +500,15 @@
 
   </script>
 
-  <script>
+  <script th:inline="javascript">
        function getLocation() {
-       //console.log("Inside the METHOD");
+       console.log("Inside the METHOD");
 			if (navigator.geolocation) {
-				navigator.geolocation
-						.getCurrentPosition(function showPosition(position) {
-							var startPoint = new google.maps.LatLng(
-									position.coords.longitude,
-									position.coords.latitude);
+				navigator.geolocation.getCurrentPosition(function showPosition(position) {
 
-                        document.getElementById("locationLat").value = position.coords.latitude;
-                        document.getElementById("locationLon").value = position.coords.longitude;
+
+                            document.getElementById("locationLat").value = position.coords.latitude;
+                            document.getElementById("locationLon").value = position.coords.longitude;
 							console.log(position.coords.latitude  + " Lat");
 							console.log(position.coords.longitude + " Lon");
 						});
@@ -519,9 +516,17 @@
 		}
     </script>
 
-    <script async defer
-            src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCcgAM0u_Su0rLafMY0skTcYr931T4x5UI">
+    <script>
+
+      $(document).ready(function(){
+        $("#searchButton").click(getLocation());
+      });
+
     </script>
+
+   <!-- <script async defer
+            src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCcgAM0u_Su0rLafMY0skTcYr931T4x5UI">
+    </script>-->
 
 </div>
 

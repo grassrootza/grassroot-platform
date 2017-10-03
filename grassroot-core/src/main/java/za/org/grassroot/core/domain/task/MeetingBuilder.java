@@ -1,7 +1,8 @@
-package za.org.grassroot.core.domain;
+package za.org.grassroot.core.domain.task;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.MeetingImportance;
 
 import java.time.Instant;

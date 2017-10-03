@@ -4,7 +4,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.JpaEntityType;
-import za.org.grassroot.core.domain.Todo;
+import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.enums.TodoCompletionConfirmType;
 import za.org.grassroot.services.enums.TodoStatus;
 

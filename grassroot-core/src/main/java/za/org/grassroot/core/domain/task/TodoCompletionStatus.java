@@ -1,4 +1,4 @@
-package za.org.grassroot.core.domain;
+package za.org.grassroot.core.domain.task;
 
 /**
  * Contains info about to-do completion confirmations.

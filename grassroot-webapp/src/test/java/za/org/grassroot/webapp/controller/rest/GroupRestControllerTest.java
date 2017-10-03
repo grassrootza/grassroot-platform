@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.BaseRoles;
-import za.org.grassroot.core.domain.Event;
+import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.GroupLog;
 import za.org.grassroot.core.enums.GroupLogType;

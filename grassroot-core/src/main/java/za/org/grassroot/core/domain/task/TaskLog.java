@@ -1,6 +1,9 @@
-package za.org.grassroot.core.domain;
+package za.org.grassroot.core.domain.task;
 
+import za.org.grassroot.core.domain.ActionLog;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
+import za.org.grassroot.core.domain.task.Task;
 
 /**
  * Created by luke on 2017/03/10.

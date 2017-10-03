@@ -59,6 +59,9 @@ schema-export-create.sql
 # Hibernate metamodel
 **/generated/
 
+# Generated classes
+classes/
+
 # Mac generated files
 **/.DS_Store
 

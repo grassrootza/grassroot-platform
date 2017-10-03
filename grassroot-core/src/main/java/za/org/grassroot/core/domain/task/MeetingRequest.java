@@ -1,5 +1,7 @@
-package za.org.grassroot.core.domain;
+package za.org.grassroot.core.domain.task;
 
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.UIDGenerator;
 

@@ -1,6 +1,6 @@
 package za.org.grassroot.core.domain.geo;
 
-import za.org.grassroot.core.domain.Meeting;
+import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.LocationSource;
 

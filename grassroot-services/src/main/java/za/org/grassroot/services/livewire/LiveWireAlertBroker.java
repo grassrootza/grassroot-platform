@@ -4,7 +4,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.Meeting;
+import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
 import za.org.grassroot.core.enums.LiveWireAlertDestType;

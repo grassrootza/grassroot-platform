@@ -3,7 +3,9 @@ package za.org.grassroot.core.repository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.GroupLocation;
 import za.org.grassroot.core.domain.geo.ObjectLocation;
@@ -63,5 +65,10 @@ public interface GroupLocationRepository extends JpaRepository<GroupLocation, Lo
 			"         + SIN(RADIANS(:latpoint)) " +
 			"         * SIN(RADIANS(l.location.latitude))))) ")
 	List<Group> findPublicGroupsWithinRadius(GeoLocation location, Integer radius);
+
+	@Query(value = "SELECT g FROM GroupLocation g" +
+			"WHERE g.group = (SELECT m.group FROM Membership m" +
+			"WHERE m.user = :user)",nativeQuery = true)
+	GroupLocation findByUserUid(@Param("user") User user);
 
 }

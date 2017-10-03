@@ -1,5 +1,7 @@
 package za.org.grassroot.core.domain;
 
+import za.org.grassroot.core.domain.task.Task;
+
 import java.util.Set;
 
 public interface UidIdentifiable extends GrassrootEntity {

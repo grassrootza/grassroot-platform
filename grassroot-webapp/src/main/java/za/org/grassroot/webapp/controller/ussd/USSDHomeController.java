@@ -13,6 +13,10 @@ import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.ObjectLocation;
+import za.org.grassroot.core.domain.task.Event;
+import za.org.grassroot.core.domain.task.Meeting;
+import za.org.grassroot.core.domain.task.Todo;
+import za.org.grassroot.core.domain.task.Vote;
 import za.org.grassroot.core.enums.*;
 import za.org.grassroot.integration.location.UssdLocationServicesBroker;
 import za.org.grassroot.services.PermissionBroker;
@@ -109,7 +113,7 @@ public class USSDHomeController extends USSDController {
             new SimpleEntry<>(USER_PROFILE, new String[]{userMenus + startMenu, openingMenuKey + userKey}),
             new SimpleEntry<>(MORE, new String[]{moreMenus + startMenu, openingMenuKey + moreKey})).
             //new SimpleEntry<>(SAFETY_GROUP_MANAGER, new String[]{safetyMenus + startMenu, openingMenuKey + safetyKey})).
-            collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue)));
+                    collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue)));
 
     private static final List<USSDSection> openingSequenceWithGroups = Arrays.asList(
             MEETINGS, VOTES, TODO, GROUP_MANAGER, USER_PROFILE, MORE);
@@ -125,7 +129,7 @@ public class USSDHomeController extends USSDController {
         USSDMenu homeMenu = new USSDMenu(opening);
         List<USSDSection> menuSequence =
                 permissionBroker.countActiveGroupsWithPermission(user, null) != 0 ?
-                openingSequenceWithGroups : openingSequenceWithoutGroups;
+                        openingSequenceWithGroups : openingSequenceWithoutGroups;
         menuSequence.forEach(s -> {
             String[] urlMsgPair = openingMenuOptions.get(s);
             homeMenu.addMenuOption(urlMsgPair[0], getMessage(urlMsgPair[1], user));
@@ -387,7 +391,7 @@ public class USSDHomeController extends USSDController {
             openingMenu.addMenuOption(voteUri + "ABSTAIN", getMessage(optionMsgKey + "abstain", sessionUser));
         } else {
             vote.getVoteOptions().forEach(o -> {
-               openingMenu.addMenuOption(voteUri + USSDUrlUtil.encodeParameter(o), o);
+                openingMenu.addMenuOption(voteUri + USSDUrlUtil.encodeParameter(o), o);
             });
         }
 
@@ -491,8 +495,8 @@ public class USSDHomeController extends USSDController {
     @RequestMapping(value = path + "todo-complete")
     @ResponseBody
     public Request todoEntryMarkComplete(@RequestParam(value = phoneNumber) String inputNumber,
-                                @RequestParam(value = entityUidParam) String todoUid,
-                                @RequestParam(value = yesOrNoParam) String response) throws URISyntaxException {
+                                         @RequestParam(value = entityUidParam) String todoUid,
+                                         @RequestParam(value = yesOrNoParam) String response) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(inputNumber);
         TodoCompletionConfirmType type = "yes".equals(response) ? TodoCompletionConfirmType.COMPLETED
