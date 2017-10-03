@@ -88,9 +88,8 @@ public class LiveWireAlertCreateController extends BaseController {
         try {
             logger.info("contact person type = {}, name = {}, number = {}", contactType, contactName, contactNumber);
 
-            final String contactUserNumber = PhoneNumberUtil.convertPhoneNumber(contactNumber);
             final String contactUserUid = CONTACT_SELF.equals(contactType) ? null :
-                    userManagementService.loadOrCreateUser(contactUserNumber).getUid();
+                    userManagementService.loadOrCreateUser(PhoneNumberUtil.convertPhoneNumber(contactNumber)).getUid();
 
             logger.info("contact user = {}", userManagementService.load(contactUserUid));
 

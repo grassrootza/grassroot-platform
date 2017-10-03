@@ -302,8 +302,6 @@ public class LiveWireAlert {
         this.description = description;
         this.complete = false;
         this.sent = false;
-        this.tags = new String[0];
-        this.publicLists = new String[0];
         this.destinationType = destType;
     }
 
@@ -433,6 +431,7 @@ public class LiveWireAlert {
     }
 
     public List<String> getTagList() {
+        logger.info("getting ... tags = {}", Arrays.toString(tags));
         return tags == null ? new ArrayList<>() : new ArrayList<>(Arrays.asList(tags));
     }
 
@@ -504,6 +503,7 @@ public class LiveWireAlert {
     }
 
     public List<String> getPublicListUids() {
+        logger.info("getting ... publicLists: {}", Arrays.toString(publicLists));
         return StringArrayUtil.arrayToList(publicLists);
     }
 

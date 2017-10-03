@@ -43,10 +43,7 @@ import java.security.InvalidParameterException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -441,6 +438,8 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
 
         LiveWireAlert alert = alertRepository.findOneByUid(alertUid);
         alert.addTags(tags);
+
+        logger.info("set tags to: {}", alert.getTagList());
     }
 
     private boolean listIsNullEmptyOrAllBlank(List<String> list) {
@@ -464,6 +463,8 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
             alert.reviseTags(tags);
         }
 
+        logger.info("here are the alert tags: {}", tags);
+
         alert.setReviewed(true);
         alert.setReviewedByUser(user);
 
@@ -479,7 +480,7 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
         if (send) {
             alert.setPublicListUids(publicListUids);
             alert.setSendTime(Instant.now());
-            logger.debug("set public list UIDs to: {}", alert.getPublicListUids());
+            logger.info("set public list UIDs to: {}", Arrays.toString(alert.getPublicLists()));
             bundle.addNotification(new LiveWireAlertReleasedNotification(
                     alert.getCreatingUser(),
                     messageSource.getMessage("livewire.alert.released"),

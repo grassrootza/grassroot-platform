@@ -78,7 +78,7 @@ public class LiveWireSendingBrokerImpl implements LiveWireSendingBroker {
     }
 
     private void sendAlert(LiveWireAlert alert, List<String> systemEmailAddresses) {
-        logger.debug("starting to send alert, uids: {}", alert.getPublicListUids());
+        logger.info("starting to send alert, uids: {}", alert.getPublicListUids());
         // send the alert (maybe add Twitter etc in future)
         List<String> alertEmails = new ArrayList<>(systemEmailAddresses);
         switch (alert.getDestinationType()) {
