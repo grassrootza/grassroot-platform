@@ -1,6 +1,9 @@
 package za.org.grassroot.core.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.UserLocationLog;
 
 import java.time.Instant;
@@ -14,4 +17,11 @@ public interface UserLocationLogRepository extends JpaRepository<UserLocationLog
 	List<UserLocationLog> findByUserUidAndTimestampBetweenAndTimestampNot(String userUid, Instant start, Instant end, Instant endAgain);
 
 	UserLocationLog findFirstByTimestampBeforeOrderByTimestampDesc(Instant timestamp);
+
+	@Query(value = "SELECT u.* FROM UserLocationLog u" +
+			"WHERE u.uid = :user" +
+			"AND u.timestamp BETWEEN :interval AND NOW()",nativeQuery = true)
+	UserLocationLog findByUserUidAndTimestampBetweenNowAndIntervalGiven(@Param("user") User user,@Param("interval") Instant interval);
+
+	//List<UserLocationLog> findByUserUid(String userUid);
 }

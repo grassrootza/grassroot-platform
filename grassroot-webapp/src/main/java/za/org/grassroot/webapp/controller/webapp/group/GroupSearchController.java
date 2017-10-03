@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.ObjectLocation;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.dto.TaskDTO;
@@ -159,7 +160,10 @@ public class GroupSearchController extends BaseController {
 				if(meetings != null){
 					model.addAttribute("publicMeetingsUserIsNotPartOf",meetings);
 				}
-				List<ObjectLocation> objectLocations = objectLocationBroker.fetchMeetingsNearUser(latitude,longitude,searchRadius,user );
+				GeoLocation location = new GeoLocation(latitude,longitude);
+
+				List<ObjectLocation> objectLocations = objectLocationBroker.fetchMeetingsNearUser(searchRadius,user,location);
+
 				log.info("Object Locations = {}" ,objectLocations.size());
 			}
 		}

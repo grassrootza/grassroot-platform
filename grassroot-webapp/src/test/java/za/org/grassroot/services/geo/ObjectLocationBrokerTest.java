@@ -11,6 +11,7 @@ import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.ObjectLocation;
 import za.org.grassroot.core.repository.GroupLocationRepository;
 import za.org.grassroot.core.repository.MeetingLocationRepository;
+import za.org.grassroot.core.repository.UserLocationLogRepository;
 import za.org.grassroot.integration.location.UssdLocationServicesBroker;
 import za.org.grassroot.services.task.EventBroker;
 
@@ -45,12 +46,16 @@ public class ObjectLocationBrokerTest {
 
     private ObjectLocationBrokerImpl objectLocationBroker;
 
+    @Mock
     private UssdLocationServicesBroker ussdLocationServicesBroker;
+
+    @Mock
+    private UserLocationLogRepository userLocationLogRepository;
 
     @Before
     public void setUp () {
         objectLocationBroker = new ObjectLocationBrokerImpl(mockEntityManager, mockGroupLocationRepository,
-                mockMeetingLocationRepository, mockRestTemplate,ussdLocationServicesBroker, mockEventBroker);
+                mockMeetingLocationRepository, mockRestTemplate,ussdLocationServicesBroker, mockEventBroker,userLocationLogRepository);
 
         given(mockQuery.setParameter(anyString(), any())).willReturn(mockQuery);
         given(mockQuery.getResultList()).willAnswer(i->Arrays.asList());
