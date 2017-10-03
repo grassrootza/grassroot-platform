@@ -20,4 +20,7 @@ public interface UssdLocationServicesBroker {
 
     GeoLocation getUssdLocationForUser(String userUid);
 
+    // just an async wrapper for the above
+    void asyncUssdLocationLookupAndStorage(String userUid);
+
 }

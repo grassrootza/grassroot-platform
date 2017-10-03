@@ -44,7 +44,9 @@ public class USSDController {
             voteMenus = "vote/",
             todoMenus = "todo/",
             safetyMenus = "safety/",
-            U404= "error";
+            moreMenus = "more/",
+            U404= "error",
+            homeMore = "/more/";
     // referencing these from the Util class so can be common across tests etc, but stating here so not cumbersome in sub-classes
     protected static final String
             phoneNumber = USSDUrlUtil.phoneNumber,
@@ -69,7 +71,8 @@ public class USSDController {
             groupKey = USSDSection.GROUP_MANAGER.toString(),
             voteKey = USSDSection.VOTES.toString(),
             logKey = USSDSection.TODO.toString(),
-            safetyKey = USSDSection.SAFETY_GROUP_MANAGER.toString();
+            safetyKey = USSDSection.SAFETY_GROUP_MANAGER.toString(),
+            moreKey = USSDSection.MORE.toString();
     protected static final String
             promptKey = "prompt",
             errorPromptKey = "prompt.error",
