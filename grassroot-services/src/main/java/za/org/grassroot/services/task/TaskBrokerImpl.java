@@ -33,6 +33,7 @@ import javax.persistence.EntityManager;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
@@ -63,11 +64,13 @@ public class TaskBrokerImpl implements TaskBroker {
     private final TodoRepository todoRepository;
     private final EventLogRepository eventLogRepository;
     private final TodoLogRepository todoLogRepository;
+
+    private final VoteBroker voteBroker;
     private final TodoBroker todoBroker;
     private final PermissionBroker permissionBroker;
 
     @Autowired
-    public TaskBrokerImpl(UserRepository userRepository, GroupBroker groupBroker, EventBroker eventBroker, EventRepository eventRepository, TodoRepository todoRepository, EventLogRepository eventLogRepository, TodoLogRepository todoLogRepository, TodoBroker todoBroker, PermissionBroker permissionBroker, EntityManager entityManager) {
+    public TaskBrokerImpl(UserRepository userRepository, GroupBroker groupBroker, EventBroker eventBroker, EventRepository eventRepository, TodoRepository todoRepository, EventLogRepository eventLogRepository, TodoLogRepository todoLogRepository, TodoBroker todoBroker, PermissionBroker permissionBroker, EntityManager entityManager, VoteBroker voteBroker) {
         this.userRepository = userRepository;
         this.groupBroker = groupBroker;
         this.eventBroker = eventBroker;
@@ -77,6 +80,7 @@ public class TaskBrokerImpl implements TaskBroker {
         this.todoLogRepository = todoLogRepository;
         this.todoBroker = todoBroker;
         this.permissionBroker = permissionBroker;
+        this.voteBroker = voteBroker;
     }
 
     @Override
@@ -364,7 +368,7 @@ public class TaskBrokerImpl implements TaskBroker {
                 collect(taskTimeChangedCollector());
 
         return Stream.concat(userEvents.stream(), userTodos.stream())
-                .map(t -> new TaskFullDTO(t, user, uidTimeMap.get(t.getUid()), hasUserResponded(t, user)))
+                .map(transformToDTO(user, uidTimeMap))
                 .sorted(compareByType(sortType))
                 .collect(Collectors.toList());
     }
@@ -391,9 +395,19 @@ public class TaskBrokerImpl implements TaskBroker {
                 collect(taskTimeChangedCollector());
 
         return Stream.concat(events.stream().map(e -> (Task) e), todos.stream().map(t -> (Task) t))
-                .map(t -> new TaskFullDTO(t, user, uidTimeMap.get(t.getUid()), hasUserResponded(t, user)))
+                .map(transformToDTO(user, uidTimeMap))
                 .sorted(compareByType(taskSortType))
                 .collect(Collectors.toList());
+    }
+
+    private Function<Task, TaskFullDTO> transformToDTO(User user, Map<String, Instant> uidTimeMap) {
+        return t-> {
+            TaskFullDTO taskFullDTO = new TaskFullDTO(t, user, uidTimeMap.get(t.getUid()), hasUserResponded(t, user));
+            if (t instanceof Vote) {
+                taskFullDTO.setVoteResults(voteBroker.fetchVoteResults(user.getUid(), t.getUid()));
+            }
+            return taskFullDTO;
+        };
     }
 
     private Comparator<TaskFullDTO> compareByType(TaskSortType type) {
@@ -459,7 +473,11 @@ public class TaskBrokerImpl implements TaskBroker {
             EventLog userResponseLog = eventLogRepository.findOne(where(forEvent(event))
                     .and(forUser(user)).and(isResponseToAnEvent()));
             if (changedSince == null || isEventAddedOrUpdatedSince(event, userResponseLog, changedSince)) {
-                taskDtos.add(new TaskDTO(event, user, userResponseLog));
+                TaskDTO taskDTO = new TaskDTO(event, user, userResponseLog);
+                if (event instanceof Vote) {
+                    taskDTO.setVoteCount(voteBroker.fetchVoteResults(user.getUid(), event.getUid()));
+                }
+                taskDtos.add(taskDTO);
             }
         }
         return taskDtos;

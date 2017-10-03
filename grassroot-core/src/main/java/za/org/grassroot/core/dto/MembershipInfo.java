@@ -3,6 +3,8 @@ package za.org.grassroot.core.dto;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.Membership;
 import za.org.grassroot.core.domain.Role;
@@ -18,12 +20,16 @@ import java.util.Set;
  * Represents all info needed to add new member.
  * Only phone number is required.
  */
+@ApiModel(value = "MembershipInfo", description = "Set of information, principally phone number and name")
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class MembershipInfo implements Comparable<MembershipInfo> {
 
     // note: removing 'final' so Thymeleaf can populate this (can find a better way if needed)
     protected String phoneNumber;
+
+    @ApiModelProperty(allowEmptyValue = true)
     protected String roleName; // optional
+
     protected String displayName; // optional
     protected boolean userSetName;
 
