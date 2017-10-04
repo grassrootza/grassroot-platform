@@ -7,19 +7,31 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.account.AccountLog;
+import za.org.grassroot.core.domain.geo.AddressLog;
+import za.org.grassroot.core.domain.livewire.LiveWireLog;
 import za.org.grassroot.core.domain.task.Event;
-import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.enums.EventRSVPResponse;
-import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.core.domain.task.EventLog;
+import za.org.grassroot.core.domain.task.TodoLog;
+import za.org.grassroot.core.enums.*;
+import za.org.grassroot.core.repository.GroupLogRepository;
+import za.org.grassroot.core.repository.UserLogRepository;
+import za.org.grassroot.integration.NotificationService;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.EventLogBroker;
+import za.org.grassroot.services.task.VoteBroker;
 import za.org.grassroot.services.user.UserManagementService;
 
+import java.text.MessageFormat;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Created by paballo on 2016/02/17.
@@ -33,6 +45,10 @@ public class AATIncomingSMSController {
     private static final String patternToMatch = "\\b(?:yes|no|abstain|maybe)\\b";
 
     private final EventBroker eventBroker;
+    private final VoteBroker voteBroker;
+    private final UserLogRepository userLogRepository;
+    private final NotificationService notificationService;
+    private final GroupLogRepository groupLogRepository;
     private final UserManagementService userManager;
     private final EventLogBroker eventLogManager;
     private final MessageAssemblingService messageAssemblingService;
@@ -42,14 +58,19 @@ public class AATIncomingSMSController {
     private static final String message ="ms";
 
     @Autowired
-    public AATIncomingSMSController(EventBroker eventBroker, UserManagementService userManager,
-                                    EventLogBroker eventLogManager, MessageAssemblingService messageAssemblingService,
-                                    MessagingServiceBroker messagingServiceBroker) {
+    public AATIncomingSMSController(EventBroker eventBroker, UserManagementService userManager, EventLogBroker eventLogManager,
+                                    MessageAssemblingService messageAssemblingService, MessagingServiceBroker messagingServiceBroker,
+                                    VoteBroker voteBroker, UserLogRepository userLogRepository, NotificationService notificationService,
+                                    GroupLogRepository groupLogRepository) {
         this.eventBroker = eventBroker;
         this.userManager = userManager;
         this.eventLogManager = eventLogManager;
         this.messageAssemblingService = messageAssemblingService;
         this.messagingServiceBroker = messagingServiceBroker;
+        this.voteBroker = voteBroker;
+        this.userLogRepository = userLogRepository;
+        this.notificationService = notificationService;
+        this.groupLogRepository = groupLogRepository;
     }
 
 
@@ -63,42 +84,143 @@ public class AATIncomingSMSController {
         User user = userManager.findByInputNumber(phoneNumber);
         String trimmedMsg =  msg.toLowerCase().trim();
 
-        if(user ==null || !isValidInput(trimmedMsg)){
-            if (user != null) {
-                notifyUnableToProcessReply(user);
-            }
+        if (user == null) {
+            log.warn("Message from unknown user: " + phoneNumber);
             return;
         }
 
-        boolean needsToVote = eventBroker.userHasResponsesOutstanding(user, EventType.VOTE);
-        boolean needsToRsvp = eventBroker.userHasResponsesOutstanding(user, EventType.MEETING);
 
-        if((needsToVote && needsToRsvp)) {
-            notifyUnableToProcessReply(user);
-        } else {
-            if (needsToVote) {
-                List<Event> outstandingVotes = eventBroker.getOutstandingResponseForUser(user, EventType.VOTE);
-                if (outstandingVotes != null && !outstandingVotes.isEmpty()) {
-                    eventLogManager.rsvpForEvent(outstandingVotes.get(0).getUid(), user.getUid(), EventRSVPResponse.fromString(trimmedMsg));
-                }
-            }
-            else if (needsToRsvp) {
-                String uid = eventBroker.getOutstandingResponseForUser(user, EventType.MEETING).get(0).getUid();
-                eventLogManager.rsvpForEvent(uid, user.getUid(), EventRSVPResponse.fromString(trimmedMsg));
+        EventRSVPResponse response = EventRSVPResponse.fromString(msg);
+        boolean isYesNoResponse = response == EventRSVPResponse.YES || response == EventRSVPResponse.NO || response == EventRSVPResponse.MAYBE;
+
+        List<Event> outstandingVotes = eventBroker.getOutstandingResponseForUser(user, EventType.VOTE);
+        List<Event> outstandingYesNoVotes = outstandingVotes.stream()
+                .filter(vote -> vote.getTags() == null || vote.getTags().length == 0)
+                .collect(Collectors.toList());
+
+        List<Event> outstandingOptionsVotes = outstandingVotes.stream()
+                .filter(vote -> hasVoteOption(trimmedMsg, vote))
+                .collect(Collectors.toList());
+
+        List<Event> outstandingMeetings = eventBroker.getOutstandingResponseForUser(user, EventType.MEETING);
+
+
+        if (isYesNoResponse && !outstandingMeetings.isEmpty())  // user sent yes-no response and there is a meeting awaiting yes-no response
+            eventLogManager.rsvpForEvent(outstandingMeetings.get(0).getUid(), user.getUid(), response); // recording rsvp for meeting
+
+        else if (isYesNoResponse && !outstandingYesNoVotes.isEmpty()) // user sent yes-no response and there is a vote awaiting yes-no response
+            voteBroker.recordUserVote(user.getUid(), outstandingYesNoVotes.get(0).getUid(), trimmedMsg); // recording user vote
+
+        else if (!outstandingOptionsVotes.isEmpty()) { // user sent something other then yes-no, and there is a vote that has this option (tag)
+            Event vote = outstandingOptionsVotes.get(0);
+            String option = getVoteOption(trimmedMsg, vote);
+            voteBroker.recordUserVote(user.getUid(), vote.getUid(), option); // recording user vote
+        }
+
+        else // we have not found any meetings or votes that this could be response to
+            handleUnknownResponse(user, trimmedMsg);
+
+    }
+
+    private void handleUnknownResponse(User user, String trimmedMsg) {
+
+        notifyUnableToProcessReply(user);
+
+        //todo(beegor), what interface type should be used here
+        UserLog userLog = new UserLog(user.getUid(), UserLogType.SENT_UNEXPECTED_SMS_MESSAGE, trimmedMsg, UserInterfaceType.INCOMING_SMS);
+        userLogRepository.save(userLog);
+
+
+        List<Notification> recentNotifications = notificationService.fetchAndroidNotificationsSince(user.getUid(), Instant.now().minus(6, ChronoUnit.HOURS));
+
+        for (Notification notification : recentNotifications) {
+
+            Map<ActionLog, Group> logs = getNotificationLog(notification);
+
+            for (Map.Entry<ActionLog, Group> entry : logs.entrySet()) {
+                ActionLog aLog = entry.getKey();
+
+                Group group = entry.getValue();
+
+                String notificationType = getNotificationType(aLog);
+                String description = MessageFormat.format("User {0} sent response we can't understand after being sent a notification of type: {} in this group", user.getName(), notificationType);
+                GroupLog groupLog = new GroupLog(group, user, GroupLogType.USER_SENT_UNKNOWN_RESPONSE, user.getId(), description);
+                groupLogRepository.save(groupLog);
             }
         }
     }
+
+    private String getNotificationType(ActionLog aLog) {
+        if (aLog instanceof EventLog)
+            return "Event log: " + ((EventLog) aLog).getEventLogType().name();
+        else if (aLog instanceof TodoLog)
+            return "ToDo log: " + ((TodoLog) aLog).getType().name();
+        else if (aLog instanceof GroupLog)
+            return "Group log: " + ((GroupLog) aLog).getGroupLogType().name();
+        else if (aLog instanceof UserLog)
+            return "User log: " + ((UserLog) aLog).getUserLogType().name();
+        else if (aLog instanceof AccountLog)
+            return "Account log: " + ((AccountLog) aLog).getAccountLogType().name();
+        else if (aLog instanceof AddressLog)
+            return "Address log: " + ((AddressLog) aLog).getType().name();
+        else if (aLog instanceof LiveWireLog)
+            return "LiveWire log: " + ((LiveWireLog) aLog).getType().name();
+        else return "Unknown notification type";
+    }
+
+    private Map<ActionLog, Group> getNotificationLog(Notification notification) {
+
+        Map<ActionLog, Group> logGroupMap = new HashMap<>();
+
+        if (notification.getEventLog() != null)
+            logGroupMap.put(notification.getEventLog(), notification.getEventLog().getEvent().getAncestorGroup());
+
+        else if (notification.getTodoLog() != null)
+            logGroupMap.put(notification.getTodoLog(), notification.getTodoLog().getTodo().getAncestorGroup());
+
+            //todo(bigor) check with Luke: are groupLog and liveWire relevant for this? Are there notifications sent for those logs?
+        else if (notification.getGroupLog() != null)
+            logGroupMap.put(notification.getGroupLog(), notification.getGroupLog().getGroup());
+
+        else if (notification.getLiveWireLog() != null)
+            logGroupMap.put(notification.getLiveWireLog(), notification.getLiveWireLog().getAlert().getGroup());
+
+        //todo(bigor) check with Luke: what about UserLog, AccountLog, AddressLog, they seem to not be related with any group, so we are probably not interested in those here
+
+        return logGroupMap;
+    }
+
+    private boolean hasVoteOption(String option, Event vote) {
+        if (vote.getTags() != null) {
+            for (String tag : vote.getTags()) {
+                if (tag.equalsIgnoreCase(option))
+                    return true;
+            }
+        }
+        return false;
+    }
+
+    private String getVoteOption(String option, Event vote) {
+        if (vote.getTags() != null) {
+            for (String tag : vote.getTags()) {
+                if (tag.equalsIgnoreCase(option))
+                    return tag;
+            }
+        }
+        return null;
+    }
+
 
     private void notifyUnableToProcessReply(User user) {
         String message = messageAssemblingService.createReplyFailureMessage(user);
         messagingServiceBroker.sendSMS(message, user.getPhoneNumber(), true);
     }
 
-    private boolean isValidInput(String message){
-        Pattern regex = Pattern.compile(patternToMatch);
-        Matcher regexMatcher = regex.matcher(message);
-        return  regexMatcher.find();
-    }
+//    private boolean isValidInput(String message){
+//        Pattern regex = Pattern.compile(patternToMatch);
+//        Matcher regexMatcher = regex.matcher(message);
+//        return  regexMatcher.find();
+//    }
 
 
 }
