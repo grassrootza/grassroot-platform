@@ -13,7 +13,6 @@ import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.ObjectLocation;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.enums.UserInterfaceType;
-import za.org.grassroot.core.repository.UserLocationLogRepository;
 import za.org.grassroot.integration.location.UssdLocationServicesBroker;
 import za.org.grassroot.services.geo.ObjectLocationBroker;
 import za.org.grassroot.services.task.EventBroker;
@@ -39,13 +38,14 @@ public class USSDAdvancedHomeController extends USSDController {
 
     private static final USSDSection thisSection = USSDSection.HOME;
 
+    @Autowired
     private final UssdLocationServicesBroker ussdLocationServicesBroker;
     private final ObjectLocationBroker objectLocationBroker;
     private final EventBroker eventBroker;
 
     @Autowired
     public USSDAdvancedHomeController(UssdLocationServicesBroker ussdLocationServicesBroker, ObjectLocationBroker objectLocationBroker,
-                                      EventBroker eventBroker,UserLocationLogRepository userLocationLogRepository){
+                                      EventBroker eventBroker){
         this.ussdLocationServicesBroker = ussdLocationServicesBroker;
         this.objectLocationBroker = objectLocationBroker;
         this.eventBroker = eventBroker;
@@ -86,7 +86,7 @@ public class USSDAdvancedHomeController extends USSDController {
     private USSDMenu haveLocationAndMeetings(User user, boolean repeat, List<ObjectLocation> publicMeetings) {
         final USSDMenu ussdMenu = new USSDMenu(repeat ? "Now we found some meetings:" :
                 getMessage(thisSection, "public", promptKey + ".list", user));
-        publicMeetings.forEach(pm -> {
+        publicMeetings.forEach((ObjectLocation pm) -> {
             ussdMenu.addMenuOption(moreMenus + "/public-meeting/details?meetingUid=" +pm.getUid(),
                     pm.getDescription());
         });
@@ -100,7 +100,7 @@ public class USSDAdvancedHomeController extends USSDController {
         if (!repeat) {
             addTryTrackMeOptions(ussdMenu, user);
         } else {
-            ussdMenu.addMenuOption("back", "back");
+            ussdMenu.addMenuOption("more/start", getMessage(optionsKey + "back", user));
         }
         return ussdMenu;
     }
@@ -112,18 +112,20 @@ public class USSDAdvancedHomeController extends USSDController {
             addTryTrackMeOptions(ussdMenu, user);
         } else {
             // add only back option
+            addBackOption(ussdMenu,user);
         }
         return ussdMenu;
     }
 
     private void addTryTrackMeOptions(USSDMenu menu, User user) {
-        menu.addMenuOption(moreMenus + startMenu + "/use-my-location","Check again trying to use my location");
+        menu.addMenuOption(moreMenus + startMenu + "/track-me","Check again trying to use my location");
         // ussdMenu.addMenuOption(moreMenus + startMenu + "/track-me","Track me");
         menu.addMenuOption("more/start", getMessage(optionsKey + "back", user));
     }
 
-    private void addBackOption() {
+    private void addBackOption(USSDMenu ussdMenu,User user) {
         // todo : create
+        ussdMenu.addMenuOption("more/start",getMessage(optionsKey + "back", user));
     }
 
     /*
@@ -154,11 +156,14 @@ public class USSDAdvancedHomeController extends USSDController {
         if (tracking) {
             menu = new USSDMenu("Great, it looks like we can work out your location, let's try searching meetings again");
             menu.addMenuOption("/near-me?repeat=true", "Look for meetings");
-            menu.addMenuOption("/start", "No"); // todo : go back to advanced menu start
+            menu.addMenuOption("more/start", "No");
             ussdLocationServicesBroker.asyncUssdLocationLookupAndStorage(user.getUid());
         } else {
             menu = new USSDMenu("Sorry, we aren't able to determine your location");
-            // todo : add back to advanced screen, back to home, exit
+
+            menu.addMenuOption("more/start", getMessage(optionsKey + "back", user));
+            menu.addMenuOption(startMenu,"Home");
+            menu.addMenuOption("exit", "Exit");
         }
         return menuBuilder(menu);
     }
