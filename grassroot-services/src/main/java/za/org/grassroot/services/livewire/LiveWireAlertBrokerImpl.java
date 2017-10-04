@@ -43,7 +43,10 @@ import java.security.InvalidParameterException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -460,10 +463,10 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
         User user = userRepository.findOneByUid(userUid);
         LiveWireAlert alert = alertRepository.findOneByUid(alertUid);
         if (tags != null && !tags.isEmpty()) {
-            alert.reviseTags(tags);
+            alert.addTags(tags);
         }
 
-        logger.info("here are the alert tags: {}", tags);
+        logger.debug("here are the alert tags: {}", tags);
 
         alert.setReviewed(true);
         alert.setReviewedByUser(user);
@@ -478,14 +481,16 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
         bundle.addLog(log);
 
         if (send) {
-            alert.setPublicListUids(publicListUids);
+            alert.revisePublicLists(publicListUids);
             alert.setSendTime(Instant.now());
-            logger.info("set public list UIDs to: {}", Arrays.toString(alert.getPublicLists()));
+            logger.info("set public list UIDs to: {}", alert.getPublicListsUids());
             bundle.addNotification(new LiveWireAlertReleasedNotification(
                     alert.getCreatingUser(),
                     messageSource.getMessage("livewire.alert.released"),
                     log));
         }
+
+        alertRepository.save(alert);
         logsAndNotificationsBroker.asyncStoreBundle(bundle);
     }
 

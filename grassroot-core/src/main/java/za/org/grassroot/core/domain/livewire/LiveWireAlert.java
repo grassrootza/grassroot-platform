@@ -431,7 +431,7 @@ public class LiveWireAlert {
     }
 
     public List<String> getTagList() {
-        logger.info("getting ... tags = {}", Arrays.toString(tags));
+        logger.debug("getting ... tags = {}", Arrays.toString(tags));
         return tags == null ? new ArrayList<>() : new ArrayList<>(Arrays.asList(tags));
     }
 
@@ -452,6 +452,16 @@ public class LiveWireAlert {
     public void reviseTags(List<String> tags) {
         Objects.requireNonNull(tags);
         this.tags = StringArrayUtil.listToArrayRemoveDuplicates(tags);
+    }
+
+    public List<String> getPublicListsUids() {
+        logger.debug("getting ... public lists = {}", Arrays.toString(publicLists));
+        return publicLists == null ? new ArrayList<>() : new ArrayList<>(Arrays.asList(publicLists));
+    }
+
+    public void revisePublicLists(List<String> listsToAdd) {
+        Objects.requireNonNull(tags);
+        this.publicLists = StringArrayUtil.listToArrayRemoveDuplicates(listsToAdd);
     }
 
     public void setSendTime(Instant sendTime) {
@@ -496,27 +506,6 @@ public class LiveWireAlert {
 
     public void setTargetSubscriber(DataSubscriber targetSubscriber) {
         this.targetSubscriber = targetSubscriber;
-    }
-
-    public String[] getPublicLists() {
-        return publicLists;
-    }
-
-    public List<String> getPublicListUids() {
-        logger.info("getting ... publicLists: {}", Arrays.toString(publicLists));
-        return StringArrayUtil.arrayToList(publicLists);
-    }
-
-    public boolean hasPublicListUids() {
-        return !StringArrayUtil.isAllEmptyOrNull(getPublicListUids());
-    }
-
-    public void setPublicLists(String[] publicLists) {
-        this.publicLists = publicLists;
-    }
-
-    public void setPublicListUids(List<String> uids) {
-        this.publicLists = StringArrayUtil.listToArray(uids);
     }
 
     public Set<MediaFileRecord> getMediaFiles() {

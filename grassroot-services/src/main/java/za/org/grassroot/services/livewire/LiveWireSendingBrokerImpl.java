@@ -7,7 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.support.MessageSourceAccessor;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.thymeleaf.TemplateEngine;
@@ -68,17 +67,17 @@ public class LiveWireSendingBrokerImpl implements LiveWireSendingBroker {
         this.storageBroker = storageBroker;
     }
 
-    @Async
+    // removed async as it was causing a seriously weird bug in here
     @Override
     @Transactional(readOnly = true)
     public void sendLiveWireAlerts(Set<String> alertUids) {
+        logger.info("starting to process {} alerts : ", alertUids.size());
         final List<String> publicPushMail = subscriberRepository.findAllActiveSubscriberPushEmails(DataSubscriberType.SYSTEM.name());
-        logger.debug("Processing {} LiveWire alerts", alertUids.size(), publicPushMail.size());
         alertUids.forEach(u -> sendAlert(alertRepository.findOneByUid(u), publicPushMail));
     }
 
     private void sendAlert(LiveWireAlert alert, List<String> systemEmailAddresses) {
-        logger.info("starting to send alert, uids: {}", alert.getPublicListUids());
+        logger.info("starting to send alert, uids: {}", alert.getPublicListsUids());
         // send the alert (maybe add Twitter etc in future)
         List<String> alertEmails = new ArrayList<>(systemEmailAddresses);
         switch (alert.getDestinationType()) {
@@ -102,13 +101,15 @@ public class LiveWireSendingBrokerImpl implements LiveWireSendingBroker {
         // doing this in one query would be more efficient, but because of the unnest it can't be done with
         // JPQL, and passing in the list of UIDs is then difficult in JPA, hence ...
         // logger.info("alert public uids: {}, empty? : {}", alert.getPublicListUids(), !alert.hasPublicListUids());
-        return !alert.hasPublicListUids() ? Collections.emptyList() :
-                alert.getPublicListUids()
+        logger.info("collecting addresses, list UIDs = {}", alert.getPublicListsUids());
+        List<String> addresses = alert.getPublicListsUids()
                 .stream()
                 .map(u -> subscriberRepository.findOneByUid(u).getPushEmails())
                 .flatMap(Collection::stream)
                 .distinct()
                 .collect(Collectors.toList());
+        logger.info("finished collecting addresses, list UIDs = {}", alert.getPublicListsUids());
+        return addresses;
     }
 
     private List<GrassrootEmail> generateEmailsForAlert(LiveWireAlert alert, List<String> emailAddresses) {
@@ -143,13 +144,13 @@ public class LiveWireSendingBrokerImpl implements LiveWireSendingBroker {
 
         GrassrootEmail.EmailBuilder builder = new GrassrootEmail.EmailBuilder()
                 .from("Grassroot LiveWire")
-                .subject(messageSource.getMessage(subject));
+                .subject(messageSource.getMessage(subject, new String[] {alert.getHeadline()}));
 
         if (alert.getMediaFiles() != null && !alert.getMediaFiles().isEmpty()) {
             // for the moment, we basically are just sending one as attachment (to change when gallery etc working)
-            logger.info("trying to fetch the image ....");
+            logger.debug("trying to fetch the image ....");
             File attachment = storageBroker.fetchFileFromRecord(alert.getMediaFiles().iterator().next());
-            logger.info("fetched the image, adding it to email ...");
+            logger.debug("fetched the image, adding it to email ...");
             builder.attachment("image.jpg", attachment);
         }
 
