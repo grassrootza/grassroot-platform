@@ -26,6 +26,7 @@ import za.org.grassroot.services.task.VoteBroker;
 import za.org.grassroot.services.user.UserManagementService;
 
 import java.text.MessageFormat;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
@@ -39,10 +40,9 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/sms/")
-public class AATIncomingSMSController {
+public class IncomingSMSController {
 
-    private static final Logger log = LoggerFactory.getLogger(AATIncomingSMSController.class);
-    private static final String patternToMatch = "\\b(?:yes|no|abstain|maybe)\\b";
+    private static final Logger log = LoggerFactory.getLogger(IncomingSMSController.class);
 
     private final EventBroker eventBroker;
     private final VoteBroker voteBroker;
@@ -51,17 +51,19 @@ public class AATIncomingSMSController {
     private final GroupLogRepository groupLogRepository;
     private final UserManagementService userManager;
     private final EventLogBroker eventLogManager;
+
     private final MessageAssemblingService messageAssemblingService;
     private final MessagingServiceBroker messagingServiceBroker;
 
-    private static final String fromNumber ="fn";
-    private static final String message ="ms";
+    private static final String FROM_PARAMETER ="fn";
+    private static final String MESSAGE_TEXT_PARAM ="ms";
+    private static final Duration NOTIFICATION_WINDOW = Duration.of(6, ChronoUnit.HOURS);
 
     @Autowired
-    public AATIncomingSMSController(EventBroker eventBroker, UserManagementService userManager, EventLogBroker eventLogManager,
-                                    MessageAssemblingService messageAssemblingService, MessagingServiceBroker messagingServiceBroker,
-                                    VoteBroker voteBroker, UserLogRepository userLogRepository, NotificationService notificationService,
-                                    GroupLogRepository groupLogRepository) {
+    public IncomingSMSController(EventBroker eventBroker, UserManagementService userManager, EventLogBroker eventLogManager,
+                                 MessageAssemblingService messageAssemblingService, MessagingServiceBroker messagingServiceBroker,
+                                 VoteBroker voteBroker, UserLogRepository userLogRepository, NotificationService notificationService,
+                                 GroupLogRepository groupLogRepository) {
         this.eventBroker = eventBroker;
         this.userManager = userManager;
         this.eventLogManager = eventLogManager;
@@ -75,8 +77,8 @@ public class AATIncomingSMSController {
 
 
     @RequestMapping(value = "incoming", method = RequestMethod.GET)
-    public void receiveSms(@RequestParam(value = fromNumber) String phoneNumber,
-                           @RequestParam(value = message) String msg) {
+    public void receiveSms(@RequestParam(value = FROM_PARAMETER) String phoneNumber,
+                           @RequestParam(value = MESSAGE_TEXT_PARAM) String msg) {
 
 
         log.info("Inside AATIncomingSMSController -" + " following param values were received + ms ="+msg+ " fn= "+phoneNumber);
@@ -88,7 +90,6 @@ public class AATIncomingSMSController {
             log.warn("Message from unknown user: " + phoneNumber);
             return;
         }
-
 
         EventRSVPResponse response = EventRSVPResponse.fromString(msg);
         boolean isYesNoResponse = response == EventRSVPResponse.YES || response == EventRSVPResponse.NO || response == EventRSVPResponse.MAYBE;
@@ -103,7 +104,6 @@ public class AATIncomingSMSController {
                 .collect(Collectors.toList());
 
         List<Event> outstandingMeetings = eventBroker.getOutstandingResponseForUser(user, EventType.MEETING);
-
 
         if (isYesNoResponse && !outstandingMeetings.isEmpty())  // user sent yes-no response and there is a meeting awaiting yes-no response
             eventLogManager.rsvpForEvent(outstandingMeetings.get(0).getUid(), user.getUid(), response); // recording rsvp for meeting
@@ -126,12 +126,14 @@ public class AATIncomingSMSController {
 
         notifyUnableToProcessReply(user);
 
-        //todo(beegor), what interface type should be used here
-        UserLog userLog = new UserLog(user.getUid(), UserLogType.SENT_UNEXPECTED_SMS_MESSAGE, trimmedMsg, UserInterfaceType.INCOMING_SMS);
+        UserLog userLog = new UserLog(user.getUid(), UserLogType.SENT_UNEXPECTED_SMS_MESSAGE,
+                trimmedMsg,
+                UserInterfaceType.INCOMING_SMS);
+
         userLogRepository.save(userLog);
 
-
-        List<Notification> recentNotifications = notificationService.fetchAndroidNotificationsSince(user.getUid(), Instant.now().minus(6, ChronoUnit.HOURS));
+        List<Notification> recentNotifications = notificationService
+                .fetchAndroidNotificationsSince(user.getUid(), Instant.now().minus(NOTIFICATION_WINDOW));
 
         for (Notification notification : recentNotifications) {
 
@@ -142,14 +144,15 @@ public class AATIncomingSMSController {
 
                 Group group = entry.getValue();
 
-                String notificationType = getNotificationType(aLog);
-                String description = MessageFormat.format("User {0} sent response we can't understand after being sent a notification of type: {} in this group", user.getName(), notificationType);
+                // String notificationType = getNotificationType(aLog);
+                String description = MessageFormat.format("{0}; {1}", trimmedMsg, notification.getMessage());
                 GroupLog groupLog = new GroupLog(group, user, GroupLogType.USER_SENT_UNKNOWN_RESPONSE, user.getId(), description);
                 groupLogRepository.save(groupLog);
             }
         }
     }
 
+    // might need this in future so just leaving it here
     private String getNotificationType(ActionLog aLog) {
         if (aLog instanceof EventLog)
             return "Event log: " + ((EventLog) aLog).getEventLogType().name();
@@ -178,14 +181,16 @@ public class AATIncomingSMSController {
         else if (notification.getTodoLog() != null)
             logGroupMap.put(notification.getTodoLog(), notification.getTodoLog().getTodo().getAncestorGroup());
 
-            //todo(bigor) check with Luke: are groupLog and liveWire relevant for this? Are there notifications sent for those logs?
         else if (notification.getGroupLog() != null)
             logGroupMap.put(notification.getGroupLog(), notification.getGroupLog().getGroup());
 
         else if (notification.getLiveWireLog() != null)
             logGroupMap.put(notification.getLiveWireLog(), notification.getLiveWireLog().getAlert().getGroup());
 
-        //todo(bigor) check with Luke: what about UserLog, AccountLog, AddressLog, they seem to not be related with any group, so we are probably not interested in those here
+        else if (notification.getAccountLog() != null)
+            logGroupMap.put(notification.getAccountLog(), notification.getAccountLog().getGroup());
+
+        // note: user log and address are not address related, so just watch the overall user logs for those
 
         return logGroupMap;
     }
@@ -215,12 +220,5 @@ public class AATIncomingSMSController {
         String message = messageAssemblingService.createReplyFailureMessage(user);
         messagingServiceBroker.sendSMS(message, user.getPhoneNumber(), true);
     }
-
-//    private boolean isValidInput(String message){
-//        Pattern regex = Pattern.compile(patternToMatch);
-//        Matcher regexMatcher = regex.matcher(message);
-//        return  regexMatcher.find();
-//    }
-
 
 }

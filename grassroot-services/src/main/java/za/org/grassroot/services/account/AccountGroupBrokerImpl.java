@@ -14,7 +14,6 @@ import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountLog;
 import za.org.grassroot.core.domain.account.PaidGroup;
 import za.org.grassroot.core.domain.notification.FreeFormMessageNotification;
-import za.org.grassroot.core.domain.notification.WelcomeNotification;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.enums.AccountLogType;
 import za.org.grassroot.core.enums.GroupLogType;
@@ -226,7 +225,7 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
             bundle.addLog(new AccountLog.Builder(account)
                     .userUid(user.getUid())
                     .accountLogType(AccountLogType.GROUP_ADDED)
-                    .groupUid(group.getUid())
+                    .group(group)
                     .paidGroupUid(paidGroup.getUid())
                     .description(group.getName()).build());
 
@@ -352,7 +351,7 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
             bundle.addLog(new AccountLog.Builder(account)
                     .userUid(user.getUid())
                     .accountLogType(AccountLogType.GROUP_REMOVED)
-                    .groupUid(group.getUid())
+                    .group(group)
                     .paidGroupUid(record.getUid())
                     .description(group.getName()).build());
 
@@ -390,7 +389,7 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
         AccountLog accountLog = new AccountLog.Builder(account)
                 .userUid(userUid)
                 .accountLogType(AccountLogType.MESSAGE_SENT)
-                .groupUid(groupUid)
+                .group(group)
                 .paidGroupUid(paidGroup.getUid())
                 .description(description)
                 .build();
@@ -581,7 +580,7 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
         bundle.addLog(new AccountLog.Builder(account)
                 .userUid(user.getUid())
                 .accountLogType(accountLogType)
-                .groupUid(group.getUid())
+                .group(group)
                 .paidGroupUid(paidGroupUid)
                 .description(group.getName()).build());
 

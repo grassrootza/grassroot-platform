@@ -31,7 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * Created by paballo on 2016/02/18.
  */
-public class AATIncomingSMSControllerTest extends RestAbstractUnitTest {
+public class IncomingSMSControllerTest extends RestAbstractUnitTest {
 
     private static final String path = "/sms/";
     private Event meeting;
@@ -49,7 +49,7 @@ public class AATIncomingSMSControllerTest extends RestAbstractUnitTest {
     private VoteBroker voteBrokerMock;
 
     @InjectMocks
-    private AATIncomingSMSController aatIncomingSMSController;
+    private IncomingSMSController aatIncomingSMSController;
 
 
     @Before
