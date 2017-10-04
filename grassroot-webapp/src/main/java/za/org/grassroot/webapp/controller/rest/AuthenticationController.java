@@ -42,7 +42,7 @@ public class AuthenticationController {
     }
 
     @RequestMapping(value = "/login", method = RequestMethod.GET)
-    @ApiOperation(value = "Login and retrieve a JWT token")
+    @ApiOperation(value = "Login and retrieve a JWT token", notes = "The JWT token is returned as a string in the 'data' property")
     public ResponseEntity<ResponseWrapper> login(@RequestParam("phoneNumber")String phoneNumber,
                                                  @RequestParam("otp")String otp,
                                                  @RequestParam(value = "clientType", required = false) String clientType) {
@@ -69,7 +69,8 @@ public class AuthenticationController {
     }
 
     @RequestMapping(value = "/token/validate", method = RequestMethod.GET)
-    @ApiOperation(value = "Validate whether a JWT token is available")
+    @ApiOperation(value = "Validate whether a JWT token is available", notes = "Returns TOKEN_STILL_VALID in 'message', or " +
+            "else 'INVALID_TOKEN'")
     public ResponseEntity<ResponseWrapper> validateToken(@RequestParam("token") String token) {
         boolean isJwtTokenValid = jwtService.isJwtTokenValid(token);
         if (isJwtTokenValid) {
@@ -81,7 +82,8 @@ public class AuthenticationController {
 
     @RequestMapping(value = "/token/refresh", method = RequestMethod.GET)
     @ApiOperation(value = "Refresh JWT token", notes = "Try to refresh an old or expired token, responds with " +
-            "a new token if the old token is within the refresh window, or a bad request if the token is still old")
+            "a new token as a string (in the 'data' property) if the old token is within the refresh window, or a bad request " +
+            "if the token is still old")
     public ResponseEntity<ResponseWrapper> refreshToken(@RequestParam("oldToken")String oldToken) {
         String newToken = jwtService.refreshToken(oldToken, JwtType.ANDROID_CLIENT);
         if (newToken != null) {
