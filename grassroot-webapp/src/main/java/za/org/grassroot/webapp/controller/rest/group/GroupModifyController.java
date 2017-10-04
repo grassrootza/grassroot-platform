@@ -1,6 +1,7 @@
 package za.org.grassroot.webapp.controller.rest.group;
 
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -26,6 +27,8 @@ public class GroupModifyController extends GroupBaseController {
     private static final Logger logger = LoggerFactory.getLogger(GroupModifyController.class);
 
     @RequestMapping(value = "/members/add/{userUid}/{groupUid}", method = RequestMethod.POST)
+    @ApiOperation(value = "Add members to a group", notes = "Adds members to the group, takes a set (can be a singleton) " +
+            "of MembershipInfo, which requires a name, a phone number, and, optionally a role (can be ROLE_ORDINARY_MEMBER)")
     public ResponseEntity<GroupModifiedResponse> addMembersToGroup(@PathVariable String userUid,
                                                           @PathVariable String groupUid,
                                                           @RequestBody Set<MembershipInfo> membersToAdd) {

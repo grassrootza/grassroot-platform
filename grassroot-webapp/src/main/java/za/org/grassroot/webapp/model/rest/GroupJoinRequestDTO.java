@@ -2,8 +2,9 @@ package za.org.grassroot.webapp.model.rest;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import za.org.grassroot.core.domain.association.GroupJoinRequest;
+import lombok.Getter;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.association.GroupJoinRequest;
 import za.org.grassroot.core.enums.AssocRequestStatus;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.PhoneNumberUtil;
@@ -15,6 +16,7 @@ import java.time.Instant;
  * Created by luke on 2016/07/09.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@Getter
 public class GroupJoinRequestDTO implements Comparable<GroupJoinRequestDTO> {
 
 	private String requestUid;
@@ -32,6 +34,8 @@ public class GroupJoinRequestDTO implements Comparable<GroupJoinRequestDTO> {
 
 	@JsonIgnore
 	private Instant createdDateTime;
+
+	private long createdDateTimeEpochMillis;
 	private String createdDateTimeISO;
 
 	public GroupJoinRequestDTO(GroupJoinRequest request, User user) {
@@ -43,6 +47,7 @@ public class GroupJoinRequestDTO implements Comparable<GroupJoinRequestDTO> {
 		this.groupName = request.getGroup().getGroupName();
 		this.requestDescription = request.getDescription();
 		this.createdDateTime = request.getCreationTime();
+		this.createdDateTimeEpochMillis = request.getCreationTime().toEpochMilli();
 		this.createdDateTimeISO = DateTimeUtil.convertToUserTimeZone(request.getCreationTime(), DateTimeUtil.getSAST())
 				.format(DateTimeUtil.getPreferredRestFormat());
 		this.status = request.getStatus();
@@ -54,39 +59,4 @@ public class GroupJoinRequestDTO implements Comparable<GroupJoinRequestDTO> {
 		return createdDateTime.compareTo(groupJoinRequestDTO.createdDateTime);
 	}
 
-	public String getRequestUid() {
-		return requestUid;
-	}
-
-	public String getRequestorName() {
-		return requestorName;
-	}
-
-	public String getRequestorNumber() {
-		return requestorNumber;
-	}
-
-	public String getGroupUid() {
-		return groupUid;
-	}
-
-	public String getGroupName() {
-		return groupName;
-	}
-
-	public String getRequestDescription() {
-		return requestDescription;
-	}
-
-	public Instant getCreatedDateTime() {
-		return createdDateTime;
-	}
-
-	public String getCreatedDateTimeISO() {
-		return createdDateTimeISO;
-	}
-
-	public JoinReqType getJoinReqType() {
-		return joinReqType;
-	}
 }
