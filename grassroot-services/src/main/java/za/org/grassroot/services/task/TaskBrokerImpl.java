@@ -404,7 +404,7 @@ public class TaskBrokerImpl implements TaskBroker {
         return t-> {
             TaskFullDTO taskFullDTO = new TaskFullDTO(t, user, uidTimeMap.get(t.getUid()), hasUserResponded(t, user));
             if (t instanceof Vote) {
-                taskFullDTO.setVoteResults(voteBroker.fetchVoteResults(user.getUid(), t.getUid()));
+                taskFullDTO.setVoteResults(voteBroker.fetchVoteResults(user.getUid(), t.getUid(), true));
             }
             return taskFullDTO;
         };
@@ -475,7 +475,7 @@ public class TaskBrokerImpl implements TaskBroker {
             if (changedSince == null || isEventAddedOrUpdatedSince(event, userResponseLog, changedSince)) {
                 TaskDTO taskDTO = new TaskDTO(event, user, userResponseLog);
                 if (event instanceof Vote) {
-                    taskDTO.setVoteCount(voteBroker.fetchVoteResults(user.getUid(), event.getUid()));
+                    taskDTO.setVoteCount(voteBroker.fetchVoteResults(user.getUid(), event.getUid(), true));
                 }
                 taskDtos.add(taskDTO);
             }
