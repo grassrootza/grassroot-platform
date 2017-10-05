@@ -58,7 +58,8 @@ public class TaskFetchController {
             " for sort type (defaults to sorting by last change")
     public ResponseEntity<List<TaskFullDTO>> fetchAllUserTasks(@PathVariable String userUid,
                                                              @RequestParam(required = false) TaskSortType taskSortType) {
-        return ResponseEntity.ok(taskBroker.fetchAllUserTasksSorted(userUid, taskSortType));
+        List<TaskFullDTO> tasks = taskBroker.fetchAllUserTasksSorted(userUid, taskSortType);
+        return ResponseEntity.ok(tasks);
     }
 
     @RequestMapping(value = "/group/{userUid}/{groupUid}", method = RequestMethod.GET)
