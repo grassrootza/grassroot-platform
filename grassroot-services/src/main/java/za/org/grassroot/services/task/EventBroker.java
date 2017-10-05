@@ -24,6 +24,8 @@ public interface EventBroker {
 
 	Meeting loadMeeting(String meetingUid);
 
+	List<Meeting> publicMeetingsUserIsNotPartOf(String term, User user);
+
 	/**
 	 * Create a meeting entity, also triggering notifications to be stored, and subsequently sent. Fields in helper:
 	 * userUid The UID of the user who is calling the meeting

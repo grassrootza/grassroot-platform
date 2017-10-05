@@ -10,7 +10,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.SafetyEvent;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.domain.task.Todo;
@@ -18,11 +20,11 @@ import za.org.grassroot.core.domain.task.Vote;
 import za.org.grassroot.core.enums.*;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.SafetyEventBroker;
-import za.org.grassroot.services.task.enums.EventListTimeType;
 import za.org.grassroot.services.group.GroupQueryBroker;
 import za.org.grassroot.services.livewire.LiveWireAlertBroker;
 import za.org.grassroot.services.task.EventLogBroker;
 import za.org.grassroot.services.task.TodoBroker;
+import za.org.grassroot.services.task.enums.EventListTimeType;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDResponseTypes;
 import za.org.grassroot.webapp.enums.USSDSection;
@@ -101,11 +103,12 @@ public class USSDHomeController extends USSDController {
             new SimpleEntry<>(TODO, new String[]{todoMenus + startMenu, openingMenuKey + logKey}),
             new SimpleEntry<>(GROUP_MANAGER, new String[]{groupMenus + startMenu, openingMenuKey + groupKey}),
             new SimpleEntry<>(USER_PROFILE, new String[]{userMenus + startMenu, openingMenuKey + userKey}),
-            new SimpleEntry<>(SAFETY_GROUP_MANAGER, new String[]{safetyMenus + startMenu, openingMenuKey + safetyKey})).
-            collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue)));
+            new SimpleEntry<>(MORE, new String[]{moreMenus + startMenu, openingMenuKey + moreKey})).
+            //new SimpleEntry<>(SAFETY_GROUP_MANAGER, new String[]{safetyMenus + startMenu, openingMenuKey + safetyKey})).
+                    collect(Collectors.toMap(SimpleEntry::getKey, SimpleEntry::getValue)));
 
     private static final List<USSDSection> openingSequenceWithGroups = Arrays.asList(
-            MEETINGS, VOTES, TODO, GROUP_MANAGER, USER_PROFILE, SAFETY_GROUP_MANAGER);
+            MEETINGS, VOTES, TODO, GROUP_MANAGER, USER_PROFILE, MORE);
     private static final List<USSDSection> openingSequenceWithoutGroups = Arrays.asList(
             USER_PROFILE, GROUP_MANAGER, MEETINGS, VOTES, TODO);
 
@@ -118,7 +121,7 @@ public class USSDHomeController extends USSDController {
         USSDMenu homeMenu = new USSDMenu(opening);
         List<USSDSection> menuSequence =
                 permissionBroker.countActiveGroupsWithPermission(user, null) != 0 ?
-                openingSequenceWithGroups : openingSequenceWithoutGroups;
+                        openingSequenceWithGroups : openingSequenceWithoutGroups;
         menuSequence.forEach(s -> {
             String[] urlMsgPair = openingMenuOptions.get(s);
             homeMenu.addMenuOption(urlMsgPair[0], getMessage(urlMsgPair[1], user));
@@ -380,7 +383,7 @@ public class USSDHomeController extends USSDController {
             openingMenu.addMenuOption(voteUri + "ABSTAIN", getMessage(optionMsgKey + "abstain", sessionUser));
         } else {
             vote.getVoteOptions().forEach(o -> {
-               openingMenu.addMenuOption(voteUri + USSDUrlUtil.encodeParameter(o), o);
+                openingMenu.addMenuOption(voteUri + USSDUrlUtil.encodeParameter(o), o);
             });
         }
 
@@ -484,8 +487,8 @@ public class USSDHomeController extends USSDController {
     @RequestMapping(value = path + "todo-complete")
     @ResponseBody
     public Request todoEntryMarkComplete(@RequestParam(value = phoneNumber) String inputNumber,
-                                @RequestParam(value = entityUidParam) String todoUid,
-                                @RequestParam(value = yesOrNoParam) String response) throws URISyntaxException {
+                                         @RequestParam(value = entityUidParam) String todoUid,
+                                         @RequestParam(value = yesOrNoParam) String response) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(inputNumber);
         TodoCompletionConfirmType type = "yes".equals(response) ? TodoCompletionConfirmType.COMPLETED

@@ -12,7 +12,6 @@ import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.enums.LiveWireAlertDestType;
 import za.org.grassroot.core.enums.LiveWireAlertType;
 import za.org.grassroot.core.enums.UserInterfaceType;
-import za.org.grassroot.core.enums.LiveWireAlertDestType;
 
 import java.time.Instant;
 import java.util.List;
@@ -35,7 +34,7 @@ public interface LiveWireAlertBroker {
      */
     String createAsComplete(String userUid, String headline, String description,
                             LiveWireAlertType type, String entityUid,
-                            String contactUserUid, String contactName,
+                            String contactUserUid, String contactName, String contactNumber,
                             LiveWireAlertDestType destType, DataSubscriber destSubscriber, List<MediaFileRecord> mediaFiles);
 
     /*
