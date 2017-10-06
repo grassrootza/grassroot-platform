@@ -66,9 +66,16 @@ public interface GroupLocationRepository extends JpaRepository<GroupLocation, Lo
 			"         * SIN(RADIANS(l.location.latitude))))) ")
 	List<Group> findPublicGroupsWithinRadius(GeoLocation location, Integer radius);
 
-	@Query(value = "SELECT g FROM GroupLocation g" +
-			"WHERE g.group = (SELECT m.group FROM Membership m" +
-			"WHERE m.user = :user)",nativeQuery = true)
+	@Query(value = "SELECT NEW za.org.grassroot.core.domain.geo.GroupLocation( g.group" +
+			",g.localDate" +
+			",g.location" +
+			",g.score" +
+			",g.source" +
+			")" +
+			" FROM GroupLocation g" +
+			" WHERE g.group IN (SELECT m.group FROM Membership m" +
+			"                   WHERE m.user =:user" +
+            "                   ORDER BY m.joinTime DESC)")
 	GroupLocation findByUserUid(@Param("user") User user);
 
 }

@@ -398,13 +398,13 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
                 .setParameter("distance_unit", KM_PER_DEGREE);
 
 
-        if(geoLocation.isValid()){
+        if(geoLocation != null){
             query.setParameter("latpoint", geoLocation.getLatitude())
                     .setParameter("longpoint", geoLocation.getLongitude());
             list = query.getResultList();
         }else{
             Instant fiveDayAgo = Instant.now().minus(5, ChronoUnit.DAYS);
-            UserLocationLog userLocationLog = userLocationLogRepository.findByUserUidAndTimestampBetweenNowAndIntervalGiven(user,fiveDayAgo);
+            UserLocationLog userLocationLog = userLocationLogRepository.findByUserUidAndTimestampBetweenNowAndIntervalGiven(user.getUid(),fiveDayAgo);
             if(userLocationLog != null){
 
                 geoLocation = new GeoLocation(userLocationLog.getLocation().getLatitude(),userLocationLog.getLocation().getLongitude());
@@ -416,12 +416,17 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
 
                 GroupLocation groupLocation = groupLocationRepository.findByUserUid(user);
 
-                geoLocation = new GeoLocation(groupLocation.getLocation().getLatitude(),groupLocation.getLocation().getLongitude());
-                if(geoLocation.isValid()){
-                    query.setParameter("latpoint",geoLocation.getLatitude())
-                            .setParameter("longpoint",geoLocation.getLongitude());
+                if(groupLocation != null){
+                    geoLocation = new GeoLocation(groupLocation.getLocation().getLatitude(),groupLocation.getLocation().getLongitude());
+                    if(geoLocation != null){
+                        query.setParameter("latpoint",geoLocation.getLatitude())
+                                .setParameter("longpoint",geoLocation.getLongitude());
 
-                    list = query.getResultList();
+                        list = query.getResultList();
+                    }
+
+                } else {
+                    list = new ArrayList<>();
                 }
             }
         }
