@@ -4,9 +4,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
-import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Notification;
+import za.org.grassroot.core.domain.NotificationStatus;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.UserMessagingPreference;
 
 import java.time.Instant;
 import java.util.List;
@@ -21,17 +22,12 @@ public interface NotificationRepository extends JpaRepository<Notification,Long>
 
     List<Notification> findByUidIn(Set<String> uids);
 
-    List<Notification> findByTargetAndForAndroidTimelineTrueOrderByCreatedDateTimeDesc(User target);
+    List<Notification> findByTargetAndDeliveryChannelOrderByCreatedDateTimeDesc(User target, UserMessagingPreference deliveryChannel);
 
-    Page<Notification> findByTargetAndForAndroidTimelineTrueOrderByCreatedDateTimeDesc(User target, Pageable pageable);
+    Page<Notification> findByTargetAndDeliveryChannelOrderByCreatedDateTimeDesc(User target, UserMessagingPreference deliveryChannel, Pageable pageable);
 
-    List<Notification> findByTargetAndForAndroidTimelineTrueAndCreatedDateTimeGreaterThanOrderByCreatedDateTimeDesc(User target, Instant start);
+    List<Notification> findByTargetAndDeliveryChannelAndCreatedDateTimeGreaterThanOrderByCreatedDateTimeDesc(User target, UserMessagingPreference deliveryChannel, Instant start);
 
-    int countByTargetAndViewedOnAndroidFalseAndForAndroidTimelineTrue(User target);
+    int countByTargetAndDeliveryChannelAndStatusNot(User target, UserMessagingPreference deliveryChannel, NotificationStatus status);
 
-    @Transactional(readOnly = true)
-    List<Notification> findFirst75ByNextAttemptTimeBeforeOrderByNextAttemptTimeAsc(Instant time);
-
-    @Transactional(readOnly = true)
-    List<Notification> findFirst100ByReadFalseAndAttemptCountGreaterThanAndLastAttemptTimeGreaterThan(int minAttemptCount, Instant lastAttemptTime);
 }

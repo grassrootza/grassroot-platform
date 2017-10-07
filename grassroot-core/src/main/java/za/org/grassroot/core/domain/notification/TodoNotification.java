@@ -1,9 +1,10 @@
 package za.org.grassroot.core.domain.notification;
 
-import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.ActionLog;
-import za.org.grassroot.core.domain.task.TodoLog;
+import za.org.grassroot.core.domain.Notification;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Todo;
+import za.org.grassroot.core.domain.task.TodoLog;
 import za.org.grassroot.core.enums.NotificationDetailedType;
 import za.org.grassroot.core.enums.NotificationType;
 
@@ -40,8 +41,8 @@ public abstract class TodoNotification extends Notification {
 	}
 
 	protected TodoNotification(User target, String message, ActionLog actionLog, Todo todo) {
-		super(target, message, actionLog, true);
-		this.todo = todo;
+        super(target, message, actionLog);
+        this.todo = todo;
 	}
 
 	public Todo getTodo() {

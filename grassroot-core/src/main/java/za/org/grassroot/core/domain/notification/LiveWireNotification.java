@@ -1,10 +1,11 @@
 package za.org.grassroot.core.domain.notification;
 
-import za.org.grassroot.core.domain.livewire.LiveWireLog;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.livewire.LiveWireLog;
 import za.org.grassroot.core.enums.NotificationDetailedType;
 import za.org.grassroot.core.enums.NotificationType;
+import za.org.grassroot.core.enums.UserMessagingPreference;
 
 import javax.persistence.MappedSuperclass;
 
@@ -19,7 +20,8 @@ public abstract class LiveWireNotification extends Notification {
     }
 
     protected LiveWireNotification(User destination, String message, LiveWireLog log) {
-        super(destination, message, log, false);
+        super(destination, message, log);
+        deliveryChannel = UserMessagingPreference.SMS;
     }
 
     @Override

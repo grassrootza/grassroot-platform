@@ -64,6 +64,7 @@ public class IncomingSMSController {
                                  MessageAssemblingService messageAssemblingService, MessagingServiceBroker messagingServiceBroker,
                                  VoteBroker voteBroker, UserLogRepository userLogRepository, NotificationService notificationService,
                                  GroupLogRepository groupLogRepository) {
+
         this.eventBroker = eventBroker;
         this.userManager = userManager;
         this.eventLogManager = eventLogManager;
