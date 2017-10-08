@@ -33,22 +33,13 @@ public interface CampaignBroker {
      */
     Campaign getCampaignDetailsByName(String campaignName);
 
-
-    /**
-     * Get Campaign message by campaign code
-     * @param campaignCode campign code
-     * @param assignment - different message use cases
-     * @return - Set of messages linked to campaign
-     */
-    Set<CampaignMessage> getCampaignMessagesByCampaignCode(String campaignCode, MessageVariationAssignment assignment);
-
     /**
      * Get Campaign message using campaign name
      * @param campaignName - name
      * @param assignment - message use case,eg. test
      * @return - set of messages linked to campaign
      */
-    Set<CampaignMessage> getCampaignMessagesByCampaignName(String campaignName, MessageVariationAssignment assignment);
+    Set<CampaignMessage> getCampaignMessagesByCampaignName(String campaignName, MessageVariationAssignment assignment, UserInterfaceType type, Locale locale);
 
     /**
      * Get campaign message using campaign code and language
@@ -57,7 +48,7 @@ public interface CampaignBroker {
      * @param locale - locale  for message
      * @return
      */
-    Set<CampaignMessage> getCampaignMessagesByCampaignCodeAndLocale(String campaignCode, MessageVariationAssignment assignment, Locale locale);
+    Set<CampaignMessage> getCampaignMessagesByCampaignCodeAndLocale(String campaignCode, MessageVariationAssignment assignment, Locale locale, UserInterfaceType type);
 
     /**
      * Get campaign message using campaign code and language
@@ -66,7 +57,7 @@ public interface CampaignBroker {
      * @param locale
      * @return
      */
-    Set<CampaignMessage> getCampaignMessagesByCampaignNameAndLocale(String campaignCode, MessageVariationAssignment assignment, Locale locale);
+    Set<CampaignMessage> getCampaignMessagesByCampaignNameAndLocale(String campaignCode, MessageVariationAssignment assignment, Locale locale, UserInterfaceType type);
 
     /**
      *
@@ -75,7 +66,7 @@ public interface CampaignBroker {
      * @param messageTag
      * @return
      */
-    Set<CampaignMessage> getCampaignMessagesByCampaignCodeAndMessageTag(String campaignCode, MessageVariationAssignment assignment, String messageTag);
+    Set<CampaignMessage> getCampaignMessagesByCampaignCodeAndMessageTag(String campaignCode, MessageVariationAssignment assignment, String messageTag, UserInterfaceType type, Locale locale);
 
     /**
      *
@@ -84,7 +75,7 @@ public interface CampaignBroker {
      * @param messageTag
      * @return
      */
-    Set<CampaignMessage> getCampaignMessagesByCampaignNameAndMessageTag(String campaignName, MessageVariationAssignment assignment, String messageTag);
+    Set<CampaignMessage> getCampaignMessagesByCampaignNameAndMessageTag(String campaignName, MessageVariationAssignment assignment, String messageTag, UserInterfaceType type,Locale locale);
 
     /**
      *
@@ -162,5 +153,19 @@ public interface CampaignBroker {
      * @param groupId
      * @return
      */
-    Campaign linkCampaignToMasterGroup(String campaignCode, Long groupId, String userUid);
+    Campaign linkCampaignToMasterGroup(String campaignCode, Long groupId, String phoneNumber);
+
+    /**
+     *
+     * @param campaignCode
+     * @param assignment
+     * @param channel
+     * @param actionType
+     * @param inputNumber
+     * @param locale
+     * @return
+     */
+    CampaignMessage getCampaignMessageByCampaignCodeAndActionType(String campaignCode, MessageVariationAssignment assignment,UserInterfaceType channel, CampaignActionType actionType, String inputNumber, Locale locale);
+
+
 }

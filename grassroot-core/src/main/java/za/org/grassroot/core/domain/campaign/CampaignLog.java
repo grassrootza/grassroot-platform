@@ -39,8 +39,8 @@ public class CampaignLog implements ActionLog {
     @Column(name="campaign_log_type", nullable = false, length = 50)
     private CampaignLogType campaignLogType;
 
-    @Column(name="user_uid", nullable = false)
-    private String userUid;
+    @Column(name="user_id", nullable = false)
+    private String userId;
 
     @ManyToOne
     @JoinColumn(name="campaign_id", nullable = false)
@@ -49,18 +49,18 @@ public class CampaignLog implements ActionLog {
     @Column(name="description", nullable = false)
     private String description;
 
-    public CampaignLog(String userUid, CampaignLogType campaignLogType,Campaign campaign) {
+    public CampaignLog(String userId, CampaignLogType campaignLogType,Campaign campaign) {
         this.uid = UIDGenerator.generateId();
         this.creationTime = Instant.now();
-        this.userUid = userUid;
+        this.userId = userId;
         this.campaignLogType = Objects.requireNonNull(campaignLogType);
         this.campaign = Objects.requireNonNull(campaign);
     }
 
-    public CampaignLog(String userUid, CampaignLogType campaignLogType, String searchValue) {
+    public CampaignLog(String userId, CampaignLogType campaignLogType, String searchValue) {
         this.uid = UIDGenerator.generateId();
         this.creationTime = Instant.now();
-        this.userUid = userUid;
+        this.userId = userId;
         this.campaignLogType = Objects.requireNonNull(campaignLogType);
         this.description = Objects.requireNonNull(searchValue);
     }
@@ -87,7 +87,7 @@ public class CampaignLog implements ActionLog {
         return "CampaignLog{" +
                 "id=" + id +
                 ", campaignLogType=" + campaignLogType +
-                ", userUid=" + userUid +
+                ", userId=" + userId +
                 ", creationTime =" + creationTime +
                 '}';
     }
@@ -117,15 +117,6 @@ public class CampaignLog implements ActionLog {
         this.creationTime = creationTime;
     }
 
-
-    public String getUserUid() {
-        return userUid;
-    }
-
-    public void setUserUid(String userUid) {
-        this.userUid = userUid;
-    }
-
     public CampaignLogType getCampaignLogType() {
         return campaignLogType;
     }
@@ -148,5 +139,13 @@ public class CampaignLog implements ActionLog {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
     }
 }
