@@ -3,10 +3,15 @@ package za.org.grassroot.core.domain;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.experimental.Tolerate;
+import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.account.Account;
+import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 /**
@@ -44,8 +49,8 @@ public class NotificationTemplate {
     @Setter private boolean active;
 
     @Basic
-    @Column(name = "send_sms")
-    @Setter private boolean sendViaSms;
+    @Column(name = "only_use_free")
+    @Setter private boolean onlyUseFreeChannels;
 
     @Basic
     @Column(name = "msg_template1", nullable = false)
@@ -74,4 +79,47 @@ public class NotificationTemplate {
     @JoinColumn(name = "group_id")
     @Setter private Group group;
 
+    @Tolerate
+    private NotificationTemplate() {
+        // for JPA
+    }
+
+    // using this to preserve builder pattern (note: deviates from prior style of setting these in constructor,
+    // todo is consider reconciling to old way by more sophisticated use of Builder pattern
+    @PrePersist
+    private void setDefaults() {
+        if (uid == null) {
+            uid = UIDGenerator.generateId();
+        }
+        if (creationTime == null) {
+            creationTime = Instant.now();
+        }
+    }
+
+    public List<String> getTemplateStrings() {
+        List<String> templates = new ArrayList<>();
+        templates.add(messageTemplate);
+        if (!StringUtils.isEmpty(messageTemplate2)) {
+            templates.add(messageTemplate2);
+        }
+        if (!StringUtils.isEmpty(messageTemplate3)) {
+            templates.add(messageTemplate3);
+        }
+        return templates;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        NotificationTemplate template = (NotificationTemplate) o;
+
+        return uid.equals(template.uid);
+    }
+
+    @Override
+    public int hashCode() {
+        return uid.hashCode();
+    }
 }

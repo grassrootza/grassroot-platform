@@ -1,10 +1,10 @@
 package za.org.grassroot.services.account;
 
 import org.springframework.data.domain.Sort;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.access.prepost.PreAuthorize;
-import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.NotificationTemplate;
+import za.org.grassroot.core.domain.account.Account;
 
 import java.time.Duration;
 import java.util.List;
@@ -57,9 +57,10 @@ public interface AccountGroupBroker {
      */
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     void createGroupWelcomeMessages(String userUid, String accountUid, String groupUid, List<String> messages,
-                                    Duration delayToSend, Locale language, boolean sendViaSms);
+                                    Duration delayToSend, Locale language, boolean onlyViaFreeChannels);
 
-    @Async
-    void generateGroupWelcomeNotifications(String groupUid, String addedMemberUid);
+    NotificationTemplate loadTemplate(String groupUid);
+
+    void generateGroupWelcomeNotifications(String addingUserUid, String groupUid, Set<String> addedMemberMsisdns);
 
 }

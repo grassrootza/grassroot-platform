@@ -32,6 +32,7 @@ import javax.annotation.PostConstruct;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -475,7 +476,7 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
     @Override
     @Transactional
     public void createGroupWelcomeMessages(String userUid, String accountUid, String groupUid,
-                                           List<String> messages, Duration delayToSend, Locale language, boolean sendViaSms) {
+                                           List<String> messages, Duration delayToSend, Locale language, boolean onlyViaFreeChannels) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(accountUid);
         Objects.requireNonNull(groupUid);
@@ -485,6 +486,11 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
         User user = userRepository.findOneByUid(userUid);
         Account account = accountRepository.findOneByUid(accountUid);
         Group group = groupRepository.findOneByUid(groupUid);
+
+        logger.info("account = {}", account);
+        logger.info("group = {}", group);
+
+        logger.info("going to check for paid group on account = {}, for group = {}", account.getName(), group.getName());
         PaidGroup paidGroup = getOrCreatePaidGroup(user, account, group);
 
         if (messages.isEmpty()) {
@@ -500,13 +506,14 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
         NotificationTemplate template = NotificationTemplate.builder()
                 .account(account)
                 .group(group)
+                .triggerType(NotificationTriggerType.ADDED_TO_GROUP)
                 .createdByUser(user)
                 .active(true)
                 .creationTime(Instant.now())
                 .delayIntervalMillis(delayToSend.toMillis())
                 .language(language)
                 .messageTemplate(messages.get(0))
-                .sendViaSms(sendViaSms)
+                .onlyUseFreeChannels(onlyViaFreeChannels)
                 .build();
 
         if (messages.size() > 1) {
@@ -520,34 +527,98 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
         templateRepository.save(template);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public NotificationTemplate loadTemplate(String groupUid) {
+        Objects.requireNonNull(groupUid);
+
+        Account account = findAccountForGroup(groupUid);
+        if (account == null) {
+            return null;
+        }
+
+        Group group = groupRepository.findOneByUid(groupUid);
+        return templateRepository.findTopByGroupAndTriggerTypeAndActiveTrue(group,
+                NotificationTriggerType.ADDED_TO_GROUP);
+    }
+
     @Async
     @Override
     @Transactional
-    public void generateGroupWelcomeNotifications(String groupUid, String addedMemberUid) {
+    public void generateGroupWelcomeNotifications(String addingUserUid, String groupUid, Set<String> addedMemberMsisdns) {
         Objects.requireNonNull(groupUid);
-        Objects.requireNonNull(addedMemberUid);
+        Objects.requireNonNull(addingUserUid);
+        Objects.requireNonNull(addedMemberMsisdns);
+
+        DebugUtil.transactionRequired("");
+
+        Account account = findAccountForGroup(groupUid);
+        if (account == null) {
+            throw new IllegalArgumentException("Trying to create welcome notifications for non-account linked group");
+        }
 
         Group group = groupRepository.findOneByUid(groupUid);
-        User destination = userRepository.findOneByUid(addedMemberUid);
+        PaidGroup latestRecord = paidGroupRepository.findTopByGroupOrderByExpireDateTimeDesc(group);
+        NotificationTemplate template = templateRepository.findTopByGroupAndTriggerTypeAndActiveTrue(group,
+                NotificationTriggerType.ADDED_TO_GROUP);
 
-        NotificationTemplate template = templateRepository.findTopByGroupAndActiveTrue(group);
+        if (template != null && template.isActive()) {
+            LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
-        if (template != null) {
-            // create the notification
-            // we need a syntax, like __name__ and __date__ or something.
-            String message = String.format(template.getMessageTemplate(), destination.getName());
+            AccountLog accountLog = new AccountLog.Builder(account)
+                    .userUid(addingUserUid)
+                    .group(group)
+                    .paidGroupUid(latestRecord.getUid())
+                    .accountLogType(AccountLogType.MESSAGE_SENT)
+                    .description("Generated group welcome notifications for {} members") // todo : more descriptions
+                    .build();
 
+            bundle.addLog(accountLog);
+            template.getTemplateStrings().forEach(templateString -> {
+                bundle.addNotifications(generateNotifications(template, templateString, group, addedMemberMsisdns, accountLog));
+            });
 
+            // todo : work out why this only actually stores if it's async
+            logsAndNotificationsBroker.asyncStoreBundle(bundle);
+            logger.info("sent logs and notifications for storage, exiting");
         }
     }
 
-    /*private Notification generateFromTemplate(String messageTemplate, User destination) {
+    private Set<Notification> generateNotifications(NotificationTemplate templateEntity, String templateString,
+                                                    Group group, Set<String> memberUids, AccountLog accountLog) {
+        Instant now = Instant.now();
+        return userRepository.findByUidIn(memberUids).stream()
+                .map(user -> fromTemplate(templateEntity, templateString, group.getMembership(user), accountLog, now))
+                .collect(Collectors.toSet());
+    }
 
-    }*/
+    private Notification fromTemplate(NotificationTemplate template, String templateString,
+                                      Membership membership, AccountLog accountLog, Instant referenceTime) {
+        // todo : handle truncating better
+        // todo : handle null delays
+        Notification notification = new FreeFormMessageNotification(membership.getUser(),
+                messageFromTemplateString(templateString, membership, 160), accountLog);
+        notification.setSendOnlyAfter(referenceTime.plus(template.getDelayIntervalMillis(), ChronoUnit.MILLIS));
+        /*if (template.isOnlyUseFreeChannels()) {
+            notification.setForAndroidTimeline(false); // todo : port to new design
+        }*/
+        return notification;
+    }
+
+    private String messageFromTemplateString(String template, Membership membership, int maxChars) {
+        final String formatString = template
+                .replace("__name__", "%1$s")
+                .replace("__date__", "%2$s");
+        String message = String.format(formatString,
+                membership.getUser().getName(),
+                membership.getJoinTime());
+        return message.substring(0, Math.min(message.length(), maxChars));
+    }
 
     private PaidGroup getOrCreatePaidGroup(User user, Account account, Group group) {
         PaidGroup paidGroup = fetchLatestPaidGroup(group);
         if (paidGroup == null) {
+            logger.info("found no paid group record, creating one ...");
             addGroupToAccount(account.getUid(), group.getUid(), user.getUid());
             paidGroup = fetchLatestPaidGroup(group);
         } else if (!paidGroup.getAccount().equals(account)) {

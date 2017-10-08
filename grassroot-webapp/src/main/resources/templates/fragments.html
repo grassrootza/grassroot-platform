@@ -3,6 +3,30 @@
       xmlns:th="http://www.thymeleaf.org">
 <body>
 
+  <section th:fragment="std_header(title, subtitle)" class="top-container">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
+          <h2 class="text-center header-content-title"><span class="bold-title" th:text="${title}">Title</span></h2>
+          <h4 class="text-center header-content-subtitle" th:text="${subtitle}"></h4>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section th:fragment="std_header_back(title, back_text, back_url)" class="top-container">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
+          <h2 class="text-center header-content-title"><span class="bold-title" th:text="${title}">Title</span></h2>
+          <h4 class="text-center header-content-subtitle">
+            <a th:href="@{${back_url}}" th:text="${back_text}">Back</a>
+          </h4>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <div th:fragment="member-picker (messageKey)" class="form-group" >
     <label class="control-label" th:text="#{__${messageKey}__}"></label>
     <div class="radio">
