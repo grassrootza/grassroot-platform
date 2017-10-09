@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specifications;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.w3c.dom.Document;
@@ -137,6 +138,14 @@ public class AatSoapLocationBrokerImpl implements UssdLocationServicesBroker {
         userLocationLogRepository.save(new UserLocationLog(timeOfCoord, userUid, location,
                 LocationSource.LOGGED_APPROX));
         return location;
+    }
+
+    // async wrapper for get user location
+    @Async
+    @Override
+    @Transactional
+    public void asyncUssdLocationLookupAndStorage(String userUid) {
+        getUssdLocationForUser(userUid);
     }
 
     // here: deal with the awfulness of the AAT XML schema

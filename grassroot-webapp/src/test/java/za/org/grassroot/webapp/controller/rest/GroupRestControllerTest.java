@@ -16,8 +16,8 @@ import za.org.grassroot.core.domain.GroupLog;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.services.group.GroupPermissionTemplate;
-import za.org.grassroot.webapp.controller.rest.android.GroupQueryRestController;
-import za.org.grassroot.webapp.controller.rest.android.GroupRestController;
+import za.org.grassroot.webapp.controller.android1.GroupQueryRestController;
+import za.org.grassroot.webapp.controller.android1.GroupRestController;
 
 import java.util.ArrayList;
 import java.util.List;

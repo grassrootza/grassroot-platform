@@ -18,4 +18,5 @@ public final class TodoLogSpecifications {
     public static Specification<TodoLog> ofType(TodoLogType type) {
         return (root, query, cb) -> cb.equal(root.get(TodoLog_.type), type);
     }
+
 }

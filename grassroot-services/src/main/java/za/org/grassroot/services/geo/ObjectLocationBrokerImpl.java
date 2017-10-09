@@ -5,23 +5,26 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestTemplate;
 import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.geo.GeoLocation;
-import za.org.grassroot.core.domain.geo.ObjectLocation;
+import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.geo.*;
+import za.org.grassroot.core.enums.LocationSource;
 import za.org.grassroot.core.repository.GroupLocationRepository;
 import za.org.grassroot.core.repository.MeetingLocationRepository;
+import za.org.grassroot.core.repository.PreviousPeriodUserLocationRepository;
+import za.org.grassroot.core.repository.UserLocationLogRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.group.GroupLocationFilter;
 
 import javax.persistence.EntityManager;
+import javax.persistence.TypedQuery;
 import java.security.InvalidParameterException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.function.Predicate;
 
 import static za.org.grassroot.services.geo.GeoLocationUtils.KM_PER_DEGREE;
 
@@ -36,13 +39,20 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
     private final EntityManager entityManager;
     private final GroupLocationRepository groupLocationRepository;
     private final MeetingLocationRepository meetingLocationRepository;
+    private final UserLocationLogRepository userLocationLogRepository;
+    private final PreviousPeriodUserLocationRepository avgLocationRepository;
+
 
     @Autowired
     public ObjectLocationBrokerImpl(EntityManager entityManager, GroupLocationRepository groupLocationRepository,
-                                    MeetingLocationRepository meetingLocationRepository, RestTemplate restTemplate) {
+                                    MeetingLocationRepository meetingLocationRepository,
+                                    UserLocationLogRepository userLocationLogRepository,
+                                    PreviousPeriodUserLocationRepository avgLocationRepository) {
         this.entityManager = entityManager;
         this.groupLocationRepository = groupLocationRepository;
         this.meetingLocationRepository = meetingLocationRepository;
+        this.userLocationLogRepository = userLocationLogRepository;
+        this.avgLocationRepository = avgLocationRepository;
     }
 
     @Override
@@ -352,6 +362,114 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
 
         return (list.isEmpty() ? new ArrayList<>() : list);
     }
+
+
+    public List<ObjectLocation> fetchMeetingsNearUser(Integer radius, User user, GeoLocation geoLocation){
+
+        assertRadius(radius);
+        List<ObjectLocation> list = new ArrayList<>();
+
+        String strQuery =
+                "SELECT NEW za.org.grassroot.core.domain.geo.ObjectLocation(" +
+                        "  m.uid, m.name, l.location.latitude, l.location.longitude, l.score, 'MEETING', " +
+                        "  CONCAT('Where: ', m.eventLocation, 'Date and Time: ', m.eventStartDateTime), m.isPublic) " +
+                        "FROM MeetingLocation l " +
+                        "INNER JOIN l.meeting m " +
+                        "WHERE m.isPublic = true " +
+                        "  AND l.location.latitude " +
+                        "      BETWEEN :latpoint  - (:radius / :distance_unit) " +
+                        "          AND :latpoint  + (:radius / :distance_unit) " +
+                        "  AND l.location.longitude " +
+                        "      BETWEEN :longpoint - (:radius / (:distance_unit * COS(RADIANS(:latpoint)))) " +
+                        "          AND :longpoint + (:radius / (:distance_unit * COS(RADIANS(:latpoint)))) " +
+                        "  AND :radius >= (:distance_unit " +
+                        "           * DEGREES(ACOS(COS(RADIANS(:latpoint)) " +
+                        "           * COS(RADIANS(l.location.latitude)) " +
+                        "           * COS(RADIANS(:longpoint - l.location.longitude)) " +
+                        "           + SIN(RADIANS(:latpoint)) " +
+                        "           * SIN(RADIANS(l.location.latitude))))) " +
+                        " AND m.ancestorGroup NOT IN(SELECT mm.group FROM Membership mm WHERE mm.user = :user)";
+
+        logger.info("query = {}",strQuery);
+
+        TypedQuery<ObjectLocation> query = entityManager.createQuery(strQuery,ObjectLocation.class)
+                .setParameter("user",user)
+                .setParameter("radius", (double)radius)
+                .setParameter("distance_unit", KM_PER_DEGREE);
+
+
+        if(geoLocation.isValid()){
+            query.setParameter("latpoint", geoLocation.getLatitude())
+                    .setParameter("longpoint", geoLocation.getLongitude());
+            list = query.getResultList();
+        }else{
+            Instant fiveDayAgo = Instant.now().minus(5, ChronoUnit.DAYS);
+            UserLocationLog userLocationLog = userLocationLogRepository.findByUserUidAndTimestampBetweenNowAndIntervalGiven(user,fiveDayAgo);
+            if(userLocationLog != null){
+
+                geoLocation = new GeoLocation(userLocationLog.getLocation().getLatitude(),userLocationLog.getLocation().getLongitude());
+                query.setParameter("latpoint",geoLocation.getLatitude())
+                        .setParameter("longpoint",geoLocation.getLongitude());
+
+                list = query.getResultList();
+            }else{
+
+                GroupLocation groupLocation = groupLocationRepository.findByUserUid(user);
+
+                geoLocation = new GeoLocation(groupLocation.getLocation().getLatitude(),groupLocation.getLocation().getLongitude());
+                if(geoLocation.isValid()){
+                    query.setParameter("latpoint",geoLocation.getLatitude())
+                            .setParameter("longpoint",geoLocation.getLongitude());
+
+                    list = query.getResultList();
+                }
+            }
+        }
+        return (list.isEmpty() ? new ArrayList<>() : list);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public GeoLocation fetchBestGuessUserLocation(String userUid) {
+        GeoLocation bestGuess = null;
+
+        Instant cutOffAge = Instant.now().minus(30, ChronoUnit.DAYS);
+        List<UserLocationLog> locationLogs = userLocationLogRepository.findByUserUidOrderByTimestampDesc(userUid);
+
+        if (!locationLogs.isEmpty()) {
+
+            Optional<UserLocationLog> bestMatch = locationLogs.stream()
+                    .filter(ofSourceNewerThan(cutOffAge, LocationSource.LOGGED_PRECISE))
+                    .findFirst();
+
+            bestGuess = bestMatch.isPresent() ? bestMatch.get().getLocation() : null;
+
+            if (bestGuess == null) {
+                Optional<UserLocationLog> nextTry = locationLogs.stream()
+                        .filter(ofSourceNewerThan(cutOffAge, LocationSource.LOGGED_APPROX)).findFirst();
+                bestGuess = nextTry.isPresent() ? nextTry.get().getLocation() : null;
+            }
+
+            if (bestGuess == null) {
+                bestGuess = locationLogs.get(0).getLocation();
+            }
+
+        } else {
+            PreviousPeriodUserLocation avgUserLocation = avgLocationRepository
+                    .findTopByKeyUserUidOrderByKeyLocalDateDesc(userUid);
+
+            if (avgUserLocation != null) {
+                bestGuess = avgUserLocation.getLocation();
+            }
+        }
+
+        return bestGuess;
+    }
+
+    private Predicate<UserLocationLog> ofSourceNewerThan(Instant threshold, LocationSource source) {
+        return log -> log.getTimestamp().isAfter(threshold) && log.getLocationSource().equals(source);
+    }
+
 
     private void assertRestriction (Integer restriction) throws InvalidParameterException {
         if (restriction == null) {

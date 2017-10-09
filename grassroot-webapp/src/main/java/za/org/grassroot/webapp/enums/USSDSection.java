@@ -14,7 +14,8 @@ public enum USSDSection {
     SAFETY_GROUP_MANAGER("safety"),
     USER_PROFILE ("user"),
     LIVEWIRE("livewire"),
-    U404 ("error");
+    U404 ("error"),
+    MORE ("more");
 
     private final String section;
 

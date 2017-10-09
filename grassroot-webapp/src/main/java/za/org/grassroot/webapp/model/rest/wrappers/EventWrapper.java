@@ -4,7 +4,7 @@ import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Vote;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
-import za.org.grassroot.core.dto.TaskDTO;
+import za.org.grassroot.core.dto.task.TaskDTO;
 import za.org.grassroot.core.repository.EventLogRepository;
 
 import java.time.Instant;

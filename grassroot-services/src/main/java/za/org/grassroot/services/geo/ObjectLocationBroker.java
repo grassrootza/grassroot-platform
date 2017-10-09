@@ -1,7 +1,9 @@
 package za.org.grassroot.services.geo;
 
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.ObjectLocation;
+import za.org.grassroot.core.domain.geo.UserLocationLog;
 import za.org.grassroot.services.group.GroupLocationFilter;
 
 import java.security.InvalidParameterException;
@@ -28,5 +30,17 @@ public interface ObjectLocationBroker {
             throws InvalidParameterException;
 
     List<ObjectLocation> fetchLocationsWithFilter(GroupLocationFilter filter);
+
+    List<ObjectLocation> fetchMeetingsNearUser(Integer radius, User user, GeoLocation geoLocation)
+            throws InvalidParameterException;
+
+    GeoLocation fetchBestGuessUserLocation(String userUid);
+
+    //List<ObjectLocation> fetchMeetingsNearUserUssd(Integer radius,User user)
+            //throws InvalidParameterException;
+
+    //ObjectLocation getObjectLocation(String uid) throws InvalidParameterException;
+
+    //ObjectLocation getObjectLocation(String uid) throws InvalidParameterException;
 
 }

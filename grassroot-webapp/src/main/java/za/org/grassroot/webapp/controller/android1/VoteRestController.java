@@ -1,4 +1,4 @@
-package za.org.grassroot.webapp.controller.rest.android;
+package za.org.grassroot.webapp.controller.android1;
 
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
@@ -12,7 +12,7 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.EventReminderType;
 import za.org.grassroot.core.domain.task.Vote;
-import za.org.grassroot.core.dto.TaskDTO;
+import za.org.grassroot.core.dto.task.TaskDTO;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.repository.EventLogRepository;
@@ -109,7 +109,7 @@ public class VoteRestController {
 
         User user = userManagementService.findByInputNumber(phoneNumber);
         Vote vote = voteBroker.load(voteUid);
-        Map<String, Long> voteResults = voteBroker.fetchVoteResults(user.getUid(), voteUid);
+        Map<String, Long> voteResults = voteBroker.fetchVoteResults(user.getUid(), voteUid, false);
         EventWrapper eventWrapper = new EventWrapper(vote, user, voteResults, eventLogRepository);
         return RestUtil.okayResponseWithData(RestMessage.VOTE_DETAILS, eventWrapper);
     }
@@ -122,7 +122,7 @@ public class VoteRestController {
 
         permissionBroker.validateGroupPermission(user, event.getAncestorGroup(), null);
 
-        Map<String, Long> totals = voteBroker.fetchVoteResults(user.getUid(), voteUid);
+        Map<String, Long> totals = voteBroker.fetchVoteResults(user.getUid(), voteUid, false);
         return totals != null ? new ResponseEntity<>(totals, HttpStatus.OK) :
                 new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     }

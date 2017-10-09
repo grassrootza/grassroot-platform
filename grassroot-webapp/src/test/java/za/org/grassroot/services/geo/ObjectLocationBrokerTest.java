@@ -6,11 +6,14 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-import org.springframework.web.client.RestTemplate;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.ObjectLocation;
 import za.org.grassroot.core.repository.GroupLocationRepository;
 import za.org.grassroot.core.repository.MeetingLocationRepository;
+import za.org.grassroot.core.repository.PreviousPeriodUserLocationRepository;
+import za.org.grassroot.core.repository.UserLocationLogRepository;
+import za.org.grassroot.integration.location.UssdLocationServicesBroker;
+import za.org.grassroot.services.task.EventBroker;
 
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
@@ -35,15 +38,19 @@ public class ObjectLocationBrokerTest {
     @Mock
     private MeetingLocationRepository mockMeetingLocationRepository;
 
-    @Mock
-    private RestTemplate mockRestTemplate;
-
     private ObjectLocationBrokerImpl objectLocationBroker;
+
+    @Mock
+    private UserLocationLogRepository userLocationLogRepository;
+
+    @Mock
+    private PreviousPeriodUserLocationRepository avgPeriodRepositoryMock;
 
     @Before
     public void setUp () {
+
         objectLocationBroker = new ObjectLocationBrokerImpl(mockEntityManager, mockGroupLocationRepository,
-                mockMeetingLocationRepository, mockRestTemplate);
+                mockMeetingLocationRepository, userLocationLogRepository, avgPeriodRepositoryMock);
 
         given(mockQuery.setParameter(anyString(), any())).willReturn(mockQuery);
         given(mockQuery.getResultList()).willAnswer(i->Arrays.asList());

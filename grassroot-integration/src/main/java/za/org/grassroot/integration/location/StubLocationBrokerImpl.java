@@ -55,5 +55,10 @@ public class StubLocationBrokerImpl implements UssdLocationServicesBroker {
     }
 
     @Override
+    public void asyncUssdLocationLookupAndStorage(String userUid) {
+        // for testing purposes etc
+    }
+
+    @Override
     public boolean hasUserGivenLocationPermission(String userUid) { return returnValue; }
 }

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.servlet.HandlerMapping;
@@ -36,6 +37,9 @@ public class TokenValidationInterceptor extends HandlerInterceptorAdapter {
     private static final String contentType = "application/json";
 
     @Autowired
+    private Environment environment;
+
+    @Autowired
     public void setPasswordTokenService(PasswordTokenService passwordTokenService) {
         this.passwordTokenService = passwordTokenService;
     }
@@ -55,6 +59,10 @@ public class TokenValidationInterceptor extends HandlerInterceptorAdapter {
         AuthorizationHeader authorizationHeader = new AuthorizationHeader(request);
 
         boolean isTokenExpired = false;
+
+        if (environment.acceptsProfiles("localpg")) {
+            return true;
+        }
 
         if (authorizationHeader.hasBearerToken()
                 && jwtService.isJwtTokenValid(authorizationHeader.getBearerToken())) {

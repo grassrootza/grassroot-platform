@@ -1,20 +1,22 @@
 package za.org.grassroot.webapp.controller.rest.group;
 
 import com.codahale.metrics.annotation.Timed;
+import io.swagger.annotations.Api;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import za.org.grassroot.core.dto.group.GroupFullDTO;
+import za.org.grassroot.core.dto.group.GroupMinimalDTO;
+import za.org.grassroot.core.dto.group.GroupTimeChangedDTO;
 import za.org.grassroot.services.group.GroupFetchBroker;
-import za.org.grassroot.webapp.enums.RestMessage;
-import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
-import za.org.grassroot.webapp.util.RestUtil;
 
 import java.util.Map;
 import java.util.Set;
 
 @RestController
+@Api("/api/group/fetch")
 @RequestMapping(value = "/api/group/fetch")
 public class GroupFetchController {
 
@@ -37,11 +39,10 @@ public class GroupFetchController {
      */
     @Timed
     @RequestMapping(value = "/updated/{userUid}", method = RequestMethod.POST)
-    public ResponseEntity<ResponseWrapper> fetchUpdatedGroups(@PathVariable String userUid,
-                                                              @RequestBody Map<String, Long> existingGroups) {
+    public ResponseEntity<Set<GroupTimeChangedDTO>> fetchUpdatedGroups(@PathVariable String userUid,
+                                                                       @RequestBody Map<String, Long> existingGroups) {
         logger.info("checking for groups changes, map sent in: {}", existingGroups);
-        return RestUtil.okayResponseWithData(RestMessage.USER_GROUPS,
-                groupFetchBroker.findNewlyChangedGroups(userUid, existingGroups));
+        return ResponseEntity.ok(groupFetchBroker.findNewlyChangedGroups(userUid, existingGroups));
     }
 
     /**
@@ -51,10 +52,9 @@ public class GroupFetchController {
      * @return
      */
     @RequestMapping(value = "/info/{userUid}", method = RequestMethod.GET)
-    public ResponseEntity<ResponseWrapper> fetchGroupInfo(@PathVariable String userUid,
-                                                          @RequestParam(required = false) Set<String> groupUids) {
-        return RestUtil.okayResponseWithData(RestMessage.USER_GROUPS,
-                groupFetchBroker.fetchGroupMinimalInfo(userUid, groupUids));
+    public ResponseEntity<Set<GroupMinimalDTO>> fetchGroupInfo(@PathVariable String userUid,
+                                                               @RequestParam(required = false) Set<String> groupUids) {
+        return ResponseEntity.ok(groupFetchBroker.fetchGroupMinimalInfo(userUid, groupUids));
     }
 
     /**
@@ -64,9 +64,8 @@ public class GroupFetchController {
      * @return
      */
     @RequestMapping(value = "/full/{userUid}", method = RequestMethod.GET)
-    public ResponseEntity<ResponseWrapper> fetchFullGroupInfo(@PathVariable String userUid,
-                                                              @RequestParam(required = false) Set<String> groupUids) {
-        return RestUtil.okayResponseWithData(RestMessage.USER_GROUPS,
-                groupFetchBroker.fetchGroupFullInfo(userUid, groupUids));
+    public ResponseEntity<Set<GroupFullDTO>> fetchFullGroupInfo(@PathVariable String userUid,
+                                                                @RequestParam(required = false) Set<String> groupUids) {
+        return ResponseEntity.ok(groupFetchBroker.fetchGroupFullInfo(userUid, groupUids));
     }
 }
