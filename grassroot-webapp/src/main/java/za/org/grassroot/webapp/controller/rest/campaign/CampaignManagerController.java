@@ -7,15 +7,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.services.campaign.CampaignBroker;
-import za.org.grassroot.services.user.UserManager;
+import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.model.web.CampaignMessageWrapper;
@@ -37,11 +33,11 @@ public class CampaignManagerController {
     private static final Logger logger = LoggerFactory.getLogger(CampaignManagerController.class);
 
     private final CampaignBroker campaignBroker;
-    private final UserManager userManager;
+    private final UserManagementService userManager;
     private final static String SA_TIME_ZONE = "Africa/Johannesburg";
 
     @Autowired
-    public CampaignManagerController(CampaignBroker campaignBroker, UserManager userManager) {
+    public CampaignManagerController(CampaignBroker campaignBroker, UserManagementService userManager) {
         this.campaignBroker = campaignBroker;
         this.userManager = userManager;
     }
