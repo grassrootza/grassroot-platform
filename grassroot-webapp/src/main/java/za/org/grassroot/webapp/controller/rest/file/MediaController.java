@@ -1,6 +1,7 @@
 package za.org.grassroot.webapp.controller.rest.file;
 
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +28,9 @@ public class MediaController {
         this.mediaFileBroker = mediaFileBroker;
     }
 
+    @ApiOperation(value = "Store a media file, and get the server key back",
+            notes = "Message will declare if the file already existed, by having already_exists or uploaded, and" +
+                    "the 'data' field contains a string that will have the UID of the file record on the server (storedFileUid)")
     @RequestMapping(value = "/store/{userUid}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> storeMediaFile(@PathVariable String userUid,
                                                           @RequestParam String imageKey,

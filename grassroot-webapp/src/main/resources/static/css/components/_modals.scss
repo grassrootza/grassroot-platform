@@ -6,17 +6,6 @@
 
 .modal-body {
     font-size: 1.2em;
-
-	.list-group .list-group-item > .list-checkbox {
-		width: 18px;
-		height: 18px;
-	}
-
-	.list-group .list-group-item > .list-checkbox-label {
-		margin-left: 20px;
-		font-size: 1.3em;
-		font-weight: normal;
-	}
 }
 
 	.modal-body .form-group {
@@ -53,21 +42,20 @@
 }
 
 .modal {
-	select,
-	input {
-		border-radius: 0;
-		font-size: 1em;
-		margin: 0 !important;
-	}
+  select,
+  input {
+    border-radius: 0;
+    font-size: 1em;
+    margin: 0 !important;
+  }
 
-	p {
-		margin-bottom: 22px;
-	}
+  p {
+  	margin-bottom: 22px;
+  }
 
-	select + p,
-	input + p,
-	label + p {
-		margin-top: 15px;
-	}
-
+  select + p,
+  input + p,
+  label + p {
+  	margin-top: 15px;
+  }
 }

@@ -5,6 +5,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.UserLog;
 import za.org.grassroot.core.enums.NotificationDetailedType;
 import za.org.grassroot.core.enums.NotificationType;
+import za.org.grassroot.core.enums.UserMessagingPreference;
 
 import javax.persistence.MappedSuperclass;
 
@@ -14,8 +15,10 @@ public abstract class UserNotification extends Notification {
 	}
 
 	protected UserNotification(User target, String message, UserLog userLog) {
-		super(target, message, userLog, false);
-	}
+
+        super(target, message, userLog);
+        deliveryChannel = UserMessagingPreference.SMS;
+    }
 
 	@Override
 	public NotificationType getNotificationType() {

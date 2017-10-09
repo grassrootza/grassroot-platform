@@ -438,7 +438,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
                 WelcomeNotification notification = new WelcomeNotification(sessionUser, message, userLog);
                 // notification sending delay of 2days
                 ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(Instant.now().plus(48, ChronoUnit.HOURS), TimeZone.getTimeZone("Africa/Johannesburg").toZoneId());
-                notification.setNextAttemptTime(DateTimeUtil.restrictToDaytime(zonedDateTime.toInstant(), null, DateTimeUtil.getSAST()));
+                notification.setSendOnlyAfter(DateTimeUtil.restrictToDaytime(zonedDateTime.toInstant(), null, DateTimeUtil.getSAST()));
                 bundle.addNotification(notification);
             }
         }

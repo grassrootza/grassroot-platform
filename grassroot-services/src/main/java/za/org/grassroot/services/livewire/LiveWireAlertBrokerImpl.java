@@ -441,6 +441,8 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
 
         LiveWireAlert alert = alertRepository.findOneByUid(alertUid);
         alert.addTags(tags);
+
+        logger.info("set tags to: {}", alert.getTagList());
     }
 
     private boolean listIsNullEmptyOrAllBlank(List<String> list) {
@@ -461,8 +463,10 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
         User user = userRepository.findOneByUid(userUid);
         LiveWireAlert alert = alertRepository.findOneByUid(alertUid);
         if (tags != null && !tags.isEmpty()) {
-            alert.reviseTags(tags);
+            alert.addTags(tags);
         }
+
+        logger.debug("here are the alert tags: {}", tags);
 
         alert.setReviewed(true);
         alert.setReviewedByUser(user);
@@ -477,14 +481,16 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
         bundle.addLog(log);
 
         if (send) {
-            alert.setPublicListUids(publicListUids);
+            alert.revisePublicLists(publicListUids);
             alert.setSendTime(Instant.now());
-            logger.debug("set public list UIDs to: {}", alert.getPublicListUids());
+            logger.info("set public list UIDs to: {}", alert.getPublicListsUids());
             bundle.addNotification(new LiveWireAlertReleasedNotification(
                     alert.getCreatingUser(),
                     messageSource.getMessage("livewire.alert.released"),
                     log));
         }
+
+        alertRepository.save(alert);
         logsAndNotificationsBroker.asyncStoreBundle(bundle);
     }
 

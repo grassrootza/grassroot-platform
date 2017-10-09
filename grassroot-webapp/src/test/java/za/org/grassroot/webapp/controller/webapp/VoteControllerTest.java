@@ -123,7 +123,7 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
         testVoteResults.put("no", 10L);
         testVoteResults.put("abstain", 7L);
         when(voteBrokerMock.load(testVote.getUid())).thenReturn(testVote);
-        when(voteBrokerMock.fetchVoteResults(sessionTestUser.getUid(), testVote.getUid())).thenReturn(testVoteResults);
+        when(voteBrokerMock.fetchVoteResults(sessionTestUser.getUid(), testVote.getUid(), false)).thenReturn(testVoteResults);
 
         mockMvc.perform(get("/vote/view").param("eventUid", testVote.getUid()))
                 .andExpect(status().isOk()).andExpect(view().name("vote/view"))
@@ -132,7 +132,7 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
                 .andExpect(model().attribute("vote", hasProperty("uid", is(testVote.getUid()))));
 
         verify(voteBrokerMock, times(1)).load(testVote.getUid());
-        verify(voteBrokerMock, times(1)).fetchVoteResults(sessionTestUser.getUid(), testVote.getUid());
+        verify(voteBrokerMock, times(1)).fetchVoteResults(sessionTestUser.getUid(), testVote.getUid(), false);
         verifyNoMoreInteractions(voteBrokerMock);
     }
 

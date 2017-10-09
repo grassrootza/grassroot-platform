@@ -8,9 +8,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import za.org.grassroot.core.domain.task.EventLog;
 import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.Role;
+import za.org.grassroot.core.domain.task.EventLog;
+import za.org.grassroot.core.domain.task.Vote;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
@@ -47,8 +48,11 @@ public class VoteRestControllerTest extends RestAbstractUnitTest {
         mockMvc = MockMvcBuilders.standaloneSetup(voteRestController).build();
     }
 
+    private Vote voteEvent = createVote(null);
+
     @Test
     public void creatingAVoteShouldWork() throws Exception {
+
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
 
@@ -90,7 +94,7 @@ public class VoteRestControllerTest extends RestAbstractUnitTest {
 
         verify(userManagementServiceMock).findByInputNumber(testUserPhone);
         verify(voteBrokerMock).load(voteEvent.getUid());
-        verify(voteBrokerMock).fetchVoteResults(sessionTestUser.getUid(), voteEvent.getUid());
+        verify(voteBrokerMock).fetchVoteResults(sessionTestUser.getUid(), voteEvent.getUid(), false);
         verify(eventLogRepositoryMock).findOne(any(Specifications.class));
     }
 

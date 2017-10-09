@@ -8,7 +8,8 @@ public enum UserInterfaceType {
     USSD("ussd"),
     WEB("web"),
     ANDROID("android"),
-    SYSTEM("system");
+    SYSTEM("system"),
+    INCOMING_SMS("incoming sms");
 
     private final String text;
 

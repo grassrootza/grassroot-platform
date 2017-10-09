@@ -88,9 +88,9 @@ public class LiveWirePushBrokerImpl implements LiveWirePushBroker {
             logger.info("Sending LiveWire alert of dest type {}, to emails: {}",
                     alert.getDestinationType(), emailAddresses);
 
-            if (!environment.acceptsProfiles("localpg")) {
+            // if (!environment.acceptsProfiles("localpg")) {
                 mailSender.send(messages);
-            }
+            // }
 
             alert.setSent(true);
         } catch (MailException|NoSuchMessageException e) {

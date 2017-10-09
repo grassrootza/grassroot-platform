@@ -5,8 +5,8 @@ package za.org.grassroot.core.enums;
  */
 public enum LiveWireAlertDestType {
 
-    SINGLE_LIST,
+    SINGLE_AND_PUBLIC,
     PUBLIC_LIST,
-    SINGLE_AND_PUBLIC
+    SINGLE_LIST
 
 }
