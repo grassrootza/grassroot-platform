@@ -5,7 +5,7 @@
     <title>Grassroot Group Search</title>
 </head>
 
-<body onload="getLocation()">
+<body >
 
 <div layout:fragment="header" class="top-container">
   <div class="container">
@@ -211,6 +211,7 @@
   </section>
 
     <section class="home-groups" th:if="${#lists.isEmpty(publicMeetingsNearUser)}">
+      <form th:action="@{search}" method="get" class="form-vertical" id="searchForm2">
         <div class="container">
             <div class="row">
                 <div class="col-md-10 col-md-offset-1">
@@ -220,19 +221,22 @@
                             <div class="panel-heading">
                                 <h4 class="panel-title">
                                     <a data-toggle="collapse" href="#public_meetings_near_user_empty" class="panel-title-text">
-                                        <span th:text="${publicMeetingsNearUser.size()}">X</span> found
+                                        <!--<span th:text="${publicMeetingsNearUser.size()}">X</span> found-->
                                         <i class="fa fa-caret-down" aria-hidden="true"></i>
                                     </a>
                                 </h4>
                             </div>
-                            <input type="hidden" id="Lat" name="Lat"/>
-                            <input type="hidden" id="Lon" name="Lon"/>
-                            <a th:href="@{/group/search(currentUserContact=${param.currentUserContact},term= ,locationLat=${Lat},locationLon=${Lon})}">Search public meetings near me using my location</a>
+                          <input type="hidden" id="locationLat" name="locationLat" th:value="${param.locationLat}"/>
+                          <input type="hidden" id="locationLon" name="locationLon" th:value="${param.locationLon}"/>
+                          <input type="hidden" name="currentUserContact" th:value="${param.currentUserContact}" />
+                          <input type="hidden" name="term" th:value="${param.term}" />
+                          <a onclick="getLocation()">Search public meetings near me using my location</a>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+      </form>
     </section>
 
   <!-- public groups search -->
@@ -335,42 +339,48 @@
             navigator.permissions.query({name:'geolocation'}).then(function(result) {
                 console.log(result.state + "");
              if (result.state == 'denied') {
-               result.state = 'granted';
                console.log(result.state + "");
-             } else if (result.state == 'prompt') {
-               showButtonToEnableLocalNews();
              }
-             // Don't do anything if the permission was denied.
             });
 
 
-
-            console.log("Getin location called.....");
+            console.log("Getting location called.....");
 			if (navigator.geolocation) {
+			    console.log("Navigator has geolocation");
+
 				navigator.geolocation.getCurrentPosition(function showPosition(position) {
 
-                document.getElementById("Lat").value = position.coords.latitude;
-                document.getElementById("Lon").value = position.coords.longitude;
-			    console.log(position.coords.latitude  + " Lat");
-			    console.log(position.coords.longitude + " Lon");
+				console.log("got current position, = " + JSON.stringify(position));
+
+                $("#locationLat").val(position.coords.latitude);
+				$("#locationLon").val(position.coords.longitude);
+
+				console.log($('input#locationLat').val() + " Latitude*********");
+				console.log($('input#locationLon').val() + " Longitude********");
+
+				$("#searchForm2").submit();
 
 				},function(error){
 				    if(error.code == error.PERMISSION_DENIED){
 				        console.log("Permission to access location denied");
-				        document.getElementById("Lat").value = 0.0;
-				        document.getElementById("Lon").value = 0.0;
-
-				        console.log(document.getElementById("Lat").value);
-				        console.log(document.getElementById("Lon").value);
+				        // just insert an alert telling user that we can't do it without permission
+				        alert("Sorry, we can't search for nearby meetings without your location");
 				    }
 				});
 			} else {
 			    console.log("Geolocation is not supported");
+			    alert("Sorry, we can't get your position to search for nearby meetings");
 			}
+
+
 		}
 
 
     </script>
+
+
+
+
 
 </div>
 

@@ -499,41 +499,17 @@
 
 
   </script>
+  <script>
+    $(document).ready(function(){
+        document.getElementById("locationLat").value = -0.0;
+        document.getElementById("locationLon").value = 0.0;
 
-  <script th:inline="javascript">
-       function getLocation() {
-            console.log("Inside the METHOD");
-			if (navigator.geolocation) {
-				navigator.geolocation.getCurrentPosition(function showPosition(position) {
-
-                document.getElementById("locationLat").value = position.coords.latitude;
-                document.getElementById("locationLon").value = position.coords.longitude;
-			    console.log(position.coords.latitude  + " Lat");
-			    console.log(position.coords.longitude + " Lon");
-
-				},function(error){
-				    if(error.code == error.PERMISSION_DENIED){
-				        console.log("Permission to access location denied");
-				        document.getElementById("locationLat").value = 0.0;
-				        document.getElementById("locationLon").value = 0.0;
-
-				        console.log(document.getElementById("locationLat").value);
-				        console.log(document.getElementById("locationLon").value);
-				    }
-				});
-			} else {
-			    console.log("Geolocation is not supported");
-			}
-		}
-    </script>
-
-    <script>
+        console.log(document.getElementById("locationLat").value);
+        console.log(document.getElementById("locationLon").value);
+    });
+  </script>
 
 
-
-      $("#searchForm").submit(getLocation());
-
-    </script>
 
    <!-- <script async defer
             src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCcgAM0u_Su0rLafMY0skTcYr931T4x5UI">
