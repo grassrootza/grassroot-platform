@@ -44,8 +44,8 @@ public class AuthenticationController {
     @RequestMapping(value = "/login", method = RequestMethod.GET)
     @ApiOperation(value = "Login and retrieve a JWT token", notes = "The JWT token is returned as a string in the 'data' property")
     public ResponseEntity<ResponseWrapper> login(@RequestParam("phoneNumber")String phoneNumber,
-                                                 @RequestParam("otp")String otp,
-                                                 @RequestParam(value = "clientType", required = false) String clientType) {
+                                                 @RequestParam("otp") String otp,
+                                                 @RequestParam(value = "durationMillis", required = false) Long durationMillis) {
         try {
             // authenticate user before issuing token
             passwordTokenService.validateOtp(phoneNumber, otp);
@@ -54,7 +54,11 @@ public class AuthenticationController {
             User user = userService.findByInputNumber(phoneNumber);
 
             // Generate a token for the user (for the moment assuming it is Android client)
-            String token = jwtService.createJwt(new CreateJwtTokenRequest(JwtType.ANDROID_CLIENT));
+            CreateJwtTokenRequest tokenRequest = new CreateJwtTokenRequest(JwtType.ANDROID_CLIENT);
+            if (durationMillis != null && durationMillis != 0) {
+                tokenRequest.setShortExpiryMillis(durationMillis);
+            }
+            String token = jwtService.createJwt(tokenRequest);
 
             // Assemble response entity
             AndroidAuthToken response = new AndroidAuthToken(user, token);
@@ -85,7 +89,7 @@ public class AuthenticationController {
             "a new token as a string (in the 'data' property) if the old token is within the refresh window, or a bad request " +
             "if the token is still old")
     public ResponseEntity<ResponseWrapper> refreshToken(@RequestParam("oldToken")String oldToken) {
-        String newToken = jwtService.refreshToken(oldToken, JwtType.ANDROID_CLIENT);
+        String newToken = jwtService.refreshToken(oldToken, JwtType.ANDROID_CLIENT, null);
         if (newToken != null) {
             return RestUtil.okayResponseWithData(RestMessage.LOGIN_SUCCESS, newToken);
         } else {

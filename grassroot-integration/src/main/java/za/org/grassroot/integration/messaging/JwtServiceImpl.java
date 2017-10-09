@@ -54,8 +54,14 @@ public class JwtServiceImpl implements JwtService {
     @Override
     public String createJwt(CreateJwtTokenRequest request) {
         Instant now = Instant.now();
-        Instant exp = now.plus(convertTypeToExpiryMillis(request.getJwtType()), ChronoUnit.MILLIS);
+
+        long typeExpiryMillis = convertTypeToExpiryMillis(request.getJwtType());
+        long passedExpiryMillis = request.getShortExpiryMillis() == null ? typeExpiryMillis :
+                Math.min(typeExpiryMillis, request.getShortExpiryMillis());
+
+        Instant exp = now.plus(passedExpiryMillis, ChronoUnit.MILLIS);
         request.getHeaderParameters().put("kid", kuid);
+
         return Jwts.builder()
                 .setHeaderParams(request.getHeaderParameters())
                 .setClaims(request.getClaims())
@@ -112,7 +118,7 @@ public class JwtServiceImpl implements JwtService {
     }
 
     @Override
-    public String refreshToken(String oldToken, JwtType jwtType) {
+    public String refreshToken(String oldToken, JwtType jwtType, Long shortExpiryMillis) {
         boolean isTokenStillValid = false;
         Date expirationTime = null;
         String newToken = null;
@@ -126,7 +132,7 @@ public class JwtServiceImpl implements JwtService {
         }
         if (isTokenStillValid || expirationTime != null
                 && expirationTime.toInstant().plus(jwtTokenExpiryGracePeriodInMilliseconds, ChronoUnit.MILLIS).isAfter(new Date().toInstant())) {
-            newToken =  createJwt(new CreateJwtTokenRequest(jwtType));
+            newToken =  createJwt(new CreateJwtTokenRequest(jwtType, shortExpiryMillis));
         }
 
         return newToken;
