@@ -60,8 +60,8 @@ public class TaskFullDTO {
 
         this.createdTimeMillis = task.getCreatedDateTime().toEpochMilli();
         this.deadlineMillis = task.getDeadlineTime().toEpochMilli();
-        this.lastServerChangeMillis = lastChangedTime == null ? task.getCreatedDateTime().toEpochMilli()
-                : lastChangedTime.toEpochMilli();
+        this.lastServerChangeMillis = lastChangedTime == null || lastChangedTime.toEpochMilli() == 0 ?
+                task.getCreatedDateTime().toEpochMilli() : lastChangedTime.toEpochMilli();
 
         this.wholeGroupAssigned = task.isAllGroupMembersAssigned();
         this.thisUserAssigned = wholeGroupAssigned || task.getAssignedMembers().contains(user);

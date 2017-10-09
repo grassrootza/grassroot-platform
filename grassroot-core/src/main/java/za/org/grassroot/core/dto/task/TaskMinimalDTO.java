@@ -37,7 +37,8 @@ public class TaskMinimalDTO {
         this.createdDateTimeMillis = task.getCreatedDateTime().toEpochMilli();
         this.deadlineDateTimeMillis = task.getDeadlineTime().toEpochMilli();
 
-        this.lastChangeTimeServerMillis = lastServerChangeTime.toEpochMilli();
+        this.lastChangeTimeServerMillis = lastServerChangeTime.toEpochMilli() == 0 ?
+            createdDateTimeMillis : lastServerChangeTime.toEpochMilli();
     }
 
     @Override

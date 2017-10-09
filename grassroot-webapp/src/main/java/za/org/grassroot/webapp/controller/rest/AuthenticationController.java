@@ -88,8 +88,9 @@ public class AuthenticationController {
     @ApiOperation(value = "Refresh JWT token", notes = "Try to refresh an old or expired token, responds with " +
             "a new token as a string (in the 'data' property) if the old token is within the refresh window, or a bad request " +
             "if the token is still old")
-    public ResponseEntity<ResponseWrapper> refreshToken(@RequestParam("oldToken")String oldToken) {
-        String newToken = jwtService.refreshToken(oldToken, JwtType.ANDROID_CLIENT, null);
+    public ResponseEntity<ResponseWrapper> refreshToken(@RequestParam("oldToken")String oldToken,
+                                                        @RequestParam(value = "durationMillis", required = false) Long durationMillis) {
+        String newToken = jwtService.refreshToken(oldToken, JwtType.ANDROID_CLIENT, durationMillis);
         if (newToken != null) {
             return RestUtil.okayResponseWithData(RestMessage.LOGIN_SUCCESS, newToken);
         } else {
