@@ -338,6 +338,7 @@ public class GroupBrokerImpl implements GroupBroker {
         storeBundleAfterCommit(bundle);
     }
 
+    // todo : make this actually generate and send notifications
     @Override
     @Transactional(readOnly = true)
     public void notifyOrganizersOfJoinCodeUse(Instant periodStart, Instant periodEnd) {
@@ -352,10 +353,10 @@ public class GroupBrokerImpl implements GroupBroker {
                 List<GroupLog> groupLogs = groupLogRepository.findByGroupAndGroupLogTypeAndCreatedDateTimeBetween(group,
                                                                               GroupLogType.GROUP_MEMBER_ADDED_VIA_JOIN_CODE,
                                                                               periodStart, periodEnd);
+
                 Set<User> organizers = group.getMemberships().stream() // consider adding a getOrganizers method to group
                         .filter(m -> m.getRole().getName().equals(BaseRoles.ROLE_GROUP_ORGANIZER))
-                        .map(m -> m.getUser())
-                        .collect(Collectors.toSet());
+                        .map(Membership::getUser).collect(Collectors.toSet());
 
                 if (groupLogs.size() < 4) { // create explicit list of phone numbers / display names to send to people
                     joinedUserDescriptions = new ArrayList<>();
