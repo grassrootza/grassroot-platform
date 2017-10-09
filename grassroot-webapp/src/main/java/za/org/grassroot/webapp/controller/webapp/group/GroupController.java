@@ -96,7 +96,7 @@ public class GroupController extends BaseController {
     Next methods are to view a group, core part of interface
      */
 
-    @RequestMapping("view")
+    @RequestMapping(value = "view",method = RequestMethod.GET)
     public String viewGroupIndex(Model model, @RequestParam String groupUid) {
 
         // note, coming here after group creation throws permission checking errors, so need to reload user from DB

@@ -6,9 +6,12 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.repository.EventLogRepository;
+import za.org.grassroot.core.repository.GroupLogRepository;
+import za.org.grassroot.core.repository.UserLogRepository;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.group.GroupJoinRequestService;
@@ -44,7 +47,6 @@ public class RestAbstractUnitTest {
 
     protected MockMvc mockMvc;
 
-    protected final static Vote voteEvent = new Vote(testEventTitle, testInstant, sessionTestUser, testGroup, true, testEventDescription);
 
     protected final static Meeting meetingEvent = new MeetingBuilder().setName(testEventTitle).setStartDateTime(testInstant).setUser(sessionTestUser).setParent(testGroup).setEventLocation(testEventLocation).setIncludeSubGroups(true).setReminderType(EventReminderType.DISABLED).setCustomReminderMinutes(15).setDescription(testEventDescription).setImportance(null).createMeeting();
 
@@ -75,6 +77,9 @@ public class RestAbstractUnitTest {
     protected GroupQueryBroker groupQueryBrokerMock;
 
     @Mock
+    protected GroupLogRepository groupLogRepositoryMock;
+
+    @Mock
     protected EventBroker eventBrokerMock;
 
     @Mock
@@ -82,6 +87,17 @@ public class RestAbstractUnitTest {
 
     @Mock
     protected GcmRegistrationBroker gcmRegistrationBrokerMock;
+
+    @Mock
+    protected UserLogRepository userLogRepositoryMock;
+
+
+    Vote createVote(String[] options) {
+        Vote voteEvent = new Vote(testEventTitle, testInstant, sessionTestUser, testGroup, true, testEventDescription);
+        voteEvent.setTags(options);
+        return voteEvent;
+    }
+
 
     @Test
     public void dummyTest () throws Exception {

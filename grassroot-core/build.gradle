@@ -47,5 +47,7 @@ dependencies {
     compile group: 'org.hibernate', name: 'hibernate-validator', version: '5.4.0.Final'
     compile group: 'org.glassfish.web', name: 'javax.el', version: '2.2.6'
 
+    compile group: 'org.projectlombok', name: 'lombok', version: '1.16.18'
+
     testCompile group: 'org.springframework', name: 'spring-orm', version:libs.springVersion // else tests fail on dependency issues
 }

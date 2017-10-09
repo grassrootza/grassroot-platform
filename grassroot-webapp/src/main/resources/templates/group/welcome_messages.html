@@ -1,0 +1,108 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      data-layout-decorate="~{layout}">
+<head>
+  <meta charset="UTF-8" />
+  <title>Create group welcome messages</title>
+
+  <meta name="_csrf" th:content="${_csrf.token}"/>
+  <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+
+  <link rel="stylesheet" type="text/css" href="//cdn.datatables.net/1.10.15/css/jquery.dataTables.css">
+</head>
+<body>
+
+<section layout:fragment="header" class="top-container"
+         th:replace="~{fragments :: std_header_back('Welcome messages', 'Back to group', '/group/view(groupUid=${group.uid})')}">
+</section>
+
+<main layout:fragment="content">
+
+  <section class="grassroot-form">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-8 col-md-offset-2 col-sm-6 col-sm-offset-3 col-xs-12">
+          <form th:action="@{create}" method="post" th:with="hasTemplate=${existingTemplate != null}">
+            <input type="hidden" name="groupUid" th:value="${groupUid}" />
+            <div class="form-group">
+              <label for="message_1" class="form-text-lg">
+                Please enter the first message (use __name__ to insert the person's name, and __date__ to
+                insert the date they joined (both are optional)
+              </label>
+              <textarea name="messageText1" id="message_1" rows="3" maxlength="160" class="form-control input-lg"
+                  th:placeholder="${hasTemplate ? existingTemplate.messageTemplate : ''}"></textarea>
+            </div>
+            <div class="form-group">
+              <label for="message_2" class="form-text-lg">
+                Please enter the second text, if there is one (optional, adds an additional SMS per user to cost)
+              </label>
+              <textarea name="messageText2" id="message_2" rows="3" maxlength="160" class="form-control input-lg"
+                        th:placeholder="${hasTemplate ? existingTemplate.messageTemplate2 : ''}"></textarea>
+            </div>
+            <div class="form-group">
+              <label for="message_3" class="form-text-lg">
+                Please enter the third text, if there is one (optional, adds an additional SMS per user to cost)
+              </label>
+              <textarea name="messageText3" id="message_3" rows="3" maxlength="160" class="form-control input-lg"
+                        th:placeholder="${hasTemplate ? existingTemplate.messageTemplate3 : ''}"></textarea>
+            </div>
+            <div class="form-group">
+              <label for="duration_quantity" class="form-text-lg">
+                How long after the user joins should this be sent?
+              </label>
+              <select id="duration_quantity" class="form-control input-lg">
+                <option th:each="i: ${#numbers.sequence(0, 12)}"
+                    th:text="${i}" th:value="${i}">
+              </select>
+              <select id="duration_units" class="form-control input-lg">
+                <option value="HOURS">Hours</option>
+                <option value="DAYS">Days</option>
+              </select>
+              <input type="hidden" id="duration_millis" name="durationMillis" />
+            </div>
+
+            <div th:include="~{form_fragments :: submit_cancel_buttons('Create', '/view?groupUid=')}"></div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<div layout:fragment="script-container">
+  <script>
+
+    $(document).ready(function() {
+
+      var HOURS_MILLIS = 60 * 60 * 1000;
+      var DAYS_MILLIS = 24 * HOURS_MILLIS;
+
+      var quantSel = $("#duration_quantity");
+      var unitSel = $("#duration_units");
+      var longField = $("#duration_millis");
+
+      longField.val(quantSel.val() * unitMillis()); // since may be reloading
+
+      quantSel.change(function() {
+        longField.val(quantSel.val() * unitMillis());
+        console.log("millis = " + longField.val());
+      });
+
+      unitSel.change(function() {
+        longField.val(quantSel.val() * unitMillis());
+        console.log("millis = " + longField.val());
+      });
+
+      function unitMillis() {
+        return $(unitSel).val() === 'DAYS' ? DAYS_MILLIS : HOURS_MILLIS;
+      }
+
+    })
+
+
+  </script>
+</div>
+
+</body>
+</html>

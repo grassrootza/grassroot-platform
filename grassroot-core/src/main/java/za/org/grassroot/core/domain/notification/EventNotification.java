@@ -1,7 +1,8 @@
 package za.org.grassroot.core.domain.notification;
 
-import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.ActionLog;
+import za.org.grassroot.core.domain.Notification;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.EventLog;
 import za.org.grassroot.core.enums.NotificationDetailedType;
@@ -36,12 +37,12 @@ public abstract class EventNotification extends Notification {
 	}
 
 	protected EventNotification(User destination, String message, EventLog eventLog) {
-		this(destination, message, eventLog, eventLog.getEvent(), true);
-	}
+        this(destination, message, eventLog, eventLog.getEvent());
+    }
 
-	protected EventNotification(User destination, String message, ActionLog actionLog, Event event, boolean forAndroidTL) {
-		super(destination, message, actionLog, forAndroidTL);
-		this.event = Objects.requireNonNull(event);
+    protected EventNotification(User destination, String message, ActionLog actionLog, Event event) {
+        super(destination, message, actionLog);
+        this.event = Objects.requireNonNull(event);
 	}
 
 	public Event getEvent() {
