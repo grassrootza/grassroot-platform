@@ -34,7 +34,7 @@ public interface LiveWireAlertBroker {
      */
     String createAsComplete(String userUid, String headline, String description,
                             LiveWireAlertType type, String entityUid,
-                            String contactUserUid, String contactName,
+                            String contactUserUid, String contactName, String contactNumber,
                             LiveWireAlertDestType destType, DataSubscriber destSubscriber, List<MediaFileRecord> mediaFiles);
 
     /*

@@ -11,12 +11,11 @@
 <body>
 
 <section layout:fragment="header" class="top-container"
-         th:replace="~{layout :: std_header('LiveWire', 'View Alerts')}">
+         th:replace="~{fragments :: std_header('LiveWire', 'View Alerts')}">
 </section>
 
 <main layout:fragment="content">
 
-  <!-- todo: add polling / refresh, plus use data tables -->
   <section th:replace="~{livewire/lw_fragments :: alert-list(${alerts}, ${pageable}, ${sort}, 'Alert list')}">
   </section>
 

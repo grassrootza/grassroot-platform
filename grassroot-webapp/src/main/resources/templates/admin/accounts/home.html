@@ -66,7 +66,7 @@
             <tbody>
             <tr th:each="account : ${accounts}">
               <td>
-                <a href="" th:href="@{/account/view(accountUid=${account.uid})}" class="form-link"><span th:text="${account.accountName}">Account name</span></a>
+                <a th:href="@{/admin/accounts/modify(accountUid=${account.uid})}" class="form-link"><span th:text="${account.accountName}">Account name</span></a>
               </td>
               <td><span th:text="${account.type}">Type</span></td>
               <td><a href="#adjustBalanceModal" data-toggle="modal" data-target="#adjustBalanceModal"

@@ -38,6 +38,7 @@ dependencies {
         exclude group: 'com.codahale.metrics'
         exclude group: 'org.springframework'
     }
+
     compile 'io.dropwizard.metrics:metrics-core:3.2.4'
     compile 'io.dropwizard.metrics:metrics-annotation:3.2.4'
 
@@ -46,6 +47,8 @@ dependencies {
 
     compile group: 'org.hibernate', name: 'hibernate-validator', version: '5.4.0.Final'
     compile group: 'org.glassfish.web', name: 'javax.el', version: '2.2.6'
+
+    compile group: 'org.projectlombok', name: 'lombok', version: '1.16.18'
 
     testCompile group: 'org.springframework', name: 'spring-orm', version:libs.springVersion // else tests fail on dependency issues
 }

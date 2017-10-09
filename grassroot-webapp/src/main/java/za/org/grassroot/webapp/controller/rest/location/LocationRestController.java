@@ -104,27 +104,6 @@ public class LocationRestController extends BaseController {
             // for JPA
         }
 
-        public BoundingBox(GeoLocation min, GeoLocation max) {
-            this.min = min;
-            this.max = max;
-        }
-
-        public GeoLocation getMin() {
-           return min; 
-        }
-
-        public GeoLocation getMax() {
-           return max; 
-        }
-
-        public void setMin(GeoLocation min) {
-           this.min = min;
-        }
-
-        public void setMax(GeoLocation max) {
-           this.max = max;
-        }
-
         public boolean isValid () {
             return min.isValid() && max.isValid();
         }
@@ -139,7 +118,7 @@ public class LocationRestController extends BaseController {
         // TODO: token!
         // TODO: Initial position from location
         logger.info("Attempting to list events locations from bounding box...");
-        
+
         // Check restriction
         Integer useRestriction = (restriction == null ? PUBLIC_LEVEL : restriction);
         if (useRestriction < PRIVATE_LEVEL || useRestriction > ALL_LEVEL) {

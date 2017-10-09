@@ -106,6 +106,10 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
                 .setParameter("longpoint", location.getLongitude())
                 .getResultList();
 
+        logger.info("Now: " + LocalDate.now());
+        logger.info("Radius: " + radius);
+        logger.info("Location: " + location);
+
         return (list.isEmpty() ? new ArrayList<>() : list);
     }
 
@@ -157,16 +161,14 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
                 .setParameter("longMax", max.getLongitude())
                 .getResultList();
 
-        logger.info("" + LocalDate.now());
-        logger.info("" + min.getLatitude());
-        logger.info("" + min.getLongitude());
-        logger.info("" + max.getLatitude());
-        logger.info("" + max.getLongitude());
+        logger.info("Now: " + LocalDate.now());
+        logger.info("Min: " + min);
+        logger.info("Max: " + max);
 
         return (list.isEmpty() ? new ArrayList<>() : list);
     }
 
-     @Override
+    @Override
     @Transactional(readOnly = true)
     public List<ObjectLocation> fetchLocationsWithFilter(GroupLocationFilter filter) {
         List<ObjectLocation> locations = new ArrayList<>();
@@ -215,9 +217,7 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
 
         // Mount query
         String query =
-            "SELECT NEW za.org.grassroot.core.domain.geo.ObjectLocation(" +
-            "  m.uid, m.name, l.location.latitude, l.location.longitude, l.score, 'MEETING', " +
-            "  CONCAT('<strong>Where: </strong>', m.eventLocation, '<br/><strong>Date and Time: </strong>', m.eventStartDateTime), m.isPublic) " +
+            "SELECT NEW za.org.grassroot.core.domain.geo.ObjectLocation(m, l)" +
             "FROM MeetingLocation l " +
             "INNER JOIN l.meeting m " +
             "WHERE " + restrictionClause +
@@ -226,7 +226,8 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
             "  AND l.location.latitude " +
             "      BETWEEN :latMin AND :latMax " +
             "  AND l.location.longitude " +
-            "      BETWEEN :longMin AND :longMax ";
+            "      BETWEEN :longMin AND :longMax "
+            ;
 
         logger.info(query);
 
@@ -238,11 +239,9 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
                 .setParameter("longMax", max.getLongitude())
                 .getResultList();
 
-        logger.info("" + Instant.now());
-        logger.info("" + min.getLatitude());
-        logger.info("" + min.getLongitude());
-        logger.info("" + max.getLatitude());
-        logger.info("" + max.getLongitude());
+        logger.info("Now: " + Instant.now());
+        logger.info("Min: " + min);
+        logger.info("Max: " + max);
 
         return (list.isEmpty() ? new ArrayList<>() : list);
     }
@@ -301,11 +300,10 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
                 .setParameter("longpoint", location.getLongitude())
                 .getResultList();
 
-        logger.info("" + Instant.now());
-        logger.info("" + (double)radius);
+        logger.info("Now: " + Instant.now());
+        logger.info("Radius: " + (double)radius);
         logger.info("" + KM_PER_DEGREE);
-        logger.info("" + location.getLatitude());
-        logger.info("" + location.getLongitude());
+        logger.info("Location: " + location);
 
         return (list.isEmpty() ? new ArrayList<>() : list);
     }

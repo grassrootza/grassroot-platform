@@ -29,20 +29,11 @@
   .explanatory-text {
     font-family: 'Roboto', sans-serif;
     font-size: 1.2em;
-
-    &.prominent {
-      font-weight: bolder;
-      color: $green;
-    }
   }
 
   .checkbox-lg {
     font-size: 1.2em;
     padding-left: 10px;
-  }
-
-  .text-lg {
-    font-size: 1.2em !important;
   }
 
   .table-header {
@@ -106,17 +97,4 @@
       }
     }
   }
-
-  p.form-text-lg {
-    font-size: 1.2em;
-  }
-
-  textarea.full-width {
-    width: 100%;
-  }
-
-  .highlight {
-    background: $light-gray;
-  }
-
 }

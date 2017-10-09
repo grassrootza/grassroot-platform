@@ -1,6 +1,8 @@
 package za.org.grassroot.core.domain.livewire;
 
 import org.hibernate.annotations.Type;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
@@ -28,6 +30,8 @@ import java.util.*;
 @Entity
 @Table(name = "live_wire_alert")
 public class LiveWireAlert {
+
+    private static final Logger logger = LoggerFactory.getLogger(LiveWireAlert.class);
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -141,6 +145,7 @@ public class LiveWireAlert {
         private LiveWireAlertType type;
         private User contactUser;
         private String contactName;
+        private String contactNumber;
         private Meeting meeting;
         private Group group;
         private String headline;
@@ -148,6 +153,7 @@ public class LiveWireAlert {
         private Instant sendTime;
         private boolean complete;
         private LiveWireAlertDestType destType;
+
         private DataSubscriber destSubscriber;
         private Set<MediaFileRecord> mediaFiles;
         private GeoLocation location;
@@ -174,12 +180,18 @@ public class LiveWireAlert {
         }
 
         public Builder contactUser(User user) {
+            logger.info("setting contact user to: {}", user);
             this.contactUser = user;
             return this;
         }
 
         public Builder contactName(String contactName) {
             this.contactName = contactName;
+            return this;
+        }
+
+        public Builder contactNumber(String contactNumber) {
+            this.contactNumber = contactNumber;
             return this;
         }
 
@@ -250,6 +262,7 @@ public class LiveWireAlert {
             }
 
             if (contactUser != null) {
+                logger.info("setting contact user in build to = {}", contactUser);
                 alert.setContactUser(contactUser);
                 alert.setContactName(contactName);
             }
@@ -289,8 +302,6 @@ public class LiveWireAlert {
         this.description = description;
         this.complete = false;
         this.sent = false;
-        this.tags = new String[0];
-        this.publicLists = new String[0];
         this.destinationType = destType;
     }
 
@@ -420,6 +431,7 @@ public class LiveWireAlert {
     }
 
     public List<String> getTagList() {
+        logger.debug("getting ... tags = {}", Arrays.toString(tags));
         return tags == null ? new ArrayList<>() : new ArrayList<>(Arrays.asList(tags));
     }
 
@@ -440,6 +452,16 @@ public class LiveWireAlert {
     public void reviseTags(List<String> tags) {
         Objects.requireNonNull(tags);
         this.tags = StringArrayUtil.listToArrayRemoveDuplicates(tags);
+    }
+
+    public List<String> getPublicListsUids() {
+        logger.debug("getting ... public lists = {}", Arrays.toString(publicLists));
+        return publicLists == null ? new ArrayList<>() : new ArrayList<>(Arrays.asList(publicLists));
+    }
+
+    public void revisePublicLists(List<String> listsToAdd) {
+        Objects.requireNonNull(tags);
+        this.publicLists = StringArrayUtil.listToArrayRemoveDuplicates(listsToAdd);
     }
 
     public void setSendTime(Instant sendTime) {
@@ -484,26 +506,6 @@ public class LiveWireAlert {
 
     public void setTargetSubscriber(DataSubscriber targetSubscriber) {
         this.targetSubscriber = targetSubscriber;
-    }
-
-    public String[] getPublicLists() {
-        return publicLists;
-    }
-
-    public List<String> getPublicListUids() {
-        return StringArrayUtil.arrayToList(publicLists);
-    }
-
-    public boolean hasPublicListUids() {
-        return !StringArrayUtil.isAllEmptyOrNull(getPublicListUids());
-    }
-
-    public void setPublicLists(String[] publicLists) {
-        this.publicLists = publicLists;
-    }
-
-    public void setPublicListUids(List<String> uids) {
-        this.publicLists = StringArrayUtil.listToArray(uids);
     }
 
     public Set<MediaFileRecord> getMediaFiles() {

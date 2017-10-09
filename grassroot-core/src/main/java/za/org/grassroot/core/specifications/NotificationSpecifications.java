@@ -14,6 +14,8 @@ import za.org.grassroot.core.enums.AccountLogType;
 
 import javax.persistence.criteria.Join;
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Created by luke on 2016/10/06.
@@ -21,7 +23,8 @@ import java.time.Instant;
 public final class NotificationSpecifications {
 
     public static Specification<Notification> wasDelivered() {
-        return (root, query, cb) -> cb.equal(root.get(Notification_.delivered), true);
+        List<NotificationStatus> deliveredStatuzses = Arrays.asList(NotificationStatus.DELIVERED, NotificationStatus.READ);
+        return (root, query, cb) -> root.get(Notification_.status).in(deliveredStatuzses);
     }
 
     public static Specification<Notification> createdTimeBetween(Instant start, Instant end) {

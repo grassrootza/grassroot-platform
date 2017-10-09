@@ -62,7 +62,7 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
     private static final int DEFAULT_MONTH_LENGTH = 30;
     private static final Duration PAYMENT_INTERVAL = Duration.ofHours(1L);
 
-    protected static final ZoneOffset BILLING_TZ = ZoneOffset.UTC;
+    protected static final ZoneOffset BILLING_TZ = OffsetDateTime.now().getOffset();
     protected static final LocalTime STD_BILLING_HOUR = LocalTime.of(10, 0);
 
     private final AccountRepository accountRepository;
@@ -211,7 +211,7 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
                     if (AccountPaymentType.FREE_TRIAL.equals(a.getDefaultPaymentType())) {
                         handleFreeTrialStatements(a, bundle, records, sendEmails, sendNotifications);
                     } else {
-                        handleCreditCardStatements(a, bundle, records, sendEmails, sendNotifications);
+                        handleNormalStatements(a, bundle, records, sendEmails, sendNotifications);
                     }
                 });
 
@@ -219,8 +219,8 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
         billingRepository.save(records);
     }
 
-    private void handleCreditCardStatements(Account account, LogsAndNotificationsBundle bundle, List<AccountBillingRecord> records,
-                                            boolean sendEmails, boolean sendNotifications) {
+    private void handleNormalStatements(Account account, LogsAndNotificationsBundle bundle, List<AccountBillingRecord> records,
+                                        boolean sendEmails, boolean sendNotifications) {
         DebugUtil.transactionRequired("");
         AccountBillingRecord lastBill = billingRepository.findTopByAccountOrderByCreatedDateTimeDesc(account);
         AccountBillingRecord thisBill = generateStandardBill(account, lastBill, bundle, null);
@@ -245,8 +245,7 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
         log.info("A free trial account has expired, disabling and sending notice ... ");
 
         long billForPeriod = account.getSubscriptionFee();
-        long costForPeriod = calculateAccountCostsInPeriod(account, LocalDateTime.ofInstant(account.getEnabledDateTime(), BILLING_TZ),
-                LocalDateTime.now());
+        long costForPeriod = calculateMessageCostsInPeriod(account, account.getEnabledDateTime(), Instant.now());
 
         AccountBillingRecord endOfTrialBill = generateBillForAmount(account, billForPeriod, costForPeriod, account.getCreatedDateTime(), bundle,
                 "Bill generated at end of free trial");
@@ -478,11 +477,14 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
         return record;
     }
 
-    private AccountBillingRecord generateStandardBill(Account account, AccountBillingRecord lastBill, LogsAndNotificationsBundle bundle, String logDescription) {
+    private AccountBillingRecord generateStandardBill(Account account, AccountBillingRecord lastBill,
+                                                      LogsAndNotificationsBundle bundle, String logDescription) {
         Instant periodStart = getPeriodStart(account, lastBill);
-        long billForPeriod = calculateAccountBillBetweenDates(account, LocalDateTime.ofInstant(periodStart, BILLING_TZ), LocalDateTime.now());
-        long costForPeriod = calculateAccountCostsInPeriod(account, LocalDateTime.ofInstant(periodStart, BILLING_TZ), LocalDateTime.now());
-        return generateBillForAmount(account, billForPeriod, costForPeriod, periodStart, bundle, logDescription);
+        long billForPeriod = calculateSubscriptionFeeForPeriod(account, periodStart, Instant.now());
+        log.info("okay, now calculating message costs ...");
+        long costForPeriod = calculateMessageCostsInPeriod(account, periodStart, Instant.now());
+        long amountToBill = account.isBillPerMessage() ? (billForPeriod + costForPeriod) : costForPeriod;
+        return generateBillForAmount(account, amountToBill, costForPeriod, periodStart, bundle, logDescription);
     }
 
     private AccountBillingRecord generateBillForAmount(Account account, long billForPeriod, long costForPeriod, Instant periodStart,
@@ -521,9 +523,10 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
         return record;
     }
 
-    private long calculateAccountBillBetweenDates(Account account, LocalDateTime billingPeriodStart, LocalDateTime billingPeriodEnd) {
+    private long calculateSubscriptionFeeForPeriod(Account account, Instant billingPeriodStart, Instant billingPeriodEnd) {
         // note : be careful about not running this around midnight, or date calcs could get messy / false (and keep an eye on floating points)
-        if (DateTimeUtil.areDatesOneMonthApart(billingPeriodStart, billingPeriodEnd)) {
+        if (DateTimeUtil.areDatesOneMonthApart(LocalDateTime.ofInstant(billingPeriodStart, BILLING_TZ),
+                LocalDateTime.ofInstant(billingPeriodEnd, BILLING_TZ))) {
             return account.getSubscriptionFee();
         } else {
             double proportionOfMonth = (double) (DAYS.between(billingPeriodStart, billingPeriodEnd)) / (double) DEFAULT_MONTH_LENGTH;
@@ -532,25 +535,31 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
         }
     }
 
-    private long calculateAccountCostsInPeriod(Account account, LocalDateTime billingPeriodStart, LocalDateTime billingPeriodEnd) {
-        Instant periodStart = billingPeriodStart.toInstant(BILLING_TZ);
-        Instant periodEnd = billingPeriodEnd.toInstant(BILLING_TZ);
-
-        if (account.getDisabledDateTime().isBefore(periodStart)) {
+    private long calculateMessageCostsInPeriod(Account account, Instant billingPeriodStart, Instant billingPeriodEnd) {
+        if (account.getDisabledDateTime().isBefore(billingPeriodStart)) {
+            log.info("account seems disabled, disabled time : {}, billing period start : {}", account.getDisabledDateTime(),
+                    billingPeriodStart);
             return 0;
         }
+
+        log.info("checking for paid groups");
 
         Set<PaidGroup> paidGroups = account.getPaidGroups();
         final int messageCost = account.getFreeFormCost();
 
-        Specifications<Notification> notificationCounter = Specifications.where(wasDelivered())
-                .and(createdTimeBetween(periodStart, periodEnd))
+        log.info("counting notifications between {} and {}", billingPeriodStart, billingPeriodEnd);
+        Specifications<Notification> notificationCounter = Specifications
+                .where(wasDelivered())
+                .and(createdTimeBetween(billingPeriodStart, billingPeriodEnd))
                 .and(belongsToAccount(account));
 
-        long costAccumulator = logsAndNotificationsBroker.countNotifications(notificationCounter) * messageCost;
+        long numberOfMessages = logsAndNotificationsBroker.countNotifications(notificationCounter);
+        long costAccumulator = numberOfMessages * messageCost;
+
+        log.info("number of notifications for account in period = {}", numberOfMessages);
 
         for (PaidGroup paidGroup : paidGroups) {
-            costAccumulator += (countMessagesForPaidGroup(paidGroup, periodStart, periodEnd) * messageCost);
+            costAccumulator += (countMessagesForPaidGroup(paidGroup, billingPeriodStart, billingPeriodEnd) * messageCost);
         }
 
         return costAccumulator;

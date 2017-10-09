@@ -9,7 +9,7 @@
   <meta id="Viewport" name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, minimum-scale=1, user-scalable=no"/>
 
   <link th:href="@{/images/favicon.ico}" rel="shortcut icon" />
-  <link rel="stylesheet" type="text/css" th:href="@{/css/app_v1.3.css}" />
+  <link rel="stylesheet" type="text/css" th:href="@{/css/app_v1.4.css}" />
 </head>
 
 <body>
@@ -92,6 +92,7 @@
               <ul class="dropdown-menu">
                 <li><a href="javascript:void(0)" th:href="@{/user/settings}">Settings</a></li>
                 <li><a href="javascript:void(0)" th:href="@{/user/password}">Change password</a></li>
+                <li><a href="javascript:void(0)" th:href="@{/user/export-groups}">Export groups</a></li>
                 <li><a href="javascript:void(0)"  class="user-logout" id="user-logout" th:href="@{/logout}">Logout</a></li>
               </ul>
             </li>
@@ -121,32 +122,8 @@
     </div>
   </section>
 
-  <section th:fragment="std_header(title, subtitle)" class="top-container">
-    <div class="container">
-      <div class="row">
-        <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
-          <h2 class="text-center header-content-title" th:text="${title}">Title</h2>
-          <h4 class="text-center header-content-subtitle" th:text="${subtitle}"></h4>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section th:fragment="std_header_back(title, back_text, back_url)" class="top-container">
-    <div class="container">
-      <div class="row">
-        <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
-          <h2 class="text-center header-content-title" th:text="${title}">Title</h2>
-          <h4 class="text-center header-content-subtitle">
-            <a th:href="@{${back_url}}" th:text="${back_text}">Back</a>
-          </h4>
-        </div>
-      </div>
-    </div>
-  </section>
-
   <div th:fragment="block_row(fieldname, label, text)" class="row">
-    <div class="col-md-8 col-md-offset-2 col-sm-10 col-sm-offset-1 col-xs-12">
+    <div class="col-md-10 col-md-offset-1 col-sm-10 col-sm-offset-1 col-xs-12">
       <div class="row detail-row">
         <div class="col-md-3 col-sm-4 col-xs-12">
           <label class="grassroot-sidebar" th:for="${fieldname}" th:text="${label}">Subject</label>

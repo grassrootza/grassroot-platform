@@ -1,6 +1,7 @@
 package za.org.grassroot.webapp.controller.webapp.group;
 
 import com.google.common.collect.Sets;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +12,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.util.MimeTypeUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.Validator;
 import org.springframework.web.bind.WebDataBinder;
@@ -26,6 +28,7 @@ import za.org.grassroot.integration.PdfGeneratingService;
 import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.services.exception.GroupSizeLimitExceededException;
 import za.org.grassroot.services.group.GroupBroker;
+import za.org.grassroot.services.group.GroupExportBroker;
 import za.org.grassroot.services.group.GroupPermissionTemplate;
 import za.org.grassroot.services.group.GroupQueryBroker;
 import za.org.grassroot.services.task.TaskBroker;
@@ -36,7 +39,9 @@ import za.org.grassroot.webapp.model.web.MemberWrapperList;
 import za.org.grassroot.webapp.util.BulkUserImportUtil;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -63,15 +68,18 @@ public class GroupController extends BaseController {
     private final GroupBroker groupBroker;
     private final TaskBroker taskBroker;
     private final GroupQueryBroker groupQueryBroker;
+    private final GroupExportBroker groupExportBroker;
     private final AccountGroupBroker accountGroupBroker;
     private final Validator groupWrapperValidator;
     private PdfGeneratingService generatingService;
 
     @Autowired
-    public GroupController(GroupBroker groupBroker, TaskBroker taskBroker, GroupQueryBroker groupQueryBroker, AccountGroupBroker accountBroker, @Qualifier("groupWrapperValidator") Validator groupWrapperValidator,PdfGeneratingService generatingService) {
+    public GroupController(GroupBroker groupBroker, TaskBroker taskBroker, GroupQueryBroker groupQueryBroker, GroupExportBroker groupExportBroker,
+                           AccountGroupBroker accountBroker, @Qualifier("groupWrapperValidator") Validator groupWrapperValidator, PdfGeneratingService generatingService) {
         this.groupBroker = groupBroker;
         this.taskBroker = taskBroker;
         this.groupQueryBroker = groupQueryBroker;
+        this.groupExportBroker = groupExportBroker;
         this.accountGroupBroker = accountBroker;
         this.groupWrapperValidator = groupWrapperValidator;
         this.generatingService = generatingService;
@@ -88,7 +96,7 @@ public class GroupController extends BaseController {
     Next methods are to view a group, core part of interface
      */
 
-    @RequestMapping("view")
+    @RequestMapping(value = "view",method = RequestMethod.GET)
     public String viewGroupIndex(Model model, @RequestParam String groupUid) {
 
         // note, coming here after group creation throws permission checking errors, so need to reload user from DB
@@ -689,6 +697,22 @@ public class GroupController extends BaseController {
             addMessage(redirectAttributes, MessageType.SUCCESS, "group.merge.success", userCounts, request);
             return "redirect:/group/view";
         }
+    }
+
+
+    @RequestMapping(value = "export/xls")
+    public void exportMembers(@RequestParam String groupUid, HttpServletResponse response) throws IOException {
+
+        String fileName = "group_members.xlsx";
+        response.setContentType(MimeTypeUtils.APPLICATION_OCTET_STREAM_VALUE);
+        response.setHeader("Content-Disposition", "attachment; filename=\"" + fileName + "\"");
+        response.setHeader("Cache-Control", "no-cache");
+        response.setHeader("Pragma", "no-cache");
+        response.setDateHeader("Expires", 0);
+
+        XSSFWorkbook xls = groupExportBroker.exportGroup(groupUid);
+        xls.write(response.getOutputStream());
+        response.flushBuffer();
     }
 
     /**

@@ -3,6 +3,8 @@ package za.org.grassroot.core.dto;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.Membership;
 import za.org.grassroot.core.domain.Role;
@@ -18,10 +20,12 @@ import java.util.Set;
  * Represents all info needed to add new member.
  * Only phone number is required.
  */
+@Getter @Setter // need to add setters so that Thymeleaf can fill the entities
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class MembershipInfo implements Comparable<MembershipInfo> {
 
     // note: removing 'final' so Thymeleaf can populate this (can find a better way if needed)
+    protected String userUid; // for optionality
     protected String phoneNumber;
     protected String roleName; // optional
     protected String displayName; // optional
@@ -56,34 +60,6 @@ public class MembershipInfo implements Comparable<MembershipInfo> {
         Set<MembershipInfo> membershipInfoSet = new HashSet<>();
         members.forEach(m -> membershipInfoSet.add(new MembershipInfo(m.getUser(), m.getDisplayName(), m.getRole().getName())));
         return membershipInfoSet;
-    }
-
-    public String getPhoneNumber() {
-        return phoneNumber;
-    }
-
-    public String getRoleName() {
-        return roleName;
-    }
-
-    public String getDisplayName() {
-        return displayName;
-    }
-
-    // need to add setters so that Thymeleaf can fill the entities
-
-    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
-
-    public void setRoleName(String roleName) { this.roleName = roleName; }
-
-    public void setDisplayName(String displayName) { this.displayName = displayName; }
-
-    public boolean isUserSetName() {
-        return userSetName;
-    }
-
-    public void setUserSetName(boolean userSetName) {
-        this.userSetName = userSetName;
     }
 
     // need to use PhoneNumberUtil here to make sure return number with country code (or vice versa)

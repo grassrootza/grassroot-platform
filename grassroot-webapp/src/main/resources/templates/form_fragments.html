@@ -14,6 +14,14 @@
   </div>
 </div>
 
+<div th:fragment="number_input (label, value, field_name)">
+  <div class="form-group">
+    <label th:for="${field_name}" th:text="${label}" class="control-label">Value</label>
+    <input th:name="${field_name}" th:id="${field_name}" type="text" class="form-control input-lg"
+           th:value="${value}" />
+  </div>
+</div>
+
 <div th:fragment="file_upload (label, field_name, accept)">
   <div class="form-group">
     <label th:for="${field_name}" class="control-label" th:text="${label}">Label</label>
@@ -34,6 +42,19 @@
   </div>
 </div>
 
+<div th:fragment="enum_selector_with_default (label, field_name, options, label_prefix, default)">
+  <div class="form-group">
+    <label th:for="${field_name}" class="control-label" th:text="${label}"></label>
+    <select th:name="${field_name}" th:id="${field_name}" class="form-control input-lg">
+      <option th:each="option : ${options}"
+              th:value="${option}"
+              th:text="#{__${label_prefix}__.__${option}__}"
+              th:selected="${option == default}">
+      </option>
+    </select>
+  </div>
+</div>
+
 <div th:fragment="entity_selector (label, field_name)">
   <div class="form-group">
     <label th:for="${field_name}" class="control-label" th:text="${label}"></label>
@@ -49,6 +70,19 @@
       <option th:each="option, iter: ${option_map}"
               th:value="${option.key}"
               th:text="${option.value}">
+      </option>
+    </select>
+  </div>
+</div>
+
+<div th:fragment="list_selector_with_default (label, option_map, field_name, default_key)">
+  <div class="form-group">
+    <label th:for="${field_name}" class="control-label" th:text="${label}">Label</label>
+    <select th:name="${field_name}" th:id="${field_name}" class="form-control input-lg">
+      <option th:each="option, iter: ${option_map}"
+              th:value="${option.key}"
+              th:text="${option.value}"
+              th:selected="${option.key == default_key}">
       </option>
     </select>
   </div>
