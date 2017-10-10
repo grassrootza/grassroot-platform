@@ -9,12 +9,10 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.*;
 import za.org.grassroot.core.enums.LocationSource;
-import za.org.grassroot.core.repository.GroupLocationRepository;
-import za.org.grassroot.core.repository.MeetingLocationRepository;
-import za.org.grassroot.core.repository.PreviousPeriodUserLocationRepository;
-import za.org.grassroot.core.repository.UserLocationLogRepository;
+import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.group.GroupLocationFilter;
+import za.org.grassroot.services.user.UserManagementService;
 
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
@@ -41,18 +39,20 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
     private final MeetingLocationRepository meetingLocationRepository;
     private final UserLocationLogRepository userLocationLogRepository;
     private final PreviousPeriodUserLocationRepository avgLocationRepository;
+    private final UserRepository userRepository;
 
 
     @Autowired
     public ObjectLocationBrokerImpl(EntityManager entityManager, GroupLocationRepository groupLocationRepository,
                                     MeetingLocationRepository meetingLocationRepository,
                                     UserLocationLogRepository userLocationLogRepository,
-                                    PreviousPeriodUserLocationRepository avgLocationRepository) {
+                                    PreviousPeriodUserLocationRepository avgLocationRepository,UserRepository userRepository) {
         this.entityManager = entityManager;
         this.groupLocationRepository = groupLocationRepository;
         this.meetingLocationRepository = meetingLocationRepository;
         this.userLocationLogRepository = userLocationLogRepository;
         this.avgLocationRepository = avgLocationRepository;
+        this.userRepository = userRepository;
     }
 
     @Override
@@ -431,6 +431,68 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
             }
         }
         return (list.isEmpty() ? new ArrayList<>() : list);
+    }
+
+
+    @Override
+    public List<ObjectLocation> fetchObjectsNearUser(String userUid, GeoLocation location,
+                                                     int radiusMetres, String filterTerm, String searchType) throws InvalidParameterException {
+        String restrictionObjectType = "";
+        String table = "";
+        List<ObjectLocation> objectLocations;
+
+        if(searchType.equals("GROUP")){
+            restrictionObjectType = "GROUP";
+            table = "GroupLocation l";
+        }else if(searchType.equals("MEETING")){
+            restrictionObjectType = "MEETING";
+            table = "MeetingLocation l";
+        }else if(searchType.equals("ALERT")){
+            restrictionObjectType = "ALERT";
+            table = "LiveWireAlert l";
+        }
+
+        String query = "";
+
+        return null;
+    }
+
+    @Override
+    public List<ObjectLocation> fetchGroupsNearUser(String userUid, GeoLocation location, Integer radiusMetres, String filterTerm, String searchType) throws InvalidParameterException {
+
+        List<ObjectLocation> objectLocations;
+        User user = userRepository.findOneByUid(userUid);
+        String query =
+                "SELECT NEW za.org.grassroot.core.domain.geo.ObjectLocation( " +
+                        "g.uid, g.groupName, l.location.latitude, l.location.longitude, l.score, 'GROUP', g.description, g.discoverable) " +
+                        "FROM GroupLocation l " +
+                        "INNER JOIN l.group g " +
+                        "WHERE g.discoverable = true AND "+
+                        " AND l.location.latitude " +
+                        "    BETWEEN :latpoint  - (:radiusMetres / :distance_unit) " +
+                        "        AND :latpoint  + (:radiusMetres / :distance_unit) " +
+                        " AND l.location.longitude " +
+                        "    BETWEEN :longpoint - (:radiusMetres / (:distance_unit * COS(RADIANS(:latpoint)))) " +
+                        "        AND :longpoint + (:radiusMetres / (:distance_unit * COS(RADIANS(:latpoint)))) " +
+                        " AND :radiusMetres >= (:distance_unit " +
+                        "         * DEGREES(ACOS(COS(RADIANS(:latpoint)) " +
+                        "         * COS(RADIANS(l.location.latitude)) " +
+                        "         * COS(RADIANS(:longpoint - l.location.longitude)) " +
+                        "         + SIN(RADIANS(:latpoint)) " +
+                        "         * SIN(RADIANS(l.location.latitude))))) " +
+                        " AND m.ancestorGroup IN(SELECT mm.group FROM Membership mm WHERE mm.user = :user)" +
+                        " AND g.description LIKE LOWER (CONCAT('%',:term , '%'))";
+
+        TypedQuery<ObjectLocation> objectLocationTypedQuery = entityManager.createQuery(query,ObjectLocation.class)
+                .setParameter("user",user)
+                .setParameter("radius", (double)radiusMetres)
+                .setParameter("distance_unit", KM_PER_DEGREE)
+                .setParameter("term",filterTerm)
+                .setParameter("latpoint",location.getLatitude())
+                .setParameter("longpoint",location.getLongitude());
+
+        objectLocations = objectLocationTypedQuery.getResultList();
+        return objectLocations;
     }
 
     @Override
