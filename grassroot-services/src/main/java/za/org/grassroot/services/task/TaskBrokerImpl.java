@@ -387,13 +387,19 @@ public class TaskBrokerImpl implements TaskBroker {
         Set<String> todoUids = taskUidsAndTypes.keySet().stream()
                 .filter(uid -> taskUidsAndTypes.get(uid).equals(TaskType.TODO)).collect(Collectors.toSet());
 
+        if (eventUids.isEmpty() && todoUids.isEmpty()) {
+            return new ArrayList<>();
+        }
+
         Set<Event> events = eventRepository.findByUidIn(eventUids);
         Set<Todo> todos = todoRepository.findByUidIn(todoUids);
 
-        Map<String, Instant> uidTimeMap = Stream.concat(
-                eventRepository.fetchEventsWithTimeChanged(eventUids).stream(),
-                todoRepository.fetchTodosWithTimeChanged(todoUids).stream()).
-                collect(taskTimeChangedCollector());
+        Stream<TaskTimeChangedDTO> taskStream =
+                todoUids.isEmpty() ? eventRepository.fetchEventsWithTimeChanged(eventUids).stream() :
+                eventUids.isEmpty() ? todoRepository.fetchTodosWithTimeChanged(todoUids).stream() :
+                Stream.concat(eventRepository.fetchEventsWithTimeChanged(eventUids).stream(), todoRepository.fetchTodosWithTimeChanged(todoUids).stream());
+
+        Map<String, Instant> uidTimeMap = taskStream.collect(taskTimeChangedCollector());
 
         return Stream.concat(events.stream().map(e -> (Task) e), todos.stream().map(t -> (Task) t))
                 .distinct()
