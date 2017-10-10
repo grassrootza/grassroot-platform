@@ -13,7 +13,7 @@
 <body>
 
 <section layout:fragment="header" class="top-container"
-         th:replace="~{fragments :: std_header_back('Welcome messages', 'Back to group', '/group/view(groupUid=${group.uid})')}">
+         th:replace="~{fragments :: std_header_back('Welcome messages', 'Back to group', ${backUrl})}">
 </section>
 
 <main layout:fragment="content">
@@ -24,27 +24,29 @@
         <div class="col-md-8 col-md-offset-2 col-sm-6 col-sm-offset-3 col-xs-12">
           <form th:action="@{create}" method="post" th:with="hasTemplate=${existingTemplate != null}">
             <input type="hidden" name="groupUid" th:value="${groupUid}" />
+            <input type="hidden" name="updatingTemplate" th:value="${hasTemplate}" />
+            <input type="hidden" name="changedDelay" id="changed_delay" value="false" />
             <div class="form-group">
               <label for="message_1" class="form-text-lg">
                 Please enter the first message (use __name__ to insert the person's name, and __date__ to
                 insert the date they joined (both are optional)
               </label>
               <textarea name="messageText1" id="message_1" rows="3" maxlength="160" class="form-control input-lg"
-                  th:placeholder="${hasTemplate ? existingTemplate.messageTemplate : ''}"></textarea>
+                  th:text="${hasTemplate ? existingTemplate.messageTemplate : ''}"></textarea>
             </div>
             <div class="form-group">
               <label for="message_2" class="form-text-lg">
                 Please enter the second text, if there is one (optional, adds an additional SMS per user to cost)
               </label>
               <textarea name="messageText2" id="message_2" rows="3" maxlength="160" class="form-control input-lg"
-                        th:placeholder="${hasTemplate ? existingTemplate.messageTemplate2 : ''}"></textarea>
+                        th:text="${hasTemplate ? existingTemplate.messageTemplate2 : ''}"></textarea>
             </div>
             <div class="form-group">
               <label for="message_3" class="form-text-lg">
                 Please enter the third text, if there is one (optional, adds an additional SMS per user to cost)
               </label>
               <textarea name="messageText3" id="message_3" rows="3" maxlength="160" class="form-control input-lg"
-                        th:placeholder="${hasTemplate ? existingTemplate.messageTemplate3 : ''}"></textarea>
+                        th:text="${hasTemplate ? existingTemplate.messageTemplate3 : ''}"></textarea>
             </div>
             <div class="form-group">
               <label for="duration_quantity" class="form-text-lg">
@@ -71,9 +73,12 @@
 </main>
 
 <div layout:fragment="script-container">
-  <script>
+  <script th:inline="javascript">
 
     $(document).ready(function() {
+
+      var isUpdating = /*[[${existingTemplate != null}]]*/ false;
+      var currentDelayMillis = /*[[${existingTemplate != null ? existingTemplate.delayIntervalMillis : 0}]]*/ 0;
 
       var HOURS_MILLIS = 60 * 60 * 1000;
       var DAYS_MILLIS = 24 * HOURS_MILLIS;
@@ -81,21 +86,31 @@
       var quantSel = $("#duration_quantity");
       var unitSel = $("#duration_units");
       var longField = $("#duration_millis");
+      var changedDelay = $("#changed_delay");
 
       longField.val(quantSel.val() * unitMillis()); // since may be reloading
 
       quantSel.change(function() {
         longField.val(quantSel.val() * unitMillis());
-        console.log("millis = " + longField.val());
+        changedDelay.val(true);
+        console.log("millis = " + longField.val(), "changed delay = " + changedDelay.val());
       });
 
       unitSel.change(function() {
         longField.val(quantSel.val() * unitMillis());
-        console.log("millis = " + longField.val());
+        changedDelay.val(true);
+        console.log("millis = " + longField.val(), "changed delay = " + changedDelay.val());
       });
 
       function unitMillis() {
         return $(unitSel).val() === 'DAYS' ? DAYS_MILLIS : HOURS_MILLIS;
+      }
+
+      if (isUpdating) {
+        var isDayDelay = currentDelayMillis / DAYS_MILLIS;
+        console.log("day/hour calc = " + isDayDelay);
+        unitSel.val(isDayDelay >= 1 ? 'DAYS' : 'HOURS');
+        quantSel.val(isDayDelay >= 1 ? (currentDelayMillis / DAYS_MILLIS) : (currentDelayMillis / HOURS_MILLIS));
       }
 
     })
