@@ -13,6 +13,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.core.repository.NotificationRepository;
 import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.specifications.NotificationSpecifications;
 
 import java.time.Instant;
 import java.util.List;
@@ -85,4 +86,19 @@ public class NotificationManager implements NotificationService{
         }
     }
 
+    @Override
+    public Notification loadBySeningKey(String sendingKey) {
+        return notificationRepository.findOne(NotificationSpecifications.getBySendingKey(sendingKey));
+    }
+
+    @Override
+    @Transactional
+    public void updateNotificationStatus(String notificationUid, NotificationStatus status, String errorMessage, String messageSendKey) {
+        Notification notification = notificationRepository.findByUid(notificationUid);
+        if (notification != null) {
+            notification.updateStatus(status);
+            if (messageSendKey != null)
+                notification.setSendingKey(messageSendKey);
+        }
+    }
 }

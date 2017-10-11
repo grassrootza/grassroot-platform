@@ -67,7 +67,7 @@ public abstract class Notification implements Serializable {
 	@Setter
 	@Column(name = "delivery_channel")
     @Enumerated(EnumType.STRING)
-    public UserMessagingPreference deliveryChannel;
+	public UserMessagingPreference deliveryChannel = UserMessagingPreference.SMS; //defaults to SMS
 
 	@ManyToOne
 	@JoinColumn(name = "event_log_id")
@@ -116,6 +116,7 @@ public abstract class Notification implements Serializable {
 		this.lastStatusChange = createdDateTime;
 		this.message = Objects.requireNonNull(message);
 		this.priority = DEFAULT_PRIORITY;
+		this.deliveryChannel = target.getMessagingPreference();
 
 		if (actionLog instanceof EventLog) {
 			eventLog = (EventLog) actionLog;
@@ -138,6 +139,8 @@ public abstract class Notification implements Serializable {
 	public void updateStatus(NotificationStatus status) {
 		this.status = status;
 		this.lastStatusChange = Instant.now();
+		if (status == NotificationStatus.SENT || status == NotificationStatus.SENDING_FAILED)
+			this.sendAttempts++;
 	}
 
 
@@ -147,11 +150,6 @@ public abstract class Notification implements Serializable {
 
 	public boolean isDelivered() {
 		return this.status == NotificationStatus.DELIVERED || this.status == NotificationStatus.READ;
-	}
-
-
-	public void incrementAttemptCount() {
-		this.sendAttempts++;
 	}
 
 

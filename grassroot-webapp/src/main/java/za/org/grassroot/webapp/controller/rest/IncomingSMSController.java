@@ -24,6 +24,8 @@ import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.EventLogBroker;
 import za.org.grassroot.services.task.VoteBroker;
 import za.org.grassroot.services.user.UserManagementService;
+import za.org.grassroot.webapp.model.AatMsgStatus;
+import za.org.grassroot.webapp.model.SMSDeliveryStatus;
 
 import java.text.MessageFormat;
 import java.time.Duration;
@@ -57,6 +59,14 @@ public class IncomingSMSController {
 
     private static final String FROM_PARAMETER ="fn";
     private static final String MESSAGE_TEXT_PARAM ="ms";
+
+    private static final String TO_PARAMETER = "tn";
+    private static final String SUCCESS_PARAMETER = "sc";
+    private static final String REF_PARAMETER = "rf";
+    private static final String STATUS_PARAMETER = "st";
+    private static final String TIME_PARAMETER = "ts";
+
+
     private static final Duration NOTIFICATION_WINDOW = Duration.of(6, ChronoUnit.HOURS);
 
     @Autowired
@@ -122,6 +132,31 @@ public class IncomingSMSController {
             handleUnknownResponse(user, trimmedMsg);
 
     }
+
+
+    @RequestMapping(value = "receipt")
+    public void deliveryReceipt(
+            @RequestParam(value = FROM_PARAMETER) String fromNumber,
+            @RequestParam(value = TO_PARAMETER) String toNumber,
+            @RequestParam(value = SUCCESS_PARAMETER) String success,
+            @RequestParam(value = REF_PARAMETER) String msgKey,
+            @RequestParam(value = STATUS_PARAMETER) Integer status,
+            @RequestParam(value = STATUS_PARAMETER) String time) {
+
+        log.info("AATIncomingSMSController -" + " message delivery receipt from number: {}, message key: {}", fromNumber, msgKey);
+
+        Notification notification = notificationService.loadBySeningKey(msgKey);
+        if (notification != null) {
+            AatMsgStatus aatMsgStatus = AatMsgStatus.fromCode(status);
+            SMSDeliveryStatus deliveryStatus = aatMsgStatus.toSMSDeliveryStatus();
+            if (deliveryStatus == SMSDeliveryStatus.DELIVERED)
+                notificationService.updateNotificationStatus(notification.getUid(), NotificationStatus.DELIVERED, null, null);
+            else if (deliveryStatus == SMSDeliveryStatus.DELIVERY_FAILED)
+                notificationService.updateNotificationStatus(notification.getUid(), NotificationStatus.DELIVERY_FAILED, "Message delivery failed: " + aatMsgStatus.name(), null);
+        }
+
+    }
+
 
     private void handleUnknownResponse(User user, String trimmedMsg) {
 
