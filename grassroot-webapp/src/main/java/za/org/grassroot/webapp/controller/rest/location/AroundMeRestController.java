@@ -1,5 +1,6 @@
 package za.org.grassroot.webapp.controller.rest.location;
 
+import com.google.common.base.Preconditions;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,9 +39,13 @@ public class AroundMeRestController {
                                                                          @RequestParam double latitude,
                                                                          @RequestParam int radiusMetres,
                                                                          @RequestParam String filterTerm,
-                                                                         @RequestParam String searchType) {
+                                                                         Integer publicPrivateOrBoth) {
         List<ObjectLocation> list = new ArrayList<>();
         // do stuff to populate list
+        GeoLocation location = new GeoLocation(latitude,longitude);
+        Preconditions.checkNotNull(objectLocationBroker);
+        list = objectLocationBroker.fetchGroupsNearby(location,radiusMetres,publicPrivateOrBoth,filterTerm,userUid);
+
         return ResponseEntity.ok(list);
     }
 
@@ -50,11 +55,10 @@ public class AroundMeRestController {
                                                                     @RequestParam double longitude,
                                                                     @RequestParam double latitude,
                                                                     @RequestParam int radiusMetres,
-                                                                    @RequestParam String filterTerm,
-                                                                    @RequestParam String searchType){
+                                                                    @RequestParam String filterTerm){
         GeoLocation location = new GeoLocation(latitude,longitude);
         // merge this broker method with fetchPublicGroupsNearMe to make coherent and reduce redundancy
-        return ResponseEntity.ok(objectLocationBroker.fetchUserGroupsNearThem(userUid,location,radiusMetres,filterTerm,searchType));
+        return ResponseEntity.ok(objectLocationBroker.fetchUserGroupsNearThem(userUid,location,radiusMetres,filterTerm));
     }
 
     @ExceptionHandler(InvalidParameterException.class)

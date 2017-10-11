@@ -20,9 +20,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Predicate;
 
 import static za.org.grassroot.services.geo.GeoLocationUtils.KM_PER_DEGREE;
@@ -31,9 +29,9 @@ import static za.org.grassroot.services.geo.GeoLocationUtils.KM_PER_DEGREE;
 public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
     private final static Logger logger = LoggerFactory.getLogger(ObjectLocationBroker.class);
 
-    private final static int PRIVATE_LEVEL = 0;
+    private final static int PRIVATE_LEVEL = -1;
     private final static int PUBLIC_LEVEL = 1;
-    private final static int ALL_LEVEL = 2;
+    private final static int ALL_LEVEL = 0;
 
     private final EntityManager entityManager;
     private final GroupLocationRepository groupLocationRepository;
@@ -435,29 +433,6 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
 
 
     @Override
-    public List<ObjectLocation> fetchObjectsNearUser(String userUid, GeoLocation location,
-                                                     int radiusMetres, String filterTerm, String searchType) throws InvalidParameterException {
-        String restrictionObjectType = "";
-        String table = "";
-        List<ObjectLocation> objectLocations;
-
-        if(searchType.equals("GROUP")){
-            restrictionObjectType = "GROUP";
-            table = "GroupLocation l";
-        }else if(searchType.equals("MEETING")){
-            restrictionObjectType = "MEETING";
-            table = "MeetingLocation l";
-        }else if(searchType.equals("ALERT")){
-            restrictionObjectType = "ALERT";
-            table = "LiveWireAlert l";
-        }
-
-        String query = "";
-
-        return null;
-    }
-
-    @Override
     public List<ObjectLocation> fetchUserGroupsNearThem(String userUid, GeoLocation location, Integer radiusMetres, String filterTerm) throws InvalidParameterException {
         User user = userRepository.findOneByUid(userUid);
 
@@ -469,7 +444,7 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
                         "g.uid, g.groupName, l.location.latitude, l.location.longitude, l.score, 'GROUP', g.description, g.discoverable) " +
                         "FROM GroupLocation l " +
                         "INNER JOIN l.group g " +
-                        "INNER JOIN g.membership m " +
+                        "INNER JOIN g.parent m, Membership mm " +
                         "WHERE l.location.latitude " +
                         "    BETWEEN :latpoint  - (:radiusMetres / :distance_unit) " +
                         "        AND :latpoint  + (:radiusMetres / :distance_unit) " +
@@ -482,12 +457,12 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
                         "         * COS(RADIANS(:longpoint - l.location.longitude)) " +
                         "         + SIN(RADIANS(:latpoint)) " +
                         "         * SIN(RADIANS(l.location.latitude))))) " +
-                        " AND m.user = :user " +
+                        " AND mm.user = :user " +
                         " AND g.description LIKE LOWER (CONCAT('%',:term , '%'))";
 
         TypedQuery<ObjectLocation> objectLocationTypedQuery = entityManager.createQuery(query,ObjectLocation.class)
                 .setParameter("user",user)
-                .setParameter("radius", (double)radiusMetres)
+                .setParameter("radiusMetres", (double)radiusMetres)
                 .setParameter("distance_unit", KM_PER_DEGREE)
                 .setParameter("term",filterTerm)
                 .setParameter("latpoint",location.getLatitude())
@@ -495,6 +470,24 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
 
         objectLocations = objectLocationTypedQuery.getResultList();
         return objectLocations;
+    }
+
+    @Override
+    public List<ObjectLocation> fetchGroupsNearby(GeoLocation location, Integer radius, Integer publicPrivateOrBoth, String filterTerm, String userUid) throws InvalidParameterException {
+
+        assertGeolocation(location);
+
+        Set<ObjectLocation> objectLocationSet = new HashSet<>();
+
+        if (publicPrivateOrBoth > PRIVATE_LEVEL) {
+            objectLocationSet.addAll(fetchPublicGroupsNearbyWithLocation(location,radius));
+        }
+
+        if (publicPrivateOrBoth < PUBLIC_LEVEL) {
+            objectLocationSet.addAll(fetchGroupsNearbyWithLocation(location,radius,PRIVATE_LEVEL));
+        }
+
+        return new ArrayList<>(objectLocationSet);
     }
 
     @Override
