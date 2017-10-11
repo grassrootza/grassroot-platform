@@ -2,7 +2,10 @@ package za.org.grassroot.core.domain.task;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.JpaEntityType;
+import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.enums.TodoCompletionConfirmType;
 import za.org.grassroot.core.util.UIDGenerator;
 
@@ -84,6 +87,11 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
         Todo todo = new Todo();
         todo.uid = UIDGenerator.generateId();
         return todo;
+    }
+
+    @Override
+    public TaskType getTaskType() {
+        return TaskType.TODO;
     }
 
     public Instant getCompletedDate() {

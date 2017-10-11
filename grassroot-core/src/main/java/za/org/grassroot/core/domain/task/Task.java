@@ -3,6 +3,7 @@ package za.org.grassroot.core.domain.task;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.UidIdentifiable;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.util.DateTimeUtil;
 
 import java.time.Instant;
@@ -26,6 +27,8 @@ public interface Task<P extends UidIdentifiable> extends UidIdentifiable {
 	User getCreatedByUser();
 
 	Instant getDeadlineTime();
+
+    TaskType getTaskType();
 
 	default LocalDateTime getDeadlineTimeAtSAST() {
 		return getDeadlineTime().atZone(DateTimeUtil.getSAST()).toLocalDateTime();

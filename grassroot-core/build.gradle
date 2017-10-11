@@ -1,4 +1,21 @@
+//plugins {
+//    id "com.jfrog.bintray" version "1.7.3"
+//}
+
 description = 'Grassroot Core'
+
+
+//bintray {
+//    user = 'bintray_user'
+//    key = 'bintray_api_key'
+//    pkg {
+//        repo = 'generic'
+//        name = 'gradle-project'
+//        userOrg = 'bintray_user'
+//        licenses = ['Apache-2.0']
+//        vcsUrl = 'https://github.com/bintray/gradle-bintray-plugin.git'
+//    }
+//}
 
 dependencies {
 
