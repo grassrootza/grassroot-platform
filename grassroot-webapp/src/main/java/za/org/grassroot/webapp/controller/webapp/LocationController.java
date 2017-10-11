@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.ObjectLocation;
@@ -103,7 +102,7 @@ public class LocationController extends BaseController {
         // Load groups
         List<ObjectLocation> groups;
         try {
-            groups = objectLocationBroker.fetchGroupLocations(location, searchRadius);
+            groups = objectLocationBroker.fetchPublicGroupsNearbyWithLocation(location, searchRadius);
         }
         catch (InvalidParameterException e) {
             logger.info("KPI: POST - BAD REQUEST: " + e.getMessage());

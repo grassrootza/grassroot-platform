@@ -5,14 +5,15 @@ import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.ObjectLocation;
 import za.org.grassroot.services.geo.ObjectLocationBroker;
+import za.org.grassroot.webapp.enums.RestMessage;
+import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
+import za.org.grassroot.webapp.util.RestUtil;
 
+import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -51,16 +52,14 @@ public class AroundMeRestController {
                                                                     @RequestParam int radiusMetres,
                                                                     @RequestParam String filterTerm,
                                                                     @RequestParam String searchType){
-        List<ObjectLocation> objectLocations;
         GeoLocation location = new GeoLocation(latitude,longitude);
-        ResponseEntity<List<ObjectLocation>> listResponseEntity = null;
-        if(location.isValid()){
-            objectLocations = objectLocationBroker.fetchGroupsNearUser(userUid,location,radiusMetres,filterTerm,searchType);
-            if(objectLocations != null){
-                listResponseEntity = new ResponseEntity<>(objectLocations, HttpStatus.OK);
-            }
-        }
-        return listResponseEntity;
+        // merge this broker method with fetchPublicGroupsNearMe to make coherent and reduce redundancy
+        return ResponseEntity.ok(objectLocationBroker.fetchUserGroupsNearThem(userUid,location,radiusMetres,filterTerm,searchType));
+    }
+
+    @ExceptionHandler(InvalidParameterException.class)
+    public ResponseEntity<ResponseWrapper> invalidLocationPassed() {
+        return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.LOCATION_EMPTY);
     }
 
     // do similar with a method that looks for only public groups, or only public meetings

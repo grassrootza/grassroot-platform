@@ -10,13 +10,15 @@ import java.util.List;
 
 public interface ObjectLocationBroker {
 
-    List<ObjectLocation> fetchGroupLocations(GeoLocation geoLocation, Integer radius)
+    // fetchGroupsNearby(Location, Radius, publicPrivateOrBoth, filterTerm)
+
+    List<ObjectLocation> fetchPublicGroupsNearbyWithLocation(GeoLocation geoLocation, Integer radius)
             throws InvalidParameterException;
 
-    List<ObjectLocation> fetchGroupLocations(GeoLocation geoLocation, Integer radius, Integer restriction)
+    List<ObjectLocation> fetchGroupsNearbyWithLocation(GeoLocation geoLocation, Integer radius, Integer publicOrPrivate)
             throws InvalidParameterException;
 
-    List<ObjectLocation> fetchGroupLocations(GeoLocation min, GeoLocation max, Integer restriction)
+    List<ObjectLocation> fetchGroupsWithinAreaWithLocation(GeoLocation min, GeoLocation max, Integer restriction)
             throws InvalidParameterException;
 
     List<ObjectLocation> fetchMeetingLocations(GeoLocation geoLocation, Integer radius, Integer restriction)
@@ -38,7 +40,7 @@ public interface ObjectLocationBroker {
     List<ObjectLocation> fetchObjectsNearUser(String userUid,GeoLocation location,int radiusMetres,String filterTerm,String searchType)
             throws InvalidParameterException;
 
-    List<ObjectLocation> fetchGroupsNearUser(String userUid, GeoLocation location, Integer radiusMetres, String filterTerm, String searchType)
+    List<ObjectLocation> fetchUserGroupsNearThem(String userUid, GeoLocation location, Integer radiusMetres, String filterTerm, String searchType)
             throws InvalidParameterException;
 
     //List<ObjectLocation> fetchMeetingsNearUserUssd(Integer radius,User user)

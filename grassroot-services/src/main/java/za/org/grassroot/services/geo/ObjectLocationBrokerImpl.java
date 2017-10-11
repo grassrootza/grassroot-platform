@@ -12,7 +12,6 @@ import za.org.grassroot.core.enums.LocationSource;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.group.GroupLocationFilter;
-import za.org.grassroot.services.user.UserManagementService;
 
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
@@ -21,7 +20,9 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import java.util.function.Predicate;
 
 import static za.org.grassroot.services.geo.GeoLocationUtils.KM_PER_DEGREE;
@@ -57,8 +58,8 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ObjectLocation> fetchGroupLocations (GeoLocation location, Integer radius) throws InvalidParameterException {
-        return fetchGroupLocations(location, radius, PUBLIC_LEVEL);
+    public List<ObjectLocation> fetchPublicGroupsNearbyWithLocation(GeoLocation location, Integer radius) throws InvalidParameterException {
+        return fetchGroupsNearbyWithLocation(location, radius, PUBLIC_LEVEL);
     }
 
     /**
@@ -69,7 +70,7 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
      */
     @Override
     @Transactional(readOnly = true)
-    public List<ObjectLocation> fetchGroupLocations (GeoLocation location, Integer radius, Integer restriction) throws InvalidParameterException {
+    public List<ObjectLocation> fetchGroupsNearbyWithLocation(GeoLocation location, Integer radius, Integer publicOrPrivate) throws InvalidParameterException {
         logger.info("Fetching group locations ...");
 
         assertRadius(radius);
@@ -77,10 +78,10 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
 
         // Mount restriction
         String restrictionClause = "";
-        if (restriction == null || restriction == PUBLIC_LEVEL) {
+        if (publicOrPrivate == null || publicOrPrivate == PUBLIC_LEVEL) {
             restrictionClause = "g.discoverable = true AND ";
         }
-        else if (restriction == PRIVATE_LEVEL) {
+        else if (publicOrPrivate == PRIVATE_LEVEL) {
             restrictionClause = "g.discoverable = false AND ";
         }
 
@@ -124,14 +125,13 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
     }
 
     /**
-     * TODO: 1) Use the user restrictions and search for public groups
      *
      * Fast nearest-location finder for SQL (MySQL, PostgreSQL, SQL Server)
      * Source: http://www.plumislandmedia.net/mysql/haversine-mysql-nearest-loc/
      */
     @Override
     @Transactional(readOnly = true)
-    public List<ObjectLocation> fetchGroupLocations (GeoLocation min, GeoLocation max, Integer restriction) {
+    public List<ObjectLocation> fetchGroupsWithinAreaWithLocation(GeoLocation min, GeoLocation max, Integer restriction) {
         logger.info("Fetching group locations ...");
 
         assertRestriction(restriction);
@@ -458,17 +458,19 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
     }
 
     @Override
-    public List<ObjectLocation> fetchGroupsNearUser(String userUid, GeoLocation location, Integer radiusMetres, String filterTerm, String searchType) throws InvalidParameterException {
+    public List<ObjectLocation> fetchUserGroupsNearThem(String userUid, GeoLocation location, Integer radiusMetres, String filterTerm) throws InvalidParameterException {
+        User user = userRepository.findOneByUid(userUid);
+
+        assertGeolocation(location);
 
         List<ObjectLocation> objectLocations;
-        User user = userRepository.findOneByUid(userUid);
         String query =
                 "SELECT NEW za.org.grassroot.core.domain.geo.ObjectLocation( " +
                         "g.uid, g.groupName, l.location.latitude, l.location.longitude, l.score, 'GROUP', g.description, g.discoverable) " +
                         "FROM GroupLocation l " +
                         "INNER JOIN l.group g " +
-                        "WHERE g.discoverable = true AND "+
-                        " AND l.location.latitude " +
+                        "INNER JOIN g.membership m " +
+                        "WHERE l.location.latitude " +
                         "    BETWEEN :latpoint  - (:radiusMetres / :distance_unit) " +
                         "        AND :latpoint  + (:radiusMetres / :distance_unit) " +
                         " AND l.location.longitude " +
@@ -480,7 +482,7 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
                         "         * COS(RADIANS(:longpoint - l.location.longitude)) " +
                         "         + SIN(RADIANS(:latpoint)) " +
                         "         * SIN(RADIANS(l.location.latitude))))) " +
-                        " AND m.ancestorGroup IN(SELECT mm.group FROM Membership mm WHERE mm.user = :user)" +
+                        " AND m.user = :user " +
                         " AND g.description LIKE LOWER (CONCAT('%',:term , '%'))";
 
         TypedQuery<ObjectLocation> objectLocationTypedQuery = entityManager.createQuery(query,ObjectLocation.class)

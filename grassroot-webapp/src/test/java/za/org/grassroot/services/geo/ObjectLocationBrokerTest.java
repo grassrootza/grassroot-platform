@@ -9,9 +9,6 @@ import org.mockito.runners.MockitoJUnitRunner;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.ObjectLocation;
 import za.org.grassroot.core.repository.*;
-import za.org.grassroot.integration.location.UssdLocationServicesBroker;
-import za.org.grassroot.services.task.EventBroker;
-import za.org.grassroot.services.user.UserManagementService;
 
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
@@ -60,7 +57,7 @@ public class ObjectLocationBrokerTest {
 
     @Test
     public void validRequestShouldBeSuccessfulWhenFetchingGroupLocations () throws Exception {
-        List<ObjectLocation> groupLocations = objectLocationBroker.fetchGroupLocations(new GeoLocation(53.4808, 2.2426), 10);
+        List<ObjectLocation> groupLocations = objectLocationBroker.fetchPublicGroupsNearbyWithLocation(new GeoLocation(53.4808, 2.2426), 10);
 
         verify(mockQuery, times(1)).getResultList();
         verify(mockEntityManager, times(1)).createQuery(anyString(), eq(ObjectLocation.class));
@@ -71,17 +68,17 @@ public class ObjectLocationBrokerTest {
 
     @Test(expected=InvalidParameterException.class)
     public void nullGeoLocationShouldThrowExceptionWhenFetchingGroupLocations () throws Exception {
-        objectLocationBroker.fetchGroupLocations(null, 10);
+        objectLocationBroker.fetchPublicGroupsNearbyWithLocation(null, 10);
     }
 
     @Test(expected=InvalidParameterException.class)
     public void nullRadiusThrowExceptionWhenFetchingGroupLocations () throws Exception {
-        objectLocationBroker.fetchGroupLocations(new GeoLocation(0.00,0.00), null);
+        objectLocationBroker.fetchPublicGroupsNearbyWithLocation(new GeoLocation(0.00,0.00), null);
     }
 
     @Test(expected=InvalidParameterException.class)
     public void negativeRadiusThrowExceptionWhenFetchingGroupLocations () throws Exception {
-        objectLocationBroker.fetchGroupLocations(new GeoLocation(0.00,0.00), -10);
+        objectLocationBroker.fetchPublicGroupsNearbyWithLocation(new GeoLocation(0.00,0.00), -10);
     }
 
     @Test
@@ -126,7 +123,7 @@ public class ObjectLocationBrokerTest {
 
     private void expectedValidFetchGroupLocationsRequest (double latitude, double longitude){
         try {
-            objectLocationBroker.fetchGroupLocations(new GeoLocation(latitude, longitude), 10);
+            objectLocationBroker.fetchPublicGroupsNearbyWithLocation(new GeoLocation(latitude, longitude), 10);
         }
         catch (Exception e){
             Assert.fail();
@@ -135,7 +132,7 @@ public class ObjectLocationBrokerTest {
 
     private void expectedInValidFetchGroupLocationsRequest (double latitude, double longitude){
         try {
-            objectLocationBroker.fetchGroupLocations(new GeoLocation(latitude, longitude), 10);
+            objectLocationBroker.fetchPublicGroupsNearbyWithLocation(new GeoLocation(latitude, longitude), 10);
             Assert.fail();
         }
         catch (Exception e){
