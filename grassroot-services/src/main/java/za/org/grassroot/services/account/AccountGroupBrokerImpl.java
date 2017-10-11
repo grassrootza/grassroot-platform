@@ -22,6 +22,7 @@ import za.org.grassroot.core.enums.PaidGroupStatus;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.EventSpecifications;
 import za.org.grassroot.core.specifications.GroupSpecifications;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.*;
@@ -515,6 +516,10 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
         logger.info("going to check for paid group on account = {}, for group = {}", account.getName(), group.getName());
         PaidGroup paidGroup = getOrCreatePaidGroup(user, account, group);
 
+        if (!account.isBillPerMessage()) {
+            throw new AccountLimitExceededException();
+        }
+
         if (messages.isEmpty()) {
             throw new IllegalArgumentException("Notification templates need at least one message");
         }
@@ -728,12 +733,12 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
     }
 
     private String messageFromTemplateString(String template, Membership membership, int maxChars) {
+        final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("d MMM, yyyy"); // can consider letting user define in future
         final String formatString = template
                 .replace("__name__", "%1$s")
                 .replace("__date__", "%2$s");
-        String message = String.format(formatString,
-                membership.getUser().getName(),
-                membership.getJoinTime());
+        final String joinedDateString = DateTimeUtil.formatAtSAST(membership.getJoinTime(), formatter);
+        String message = String.format(formatString, membership.getUser().getName(), joinedDateString);
         return message.substring(0, Math.min(message.length(), maxChars));
     }
 
