@@ -7,7 +7,7 @@
 <body>
 
 <section layout:fragment="header" class="top-container"
-         th:replace="~{layout :: std_header_back('Modify ' + ${account.accountName}, 'Back to list', '/admin/accounts/home')}">
+         th:replace="~{fragments :: std_header_back('Modify ' + ${account.accountName}, 'Back to list', '/admin/accounts/home')}">
 </section>
 
 <main layout:fragment="content">

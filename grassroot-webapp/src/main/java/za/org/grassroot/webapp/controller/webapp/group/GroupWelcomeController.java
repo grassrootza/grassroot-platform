@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.services.account.AccountGroupBroker;
+import za.org.grassroot.services.exception.AccountLimitExceededException;
 import za.org.grassroot.services.exception.GroupNotPaidForException;
 import za.org.grassroot.webapp.controller.BaseController;
 
@@ -110,6 +111,16 @@ public class GroupWelcomeController extends BaseController {
                 "welcome messages. Please add this group to a Grassroot Extra account, either by signing up (via 'Grassroot Extra') " +
                 "at the top, or adding it to an existing account - just click 'add to account' on the 'manage group' drop down, or " +
                 "'Add Group' in your Grassroot Extra page.");
+        return "error_generic";
+    }
+
+    @ExceptionHandler(AccountLimitExceededException.class)
+    public String handleAccountNotOnPayPerMessage(Model model) {
+        model.addAttribute("pageTitle", "Account Exceeded");
+        model.addAttribute("pageHeader", "Error");
+        model.addAttribute("subHeader", "Account does not provide welcome messages");
+        model.addAttribute("message", "Sorry, but your Grassroot Extra account does not provide access to this feature. " +
+                "Please contact Grassroot to enable it.");
         return "error_generic";
     }
 
