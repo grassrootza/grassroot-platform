@@ -48,8 +48,10 @@ public abstract class Notification implements Serializable {
 	@JoinColumn(name = "target_id")
 	private User target;
 
+
 	@Column(name = "sending_status")
-	private NotificationStatus status = NotificationStatus.PENDING;
+    @Enumerated(EnumType.STRING)
+    private NotificationStatus status = NotificationStatus.READY_FOR_SENDING;
 
 	@Setter
 	@Column(name = "send_only_after")
@@ -58,12 +60,14 @@ public abstract class Notification implements Serializable {
 	@Column(name = "last_status_change")
 	private Instant lastStatusChange;
 
-	@Column(name = "sending_key")
-	protected String sendingKey;
+    @Setter
+    @Column(name = "sending_key")
+    protected String sendingKey;
 
 	@Setter
 	@Column(name = "delivery_channel")
-	public UserMessagingPreference deliveryChannel;
+    @Enumerated(EnumType.STRING)
+    public UserMessagingPreference deliveryChannel;
 
 	@ManyToOne
 	@JoinColumn(name = "event_log_id")

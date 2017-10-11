@@ -1,6 +1,8 @@
 package za.org.grassroot.core.domain.task;
 
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.JpaEntityType;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.TaskType;
 
@@ -39,6 +41,11 @@ public class Vote extends Event<VoteContainer> {
 	public EventType getEventType() {
 		return EventType.VOTE;
 	}
+
+    @Override
+    public TaskType getTaskType() {
+        return TaskType.VOTE;
+    }
 
 	@Override
 	public JpaEntityType getJpaEntityType() {

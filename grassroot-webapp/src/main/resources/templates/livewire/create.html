@@ -32,7 +32,9 @@
             <div id="group_selector" th:include="~{form_fragments :: entity_selector ('Group', 'group')}"></div>
             <div id="mtg_selector" th:include="~{form_fragments :: entity_selector ('Meeting', 'meeting')}"></div>
             <div th:replace="~{form_fragments :: file_upload('Image for the alert (optional)', 'image', 'image/*')}"></div>
-            <div th:replace="~{form_fragments :: enum_selector('Destination', 'destination', ${destinations}, 'web.livewire.alert.dest')}"></div>
+            <div th:if="${userHasList}">
+              <div th:replace="~{form_fragments :: enum_selector('Destination', 'destination', ${destinations}, 'web.livewire.alert.dest')}"></div>
+            </div>
             <div th:replace="~{form_fragments :: collapse_header_title('Add article text', '#description_field')}"></div>
             <div class="collapse" id="description_field">
               <div th:replace="~{form_fragments :: text_area(false, '', 10, 1000, 'Add a (short) extra text, at most 100-150 words', 'description')}"></div>
@@ -49,7 +51,7 @@
 
 <div layout:fragment="script-container">
 
-  <script>
+  <script th:inline="javascript">
 
     $(document).ready(function() {
       var contactSelect = $("#contact_person_type");
@@ -68,12 +70,25 @@
       var groupSel = $("#group_selector");
       var meetingSel = $("#mtg_selector");
 
-      meetingSel.hide();
-      typeSel.change(function() {
-        var showGroup = $(this).val() === 'INSTANT';
-        groupSel.toggle(showGroup);
-        meetingSel.toggle(!showGroup);
-      });
+      var hasGroups = [[${hasGroups}]];
+      var hasMeetings = [[${hasMeetings}]];
+
+      if (hasGroups && hasMeetings) {
+        meetingSel.hide();
+        typeSel.change(function () {
+          var showGroup = $(this).val() === 'INSTANT';
+          groupSel.toggle(showGroup);
+          meetingSel.toggle(!showGroup);
+        });
+      } else if (hasGroups) {
+        meetingSel.hide();
+        $('#type option[value="MEETING"]').prop("disabled", true);
+      } else if (hasMeetings) {
+        typeSel.val("MEETING");
+        meetingSel.show();
+        groupSel.hide();
+        $('#type option[value="INSTANT"]').prop('disabled', true);
+      }
 
     })
 
