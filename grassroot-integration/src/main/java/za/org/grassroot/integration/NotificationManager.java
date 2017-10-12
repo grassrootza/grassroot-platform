@@ -65,7 +65,7 @@ public class NotificationManager implements NotificationService{
     @Transactional
     public void updateNotificationsViewedAndRead(Set<String> notificationUids) {
         List<Notification> notifications = notificationRepository.findByUidIn(notificationUids);
-        notifications.forEach(n -> n.updateStatus(NotificationStatus.READ));
+        notifications.forEach(n -> n.updateStatus(NotificationStatus.READ, false));
     }
 
     @Override
@@ -80,7 +80,7 @@ public class NotificationManager implements NotificationService{
     public void markNotificationAsDelivered(String notificationUid) {
         Notification notification = notificationRepository.findByUid(notificationUid);
         if (notification != null) {
-            notification.updateStatus(NotificationStatus.DELIVERED);
+            notification.updateStatus(NotificationStatus.DELIVERED, false);
         } else {
             logger.info("No notification under UID {}, possibly from another environment", notificationUid);
         }
@@ -96,7 +96,7 @@ public class NotificationManager implements NotificationService{
     public void updateNotificationStatus(String notificationUid, NotificationStatus status, String errorMessage, String messageSendKey) {
         Notification notification = notificationRepository.findByUid(notificationUid);
         if (notification != null) {
-            notification.updateStatus(status);
+            notification.updateStatus(status, false);
             if (messageSendKey != null)
                 notification.setSendingKey(messageSendKey);
         }

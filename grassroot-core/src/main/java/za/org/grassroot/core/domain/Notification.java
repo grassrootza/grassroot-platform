@@ -7,6 +7,7 @@ import za.org.grassroot.core.domain.account.AccountLog;
 import za.org.grassroot.core.domain.livewire.LiveWireLog;
 import za.org.grassroot.core.domain.task.EventLog;
 import za.org.grassroot.core.domain.task.TodoLog;
+import za.org.grassroot.core.enums.MessagingProvider;
 import za.org.grassroot.core.enums.NotificationDetailedType;
 import za.org.grassroot.core.enums.NotificationType;
 import za.org.grassroot.core.enums.UserMessagingPreference;
@@ -97,6 +98,11 @@ public abstract class Notification implements Serializable {
 	@Column(name = "message")
 	protected String message;
 
+	@Setter
+	@Column(name = "sent_via_provider")
+	@Enumerated(EnumType.STRING)
+	private MessagingProvider sentViaProvider = null;
+
 	@Transient
 	public int priority;
 
@@ -136,10 +142,14 @@ public abstract class Notification implements Serializable {
 	}
 
 
-	public void updateStatus(NotificationStatus status) {
+	/**
+	 * @param status                 status to be set
+	 * @param resultOfSendingAttempt if this staus update is result of sending attempt should be true, otherwise false
+	 */
+	public void updateStatus(NotificationStatus status, boolean resultOfSendingAttempt) {
 		this.status = status;
 		this.lastStatusChange = Instant.now();
-		if (status == NotificationStatus.SENT || status == NotificationStatus.SENDING_FAILED)
+		if (resultOfSendingAttempt)
 			this.sendAttempts++;
 	}
 

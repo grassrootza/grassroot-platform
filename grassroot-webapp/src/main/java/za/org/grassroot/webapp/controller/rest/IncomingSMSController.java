@@ -137,11 +137,11 @@ public class IncomingSMSController {
     @RequestMapping(value = "receipt")
     public void deliveryReceipt(
             @RequestParam(value = FROM_PARAMETER) String fromNumber,
-            @RequestParam(value = TO_PARAMETER) String toNumber,
-            @RequestParam(value = SUCCESS_PARAMETER) String success,
+            @RequestParam(value = TO_PARAMETER, required = false) String toNumber,
+            @RequestParam(value = SUCCESS_PARAMETER, required = false) String success,
             @RequestParam(value = REF_PARAMETER) String msgKey,
             @RequestParam(value = STATUS_PARAMETER) Integer status,
-            @RequestParam(value = STATUS_PARAMETER) String time) {
+            @RequestParam(value = TIME_PARAMETER, required = false) String time) {
 
         log.info("AATIncomingSMSController -" + " message delivery receipt from number: {}, message key: {}", fromNumber, msgKey);
 
