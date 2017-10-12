@@ -535,4 +535,10 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
                 log);
     }
 
+    @Override
+    public List<LiveWireAlert> fetchAlertsNearUser(String userUid, GeoLocation location, String alertType) {
+
+
+        return null;
+    }
 }

@@ -473,9 +473,11 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
     }
 
     @Override
-    public List<ObjectLocation> fetchGroupsNearby(GeoLocation location, Integer radius, Integer publicPrivateOrBoth, String filterTerm, String userUid) throws InvalidParameterException {
+    public List<ObjectLocation> fetchGroupsNearby(GeoLocation location, Integer radius, String searchTerm, String filterTerm, String userUid) throws InvalidParameterException {
 
         assertGeolocation(location);
+
+        Integer publicPrivateOrBoth = searchTerm.toLowerCase().equals("all") ? 0 : (searchTerm.toLowerCase().equals("public") ? 1 : -1);
 
         Set<ObjectLocation> objectLocationSet = new HashSet<>();
 
@@ -486,6 +488,8 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
         if (publicPrivateOrBoth < PUBLIC_LEVEL) {
             objectLocationSet.addAll(fetchGroupsNearbyWithLocation(location,radius,PRIVATE_LEVEL));
         }
+
+        logger.info("Set Size = {}",objectLocationSet.size());
 
         return new ArrayList<>(objectLocationSet);
     }

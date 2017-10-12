@@ -39,12 +39,9 @@ public class AroundMeRestController {
                                                                          @RequestParam double latitude,
                                                                          @RequestParam int radiusMetres,
                                                                          @RequestParam String filterTerm,
-                                                                         Integer publicPrivateOrBoth) {
-        List<ObjectLocation> list = new ArrayList<>();
-        // do stuff to populate list
+                                                                         String searchTerm) {
         GeoLocation location = new GeoLocation(latitude,longitude);
-        Preconditions.checkNotNull(objectLocationBroker);
-        list = objectLocationBroker.fetchGroupsNearby(location,radiusMetres,publicPrivateOrBoth,filterTerm,userUid);
+        List<ObjectLocation> list = objectLocationBroker.fetchGroupsNearby(location,radiusMetres,searchTerm,filterTerm,userUid);
 
         return ResponseEntity.ok(list);
     }
@@ -61,10 +58,24 @@ public class AroundMeRestController {
         return ResponseEntity.ok(objectLocationBroker.fetchUserGroupsNearThem(userUid,location,radiusMetres,filterTerm));
     }
 
+    @RequestMapping(value = "/public/alerts/{userUid}")
+    @ApiOperation(value = "All public Alerts near user", notes = "Fetch all public alerts near to the user")
+    public ResponseEntity<List<ObjectLocation>> getAlertsNearUser(@PathVariable String userUid,
+                                                                  @RequestParam double longitude,
+                                                                  @RequestParam double latitude,
+                                                                  @RequestParam int radiusMetres,
+                                                                  @RequestParam String alertType){
+        GeoLocation location = new GeoLocation(latitude,longitude);
+        // In construction
+        return null;
+    }
+
     @ExceptionHandler(InvalidParameterException.class)
     public ResponseEntity<ResponseWrapper> invalidLocationPassed() {
         return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.LOCATION_EMPTY);
     }
+
+
 
     // do similar with a method that looks for only public groups, or only public meetings
 

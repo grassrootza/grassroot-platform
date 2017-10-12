@@ -10,7 +10,7 @@ import java.util.List;
 
 public interface ObjectLocationBroker {
 
-    List<ObjectLocation> fetchGroupsNearby(GeoLocation location, Integer rsdius, Integer publicPrivateOrBoth, String filterTerm, String userUid)
+    List<ObjectLocation> fetchGroupsNearby(GeoLocation location, Integer rsdius, String searchTerm, String filterTerm, String userUid)
         throws InvalidParameterException;
 
     List<ObjectLocation> fetchPublicGroupsNearbyWithLocation(GeoLocation geoLocation, Integer radius)
