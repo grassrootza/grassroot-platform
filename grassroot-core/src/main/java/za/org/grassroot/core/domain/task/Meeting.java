@@ -96,11 +96,6 @@ public class Meeting extends Event<MeetingContainer> implements VoteContainer {
 		}
 	}
 
-    @Override
-    public TaskType getTaskType() {
-        return TaskType.MEETING;
-    }
-
     public void setParent(MeetingContainer parent) {
 		if (parent instanceof Group) {
 			this.parentGroup = (Group) parent;

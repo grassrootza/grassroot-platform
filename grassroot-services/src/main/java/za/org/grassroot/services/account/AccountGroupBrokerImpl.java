@@ -4,7 +4,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -82,12 +81,10 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
     private final NotificationTemplateRepository templateRepository;
     private LogsAndNotificationsBroker logsAndNotificationsBroker;
 
-    private final ApplicationEventPublisher eventPublisher;
-
     @Autowired
     public AccountGroupBrokerImpl(UserRepository userRepository, GroupRepository groupRepository, TodoRepository todoRepository,
                                   EventRepository eventRepository, PermissionBroker permissionBroker, AccountRepository accountRepository,
-                                  PaidGroupRepository paidGroupRepository, NotificationTemplateRepository templateRepository, LogsAndNotificationsBroker logsAndNotificationsBroker, ApplicationEventPublisher eventPublisher) {
+                                  PaidGroupRepository paidGroupRepository, NotificationTemplateRepository templateRepository, LogsAndNotificationsBroker logsAndNotificationsBroker) {
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
         this.todoRepository = todoRepository;
@@ -97,7 +94,6 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
         this.paidGroupRepository = paidGroupRepository;
         this.templateRepository = templateRepository;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
-        this.eventPublisher = eventPublisher;
     }
 
     @PostConstruct

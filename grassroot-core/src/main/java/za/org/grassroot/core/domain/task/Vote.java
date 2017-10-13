@@ -64,11 +64,6 @@ public class Vote extends Event<VoteContainer> {
 		}
 	}
 
-    @Override
-    public TaskType getTaskType() {
-        return TaskType.VOTE;
-    }
-
     public void setParent(VoteContainer parent) {
 		if (parent instanceof Group) {
 			this.parentGroup = (Group) parent;

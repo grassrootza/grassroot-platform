@@ -75,4 +75,9 @@ public final class NotificationSpecifications {
         };
     }
 
+    public static Specification<Notification> getBySendingKey(String sendingKey) {
+        return (root, query, cb) -> cb.equal(root.get(Notification_.sendingKey), sendingKey);
+    }
+
+
 }

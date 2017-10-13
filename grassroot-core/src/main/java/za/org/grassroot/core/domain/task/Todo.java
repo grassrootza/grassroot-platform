@@ -102,6 +102,11 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
     }
 
     @Override
+    public TaskType getTaskType() {
+        return TaskType.TODO;
+    }
+
+    @Override
     public Group getAncestorGroup() {
         return ancestorGroup;
     }
@@ -199,11 +204,6 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
     public boolean isCancelled() { return cancelled; }
 
     public void setCancelled(boolean cancelled) { this.cancelled = cancelled; }
-
-    @Override
-    public TaskType getTaskType() {
-        return TaskType.TODO;
-    }
 
     @Override
     public Instant getDeadlineTime() {
