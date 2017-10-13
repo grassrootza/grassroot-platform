@@ -37,6 +37,25 @@ public class TaskMinimalDTO {
         this.createdDateTimeMillis = task.getCreatedDateTime().toEpochMilli();
         this.deadlineDateTimeMillis = task.getDeadlineTime().toEpochMilli();
 
-        this.lastChangeTimeServerMillis = lastServerChangeTime.toEpochMilli();
+        this.lastChangeTimeServerMillis = lastServerChangeTime.toEpochMilli() == 0 ?
+            createdDateTimeMillis : lastServerChangeTime.toEpochMilli();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        TaskMinimalDTO that = (TaskMinimalDTO) o;
+
+        if (!taskUid.equals(that.taskUid)) return false;
+        return taskType == that.taskType;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = taskUid.hashCode();
+        result = 31 * result + taskType.hashCode();
+        return result;
     }
 }

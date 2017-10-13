@@ -11,9 +11,12 @@ import org.springframework.test.context.junit4.SpringRunner;
 import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.task.Todo;
+import za.org.grassroot.core.domain.task.TodoLog;
+import za.org.grassroot.core.dto.task.TaskTimeChangedDTO;
 import za.org.grassroot.core.enums.TodoCompletionConfirmType;
+import za.org.grassroot.core.enums.TodoLogType;
 import za.org.grassroot.core.specifications.GroupSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
 
@@ -22,10 +25,9 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
+import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
 
@@ -44,6 +46,9 @@ public class TodoRepositoryTest {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private TodoLogRepository todoLogRepository;
 
     private Instant addHoursFromNow(int hours) { return Instant.now().plus(hours, ChronoUnit.HOURS); }
 
@@ -79,22 +84,6 @@ public class TodoRepositoryTest {
         Todo lb2 = todoRepository.save(new Todo(user, group, "just do it too", addHoursFromNow(2)));
         lb1 = todoRepository.save(lb1);
     }
-
-/*
-    public void shouldSaveAndRetrieveLogBookAssignedToUser()  {
-
-        User user = userRepository.save(new User("001111144"));
-        Group group = groupRepository.save(new Group("test action", user));
-        To-do lb1 = todoRepository.save(new To-do(user, group, "just do it", addHoursFromNow(2), 60, null, 3));
-        To-do lb2 = todoRepository.save(new To-do(user, group, "not assigned", addHoursFromNow(2)));
-        List<To-do> list = todoRepository.findByAssignedMembersAndActionByDateGreaterThan(user, Instant.now());
-        assertEquals(1,list.size());
-//        lb2.setAssignedToUser(user);
-        lb2 = todoRepository.save(lb2);
-        list = todoRepository.findByAssignedMembersAndActionByDateGreaterThan(user, Instant.now());
-        assertEquals(2,list.size());
-    }
-*/
 
     @Test
     public void shouldSaveAndRetrieveLogBookAssignedToUserAndCompleted()  {
@@ -184,5 +173,31 @@ public class TodoRepositoryTest {
 
         int numberReplicatedEntries2 = todoRepository.countBySourceTodo(lbParent2);
         assertEquals(numberReplicatedEntries2, entriesFromDb2.size());
+    }
+
+    @Test
+    public void shouldRetrieveTodosWithTimeChanged() {
+        User user = userRepository.save(new User("0601110000"));
+        Group group = new Group("test", user);
+        group.addMember(user);
+        groupRepository.save(group);
+
+        Todo todo1 = todoRepository.save(new Todo(user, group, "firstOne", addHoursFromNow(2), 60, null, 3, true));
+        Todo todo2 = todoRepository.save(new Todo(user, group, "secondOne", addHoursFromNow(2), 60, null, 3, true));
+
+        TodoLog createdLog = todoLogRepository.save(new TodoLog(TodoLogType.CREATED, user, todo1, "created"));
+        TodoLog createdLog1 = todoLogRepository.save(new TodoLog(TodoLogType.CREATED, user, todo2, "created"));
+
+        Set<String> todoUids = new HashSet<>();
+        todoUids.add(todo1.getUid());
+        todoUids.add(todo2.getUid());
+
+        assertEquals(2, todoRepository.count());
+
+        List<TaskTimeChangedDTO> todosWithTimeChanged = todoRepository.fetchTodosWithTimeChanged(todoUids);
+        assertNotNull(todosWithTimeChanged);
+        assertEquals(2, todosWithTimeChanged.size());
+        List<Instant> creationTimes = Arrays.asList(createdLog.getCreatedDateTime(), createdLog1.getCreatedDateTime());
+        assertTrue(creationTimes.contains(todosWithTimeChanged.get(0).getLastTaskChange()));
     }
 }

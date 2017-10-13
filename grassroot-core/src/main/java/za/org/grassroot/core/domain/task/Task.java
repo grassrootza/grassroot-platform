@@ -30,8 +30,6 @@ public interface Task<P extends UidIdentifiable> extends UidIdentifiable {
 	Instant getCreatedDateTime();
 	Instant getDeadlineTime();
 
-    TaskType getTaskType();
-
 	default LocalDateTime getDeadlineTimeAtSAST() {
 		return getDeadlineTime().atZone(DateTimeUtil.getSAST()).toLocalDateTime();
 	}

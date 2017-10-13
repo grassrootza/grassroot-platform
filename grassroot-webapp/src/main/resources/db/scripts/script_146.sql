@@ -21,4 +21,5 @@ create table notification_template (
 alter table only notification_template add constraint uk_n_template_uid unique (uid);
 
 alter table only notification_template add constraint fk_ntemplate_account_id foreign key (account_id) references paid_account(id);
+
 alter table only notification_template add constraint fk_ntemplate_group_id foreign key (group_id) references group_profile(id);

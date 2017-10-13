@@ -43,6 +43,15 @@ public class TaskFetchController {
         return ResponseEntity.ok(taskBroker.findNewlyChangedTasks(userUid, knownTasks));
     }
 
+    @RequestMapping(value = "/updated/group/{userUid}/{groupUid}", method = RequestMethod.POST)
+    @ApiOperation(value = "Updated tasks for group", notes = "Fetches all the tasks on this group updated since the " +
+            "timestampts in the map")
+    public ResponseEntity<List<TaskMinimalDTO>> fetchGroupUpdatedTasks(@PathVariable String userUid,
+                                                                       @PathVariable String groupUid,
+                                                                       @RequestBody Map<String, Long> knownTasks) {
+        return ResponseEntity.ok(taskBroker.fetchNewlyChangedTasksForGroup(userUid, groupUid, knownTasks));
+    }
+
     @Timed
     @RequestMapping(value = "/specified/{userUid}", method = RequestMethod.POST)
     @ApiOperation(value = "Full details on specified task", notes = "Fetches full details on tasks specified in the " +
@@ -58,7 +67,8 @@ public class TaskFetchController {
             " for sort type (defaults to sorting by last change")
     public ResponseEntity<List<TaskFullDTO>> fetchAllUserTasks(@PathVariable String userUid,
                                                              @RequestParam(required = false) TaskSortType taskSortType) {
-        return ResponseEntity.ok(taskBroker.fetchAllUserTasksSorted(userUid, taskSortType));
+        List<TaskFullDTO> tasks = taskBroker.fetchAllUserTasksSorted(userUid, taskSortType);
+        return ResponseEntity.ok(tasks);
     }
 
     @RequestMapping(value = "/group/{userUid}/{groupUid}", method = RequestMethod.GET)
@@ -69,4 +79,5 @@ public class TaskFetchController {
         return ResponseEntity.ok(taskBroker.fetchGroupTasks(userUid, groupUid,
                         changedSinceMillis == 0 ? null : Instant.ofEpochMilli(changedSinceMillis)));
     }
+
 }

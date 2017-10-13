@@ -212,7 +212,7 @@ public class TaskBrokerImpl implements TaskBroker {
         taskDtos.addAll(todoTaskDtos);
 
         List<TaskDTO> tasks = new ArrayList<>(taskDtos);
-        Collections.sort(tasks, Collections.reverseOrder());
+        tasks.sort(Collections.reverseOrder());
 
         return new ChangedSinceData<>(tasks, removedUids);
     }
@@ -368,6 +368,7 @@ public class TaskBrokerImpl implements TaskBroker {
                 collect(taskTimeChangedCollector());
 
         return Stream.concat(userEvents.stream(), userTodos.stream())
+                .distinct()
                 .map(transformToDTO(user, uidTimeMap))
                 .sorted(compareByType(sortType))
                 .collect(Collectors.toList());
@@ -386,15 +387,22 @@ public class TaskBrokerImpl implements TaskBroker {
         Set<String> todoUids = taskUidsAndTypes.keySet().stream()
                 .filter(uid -> taskUidsAndTypes.get(uid).equals(TaskType.TODO)).collect(Collectors.toSet());
 
+        if (eventUids.isEmpty() && todoUids.isEmpty()) {
+            return new ArrayList<>();
+        }
+
         Set<Event> events = eventRepository.findByUidIn(eventUids);
         Set<Todo> todos = todoRepository.findByUidIn(todoUids);
 
-        Map<String, Instant> uidTimeMap = Stream.concat(
-                eventRepository.fetchEventsWithTimeChanged(eventUids).stream(),
-                todoRepository.fetchTodosWithTimeChanged(todoUids).stream()).
-                collect(taskTimeChangedCollector());
+        Stream<TaskTimeChangedDTO> taskStream =
+                todoUids.isEmpty() ? eventRepository.fetchEventsWithTimeChanged(eventUids).stream() :
+                eventUids.isEmpty() ? todoRepository.fetchTodosWithTimeChanged(todoUids).stream() :
+                Stream.concat(eventRepository.fetchEventsWithTimeChanged(eventUids).stream(), todoRepository.fetchTodosWithTimeChanged(todoUids).stream());
+
+        Map<String, Instant> uidTimeMap = taskStream.collect(taskTimeChangedCollector());
 
         return Stream.concat(events.stream().map(e -> (Task) e), todos.stream().map(t -> (Task) t))
+                .distinct()
                 .map(transformToDTO(user, uidTimeMap))
                 .sorted(compareByType(taskSortType))
                 .collect(Collectors.toList());
@@ -404,13 +412,17 @@ public class TaskBrokerImpl implements TaskBroker {
         return t-> {
             TaskFullDTO taskFullDTO = new TaskFullDTO(t, user, uidTimeMap.get(t.getUid()), hasUserResponded(t, user));
             if (t instanceof Vote) {
-                taskFullDTO.setVoteResults(voteBroker.fetchVoteResults(user.getUid(), t.getUid()));
+                taskFullDTO.setVoteResults(voteBroker.fetchVoteResults(user.getUid(), t.getUid(), true));
             }
             return taskFullDTO;
         };
     }
 
     private Comparator<TaskFullDTO> compareByType(TaskSortType type) {
+        if (type == null) {
+            return Comparator.comparing(TaskFullDTO::getLastServerChangeMillis);
+        }
+
         switch (type) {
             case TIME_CREATED:
                 return Comparator.comparing(TaskFullDTO::getCreatedTimeMillis);
@@ -442,13 +454,16 @@ public class TaskBrokerImpl implements TaskBroker {
     private List<TaskMinimalDTO> combineTasks(Set<Event> events, Set<Todo> todos, Map<String, Instant> uidInstantMap) {
         List<TaskMinimalDTO> tasksToReturn = events.stream()
                 .map(e -> new TaskMinimalDTO(e, uidInstantMap.get(e.getUid())))
+                .distinct()
                 .collect(Collectors.toList());
 
         tasksToReturn.addAll(todos.stream()
                 .map(t -> new TaskMinimalDTO(t, uidInstantMap.get(t.getUid())))
+                .distinct()
                 .collect(Collectors.toList()));
 
-        tasksToReturn.sort(Comparator.comparing(TaskMinimalDTO::getLastChangeTimeServerMillis));
+        tasksToReturn
+                .sort(Comparator.comparing(TaskMinimalDTO::getLastChangeTimeServerMillis));
         return tasksToReturn;
     }
 
@@ -475,7 +490,7 @@ public class TaskBrokerImpl implements TaskBroker {
             if (changedSince == null || isEventAddedOrUpdatedSince(event, userResponseLog, changedSince)) {
                 TaskDTO taskDTO = new TaskDTO(event, user, userResponseLog);
                 if (event instanceof Vote) {
-                    taskDTO.setVoteCount(voteBroker.fetchVoteResults(user.getUid(), event.getUid()));
+                    taskDTO.setVoteCount(voteBroker.fetchVoteResults(user.getUid(), event.getUid(), true));
                 }
                 taskDtos.add(taskDTO);
             }

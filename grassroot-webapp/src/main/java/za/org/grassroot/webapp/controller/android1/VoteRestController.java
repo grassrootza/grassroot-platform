@@ -109,7 +109,7 @@ public class VoteRestController {
 
         User user = userManagementService.findByInputNumber(phoneNumber);
         Vote vote = voteBroker.load(voteUid);
-        Map<String, Long> voteResults = voteBroker.fetchVoteResults(user.getUid(), voteUid);
+        Map<String, Long> voteResults = voteBroker.fetchVoteResults(user.getUid(), voteUid, false);
         EventWrapper eventWrapper = new EventWrapper(vote, user, voteResults, eventLogRepository);
         return RestUtil.okayResponseWithData(RestMessage.VOTE_DETAILS, eventWrapper);
     }
@@ -122,7 +122,7 @@ public class VoteRestController {
 
         permissionBroker.validateGroupPermission(user, event.getAncestorGroup(), null);
 
-        Map<String, Long> totals = voteBroker.fetchVoteResults(user.getUid(), voteUid);
+        Map<String, Long> totals = voteBroker.fetchVoteResults(user.getUid(), voteUid, false);
         return totals != null ? new ResponseEntity<>(totals, HttpStatus.OK) :
                 new ResponseEntity<>(HttpStatus.BAD_REQUEST);
     }

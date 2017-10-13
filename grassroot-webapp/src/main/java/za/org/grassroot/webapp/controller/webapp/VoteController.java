@@ -138,7 +138,7 @@ public class VoteController extends BaseController {
         boolean canModify = (vote.getCreatedByUser().equals(getUserProfile())
                 && vote.getEventStartDateTime().isAfter(Instant.now())); // todo: make this more nuanced
 
-        Map<String, Long> voteTotals = voteBroker.fetchVoteResults(getUserProfile().getUid(), eventUid);
+        Map<String, Long> voteTotals = voteBroker.fetchVoteResults(getUserProfile().getUid(), eventUid, false);
         long totalResponses = voteTotals.values().stream().mapToLong(Long::longValue).sum();
         long possibleResponses = vote.getAllMembers().size();
 
