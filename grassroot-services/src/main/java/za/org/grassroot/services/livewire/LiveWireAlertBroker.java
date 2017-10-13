@@ -23,6 +23,8 @@ public interface LiveWireAlertBroker {
 
     LiveWireAlert load(String alertUid);
 
+    boolean canUserCreateAlert(String userUid);
+
     long countGroupsForInstantAlert(String userUid);
 
     List<Group> groupsForInstantAlert(String userUid, Integer pageNumber, Integer pageSize);

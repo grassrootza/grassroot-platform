@@ -31,14 +31,17 @@ public class GroupModifyController extends GroupBaseController {
             "of MembershipInfo, which requires a name, a phone number, and, optionally a role (can be ROLE_ORDINARY_MEMBER)")
     public ResponseEntity<GroupModifiedResponse> addMembersToGroup(@PathVariable String userUid,
                                                           @PathVariable String groupUid,
-                                                          @RequestBody Set<MembershipInfo> membersToAdd) {
+                                                          @RequestBody Set<AddMemberInfo> membersToAdd) {
         logger.info("membersReceived = {}", membersToAdd != null ? membersToAdd.toString() : "null");
-        List<String> invalidNumbers = findInvalidNumbers(membersToAdd);
-        if (membersToAdd == null || membersToAdd.isEmpty()) {
+        if (membersToAdd == null) {
             throw new NoMembershipInfoException();
-        } else {
-            groupBroker.addMembers(userUid, groupUid, membersToAdd, false);
         }
+        // workaround for the moment, need to fix and improve later
+        Set<MembershipInfo> memberInfos = membersToAdd.stream()
+                .map(AddMemberInfo::convertToMembershipInfo)
+                .collect(Collectors.toSet());
+        List<String> invalidNumbers = findInvalidNumbers(memberInfos);
+        groupBroker.addMembers(userUid, groupUid, memberInfos, false);
         return ResponseEntity.ok(new GroupModifiedResponse(membersToAdd.size() - invalidNumbers.size(), invalidNumbers));
     }
 

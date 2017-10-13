@@ -7,6 +7,7 @@ import za.org.grassroot.core.domain.account.AccountLog;
 import za.org.grassroot.core.domain.livewire.LiveWireLog;
 import za.org.grassroot.core.domain.task.EventLog;
 import za.org.grassroot.core.domain.task.TodoLog;
+import za.org.grassroot.core.enums.MessagingProvider;
 import za.org.grassroot.core.enums.NotificationDetailedType;
 import za.org.grassroot.core.enums.NotificationType;
 import za.org.grassroot.core.enums.UserMessagingPreference;
@@ -48,8 +49,10 @@ public abstract class Notification implements Serializable {
 	@JoinColumn(name = "target_id")
 	private User target;
 
+
 	@Column(name = "sending_status")
-	private NotificationStatus status = NotificationStatus.PENDING;
+    @Enumerated(EnumType.STRING)
+    private NotificationStatus status = NotificationStatus.READY_FOR_SENDING;
 
 	@Setter
 	@Column(name = "send_only_after")
@@ -58,12 +61,14 @@ public abstract class Notification implements Serializable {
 	@Column(name = "last_status_change")
 	private Instant lastStatusChange;
 
-	@Column(name = "sending_key")
-	protected String sendingKey;
+    @Setter
+    @Column(name = "sending_key")
+    protected String sendingKey;
 
 	@Setter
 	@Column(name = "delivery_channel")
-	public UserMessagingPreference deliveryChannel;
+    @Enumerated(EnumType.STRING)
+	public UserMessagingPreference deliveryChannel = UserMessagingPreference.SMS; //defaults to SMS
 
 	@ManyToOne
 	@JoinColumn(name = "event_log_id")
@@ -93,6 +98,11 @@ public abstract class Notification implements Serializable {
 	@Column(name = "message")
 	protected String message;
 
+	@Setter
+	@Column(name = "sent_via_provider")
+	@Enumerated(EnumType.STRING)
+	private MessagingProvider sentViaProvider = null;
+
 	@Transient
 	public int priority;
 
@@ -112,6 +122,7 @@ public abstract class Notification implements Serializable {
 		this.lastStatusChange = createdDateTime;
 		this.message = Objects.requireNonNull(message);
 		this.priority = DEFAULT_PRIORITY;
+		this.deliveryChannel = target.getMessagingPreference();
 
 		if (actionLog instanceof EventLog) {
 			eventLog = (EventLog) actionLog;
@@ -131,9 +142,15 @@ public abstract class Notification implements Serializable {
 	}
 
 
-	public void updateStatus(NotificationStatus status) {
+	/**
+	 * @param status                 status to be set
+	 * @param resultOfSendingAttempt if this staus update is result of sending attempt should be true, otherwise false
+	 */
+	public void updateStatus(NotificationStatus status, boolean resultOfSendingAttempt) {
 		this.status = status;
 		this.lastStatusChange = Instant.now();
+		if (resultOfSendingAttempt)
+			this.sendAttempts++;
 	}
 
 
@@ -143,11 +160,6 @@ public abstract class Notification implements Serializable {
 
 	public boolean isDelivered() {
 		return this.status == NotificationStatus.DELIVERED || this.status == NotificationStatus.READ;
-	}
-
-
-	public void incrementAttemptCount() {
-		this.sendAttempts++;
 	}
 
 

@@ -165,10 +165,12 @@ public class GroupController extends BaseController {
 
         model.addAttribute("flyerLanguages", generatingService.availableLanguages());
 
+        Account groupAccount = isGroupPaidFor ? accountGroupBroker.findAccountForGroup(groupUid) : null;
         model.addAttribute("atGroupSizeLimit", !groupBroker.canAddMember(groupUid));
         model.addAttribute("hasAccount", user.getPrimaryAccount() != null);
         model.addAttribute("canRemoveFromAccount", isGroupPaidFor && user.getPrimaryAccount() != null &&
-                user.getPrimaryAccount().equals(accountGroupBroker.findAccountForGroup(groupUid)));
+                user.getPrimaryAccount().equals(groupAccount));
+        model.addAttribute("hasPayPerMessage", groupAccount != null && groupAccount.isBillPerMessage());
 
         return "group/view";
     }

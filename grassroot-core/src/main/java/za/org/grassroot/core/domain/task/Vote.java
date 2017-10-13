@@ -1,6 +1,8 @@
 package za.org.grassroot.core.domain.task;
 
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.JpaEntityType;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.TaskType;
 
@@ -40,6 +42,11 @@ public class Vote extends Event<VoteContainer> {
 		return EventType.VOTE;
 	}
 
+    @Override
+    public TaskType getTaskType() {
+        return TaskType.VOTE;
+    }
+
 	@Override
 	public JpaEntityType getJpaEntityType() {
 		return JpaEntityType.VOTE;
@@ -56,11 +63,6 @@ public class Vote extends Event<VoteContainer> {
 			throw new IllegalStateException("There is no " + VoteContainer.class.getSimpleName() + " parent defined for " + this);
 		}
 	}
-
-    @Override
-    public TaskType getTaskType() {
-        return TaskType.VOTE;
-    }
 
     public void setParent(VoteContainer parent) {
 		if (parent instanceof Group) {

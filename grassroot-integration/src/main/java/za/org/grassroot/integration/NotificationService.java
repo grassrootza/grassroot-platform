@@ -2,6 +2,7 @@ package za.org.grassroot.integration;
 
 import org.springframework.data.domain.Page;
 import za.org.grassroot.core.domain.Notification;
+import za.org.grassroot.core.domain.NotificationStatus;
 import za.org.grassroot.core.domain.User;
 
 import java.time.Instant;
@@ -24,5 +25,9 @@ public interface NotificationService {
 	int countUnviewedAndroidNotifications(String targetUid);
 
 	void markNotificationAsDelivered(String notificationUid);
+
+    Notification loadBySeningKey(String sendingKey);
+
+    void updateNotificationStatus(String notificationUid, NotificationStatus status, String errorMessage, String messageSendKey);
 
 }

@@ -1,0 +1,30 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      data-layout-decorate="~{layout}">
+<head>
+  <meta charset="UTF-8" />
+  <title th:text="${pageTitle}"></title>
+
+</head>
+<body>
+
+<section layout:fragment="header" class="top-container"
+         th:replace="~{fragments :: std_header(${pageHeader}, ${subHeader})}">
+</section>
+
+<main layout:fragment="content">
+
+  <section class="grassroot-form">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-8 col-md-offset-2 col-sm-6 col-sm-offset-3 col-xs-12">
+          <p class="gr-body-text-lg" th:text="${message}"></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+</body>
+</html>

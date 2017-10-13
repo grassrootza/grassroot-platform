@@ -108,6 +108,12 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
 
     @Override
     @Transactional(readOnly = true)
+    public boolean canUserCreateAlert(String userUid) {
+        return countGroupsForInstantAlert(userUid) > 0 || !meetingsForAlert(userUid).isEmpty();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public long countGroupsForInstantAlert(String userUid) {
         User user = userRepository.findOneByUid(userUid);
         return (long) groupsForInstantAlertQuery(user, true).getSingleResult();
