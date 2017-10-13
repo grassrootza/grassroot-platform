@@ -1,0 +1,1 @@
+alter table notification add column sent_via_provider varchar(255);

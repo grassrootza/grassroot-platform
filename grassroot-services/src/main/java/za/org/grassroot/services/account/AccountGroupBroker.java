@@ -20,6 +20,8 @@ public interface AccountGroupBroker {
 
     Account findAccountForGroup(String groupUid);
 
+    void validateUserAccountAdminForGroup(String userUid, String groupUid);
+
     List<Group> fetchGroupsSponsoredByAccount(String accountUid);
 
     void addGroupToAccount(String accountUid, String groupUid, String addingUserUid);
@@ -58,6 +60,10 @@ public interface AccountGroupBroker {
     @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
     void createGroupWelcomeMessages(String userUid, String accountUid, String groupUid, List<String> messages,
                                     Duration delayToSend, Locale language, boolean onlyViaFreeChannels);
+
+    void updateGroupWelcomeNotifications(String userUid, String groupUid, List<String> messages, Duration delayToSend);
+
+    void deactivateGroupWelcomes(String userUid, String groupUid);
 
     NotificationTemplate loadTemplate(String groupUid);
 

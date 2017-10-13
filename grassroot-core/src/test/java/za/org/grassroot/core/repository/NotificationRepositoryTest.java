@@ -1,6 +1,5 @@
 package za.org.grassroot.core.repository;
 
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +17,6 @@ import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.EventLog;
 import za.org.grassroot.core.domain.task.MeetingBuilder;
 import za.org.grassroot.core.enums.EventLogType;
-import za.org.grassroot.core.enums.UserMessagingPreference;
 
 import javax.transaction.Transactional;
 import java.time.Instant;
@@ -74,17 +72,17 @@ public class NotificationRepositoryTest {
 
     }
 
-    @Test
-    public void shouldFindByUser() throws Exception{
-        User user = userRepository.save(new User("0848835097"));
-        Group group = groupRepository.save(new Group("test eventlog", user));
-        Event event = eventRepository.save(new MeetingBuilder().setName("test meeting").setStartDateTime(Instant.now()).setUser(user).setParent(group).setEventLocation("someLoc").createMeeting());
-        EventLog eventLog = eventLogRepository.save(new EventLog(user, event, EventLogType.CREATED));
-        GcmRegistration gcmRegistration = gcmRegistrationRepository.save(new GcmRegistration(user, "33433"));
-        notificationRepository.save(new EventCancelledNotification(user, "blah", eventLog));
-        List<Notification> notifications = notificationRepository.findByTargetAndDeliveryChannelOrderByCreatedDateTimeDesc(user, UserMessagingPreference.ANDROID_APP);
-        Assert.assertThat(notifications.size(), is(1));
-    }
+//    @Test
+//    public void shouldFindByUser() throws Exception{
+//        User user = userRepository.save(new User("0848835097"));
+//        Group group = groupRepository.save(new Group("test eventlog", user));
+//        Event event = eventRepository.save(new MeetingBuilder().setName("test meeting").setStartDateTime(Instant.now()).setUser(user).setParent(group).setEventLocation("someLoc").createMeeting());
+//        EventLog eventLog = eventLogRepository.save(new EventLog(user, event, EventLogType.CREATED));
+//        GcmRegistration gcmRegistration = gcmRegistrationRepository.save(new GcmRegistration(user, "33433"));
+//        notificationRepository.save(new EventCancelledNotification(user, "blah", eventLog));
+//        List<Notification> notifications = notificationRepository.findByTargetAndDeliveryChannelOrderByCreatedDateTimeDesc(user, UserMessagingPreference.ANDROID_APP);
+//        Assert.assertThat(notifications.size(), is(1));
+//    }
 
 //    @Test
 //    public void shouldFetchNotificatonsToDeliver() throws Exception {
