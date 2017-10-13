@@ -362,10 +362,15 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
     }
 
 
-    public List<ObjectLocation> fetchMeetingsNearUser(Integer radius, User user, GeoLocation geoLocation){
+    public List<ObjectLocation> fetchMeetingsNearUser(Integer radius, User user, GeoLocation geoLocation,
+                                                      String publicPrivateBoth){
 
         assertRadius(radius);
         List<ObjectLocation> list = new ArrayList<>();
+
+        String filter = publicPrivateBoth.toLowerCase().equals("public") ? "m.isPublic = true AND " : "m.isPublic = false AND ";
+
+        String membership = publicPrivateBoth.toLowerCase().equals("public") ? " NOT IN" : " IN ";
 
         String strQuery =
                 "SELECT NEW za.org.grassroot.core.domain.geo.ObjectLocation(" +
@@ -373,7 +378,7 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
                         "  CONCAT('Where: ', m.eventLocation, 'Date and Time: ', m.eventStartDateTime), m.isPublic) " +
                         "FROM MeetingLocation l " +
                         "INNER JOIN l.meeting m " +
-                        "WHERE m.isPublic = true " +
+                        "WHERE " + filter +
                         "  AND l.location.latitude " +
                         "      BETWEEN :latpoint  - (:radius / :distance_unit) " +
                         "          AND :latpoint  + (:radius / :distance_unit) " +
@@ -386,7 +391,7 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
                         "           * COS(RADIANS(:longpoint - l.location.longitude)) " +
                         "           + SIN(RADIANS(:latpoint)) " +
                         "           * SIN(RADIANS(l.location.latitude))))) " +
-                        " AND m.ancestorGroup NOT IN(SELECT mm.group FROM Membership mm WHERE mm.user = :user)";
+                        " AND m.ancestorGroup" + membership + "(SELECT mm.group FROM Membership mm WHERE mm.user = :user)";
 
         logger.info("query = {}",strQuery);
 

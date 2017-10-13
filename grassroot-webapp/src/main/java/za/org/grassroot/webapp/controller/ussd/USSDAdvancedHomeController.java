@@ -72,7 +72,7 @@ public class USSDAdvancedHomeController extends USSDController {
         USSDMenu ussdMenu;
 
         if (guessedLocation != null) {
-            List<ObjectLocation> listOfPublicMeetingsNearUser = objectLocationBroker.fetchMeetingsNearUser(searchRadius, user, guessedLocation);
+            List<ObjectLocation> listOfPublicMeetingsNearUser = objectLocationBroker.fetchMeetingsNearUser(searchRadius, user, guessedLocation,"public");
             logger.info("Size of meetings array in home more controller= {}",listOfPublicMeetingsNearUser.size());
             ussdMenu = listOfPublicMeetingsNearUser.isEmpty() ?
                     haveLocationButNoMeetings(user, repeat) :

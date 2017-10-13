@@ -33,7 +33,7 @@ public interface ObjectLocationBroker {
 
     List<ObjectLocation> fetchLocationsWithFilter(GroupLocationFilter filter);
 
-    List<ObjectLocation> fetchMeetingsNearUser(Integer radius, User user, GeoLocation geoLocation)
+    List<ObjectLocation> fetchMeetingsNearUser(Integer radius, User user, GeoLocation geoLocation, String publicPrivateBoth)
             throws InvalidParameterException;
 
     GeoLocation fetchBestGuessUserLocation(String userUid);

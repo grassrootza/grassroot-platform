@@ -7,16 +7,22 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.ObjectLocation;
+import za.org.grassroot.core.domain.livewire.LiveWireAlert;
+import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.geo.ObjectLocationBroker;
+import za.org.grassroot.services.livewire.LiveWireAlertBroker;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @Api("/api/location")
@@ -25,10 +31,14 @@ public class AroundMeRestController {
 
 
     private final ObjectLocationBroker objectLocationBroker;
+    private final UserRepository userRepository;
+    private final LiveWireAlertBroker liveWireAlertBroker;
 
     @Autowired
-    public AroundMeRestController(ObjectLocationBroker objectLocationBroker){
+    public AroundMeRestController(ObjectLocationBroker objectLocationBroker,UserRepository userRepository,LiveWireAlertBroker liveWireAlertBroker){
         this.objectLocationBroker = objectLocationBroker;
+        this.userRepository = userRepository;
+        this.liveWireAlertBroker = liveWireAlertBroker;
     }
 
     @RequestMapping(value = "/public/{userUid}")
@@ -41,7 +51,14 @@ public class AroundMeRestController {
                                                                          @RequestParam String filterTerm,
                                                                          String searchTerm) {
         GeoLocation location = new GeoLocation(latitude,longitude);
-        List<ObjectLocation> list = objectLocationBroker.fetchGroupsNearby(location,radiusMetres,searchTerm,filterTerm,userUid);
+        User user = userRepository.findOneByUid(userUid);
+
+        Set<ObjectLocation> objectLocationSet = new HashSet<>();
+
+        objectLocationSet.addAll(objectLocationBroker.fetchGroupsNearby(location,radiusMetres,searchTerm,filterTerm,userUid)); //Adding Groups near user
+        objectLocationSet.addAll(objectLocationBroker.fetchMeetingsNearUser(radiusMetres,user,location,searchTerm)); // Adding Meetings near user
+
+        List<ObjectLocation> list = new ArrayList<>(objectLocationSet);
 
         return ResponseEntity.ok(list);
     }
@@ -60,14 +77,16 @@ public class AroundMeRestController {
 
     @RequestMapping(value = "/public/alerts/{userUid}")
     @ApiOperation(value = "All public Alerts near user", notes = "Fetch all public alerts near to the user")
-    public ResponseEntity<List<ObjectLocation>> getAlertsNearUser(@PathVariable String userUid,
+    public ResponseEntity<List<LiveWireAlert>> getAlertsNearUser(@PathVariable String userUid,
                                                                   @RequestParam double longitude,
                                                                   @RequestParam double latitude,
                                                                   @RequestParam int radiusMetres,
-                                                                  @RequestParam String alertType){
+                                                                  @RequestParam String createdByMe){
         GeoLocation location = new GeoLocation(latitude,longitude);
-        // In construction
-        return null;
+
+        List<LiveWireAlert> liveWireAlerts = liveWireAlertBroker.fetchAlertsNearUser(userUid,location,createdByMe,radiusMetres);
+
+        return ResponseEntity.ok(liveWireAlerts);
     }
 
     @ExceptionHandler(InvalidParameterException.class)

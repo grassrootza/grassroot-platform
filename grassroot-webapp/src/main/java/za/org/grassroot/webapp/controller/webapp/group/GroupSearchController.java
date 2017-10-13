@@ -106,7 +106,8 @@ public class GroupSearchController extends BaseController {
 	@RequestMapping(value = "/search")
 	public String searchForGroup(@RequestParam("currentUserContact")String currentUserContact,@RequestParam String term,
 								 @RequestParam(required = false) String groupUid, Model model, RedirectAttributes attributes, HttpServletRequest request,
-								 @RequestParam(value = "locationLat",required = false) double latitude ,@RequestParam(value = "locationLon",required = false) double longitude) {
+								 @RequestParam(value = "locationLat",required = false) double latitude ,
+								 @RequestParam(value = "locationLon",required = false) double longitude) {
 		boolean resultFound = false;
 		GeoLocation location;
 
@@ -169,7 +170,7 @@ public class GroupSearchController extends BaseController {
 					location = new GeoLocation(latitude,longitude);
 				}
 
-				List<ObjectLocation> objectLocations = objectLocationBroker.fetchMeetingsNearUser(searchRadius,user,location);
+				List<ObjectLocation> objectLocations = objectLocationBroker.fetchMeetingsNearUser(searchRadius,user,location,"public");
 				model.addAttribute("publicMeetingsNearUser",objectLocations);
 				log.info("Object Locations = {}" ,objectLocations.size());
 			}
