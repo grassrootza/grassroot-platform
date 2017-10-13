@@ -1,9 +1,9 @@
 package za.org.grassroot.core.domain.notification;
 
-import za.org.grassroot.core.domain.task.Event;
-import za.org.grassroot.core.domain.task.EventLog;
 import za.org.grassroot.core.domain.GroupLog;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.task.Event;
+import za.org.grassroot.core.domain.task.EventLog;
 import za.org.grassroot.core.enums.AlertPreference;
 import za.org.grassroot.core.enums.NotificationDetailedType;
 
@@ -24,8 +24,8 @@ public class EventInfoNotification extends EventNotification {
 	}
 
 	public EventInfoNotification(User target, String message, GroupLog groupLog, Event event) {
-		super(target, message, groupLog, event, true);
-		this.priority = AlertPreference.NOTIFY_ONLY_NEW.getPriority();
+        super(target, message, groupLog, event);
+        this.priority = AlertPreference.NOTIFY_ONLY_NEW.getPriority();
 	}
 
 	public EventInfoNotification(User target, String message, EventLog eventLog) {

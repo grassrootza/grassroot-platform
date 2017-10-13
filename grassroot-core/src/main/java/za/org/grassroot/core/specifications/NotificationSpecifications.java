@@ -2,14 +2,16 @@ package za.org.grassroot.core.specifications;
 
 import org.springframework.data.jpa.domain.Specification;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountLog;
 import za.org.grassroot.core.domain.account.AccountLog_;
-import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.enums.AccountLogType;
 
 import javax.persistence.criteria.Join;
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Created by luke on 2016/10/06.
@@ -17,7 +19,8 @@ import java.time.Instant;
 public final class NotificationSpecifications {
 
     public static Specification<Notification> wasDelivered() {
-        return (root, query, cb) -> cb.equal(root.get(Notification_.delivered), true);
+        List<NotificationStatus> deliveredStatuzses = Arrays.asList(NotificationStatus.DELIVERED, NotificationStatus.READ);
+        return (root, query, cb) -> root.get(Notification_.status).in(deliveredStatuzses);
     }
 
     public static Specification<Notification> createdTimeBetween(Instant start, Instant end) {
@@ -71,5 +74,10 @@ public final class NotificationSpecifications {
             return cb.equal(groupLogJoin.get(GroupLog_.group), group);
         };
     }
+
+    public static Specification<Notification> getBySendingKey(String sendingKey) {
+        return (root, query, cb) -> cb.equal(root.get(Notification_.sendingKey), sendingKey);
+    }
+
 
 }

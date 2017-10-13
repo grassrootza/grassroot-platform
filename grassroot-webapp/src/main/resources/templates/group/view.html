@@ -71,6 +71,9 @@
             <li><a href="" th:href="@{/group/export/xls(groupUid=${group.uid})}">Export group</a></li>
 
             <li class="divider"></li>
+            <li th:if="${isPaidFor and hasPayPerMessage}">
+              <a th:href="@{/group/welcome/messages(groupUid=${group.uid})}">Group welcome messages</a>
+            </li>
             <li th:if="${canAddToAccount}" sec:authorize="hasAnyRole('ROLE_ACCOUNT_ADMIN')">
               <a href="javascript:void(0)" data-toggle="modal" data-target="#accountModal">Add group to account</a>
             </li>

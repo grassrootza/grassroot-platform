@@ -32,7 +32,8 @@ public enum UserLogType {
     LOCATION_PERMISSION_ENABLED("msisdn added to ussd location tracking service"),
     LOCATION_PERMISSION_REMOVED("msisdn removed from location tracking service"),
     LIVEWIRE_CONTACT_GRANTED("granted permission to be a LiveWire contact"),
-    LIVEWIRE_CONTACT_REVOKED("revoked livewire permission");
+    LIVEWIRE_CONTACT_REVOKED("revoked livewire permission"),
+    SENT_UNEXPECTED_SMS_MESSAGE("sent SMS message that could not be interpreted");
 
     private final String text;
 

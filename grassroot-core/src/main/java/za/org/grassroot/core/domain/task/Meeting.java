@@ -1,6 +1,8 @@
 package za.org.grassroot.core.domain.task;
 
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.JpaEntityType;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.MeetingImportance;
 import za.org.grassroot.core.enums.TaskType;
@@ -54,6 +56,11 @@ public class Meeting extends Event<MeetingContainer> implements VoteContainer {
 	public EventType getEventType() {
 		return EventType.MEETING;
 	}
+
+    @Override
+    public TaskType getTaskType() {
+        return TaskType.MEETING;
+    }
 
 	@Override
 	public JpaEntityType getJpaEntityType() {

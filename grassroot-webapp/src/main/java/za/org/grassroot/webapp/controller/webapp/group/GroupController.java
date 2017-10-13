@@ -96,7 +96,7 @@ public class GroupController extends BaseController {
     Next methods are to view a group, core part of interface
      */
 
-    @RequestMapping("view")
+    @RequestMapping(value = "view",method = RequestMethod.GET)
     public String viewGroupIndex(Model model, @RequestParam String groupUid) {
 
         // note, coming here after group creation throws permission checking errors, so need to reload user from DB
@@ -165,10 +165,12 @@ public class GroupController extends BaseController {
 
         model.addAttribute("flyerLanguages", generatingService.availableLanguages());
 
+        Account groupAccount = isGroupPaidFor ? accountGroupBroker.findAccountForGroup(groupUid) : null;
         model.addAttribute("atGroupSizeLimit", !groupBroker.canAddMember(groupUid));
         model.addAttribute("hasAccount", user.getPrimaryAccount() != null);
         model.addAttribute("canRemoveFromAccount", isGroupPaidFor && user.getPrimaryAccount() != null &&
-                user.getPrimaryAccount().equals(accountGroupBroker.findAccountForGroup(groupUid)));
+                user.getPrimaryAccount().equals(groupAccount));
+        model.addAttribute("hasPayPerMessage", groupAccount != null && groupAccount.isBillPerMessage());
 
         return "group/view";
     }

@@ -170,6 +170,8 @@ public class GroupBrokerImpl implements GroupBroker {
         }
 
         logsAndNotificationsBroker.asyncStoreBundle(bundle);
+        // note: would be very difficult to have coherent user flow for messages on group create (e.g., would need to
+        // have user define the welcome messages immediately, etc., etc.,) - so, am leaving out
 
         return group;
     }
@@ -284,7 +286,7 @@ public class GroupBrokerImpl implements GroupBroker {
             LogsAndNotificationsBundle bundle = addMemberships(user, group, membershipInfos, false);
             storeBundleAfterCommit(bundle);
         } catch (InvalidPhoneNumberException e) {
-            logger.info("Error! Invalid phone number : " + e.getMessage());
+            logger.error("Error! Invalid phone number : " + e.getMessage());
         }
     }
 
@@ -306,7 +308,6 @@ public class GroupBrokerImpl implements GroupBroker {
         group.addMembers(userSet, BaseRoles.ROLE_ORDINARY_MEMBER);
 
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
-        // addGroupMembersToChatAfterCommit(group, user);
 
         for (User u  : users) {
             GroupLog groupLog = new GroupLog(group, user, GroupLogType.GROUP_MEMBER_ADDED, u.getId());
@@ -338,6 +339,7 @@ public class GroupBrokerImpl implements GroupBroker {
         storeBundleAfterCommit(bundle);
     }
 
+    // todo : make this actually generate and send notifications
     @Override
     @Transactional(readOnly = true)
     public void notifyOrganizersOfJoinCodeUse(Instant periodStart, Instant periodEnd) {
@@ -352,10 +354,10 @@ public class GroupBrokerImpl implements GroupBroker {
                 List<GroupLog> groupLogs = groupLogRepository.findByGroupAndGroupLogTypeAndCreatedDateTimeBetween(group,
                                                                               GroupLogType.GROUP_MEMBER_ADDED_VIA_JOIN_CODE,
                                                                               periodStart, periodEnd);
+
                 Set<User> organizers = group.getMemberships().stream() // consider adding a getOrganizers method to group
                         .filter(m -> m.getRole().getName().equals(BaseRoles.ROLE_GROUP_ORGANIZER))
-                        .map(m -> m.getUser())
-                        .collect(Collectors.toSet());
+                        .map(Membership::getUser).collect(Collectors.toSet());
 
                 if (groupLogs.size() < 4) { // create explicit list of phone numbers / display names to send to people
                     joinedUserDescriptions = new ArrayList<>();
@@ -378,6 +380,7 @@ public class GroupBrokerImpl implements GroupBroker {
     private LogsAndNotificationsBundle addMemberships(User initiator, Group group, Set<MembershipInfo> membershipInfos, boolean duringGroupCreation) {
         // note: User objects should only ever store phone numbers in the msisdn format (i.e, with country code at front, no '+')
 
+
         Comparator<MembershipInfo> byPhoneNumber =
                 (MembershipInfo m1, MembershipInfo m2) -> (m1.getPhoneNumberWithCCode().compareTo(m2.getPhoneNumberWithCCode()));
 
@@ -386,13 +389,18 @@ public class GroupBrokerImpl implements GroupBroker {
                 .collect(collectingAndThen(toCollection(() -> new TreeSet<>(byPhoneNumber)), HashSet::new));
         logger.debug("number of members: {}", validNumberMembers.size());
 
+        Map<String, MembershipInfo> membershipMap = validNumberMembers.stream()
+                .collect(Collectors.toMap(MembershipInfo::getPhoneNumberWithCCode, m -> m));
+
         Set<String> memberPhoneNumbers = validNumberMembers.stream()
                 .map(MembershipInfo::getPhoneNumberWithCCode)
                 .collect(Collectors.toSet());
 
         logger.debug("phoneNumbers returned: ...." + memberPhoneNumbers);
+
         Set<User> existingUsers = new HashSet<>(userRepository.findByPhoneNumberIn(memberPhoneNumbers));
         Map<String, User> existingUserMap = existingUsers.stream().collect(Collectors.toMap(User::getPhoneNumber, user -> user));
+
         logger.info("Number of existing users ... " + existingUsers.size());
 
         Set<User> createdUsers = new HashSet<>();
@@ -432,16 +440,30 @@ public class GroupBrokerImpl implements GroupBroker {
             addGroupMembersToChatAfterCommit(group,initiator);
         }*/
 
+        Set<String> addedUserUids = new HashSet<>();
         for (Membership membership : memberships) {
             User member = membership.getUser();
             GroupLog groupLog = new GroupLog(group, initiator, logType, member.getId());
             bundle.addLog(groupLog);
             notifyNewMembersOfUpcomingMeetings(bundle, member, group, groupLog);
+            addedUserUids.add(member.getUid());
         }
+
+        triggerWelcomeMessagesAfterCommit(initiator.getUid(), group.getUid(), addedUserUids);
 
         logger.info("Done with member add subroutine, returning bundle");
 
         return bundle;
+    }
+
+    private void triggerWelcomeMessagesAfterCommit(String addingUserUid, String groupUid, Set<String> addedUserUids) {
+        AfterTxCommitTask afterTxCommitTask = () -> {
+            if (accountGroupBroker.isGroupOnAccount(groupUid)) { // maybe just use isPaidFor
+                logger.info("Group is on account, generate some welcome notifications");
+                accountGroupBroker.generateGroupWelcomeNotifications(addingUserUid, groupUid, addedUserUids);
+            }
+        };
+        applicationEventPublisher.publishEvent(afterTxCommitTask);
     }
 
     // for each meeting that belongs to this group, or it belongs to one of parent groups and apply to subgroups,

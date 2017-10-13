@@ -196,7 +196,7 @@ public class EventBrokerImpl implements EventBroker {
 			User creator = event.getCreatedByUser();
 			String creatorMessage = messageAssemblingService.createEventInfoMessage(creator, event);
 			Notification smsNotification = new EventInfoNotification(creator, creatorMessage, eventLog);
-			smsNotification.setForAndroidTimeline(false);
+			smsNotification.setDeliveryChannel(UserMessagingPreference.SMS);
 			notifications.add(smsNotification);
 		}
 		return notifications;

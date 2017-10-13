@@ -1,0 +1,1 @@
+alter table notification drop column sent_via_provider;

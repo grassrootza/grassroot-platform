@@ -3,6 +3,7 @@ package za.org.grassroot.webapp.controller.webapp.livewire;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -37,6 +38,12 @@ public class LiveWireAlertCreateController extends BaseController {
 
     private static final Logger logger = LoggerFactory.getLogger(LiveWireAlertCreateController.class);
 
+    @Value("${grassroot.livewire.instant.minsize:100}")
+    private int minGroupSizeForInstantAlert;
+
+    @Value("${grassroot.livewire.instant.mintasks:5}")
+    private int minGroupTasksForInstantAlert;
+
     private static final String CONTACT_SELF = "self";
     private static final String CONTACT_OTHER = "other";
 
@@ -53,12 +60,21 @@ public class LiveWireAlertCreateController extends BaseController {
 
     @RequestMapping(value = {"", "/"})
     public String createAlertForm(Model model) {
-        Map<String, String> contactOptions = new LinkedHashMap<>();
-        contactOptions.put(CONTACT_SELF, "Me");
-        contactOptions.put(CONTACT_OTHER, "Someone else");
-        model.addAttribute("contactOptions", contactOptions);
-        model.addAttribute("hasOwnList", dataSubscriberBroker.doesUserHaveCustomLiveWireList(getUserProfile().getUid()));
-        return "livewire/create";
+        final String userUid = getUserProfile().getUid();
+        if (liveWireAlertBroker.canUserCreateAlert(userUid)) {
+            Map<String, String> contactOptions = new LinkedHashMap<>();
+            contactOptions.put(CONTACT_SELF, "Me");
+            contactOptions.put(CONTACT_OTHER, "Someone else");
+            model.addAttribute("contactOptions", contactOptions);
+            model.addAttribute("userHasList", dataSubscriberBroker.doesUserHaveCustomLiveWireList(userUid));
+            model.addAttribute("hasGroups", liveWireAlertBroker.countGroupsForInstantAlert(userUid) > 0);
+            model.addAttribute("hasMeetings", !liveWireAlertBroker.meetingsForAlert(userUid).isEmpty());
+            return "livewire/create";
+        } else {
+            model.addAttribute("minSize", minGroupSizeForInstantAlert);
+            model.addAttribute("minTasks", minGroupTasksForInstantAlert);
+            return "livewire/denied";
+        }
     }
 
     @RequestMapping("/groups")
