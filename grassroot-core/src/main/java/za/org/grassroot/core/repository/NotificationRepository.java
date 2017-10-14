@@ -30,6 +30,4 @@ public interface NotificationRepository extends JpaRepository<Notification,Long>
 
     int countByTargetAndDeliveryChannelAndStatusNot(User target, UserMessagingPreference deliveryChannel, NotificationStatus status);
 
-    List<Notification> findFirst150ByStatusOrderByCreatedDateTimeAsc(NotificationStatus status);
-
 }
