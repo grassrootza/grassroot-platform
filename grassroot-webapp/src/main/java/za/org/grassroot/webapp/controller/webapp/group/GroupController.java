@@ -24,6 +24,7 @@ import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.dto.TaskDTO;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.PhoneNumberUtil;
+import za.org.grassroot.integration.NotificationService;
 import za.org.grassroot.integration.PdfGeneratingService;
 import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.services.exception.GroupSizeLimitExceededException;
@@ -44,6 +45,9 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -71,17 +75,20 @@ public class GroupController extends BaseController {
     private final GroupExportBroker groupExportBroker;
     private final AccountGroupBroker accountGroupBroker;
     private final Validator groupWrapperValidator;
+    private NotificationService notificationService;
     private PdfGeneratingService generatingService;
 
     @Autowired
     public GroupController(GroupBroker groupBroker, TaskBroker taskBroker, GroupQueryBroker groupQueryBroker, GroupExportBroker groupExportBroker,
-                           AccountGroupBroker accountBroker, @Qualifier("groupWrapperValidator") Validator groupWrapperValidator, PdfGeneratingService generatingService) {
+                           AccountGroupBroker accountBroker, @Qualifier("groupWrapperValidator") Validator groupWrapperValidator,
+                           NotificationService notificationService, PdfGeneratingService generatingService) {
         this.groupBroker = groupBroker;
         this.taskBroker = taskBroker;
         this.groupQueryBroker = groupQueryBroker;
         this.groupExportBroker = groupExportBroker;
         this.accountGroupBroker = accountBroker;
         this.groupWrapperValidator = groupWrapperValidator;
+        this.notificationService = notificationService;
         this.generatingService = generatingService;
     }
 
@@ -748,12 +755,25 @@ public class GroupController extends BaseController {
         List<GroupLog> groupLogsInPeriod = groupQueryBroker.getLogsForGroup(group, startDateTime, endDateTime);
         List<LocalDate> monthsActive = groupQueryBroker.getMonthsGroupActive(groupUid);
 
+
+        List<Notification> recentlyFailedNotifications = notificationService.loadRecentFailedNotificationsInGroup(startDateTime, endDateTime, group);
+
+        DateTimeFormatter instantFormatter =
+                DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT)
+                        .withLocale(Locale.UK)
+                        .withZone(ZoneId.systemDefault());
+
+
         model.addAttribute("group", group);
 
         log.info("tasksInPeriod: " + tasksInPeriod);
 
+        model.addAttribute("instantFormatter", instantFormatter);
+
         model.addAttribute("tasksInPeriod", tasksInPeriod);
         model.addAttribute("groupLogsInPeriod", groupLogsInPeriod);
+
+        model.addAttribute("recentlyFailedNotifications", recentlyFailedNotifications);
 
         model.addAttribute("month", StringUtils.isEmpty(monthToView) ? null : LocalDate.parse(monthToView));
         model.addAttribute("monthsToView", monthsActive);

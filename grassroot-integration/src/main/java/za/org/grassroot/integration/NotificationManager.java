@@ -5,8 +5,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.NotificationStatus;
 import za.org.grassroot.core.domain.User;
@@ -14,8 +17,11 @@ import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.core.repository.NotificationRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.specifications.NotificationSpecifications;
+import za.org.grassroot.core.util.DateTimeUtil;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -65,7 +71,7 @@ public class NotificationManager implements NotificationService{
     @Transactional
     public void updateNotificationsViewedAndRead(Set<String> notificationUids) {
         List<Notification> notifications = notificationRepository.findByUidIn(notificationUids);
-        notifications.forEach(n -> n.updateStatus(NotificationStatus.READ, false));
+        notifications.forEach(n -> n.updateStatus(NotificationStatus.READ, false, null));
     }
 
     @Override
@@ -80,7 +86,7 @@ public class NotificationManager implements NotificationService{
     public void markNotificationAsDelivered(String notificationUid) {
         Notification notification = notificationRepository.findByUid(notificationUid);
         if (notification != null) {
-            notification.updateStatus(NotificationStatus.DELIVERED, false);
+            notification.updateStatus(NotificationStatus.DELIVERED, false, null);
         } else {
             logger.info("No notification under UID {}, possibly from another environment", notificationUid);
         }
@@ -92,11 +98,23 @@ public class NotificationManager implements NotificationService{
     }
 
     @Override
+    public List<Notification> loadRecentFailedNotificationsInGroup(LocalDateTime from, LocalDateTime to, Group group) {
+
+        Instant fromInstant = DateTimeUtil.convertToSystemTime(from, ZoneId.systemDefault());
+        Instant toInstant = DateTimeUtil.convertToSystemTime(to, ZoneId.systemDefault());
+        Specification<Notification> recently = NotificationSpecifications.createdTimeBetween(fromInstant, toInstant);
+        Specification<Notification> isFailed = NotificationSpecifications.isInFailedStatus();
+        Specification<Notification> forGroup = NotificationSpecifications.ancestorGroupIs(group);
+        Specifications<Notification> specs = Specifications.where(recently).and(isFailed).and(forGroup);
+        return notificationRepository.findAll(specs);
+    }
+
+    @Override
     @Transactional
     public void updateNotificationStatus(String notificationUid, NotificationStatus status, String errorMessage, String messageSendKey) {
         Notification notification = notificationRepository.findByUid(notificationUid);
         if (notification != null) {
-            notification.updateStatus(status, false);
+            notification.updateStatus(status, false, errorMessage);
             if (messageSendKey != null)
                 notification.setSendingKey(messageSendKey);
         }

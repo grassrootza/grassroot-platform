@@ -152,5 +152,6 @@
     <include file="change_146.xml" relativeToChangelogFile="true" />
     <include file="change_147.xml" relativeToChangelogFile="true"/>
     <include file="change_148.xml" relativeToChangelogFile="true"/>
+    <include file="change_149.xml" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>

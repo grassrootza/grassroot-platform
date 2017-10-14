@@ -16,6 +16,9 @@ import za.org.grassroot.core.util.UIDGenerator;
 import javax.persistence.*;
 import java.io.Serializable;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -103,6 +106,12 @@ public abstract class Notification implements Serializable {
 	@Enumerated(EnumType.STRING)
 	private MessagingProvider sentViaProvider = null;
 
+
+	@ElementCollection
+	@CollectionTable(name = "notification_error", joinColumns = @JoinColumn(name = "notification_id"))
+	private List<NotificationSendError> sendingErrors = new ArrayList<>();
+
+
 	@Transient
 	public int priority;
 
@@ -146,11 +155,16 @@ public abstract class Notification implements Serializable {
 	 * @param status                 status to be set
 	 * @param resultOfSendingAttempt if this staus update is result of sending attempt should be true, otherwise false
 	 */
-	public void updateStatus(NotificationStatus status, boolean resultOfSendingAttempt) {
+	public void updateStatus(NotificationStatus status, boolean resultOfSendingAttempt, String error) {
+		NotificationStatus oldStatus = this.status;
 		this.status = status;
 		this.lastStatusChange = Instant.now();
 		if (resultOfSendingAttempt)
 			this.sendAttempts++;
+		if (error != null) {
+			NotificationSendError sendError = new NotificationSendError(LocalDateTime.now(), error, oldStatus, status);
+			this.sendingErrors.add(sendError);
+		}
 	}
 
 
