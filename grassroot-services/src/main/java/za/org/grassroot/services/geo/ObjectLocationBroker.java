@@ -19,9 +19,6 @@ public interface ObjectLocationBroker {
     List<ObjectLocation> fetchGroupsNearbyWithLocation(GeoLocation geoLocation, Integer radius, Integer publicOrPrivate)
             throws InvalidParameterException;
 
-    List<ObjectLocation> fetchGroupsWithinAreaWithLocation(GeoLocation min, GeoLocation max, Integer restriction)
-            throws InvalidParameterException;
-
     List<ObjectLocation> fetchMeetingLocations(GeoLocation geoLocation, Integer radius, Integer restriction)
             throws InvalidParameterException;
 
@@ -40,12 +37,5 @@ public interface ObjectLocationBroker {
 
     List<ObjectLocation> fetchUserGroupsNearThem(String userUid, GeoLocation location, Integer radiusMetres, String filterTerm)
             throws InvalidParameterException;
-
-    //List<ObjectLocation> fetchMeetingsNearUserUssd(Integer radius,User user)
-            //throws InvalidParameterException;
-
-    //ObjectLocation getObjectLocation(String uid) throws InvalidParameterException;
-
-    //ObjectLocation getObjectLocation(String uid) throws InvalidParameterException;
 
 }

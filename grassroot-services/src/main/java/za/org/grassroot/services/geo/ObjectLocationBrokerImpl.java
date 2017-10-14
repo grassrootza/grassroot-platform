@@ -1,7 +1,6 @@
 package za.org.grassroot.services.geo;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,12 +25,12 @@ import java.util.function.Predicate;
 import static za.org.grassroot.services.geo.GeoLocationUtils.KM_PER_DEGREE;
 
 @Service
+@Slf4j
 public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
-    private final static Logger logger = LoggerFactory.getLogger(ObjectLocationBroker.class);
 
+    private final static int ALL_LEVEL = 0;
     private final static int PRIVATE_LEVEL = -1;
     private final static int PUBLIC_LEVEL = 1;
-    private final static int ALL_LEVEL = 0;
 
     private final EntityManager entityManager;
     private final GroupLocationRepository groupLocationRepository;
@@ -69,7 +68,7 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
     @Override
     @Transactional(readOnly = true)
     public List<ObjectLocation> fetchGroupsNearbyWithLocation(GeoLocation location, Integer radius, Integer publicOrPrivate) throws InvalidParameterException {
-        logger.info("Fetching group locations ...");
+        log.info("Fetching group locations ...");
 
         assertRadius(radius);
         assertGeolocation(location);
@@ -104,9 +103,12 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
             "         * COS(RADIANS(:longpoint - l.location.longitude)) " +
             "         + SIN(RADIANS(:latpoint)) " +
             "         * SIN(RADIANS(l.location.latitude))))) ";
-        logger.info(query);
 
-        List<ObjectLocation> list = entityManager.createQuery(query,
+        log.info(query);
+
+        log.debug("Now: {}, radius: {}, location: {}" + LocalDate.now(), radius, location);
+
+        return entityManager.createQuery(query,
                 ObjectLocation.class)
                 .setParameter("date", LocalDate.now())
                 .setParameter("radius", (double)radius)
@@ -115,65 +117,6 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
                 .setParameter("longpoint", location.getLongitude())
                 .getResultList();
 
-        logger.info("Now: " + LocalDate.now());
-        logger.info("Radius: " + radius);
-        logger.info("Location: " + location);
-
-        return (list.isEmpty() ? new ArrayList<>() : list);
-    }
-
-    /**
-     *
-     * Fast nearest-location finder for SQL (MySQL, PostgreSQL, SQL Server)
-     * Source: http://www.plumislandmedia.net/mysql/haversine-mysql-nearest-loc/
-     */
-    @Override
-    @Transactional(readOnly = true)
-    public List<ObjectLocation> fetchGroupsWithinAreaWithLocation(GeoLocation min, GeoLocation max, Integer restriction) {
-        logger.info("Fetching group locations ...");
-
-        assertRestriction(restriction);
-        assertGeolocation(min);
-        assertGeolocation(max);
-
-        // Mount restriction
-        String restrictionClause = "";
-        if (restriction == PRIVATE_LEVEL) {
-            restrictionClause = "g.discoverable = false AND ";
-        }
-        else if (restriction == PUBLIC_LEVEL) {
-            restrictionClause = "g.discoverable = true AND ";
-        }
-
-        // Mount query
-        String query =
-            "SELECT NEW za.org.grassroot.core.domain.geo.ObjectLocation( " +
-            "g.uid, g.groupName, l.location.latitude, l.location.longitude, l.score, 'GROUP', g.description, g.discoverable) " +
-            "FROM GroupLocation l " +
-            "INNER JOIN l.group g " +
-            "WHERE " + restrictionClause +
-            "  l.localDate <= :date " +
-            "  AND l.localDate = (SELECT MAX(ll.localDate) FROM GroupLocation ll WHERE ll.group = l.group) " +
-            "  AND l.location.latitude " +
-            "      BETWEEN :latMin AND :latMax " +
-            "  AND l.location.longitude " +
-            "      BETWEEN :longMin AND :longMax ";
-        logger.info(query);
-
-        List<ObjectLocation> list = entityManager.createQuery(query,
-                ObjectLocation.class)
-                .setParameter("date", LocalDate.now())
-                .setParameter("latMin", min.getLatitude())
-                .setParameter("longMin", min.getLongitude())
-                .setParameter("latMax", max.getLatitude())
-                .setParameter("longMax", max.getLongitude())
-                .getResultList();
-
-        logger.info("Now: " + LocalDate.now());
-        logger.info("Min: " + min);
-        logger.info("Max: " + max);
-
-        return (list.isEmpty() ? new ArrayList<>() : list);
     }
 
     @Override
@@ -208,7 +151,7 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
     @Override
     @Transactional(readOnly = true)
     public List<ObjectLocation> fetchMeetingLocations (GeoLocation min, GeoLocation max, Integer restriction) {
-        logger.info("Fetching meeting locations ...");
+        log.info("Fetching meeting locations ...");
 
         assertRestriction(restriction);
         assertGeolocation(min);
@@ -237,7 +180,7 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
             "      BETWEEN :longMin AND :longMax "
             ;
 
-        logger.info(query);
+        log.info(query);
 
         List<ObjectLocation> list = entityManager.createQuery(query, ObjectLocation.class)
                 .setParameter("date", Instant.now())
@@ -247,9 +190,9 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
                 .setParameter("longMax", max.getLongitude())
                 .getResultList();
 
-        logger.info("Now: " + Instant.now());
-        logger.info("Min: " + min);
-        logger.info("Max: " + max);
+        log.info("Now: " + Instant.now());
+        log.info("Min: " + min);
+        log.info("Max: " + max);
 
         return (list.isEmpty() ? new ArrayList<>() : list);
     }
@@ -260,7 +203,7 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
     @Override
     @Transactional(readOnly = true)
     public List<ObjectLocation> fetchMeetingLocations (GeoLocation location, Integer radius, Integer restriction) {
-        logger.info("Fetching meeting locations ...");
+        log.info("Fetching meeting locations ...");
 
         assertRestriction(restriction);
         assertRadius(radius);
@@ -298,7 +241,7 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
             "           + SIN(RADIANS(:latpoint)) " +
             "           * SIN(RADIANS(l.location.latitude))))) ";
 
-        logger.info(query);
+        log.info(query);
 
         List<ObjectLocation> list = entityManager.createQuery(query, ObjectLocation.class)
                 .setParameter("date", Instant.now())
@@ -308,10 +251,10 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
                 .setParameter("longpoint", location.getLongitude())
                 .getResultList();
 
-        logger.info("Now: " + Instant.now());
-        logger.info("Radius: " + (double)radius);
-        logger.info("" + KM_PER_DEGREE);
-        logger.info("Location: " + location);
+        log.info("Now: " + Instant.now());
+        log.info("Radius: " + (double)radius);
+        log.info("" + KM_PER_DEGREE);
+        log.info("Location: " + location);
 
         return (list.isEmpty() ? new ArrayList<>() : list);
     }
@@ -323,7 +266,7 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
      */
     @Override
     public List<ObjectLocation> fetchMeetingLocationsByGroup (ObjectLocation group, GeoLocation location, Integer radius) {
-        logger.info("Fetching meeting locations by group ...");
+        log.info("Fetching meeting locations by group ...");
 
         assertRadius(radius);
         assertGeolocation(location);
@@ -362,83 +305,66 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
     }
 
 
-    public List<ObjectLocation> fetchMeetingsNearUser(Integer radius, User user, GeoLocation geoLocation,
-                                                      String publicPrivateBoth){
-
+    public List<ObjectLocation> fetchMeetingsNearUser(Integer radius, User user, GeoLocation geoLocation, String publicPrivateBoth) {
         assertRadius(radius);
+
         List<ObjectLocation> list = new ArrayList<>();
 
         String filter = publicPrivateBoth.toLowerCase().equals("public") ? "m.isPublic = true AND " : "m.isPublic = false AND ";
 
-        String membership = publicPrivateBoth.toLowerCase().equals("public") ? " NOT IN" : " IN ";
+        boolean onlyPublicMeetings = "PUBLIC".equals(publicPrivateBoth);
+        String membershipClause = publicPrivateBoth.toLowerCase().equals("public") ? "NOT IN" : "IN ";
 
+        GeoLocationUtils.locationFilterSuffix("l");
         String strQuery =
                 "SELECT NEW za.org.grassroot.core.domain.geo.ObjectLocation(" +
                         "  m.uid, m.name, l.location.latitude, l.location.longitude, l.score, 'MEETING', " +
                         "  CONCAT('Where: ', m.eventLocation, 'Date and Time: ', m.eventStartDateTime), m.isPublic) " +
-                        "FROM MeetingLocation l " +
-                        "INNER JOIN l.meeting m " +
-                        "WHERE " + filter +
-                        "  AND l.location.latitude " +
-                        "      BETWEEN :latpoint  - (:radius / :distance_unit) " +
-                        "          AND :latpoint  + (:radius / :distance_unit) " +
-                        "  AND l.location.longitude " +
-                        "      BETWEEN :longpoint - (:radius / (:distance_unit * COS(RADIANS(:latpoint)))) " +
-                        "          AND :longpoint + (:radius / (:distance_unit * COS(RADIANS(:latpoint)))) " +
-                        "  AND :radius >= (:distance_unit " +
-                        "           * DEGREES(ACOS(COS(RADIANS(:latpoint)) " +
-                        "           * COS(RADIANS(l.location.latitude)) " +
-                        "           * COS(RADIANS(:longpoint - l.location.longitude)) " +
-                        "           + SIN(RADIANS(:latpoint)) " +
-                        "           * SIN(RADIANS(l.location.latitude))))) " +
-                        " AND m.ancestorGroup" + membership + "(SELECT mm.group FROM Membership mm WHERE mm.user = :user)";
+                        "FROM MeetingLocation l INNER JOIN l.meeting m " +
+                        "WHERE m.ancestorGroup " + membershipClause + " (SELECT mm.group FROM Membership mm WHERE mm.user = :user) " +
+                        (onlyPublicMeetings ? " AND m.public = true " : "") + "AND " +
+                        GeoLocationUtils.locationFilterSuffix("l.location");
 
-        logger.info("query = {}",strQuery);
+        log.info("query = {}",strQuery);
 
         TypedQuery<ObjectLocation> query = entityManager.createQuery(strQuery,ObjectLocation.class)
                 .setParameter("user",user)
                 .setParameter("radius", (double)radius)
                 .setParameter("distance_unit", KM_PER_DEGREE);
 
-
-        if(geoLocation != null){
-            query.setParameter("latpoint", geoLocation.getLatitude())
-                    .setParameter("longpoint", geoLocation.getLongitude());
+        if (geoLocation != null){
+            log.debug("we have a geolocation, it looks like: {}", geoLocation);
+            setLocationParams(query, geoLocation);
             list = query.getResultList();
-        }else{
+        } else {
+            log.debug("we don't have a geolocation, try find one");
             Instant fiveDayAgo = Instant.now().minus(5, ChronoUnit.DAYS);
             UserLocationLog userLocationLog = userLocationLogRepository.findByUserUidAndTimestampBetweenNowAndIntervalGiven(user.getUid(),fiveDayAgo);
-            if(userLocationLog != null){
-
-                geoLocation = new GeoLocation(userLocationLog.getLocation().getLatitude(),userLocationLog.getLocation().getLongitude());
-                query.setParameter("latpoint",geoLocation.getLatitude())
-                        .setParameter("longpoint",geoLocation.getLongitude());
-
+            log.debug("latest user location log = {}", userLocationLog);
+            if(userLocationLog != null) {
+                setLocationParams(query, userLocationLog.getLocation());
                 list = query.getResultList();
-            }else{
-
+            } else {
                 GroupLocation groupLocation = groupLocationRepository.findByUserUid(user);
-
-                if(groupLocation != null){
-                    geoLocation = new GeoLocation(groupLocation.getLocation().getLatitude(),groupLocation.getLocation().getLongitude());
-                    if(geoLocation != null){
-                        query.setParameter("latpoint",geoLocation.getLatitude())
-                                .setParameter("longpoint",geoLocation.getLongitude());
-
-                        list = query.getResultList();
-                    }
-
-                } else {
-                    list = new ArrayList<>();
+                log.info("okay, no recent user location log either, group location = {}", groupLocation);
+                if (groupLocation != null && groupLocation.hasLocation()) {
+                    setLocationParams(query, groupLocation.getLocation());
+                    list = query.getResultList();
                 }
             }
         }
-        return (list.isEmpty() ? new ArrayList<>() : list);
+        return list;
+    }
+
+    private void setLocationParams(TypedQuery query, GeoLocation location) {
+        Objects.requireNonNull(location);
+        query.setParameter("latpoint",location.getLatitude()).setParameter("longpoint",location.getLongitude());
     }
 
 
     @Override
-    public List<ObjectLocation> fetchUserGroupsNearThem(String userUid, GeoLocation location, Integer radiusMetres, String filterTerm) throws InvalidParameterException {
+    public List<ObjectLocation> fetchUserGroupsNearThem(String userUid, GeoLocation location, Integer radiusMetres,
+                                                        String filterTerm) throws InvalidParameterException {
         User user = userRepository.findOneByUid(userUid);
 
         assertGeolocation(location);
@@ -494,7 +420,7 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
             objectLocationSet.addAll(fetchGroupsNearbyWithLocation(location,radius,PRIVATE_LEVEL));
         }
 
-        logger.info("Set Size = {}",objectLocationSet.size());
+        log.info("Set Size = {}",objectLocationSet.size());
 
         return new ArrayList<>(objectLocationSet);
     }
@@ -508,10 +434,13 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
         List<UserLocationLog> locationLogs = userLocationLogRepository.findByUserUidOrderByTimestampDesc(userUid);
 
         if (!locationLogs.isEmpty()) {
+            log.info("we have {} recent location logs", locationLogs.size());
 
             Optional<UserLocationLog> bestMatch = locationLogs.stream()
                     .filter(ofSourceNewerThan(cutOffAge, LocationSource.LOGGED_PRECISE))
                     .findFirst();
+
+            log.info("found a new precise log?: {}", bestMatch);
 
             bestGuess = bestMatch.isPresent() ? bestMatch.get().getLocation() : null;
 
@@ -519,13 +448,16 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
                 Optional<UserLocationLog> nextTry = locationLogs.stream()
                         .filter(ofSourceNewerThan(cutOffAge, LocationSource.LOGGED_APPROX)).findFirst();
                 bestGuess = nextTry.isPresent() ? nextTry.get().getLocation() : null;
+                log.info("found an approx location? {}", nextTry.isPresent());
             }
 
             if (bestGuess == null) {
+                log.info("found nothing, using this: {}", locationLogs.get(0));
                 bestGuess = locationLogs.get(0).getLocation();
             }
 
         } else {
+            log.info("no recent location logs, going for previously calculated");
             PreviousPeriodUserLocation avgUserLocation = avgLocationRepository
                     .findTopByKeyUserUidOrderByKeyLocalDateDesc(userUid);
 
