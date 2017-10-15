@@ -1,23 +1,22 @@
-package za.org.grassroot.webapp.controller.rest.android2;
+package za.org.grassroot.webapp.controller.rest.file;
 
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import za.org.grassroot.core.domain.media.MediaFunction;
 import za.org.grassroot.integration.MediaFileBroker;
-import za.org.grassroot.integration.storage.StorageBroker;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
 @RestController
-@RequestMapping(value = "/api/mobile/media")
+@Api("/api/media")
+@RequestMapping(value = "/api/media")
 public class MediaController {
 
     private static final Logger logger = LoggerFactory.getLogger(MediaController.class);
@@ -29,7 +28,10 @@ public class MediaController {
         this.mediaFileBroker = mediaFileBroker;
     }
 
-    @RequestMapping(value = "/store/{userUid}")
+    @ApiOperation(value = "Store a media file, and get the server key back",
+            notes = "Message will declare if the file already existed, by having already_exists or uploaded, and" +
+                    "the 'data' field contains a string that will have the UID of the file record on the server (storedFileUid)")
+    @RequestMapping(value = "/store/{userUid}", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> storeMediaFile(@PathVariable String userUid,
                                                           @RequestParam String imageKey,
                                                           @RequestParam MediaFunction mediaFunction,

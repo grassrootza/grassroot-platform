@@ -1,9 +1,14 @@
-package za.org.grassroot.core.dto;
+package za.org.grassroot.core.dto.task;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.google.common.collect.ComparisonChain;
-import za.org.grassroot.core.domain.*;
+import io.swagger.annotations.ApiModel;
+import lombok.Getter;
+import lombok.Setter;
+import za.org.grassroot.core.domain.JpaEntityType;
+import za.org.grassroot.core.domain.Membership;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.TaskType;
@@ -17,6 +22,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static org.springframework.data.jpa.domain.Specifications.where;
 import static za.org.grassroot.core.specifications.EventLogSpecifications.*;
@@ -24,6 +30,7 @@ import static za.org.grassroot.core.specifications.EventLogSpecifications.*;
 /**
  * Created by paballo on 2016/03/02.
  */
+@ApiModel(value = "Task", description = "Generic DTO for meetings, votes, and actions")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class TaskDTO implements Comparable<TaskDTO> {
 
@@ -53,6 +60,7 @@ public class TaskDTO implements Comparable<TaskDTO> {
     private boolean canEdit;
 
     private List<String> tags;
+    @Getter @Setter private Map<String, Long> voteCount;
 
     @JsonIgnore
     private final Instant instant;

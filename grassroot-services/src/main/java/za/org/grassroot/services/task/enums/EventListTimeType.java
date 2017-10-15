@@ -1,4 +1,4 @@
-package za.org.grassroot.services.enums;
+package za.org.grassroot.services.task.enums;
 
 /**
  * Created by luke on 2016/09/09.

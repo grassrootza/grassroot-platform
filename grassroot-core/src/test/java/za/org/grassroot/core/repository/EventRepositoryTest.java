@@ -5,14 +5,18 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.*;
+import za.org.grassroot.core.dto.task.TaskTimeChangedDTO;
 import za.org.grassroot.core.enums.EventLogType;
+import za.org.grassroot.core.specifications.EventSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
 
 import javax.transaction.Transactional;
@@ -21,6 +25,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoField;
 import java.time.temporal.ChronoUnit;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -197,11 +202,7 @@ public class EventRepositoryTest {
         Event event = eventRepository.findAll().iterator().next();
         event.setCustomReminderMinutes(0);
         assertThat(event.getCustomReminderMinutes(),is(0));
-
-
     }
-
-
 
     @Test
     public void shouldSaveAndFetchAssignedMemberCollection() {
@@ -221,7 +222,6 @@ public class EventRepositoryTest {
         Event eventFromDb = eventRepository.findAll().iterator().next();
         assertNotNull(eventFromDb.getUid());
         assertTrue(eventFromDb.fetchAssignedMembersCollection().equals(userList));
-
     }
 
     @Test
@@ -272,8 +272,6 @@ public class EventRepositoryTest {
         assertThat(eventFromDb.getAncestorGroup().getMembersWithChildrenIncluded().size(), is(3));
         assertThat(eventFromDb.getAncestorGroup().getMembers().size(), is(3));
         assertThat(eventFromDb.getAssignedMembers().size(),is(0));
-
-
     }
 
     @Test
@@ -319,7 +317,6 @@ public class EventRepositoryTest {
         assertTrue(eventFromDb.getReminderType().equals(EventReminderType.CUSTOM));
         assertTrue(newEvent.getScheduledReminderTime().isAfter(Instant.now()));
         assertFalse(newEvent.isScheduledReminderActive());
-
     }
 
 
@@ -368,8 +365,8 @@ public class EventRepositoryTest {
         assertThat(eventFromDb.getReminderType(), is(EventReminderType.DISABLED));
         eventFromDb.updateScheduledReminderTime();
         assertThat(eventFromDb.getScheduledReminderTime(), is(nullValue()));
-
     }
+
     @Test
     public void shouldReturnEventsForGroupAfterDate() {
         User user = userRepository.save(new User("27827654321"));
@@ -481,8 +478,8 @@ public class EventRepositoryTest {
         group2 = groupRepository.save(group2);
         Event event2 = eventRepository.save(new MeetingBuilder().setName("test2").setStartDateTime(Instant.now()).setUser(user2).setParent(group2).setEventLocation("someLoc").createMeeting());
 
-        List<Event> events = eventRepository.findByParentGroupMembershipsUser(user1);
-        List<Event> events2 = eventRepository.findByParentGroupMembershipsUser(user2);
+        List<Event> events = eventRepository.findAll(EventSpecifications.userPartOfGroup(user1));
+        List<Event> events2 = eventRepository.findAll(EventSpecifications.userPartOfGroup(user2));
 
         assertThat(userRepository.count(), is(2L));
         assertThat(groupRepository.count(), is(2L));
@@ -518,7 +515,11 @@ public class EventRepositoryTest {
         event3.setCanceled(true);
         eventRepository.save(event3);
 
-        List<Event> events = eventRepository.findByParentGroupMembershipsUserAndEventStartDateTimeGreaterThanAndCanceledFalse(user, Instant.now());
+        List<Event> events = eventRepository.findAll(Specifications
+                .where(EventSpecifications.userPartOfGroup(user))
+                .and(EventSpecifications.notCancelled())
+                .and(EventSpecifications.startDateTimeAfter(Instant.now())));
+
         assertNotNull(events);
         assertEquals(1, events.size());
         assertFalse(events.contains(event2));
@@ -600,6 +601,45 @@ public class EventRepositoryTest {
 	    List<Event> cancelledEvents2 = eventRepository.findByMemberAndCanceledSince(user, intervalStart2);
 
 	    assertTrue(cancelledEvents2.isEmpty());
+
+    }
+
+    @Test
+    public void shouldGetLatestChangedTime() {
+        User user = userRepository.save(new User("0710001111"));
+        Group group = groupRepository.save(new Group("tg1", user));
+
+        Event event1 = new MeetingBuilder()
+                .setName("time changed check")
+                .setStartDateTime(Instant.now().plus(2, DAYS))
+                .setUser(user).setParent(group).setEventLocation("someLoc").createMeeting();
+        eventRepository.save(event1);
+        EventLog eventLog = new EventLog(user, event1, EventLogType.CREATED);
+        eventLogRepository.save(eventLog);
+
+        Event event2 = eventRepository.save(new Vote("Working?", Instant.now().plus(2, ChronoUnit.DAYS), user, group));
+        EventLog eventLog2 = eventLogRepository.save(new EventLog(user, event2, EventLogType.CREATED));
+
+        List<TaskTimeChangedDTO> list1 = eventRepository.fetchEventsWithTimeChanged(
+                Collections.singleton(event1.getUid()));
+
+        assertNotNull(list1);
+        assertEquals(list1.size(), 1);
+        assertEquals(list1.get(0).getLastTaskChange(), eventLog.getCreatedDateTime());
+        assertEquals(list1.get(0).getTaskUid(), event1.getUid());
+
+        List<TaskTimeChangedDTO> list2 = eventRepository.fetchEventsWithTimeChanged(
+                Collections.singleton(event2.getUid()));
+        assertNotNull(list2);
+        assertEquals(list2.size(), 1);
+        assertEquals(list2.get(0).getLastTaskChange(), eventLog2.getCreatedDateTime());
+
+        EventLog eventLog3 = eventLogRepository.save(new EventLog(user, event1, EventLogType.CANCELLED));
+        List<TaskTimeChangedDTO> list3 = eventRepository.fetchEventsWithTimeChanged(
+                Collections.singleton(event1.getUid()));
+        assertNotNull(list3);
+        assertEquals(list3.size(), 1);
+        assertEquals(list3.get(0).getLastTaskChange(), eventLog3.getCreatedDateTime());
 
     }
 

@@ -39,8 +39,11 @@
             <div class="input-group input-group-lg">
               <input type="text" name="term" class="form-control" id="searchTerm" />
               <input type="hidden" name="groupUid" id="groupSearchUid" />
+                <input type="hidden" id="locationLat" name="locationLat"/>
+                <input type="hidden" id="locationLon" name="locationLon"/>
+              <input type="hidden" name="currentUserContact" th:value="${currentUser.phoneNumber}"/>
               <span class="input-group-btn">
-                <button type="submit" class="btn btn-primary"><i class="fa fa-search" aria-hidden="true"></i>Search</button>
+                <button type="submit" class="btn btn-primary" id="searchButton" name="searchButton"><i class="fa fa-search" aria-hidden="true"></i>Search</button>
               </span>
             </div>
           </form>
@@ -496,6 +499,21 @@
 
 
   </script>
+  <script>
+    $(document).ready(function(){
+        document.getElementById("locationLat").value = -0.0;
+        document.getElementById("locationLon").value = 0.0;
+
+        console.log(document.getElementById("locationLat").value);
+        console.log(document.getElementById("locationLon").value);
+    });
+  </script>
+
+
+
+   <!-- <script async defer
+            src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCcgAM0u_Su0rLafMY0skTcYr931T4x5UI">
+    </script>-->
 
 </div>
 

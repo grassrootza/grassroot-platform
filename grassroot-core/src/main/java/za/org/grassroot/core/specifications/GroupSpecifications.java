@@ -3,7 +3,6 @@ package za.org.grassroot.core.specifications;
 import org.springframework.data.jpa.domain.Specification;
 import za.org.grassroot.core.domain.*;
 
-import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Join;
 import java.time.Instant;
 import java.util.Set;

@@ -4,7 +4,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import za.org.grassroot.webapp.controller.rest.android.TodoRestController;
+import za.org.grassroot.webapp.controller.android1.TodoRestController;
 
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;

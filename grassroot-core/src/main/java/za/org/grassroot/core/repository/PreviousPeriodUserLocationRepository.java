@@ -16,4 +16,6 @@ public interface PreviousPeriodUserLocationRepository extends JpaRepository<Prev
 
 	@Transactional(readOnly = true)
 	List<PreviousPeriodUserLocation> findByKeyUserUidIn(Set<String> userUids);
+
+	PreviousPeriodUserLocation findTopByKeyUserUidOrderByKeyLocalDateDesc(String userUid);
 }

@@ -64,7 +64,7 @@ public class Vote extends Event<VoteContainer> {
 		}
 	}
 
-	public void setParent(VoteContainer parent) {
+    public void setParent(VoteContainer parent) {
 		if (parent instanceof Group) {
 			this.parentGroup = (Group) parent;
 		} else if (parent instanceof Todo) {
