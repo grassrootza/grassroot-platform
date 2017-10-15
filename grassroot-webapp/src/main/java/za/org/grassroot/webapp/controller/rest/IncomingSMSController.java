@@ -1,5 +1,7 @@
 package za.org.grassroot.webapp.controller.rest;
 
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +33,7 @@ import java.text.MessageFormat;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,9 +42,9 @@ import java.util.stream.Collectors;
 /**
  * Created by paballo on 2016/02/17.
  */
-
+@Api("/api/inbound/sms/")
 @RestController
-@RequestMapping("/sms/")
+@RequestMapping("/api/inbound/sms/")
 public class IncomingSMSController {
 
     private static final Logger log = LoggerFactory.getLogger(IncomingSMSController.class);
@@ -66,7 +69,6 @@ public class IncomingSMSController {
     private static final String STATUS_PARAMETER = "st";
     private static final String TIME_PARAMETER = "ts";
 
-
     private static final Duration NOTIFICATION_WINDOW = Duration.of(6, ChronoUnit.HOURS);
 
     @Autowired
@@ -88,11 +90,13 @@ public class IncomingSMSController {
 
 
     @RequestMapping(value = "incoming", method = RequestMethod.GET)
+    @ApiOperation(value = "Send in an incoming SMS", notes = "For when an end-user SMSs a reply to the platform. " +
+            "Parameters are phone number and the message sent")
     public void receiveSms(@RequestParam(value = FROM_PARAMETER) String phoneNumber,
                            @RequestParam(value = MESSAGE_TEXT_PARAM) String msg) {
 
 
-        log.info("Inside AATIncomingSMSController -" + " following param values were received + ms ="+msg+ " fn= "+phoneNumber);
+        log.info("Inside IncomingSMSController -" + " following param values were received + ms ="+msg+ " fn= "+phoneNumber);
 
         User user = userManager.findByInputNumber(phoneNumber);
         String trimmedMsg =  msg.toLowerCase().trim();
@@ -134,7 +138,9 @@ public class IncomingSMSController {
     }
 
 
-    @RequestMapping(value = "receipt")
+    @RequestMapping(value = "receipt", method = RequestMethod.GET)
+    @ApiOperation(value = "Obtain a delivery receipt (or failure)", notes = "Callback for when the gateway notifies us of " +
+            "the result of sending an SMS.")
     public void deliveryReceipt(
             @RequestParam(value = FROM_PARAMETER) String fromNumber,
             @RequestParam(value = TO_PARAMETER, required = false) String toNumber,
@@ -143,7 +149,7 @@ public class IncomingSMSController {
             @RequestParam(value = STATUS_PARAMETER) Integer status,
             @RequestParam(value = TIME_PARAMETER, required = false) String time) {
 
-        log.info("AATIncomingSMSController -" + " message delivery receipt from number: {}, message key: {}", fromNumber, msgKey);
+        log.info("IncomingSMSController -" + " message delivery receipt from number: {}, message key: {}", fromNumber, msgKey);
 
         Notification notification = notificationService.loadBySeningKey(msgKey);
         if (notification != null) {
@@ -169,23 +175,30 @@ public class IncomingSMSController {
         userLogRepository.save(userLog);
 
         List<Notification> recentNotifications = notificationService
-                .fetchAndroidNotificationsSince(user.getUid(), Instant.now().minus(NOTIFICATION_WINDOW));
+                .fetchSentOrBetterSince(user.getUid(), Instant.now().minus(NOTIFICATION_WINDOW), null);
 
-        for (Notification notification : recentNotifications) {
+        Map<Group, String> messagesAndGroups = new HashMap<>();
 
-            Map<ActionLog, Group> logs = getNotificationLog(notification);
+        // todo: not the most elegant thing in the world, but can clean up later
+        recentNotifications.stream().sorted(Comparator.comparing(Notification::getCreatedDateTime))
+                .forEach(n -> {
+                    Map<ActionLog, Group> logGroupMap = getNotificationLog(n);
+                    for (Group g : logGroupMap.values()) {
+                        messagesAndGroups.put(g, n.getMessage());
+                    }
+                });
 
-            for (Map.Entry<ActionLog, Group> entry : logs.entrySet()) {
-                ActionLog aLog = entry.getKey();
+        log.info("okay, we have {} distinct groups", messagesAndGroups.size());
 
-                Group group = entry.getValue();
-
-                // String notificationType = getNotificationType(aLog);
-                String description = MessageFormat.format("{0}; {1}", trimmedMsg, notification.getMessage());
-                GroupLog groupLog = new GroupLog(group, user, GroupLogType.USER_SENT_UNKNOWN_RESPONSE, user.getId(), description);
-                groupLogRepository.save(groupLog);
-            }
+        for (Map.Entry<Group, String> entry : messagesAndGroups.entrySet()) {
+            // String notificationType = getNotificationType(aLog);
+            String description = MessageFormat.format("From user: {0}; likely responding to: {1}",
+                    trimmedMsg, entry.getValue());
+            GroupLog groupLog = new GroupLog(entry.getKey(), user, GroupLogType.USER_SENT_UNKNOWN_RESPONSE, user.getId(),
+                    description.substring(0, Math.min(255, description.length()))); // since could be very long ...
+            groupLogRepository.save(groupLog);
         }
+
     }
 
     // might need this in future so just leaving it here
