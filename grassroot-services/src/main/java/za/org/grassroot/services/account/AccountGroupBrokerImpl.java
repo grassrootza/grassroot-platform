@@ -5,42 +5,43 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.domain.account.AccountLog;
-import za.org.grassroot.core.domain.GroupLog;
 import za.org.grassroot.core.domain.account.Account;
+import za.org.grassroot.core.domain.account.AccountLog;
 import za.org.grassroot.core.domain.account.PaidGroup;
 import za.org.grassroot.core.domain.notification.FreeFormMessageNotification;
+import za.org.grassroot.core.domain.notification.GroupWelcomeNotification;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.enums.AccountLogType;
 import za.org.grassroot.core.enums.GroupLogType;
+import za.org.grassroot.core.enums.PaidGroupStatus;
 import za.org.grassroot.core.repository.*;
+import za.org.grassroot.core.specifications.EventSpecifications;
 import za.org.grassroot.core.specifications.GroupSpecifications;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.*;
-import za.org.grassroot.core.specifications.EventSpecifications;
 import za.org.grassroot.services.util.FullTextSearchUtils;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import javax.annotation.PostConstruct;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.springframework.data.jpa.domain.Specifications.where;
+import static za.org.grassroot.core.specifications.NotificationSpecifications.*;
 import static za.org.grassroot.core.specifications.PaidGroupSpecifications.expiresAfter;
 import static za.org.grassroot.core.specifications.PaidGroupSpecifications.isForAccount;
-import static za.org.grassroot.core.specifications.NotificationSpecifications.*;
 import static za.org.grassroot.core.specifications.TodoSpecifications.createdDateBetween;
 import static za.org.grassroot.core.specifications.TodoSpecifications.hasGroupAsAncestor;
 
@@ -48,7 +49,7 @@ import static za.org.grassroot.core.specifications.TodoSpecifications.hasGroupAs
  * Created by luke on 2016/10/25.
  */
 @Service
-public class AccountGroupBrokerImpl implements AccountGroupBroker {
+public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements AccountGroupBroker {
 
     private static final Logger logger = LoggerFactory.getLogger(AccountGroupBrokerImpl.class);
 
@@ -70,20 +71,21 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
     private static final String addedDescription = "Group added to Grassroot Extra";
     private static final String removedDescription = "Group removed from Grassroot Extra";
 
-    private UserRepository userRepository;
-    private GroupRepository groupRepository;
-    private PermissionBroker permissionBroker;
-    private TodoRepository todoRepository;
-    private EventRepository eventRepository;
+    private final UserRepository userRepository;
+    private final GroupRepository groupRepository;
+    private final PermissionBroker permissionBroker;
+    private final TodoRepository todoRepository;
+    private final EventRepository eventRepository;
 
-    private AccountRepository accountRepository;
-    private PaidGroupRepository paidGroupRepository;
+    private final AccountRepository accountRepository;
+    private final PaidGroupRepository paidGroupRepository;
+    private final NotificationTemplateRepository templateRepository;
     private LogsAndNotificationsBroker logsAndNotificationsBroker;
 
     @Autowired
     public AccountGroupBrokerImpl(UserRepository userRepository, GroupRepository groupRepository, TodoRepository todoRepository,
                                   EventRepository eventRepository, PermissionBroker permissionBroker, AccountRepository accountRepository,
-                                  PaidGroupRepository paidGroupRepository, LogsAndNotificationsBroker logsAndNotificationsBroker) {
+                                  PaidGroupRepository paidGroupRepository, NotificationTemplateRepository templateRepository, LogsAndNotificationsBroker logsAndNotificationsBroker) {
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
         this.todoRepository = todoRepository;
@@ -91,6 +93,7 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
         this.permissionBroker = permissionBroker;
         this.accountRepository = accountRepository;
         this.paidGroupRepository = paidGroupRepository;
+        this.templateRepository = templateRepository;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
     }
 
@@ -225,7 +228,7 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
             bundle.addLog(new AccountLog.Builder(account)
                     .userUid(user.getUid())
                     .accountLogType(AccountLogType.GROUP_ADDED)
-                    .groupUid(group.getUid())
+                    .group(group)
                     .paidGroupUid(paidGroup.getUid())
                     .description(group.getName()).build());
 
@@ -324,6 +327,24 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
     }
 
     @Override
+    public void validateUserAccountAdminForGroup(String userUid, String groupUid) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(groupUid);
+
+        User user = userRepository.findOneByUid(userUid);
+        Group group = groupRepository.findOneByUid(groupUid);
+        Account account = findAccountForGroup(groupUid);
+
+        if (account == null) {
+            throw new GroupNotPaidForException();
+        }
+
+        if (!account.getAdministrators().contains(user)) {
+            throw new AccessDeniedException("User is not an administrator of the group account");
+        }
+    }
+
+    @Override
     @Transactional
     public void removeGroupsFromAccount(String accountUid, Set<String> groupUids, String removingUserUid) {
         Objects.requireNonNull(accountUid);
@@ -351,7 +372,7 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
             bundle.addLog(new AccountLog.Builder(account)
                     .userUid(user.getUid())
                     .accountLogType(AccountLogType.GROUP_REMOVED)
-                    .groupUid(group.getUid())
+                    .group(group)
                     .paidGroupUid(record.getUid())
                     .description(group.getName()).build());
 
@@ -373,7 +394,7 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
         User user = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
         Account account = user.getPrimaryAccount();
-        PaidGroup paidGroup = paidGroupRepository.findTopByGroupOrderByExpireDateTimeDesc(group);
+        PaidGroup paidGroup = paidGroupRepository.findTopByGroupAndStatusOrderByActiveDateTimeDesc(group, PaidGroupStatus.ACTIVE);
 
         Objects.requireNonNull(user);
         Objects.requireNonNull(group);
@@ -389,7 +410,7 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
         AccountLog accountLog = new AccountLog.Builder(account)
                 .userUid(userUid)
                 .accountLogType(AccountLogType.MESSAGE_SENT)
-                .groupUid(groupUid)
+                .group(group)
                 .paidGroupUid(paidGroup.getUid())
                 .description(description)
                 .build();
@@ -473,6 +494,269 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
     }
 
     @Override
+    @Transactional
+    public void createGroupWelcomeMessages(String userUid, String accountUid, String groupUid,
+                                           List<String> messages, Duration delayToSend, Locale language, boolean onlyViaFreeChannels) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(accountUid);
+        Objects.requireNonNull(groupUid);
+        Objects.requireNonNull(messages);
+        Objects.requireNonNull(delayToSend);
+
+        User user = userRepository.findOneByUid(userUid);
+        Account account = accountRepository.findOneByUid(accountUid);
+        Group group = groupRepository.findOneByUid(groupUid);
+
+        logger.info("account = {}", account);
+        logger.info("group = {}", group);
+
+        logger.info("going to check for paid group on account = {}, for group = {}", account.getName(), group.getName());
+        PaidGroup paidGroup = getOrCreatePaidGroup(user, account, group);
+
+        if (!account.isBillPerMessage()) {
+            throw new AccountLimitExceededException();
+        }
+
+        if (messages.isEmpty()) {
+            throw new IllegalArgumentException("Notification templates need at least one message");
+        }
+
+        if (messages.size() > NotificationTemplate.MAX_MESSAGES) {
+            throw new IllegalArgumentException("Notification templates can only store up to 3 messages");
+        }
+
+        storeAccountLogPostCommit(new AccountLog.Builder(account)
+                .accountLogType(AccountLogType.GROUP_WELCOME_MESSAGES_CREATED)
+                .group(group)
+                .paidGroupUid(paidGroup.getUid())
+                .userUid(userUid)
+                .description(String.format("Duration: %s, messages: %s", delayToSend.toString(), messages.toString()))
+                .build());
+
+        // note : could also throw an error here, but would have to be more confident in the overall Account structure's
+        // ability to then allow for finding the other one and disabling it (i.e., to resolve such conflicts)
+        checkForAndDisablePriorTemplate(group, user);
+
+        NotificationTemplate template = NotificationTemplate.builder()
+                .account(account)
+                .group(group)
+                .triggerType(NotificationTriggerType.ADDED_TO_GROUP)
+                .createdByUser(user)
+                .active(true)
+                .creationTime(Instant.now())
+                .delayIntervalMillis(delayToSend.toMillis())
+                .language(language)
+                .messageTemplate(messages.get(0))
+                .onlyUseFreeChannels(onlyViaFreeChannels)
+                .build();
+
+        if (messages.size() > 1) {
+            template.setMessageTemplate2(messages.get(1));
+        }
+
+        if (messages.size() > 2) {
+            template.setMessageTemplate3(messages.get(2));
+        }
+
+        templateRepository.save(template);
+    }
+
+    private void checkForAndDisablePriorTemplate(Group group, User user) {
+        NotificationTemplate template = templateRepository.findTopByGroupAndTriggerTypeAndActiveTrue(group,
+                NotificationTriggerType.ADDED_TO_GROUP);
+        if (template != null) {
+            logger.error("Conflict in group welcome messages ... check logs and debug");
+            storeAccountLogPostCommit(new AccountLog.Builder(template.getAccount())
+                    .userUid(user.getUid())
+                    .group(group)
+                    .accountLogType(AccountLogType.GROUP_WELCOME_CONFLICT)
+                    .description("Group welcome messages deactivated due to conflicting creation of new template").build());
+            template.setActive(false);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void updateGroupWelcomeNotifications(String userUid, String groupUid, List<String> messages, Duration delayToSend) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(groupUid);
+        Objects.requireNonNull(messages);
+
+        User user = userRepository.findOneByUid(userUid);
+        Group group = groupRepository.findOneByUid(groupUid);
+
+        Account account = findAccountForGroup(groupUid);
+        PaidGroup paidGroup = fetchLatestPaidGroup(group);
+
+        validateAdmin(user, account);
+
+        // todo : as above, checking for uniqueness, disabling, etc
+        NotificationTemplate template = templateRepository.findTopByGroupAndTriggerTypeAndActiveTrue(group,
+                NotificationTriggerType.ADDED_TO_GROUP);
+
+        boolean changedTime = false;
+        if (delayToSend != null && delayToSend != Duration.of(template.getDelayIntervalMillis(), ChronoUnit.MILLIS)) {
+            template.setDelayIntervalMillis(delayToSend.toMillis());
+            changedTime = true;
+        }
+
+        boolean changedMessages = !messages.equals(template.getTemplateStrings());
+        if (changedMessages) {
+            template.setMessageTemplate(messages.get(0));
+            if (messages.size() > 1) {
+                template.setMessageTemplate2(messages.get(1));
+            } else if (!StringUtils.isEmpty(template.getMessageTemplate2())) {
+                template.setMessageTemplate2(null);
+            }
+            if (messages.size() > 2) {
+                template.setMessageTemplate3(messages.get(2));
+            } else if (!StringUtils.isEmpty(template.getMessageTemplate3())) {
+                template.setMessageTemplate3(null);
+            }
+        }
+
+        final String logDescription = (changedTime ? String.format("Duration: %s,", delayToSend.toString()) : "") +
+                (changedMessages ? String.format("Messages: %s", messages.toString()) : "");
+        storeAccountLogPostCommit(new AccountLog.Builder(account)
+                .accountLogType(AccountLogType.GROUP_WELCOME_MESSAGES_CHANGED)
+                .group(group)
+                .paidGroupUid(paidGroup.getUid())
+                .userUid(userUid)
+                .description(logDescription).build());
+    }
+
+    @Override
+    @Transactional
+    public void deactivateGroupWelcomes(String userUid, String groupUid) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(groupUid);
+
+        User user = userRepository.findOneByUid(userUid);
+        Group group = groupRepository.findOneByUid(groupUid);
+
+        Account account = findAccountForGroup(groupUid);
+        PaidGroup paidGroup = fetchLatestPaidGroup(group);
+
+        validateAdmin(user, account);
+
+        NotificationTemplate template = templateRepository.findTopByGroupAndTriggerTypeAndActiveTrue(group,
+                NotificationTriggerType.ADDED_TO_GROUP);
+
+        template.setActive(false);
+
+        storeAccountLogPostCommit(new AccountLog.Builder(account)
+                .accountLogType(AccountLogType.GROUP_WELCOME_DEACTIVATED)
+                .group(group)
+                .paidGroupUid(paidGroup.getUid())
+                .userUid(userUid).build());
+
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public NotificationTemplate loadTemplate(String groupUid) {
+        Objects.requireNonNull(groupUid);
+
+        Account account = findAccountForGroup(groupUid);
+        if (account == null) {
+            return null;
+        }
+
+        Group group = groupRepository.findOneByUid(groupUid);
+        return templateRepository.findTopByGroupAndTriggerTypeAndActiveTrue(group,
+                NotificationTriggerType.ADDED_TO_GROUP);
+    }
+
+    @Override
+    @Transactional
+    public void generateGroupWelcomeNotifications(String addingUserUid, String groupUid, Set<String> addedMemberUids) {
+        Objects.requireNonNull(groupUid);
+        Objects.requireNonNull(addingUserUid);
+        Objects.requireNonNull(addedMemberUids);
+
+        DebugUtil.transactionRequired("");
+
+        Account account = findAccountForGroup(groupUid);
+        if (account == null) {
+            throw new IllegalArgumentException("Trying to create welcome notifications for non-account linked group");
+        }
+
+        Group group = groupRepository.findOneByUid(groupUid);
+        PaidGroup latestRecord = paidGroupRepository.findTopByGroupOrderByExpireDateTimeDesc(group);
+        NotificationTemplate template = templateRepository.findTopByGroupAndTriggerTypeAndActiveTrue(group,
+                NotificationTriggerType.ADDED_TO_GROUP);
+
+        if (template != null && template.isActive()) {
+            LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+
+            AccountLog accountLog = new AccountLog.Builder(account)
+                    .userUid(addingUserUid)
+                    .group(group)
+                    .paidGroupUid(latestRecord.getUid())
+                    .accountLogType(AccountLogType.MESSAGE_SENT)
+                    .description("Generated group welcome notifications for {} members") // todo : more descriptions
+                    .build();
+
+            bundle.addLog(accountLog);
+            template.getTemplateStrings().forEach(templateString -> {
+                bundle.addNotifications(generateNotifications(template, templateString, group, addedMemberUids, accountLog));
+                logger.debug("bundle has {} notifications", bundle.getNotifications().size());
+            });
+
+            // todo : work out why this only actually stores if it's async (which should violate usual async issues, but ..)
+            logsAndNotificationsBroker.asyncStoreBundle(bundle);
+            logger.info("sent {} logs and {} notifications for storage, exiting", bundle.getLogs().size(), bundle.getNotifications().size());
+        }
+    }
+
+    private Set<Notification> generateNotifications(NotificationTemplate templateEntity, String templateString,
+                                                    Group group, Set<String> memberUids, AccountLog accountLog) {
+        logger.debug("generating notifications for {} member", memberUids.size());
+        Instant now = Instant.now();
+        Set<Notification> notifications = userRepository.findByUidIn(memberUids).stream()
+                .map(user -> fromTemplate(templateEntity, templateString, group.getMembership(user), accountLog, now))
+                .collect(Collectors.toSet());
+        logger.debug("generated {} notifications", notifications.size());
+        return notifications;
+    }
+
+    private Notification fromTemplate(NotificationTemplate template, String templateString,
+                                      Membership membership, AccountLog accountLog, Instant referenceTime) {
+        // todo : handle truncating better, handle null delays, handle send only via free
+        Notification notification = new GroupWelcomeNotification(membership.getUser(),
+                messageFromTemplateString(templateString, membership, 160), accountLog);
+        notification.setSendOnlyAfter(referenceTime.plus(template.getDelayIntervalMillis(), ChronoUnit.MILLIS));
+        return notification;
+    }
+
+    private String messageFromTemplateString(String template, Membership membership, int maxChars) {
+        final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("d MMM, yyyy"); // can consider letting user define in future
+        final String formatString = template
+                .replace("__name__", "%1$s")
+                .replace("__date__", "%2$s");
+        final String joinedDateString = DateTimeUtil.formatAtSAST(membership.getJoinTime(), formatter);
+        String message = String.format(formatString, membership.getUser().getName(), joinedDateString);
+        return message.substring(0, Math.min(message.length(), maxChars));
+    }
+
+    private PaidGroup getOrCreatePaidGroup(User user, Account account, Group group) {
+        PaidGroup paidGroup = fetchLatestPaidGroup(group);
+        if (paidGroup == null) {
+            logger.info("found no paid group record, creating one ...");
+            addGroupToAccount(account.getUid(), group.getUid(), user.getUid());
+            paidGroup = fetchLatestPaidGroup(group);
+        } else if (!paidGroup.getAccount().equals(account)) {
+            throw new GroupAlreadyPaidForException();
+        }
+
+        return paidGroup;
+    }
+
+    private PaidGroup fetchLatestPaidGroup(Group group) {
+        return paidGroupRepository.findTopByGroupAndStatusOrderByActiveDateTimeDesc(group, PaidGroupStatus.ACTIVE);
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public int numberMessagesLeft(String accountUid) {
         Account account = accountRepository.findOneByUid(accountUid);
@@ -491,7 +775,7 @@ public class AccountGroupBrokerImpl implements AccountGroupBroker {
         bundle.addLog(new AccountLog.Builder(account)
                 .userUid(user.getUid())
                 .accountLogType(accountLogType)
-                .groupUid(group.getUid())
+                .group(group)
                 .paidGroupUid(paidGroupUid)
                 .description(group.getName()).build());
 

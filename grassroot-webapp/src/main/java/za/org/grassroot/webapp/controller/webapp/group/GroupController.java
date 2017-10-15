@@ -1,6 +1,7 @@
 package za.org.grassroot.webapp.controller.webapp.group;
 
 import com.google.common.collect.Sets;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +12,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.util.MimeTypeUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.Validator;
 import org.springframework.web.bind.WebDataBinder;
@@ -19,13 +21,15 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.dto.MembershipInfo;
-import za.org.grassroot.core.dto.TaskDTO;
+import za.org.grassroot.core.dto.task.TaskDTO;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.PhoneNumberUtil;
+import za.org.grassroot.integration.NotificationService;
 import za.org.grassroot.integration.PdfGeneratingService;
 import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.services.exception.GroupSizeLimitExceededException;
 import za.org.grassroot.services.group.GroupBroker;
+import za.org.grassroot.services.group.GroupExportBroker;
 import za.org.grassroot.services.group.GroupPermissionTemplate;
 import za.org.grassroot.services.group.GroupQueryBroker;
 import za.org.grassroot.services.task.TaskBroker;
@@ -36,9 +40,14 @@ import za.org.grassroot.webapp.model.web.MemberWrapperList;
 import za.org.grassroot.webapp.util.BulkUserImportUtil;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -63,17 +72,23 @@ public class GroupController extends BaseController {
     private final GroupBroker groupBroker;
     private final TaskBroker taskBroker;
     private final GroupQueryBroker groupQueryBroker;
+    private final GroupExportBroker groupExportBroker;
     private final AccountGroupBroker accountGroupBroker;
     private final Validator groupWrapperValidator;
+    private NotificationService notificationService;
     private PdfGeneratingService generatingService;
 
     @Autowired
-    public GroupController(GroupBroker groupBroker, TaskBroker taskBroker, GroupQueryBroker groupQueryBroker, AccountGroupBroker accountBroker, @Qualifier("groupWrapperValidator") Validator groupWrapperValidator,PdfGeneratingService generatingService) {
+    public GroupController(GroupBroker groupBroker, TaskBroker taskBroker, GroupQueryBroker groupQueryBroker, GroupExportBroker groupExportBroker,
+                           AccountGroupBroker accountBroker, @Qualifier("groupWrapperValidator") Validator groupWrapperValidator,
+                           NotificationService notificationService, PdfGeneratingService generatingService) {
         this.groupBroker = groupBroker;
         this.taskBroker = taskBroker;
         this.groupQueryBroker = groupQueryBroker;
+        this.groupExportBroker = groupExportBroker;
         this.accountGroupBroker = accountBroker;
         this.groupWrapperValidator = groupWrapperValidator;
+        this.notificationService = notificationService;
         this.generatingService = generatingService;
     }
 
@@ -88,7 +103,7 @@ public class GroupController extends BaseController {
     Next methods are to view a group, core part of interface
      */
 
-    @RequestMapping("view")
+    @RequestMapping(value = "view",method = RequestMethod.GET)
     public String viewGroupIndex(Model model, @RequestParam String groupUid) {
 
         // note, coming here after group creation throws permission checking errors, so need to reload user from DB
@@ -157,10 +172,12 @@ public class GroupController extends BaseController {
 
         model.addAttribute("flyerLanguages", generatingService.availableLanguages());
 
+        Account groupAccount = isGroupPaidFor ? accountGroupBroker.findAccountForGroup(groupUid) : null;
         model.addAttribute("atGroupSizeLimit", !groupBroker.canAddMember(groupUid));
         model.addAttribute("hasAccount", user.getPrimaryAccount() != null);
         model.addAttribute("canRemoveFromAccount", isGroupPaidFor && user.getPrimaryAccount() != null &&
-                user.getPrimaryAccount().equals(accountGroupBroker.findAccountForGroup(groupUid)));
+                user.getPrimaryAccount().equals(groupAccount));
+        model.addAttribute("hasPayPerMessage", groupAccount != null && groupAccount.isBillPerMessage());
 
         return "group/view";
     }
@@ -691,6 +708,22 @@ public class GroupController extends BaseController {
         }
     }
 
+
+    @RequestMapping(value = "export/xls")
+    public void exportMembers(@RequestParam String groupUid, HttpServletResponse response) throws IOException {
+
+        String fileName = "group_members.xlsx";
+        response.setContentType(MimeTypeUtils.APPLICATION_OCTET_STREAM_VALUE);
+        response.setHeader("Content-Disposition", "attachment; filename=\"" + fileName + "\"");
+        response.setHeader("Cache-Control", "no-cache");
+        response.setHeader("Pragma", "no-cache");
+        response.setDateHeader("Expires", 0);
+
+        XSSFWorkbook xls = groupExportBroker.exportGroup(groupUid);
+        xls.write(response.getOutputStream());
+        response.flushBuffer();
+    }
+
     /**
      * SECTION: Group history pages
      */
@@ -722,12 +755,24 @@ public class GroupController extends BaseController {
         List<GroupLog> groupLogsInPeriod = groupQueryBroker.getLogsForGroup(group, startDateTime, endDateTime);
         List<LocalDate> monthsActive = groupQueryBroker.getMonthsGroupActive(groupUid);
 
+        List<Notification> recentlyFailedNotifications = notificationService.loadRecentFailedNotificationsInGroup(startDateTime, endDateTime, group);
+
+        DateTimeFormatter instantFormatter =
+                DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT)
+                        .withLocale(Locale.UK)
+                        .withZone(ZoneId.systemDefault());
+
+
         model.addAttribute("group", group);
 
         log.info("tasksInPeriod: " + tasksInPeriod);
 
+        model.addAttribute("instantFormatter", instantFormatter);
+
         model.addAttribute("tasksInPeriod", tasksInPeriod);
         model.addAttribute("groupLogsInPeriod", groupLogsInPeriod);
+
+        model.addAttribute("recentlyFailedNotifications", recentlyFailedNotifications);
 
         model.addAttribute("month", StringUtils.isEmpty(monthToView) ? null : LocalDate.parse(monthToView));
         model.addAttribute("monthsToView", monthsActive);

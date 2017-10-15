@@ -28,7 +28,7 @@ import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.account.AccountGroupBroker;
-import za.org.grassroot.services.enums.TodoStatus;
+import za.org.grassroot.services.task.enums.TodoStatus;
 import za.org.grassroot.services.exception.AccountLimitExceededException;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.core.specifications.TodoSpecifications;

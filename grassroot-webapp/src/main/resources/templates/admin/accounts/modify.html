@@ -1,0 +1,37 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      data-layout-decorate="~{layout}">
+<head>
+  <title>Modify account</title>
+</head>
+<body>
+
+<section layout:fragment="header" class="top-container"
+         th:replace="~{fragments :: std_header_back('Modify ' + ${account.accountName}, 'Back to list', '/admin/accounts/home')}">
+</section>
+
+<main layout:fragment="content">
+
+  <section class="grassroot-form" th:with="accountTypes=${T(za.org.grassroot.core.enums.AccountType).values()}">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-8 col-md-offset-2 col-sm-6 col-sm-offset-3 col-xs-12">
+          <form th:action="@{/admin/accounts/modify/do}" method="post">
+            <input type="hidden" name="accountUid" th:value="${account.uid}" />
+            <div th:replace="~{form_fragments :: list_selector_with_default('Visible', ${onOffOptions}, 'visible', true)}"></div>
+            <div th:replace="~{form_fragments :: enum_selector_with_default('Account type', 'accountType', ${accountTypes}, 'web.account.type', ${account.type})}"></div>
+            <div th:include="~{form_fragments :: number_input('Monthly subscription (cents)', ${account.subscriptionFee}, 'subscriptionFee')}"></div>
+            <div th:replace="~{form_fragments :: list_selector_with_default('Charged per message', ${onOffOptions}, 'chargePerMessage', ${account.billPerMessage})}"></div>
+            <div th:include="~{form_fragments :: number_input('Cost per message (cents)', ${account.freeFormCost}, 'costPerMessage')}"></div>
+            <div th:include="~{form_fragments :: submit_cancel_buttons('Submit', '/admin/accounts/home')}"></div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+</main>
+
+</body>
+</html>

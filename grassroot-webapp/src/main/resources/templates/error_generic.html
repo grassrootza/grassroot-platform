@@ -1,0 +1,38 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      data-layout-decorate="~{layout}">
+<head>
+  <meta charset="UTF-8" />
+  <title>Cannot Create Alert Yet</title>
+
+  <meta name="_csrf" th:content="${_csrf.token}"/>
+  <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+
+</head>
+<body>
+
+<section layout:fragment="header" class="top-container"
+         th:replace="~{fragments :: std_header('LiveWire', 'Cannot create LiveWire alert')}">
+</section>
+
+<main layout:fragment="content">
+
+  <section class="grassroot-form">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-8 col-md-offset-2 col-sm-6 col-sm-offset-3 col-xs-12">
+          <p class="gr-body-text-lg">
+            Sorry, you do not have a large enough group to create a flash alert, or a public meeting coming up. To
+            create a LiveWire alert, you must be part of a group with at least <span th:text="${minSize}">X</span> members,
+            and which has had at least <span th:text="${minTasks}">X</span> meetings, votes, or actions. Alternately,
+            you can <a th:href="@{/meeting/create}">call a meeting</a> and issue a public gathering alert.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+</body>
+</html>

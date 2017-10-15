@@ -22,6 +22,9 @@ public interface GroupJoinRequestService {
     // this retrieves requests for which the user is approver
     List<GroupJoinRequest> getPendingRequestsForUser(String userUid);
 
+    // this retrieves requests on the group
+    List<GroupJoinRequest> getPendingRequestsForGroup(String userUid, String groupUid);
+
     // this retrieves requests which the user has sent
     List<GroupJoinRequest> getPendingRequestsFromUser(String userUid);
 

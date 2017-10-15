@@ -26,7 +26,8 @@ public enum GroupLogType {
     GROUP_DEFAULT_IMAGE_CHANGED("Group default image changed"),
     ADDED_TO_ACCOUNT("Group added to account"),
     REMOVED_FROM_ACCOUNT("Group removed from account"),
-    CHANGED_ALIAS("User changed their alias in the group");
+    CHANGED_ALIAS("User changed their alias in the group"),
+    USER_SENT_UNKNOWN_RESPONSE("User sent notification response that can't be interpreted");
 
     private final String text;
 

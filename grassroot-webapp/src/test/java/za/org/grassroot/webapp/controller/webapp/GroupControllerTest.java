@@ -9,9 +9,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.task.*;
-import za.org.grassroot.core.domain.GroupLog;
 import za.org.grassroot.core.dto.MembershipInfo;
-import za.org.grassroot.core.dto.TaskDTO;
+import za.org.grassroot.core.dto.task.TaskDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.util.DateTimeUtil;
@@ -30,6 +29,7 @@ import java.util.*;
 import static java.time.temporal.TemporalAdjusters.firstDayOfMonth;
 import static java.time.temporal.TemporalAdjusters.lastDayOfMonth;
 import static org.hamcrest.Matchers.*;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -475,6 +475,8 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
 
         when(groupQueryBrokerMock.getLogsForGroup(testGroup, start, end)).thenReturn(dummyGroupLogs);
         when(groupQueryBrokerMock.getMonthsGroupActive(testGroup.getUid())).thenReturn(dummyMonths);
+
+        when(notificationService.loadRecentFailedNotificationsInGroup(any(), any(), any())).thenReturn(Collections.emptyList());
 
         mockMvc.perform(get("/group/history")
                 .param("groupUid", testGroup.getUid())

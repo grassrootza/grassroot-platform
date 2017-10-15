@@ -2,10 +2,13 @@ package za.org.grassroot.services.account;
 
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
-import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.NotificationTemplate;
+import za.org.grassroot.core.domain.account.Account;
 
+import java.time.Duration;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 /**
@@ -16,6 +19,8 @@ public interface AccountGroupBroker {
     boolean isGroupOnAccount(String groupUid);
 
     Account findAccountForGroup(String groupUid);
+
+    void validateUserAccountAdminForGroup(String userUid, String groupUid);
 
     List<Group> fetchGroupsSponsoredByAccount(String accountUid);
 
@@ -48,4 +53,20 @@ public interface AccountGroupBroker {
     int numberEventsLeftForGroup(String groupUid);
 
     int numberEventsLeftForParent(String eventUid);
+
+    /**
+     * Methods for doing and handling group welcome methods
+     */
+    @PreAuthorize("hasAnyRole('ROLE_SYSTEM_ADMIN', 'ROLE_ACCOUNT_ADMIN')")
+    void createGroupWelcomeMessages(String userUid, String accountUid, String groupUid, List<String> messages,
+                                    Duration delayToSend, Locale language, boolean onlyViaFreeChannels);
+
+    void updateGroupWelcomeNotifications(String userUid, String groupUid, List<String> messages, Duration delayToSend);
+
+    void deactivateGroupWelcomes(String userUid, String groupUid);
+
+    NotificationTemplate loadTemplate(String groupUid);
+
+    void generateGroupWelcomeNotifications(String addingUserUid, String groupUid, Set<String> addedMemberUids);
+
 }

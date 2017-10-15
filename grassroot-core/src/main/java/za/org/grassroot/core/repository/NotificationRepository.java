@@ -4,11 +4,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
-import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Notification;
+import za.org.grassroot.core.domain.NotificationStatus;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.UserMessagingPreference;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 
@@ -21,17 +21,8 @@ public interface NotificationRepository extends JpaRepository<Notification,Long>
 
     List<Notification> findByUidIn(Set<String> uids);
 
-    List<Notification> findByTargetAndForAndroidTimelineTrueOrderByCreatedDateTimeDesc(User target);
+    Page<Notification> findByTargetAndDeliveryChannelOrderByCreatedDateTimeDesc(User target, UserMessagingPreference deliveryChannel, Pageable pageable);
 
-    Page<Notification> findByTargetAndForAndroidTimelineTrueOrderByCreatedDateTimeDesc(User target, Pageable pageable);
+    int countByTargetAndDeliveryChannelAndStatusNot(User target, UserMessagingPreference deliveryChannel, NotificationStatus status);
 
-    List<Notification> findByTargetAndForAndroidTimelineTrueAndCreatedDateTimeGreaterThanOrderByCreatedDateTimeDesc(User target, Instant start);
-
-    int countByTargetAndViewedOnAndroidFalseAndForAndroidTimelineTrue(User target);
-
-    @Transactional(readOnly = true)
-    List<Notification> findFirst75ByNextAttemptTimeBeforeOrderByNextAttemptTimeAsc(Instant time);
-
-    @Transactional(readOnly = true)
-    List<Notification> findFirst100ByReadFalseAndAttemptCountGreaterThanAndLastAttemptTimeGreaterThan(int minAttemptCount, Instant lastAttemptTime);
 }

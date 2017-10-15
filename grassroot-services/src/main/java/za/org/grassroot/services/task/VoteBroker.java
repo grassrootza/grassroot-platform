@@ -21,6 +21,6 @@ public interface VoteBroker {
 
     void calculateAndSendVoteResults(String voteUid);
 
-    Map<String, Long> fetchVoteResults(String userUid, String voteUid);
+    Map<String, Long> fetchVoteResults(String userUid, String voteUid, boolean swallowMemberException);
 
 }

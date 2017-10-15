@@ -26,7 +26,7 @@ public abstract class AbstractEventEntity {
 	@Column(name = "id", nullable = false)
 	protected Long id;
 
-	@Column(name = "uid", length = 50)
+	@Column(name = "uid", length = 50, unique = true)
 	protected String uid;
 
 	@Column(name = "created_date_time", insertable = true, updatable = false)

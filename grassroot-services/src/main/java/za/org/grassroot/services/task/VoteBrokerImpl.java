@@ -9,7 +9,9 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.Membership;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.notification.VoteResultsNotification;
 import za.org.grassroot.core.domain.task.EventLog;
 import za.org.grassroot.core.domain.task.Vote;
@@ -169,17 +171,24 @@ public class VoteBrokerImpl implements VoteBroker {
 
     @Override
     @Transactional(readOnly = true)
-    public Map<String, Long> fetchVoteResults(String userUid, String voteUid) {
+    public Map<String, Long> fetchVoteResults(String userUid, String voteUid, boolean swallowMemberException) {
         Objects.requireNonNull(voteUid);
         Objects.requireNonNull(userUid);
 
         User user = userRepository.findOneByUid(userUid);
         Vote vote = voteRepository.findOneByUid(voteUid);
 
-        validateUserPartOfVote(user, vote, false);
-
-        return StringArrayUtil.isAllEmptyOrNull(vote.getVoteOptions()) ?
-                calculateYesNoResults(vote) : calculateMultiOptionResults(vote, vote.getVoteOptions());
+        try {
+            validateUserPartOfVote(user, vote, false);
+            return StringArrayUtil.isAllEmptyOrNull(vote.getVoteOptions()) ?
+                    calculateYesNoResults(vote) : calculateMultiOptionResults(vote, vote.getVoteOptions());
+        } catch (AccessDeniedException e) {
+            if (swallowMemberException) {
+                return new HashMap<>();
+            } else {
+                throw e;
+            }
+        }
     }
 
     private Map<String, Long> calculateMultiOptionResults(Vote vote, List<String> options) {
