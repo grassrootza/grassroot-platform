@@ -1,7 +1,6 @@
 package za.org.grassroot.integration;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -29,21 +28,23 @@ import java.util.Set;
 /**
  * Created by paballo on 2016/04/07.
  */
-
+@Slf4j
 @Service
 public class NotificationManager implements NotificationService{
-    private final static Logger logger = LoggerFactory.getLogger(NotificationManager.class);
+
+    private final UserRepository userRepository;
+    private final NotificationRepository notificationRepository;
 
     @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private NotificationRepository notificationRepository;
+    public NotificationManager(UserRepository userRepository, NotificationRepository notificationRepository) {
+        this.userRepository = userRepository;
+        this.notificationRepository = notificationRepository;
+    }
 
     @Override
     @Transactional(readOnly = true)
     public Notification loadNotification(String uid) {
-        Objects.nonNull(uid);
+        Objects.requireNonNull(uid);
         return notificationRepository.findByUid(uid);
     }
 
@@ -54,17 +55,15 @@ public class NotificationManager implements NotificationService{
     }
 
     @Override
-    public List<Notification> fetchAndroidNotificationsSince(String userUid, Instant createdSince) {
+    public List<Notification> fetchSentOrBetterSince(String userUid, Instant sentSince, UserMessagingPreference deliveryChannel) {
         Objects.requireNonNull(userUid);
-        User user = userRepository.findOneByUid(userUid);
-        List<Notification> notifications;
-        if (createdSince != null) {
-            notifications = notificationRepository.findByTargetAndDeliveryChannelAndCreatedDateTimeGreaterThanOrderByCreatedDateTimeDesc(user, UserMessagingPreference.ANDROID_APP, createdSince);
-        } else {
-            notifications = notificationRepository.findByTargetAndDeliveryChannelOrderByCreatedDateTimeDesc(user, UserMessagingPreference.ANDROID_APP);
+        User target = userRepository.findOneByUid(userUid);
+        Specifications<Notification> specifications = Specifications.where(NotificationSpecifications.toUser(target))
+                .and(NotificationSpecifications.sentOrBetterSince(sentSince));
+        if (deliveryChannel != null) {
+            specifications = specifications.and(NotificationSpecifications.forDeliveryChannel(deliveryChannel));
         }
-
-        return notifications;
+        return notificationRepository.findAll(specifications);
     }
 
     @Override
@@ -88,7 +87,7 @@ public class NotificationManager implements NotificationService{
         if (notification != null) {
             notification.updateStatus(NotificationStatus.DELIVERED, false, null);
         } else {
-            logger.info("No notification under UID {}, possibly from another environment", notificationUid);
+            log.info("No notification under UID {}, possibly from another environment", notificationUid);
         }
     }
 
@@ -99,7 +98,6 @@ public class NotificationManager implements NotificationService{
 
     @Override
     public List<Notification> loadRecentFailedNotificationsInGroup(LocalDateTime from, LocalDateTime to, Group group) {
-
         Instant fromInstant = DateTimeUtil.convertToSystemTime(from, ZoneId.systemDefault());
         Instant toInstant = DateTimeUtil.convertToSystemTime(to, ZoneId.systemDefault());
         Specification<Notification> recently = NotificationSpecifications.createdTimeBetween(fromInstant, toInstant);

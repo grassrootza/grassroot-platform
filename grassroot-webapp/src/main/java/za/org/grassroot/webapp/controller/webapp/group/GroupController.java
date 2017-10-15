@@ -755,7 +755,6 @@ public class GroupController extends BaseController {
         List<GroupLog> groupLogsInPeriod = groupQueryBroker.getLogsForGroup(group, startDateTime, endDateTime);
         List<LocalDate> monthsActive = groupQueryBroker.getMonthsGroupActive(groupUid);
 
-
         List<Notification> recentlyFailedNotifications = notificationService.loadRecentFailedNotificationsInGroup(startDateTime, endDateTime, group);
 
         DateTimeFormatter instantFormatter =

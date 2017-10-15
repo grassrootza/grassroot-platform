@@ -5,6 +5,7 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.NotificationStatus;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.UserMessagingPreference;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -20,7 +21,7 @@ public interface NotificationService {
 
 	Page<Notification> fetchPagedAndroidNotifications(User target, int pageNumber, int pageSize);
 
-	List<Notification> fetchAndroidNotificationsSince(String userUid, Instant createdSince);
+	List<Notification> fetchSentOrBetterSince(String userUid, Instant sentSince, UserMessagingPreference deliveryChannel);
 
 	void updateNotificationsViewedAndRead(Set<String> notificationUids);
 

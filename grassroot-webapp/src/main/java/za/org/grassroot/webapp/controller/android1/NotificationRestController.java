@@ -84,7 +84,7 @@ public class NotificationRestController {
 
         User user = userManagementService.findByInputNumber(phoneNumber);
         Instant intervalStart = createdSince == null ? null : Instant.ofEpochMilli(createdSince);
-        List<Notification> notifications = notificationService.fetchAndroidNotificationsSince(user.getUid(), intervalStart);
+        List<Notification> notifications = notificationService.fetchSentOrBetterSince(user.getUid(), intervalStart, null);
         List<NotificationDTO> notificationDTOs = notifications
                 .stream()
                 .filter(NotificationDTO::isNotificationOfTypeForDTO)

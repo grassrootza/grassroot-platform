@@ -449,17 +449,16 @@ public class GroupBrokerImpl implements GroupBroker {
             addedUserUids.add(member.getUid());
         }
 
+        logger.info("Done with member add subroutine, returning bundle, with {} UIDs", addedUserUids.size());
+
         triggerWelcomeMessagesAfterCommit(initiator.getUid(), group.getUid(), addedUserUids);
-
-        logger.info("Done with member add subroutine, returning bundle");
-
         return bundle;
     }
 
     private void triggerWelcomeMessagesAfterCommit(String addingUserUid, String groupUid, Set<String> addedUserUids) {
         AfterTxCommitTask afterTxCommitTask = () -> {
             if (accountGroupBroker.isGroupOnAccount(groupUid)) { // maybe just use isPaidFor
-                logger.info("Group is on account, generate some welcome notifications");
+                logger.info("Group is on account, generate some welcome notifications, for uids: {}", addedUserUids);
                 accountGroupBroker.generateGroupWelcomeNotifications(addingUserUid, groupUid, addedUserUids);
             }
         };
