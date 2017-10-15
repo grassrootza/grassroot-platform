@@ -16,6 +16,7 @@ import za.org.grassroot.core.enums.LocationSource;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.repository.UserLocationLogRepository;
 import za.org.grassroot.integration.location.UssdLocationServicesBroker;
+import za.org.grassroot.services.geo.GeographicSearchType;
 import za.org.grassroot.services.geo.ObjectLocationBroker;
 import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
@@ -80,7 +81,7 @@ public class USSDAdvancedHomeController extends USSDController {
         USSDMenu ussdMenu;
 
         if (guessedLocation != null) {
-            List<ObjectLocation> listOfPublicMeetingsNearUser = objectLocationBroker.fetchMeetingsNearUser(searchRadius, user, guessedLocation,"public");
+            List<ObjectLocation> listOfPublicMeetingsNearUser = objectLocationBroker.fetchMeetingLocationsNearUser(user, guessedLocation, searchRadius, GeographicSearchType.PUBLIC, null);
             log.info("Size of meetings array in home more controller= {}",listOfPublicMeetingsNearUser.size());
             ussdMenu = listOfPublicMeetingsNearUser.isEmpty() ?
                     haveLocationButNoMeetings(user, repeat) :

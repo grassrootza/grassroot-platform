@@ -20,10 +20,10 @@ import za.org.grassroot.core.dto.task.TaskDTO;
 import za.org.grassroot.integration.LearningService;
 import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.exception.RequestorAlreadyPartOfGroupException;
+import za.org.grassroot.services.geo.GeographicSearchType;
 import za.org.grassroot.services.geo.ObjectLocationBroker;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.group.GroupJoinRequestService;
-import za.org.grassroot.services.group.GroupLocationFilter;
 import za.org.grassroot.services.group.GroupQueryBroker;
 import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.TaskBroker;
@@ -129,11 +129,10 @@ public class GroupSearchController extends BaseController {
 			} else {
 				// just for testing since no UI support yet exists...
 				// GroupLocationFilter locationFilter = new GroupLocationFilter(new GeoLocation(45.567641, 18.701211), 30000, true);
-				GroupLocationFilter locationFilter = null;
 				final String description = getMessage("search.group.desc");
 				final String userUid = getUserProfile().getUid();
 
-				List<PublicGroupWrapper> publicGroups = groupQueryBroker.findPublicGroups(userUid, term, locationFilter, false).stream()
+				List<PublicGroupWrapper> publicGroups = groupQueryBroker.findPublicGroups(userUid, term, null, false).stream()
 						.map(g -> new PublicGroupWrapper(g, description)).collect(Collectors.toList());
 
 				List<String> relatedTerms = learningService.findRelatedTerms(term).entrySet().stream()
@@ -149,7 +148,6 @@ public class GroupSearchController extends BaseController {
 
 				model.addAttribute("groupCandidates", publicGroups);
 				model.addAttribute("relatedTerms", relatedTerms);
-
 
 				List<Group> memberGroups = groupQueryBroker.searchUsersGroups(userUid, term, false);
 				List<TaskDTO> memberTasks = taskBroker.searchForTasks(userUid, term);
@@ -170,9 +168,9 @@ public class GroupSearchController extends BaseController {
 					location = new GeoLocation(latitude,longitude);
 				}
 
-				List<ObjectLocation> objectLocations = objectLocationBroker.fetchMeetingsNearUser(searchRadius,user,location,"public");
-				model.addAttribute("publicMeetingsNearUser",objectLocations);
-				log.info("Object Locations = {}" ,objectLocations.size());
+				List<ObjectLocation> publicMeetings = objectLocationBroker.fetchMeetingLocationsNearUser(user, location, searchRadius, GeographicSearchType.PUBLIC, null);
+				model.addAttribute("publicMeetingsNearUser",publicMeetings);
+				log.info("Object Locations = {}" ,publicMeetings.size());
 			}
 		}
 		model.addAttribute("resultFound", resultFound);

@@ -6,18 +6,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.ObjectLocation;
 import za.org.grassroot.services.geo.GeoLocationBroker;
+import za.org.grassroot.services.geo.GeographicSearchType;
 import za.org.grassroot.services.geo.ObjectLocationBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
-import java.util.Collections;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @RestController
@@ -42,10 +42,7 @@ public class LocationRestController extends BaseController {
                                                    @RequestParam(value = "restriction", required = false) Integer restriction,
                                                    @RequestParam(value = "token", required = true) String token) {
 
-        // TODO: token!
         // TODO: Bounding box search instead of disc
-        // TODO: Initial position from location
-        logger.info("Attempting to list events locations...");
 
         // Validate parameters
         Integer searchRadius = (radius == null ? LOCATION_RADIUS_DEFAULT : radius);
@@ -59,15 +56,11 @@ public class LocationRestController extends BaseController {
         // Check restriction
         Integer useRestriction = (restriction == null ? PUBLIC_LEVEL : restriction);
         if (useRestriction < PRIVATE_LEVEL || useRestriction > ALL_LEVEL) {
-            String errorMsg = "Invalid restriction. Make sure it is greater than zero and smaller than " + ALL_LEVEL + ".";
-            logger.info("KPI: GET - BAD REQUEST: " + errorMsg);
             return RestUtil.errorResponse(RestMessage.INVALID_LOCATION_RESTRICTION_PARAMETER);
         }
 
         GeoLocation location = new GeoLocation(latitude, longitude);
         if (!location.isValid()) {
-            String errorMsg = "KPI: GET - BAD REQUEST: Invalid location parameter.";
-            logger.info(errorMsg);
             return RestUtil.errorResponse(RestMessage.INVALID_LOCATION_LATLONG_PARAMETER);
         }
 
@@ -77,7 +70,8 @@ public class LocationRestController extends BaseController {
         ResponseEntity<ResponseWrapper> responseEntity;
 
         try {
-            objectsToReturn = objectLocationBroker.fetchMeetingLocations(location, searchRadius, useRestriction);
+            objectsToReturn = objectLocationBroker.fetchMeetingLocationsNearUser(getUserProfile(), location, searchRadius, GeographicSearchType.PUBLIC,
+                    null);
         }
         catch (Exception e){
             logger.info("KPI: GET - INTERNAL SERVER ERROR: " + e.getLocalizedMessage());
@@ -140,15 +134,14 @@ public class LocationRestController extends BaseController {
         List<ObjectLocation> objectsToReturn = new ArrayList<>();
 
         // Load meetings
-        // TODO: filter?
-        try {
+        /*try {
             objectsToReturn = objectLocationBroker.fetchMeetingLocations(boundingBox.min, boundingBox.max, useRestriction);
             logger.info("Meetings found: {}", objectsToReturn.size());
         }
         catch (Exception e){
             logger.info("KPI: POST - INTERNAL SERVER ERROR: " + e.getLocalizedMessage());
             return RestUtil.internalErrorResponse(RestMessage.INTERNAL_SERVER_ERROR);
-        }
+        }*/
 
         // Send response
         ResponseEntity<ResponseWrapper> responseEntity;

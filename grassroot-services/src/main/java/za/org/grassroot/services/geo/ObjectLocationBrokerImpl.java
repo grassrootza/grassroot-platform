@@ -145,215 +145,40 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
         return locations;
     }
 
-    /**
-     * TODO: 1) Use the user restrictions
-     */
-    @Override
-    @Transactional(readOnly = true)
-    public List<ObjectLocation> fetchMeetingLocations (GeoLocation min, GeoLocation max, Integer restriction) {
-        log.info("Fetching meeting locations ...");
-
-        assertRestriction(restriction);
-        assertGeolocation(min);
-        assertGeolocation(max);
-
-        // Mount restriction
-        String restrictionClause = "";
-        if (restriction == PRIVATE_LEVEL) {
-            restrictionClause = "m.isPublic = false AND ";
-        }
-        else if (restriction == PUBLIC_LEVEL) {
-            restrictionClause = "m.isPublic = true AND ";
-        }
-
-        // Mount query
-        String query =
-            "SELECT NEW za.org.grassroot.core.domain.geo.ObjectLocation(m, l)" +
-            "FROM MeetingLocation l " +
-            "INNER JOIN l.meeting m " +
-            "WHERE " + restrictionClause +
-            "  l.calculatedDateTime <= :date " +
-            "  AND l.calculatedDateTime = (SELECT MAX(ll.calculatedDateTime) FROM MeetingLocation ll WHERE ll.meeting = l.meeting) " +
-            "  AND l.location.latitude " +
-            "      BETWEEN :latMin AND :latMax " +
-            "  AND l.location.longitude " +
-            "      BETWEEN :longMin AND :longMax "
-            ;
-
-        log.info(query);
-
-        List<ObjectLocation> list = entityManager.createQuery(query, ObjectLocation.class)
-                .setParameter("date", Instant.now())
-                .setParameter("latMin", min.getLatitude())
-                .setParameter("longMin", min.getLongitude())
-                .setParameter("latMax", max.getLatitude())
-                .setParameter("longMax", max.getLongitude())
-                .getResultList();
-
-        log.info("Now: " + Instant.now());
-        log.info("Min: " + min);
-        log.info("Max: " + max);
-
-        return (list.isEmpty() ? new ArrayList<>() : list);
-    }
-
-    /**
-     * TODO: 1) Use the user restrictions
-     */
-    @Override
-    @Transactional(readOnly = true)
-    public List<ObjectLocation> fetchMeetingLocations (GeoLocation location, Integer radius, Integer restriction) {
-        log.info("Fetching meeting locations ...");
-
-        assertRestriction(restriction);
-        assertRadius(radius);
-        assertGeolocation(location);
-
-        // Mount restriction
-        String restrictionClause = "";
-        if (restriction == PRIVATE_LEVEL) {
-            restrictionClause = "m.isPublic = false AND ";
-        }
-        else if (restriction == PUBLIC_LEVEL) {
-            restrictionClause = "m.isPublic = true AND ";
-        }
-
-        // Mount query
-        String query =
-            "SELECT NEW za.org.grassroot.core.domain.geo.ObjectLocation(" +
-            "  m.uid, m.name, l.location.latitude, l.location.longitude, l.score, 'MEETING', " +
-            "  CONCAT('<strong>Where: </strong>', m.eventLocation, '<br/><strong>Date and Time: </strong>', m.eventStartDateTime), m.isPublic) " +
-            "FROM MeetingLocation l " +
-            "INNER JOIN l.meeting m " +
-            "WHERE " + restrictionClause +
-            "  l.calculatedDateTime <= :date " +
-            "  AND l.calculatedDateTime = (SELECT MAX(ll.calculatedDateTime) FROM MeetingLocation ll WHERE ll.meeting = l.meeting) " +
-            "  AND l.location.latitude " +
-            "      BETWEEN :latpoint  - (:radius / :distance_unit) " +
-            "          AND :latpoint  + (:radius / :distance_unit) " +
-            "  AND l.location.longitude " +
-            "      BETWEEN :longpoint - (:radius / (:distance_unit * COS(RADIANS(:latpoint)))) " +
-            "          AND :longpoint + (:radius / (:distance_unit * COS(RADIANS(:latpoint)))) " +
-            "  AND :radius >= (:distance_unit " +
-            "           * DEGREES(ACOS(COS(RADIANS(:latpoint)) " +
-            "           * COS(RADIANS(l.location.latitude)) " +
-            "           * COS(RADIANS(:longpoint - l.location.longitude)) " +
-            "           + SIN(RADIANS(:latpoint)) " +
-            "           * SIN(RADIANS(l.location.latitude))))) ";
-
-        log.info(query);
-
-        List<ObjectLocation> list = entityManager.createQuery(query, ObjectLocation.class)
-                .setParameter("date", Instant.now())
-                .setParameter("radius", (double)radius)
-                .setParameter("distance_unit", KM_PER_DEGREE)
-                .setParameter("latpoint", location.getLatitude())
-                .setParameter("longpoint", location.getLongitude())
-                .getResultList();
-
-        log.info("Now: " + Instant.now());
-        log.info("Radius: " + (double)radius);
-        log.info("" + KM_PER_DEGREE);
-        log.info("Location: " + location);
-
-        return (list.isEmpty() ? new ArrayList<>() : list);
-    }
-
-    /**
-     * TODO: IS IT NECESSARY?
-     * TODO: 1) Use the user restrictions and search for public groups/meetings
-     * TODO: 3) Validate ObjectLocation/group
-     */
-    @Override
-    public List<ObjectLocation> fetchMeetingLocationsByGroup (ObjectLocation group, GeoLocation location, Integer radius) {
-        log.info("Fetching meeting locations by group ...");
-
-        assertRadius(radius);
-        assertGeolocation(location);
-
-        List<ObjectLocation> list = entityManager.createQuery("SELECT NEW za.org.grassroot.core.domain.geo.ObjectLocation(" +
-                        "m.uid, m.name, l.location.latitude, l.location.longitude, l.score, 'MEETING', " +
-                        "CONCAT('<strong>Where: </strong>', m.eventLocation, '<br/><strong>Date and Time: </strong>', m.eventStartDateTime), m.isPublic) " +
-                        "FROM Meeting m " +
-                        "INNER JOIN m.parentGroup g, GroupLocation l " +
-                        "WHERE l.localDate <= :date " +
-                        "AND l.group = g " +
-                        "AND g.uid = :guid " +
-                        "AND l.localDate = (SELECT MAX(ll.localDate) FROM GroupLocation ll WHERE ll.group = l.group)" +
-                        "AND l.location.latitude " +
-                        "    BETWEEN :latpoint  - (:radius / :distance_unit) " +
-                        "        AND :latpoint  + (:radius / :distance_unit) " +
-                        "AND l.location.longitude " +
-                        "    BETWEEN :longpoint - (:radius / (:distance_unit * COS(RADIANS(:latpoint)))) " +
-                        "        AND :longpoint + (:radius / (:distance_unit * COS(RADIANS(:latpoint)))) " +
-                        "AND :radius >= (:distance_unit " +
-                        "         * DEGREES(ACOS(COS(RADIANS(:latpoint)) " +
-                        "         * COS(RADIANS(l.location.latitude)) " +
-                        "         * COS(RADIANS(:longpoint - l.location.longitude)) " +
-                        "         + SIN(RADIANS(:latpoint)) " +
-                        "         * SIN(RADIANS(l.location.latitude))))) ",
-                ObjectLocation.class)
-                .setParameter("date", LocalDate.now())
-                .setParameter("guid", group.getUid())
-                .setParameter("radius", (double)radius)
-                .setParameter("distance_unit", KM_PER_DEGREE)
-                .setParameter("latpoint", location.getLatitude())
-                .setParameter("longpoint", location.getLongitude())
-                .getResultList();
-
-        return (list.isEmpty() ? new ArrayList<>() : list);
-    }
-
-
-    public List<ObjectLocation> fetchMeetingsNearUser(Integer radius, User user, GeoLocation geoLocation, String publicPrivateBoth) {
+    public List<ObjectLocation> fetchMeetingLocationsNearUser(User user, GeoLocation geoLocation, Integer radius, GeographicSearchType searchType, String searchTerm) {
+        Objects.requireNonNull(user);
+        Objects.requireNonNull(searchType);
         assertRadius(radius);
 
-        List<ObjectLocation> list = new ArrayList<>();
+        GeoLocation searchCentre = geoLocation == null ? fetchBestGuessUserLocation(user.getUid()) : geoLocation;
+        if (searchCentre == null) {
+            // we can't find anything, so just return blank (leave to client to work out best way to get location)
+            // should probably throw an exception here in time, but for the moment (mid clean up) it's somewhat dangerous
+            return new ArrayList<>();
+        }
 
-        String filter = publicPrivateBoth.toLowerCase().equals("public") ? "m.isPublic = true AND " : "m.isPublic = false AND ";
+        boolean onlyPublicMeetings = searchType.equals(GeographicSearchType.PUBLIC);
+        final String membershipClause = onlyPublicMeetings ? "NOT IN" : "IN ";
 
-        boolean onlyPublicMeetings = "PUBLIC".equals(publicPrivateBoth);
-        String membershipClause = publicPrivateBoth.toLowerCase().equals("public") ? "NOT IN" : "IN ";
-
-        GeoLocationUtils.locationFilterSuffix("l");
         String strQuery =
                 "SELECT NEW za.org.grassroot.core.domain.geo.ObjectLocation(" +
                         "  m.uid, m.name, l.location.latitude, l.location.longitude, l.score, 'MEETING', " +
                         "  CONCAT('Where: ', m.eventLocation, 'Date and Time: ', m.eventStartDateTime), m.isPublic) " +
                         "FROM MeetingLocation l INNER JOIN l.meeting m " +
                         "WHERE m.ancestorGroup " + membershipClause + " (SELECT mm.group FROM Membership mm WHERE mm.user = :user) " +
-                        (onlyPublicMeetings ? " AND m.public = true " : "") + "AND " +
+                        (onlyPublicMeetings ? " AND m.isPublic = true " : "") + "AND " +
                         GeoLocationUtils.locationFilterSuffix("l.location");
 
-        log.info("query = {}",strQuery);
+        log.info("query = {}", strQuery);
 
         TypedQuery<ObjectLocation> query = entityManager.createQuery(strQuery,ObjectLocation.class)
-                .setParameter("user",user)
-                .setParameter("radius", (double)radius)
+                .setParameter("user", user)
+                .setParameter("radius", (double) radius)
                 .setParameter("distance_unit", KM_PER_DEGREE);
 
-        if (geoLocation != null){
-            log.debug("we have a geolocation, it looks like: {}", geoLocation);
-            setLocationParams(query, geoLocation);
-            list = query.getResultList();
-        } else {
-            log.debug("we don't have a geolocation, try find one");
-            Instant fiveDayAgo = Instant.now().minus(5, ChronoUnit.DAYS);
-            UserLocationLog userLocationLog = userLocationLogRepository.findByUserUidAndTimestampBetweenNowAndIntervalGiven(user.getUid(),fiveDayAgo);
-            log.debug("latest user location log = {}", userLocationLog);
-            if(userLocationLog != null) {
-                setLocationParams(query, userLocationLog.getLocation());
-                list = query.getResultList();
-            } else {
-                GroupLocation groupLocation = groupLocationRepository.findByUserUid(user);
-                log.info("okay, no recent user location log either, group location = {}", groupLocation);
-                if (groupLocation != null && groupLocation.hasLocation()) {
-                    setLocationParams(query, groupLocation.getLocation());
-                    list = query.getResultList();
-                }
-            }
-        }
-        return list;
+        log.debug("we have a search location, it looks like: {}", searchCentre);
+        setLocationParams(query, searchCentre);
+        return query.getResultList();
     }
 
     private void setLocationParams(TypedQuery query, GeoLocation location) {

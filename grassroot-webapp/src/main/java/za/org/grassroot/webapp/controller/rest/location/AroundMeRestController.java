@@ -1,6 +1,5 @@
 package za.org.grassroot.webapp.controller.rest.location;
 
-import com.google.common.base.Preconditions;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +11,7 @@ import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.ObjectLocation;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
 import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.services.geo.GeographicSearchType;
 import za.org.grassroot.services.geo.ObjectLocationBroker;
 import za.org.grassroot.services.livewire.LiveWireAlertBroker;
 import za.org.grassroot.webapp.enums.RestMessage;
@@ -56,7 +56,7 @@ public class AroundMeRestController {
         Set<ObjectLocation> objectLocationSet = new HashSet<>();
 
         objectLocationSet.addAll(objectLocationBroker.fetchGroupsNearby(location,radiusMetres,searchTerm,filterTerm,userUid)); //Adding Groups near user
-        objectLocationSet.addAll(objectLocationBroker.fetchMeetingsNearUser(radiusMetres,user,location,searchTerm)); // Adding Meetings near user
+        objectLocationSet.addAll(objectLocationBroker.fetchMeetingLocationsNearUser(user, location, radiusMetres, GeographicSearchType.PUBLIC, null)); // Adding Meetings near user
 
         List<ObjectLocation> list = new ArrayList<>(objectLocationSet);
 
