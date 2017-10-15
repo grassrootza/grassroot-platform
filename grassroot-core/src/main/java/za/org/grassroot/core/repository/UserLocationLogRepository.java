@@ -5,8 +5,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.UserLocationLog;
-import za.org.grassroot.core.enums.LocationSource;
 
+import javax.transaction.Transactional;
 import java.time.Instant;
 import java.util.List;
 
@@ -21,10 +21,17 @@ public interface UserLocationLogRepository extends JpaRepository<UserLocationLog
 
 	List<UserLocationLog> findByUserUidOrderByTimestampDesc(String userUid);
 
-	@Query(value = "SELECT u.* FROM UserLocationLog u" +
-			"WHERE u.uid = :user" +
-			"AND u.timestamp BETWEEN :interval AND NOW()",nativeQuery = true)
-	UserLocationLog findByUserUidAndTimestampBetweenNowAndIntervalGiven(@Param("user") User user,@Param("interval") Instant interval);
+	@Transactional
+	@Query(value = "SELECT NEW za.org.grassroot.core.domain.geo.UserLocationLog(" +
+            " u.timestamp" +
+            ",u.userUid" +
+            ",u.location" +
+            ",u.locationSource" +
+            ")" +
+            " FROM UserLocationLog u" +
+			" WHERE u.uid=:user" +
+			" AND u.timestamp BETWEEN :interval AND NOW()")
+	UserLocationLog findByUserUidAndTimestampBetweenNowAndIntervalGiven(@Param("user") String user,@Param("interval") Instant interval);
 
 	//List<UserLocationLog> findByUserUid(String userUid);
 }

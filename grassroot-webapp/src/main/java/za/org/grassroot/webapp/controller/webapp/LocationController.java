@@ -9,12 +9,12 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.ObjectLocation;
 import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
 import za.org.grassroot.services.geo.GeoLocationBroker;
+import za.org.grassroot.services.geo.GeographicSearchType;
 import za.org.grassroot.services.geo.ObjectLocationBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.GeoFilterFormModel;
@@ -74,9 +74,7 @@ public class LocationController extends BaseController {
         // and set the zoom level appropriately (lower for less precise measurements)
         GeoLocation location;
 
-        // Check parameters
         if (latitude != null && longitude != null) {
-            // Check values
             if (latitude < -90.0 || latitude > 90) {
                 addMessage(model, MessageType.ERROR, "location.latitude.error", request);
                 return "location/map";
@@ -85,7 +83,6 @@ public class LocationController extends BaseController {
                 addMessage(model, MessageType.ERROR, "location.longitude.error", request);
                 return "location/map";
             }
-            // Use the passed location
             location = new GeoLocation(latitude, longitude);
         } else if (geoLocationBroker.fetchUserLocation(user.getUid()) != null) {
             // Use User location
@@ -103,7 +100,7 @@ public class LocationController extends BaseController {
         // Load groups
         List<ObjectLocation> groups;
         try {
-            groups = objectLocationBroker.fetchGroupLocations(location, searchRadius);
+            groups = objectLocationBroker.fetchPublicGroupsNearbyWithLocation(location, searchRadius);
         }
         catch (InvalidParameterException e) {
             logger.info("KPI: POST - BAD REQUEST: " + e.getMessage());
@@ -118,21 +115,11 @@ public class LocationController extends BaseController {
         objectsToReturn.addAll(groups);
 
         // Load meetings
-        if (groups.size() > 0) {
-            for (ObjectLocation group : groups) {
-                // Get meetings
-                List<ObjectLocation> meetings = objectLocationBroker.fetchMeetingLocationsByGroup(group, location, searchRadius);
+        List<ObjectLocation> meetings = objectLocationBroker.fetchMeetingLocationsNearUser(user, location, searchRadius, GeographicSearchType.PUBLIC, null);
+        logger.info("Meetings found: {}", meetings.size());
 
-                // Concat the results
-                objectsToReturn.addAll(meetings);
-            }
-        } else {
-            List<ObjectLocation> meetings = objectLocationBroker.fetchMeetingLocations(location, searchRadius, useRestriction);
-            logger.info("Meetings found: {}", meetings.size());
-
-            // Concat the results
-            objectsToReturn.addAll(meetings);
-        }
+        // Concat the results
+        objectsToReturn.addAll(meetings);
 
         // Send response
         model.addAttribute("user", user);

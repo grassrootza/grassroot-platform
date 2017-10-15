@@ -43,10 +43,8 @@ import java.security.InvalidParameterException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -70,6 +68,8 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
 
     private MessageSourceAccessor messageSource;
     private UssdLocationServicesBroker locationServicesBroker;
+
+    protected final static double KM_PER_DEGREE = 111.045;
 
     @Value("${grassroot.livewire.instant.minsize:100}")
     private int minGroupSizeForInstantAlert;
@@ -541,4 +541,54 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
                 log);
     }
 
+    @Override
+    public List<LiveWireAlert> fetchAlertsNearUser(String userUid, GeoLocation location, String createdByMe, Integer radius) {
+
+        User user = userRepository.findOneByUid(userUid);
+
+        if(location == null || !location.isValid()){
+            throw new InvalidParameterException("Invalid GeoLocation object.");
+        }
+
+        String mineFilter = createdByMe.toLowerCase().equals("mine") ? "l.creatingUser =:user " : " l.creatingUser <>:user ";
+
+        Instant lastWeekTime = getLastWeekTime();
+
+        String query = "SELECT l FROM LiveWireAlert l" +
+                " WHERE l.sent = true " +
+                " AND creationTime >:lastWeekTime " +
+                " AND " + mineFilter +
+                " AND l.location.latitude " +
+                "      BETWEEN :latpoint  - (:radius / :distance_unit) " +
+                "          AND :latpoint  + (:radius / :distance_unit) " +
+                "  AND l.location.longitude " +
+                "      BETWEEN :longpoint - (:radius / (:distance_unit * COS(RADIANS(:latpoint)))) " +
+                "          AND :longpoint + (:radius / (:distance_unit * COS(RADIANS(:latpoint)))) " +
+                "  AND :radius >= (:distance_unit " +
+                "           * DEGREES(ACOS(COS(RADIANS(:latpoint)) " +
+                "           * COS(RADIANS(l.location.latitude)) " +
+                "           * COS(RADIANS(:longpoint - l.location.longitude)) " +
+                "           + SIN(RADIANS(:latpoint)) " +
+                "           * SIN(RADIANS(l.location.latitude))))) ";
+
+
+        TypedQuery<LiveWireAlert> typedQuery = entityManager.createQuery(query,LiveWireAlert.class)
+                .setParameter("user",user)
+                .setParameter("radius", (double)radius)
+                .setParameter("distance_unit", KM_PER_DEGREE)
+                .setParameter("latpoint",location.getLatitude())
+                .setParameter("longpoint",location.getLongitude())
+                .setParameter("lastWeekTime",lastWeekTime);
+
+        List<LiveWireAlert> liveWireAlerts = typedQuery.getResultList();
+        if(liveWireAlerts == null){
+            liveWireAlerts = new ArrayList<>();
+        }
+
+        return liveWireAlerts;
+    }
+
+    public Instant getLastWeekTime(){
+        return Instant.now().minus(7, ChronoUnit.DAYS);
+    }
 }
