@@ -16,7 +16,7 @@ import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.services.task.VoteBroker;
-import za.org.grassroot.webapp.controller.rest.android.VoteRestController;
+import za.org.grassroot.webapp.controller.android1.VoteRestController;
 
 import java.util.Collections;
 
@@ -94,7 +94,7 @@ public class VoteRestControllerTest extends RestAbstractUnitTest {
 
         verify(userManagementServiceMock).findByInputNumber(testUserPhone);
         verify(voteBrokerMock).load(voteEvent.getUid());
-        verify(voteBrokerMock).fetchVoteResults(sessionTestUser.getUid(), voteEvent.getUid());
+        verify(voteBrokerMock).fetchVoteResults(sessionTestUser.getUid(), voteEvent.getUid(), false);
         verify(eventLogRepositoryMock).findOne(any(Specifications.class));
     }
 

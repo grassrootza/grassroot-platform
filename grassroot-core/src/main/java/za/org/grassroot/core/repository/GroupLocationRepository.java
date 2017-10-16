@@ -3,7 +3,9 @@ package za.org.grassroot.core.repository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.GroupLocation;
 import za.org.grassroot.core.domain.geo.ObjectLocation;
@@ -46,22 +48,16 @@ public interface GroupLocationRepository extends JpaRepository<GroupLocation, Lo
 			+ " l.localDate = (select max(ll.localDate) from GroupLocation ll where ll.group = l.group)")
 	List<ObjectLocation> findAllLocationsWithDateAfterAndGroupIn(Collection<Group> groups);
 
-	@Query("SELECT l.group from GroupLocation l INNER JOIN l.group g " +
-			"WHERE g.discoverable = true " +
-			"AND l.localDate <= :date " +
-			"AND l.localDate = (SELECT MAX(ll.localDate) FROM GroupLocation ll WHERE ll.group = l.group)" +
-			"AND l.location.latitude " +
-			"    BETWEEN :latpoint  - (:radius / :distance_unit) " +
-			"        AND :latpoint  + (:radius / :distance_unit) " +
-			"AND l.location.longitude " +
-			"    BETWEEN :longpoint - (:radius / (:distance_unit * COS(RADIANS(:latpoint)))) " +
-			"        AND :longpoint + (:radius / (:distance_unit * COS(RADIANS(:latpoint)))) " +
-			"AND :radius >= (:distance_unit " +
-			"         * DEGREES(ACOS(COS(RADIANS(:latpoint)) " +
-			"         * COS(RADIANS(l.location.latitude)) " +
-			"         * COS(RADIANS(:longpoint - l.location.longitude)) " +
-			"         + SIN(RADIANS(:latpoint)) " +
-			"         * SIN(RADIANS(l.location.latitude))))) ")
-	List<Group> findPublicGroupsWithinRadius(GeoLocation location, Integer radius);
+	@Query(value = "SELECT NEW za.org.grassroot.core.domain.geo.GroupLocation( g.group" +
+			",g.localDate" +
+			",g.location" +
+			",g.score" +
+			",g.source" +
+			")" +
+			" FROM GroupLocation g" +
+			" WHERE g.group IN (SELECT m.group FROM Membership m" +
+			"                   WHERE m.user =:user" +
+            "                   ORDER BY m.joinTime DESC)")
+	GroupLocation findByUserUid(@Param("user") User user);
 
 }

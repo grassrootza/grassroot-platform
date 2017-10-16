@@ -89,11 +89,6 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
         return todo;
     }
 
-    @Override
-    public TaskType getTaskType() {
-        return TaskType.TODO;
-    }
-
     public Instant getCompletedDate() {
         return completedDate;
     }
@@ -104,6 +99,11 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
 
     public void setNumberOfRemindersLeftToSend(int numberOfRemindersLeftToSend) {
         this.numberOfRemindersLeftToSend = numberOfRemindersLeftToSend;
+    }
+
+    @Override
+    public TaskType getTaskType() {
+        return TaskType.TODO;
     }
 
     @Override

@@ -6,11 +6,10 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-import org.springframework.web.client.RestTemplate;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.ObjectLocation;
-import za.org.grassroot.core.repository.GroupLocationRepository;
-import za.org.grassroot.core.repository.MeetingLocationRepository;
+import za.org.grassroot.core.repository.*;
 
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
@@ -35,15 +34,26 @@ public class ObjectLocationBrokerTest {
     @Mock
     private MeetingLocationRepository mockMeetingLocationRepository;
 
-    @Mock
-    private RestTemplate mockRestTemplate;
-
     private ObjectLocationBrokerImpl objectLocationBroker;
+
+    @Mock
+    private UserLocationLogRepository userLocationLogRepository;
+
+    @Mock
+    private UserRepository userRepository;
+
+    @Mock
+    private PreviousPeriodUserLocationRepository avgPeriodRepositoryMock;
+
+    User testUser;
 
     @Before
     public void setUp () {
+
         objectLocationBroker = new ObjectLocationBrokerImpl(mockEntityManager, mockGroupLocationRepository,
-                mockMeetingLocationRepository, mockRestTemplate);
+                mockMeetingLocationRepository, userLocationLogRepository, avgPeriodRepositoryMock,userRepository);
+
+        testUser = new User("27610001234", "test");
 
         given(mockQuery.setParameter(anyString(), any())).willReturn(mockQuery);
         given(mockQuery.getResultList()).willAnswer(i->Arrays.asList());
@@ -52,7 +62,7 @@ public class ObjectLocationBrokerTest {
 
     @Test
     public void validRequestShouldBeSuccessfulWhenFetchingGroupLocations () throws Exception {
-        List<ObjectLocation> groupLocations = objectLocationBroker.fetchGroupLocations(new GeoLocation(53.4808, 2.2426), 10);
+        List<ObjectLocation> groupLocations = objectLocationBroker.fetchPublicGroupsNearbyWithLocation(new GeoLocation(53.4808, 2.2426), 10);
 
         verify(mockQuery, times(1)).getResultList();
         verify(mockEntityManager, times(1)).createQuery(anyString(), eq(ObjectLocation.class));
@@ -63,17 +73,17 @@ public class ObjectLocationBrokerTest {
 
     @Test(expected=InvalidParameterException.class)
     public void nullGeoLocationShouldThrowExceptionWhenFetchingGroupLocations () throws Exception {
-        objectLocationBroker.fetchGroupLocations(null, 10);
+        objectLocationBroker.fetchPublicGroupsNearbyWithLocation(null, 10);
     }
 
     @Test(expected=InvalidParameterException.class)
     public void nullRadiusThrowExceptionWhenFetchingGroupLocations () throws Exception {
-        objectLocationBroker.fetchGroupLocations(new GeoLocation(0.00,0.00), null);
+        objectLocationBroker.fetchPublicGroupsNearbyWithLocation(new GeoLocation(0.00,0.00), null);
     }
 
     @Test(expected=InvalidParameterException.class)
     public void negativeRadiusThrowExceptionWhenFetchingGroupLocations () throws Exception {
-        objectLocationBroker.fetchGroupLocations(new GeoLocation(0.00,0.00), -10);
+        objectLocationBroker.fetchPublicGroupsNearbyWithLocation(new GeoLocation(0.00,0.00), -10);
     }
 
     @Test
@@ -92,33 +102,29 @@ public class ObjectLocationBrokerTest {
 
     @Test
     public void validRequestShouldBeSuccessfulWhenFetchingMeetingLocations () throws Exception {
-        List<ObjectLocation> groupLocations = objectLocationBroker.fetchMeetingLocations(new GeoLocation(53.4808, 2.2426), 10, 0);
+        List<ObjectLocation> meetingLocations = objectLocationBroker.fetchMeetingLocationsNearUser(
+                testUser, new GeoLocation(53.4808, 2.2426), 10, GeographicSearchType.PUBLIC, null);
 
         verify(mockQuery, times(1)).getResultList();
         verify(mockEntityManager, times(1)).createQuery(anyString(), eq(ObjectLocation.class));
 
-        Assert.assertNotNull(groupLocations.size());
-        Assert.assertEquals(groupLocations.size(), 0);
-    }
-
-    @Test(expected=InvalidParameterException.class)
-    public void nullGeoLocationShouldThrowExceptionWhenFetchingMeetingLocations () throws Exception {
-        objectLocationBroker.fetchMeetingLocations(null, 10, null);
+        Assert.assertNotNull(meetingLocations);
+        Assert.assertEquals(meetingLocations.size(), 0);
     }
 
     @Test(expected=InvalidParameterException.class)
     public void nullRadiusThrowExceptionWhenFetchingMeetingLocations () throws Exception {
-        objectLocationBroker.fetchMeetingLocations(new GeoLocation(0.00, 0.00), 0, 0);
+        objectLocationBroker.fetchMeetingLocationsNearUser(testUser, new GeoLocation(0.00, 0.00), 0, GeographicSearchType.PUBLIC, null);
     }
 
     @Test(expected=InvalidParameterException.class)
     public void negativeRadiusThrowExceptionWhenFetchingMeetingLocations () throws Exception {
-        objectLocationBroker.fetchMeetingLocations(new GeoLocation(0.00, 0.00), -10, null);
+        objectLocationBroker.fetchMeetingLocationsNearUser(testUser, new GeoLocation(0.00, 0.00), -10, GeographicSearchType.PUBLIC, null);
     }
 
     private void expectedValidFetchGroupLocationsRequest (double latitude, double longitude){
         try {
-            objectLocationBroker.fetchGroupLocations(new GeoLocation(latitude, longitude), 10);
+            objectLocationBroker.fetchPublicGroupsNearbyWithLocation(new GeoLocation(latitude, longitude), 10);
         }
         catch (Exception e){
             Assert.fail();
@@ -127,7 +133,7 @@ public class ObjectLocationBrokerTest {
 
     private void expectedInValidFetchGroupLocationsRequest (double latitude, double longitude){
         try {
-            objectLocationBroker.fetchGroupLocations(new GeoLocation(latitude, longitude), 10);
+            objectLocationBroker.fetchPublicGroupsNearbyWithLocation(new GeoLocation(latitude, longitude), 10);
             Assert.fail();
         }
         catch (Exception e){

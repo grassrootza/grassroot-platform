@@ -96,7 +96,7 @@ public class Meeting extends Event<MeetingContainer> implements VoteContainer {
 		}
 	}
 
-	public void setParent(MeetingContainer parent) {
+    public void setParent(MeetingContainer parent) {
 		if (parent instanceof Group) {
 			this.parentGroup = (Group) parent;
 			this.parentGroup.addChildEvent(this); // needed for double sided relationship in JPA

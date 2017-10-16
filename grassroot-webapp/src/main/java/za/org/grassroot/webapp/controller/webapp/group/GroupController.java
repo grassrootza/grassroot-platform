@@ -21,7 +21,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.dto.MembershipInfo;
-import za.org.grassroot.core.dto.TaskDTO;
+import za.org.grassroot.core.dto.task.TaskDTO;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.NotificationService;
@@ -754,7 +754,6 @@ public class GroupController extends BaseController {
 
         List<GroupLog> groupLogsInPeriod = groupQueryBroker.getLogsForGroup(group, startDateTime, endDateTime);
         List<LocalDate> monthsActive = groupQueryBroker.getMonthsGroupActive(groupUid);
-
 
         List<Notification> recentlyFailedNotifications = notificationService.loadRecentFailedNotificationsInGroup(startDateTime, endDateTime, group);
 

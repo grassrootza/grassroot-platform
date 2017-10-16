@@ -1,37 +1,30 @@
 package za.org.grassroot.integration.messaging;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import java.util.HashMap;
 import java.util.Map;
 
 /**
  * Created by edwin on 2017/07/08.
  */
+@Getter
 public class CreateJwtTokenRequest {
     private JwtType jwtType;
-    private Map<String, Object> claims = new HashMap<>();
-    private Map<String, Object> headerParameters = new HashMap<>();
+    @Setter private Long shortExpiryMillis;
+    @Setter private Map<String, Object> claims = new HashMap<>();
+    @Setter private Map<String, Object> headerParameters = new HashMap<>();
 
     public CreateJwtTokenRequest(JwtType jwtType) {
         this.jwtType = jwtType;
     }
 
-    public JwtType getJwtType() {
-        return jwtType;
+    public CreateJwtTokenRequest(JwtType jwtType, Long shortExpiryMillis) {
+        this(jwtType);
+        if (shortExpiryMillis != null) {
+            this.shortExpiryMillis = shortExpiryMillis;
+        }
     }
 
-    public Map<String, Object> getClaims() {
-        return claims;
-    }
-
-    public void setClaims(Map<String, Object> claims) {
-        this.claims = claims;
-    }
-
-    public Map<String, Object> getHeaderParameters() {
-        return headerParameters;
-    }
-
-    public void setHeaderParameters(Map<String, Object> headerParameters) {
-        this.headerParameters = headerParameters;
-    }
 }

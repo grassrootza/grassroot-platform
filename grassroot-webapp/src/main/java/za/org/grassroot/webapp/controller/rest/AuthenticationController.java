@@ -1,5 +1,7 @@
 package za.org.grassroot.webapp.controller.rest;
 
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +24,7 @@ import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
 @RestController
+@Api("/api/auth")
 @RequestMapping("/api/auth")
 public class AuthenticationController {
 
@@ -39,9 +42,10 @@ public class AuthenticationController {
     }
 
     @RequestMapping(value = "/login", method = RequestMethod.GET)
+    @ApiOperation(value = "Login and retrieve a JWT token", notes = "The JWT token is returned as a string in the 'data' property")
     public ResponseEntity<ResponseWrapper> login(@RequestParam("phoneNumber")String phoneNumber,
-                                                 @RequestParam("otp")String otp,
-                                                 @RequestParam("clientType") String clientType) {
+                                                 @RequestParam("otp") String otp,
+                                                 @RequestParam(value = "durationMillis", required = false) Long durationMillis) {
         try {
             // authenticate user before issuing token
             passwordTokenService.validateOtp(phoneNumber, otp);
@@ -50,7 +54,11 @@ public class AuthenticationController {
             User user = userService.findByInputNumber(phoneNumber);
 
             // Generate a token for the user (for the moment assuming it is Android client)
-            String token = jwtService.createJwt(new CreateJwtTokenRequest(JwtType.ANDROID_CLIENT));
+            CreateJwtTokenRequest tokenRequest = new CreateJwtTokenRequest(JwtType.ANDROID_CLIENT);
+            if (durationMillis != null && durationMillis != 0) {
+                tokenRequest.setShortExpiryMillis(durationMillis);
+            }
+            String token = jwtService.createJwt(tokenRequest);
 
             // Assemble response entity
             AndroidAuthToken response = new AndroidAuthToken(user, token);
@@ -65,6 +73,8 @@ public class AuthenticationController {
     }
 
     @RequestMapping(value = "/token/validate", method = RequestMethod.GET)
+    @ApiOperation(value = "Validate whether a JWT token is available", notes = "Returns TOKEN_STILL_VALID in 'message', or " +
+            "else 'INVALID_TOKEN'")
     public ResponseEntity<ResponseWrapper> validateToken(@RequestParam("token") String token) {
         boolean isJwtTokenValid = jwtService.isJwtTokenValid(token);
         if (isJwtTokenValid) {
@@ -75,8 +85,12 @@ public class AuthenticationController {
     }
 
     @RequestMapping(value = "/token/refresh", method = RequestMethod.GET)
-    public ResponseEntity<ResponseWrapper> refreshToken(@RequestParam("oldToken")String oldToken) {
-        String newToken = jwtService.refreshToken(oldToken, JwtType.ANDROID_CLIENT);
+    @ApiOperation(value = "Refresh JWT token", notes = "Try to refresh an old or expired token, responds with " +
+            "a new token as a string (in the 'data' property) if the old token is within the refresh window, or a bad request " +
+            "if the token is still old")
+    public ResponseEntity<ResponseWrapper> refreshToken(@RequestParam("oldToken")String oldToken,
+                                                        @RequestParam(value = "durationMillis", required = false) Long durationMillis) {
+        String newToken = jwtService.refreshToken(oldToken, JwtType.ANDROID_CLIENT, durationMillis);
         if (newToken != null) {
             return RestUtil.okayResponseWithData(RestMessage.LOGIN_SUCCESS, newToken);
         } else {

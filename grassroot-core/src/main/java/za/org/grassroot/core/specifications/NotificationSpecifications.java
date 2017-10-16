@@ -1,12 +1,14 @@
 package za.org.grassroot.core.specifications;
 
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.domain.Specifications;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountLog;
 import za.org.grassroot.core.domain.account.AccountLog_;
 import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.enums.AccountLogType;
+import za.org.grassroot.core.enums.UserMessagingPreference;
 
 import javax.persistence.criteria.Join;
 import javax.persistence.criteria.JoinType;
@@ -19,9 +21,13 @@ import java.util.List;
  */
 public final class NotificationSpecifications {
 
+    public static Specification<Notification> toUser(User target) {
+        return (root, query, cb) -> cb.equal(root.get(Notification_.target), target);
+    }
+
     public static Specification<Notification> wasDelivered() {
-        List<NotificationStatus> deliveredStatuzses = Arrays.asList(NotificationStatus.DELIVERED, NotificationStatus.READ);
-        return (root, query, cb) -> root.get(Notification_.status).in(deliveredStatuzses);
+        List<NotificationStatus> deliveredStatuses = Arrays.asList(NotificationStatus.DELIVERED, NotificationStatus.READ);
+        return (root, query, cb) -> root.get(Notification_.status).in(deliveredStatuses);
     }
 
     public static Specification<Notification> createdTimeBetween(Instant start, Instant end) {
@@ -43,20 +49,11 @@ public final class NotificationSpecifications {
         };
     }
 
-    public static Specification<Notification> eventAncestorGroupIs(final Group group) {
-        return (root, query, cb) -> {
-            Join<Notification, EventLog> eventLogJoin = root.join(Notification_.eventLog, JoinType.LEFT);
-            Join<EventLog, Event> eventJoin = eventLogJoin.join(EventLog_.event, JoinType.LEFT);
-            return cb.equal(eventJoin.get(Event_.ancestorGroup), group);
-        };
-    }
-
-    public static Specification<Notification> todoAncestorGroupIs(final Group group) {
-        return (root, query, cb) -> {
-            Join<Notification, TodoLog> todoLogJoin = root.join(Notification_.todoLog, JoinType.LEFT);
-            Join<TodoLog, Todo> todoJoin = todoLogJoin.join(TodoLog_.todo, JoinType.LEFT);
-            return cb.equal(todoJoin.get(Todo_.ancestorGroup), group);
-        };
+    public static Specifications<Notification> sentOrBetterSince(Instant time) {
+        List<NotificationStatus> sentOrBetterStatuses = Arrays.asList(NotificationStatus.READ, NotificationStatus.DELIVERED, NotificationStatus.READ);
+        Specification<Notification> sentOrBetter = (root, query, cb) -> root.get(Notification_.status).in(sentOrBetterStatuses);
+        Specification<Notification> statusChangedSince = (root, query, cb) -> cb.greaterThan(root.get(Notification_.lastStatusChange), time);
+        return Specifications.where(statusChangedSince).and(sentOrBetter);
     }
 
     public static Specification<Notification> ancestorGroupIs(final Group group) {
@@ -65,15 +62,9 @@ public final class NotificationSpecifications {
             Join<EventLog, Event> eventJoin = eventLogJoin.join(EventLog_.event, JoinType.LEFT);
             Join<Notification, TodoLog> todoLogJoin = root.join(Notification_.todoLog, JoinType.LEFT);
             Join<TodoLog, Todo> todoJoin = todoLogJoin.join(TodoLog_.todo, JoinType.LEFT);
-            return cb.or(cb.equal(eventJoin.get(Event_.ancestorGroup), group),
-                    cb.equal(todoJoin.get(Todo_.ancestorGroup), group));
-        };
-    }
-
-    public static Specification<Notification> groupLogIs(final Group group) {
-        return (root, query, cb) -> {
-            Join<Notification, GroupLog> groupLogJoin = root.join(Notification_.groupLog);
-            return cb.equal(groupLogJoin.get(GroupLog_.group), group);
+            Join<Notification, AccountLog> accountLogJoin = root.join(Notification_.accountLog, JoinType.LEFT);
+            return cb.or(cb.or(cb.equal(eventJoin.get(Event_.ancestorGroup), group),
+                    cb.equal(todoJoin.get(Todo_.ancestorGroup), group)), cb.equal(accountLogJoin.get(AccountLog_.group), group));
         };
     }
 
@@ -83,10 +74,12 @@ public final class NotificationSpecifications {
 
 
     public static Specification<Notification> isInFailedStatus() {
-        return (root, query, cb) -> root.get(Notification_.status).in(Arrays.asList(NotificationStatus.DELIVERY_FAILED, NotificationStatus.SENDING_FAILED, NotificationStatus.UNDELIVERABLE));
+        return (root, query, cb) -> root.get(Notification_.status).in(Arrays.asList(NotificationStatus.DELIVERY_FAILED,
+                NotificationStatus.SENDING_FAILED, NotificationStatus.UNDELIVERABLE));
     }
 
-
-
+    public static Specification<Notification> forDeliveryChannel(UserMessagingPreference deliveryChannel) {
+        return (root, query, cb) -> cb.equal(root.get(Notification_.deliveryChannel), deliveryChannel);
+    }
 
 }

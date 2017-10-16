@@ -10,6 +10,8 @@ import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.repository.UserRepository;
 
+import java.util.concurrent.CompletableFuture;
+
 /**
  * Created by luke on 2017/04/28.
  */
@@ -52,6 +54,11 @@ public class StubLocationBrokerImpl implements UssdLocationServicesBroker {
     @Override
     public GeoLocation getUssdLocationForUser(String userUid) {
         return new GeoLocation(testLat, testLong);
+    }
+
+    @Override
+    public CompletableFuture<GeoLocation> getUssdLocation(String userUid) {
+        return null;
     }
 
     @Override

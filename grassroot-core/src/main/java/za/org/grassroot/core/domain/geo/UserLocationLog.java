@@ -1,5 +1,6 @@
 package za.org.grassroot.core.domain.geo;
 
+import lombok.Getter;
 import za.org.grassroot.core.enums.LocationSource;
 
 import javax.persistence.*;
@@ -8,6 +9,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 @Entity
+@Getter
 @Table(name = "user_location_log",
 		uniqueConstraints = @UniqueConstraint(name = "uk_user_location_log_uid", columnNames = "uid"))
 public class UserLocationLog {
@@ -35,6 +37,11 @@ public class UserLocationLog {
 		// for JPA
 	}
 
+	public UserLocationLog(String uid,double latitude,double longitude){
+	    this.uid = uid;
+	    this.location = new GeoLocation(latitude,longitude);
+    }
+
 	public UserLocationLog(Instant timestamp, String userUid, GeoLocation location, LocationSource locationSource) {
 		this.uid = UUID.randomUUID().toString();
 		this.timestamp = Objects.requireNonNull(timestamp);
@@ -42,28 +49,6 @@ public class UserLocationLog {
 		this.location = Objects.requireNonNull(location);
 		this.locationSource = Objects.requireNonNull(locationSource);
 	}
-
-	public Long getId() {
-		return id;
-	}
-
-	public String getUid() {
-		return uid;
-	}
-
-	public Instant getTimestamp() {
-		return timestamp;
-	}
-
-	public String getUserUid() {
-		return userUid;
-	}
-
-	public GeoLocation getLocation() {
-		return location;
-	}
-
-	public LocationSource getLocationSource() { return locationSource; }
 
 	@Override
 	public boolean equals(Object o) {

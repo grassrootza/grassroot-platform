@@ -9,7 +9,6 @@ import za.org.grassroot.core.domain.NotificationStatus;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.UserMessagingPreference;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 
@@ -22,11 +21,7 @@ public interface NotificationRepository extends JpaRepository<Notification,Long>
 
     List<Notification> findByUidIn(Set<String> uids);
 
-    List<Notification> findByTargetAndDeliveryChannelOrderByCreatedDateTimeDesc(User target, UserMessagingPreference deliveryChannel);
-
     Page<Notification> findByTargetAndDeliveryChannelOrderByCreatedDateTimeDesc(User target, UserMessagingPreference deliveryChannel, Pageable pageable);
-
-    List<Notification> findByTargetAndDeliveryChannelAndCreatedDateTimeGreaterThanOrderByCreatedDateTimeDesc(User target, UserMessagingPreference deliveryChannel, Instant start);
 
     int countByTargetAndDeliveryChannelAndStatusNot(User target, UserMessagingPreference deliveryChannel, NotificationStatus status);
 

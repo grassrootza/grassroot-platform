@@ -10,7 +10,10 @@ import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.GroupLog;
+import za.org.grassroot.core.domain.Permission;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.GroupLocation;
 import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
@@ -263,7 +266,7 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
     @Override
     @Transactional(readOnly = true)
     public List<GroupLog> getLogsForGroup(Group group, LocalDateTime periodStart, LocalDateTime periodEnd) {
-        Sort sort = new Sort(Sort.Direction.ASC, "CreatedDateTime");
+        Sort sort = new Sort(Sort.Direction.DESC, "CreatedDateTime");
         return groupLogRepository.findByGroupAndCreatedDateTimeBetween(group, convertToSystemTime(periodStart, getSAST()),
                 convertToSystemTime(periodEnd, getSAST()), sort);
     }

@@ -20,15 +20,15 @@ import java.util.stream.Stream;
  * @param <P> parent type
  */
 public interface Task<P extends UidIdentifiable> extends UidIdentifiable {
-	void setParent(P parent);
+	TaskType getTaskType();
 
+	void setParent(P parent);
 	P getParent();
 
 	User getCreatedByUser();
 
+	Instant getCreatedDateTime();
 	Instant getDeadlineTime();
-
-    TaskType getTaskType();
 
 	default LocalDateTime getDeadlineTimeAtSAST() {
 		return getDeadlineTime().atZone(DateTimeUtil.getSAST()).toLocalDateTime();

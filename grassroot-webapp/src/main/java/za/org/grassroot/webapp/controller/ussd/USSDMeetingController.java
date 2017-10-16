@@ -25,7 +25,7 @@ import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.integration.exception.SeloParseDateTimeFailure;
 import za.org.grassroot.services.account.AccountGroupBroker;
-import za.org.grassroot.services.enums.EventListTimeType;
+import za.org.grassroot.services.task.enums.EventListTimeType;
 import za.org.grassroot.services.exception.AccountLimitExceededException;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.services.geo.GeoLocationBroker;

@@ -1,11 +1,11 @@
 package za.org.grassroot.integration.location;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specifications;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.w3c.dom.Document;
@@ -22,6 +22,7 @@ import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.UserLocationLogRepository;
 import za.org.grassroot.core.repository.UserLogRepository;
 import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.integration.exception.LocationNotAvailableException;
 import za.org.grassroot.integration.location.aatmodels.*;
 
@@ -32,6 +33,7 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.time.Instant;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import static org.springframework.data.jpa.domain.Specifications.where;
 import static za.org.grassroot.core.specifications.UserLogSpecifications.forUser;
@@ -41,10 +43,9 @@ import static za.org.grassroot.core.specifications.UserLogSpecifications.ofType;
  * Created by luke on 2017/04/19.
  */
 @Service
+@Slf4j
 @ConditionalOnProperty(name = "grassroot.ussd.location.service", havingValue = "aat_soap", matchIfMissing = false)
 public class AatSoapLocationBrokerImpl implements UssdLocationServicesBroker {
-
-    private static final Logger logger = LoggerFactory.getLogger(AatSoapLocationBrokerImpl.class);
 
     private final AatSoapClient aatSoapClient;
 
@@ -64,18 +65,18 @@ public class AatSoapLocationBrokerImpl implements UssdLocationServicesBroker {
     @Transactional
     public boolean addUssdLocationLookupAllowed(String userUid, UserInterfaceType grantedThroughInterface) {
         User user = userRepository.findOneByUid(userUid);
-        logger.info("About to call adding user lookup, for user phone: {}", user.getPhoneNumber());
+        log.info("About to call adding user lookup, for user phone: {}", user.getPhoneNumber());
         // we already have the permission, so store that as a log, then save if successful
         userLogRepository.save(new UserLog(userUid, UserLogType.GAVE_LOCATION_PERMISSION, "", grantedThroughInterface));
         AddAllowedMsisdnResponse response = aatSoapClient.addAllowedMsisdn(user.getPhoneNumber(), 2);
         if (isAddRequestSuccessful(response)) {
-            logger.info("Response succeeded, with result: {}", response.toString());
+            log.info("Response succeeded, with result: {}", response.toString());
             UserLog successLog = new UserLog(userUid, UserLogType.LOCATION_PERMISSION_ENABLED,
                     "message from server", grantedThroughInterface);
             userLogRepository.save(successLog);
             return true;
         } else { // todo: throw exception if tracking impossible (e.g., because of network) is cause of failure
-            logger.info("response failed! looks like: {}", response.toString());
+            log.info("response failed! looks like: {}", response.toString());
             return false;
         }
     }
@@ -84,7 +85,7 @@ public class AatSoapLocationBrokerImpl implements UssdLocationServicesBroker {
     @Transactional
     public boolean removeUssdLocationLookup(String userUid, UserInterfaceType interfaceType) {
         User user = userRepository.findOneByUid(userUid);
-        logger.info("About to remove a user from LBS lookup, for phone: {}", user.getPhoneNumber());
+        log.info("About to remove a user from LBS lookup, for phone: {}", user.getPhoneNumber());
         UserLogType logType = UserInterfaceType.SYSTEM.equals(interfaceType) ?
                 UserLogType.ONCE_OFF_LBS_REVERSAL : UserLogType.REVOKED_LOCATION_PERMISSION;
         userLogRepository.save(new UserLog(userUid, logType, "", interfaceType));
@@ -126,6 +127,7 @@ public class AatSoapLocationBrokerImpl implements UssdLocationServicesBroker {
     @Override
     @Transactional
     public GeoLocation getUssdLocationForUser(String userUid) {
+        DebugUtil.transactionRequired("inside storing user location log");
         User user = userRepository.findOneByUid(userUid);
         // todo : will want to use the accuracy score ...
         GetLocationResponse response = aatSoapClient.getLocationResponse(user.getPhoneNumber());
@@ -134,9 +136,20 @@ public class AatSoapLocationBrokerImpl implements UssdLocationServicesBroker {
         if (location.getLongitude() == 0 || location.getLatitude() == 0) {
             throw new LocationNotAvailableException();
         }
+        log.info("saving user location log ...");
         userLocationLogRepository.save(new UserLocationLog(timeOfCoord, userUid, location,
                 LocationSource.LOGGED_APPROX));
         return location;
+    }
+
+    @Async
+    @Override
+    public CompletableFuture<GeoLocation> getUssdLocation(String userUid) {
+        User user = userRepository.findOneByUid(userUid);
+        GetLocationResponse response = aatSoapClient.getLocationResponse(user.getPhoneNumber());
+        GeoLocation location = getLocationFromResposne(response);
+        log.info("okay, done on this thread");
+        return CompletableFuture.completedFuture(location);
     }
 
     // here: deal with the awfulness of the AAT XML schema
@@ -144,13 +157,13 @@ public class AatSoapLocationBrokerImpl implements UssdLocationServicesBroker {
         AddAllowedMsisdnResponse.AddAllowedMsisdnResult result = response.getAddAllowedMsisdnResult();
         Integer resultCode = result.getAddAllowedMsisdn().getResult().getCode();
         String message = result.getAddAllowedMsisdn().getResult().getMessage();
-        logger.info("Content of result: code = {}, message = {}", resultCode, message);
+        log.info("Content of result: code = {}, message = {}", resultCode, message);
         return resultCode == 100 || resultCode == 101;
     }
 
     // retaining this just in case need it again in future
     private boolean isAddRequestSuccessfulString(AddAllowedMsisdn2Response response) {
-        logger.info("Content of result: " + response.getAddAllowedMsisdn2Result());
+        log.info("Content of result: " + response.getAddAllowedMsisdn2Result());
         try {
             DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
             InputSource src = new InputSource();
@@ -162,7 +175,7 @@ public class AatSoapLocationBrokerImpl implements UssdLocationServicesBroker {
             Element resultElement = (Element) doc.getElementsByTagName("result").item(0);
             int resultCode = Integer.parseInt(resultElement.getAttribute("code"));
             String resultDescription = resultElement.getAttribute("message");
-            logger.info("resultCode: {}, resultDescription: {}", resultCode, resultDescription);
+            log.info("resultCode: {}, resultDescription: {}", resultCode, resultDescription);
 
             return resultCode == 100 || resultCode == 101;
         } catch (ParserConfigurationException|IOException|SAXException e) {
@@ -183,7 +196,7 @@ public class AatSoapLocationBrokerImpl implements UssdLocationServicesBroker {
         GetLocationEntity entity = response.getGetLocationResult().getLocation();
 
         // todo: store accuracy?
-        logger.info("Got location back, with X: {}, Y: {}, accuracy: {}", entity.getResult().getX(),
+        log.info("Got location back, with X: {}, Y: {}, accuracy: {}", entity.getResult().getX(),
                 entity.getResult().getY(), entity.getResult().getAccuracy());
         return new GeoLocation(entity.getResult().getY(), entity.getResult().getX());
     }

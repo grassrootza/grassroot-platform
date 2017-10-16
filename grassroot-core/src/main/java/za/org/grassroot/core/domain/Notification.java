@@ -83,7 +83,7 @@ public abstract class Notification implements Serializable {
 
 	@ManyToOne
 	@JoinColumn(name = "group_log_id", foreignKey = @ForeignKey(name = "fk_notification_group_log"))
-	private GroupLog groupLog;
+	protected GroupLog groupLog;
 
 	@ManyToOne
 	@JoinColumn(name = "account_log_id", foreignKey = @ForeignKey(name = "fk_notification_account_log"))
@@ -176,12 +176,9 @@ public abstract class Notification implements Serializable {
 		return this.status == NotificationStatus.DELIVERED || this.status == NotificationStatus.READ;
 	}
 
-
 	public boolean isViewedOnAndroid() {
 		return this.deliveryChannel == UserMessagingPreference.ANDROID_APP && this.status == NotificationStatus.READ;
 	}
-
-
 
 	public boolean isPrioritySatisfiedByTarget() {
 		return this.priority >= target.getNotificationPriority();

@@ -24,7 +24,7 @@ import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.account.AccountGroupBroker;
-import za.org.grassroot.services.enums.EventListTimeType;
+import za.org.grassroot.services.task.enums.EventListTimeType;
 import za.org.grassroot.services.exception.AccountLimitExceededException;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.services.exception.TaskNameTooLongException;
@@ -33,6 +33,7 @@ import za.org.grassroot.services.util.CacheUtilService;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
+import javax.persistence.EntityManager;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -70,8 +71,10 @@ public class EventBrokerImpl implements EventBroker {
 	private final GeoLocationBroker geoLocationBroker;
 	private final TaskImageBroker taskImageBroker;
 
+	private final EntityManager entityManager;
+
 	@Autowired
-	public EventBrokerImpl(MeetingRepository meetingRepository, EventLogBroker eventLogBroker, EventRepository eventRepository, VoteRepository voteRepository, UidIdentifiableRepository uidIdentifiableRepository, UserRepository userRepository, AccountGroupBroker accountGroupBroker, GroupRepository groupRepository, PermissionBroker permissionBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, CacheUtilService cacheUtilService, MessageAssemblingService messageAssemblingService, MeetingLocationRepository meetingLocationRepository, GeoLocationBroker geoLocationBroker, TaskImageBroker taskImageBroker) {
+	public EventBrokerImpl(MeetingRepository meetingRepository, EventLogBroker eventLogBroker, EventRepository eventRepository, VoteRepository voteRepository, UidIdentifiableRepository uidIdentifiableRepository, UserRepository userRepository, AccountGroupBroker accountGroupBroker, GroupRepository groupRepository, PermissionBroker permissionBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, CacheUtilService cacheUtilService, MessageAssemblingService messageAssemblingService, MeetingLocationRepository meetingLocationRepository, GeoLocationBroker geoLocationBroker, TaskImageBroker taskImageBroker,EntityManager entityManager) {
 		this.meetingRepository = meetingRepository;
 		this.eventLogBroker = eventLogBroker;
 		this.eventRepository = eventRepository;
@@ -86,6 +89,7 @@ public class EventBrokerImpl implements EventBroker {
 		this.messageAssemblingService = messageAssemblingService;
 		this.geoLocationBroker = geoLocationBroker;
 		this.taskImageBroker = taskImageBroker;
+		this.entityManager = entityManager;
 	}
 
 	@Override
@@ -129,6 +133,7 @@ public class EventBrokerImpl implements EventBroker {
 		logger.info("Created meeting, with importance={}, reminder type={} and time={}", meeting.getImportance(), meeting.getReminderType(), meeting.getScheduledReminderTime());
 
 		meetingRepository.save(meeting);
+
 		eventLogBroker.rsvpForEvent(meeting.getUid(), meeting.getCreatedByUser().getUid(), EventRSVPResponse.YES);
 
 		LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
@@ -147,6 +152,11 @@ public class EventBrokerImpl implements EventBroker {
 		logsAndNotificationsBroker.storeBundle(bundle);
 
 		return meeting;
+	}
+
+	@Override
+	public List<Meeting> publicMeetingsUserIsNotPartOf(String term, User user){
+		return meetingRepository.publicMeetingsUserIsNotPartOfWithsSearchTerm(term, user);
 	}
 
 	private void checkForEventLimit(String parentUid) {

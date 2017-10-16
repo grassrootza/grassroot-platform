@@ -196,7 +196,7 @@ public abstract class Event<P extends UidIdentifiable> extends AbstractEventEnti
 		return eventStartDateTime;
 	}
 
-	@Override
+    @Override
 	public void putAssignedMembersCollection(Set<User> assignedMembersCollection) {
 		this.assignedMembers = assignedMembersCollection;
 	}

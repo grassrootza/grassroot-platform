@@ -10,7 +10,7 @@ import za.org.grassroot.core.domain.task.Vote;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.UserInterfaceType;
-import za.org.grassroot.services.enums.EventListTimeType;
+import za.org.grassroot.services.task.enums.EventListTimeType;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -23,6 +23,8 @@ public interface EventBroker {
 	Event load(String eventUid);
 
 	Meeting loadMeeting(String meetingUid);
+
+	List<Meeting> publicMeetingsUserIsNotPartOf(String term, User user);
 
 	/**
 	 * Create a meeting entity, also triggering notifications to be stored, and subsequently sent. Fields in helper:

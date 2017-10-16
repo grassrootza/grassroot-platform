@@ -4,7 +4,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -15,6 +14,7 @@ import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountLog;
 import za.org.grassroot.core.domain.account.PaidGroup;
 import za.org.grassroot.core.domain.notification.FreeFormMessageNotification;
+import za.org.grassroot.core.domain.notification.GroupWelcomeNotification;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.enums.AccountLogType;
 import za.org.grassroot.core.enums.GroupLogType;
@@ -82,12 +82,10 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
     private final NotificationTemplateRepository templateRepository;
     private LogsAndNotificationsBroker logsAndNotificationsBroker;
 
-    private final ApplicationEventPublisher eventPublisher;
-
     @Autowired
     public AccountGroupBrokerImpl(UserRepository userRepository, GroupRepository groupRepository, TodoRepository todoRepository,
                                   EventRepository eventRepository, PermissionBroker permissionBroker, AccountRepository accountRepository,
-                                  PaidGroupRepository paidGroupRepository, NotificationTemplateRepository templateRepository, LogsAndNotificationsBroker logsAndNotificationsBroker, ApplicationEventPublisher eventPublisher) {
+                                  PaidGroupRepository paidGroupRepository, NotificationTemplateRepository templateRepository, LogsAndNotificationsBroker logsAndNotificationsBroker) {
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
         this.todoRepository = todoRepository;
@@ -97,7 +95,6 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
         this.paidGroupRepository = paidGroupRepository;
         this.templateRepository = templateRepository;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
-        this.eventPublisher = eventPublisher;
     }
 
     @PostConstruct
@@ -672,10 +669,10 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
 
     @Override
     @Transactional
-    public void generateGroupWelcomeNotifications(String addingUserUid, String groupUid, Set<String> addedMemberMsisdns) {
+    public void generateGroupWelcomeNotifications(String addingUserUid, String groupUid, Set<String> addedMemberUids) {
         Objects.requireNonNull(groupUid);
         Objects.requireNonNull(addingUserUid);
-        Objects.requireNonNull(addedMemberMsisdns);
+        Objects.requireNonNull(addedMemberUids);
 
         DebugUtil.transactionRequired("");
 
@@ -702,33 +699,33 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
 
             bundle.addLog(accountLog);
             template.getTemplateStrings().forEach(templateString -> {
-                bundle.addNotifications(generateNotifications(template, templateString, group, addedMemberMsisdns, accountLog));
+                bundle.addNotifications(generateNotifications(template, templateString, group, addedMemberUids, accountLog));
+                logger.debug("bundle has {} notifications", bundle.getNotifications().size());
             });
 
-            // todo : work out why this only actually stores if it's async
+            // todo : work out why this only actually stores if it's async (which should violate usual async issues, but ..)
             logsAndNotificationsBroker.asyncStoreBundle(bundle);
-            logger.info("sent logs and notifications for storage, exiting");
+            logger.info("sent {} logs and {} notifications for storage, exiting", bundle.getLogs().size(), bundle.getNotifications().size());
         }
     }
 
     private Set<Notification> generateNotifications(NotificationTemplate templateEntity, String templateString,
                                                     Group group, Set<String> memberUids, AccountLog accountLog) {
+        logger.debug("generating notifications for {} member", memberUids.size());
         Instant now = Instant.now();
-        return userRepository.findByUidIn(memberUids).stream()
+        Set<Notification> notifications = userRepository.findByUidIn(memberUids).stream()
                 .map(user -> fromTemplate(templateEntity, templateString, group.getMembership(user), accountLog, now))
                 .collect(Collectors.toSet());
+        logger.debug("generated {} notifications", notifications.size());
+        return notifications;
     }
 
     private Notification fromTemplate(NotificationTemplate template, String templateString,
                                       Membership membership, AccountLog accountLog, Instant referenceTime) {
-        // todo : handle truncating better
-        // todo : handle null delays
-        Notification notification = new FreeFormMessageNotification(membership.getUser(),
+        // todo : handle truncating better, handle null delays, handle send only via free
+        Notification notification = new GroupWelcomeNotification(membership.getUser(),
                 messageFromTemplateString(templateString, membership, 160), accountLog);
         notification.setSendOnlyAfter(referenceTime.plus(template.getDelayIntervalMillis(), ChronoUnit.MILLIS));
-        /*if (template.isOnlyUseFreeChannels()) {
-            notification.setForAndroidTimeline(false); // todo : port to new design
-        }*/
         return notification;
     }
 

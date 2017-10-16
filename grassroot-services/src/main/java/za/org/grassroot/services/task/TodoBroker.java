@@ -6,7 +6,7 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.enums.TodoCompletionConfirmType;
-import za.org.grassroot.services.enums.TodoStatus;
+import za.org.grassroot.services.task.enums.TodoStatus;
 
 import java.time.LocalDateTime;
 import java.util.List;
