@@ -75,14 +75,19 @@ public class MessagingServiceBrokerImpl implements MessagingServiceBroker, Comma
                 .queryParam("message", message)
                 .buildAndExpand(phoneNumber)
                 .toUri();
-        ResponseEntity<MessageServicePushResponse> responseEntity =
-                restTemplate.exchange(
-                        serviceCallUri,
-                        HttpMethod.POST,
-                        new HttpEntity<MessageServicePushResponse>(jwtHeaders()),
-                        MessageServicePushResponse.class
-                );
-        return responseEntity.getBody();
+        try {
+            ResponseEntity<MessageServicePushResponse> responseEntity =
+                    restTemplate.exchange(
+                            serviceCallUri,
+                            HttpMethod.POST,
+                            new HttpEntity<MessageServicePushResponse>(jwtHeaders()),
+                            MessageServicePushResponse.class
+                    );
+            return responseEntity.getBody();
+        } catch (Exception e) {
+            logger.error("Error connecting to: {}", serviceCallUri);
+            throw e;
+        }
     }
 
     @Override
