@@ -106,8 +106,8 @@ public class IncomingSMSController {
             return;
         }
 
-        EventRSVPResponse response = EventRSVPResponse.fromString(msg);
-        boolean isYesNoResponse = response == EventRSVPResponse.YES || response == EventRSVPResponse.NO || response == EventRSVPResponse.MAYBE;
+        EventRSVPResponse responseType = EventRSVPResponse.fromString(msg);
+        boolean isYesNoResponse = responseType == EventRSVPResponse.YES || responseType == EventRSVPResponse.NO || responseType == EventRSVPResponse.MAYBE;
 
         List<Event> outstandingVotes = eventBroker.getOutstandingResponseForUser(user, EventType.VOTE);
         List<Event> outstandingYesNoVotes = outstandingVotes.stream()
