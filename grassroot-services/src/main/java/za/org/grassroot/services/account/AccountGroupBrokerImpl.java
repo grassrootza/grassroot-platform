@@ -67,6 +67,7 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
     private Instant eventLimitStart;
 
     private static final int LARGE_EVENT_LIMIT = 99;
+    private static final long WELCOME_MSG_INTERVAL = 60 * 1000; // 1 minute
 
     private static final String addedDescription = "Group added to Grassroot Extra";
     private static final String removedDescription = "Group removed from Grassroot Extra";
@@ -698,10 +699,9 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
                     .build();
 
             bundle.addLog(accountLog);
-            template.getTemplateStrings().forEach(templateString -> {
-                bundle.addNotifications(generateNotifications(template, templateString, group, addedMemberUids, accountLog));
-                logger.debug("bundle has {} notifications", bundle.getNotifications().size());
-            });
+            for (int i = 0; i < template.getTemplateStrings().size(); i++) {
+                bundle.addNotifications(generateNotifications(template, i, group, addedMemberUids, accountLog));
+            }
 
             // todo : work out why this only actually stores if it's async (which should violate usual async issues, but ..)
             logsAndNotificationsBroker.asyncStoreBundle(bundle);
@@ -709,22 +709,22 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
         }
     }
 
-    private Set<Notification> generateNotifications(NotificationTemplate templateEntity, String templateString,
+    private Set<Notification> generateNotifications(NotificationTemplate templateEntity, int templateStringIndex,
                                                     Group group, Set<String> memberUids, AccountLog accountLog) {
         logger.debug("generating notifications for {} member", memberUids.size());
-        Instant now = Instant.now();
+        Instant now = Instant.now().plus(templateStringIndex * WELCOME_MSG_INTERVAL, ChronoUnit.MILLIS);
         Set<Notification> notifications = userRepository.findByUidIn(memberUids).stream()
-                .map(user -> fromTemplate(templateEntity, templateString, group.getMembership(user), accountLog, now))
+                .map(user -> fromTemplate(templateEntity, templateStringIndex, group.getMembership(user), accountLog, now))
                 .collect(Collectors.toSet());
         logger.debug("generated {} notifications", notifications.size());
         return notifications;
     }
 
-    private Notification fromTemplate(NotificationTemplate template, String templateString,
+    private Notification fromTemplate(NotificationTemplate template, int templateStringIndex,
                                       Membership membership, AccountLog accountLog, Instant referenceTime) {
         // todo : handle truncating better, handle null delays, handle send only via free
         Notification notification = new GroupWelcomeNotification(membership.getUser(),
-                messageFromTemplateString(templateString, membership, 160), accountLog);
+                messageFromTemplateString(template.getTemplateStrings().get(templateStringIndex), membership, 160), accountLog);
         notification.setSendOnlyAfter(referenceTime.plus(template.getDelayIntervalMillis(), ChronoUnit.MILLIS));
         return notification;
     }
