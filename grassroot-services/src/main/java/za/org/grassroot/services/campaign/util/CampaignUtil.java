@@ -55,15 +55,40 @@ public class CampaignUtil {
         return messageActions;
     }
 
-    public static CampaignMessage processCampaignMessageByAssignmentVariationAndUserInterfaceTypeAndLocaleAndActionType(Campaign campaign, MessageVariationAssignment variationAssignment, UserInterfaceType channel, Locale locale, CampaignActionType action){
+    public static CampaignMessage getCampaignMessageByAssignmentVariationAndUserInterfaceTypeAndLocale(Campaign campaign, MessageVariationAssignment variationAssignment, UserInterfaceType channel, Locale locale){
         if(campaign != null && campaign.getCampaignMessages() != null && !campaign.getCampaignMessages().isEmpty()){
             for(CampaignMessage message: campaign.getCampaignMessages()){
                 if(message.getVariation().equals(variationAssignment) && message.getChannel().equals(channel) && message.getLocale().equals(locale)){
-                    for(CampaignMessageAction campaignMessageAction: message.getCampaignMessageActionSet()){
-                        if(campaignMessageAction.getActionType().equals(action)){
-                            return message;
+                    return message;
+                }
+            }
+        }
+        return null;
+    }
+
+    public static CampaignMessage getNextCampaignMessageByActionType(Campaign campaign, CampaignActionType action, String messageUid){
+        if(campaign != null && campaign.getCampaignMessages() != null && !campaign.getCampaignMessages().isEmpty()){
+            for(CampaignMessage message: campaign.getCampaignMessages()){
+                if(message.getUid().trim().equalsIgnoreCase(messageUid.trim())){
+                    if(message.getCampaignMessageActionSet() != null && !message.getCampaignMessageActionSet().isEmpty()){
+                        for(CampaignMessageAction campaignMessageAction: message.getCampaignMessageActionSet()){
+                            if(campaignMessageAction.getActionType().equals(action)){
+                                return  campaignMessageAction.getActionMessage();
+                            }
                         }
                     }
+                }
+            }
+        }
+        return null;
+    }
+
+    //To do. look at recursive function
+    public static CampaignMessage getCampaignMessageFromCampaignByMessageUid(Campaign campaign, String messageUid){
+        if(campaign != null && campaign.getCampaignMessages() != null && !campaign.getCampaignMessages().isEmpty()){
+            for(CampaignMessage message: campaign.getCampaignMessages()){
+                if(message.getUid().equalsIgnoreCase(messageUid)){
+                    return message;
                 }
             }
         }

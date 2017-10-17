@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.SafetyEvent;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignMessage;
 import za.org.grassroot.core.domain.campaign.CampaignMessageAction;
 import za.org.grassroot.core.domain.task.Event;
@@ -29,6 +30,7 @@ import za.org.grassroot.integration.experiments.ExperimentBroker;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.SafetyEventBroker;
 import za.org.grassroot.services.campaign.CampaignBroker;
+import za.org.grassroot.services.campaign.util.CampaignUtil;
 import za.org.grassroot.services.group.GroupQueryBroker;
 import za.org.grassroot.services.livewire.LiveWireAlertBroker;
 import za.org.grassroot.services.task.EventLogBroker;
@@ -56,7 +58,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -269,7 +270,8 @@ public class USSDHomeController extends USSDController {
             }
             returnMenu = defaultStartMenu(user);
         } else if(isCampaignTrailingCode(trailingDigits)){
-            returnMenu = assembleCampaignResponse(trailingDigits.trim(),user);
+            Campaign campaign = campaignBroker.getCampaignDetailsByCode(trailingDigits);
+            returnMenu = assembleCampaignResponse(campaign,user);
         }
         else {
             Optional<Group> searchResult = groupQueryBroker.findGroupFromJoinCode(trailingDigits.trim());
@@ -498,12 +500,11 @@ public class USSDHomeController extends USSDController {
         return new USSDMenu(message, optionsHomeExit(user, false));
     }
 
-    private USSDMenu assembleCampaignResponse(String campaignCode, User user){
+    private USSDMenu assembleCampaignResponse(Campaign campaign, User user){
         Locale userLocale  = (user != null && user.getLanguageCode() != null)?
                 new Locale(user.getLanguageCode()): Locale.ENGLISH;
-        Set<CampaignMessage> messageSet = campaignBroker.getCampaignMessagesByCampaignCodeAndLocale(campaignCode,
-                MessageVariationAssignment.CONTROL,userLocale, UserInterfaceType.USSD);
-        CampaignMessage campaignMessage =  messageSet.iterator().next();
+        CampaignMessage campaignMessage = CampaignUtil.getCampaignMessageByAssignmentVariationAndUserInterfaceTypeAndLocale(campaign,
+                MessageVariationAssignment.CONTROL, UserInterfaceType.USSD, userLocale);
         String promptMessage = campaignMessage.getMessage();
         Map<String, String> linksMap = new HashMap<>();
         if(campaignMessage.getCampaignMessageActionSet() != null && !campaignMessage.getCampaignMessageActionSet().isEmpty()){
@@ -511,9 +512,9 @@ public class USSDHomeController extends USSDController {
                 String optionKey = USSDCampaignUtil.CAMPAIGN_PREFIX + action.getActionType().name().toLowerCase();
                 String option  = getMessage(optionKey,userLocale.getLanguage());
                 StringBuilder url = new StringBuilder();
-                url.append(USSDCampaignUtil.getCampaignUrls().get(action.getActionType()));
+                url.append(USSDCampaignUtil.getCampaignUrlPrefixs().get(action.getActionType()));
                 url.append(USSDCampaignUtil.CODE_PARAMETER);
-                url.append(campaignCode);
+                url.append(campaign.getCampaignCode());
                 url.append(USSDCampaignUtil.LANGUAGE_PARAMETER);
                 url.append(userLocale.getLanguage());
                 linksMap.put(option,url.toString());
