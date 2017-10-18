@@ -6,22 +6,26 @@ import io.swagger.annotations.ApiParam;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.JpaEntityType;
+import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.dto.task.TaskFullDTO;
+import za.org.grassroot.services.exception.MemberLacksPermissionException;
 import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.MeetingBuilderHelper;
 import za.org.grassroot.services.task.TaskImageBroker;
 import za.org.grassroot.services.user.UserManagementService;
+import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 
 import java.time.Instant;
 import java.util.Set;
 
 @Slf4j
-@RestController
+@RestController @Grassroot2RestController
 @Api("/api/task/create")
 @RequestMapping(value = "/api/task/create")
 public class TaskCreateController {
@@ -79,8 +83,12 @@ public class TaskCreateController {
             helper.taskImageKey(mediaFileUid);
         }
 
-        Meeting createdMeeting = eventBroker.createMeeting(helper);
-        return ResponseEntity.ok(new TaskFullDTO(createdMeeting, userService.load(userUid),
-                createdMeeting.getCreatedDateTime(), false));
+        try {
+            Meeting createdMeeting = eventBroker.createMeeting(helper);
+            return ResponseEntity.ok(new TaskFullDTO(createdMeeting, userService.load(userUid),
+                    createdMeeting.getCreatedDateTime(), false));
+        } catch (AccessDeniedException e) {
+            throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING);
+        }
     }
 }
