@@ -32,6 +32,7 @@ import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.location.UssdLocationServicesBroker;
+import za.org.grassroot.services.geo.GeographicSearchType;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
@@ -44,7 +45,10 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -542,7 +546,7 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
     }
 
     @Override
-    public List<LiveWireAlert> fetchAlertsNearUser(String userUid, GeoLocation location, String createdByMe, Integer radius) {
+    public List<LiveWireAlert> fetchAlertsNearUser(String userUid, GeoLocation location, String createdByMe, Integer radius, GeographicSearchType searchType) {
 
         User user = userRepository.findOneByUid(userUid);
 
@@ -550,14 +554,15 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
             throw new InvalidParameterException("Invalid GeoLocation object.");
         }
 
-        String mineFilter = createdByMe.toLowerCase().equals("mine") ? "l.creatingUser =:user " : " l.creatingUser <>:user ";
+        String mineFilter = searchType.equals(GeographicSearchType.PUBLIC) ? " AND l.creatingUser <>:user "
+                : searchType.equals(GeographicSearchType.PRIVATE) ? " AND l.creatingUser = :user " : "";
 
         Instant lastWeekTime = getLastWeekTime();
 
         String query = "SELECT l FROM LiveWireAlert l" +
                 " WHERE l.sent = true " +
-                " AND creationTime >:lastWeekTime " +
-                " AND " + mineFilter +
+                " AND creationTime > :lastWeekTime" +
+                mineFilter +
                 " AND l.location.latitude " +
                 "      BETWEEN :latpoint  - (:radius / :distance_unit) " +
                 "          AND :latpoint  + (:radius / :distance_unit) " +
@@ -573,22 +578,20 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
 
 
         TypedQuery<LiveWireAlert> typedQuery = entityManager.createQuery(query,LiveWireAlert.class)
-                .setParameter("user",user)
                 .setParameter("radius", (double)radius)
                 .setParameter("distance_unit", KM_PER_DEGREE)
                 .setParameter("latpoint",location.getLatitude())
                 .setParameter("longpoint",location.getLongitude())
                 .setParameter("lastWeekTime",lastWeekTime);
 
-        List<LiveWireAlert> liveWireAlerts = typedQuery.getResultList();
-        if(liveWireAlerts == null){
-            liveWireAlerts = new ArrayList<>();
+        if (!searchType.equals(GeographicSearchType.BOTH)) {
+            typedQuery = typedQuery.setParameter("user",user);
         }
 
-        return liveWireAlerts;
+        return typedQuery.getResultList();
     }
 
-    public Instant getLastWeekTime(){
+    private Instant getLastWeekTime(){
         return Instant.now().minus(7, ChronoUnit.DAYS);
     }
 }

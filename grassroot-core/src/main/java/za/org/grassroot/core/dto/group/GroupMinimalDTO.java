@@ -2,19 +2,25 @@ package za.org.grassroot.core.dto.group;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import lombok.Getter;
+import lombok.Setter;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.InstantToMilliSerializer;
 
 import java.time.Instant;
 import java.time.ZonedDateTime;
+import java.util.Set;
 
+@Getter @Setter
 public class GroupMinimalDTO extends GroupTimeChangedDTO {
 
     private final String name;
     private final String userRole;
     protected Long memberCount;
+    private final Set<Permission> userPermissions;
 
     @JsonSerialize(using = InstantToMilliSerializer.class)
     private Instant lastTaskOrChangeTime;
@@ -24,26 +30,7 @@ public class GroupMinimalDTO extends GroupTimeChangedDTO {
         this.name = group.getName();
         this.userRole = role.getName();
         this.lastTaskOrChangeTime = group.getLatestChangeOrTaskTime();
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public String getUserRole() {
-        return userRole;
-    }
-
-    public void setMemberCount(Long memberCount) {
-        this.memberCount = memberCount;
-    }
-
-    public Long getMemberCount() {
-        return memberCount;
-    }
-
-    public Instant getLastTaskOrChangeTime() {
-        return lastTaskOrChangeTime;
+        this.userPermissions = role.getPermissions();
     }
 
     @JsonIgnore

@@ -40,6 +40,7 @@ public class USSDAdvancedHomeController extends USSDController {
 
     private static final String ROOT_PATH = homePath + moreMenus;
 
+    private static final int PAGE_SIZE = 2;
     private static final Integer searchRadius = 5;
     private static final USSDSection thisSection = USSDSection.HOME;
 
@@ -74,6 +75,7 @@ public class USSDAdvancedHomeController extends USSDController {
     @RequestMapping(value = ROOT_PATH + "/public/mtgs")
     @ResponseBody
     public Request getPublicMeetingsNearUser(@RequestParam(value = phoneNumber) String inputNumber,
+                                             @RequestParam(required = false) Integer page,
                                              @RequestParam(required = false) boolean repeat) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber);
         GeoLocation guessedLocation = objectLocationBroker.fetchBestGuessUserLocation(user.getUid());
@@ -85,7 +87,7 @@ public class USSDAdvancedHomeController extends USSDController {
             log.info("Size of meetings array in home more controller= {}",listOfPublicMeetingsNearUser.size());
             ussdMenu = listOfPublicMeetingsNearUser.isEmpty() ?
                     haveLocationButNoMeetings(user, repeat) :
-                    haveLocationAndMeetings(user, repeat, listOfPublicMeetingsNearUser);
+                    haveLocationAndMeetings(user, repeat, listOfPublicMeetingsNearUser, page == null ? 0 : page);
         } else {
             ussdMenu = haveNoLocation(user, repeat);
         }
@@ -100,7 +102,7 @@ public class USSDAdvancedHomeController extends USSDController {
         Meeting meeting = (Meeting) eventBroker.load(meetingUid);
 
         USSDMenu ussdMenu = new USSDMenu(getMessage(thisSection, "public", promptKey + ".details", new String[] {
-                meeting.getName(), meeting.getDeadlineTime().toString(), meeting.getEventLocation()
+                meeting.getName(), dateTimeFormat.format(meeting.getEventDateTimeAtSAST()), meeting.getEventLocation()
         }, user));
 
         ussdMenu.addMenuOption(moreMenus + "public/mtgs", getMessage(optionsKey + "back", user));
@@ -128,12 +130,22 @@ public class USSDAdvancedHomeController extends USSDController {
         return menuBuilder(menu);
     }
 
-    private USSDMenu haveLocationAndMeetings(User user, boolean repeat, List<ObjectLocation> publicMeetings) {
+    private USSDMenu haveLocationAndMeetings(User user, boolean repeat, List<ObjectLocation> publicMeetings, int pageNumber) {
         final USSDMenu ussdMenu = new USSDMenu(getMessage(thisSection, "public",
                 promptKey + ".list" + (repeat ? ".repeat" : ""), String.valueOf(publicMeetings.size()), user));
-        publicMeetings.forEach(pm -> ussdMenu.addMenuOption(moreMenus + "/public/mtgs/details?meetingUid=" + pm.getUid(),
+        publicMeetings.stream()
+                .skip(pageNumber * PAGE_SIZE)
+                .limit(PAGE_SIZE)
+                .forEach(pm -> ussdMenu.addMenuOption(moreMenus + "/public/mtgs/details?meetingUid=" + pm.getUid(),
                     assembleDescription(pm)));
-        addBackOption(ussdMenu, user);
+        if (publicMeetings.size() > (pageNumber + 1) * PAGE_SIZE) {
+            ussdMenu.addMenuOption(moreMenus + "public/mtgs?page=" + (pageNumber + 1), getMessage(optionsKey + "more", user));
+        }
+        if (pageNumber == 0) {
+            addBackOption(ussdMenu, user);
+        } else {
+            ussdMenu.addMenuOption(moreMenus + "public/mtgs?page=" + (pageNumber - 1), getMessage(optionsKey + "back", user));
+        }
         return ussdMenu;
     }
 
@@ -179,7 +191,7 @@ public class USSDAdvancedHomeController extends USSDController {
     }
 
     private String assembleDescription(ObjectLocation objectLocation) {
-        return objectLocation.getName() + ", at " + objectLocation.getDescription();
+        return objectLocation.getName() + ", at " + objectLocation.getLocationDescription();
     }
 
 }
