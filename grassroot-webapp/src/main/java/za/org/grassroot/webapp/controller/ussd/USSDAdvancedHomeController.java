@@ -102,7 +102,7 @@ public class USSDAdvancedHomeController extends USSDController {
         Meeting meeting = (Meeting) eventBroker.load(meetingUid);
 
         USSDMenu ussdMenu = new USSDMenu(getMessage(thisSection, "public", promptKey + ".details", new String[] {
-                meeting.getName(), meeting.getDeadlineTime().toString(), meeting.getEventLocation()
+                meeting.getName(), dateTimeFormat.format(meeting.getEventDateTimeAtSAST()), meeting.getEventLocation()
         }, user));
 
         ussdMenu.addMenuOption(moreMenus + "public/mtgs", getMessage(optionsKey + "back", user));
@@ -191,7 +191,7 @@ public class USSDAdvancedHomeController extends USSDController {
     }
 
     private String assembleDescription(ObjectLocation objectLocation) {
-        return objectLocation.getName() + ", at " + objectLocation.getDescription();
+        return objectLocation.getName() + ", at " + objectLocation.getLocationDescription();
     }
 
 }
