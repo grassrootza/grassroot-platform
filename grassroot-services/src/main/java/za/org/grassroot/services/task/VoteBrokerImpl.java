@@ -194,7 +194,8 @@ public class VoteBrokerImpl implements VoteBroker {
     private Map<String, Long> calculateMultiOptionResults(Vote vote, List<String> options) {
         Map<String, Long> results = new LinkedHashMap<>();
         List<EventLog> eventLogs = eventLogRepository.findAll(Specifications.where(isResponseToVote(vote)));
-        options.forEach(o -> results.put(o, eventLogs.stream().filter(el -> o.equals(el.getTag())).count()));
+        // logger.info("calculating multi option results, have {} eventlogs, look like {}", eventLogs);
+        options.forEach(o -> results.put(o, eventLogs.stream().filter(el -> o.equalsIgnoreCase(el.getTag())).count()));
         return results;
     }
 
@@ -202,12 +203,14 @@ public class VoteBrokerImpl implements VoteBroker {
         // vote may have been done via old method, so need to do a check, for now, if there are no
         // option responses (note: if no responses at all, it will still return valid result, since we
         // know at this point that it is a yes/no vote)
+
         return eventLogRepository.count(Specifications.where(ofType(EventLogType.VOTE_OPTION_RESPONSE))) == 0 ?
                 calculateOldVoteResult(vote) :
                 calculateMultiOptionResults(vote, optionsForYesNoVote); // will just return
     }
 
     private Map<String, Long> calculateOldVoteResult(Vote vote) {
+
         List<EventLog> eventLogs = eventLogRepository.findAll(Specifications.where(
                 ofType(EventLogType.RSVP)).and(forEvent(vote)));
         Map<String, Long> results = new LinkedHashMap<>();

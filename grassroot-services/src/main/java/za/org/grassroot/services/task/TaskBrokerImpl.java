@@ -408,6 +408,32 @@ public class TaskBrokerImpl implements TaskBroker {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<Task> fetchTasksRequiringUserResponse(String userUid, String userResponse) {
+        Objects.requireNonNull(userUid);
+        User user = userRepository.findOneByUid(userUid);
+
+        List<Task> tasks = new ArrayList<>();
+
+        List<Event> outstandingVotes = eventBroker.getOutstandingResponseForUser(user, EventType.VOTE);
+        List<Event> outstandingYesNoVotes = outstandingVotes.stream()
+                .filter(vote -> vote.getTags() == null || vote.getTags().length == 0)
+                .collect(Collectors.toList());
+
+        List<Event> outstandingOptionsVotes = outstandingVotes.stream()
+                .filter(v -> ((Vote) v).hasOption(userResponse.trim()))
+                .collect(Collectors.toList());
+
+        List<Event> outstandingMeetings = eventBroker.getOutstandingResponseForUser(user, EventType.MEETING);
+
+        tasks.addAll(outstandingYesNoVotes);
+        tasks.addAll(outstandingOptionsVotes);
+        tasks.addAll(outstandingMeetings);
+
+        return tasks;
+    }
+
     private Function<Task, TaskFullDTO> transformToDTO(User user, Map<String, Instant> uidTimeMap) {
         return t-> {
             TaskFullDTO taskFullDTO = new TaskFullDTO(t, user, uidTimeMap.get(t.getUid()), hasUserResponded(t, user));

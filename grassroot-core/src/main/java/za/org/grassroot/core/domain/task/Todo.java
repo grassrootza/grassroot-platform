@@ -1,5 +1,6 @@
 package za.org.grassroot.core.domain.task;
 
+import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.Group;
@@ -62,6 +63,10 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
 
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "todo", orphanRemoval = true)
     private Set<TodoCompletionConfirmation> completionConfirmations = new HashSet<>();
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "todo_type", nullable = false)
+    @Getter private TodoType type;
 
     private Todo() {
         // for JPA

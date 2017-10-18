@@ -95,7 +95,6 @@ public class IncomingSMSController {
     public void receiveSms(@RequestParam(value = FROM_PARAMETER) String phoneNumber,
                            @RequestParam(value = MESSAGE_TEXT_PARAM) String msg) {
 
-
         log.info("Inside IncomingSMSController -" + " following param values were received + ms ="+msg+ " fn= "+phoneNumber);
 
         User user = userManager.findByInputNumber(phoneNumber);
