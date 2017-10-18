@@ -12,6 +12,7 @@ import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.enums.LiveWireAlertDestType;
 import za.org.grassroot.core.enums.LiveWireAlertType;
 import za.org.grassroot.core.enums.UserInterfaceType;
+import za.org.grassroot.services.geo.GeographicSearchType;
 
 import java.time.Instant;
 import java.util.List;
@@ -77,6 +78,6 @@ public interface LiveWireAlertBroker {
     @PreAuthorize("hasRole('ROLE_LIVEWIRE_USER')")
     void reviewAlert(String userUid, String alertUid, List<String> tags, boolean send, List<String> publicListUids);
 
-    List<LiveWireAlert> fetchAlertsNearUser(String userUid, GeoLocation location, String createdByMe, Integer radius);
+    List<LiveWireAlert> fetchAlertsNearUser(String userUid, GeoLocation location, String createdByMe, Integer radius, GeographicSearchType searchType);
 
 }

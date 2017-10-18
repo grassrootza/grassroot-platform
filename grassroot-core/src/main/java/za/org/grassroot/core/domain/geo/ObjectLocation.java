@@ -45,6 +45,9 @@ public class ObjectLocation {
     @Transient
     private Instant createdDateTime;
 
+    @Transient
+    private String locationDescription;
+
     private int groupSize;
 
     private int groupTasks;
@@ -69,19 +72,21 @@ public class ObjectLocation {
                 meeting.getName(), meetingLocation.getLocation().getLatitude(),
                 meetingLocation.getLocation().getLongitude(), meetingLocation.getScore(),
                 "MEETING",
-                "<strong>Where: </strong>" + meeting.getEventLocation() +
-                "<br/><strong>Date and Time: </strong>" + meeting.getEventStartDateTime() +
-                "<br/><strong>Creation Date: </strong>" + meeting.getCreatedDateTime(),
+                "Where: " + meeting.getEventLocation() +
+                "Date and Time: " + meeting.getEventStartDateTime() +
+                "Creation Date: " + meeting.getCreatedDateTime(),
                 meeting.isPublic(),
                 meeting.getAncestorGroup().getMemberships().size(),
                 (meeting.getAncestorGroup().getDescendantEvents().size() + meeting.getAncestorGroup().getDescendantTodos().size()));
+        this.locationDescription = meeting.getEventLocation();
     }
 
     public ObjectLocation (String uid, String name, double latitude, double longitude, float score, String type, boolean isPublic) {
         this(uid, name, latitude, longitude, score, type, isPublic, 0, 0);
     }
 
-    public ObjectLocation (String uid, String name, double latitude, double longitude, float score, String type, String description, boolean isPublic) {
+    public ObjectLocation (String uid, String name, double latitude, double longitude, float score, String type,
+                           String description, boolean isPublic) {
         this(uid, name, latitude, longitude, score, type, description, isPublic, 0, 0);
     }
 

@@ -1,13 +1,14 @@
 package za.org.grassroot.core.dto.group;
 
+import lombok.Getter;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Membership;
-import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.MembershipDTO;
 
 import java.util.Set;
 import java.util.stream.Collectors;
 
+@Getter
 public class GroupFullDTO extends GroupHeavyDTO {
 
     private final String joinCode;
@@ -23,15 +24,4 @@ public class GroupFullDTO extends GroupHeavyDTO {
                 .map(MembershipDTO::new).collect(Collectors.toSet());
     }
 
-    public String getJoinCode() {
-        return joinCode;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public Set<MembershipDTO> getMembers() {
-        return members;
-    }
 }

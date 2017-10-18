@@ -1,8 +1,11 @@
 package za.org.grassroot.services.task;
 
+import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.JpaEntityType;
+import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.task.EventReminderType;
 import za.org.grassroot.core.domain.task.MeetingBuilder;
 import za.org.grassroot.core.domain.task.MeetingContainer;
@@ -22,12 +25,13 @@ public class MeetingBuilderHelper {
 
     private static final Logger logger = LoggerFactory.getLogger(MeetingBuilderHelper.class);
 
-    private String userUid;
-    private String parentUid;
-    private JpaEntityType parentType;
+    @Getter private String userUid;
+    @Getter private String parentUid;
+    @Getter private JpaEntityType parentType;
 
-    private String name;
+    @Getter private String name;
     private LocalDateTime startDateTime;
+    private Instant startDateTimeInstant;
 
     private String eventLocation;
     private boolean includeSubGroups = false;
@@ -37,7 +41,10 @@ public class MeetingBuilderHelper {
     private MeetingImportance importance;
 
     private Set<String> assignedMemberUids;
-    private String taskImageKey;
+    @Getter private String taskImageKey;
+
+    private boolean isPublic = false;
+    private GeoLocation userLocation;
 
     public MeetingBuilderHelper name(String name) {
         this.name = name;
@@ -46,6 +53,11 @@ public class MeetingBuilderHelper {
 
     public MeetingBuilderHelper startDateTime(LocalDateTime startDateTime) {
         this.startDateTime = startDateTime;
+        return this;
+    }
+
+    public MeetingBuilderHelper startDateTimeInstant(Instant startDateTimeInstant) {
+        this.startDateTimeInstant = startDateTimeInstant;
         return this;
     }
 
@@ -104,35 +116,30 @@ public class MeetingBuilderHelper {
         return this;
     }
 
-    public String getUserUid() {
-        return userUid;
+    public MeetingBuilderHelper isPublic(boolean isPublic) {
+        this.isPublic = isPublic;
+        return this;
     }
 
-    public String getParentUid() {
-        return parentUid;
+    public MeetingBuilderHelper userLocation(GeoLocation userLocation) {
+        this.userLocation = userLocation;
+        return this;
     }
 
-    public JpaEntityType getParentType() {
-        return parentType;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public LocalDateTime getStartDateTime() {
-        return startDateTime;
-    }
+    /*
+    Couple of custom getters
+     */
 
     public EventReminderType getReminderType() {
         return reminderType == null ? EventReminderType.DISABLED : reminderType;
     }
 
     public Instant getStartInstant() {
-        return convertToSystemTime(startDateTime, getSAST());
+        if (startDateTimeInstant == null) {
+            startDateTimeInstant = convertToSystemTime(startDateTime, getSAST());
+        }
+        return startDateTimeInstant;
     }
-
-    public String getTaskImageKey() { return taskImageKey; }
 
     public void validateMeetingFields() {
         Objects.requireNonNull(userUid);

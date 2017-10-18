@@ -6,6 +6,7 @@ import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
 import za.org.grassroot.webapp.model.rest.wrappers.GenericResponseWrapper;
+import za.org.grassroot.webapp.model.rest.wrappers.PermissionLackingWrapper;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapperImpl;
 
@@ -66,6 +67,10 @@ public class RestUtil {
 
     public static ResponseEntity<ResponseWrapper> accessDeniedResponse() {
         return new ResponseEntity<>(new ResponseWrapperImpl(FORBIDDEN, RestMessage.PERMISSION_DENIED, RestStatus.FAILURE), FORBIDDEN);
+    }
+
+    public static ResponseEntity<ResponseWrapper> lackPermissionResponse(Permission permission) {
+        return new ResponseEntity<>(new PermissionLackingWrapper(FORBIDDEN, permission, RestStatus.FAILURE), FORBIDDEN);
     }
 
     public static ResponseEntity<ResponseWrapper> messageOkayResponse(RestMessage message) {

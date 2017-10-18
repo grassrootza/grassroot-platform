@@ -6,7 +6,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.domain.geo.*;
+import za.org.grassroot.core.domain.geo.GeoLocation;
+import za.org.grassroot.core.domain.geo.ObjectLocation;
+import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
+import za.org.grassroot.core.domain.geo.UserLocationLog;
 import za.org.grassroot.core.enums.LocationSource;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.util.DateTimeUtil;
@@ -161,9 +164,7 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
         final String membershipClause = onlyPublicMeetings ? "NOT IN" : "IN ";
 
         String strQuery =
-                "SELECT NEW za.org.grassroot.core.domain.geo.ObjectLocation(" +
-                        "  m.uid, m.name, l.location.latitude, l.location.longitude, l.score, 'MEETING', " +
-                        "  CONCAT('Where: ', m.eventLocation, 'Date and Time: ', m.eventStartDateTime), m.isPublic) " +
+                "SELECT NEW za.org.grassroot.core.domain.geo.ObjectLocation(m, l) " +
                         "FROM MeetingLocation l INNER JOIN l.meeting m " +
                         "WHERE m.ancestorGroup " + membershipClause + " (SELECT mm.group FROM Membership mm WHERE mm.user = :user) " +
                         (onlyPublicMeetings ? " AND m.isPublic = true " : "") + "AND " +
@@ -186,62 +187,18 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
         query.setParameter("latpoint",location.getLatitude()).setParameter("longpoint",location.getLongitude());
     }
 
-
     @Override
-    public List<ObjectLocation> fetchUserGroupsNearThem(String userUid, GeoLocation location, Integer radiusMetres,
-                                                        String filterTerm) throws InvalidParameterException {
-        User user = userRepository.findOneByUid(userUid);
+    public List<ObjectLocation> fetchGroupsNearby(String userUid, GeoLocation location, Integer radius, String filterTerm, GeographicSearchType searchType) throws InvalidParameterException {
 
         assertGeolocation(location);
-
-        List<ObjectLocation> objectLocations;
-        String query =
-                "SELECT NEW za.org.grassroot.core.domain.geo.ObjectLocation( " +
-                        "g.uid, g.groupName, l.location.latitude, l.location.longitude, l.score, 'GROUP', g.description, g.discoverable) " +
-                        "FROM GroupLocation l " +
-                        "INNER JOIN l.group g " +
-                        "INNER JOIN g.parent m, Membership mm " +
-                        "WHERE l.location.latitude " +
-                        "    BETWEEN :latpoint  - (:radiusMetres / :distance_unit) " +
-                        "        AND :latpoint  + (:radiusMetres / :distance_unit) " +
-                        " AND l.location.longitude " +
-                        "    BETWEEN :longpoint - (:radiusMetres / (:distance_unit * COS(RADIANS(:latpoint)))) " +
-                        "        AND :longpoint + (:radiusMetres / (:distance_unit * COS(RADIANS(:latpoint)))) " +
-                        " AND :radiusMetres >= (:distance_unit " +
-                        "         * DEGREES(ACOS(COS(RADIANS(:latpoint)) " +
-                        "         * COS(RADIANS(l.location.latitude)) " +
-                        "         * COS(RADIANS(:longpoint - l.location.longitude)) " +
-                        "         + SIN(RADIANS(:latpoint)) " +
-                        "         * SIN(RADIANS(l.location.latitude))))) " +
-                        " AND mm.user = :user " +
-                        " AND g.description LIKE LOWER (CONCAT('%',:term , '%'))";
-
-        TypedQuery<ObjectLocation> objectLocationTypedQuery = entityManager.createQuery(query,ObjectLocation.class)
-                .setParameter("user",user)
-                .setParameter("radiusMetres", (double)radiusMetres)
-                .setParameter("distance_unit", KM_PER_DEGREE)
-                .setParameter("term",filterTerm)
-                .setParameter("latpoint",location.getLatitude())
-                .setParameter("longpoint",location.getLongitude());
-
-        objectLocations = objectLocationTypedQuery.getResultList();
-        return objectLocations;
-    }
-
-    @Override
-    public List<ObjectLocation> fetchGroupsNearby(GeoLocation location, Integer radius, String searchTerm, String filterTerm, String userUid) throws InvalidParameterException {
-
-        assertGeolocation(location);
-
-        Integer publicPrivateOrBoth = searchTerm.toLowerCase().equals("all") ? 0 : (searchTerm.toLowerCase().equals("public") ? 1 : -1);
 
         Set<ObjectLocation> objectLocationSet = new HashSet<>();
 
-        if (publicPrivateOrBoth > PRIVATE_LEVEL) {
+        if (searchType.toInt() > PRIVATE_LEVEL) {
             objectLocationSet.addAll(fetchPublicGroupsNearbyWithLocation(location,radius));
         }
 
-        if (publicPrivateOrBoth < PUBLIC_LEVEL) {
+        if (searchType.toInt() < PUBLIC_LEVEL) {
             objectLocationSet.addAll(fetchGroupsNearbyWithLocation(location,radius,PRIVATE_LEVEL));
         }
 
