@@ -14,6 +14,10 @@ import za.org.grassroot.services.geo.ObjectLocationBroker;
 import za.org.grassroot.services.livewire.LiveWireAlertBroker;
 import za.org.grassroot.webapp.controller.rest.RestAbstractUnitTest;
 
+import java.security.InvalidParameterException;
+
+import static org.mockito.Mockito.when;
+
 public class AroundMeRestControllerTest extends RestAbstractUnitTest {
 
     @InjectMocks
@@ -49,7 +53,8 @@ public class AroundMeRestControllerTest extends RestAbstractUnitTest {
         User user = userRepository.findOneByUid(uidParameter);
         String testSearchTerm = "searchTerm";
 
-        Assert.assertNotNull(objectLocationBroker.fetchGroupsNearby(testLocation,testRadiusMetres,testSearchTerm,testFilterTerm,uidParameter));
+        when(!testLocation.isValid()).thenThrow(new InvalidParameterException("Invalid Geolocation object"));
+        //Assert.assertNotNull(objectLocationBroker.fetchGroupsNearby(user.getUid(),testLocation,testRadiusMetres,testFilterTerm,GeographicSearchType.BOTH));
         Assert.assertNotNull(objectLocationBroker.fetchMeetingLocationsNearUser(user,testLocation,testRadiusMetres, GeographicSearchType.PUBLIC,testSearchTerm));
     }
 
@@ -57,7 +62,7 @@ public class AroundMeRestControllerTest extends RestAbstractUnitTest {
     public void getPublicGroupsNearUserShouldWork() throws Exception{
         GeoLocation testLocation = new GeoLocation(testLat,testLong);
 
-        Assert.assertNotNull(objectLocationBroker.fetchUserGroupsNearThem(uidParameter,testLocation,testRadiusMetres,testFilterTerm));
+        Assert.assertNotNull(objectLocationBroker.fetchGroupsNearby(uidParameter,testLocation,testRadiusMetres,testFilterTerm,GeographicSearchType.PUBLIC));
     }
 
     @Test
@@ -65,7 +70,7 @@ public class AroundMeRestControllerTest extends RestAbstractUnitTest {
         GeoLocation testLocation = new GeoLocation(testLat,testLong);
         String testCreatedByMe = "createdByMe";
 
-        Assert.assertNotNull(liveWireAlertBroker.fetchAlertsNearUser(uidParameter,testLocation,testCreatedByMe,testRadiusMetres));
+        Assert.assertNotNull(liveWireAlertBroker.fetchAlertsNearUser(uidParameter,testLocation,testCreatedByMe,testRadiusMetres,GeographicSearchType.PUBLIC));
     }
 
 }
