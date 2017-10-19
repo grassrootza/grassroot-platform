@@ -68,6 +68,9 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
     @Column(name = "todo_type", nullable = false)
     @Getter private TodoType type;
 
+    @Column(name = "response_tag")
+    @Getter private String responseTag;
+
     private Todo() {
         // for JPA
     }
