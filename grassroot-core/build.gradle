@@ -1,21 +1,46 @@
-//plugins {
-//    id "com.jfrog.bintray" version "1.7.3"
-//}
+plugins {
+    id "com.jfrog.bintray" version "1.7.3"
+}
+apply plugin: 'maven-publish'
 
 description = 'Grassroot Core'
 
 
-//bintray {
-//    user = 'bintray_user'
-//    key = 'bintray_api_key'
-//    pkg {
-//        repo = 'generic'
-//        name = 'gradle-project'
-//        userOrg = 'bintray_user'
-//        licenses = ['Apache-2.0']
-//        vcsUrl = 'https://github.com/bintray/gradle-bintray-plugin.git'
-//    }
-//}
+
+
+publishing {
+    publications {
+        MyPublication(MavenPublication) {
+            from components.java
+            groupId 'za.org.grassroot'
+            artifactId 'grassroot-core'
+            version "${version}"
+        }
+    }
+}
+
+
+bintray {
+    user = hasProperty('bintray_user') ? getProperty('bintray_user') : ''
+    key = hasProperty('bintray_api_key') ? getProperty('bintray_api_key') : ''
+    pkg {
+
+        repo = 'grassroot-platform'
+        name = 'grassroot-core'
+        licenses = ['Apache-2.0']
+        userOrg = 'grassrootza'
+        vcsUrl = 'https://github.com/grassrootza/grassroot-platform'
+
+        version {
+            name = "${version}"
+            desc = "Grassroot core module, version ${version}"
+            released  = new Date()
+        }
+    }
+    publish = true
+    publications = ['MyPublication']
+}
+
 
 dependencies {
 

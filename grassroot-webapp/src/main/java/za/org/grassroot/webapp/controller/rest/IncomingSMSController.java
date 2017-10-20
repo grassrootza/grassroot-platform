@@ -106,8 +106,8 @@ public class IncomingSMSController {
             return;
         }
 
-        EventRSVPResponse response = EventRSVPResponse.fromString(msg);
-        boolean isYesNoResponse = response == EventRSVPResponse.YES || response == EventRSVPResponse.NO || response == EventRSVPResponse.MAYBE;
+        EventRSVPResponse responseType = EventRSVPResponse.fromString(msg);
+        boolean isYesNoResponse = responseType == EventRSVPResponse.YES || responseType == EventRSVPResponse.NO || responseType == EventRSVPResponse.MAYBE;
 
         List<Event> outstandingVotes = eventBroker.getOutstandingResponseForUser(user, EventType.VOTE);
         List<Event> outstandingYesNoVotes = outstandingVotes.stream()
@@ -120,20 +120,23 @@ public class IncomingSMSController {
 
         List<Event> outstandingMeetings = eventBroker.getOutstandingResponseForUser(user, EventType.MEETING);
 
-        if (isYesNoResponse && !outstandingMeetings.isEmpty())  // user sent yes-no response and there is a meeting awaiting yes-no response
-            eventLogManager.rsvpForEvent(outstandingMeetings.get(0).getUid(), user.getUid(), response); // recording rsvp for meeting
-
-        else if (isYesNoResponse && !outstandingYesNoVotes.isEmpty()) // user sent yes-no response and there is a vote awaiting yes-no response
+        if (isYesNoResponse && !outstandingMeetings.isEmpty()) {  // user sent yes-no response and there is a meeting awaiting yes-no response
+            log.info("User response is {}, type {} and there are outstanding meetings for that user. Recording RSVP...", trimmedMsg, responseType);
+            eventLogManager.rsvpForEvent(outstandingMeetings.get(0).getUid(), user.getUid(), responseType); // recording rsvp for meeting
+        } else if (isYesNoResponse && !outstandingYesNoVotes.isEmpty()) { // user sent yes-no response and there is a vote awaiting yes-no response
+            log.info("User response is {}, type {} and there are outstanding YES_NO votes for that user. Recording vote...", trimmedMsg, responseType);
             voteBroker.recordUserVote(user.getUid(), outstandingYesNoVotes.get(0).getUid(), trimmedMsg); // recording user vote
+        }
 
         else if (!outstandingOptionsVotes.isEmpty()) { // user sent something other then yes-no, and there is a vote that has this option (tag)
+            log.info("User response is {}, type {} and there are outstanding votes with custom option matching user's answer. Recording vote...", trimmedMsg, responseType);
             Event vote = outstandingOptionsVotes.get(0);
             String option = getVoteOption(trimmedMsg, vote);
             voteBroker.recordUserVote(user.getUid(), vote.getUid(), option); // recording user vote
-        }
-
-        else // we have not found any meetings or votes that this could be response to
+        } else {// we have not found any meetings or votes that this could be response to
+            log.info("User response is {}, type {} and there are no outstanding meetings or votes this answer is. Recording vote...", trimmedMsg, responseType);
             handleUnknownResponse(user, trimmedMsg);
+        }
 
     }
 
@@ -166,8 +169,10 @@ public class IncomingSMSController {
 
     private void handleUnknownResponse(User user, String trimmedMsg) {
 
+        log.info("Handling unexpected user SMS message");
         notifyUnableToProcessReply(user);
 
+        log.info("Recording  unexpected user SMS message user log.");
         UserLog userLog = new UserLog(user.getUid(), UserLogType.SENT_UNEXPECTED_SMS_MESSAGE,
                 trimmedMsg,
                 UserInterfaceType.INCOMING_SMS);
