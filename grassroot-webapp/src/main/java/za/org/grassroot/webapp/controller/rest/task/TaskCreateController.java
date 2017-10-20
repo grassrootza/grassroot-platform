@@ -39,7 +39,7 @@ public class TaskCreateController {
         this.eventBroker = eventBroker;
     }
 
-    @RequestMapping(value = "/create/{parentType}/{userUid}/{parentUid}", method = RequestMethod.POST)
+    @RequestMapping(value = "/meeting/{userUid}/{parentType}/{parentUid}", method = RequestMethod.POST)
     @ApiOperation(value = "Call a meeting", notes = "Creates a meeting, that starts at the specified date and time, passed in " +
             "as epoch millis. The first six params are necessary, the rest are optional")
     public ResponseEntity<TaskFullDTO> createMeeting(@PathVariable String userUid,
