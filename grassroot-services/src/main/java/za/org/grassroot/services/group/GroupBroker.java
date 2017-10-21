@@ -48,6 +48,10 @@ public interface GroupBroker {
 
     void notifyOrganizersOfJoinCodeUse(Instant periodStart, Instant periodEnd);
 
+    void asyncAddMemberships(String initiatorUid, String groupUid, Set<MembershipInfo> membershipInfos,
+                             boolean duringGroupCreation, boolean createWelcomeNotifications);
+
+
     void removeMembers(String userUid, String groupUid, Set<String> memberUids);
 
     void unsubscribeMember(String userUid, String groupUid);

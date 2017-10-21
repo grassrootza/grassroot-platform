@@ -10,6 +10,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
+import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Todo;
@@ -27,7 +28,6 @@ import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
-import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
 
@@ -89,7 +89,7 @@ public class TodoRepositoryTest {
     public void shouldSaveAndRetrieveLogBookAssignedToUserAndCompleted()  {
         User user = userRepository.save(new User("001111145"));
         Group group = new Group("test action", user);
-        group.addMember(user);
+        group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER);
         groupRepository.save(group);
 
         Todo lb1 = new Todo(user, group, "assigned 1", addHoursFromNow(2), 60, null, 3, true);
@@ -179,7 +179,7 @@ public class TodoRepositoryTest {
     public void shouldRetrieveTodosWithTimeChanged() {
         User user = userRepository.save(new User("0601110000"));
         Group group = new Group("test", user);
-        group.addMember(user);
+        group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER);
         groupRepository.save(group);
 
         Todo todo1 = todoRepository.save(new Todo(user, group, "firstOne", addHoursFromNow(2), 60, null, 3, true));

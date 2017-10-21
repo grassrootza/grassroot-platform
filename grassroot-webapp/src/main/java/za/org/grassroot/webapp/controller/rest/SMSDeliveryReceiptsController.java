@@ -19,15 +19,11 @@ import za.org.grassroot.webapp.model.SMSDeliveryStatus;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 
-/**
- * Created by paballo on 2016/02/17.
- */
+
 @Api("/api/inbound/sms/")
 @RestController
 @RequestMapping("/api/inbound/sms/")
@@ -38,18 +34,13 @@ public class SMSDeliveryReceiptsController {
     private final NotificationService notificationService;
 
     private static final String FROM_PARAMETER = "fn";
-    private static final String MESSAGE_TEXT_PARAM = "ms";
-
     private static final String TO_PARAMETER = "tn";
     private static final String SUCCESS_PARAMETER = "sc";
     private static final String REF_PARAMETER = "rf";
     private static final String STATUS_PARAMETER = "st";
     private static final String TIME_PARAMETER = "ts";
 
-    private static final Duration NOTIFICATION_WINDOW = Duration.of(6, ChronoUnit.HOURS);
-
     private LinkedBlockingQueue<DeliveryReceipt> queue = new LinkedBlockingQueue<>();
-
     private List<Worker> workers = new ArrayList<>();
 
 
@@ -105,7 +96,7 @@ public class SMSDeliveryReceiptsController {
 
     @Getter
     @AllArgsConstructor
-    class DeliveryReceipt {
+    private class DeliveryReceipt {
         private String messageKey;
         private Integer status;
     }
