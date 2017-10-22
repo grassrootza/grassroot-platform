@@ -91,7 +91,7 @@
 <div th:fragment="submit_cancel_buttons (submit_label, cancel_url)">
   <div class="form-group pull-right top-buffer">
     <a th:href="${cancel_url}" role="button" class="btn default-button btn-neutral">Cancel</a>
-    <button type="submit" th:text="${submit_label}" class="btn default-button">Submit</button>
+    <button id="submitButton" type="submit" th:text="${submit_label}" class="btn default-button">Submit</button>
   </div>
 </div>
 

@@ -31,7 +31,15 @@
             <div th:replace="~{form_fragments :: enum_selector('Alert type', 'type', ${types}, 'web.livewire.alert.type')}"></div>
             <div id="group_selector" th:include="~{form_fragments :: entity_selector ('Group', 'group')}"></div>
             <div id="mtg_selector" th:include="~{form_fragments :: entity_selector ('Meeting', 'meeting')}"></div>
-            <div th:replace="~{form_fragments :: file_upload('Image for the alert (optional)', 'image', 'image/*')}"></div>
+            <div id="img_selector" th:replace="~{form_fragments :: file_upload('Image for the alert (optional)', 'image', 'image/*')}"></div>
+            <div id="progress-holder" class="form-group">
+              <div id="progress" class="progress">
+                <div class="progress-bar" role="progressbar" aria-valuenow="70"
+                     aria-valuemin="0" aria-valuemax="100" style="width:0%">
+                  0%
+                </div>
+              </div>
+            </div>
             <div th:if="${userHasList}">
               <div th:replace="~{form_fragments :: enum_selector('Destination', 'destination', ${destinations}, 'web.livewire.alert.dest')}"></div>
             </div>
@@ -41,6 +49,7 @@
             </div>
 
             <div th:include="~{form_fragments :: submit_cancel_buttons('Create', '/home')}"></div>
+            <input type="hidden" id="imageUid" name="imageUid" />
           </form>
         </div>
       </div>
@@ -50,6 +59,10 @@
 </main>
 
 <div layout:fragment="script-container">
+
+  <script th:src="@{/js/lib/jquery.ui.widget.min.js}"></script>
+  <script th:src="@{/js/lib/jquery.iframe-transport.min.js}"></script>
+  <script th:src="@{/js/lib/jquery.fileupload.min.js}"></script>
 
   <script th:inline="javascript">
 
@@ -89,6 +102,48 @@
         groupSel.hide();
         $('#type option[value="INSTANT"]').prop('disabled', true);
       }
+
+      var token = $("meta[name='_csrf']").attr("content");
+      var header = $("meta[name='_csrf_header']").attr("content");
+
+      var progressContainer = $("#progress-holder");
+      var progressBar = $("#progress .progress-bar");
+
+      var submitButton = $("#submitButton");
+
+      progressContainer.hide();
+
+      $('#image').fileupload({
+        url: /* [[@{'/livewire/alert/create/image/add'}]] */ "create/image/add",
+        dataType: 'json',
+        beforeSend: function(xhr) {
+          console.log("uploading image!");
+          progressContainer.show();
+          submitButton.attr('disabled', 'disabled');
+          xhr.setRequestHeader(header, token);
+        },
+        progressall: function(e, data) {
+          var progress = parseInt(data.loaded / data.total * 100, 10);
+          progressBar.css(
+            'width',
+            progress + '%'
+          );
+          progressBar.text(progress + '%');
+        },
+        done: function (e, data) {
+          console.log("uploaded! -- uid : " + data.result.uid);
+          $("#imageUid").val(data.result.uid);
+          submitButton.removeAttr('disabled');
+          $("#img_selector").hide();
+          $("#image").remove();
+          progressBar.text('Done!');
+        },
+        fail: function (e, data) {
+          console.log("Failed!");
+          progressBar.text('Sorry, failed!');
+          submitButton.removeAttr('disabled');
+        }
+      });
 
     })
 

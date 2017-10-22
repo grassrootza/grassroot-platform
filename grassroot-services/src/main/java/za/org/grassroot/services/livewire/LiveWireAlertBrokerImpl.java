@@ -296,7 +296,7 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
 
         User user = userRepository.findOneByUid(userUid);
         LiveWireAlert alert = alertRepository.findOneByUid(alertUid);
-        validateCreatingUser(user, alert);
+        validateCreatingOrReviewUser(user, alert);
 
         alert.setHeadline(headline);
     }
@@ -310,9 +310,23 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
 
         User user = userRepository.findOneByUid(userUid);
         LiveWireAlert alert = alertRepository.findOneByUid(alertUid);
-        validateCreatingUser(user, alert);
+        validateCreatingOrReviewUser(user, alert);
 
         alert.setDescription(description);
+    }
+
+    @Override
+    @Transactional
+    public void addMediaFile(String userUid, String alertUid, MediaFileRecord mediaFileRecord) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(alertUid);
+        Objects.requireNonNull(mediaFileRecord);
+
+        User user = userRepository.findOneByUid(userUid);
+        LiveWireAlert alert = alertRepository.findOneByUid(alertUid);
+        validateCreatingOrReviewUser(user, alert);
+
+        alert.addMediaFile(mediaFileRecord);
     }
 
     @Override
@@ -509,6 +523,13 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
         Objects.requireNonNull(alert);
         if (!alert.getCreatingUser().equals(user)) {
             throw new AccessDeniedException("Only the user creating the alert can perform that action");
+        }
+    }
+
+    private void validateCreatingOrReviewUser(User user, LiveWireAlert alert) throws AccessDeniedException {
+        logger.info("user UID = {}, alert creating user = {}", user, alert);
+        if (!alert.getCreatingUser().equals(user) && !canUserRelease(user.getUid())) {
+            throw new AccessDeniedException("Only the user creating the alert can do that, or a reviewer");
         }
     }
 

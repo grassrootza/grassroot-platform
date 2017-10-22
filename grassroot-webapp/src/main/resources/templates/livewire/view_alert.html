@@ -23,7 +23,7 @@
           <div class="container-fluid alert-top-buttons">
             <div class="row">
               <div class="col-md-4">
-                <button th:if="${canRelease}" type="button" class="btn default-button btn-neutral" data-toggle="modal" data-target="#release_alert_modal">Release</button>
+                <button th:if="${canRelease}" id="releaseBtn" type="button" class="btn default-button btn-neutral" data-toggle="modal" data-target="#release_alert_modal">Release</button>
               </div>
               <div class="col-md-4">
                 <button th:if="${canRelease}" type="button" class="btn default-button btn-neutral" data-toggle="modal" data-target="#block_alert_modal">Block</button>
@@ -40,12 +40,12 @@
 
   <section class="grassroot-form">
     <div class="container task-details">
-      <div th:replace="~{layout :: block_row('headline', 'Headline', ${alert.headline})}"></div>
-      <div th:replace="~{layout :: block_row('status', 'Status', ${status})}"></div>
-      <div th:replace="~{layout :: block_row('contact_person', 'Contact', ${alert.contactNameNullSafe + ', ' + alert.contactNumberFormatted})}"></div>
-      <div th:replace="~{layout :: block_row('group_descrption', 'Created time', ${#temporals.format(alert.creationTimeAtSAST, 'h:mm a, dd MMMM')})}"></div>
-      <div th:replace="~{layout :: block_row('description', 'Description', ${alert.description})}"></div>
-      <div th:replace="~{layout :: block_row('backing_entity', 'Related to', ${backingEntityDesc})}"></div>
+      <div th:replace="~{fragments :: block_row_modal('headline', 'Headline', ${alert.headline}, 'Edit', '#headlineModal')}"></div>
+      <div th:replace="~{fragments :: block_row('status', 'Status', ${status})}"></div>
+      <div th:replace="~{fragments :: block_row('contact_person', 'Contact', ${alert.contactNameNullSafe + ', ' + alert.contactNumberFormatted})}"></div>
+      <div th:replace="~{fragments :: block_row('group_descrption', 'Created time', ${#temporals.format(alert.creationTimeAtSAST, 'h:mm a, dd MMMM')})}"></div>
+      <div th:replace="~{fragments :: block_row_modal('description', 'Description', ${alert.description}, 'Edit', '#descriptionModal')}"></div>
+      <div th:replace="~{fragments :: block_row('backing_entity', 'Related to', ${backingEntityDesc})}"></div>
       <div class="row">
         <div class="col-md-10 col-md-offset-1 col-sm-10 col-sm-offset-1 col-xs-12">
           <div class="row detail-row">
@@ -59,13 +59,71 @@
                 </ul>
               </p>
               <p class="description" th:unless="${alert.hasMediaFiles()}">None</p>
+              <div id="img_selector" th:replace="~{form_fragments :: file_upload('Add image', 'image', 'image/*')}"></div>
+              <div id="progress-holder" class="form-group">
+                <div id="progress" class="progress">
+                  <div class="progress-bar" role="progressbar" aria-valuenow="70"
+                       aria-valuemin="0" aria-valuemax="100" style="width:0%">
+                    0%
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
-      <div th:replace="~{layout :: block_row('tags', 'Tags', ${alert.printTags()})}"></div>
+      <div th:replace="~{fragments :: block_row('tags', 'Tags', ${alert.printTags()})}"></div>
     </div>
 
+    <div class="modal fade" id="headlineModal" tabindex="-1" role="dialog" aria-labelledby="headlineModalLabel">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title" id="headlineModalLabel">Change headline</h4>
+          </div>
+          <form th:action="@{modify/headline}" method="post">
+            <input type="hidden" name="alertUid" th:value="${alert.uid}" />
+            <div class="modal-body">
+              <div class="form-group">
+                <label for="headline_input" class="control-label">Edit the headline below:</label>
+                <input name="headline" id="headline_input" type="text" class="form-control input-lg"
+                       th:value="${alert.headline}" />
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn default-button btn-neutral" data-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn default-button btn-negative">Edit</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="descriptionModal" tabindex="-1" role="dialog" aria-labelledby="descriptionModalLabel">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title" id="descriptionModalLabel">Change description</h4>
+          </div>
+          <form th:action="@{modify/description}" method="post">
+            <input type="hidden" name="alertUid" th:value="${alert.uid}" />
+            <div class="modal-body">
+              <div class="form-group">
+                <label for="description_text" class="control-label">Edit the description below:</label>
+                <textarea name="description" id="description_text" class="form-control input-lg"
+                          th:value="${alert.description}"></textarea>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn default-button btn-neutral" data-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn default-button btn-negative">Edit</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
 
     <div class="modal fade" id="release_alert_modal" tabindex="-1" role="dialog">
       <div class="modal-dialog" role="document">
@@ -129,6 +187,60 @@
   </section>
 
 </main>
+
+<div layout:fragment="script-container">
+
+  <script th:src="@{/js/lib/jquery.ui.widget.min.js}"></script>
+  <script th:src="@{/js/lib/jquery.iframe-transport.min.js}"></script>
+  <script th:src="@{/js/lib/jquery.fileupload.min.js}"></script>
+
+  <script th:inline="javascript">
+
+    $(document).ready(function() {
+      var token = $("meta[name='_csrf']").attr("content");
+      var header = $("meta[name='_csrf_header']").attr("content");
+
+      var progressContainer = $("#progress-holder");
+      var progressBar = $("#progress .progress-bar");
+
+      var releaseButton = $("#releaseBtn");
+
+      progressContainer.hide();
+
+      $('#image').fileupload({
+        url: /* [[@{'modify/images/add'}]] */ "modify/images/add",
+        formData: { alertUid: [[${alert.uid}]] },
+        beforeSend: function(xhr) {
+          progressContainer.show();
+          releaseButton.attr('disabled', 'disabled');
+          xhr.setRequestHeader(header, token);
+        },
+        progressall: function(e, data) {
+          var progress = parseInt(data.loaded / data.total * 100, 10);
+          progressBar.css(
+            'width',
+            progress + '%'
+          );
+          progressBar.text(progress + '%');
+        },
+        done: function (e, data) {
+          releaseButton.removeAttr('disabled');
+          $("#img_selector").hide();
+          $("#image").remove();
+          progressBar.text('Done!');
+          location.reload();
+        },
+        fail: function (e, data) {
+          console.log("Failed!");
+          progressBar.text('Sorry, that failed');
+          releaseButton.removeAttr('disabled');
+        }
+      })
+
+    })
+
+  </script>
+</div>
 
 </body>
 </html>
