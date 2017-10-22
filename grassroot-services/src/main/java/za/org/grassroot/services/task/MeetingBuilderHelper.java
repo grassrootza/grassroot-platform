@@ -145,9 +145,10 @@ public class MeetingBuilderHelper {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(parentUid);
         Objects.requireNonNull(parentType);
-        Objects.requireNonNull(assignedMemberUids);
 
-        Instant eventStartDateTimeInSystem = convertToSystemTime(startDateTime, getSAST());
+        Instant eventStartDateTimeInSystem = startDateTimeInstant != null ? startDateTimeInstant :
+                convertToSystemTime(startDateTime, getSAST());
+
         if (!eventStartDateTimeInSystem.isAfter(Instant.now())) {
             throw new EventStartTimeNotInFutureException("Event start time " + eventStartDateTimeInSystem.toString() +
                         " is not in the future");

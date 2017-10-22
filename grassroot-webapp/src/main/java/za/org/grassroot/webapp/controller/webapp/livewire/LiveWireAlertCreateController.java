@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -89,6 +90,15 @@ public class LiveWireAlertCreateController extends BaseController {
                 .stream().map(UidNameDTO::new).collect(Collectors.toList());
     }
 
+    // jQuery file upload handles JSON better, so using that
+    @RequestMapping("/image/add")
+    public @ResponseBody UidNameDTO uploadImage(@RequestParam MultipartFile image) {
+        // todo: proper MIME type handling
+        final String mediaFileUid = mediaFileBroker.storeFile(image, MediaFunction.LIVEWIRE_MEDIA, "image/jpeg", null);
+        logger.info("stored image, returning UID = {}", mediaFileUid);
+        return new UidNameDTO(mediaFileUid, "");
+    }
+
     @RequestMapping(value = "/submit", method = RequestMethod.POST)
     public String createLiveWireAlert(@RequestParam String headline,
                                       @RequestParam(value = "contact_person_type") String contactType,
@@ -97,7 +107,7 @@ public class LiveWireAlertCreateController extends BaseController {
                                       @RequestParam(value = "type") LiveWireAlertType type,
                                       @RequestParam(value = "group", required = false) String groupUid,
                                       @RequestParam(value = "meeting", required = false) String meetingUid,
-                                      @RequestParam(value = "image", required = false) MultipartFile image,
+                                      @RequestParam(value = "imageUid", required = false) String imageUid,
                                       @RequestParam(value = "destination", required = false) LiveWireAlertDestType destination,
                                       @RequestParam(value = "description", required = false) String description,
                                       RedirectAttributes attributes, HttpServletRequest request) {
@@ -112,14 +122,9 @@ public class LiveWireAlertCreateController extends BaseController {
             final DataSubscriber dataSubscriber = (destination != null && !LiveWireAlertDestType.PUBLIC_LIST.equals(destination)) ?
                     dataSubscriberBroker.fetchLiveWireListForSubscriber(getUserProfile().getUid()) : null;
 
-            // todo: probably should handle the file upload async or in a different thread ...
-            // todo: proper MIME type handling
-
-            logger.debug("here is the supposed file: {}", isFileEmpty(image) ? "null" : image.getOriginalFilename());
-            String mediaRecordUid = isFileEmpty(image) ? null :
-                    mediaFileBroker.storeFile(image, MediaFunction.LIVEWIRE_MEDIA, "image/jpeg", null); // means UID will be used for key
-            List<MediaFileRecord> mediaRecords = mediaRecordUid == null ? null :
-                    Collections.singletonList(mediaFileBroker.load(mediaRecordUid));
+            logger.info("imageUid = {}", imageUid);
+            List<MediaFileRecord> mediaRecords = StringUtils.isEmpty(imageUid) ? null :
+                    Collections.singletonList(mediaFileBroker.load(imageUid));
 
             liveWireAlertBroker.createAsComplete(getUserProfile().getUid(), headline, description, type,
                     type.equals(LiveWireAlertType.INSTANT) ? groupUid : meetingUid,
@@ -134,10 +139,6 @@ public class LiveWireAlertCreateController extends BaseController {
             addMessage(attributes, MessageType.ERROR, "livewire.alert.submitted.error", request);
             return "redirect:/livewire/alert/create";
         }
-    }
-
-    private boolean isFileEmpty(MultipartFile image) {
-        return image == null || image.isEmpty();
     }
 
 }
