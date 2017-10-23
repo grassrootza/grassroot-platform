@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.services.exception.AccountLimitExceededException;
 import za.org.grassroot.services.exception.GroupNotPaidForException;
@@ -66,8 +67,9 @@ public class GroupWelcomeController extends BaseController {
             return "redirect:/group/view";
         }
 
-        final String accountUid = user.getPrimaryAccount().getUid();
-        logger.info("user primary account UID = {}", accountUid);
+        final Account groupAccount = accountGroupBroker.findAccountForGroup(groupUid);
+        final String accountUid = groupAccount.getUid();
+        logger.info("found group account UID = {}", accountUid);
 
         if (updatingTemplate == null || !updatingTemplate) {
             List<String> messages = new ArrayList<>();
