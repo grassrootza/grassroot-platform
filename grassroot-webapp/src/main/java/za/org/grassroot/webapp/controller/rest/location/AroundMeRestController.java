@@ -15,6 +15,7 @@ import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.geo.GeographicSearchType;
 import za.org.grassroot.services.geo.ObjectLocationBroker;
 import za.org.grassroot.services.livewire.LiveWireAlertBroker;
+import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
@@ -31,13 +32,13 @@ import java.util.Set;
 public class AroundMeRestController {
 
     private final ObjectLocationBroker objectLocationBroker;
-    private final UserRepository userRepository;
+    private final UserManagementService userManager;
     private final LiveWireAlertBroker liveWireAlertBroker;
 
     @Autowired
-    public AroundMeRestController(ObjectLocationBroker objectLocationBroker,UserRepository userRepository,LiveWireAlertBroker liveWireAlertBroker){
+    public AroundMeRestController(ObjectLocationBroker objectLocationBroker,UserManagementService userManager, LiveWireAlertBroker liveWireAlertBroker){
         this.objectLocationBroker = objectLocationBroker;
-        this.userRepository = userRepository;
+        this.userManager = userManager;
         this.liveWireAlertBroker = liveWireAlertBroker;
     }
 
@@ -52,7 +53,7 @@ public class AroundMeRestController {
                                                                                  "name (subject etc) of the entities")
                                                                          @RequestParam(required = false) String filterTerm) {
         GeoLocation location = new GeoLocation(latitude,longitude);
-        User user = userRepository.findOneByUid(userUid);
+        User user = userManager.load(userUid);
 
         Set<ObjectLocation> objectLocationSet = new HashSet<>();
 

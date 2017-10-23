@@ -83,7 +83,7 @@ public class ObjectLocation {
 
     public ObjectLocation(Group group,GroupLocation groupLocation){
         this(group.getUid(),
-                group.getName(),groupLocation.getLocation().getLatitude(),
+                group.getName(), groupLocation.getLocation().getLatitude(),
                 groupLocation.getLocation().getLongitude(),groupLocation.getScore(),"GROUP",group.isDiscoverable());
     }
 

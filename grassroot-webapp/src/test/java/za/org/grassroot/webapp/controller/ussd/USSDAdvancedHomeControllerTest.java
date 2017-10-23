@@ -102,6 +102,8 @@ public class USSDAdvancedHomeControllerTest extends USSDAbstractUnitTest{
                 .thenReturn(actualObjectLocations);
 
         mockMvc.perform(get(advancedMenuOptionsRoot + "/public/mtgs").param(phoneParameter, phoneForTests)).andExpect(status().is(200));
+
+        // todo: add verifications
     }
 
     @Test//(expected = URISyntaxException.class)
@@ -114,6 +116,7 @@ public class USSDAdvancedHomeControllerTest extends USSDAbstractUnitTest{
 
     @Test//(expected = URISyntaxException.class)
     public void trackUserShouldWork() throws Exception{
+        // todo: actual test (MVC call)
         Assert.assertFalse(ussdLocationServicesBrokerMock.addUssdLocationLookupAllowed(testUser.getUid(), UserInterfaceType.USSD));
     }
 }

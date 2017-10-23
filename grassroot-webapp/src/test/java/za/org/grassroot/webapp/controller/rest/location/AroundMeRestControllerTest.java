@@ -5,6 +5,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
@@ -31,7 +34,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class AroundMeRestControllerTest extends RestAbstractUnitTest {
 
@@ -42,7 +45,7 @@ public class AroundMeRestControllerTest extends RestAbstractUnitTest {
     private ObjectLocationBroker objectLocationBrokerMock;
 
     @Mock
-    private UserRepository userRepositoryMock;
+    private UserRepository userRepositoryInMem;
 
     @Mock
     private LiveWireAlertBroker liveWireAlertBrokerMock;
@@ -68,7 +71,7 @@ public class AroundMeRestControllerTest extends RestAbstractUnitTest {
     @Test
     public void fetchAllEntitiesNearUserShouldWork() throws Exception{
         GeoLocation testLocation = new GeoLocation(testLat,testLong);
-        User user = userRepositoryMock.findOneByUid(uidParameter);
+
         User testUser = new User(phoneForTests,testUserName);
         String testSearchTerm = "searchTerm";
 
@@ -86,11 +89,23 @@ public class AroundMeRestControllerTest extends RestAbstractUnitTest {
         List<ObjectLocation> objectLocationList = new ArrayList<>();
         objectLocationList.add(objectLocation);
 
+        when(userManagementServiceMock.load(testUser.getUid())).thenReturn(testUser);
         when(objectLocationBrokerMock
-                .fetchMeetingLocationsNearUser(user,testLocation,testRadiusMetres, GeographicSearchType.PUBLIC,testSearchTerm))
+                .fetchMeetingLocationsNearUser(testUser,testLocation,testRadiusMetres, GeographicSearchType.PUBLIC,testSearchTerm))
                 .thenReturn(objectLocationList);
 
-        Assert.assertNotNull(objectLocationBrokerMock.fetchMeetingLocationsNearUser(user,testLocation,testRadiusMetres, GeographicSearchType.PUBLIC,testSearchTerm));
+        // todo: make work by calling actual method
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders
+                .get(path + "?latitude=0&longitude=200&radius=3&token=234324")
+                .accept(MediaType.APPLICATION_JSON))
+                .andReturn();
+
+        // just reaffirms 'when' set up above
+        Assert.assertNotNull(objectLocationBrokerMock.fetchMeetingLocationsNearUser(testUser,testLocation,testRadiusMetres, GeographicSearchType.PUBLIC,testSearchTerm));
+
+        verify(userManagementServiceMock, times(1)).load(testUser.getUid());
+        verify(objectLocationBrokerMock, times(1)).fetchMeetingLocationsNearUser(testUser, testLocation,
+                testRadiusMetres, GeographicSearchType.PUBLIC, testSearchTerm);
     }
 
     @Test
