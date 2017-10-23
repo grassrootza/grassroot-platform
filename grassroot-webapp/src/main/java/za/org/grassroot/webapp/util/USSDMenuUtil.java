@@ -79,7 +79,7 @@ public class USSDMenuUtil {
             final Integer charsToTrim = thisMenu.getMenuCharLength() - (isFirstMenu ? (maxOpeningMenuLength - 1) : (maxMenuLength - 1)); // adding a character, for safety
             String currentPrompt = thisMenu.getPromptMessage();
             log.info("about to trim this current prompt = {}, and going to trim this many characters: {}", currentPrompt, charsToTrim);
-            String revisedPrompt = currentPrompt.substring(0, currentPrompt.length() - charsToTrim);
+            String revisedPrompt = currentPrompt.substring(0, Math.max(1, currentPrompt.length() - charsToTrim));
             menuRequest = new Request(revisedPrompt, createMenu(thisMenu.getMenuOptions()));
         }
         return menuRequest;
