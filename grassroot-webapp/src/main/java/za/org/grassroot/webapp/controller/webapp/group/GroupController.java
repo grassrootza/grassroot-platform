@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Controller;
@@ -20,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.account.Account;
+import za.org.grassroot.core.dto.MembershipDTO;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.dto.task.TaskDTO;
 import za.org.grassroot.core.enums.EventType;
@@ -43,11 +46,13 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -833,6 +838,29 @@ public class GroupController extends BaseController {
     public String redirectToMessaging() {
 
         return "group/temp";
+    }
+
+
+    @RequestMapping(value = "user-joins")
+    @ResponseBody
+    public Map<String, Object> myGroupsRecentUserJoins(@RequestParam("gcd") Integer maxGroupAgeInDays,
+                                                       @RequestParam("ujd") Integer joinedInLastXDays, Pageable pageable) {
+
+        Instant joinedAfter = Instant.now().minus(joinedInLastXDays, ChronoUnit.DAYS);
+        Instant groupCreatedAfter = Instant.now().minus(maxGroupAgeInDays, ChronoUnit.DAYS);
+        User user = getUserProfile();
+
+        long totalJoins = groupQueryBroker.countMembershipsInGroups(user, groupCreatedAfter, joinedAfter);
+
+        Page<MembershipDTO> memberships = groupQueryBroker.getMembershipsInGroups(user, groupCreatedAfter, joinedAfter, pageable);
+
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("totalJoins", totalJoins);
+        result.put("memberships", memberships);
+
+        return result;
+
     }
 
 }
