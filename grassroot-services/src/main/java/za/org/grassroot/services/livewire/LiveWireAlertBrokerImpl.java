@@ -546,7 +546,8 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
     }
 
     @Override
-    public List<LiveWireAlert> fetchAlertsNearUser(String userUid, GeoLocation location, String createdByMe, Integer radius, GeographicSearchType searchType) {
+    public List<LiveWireAlert> fetchAlertsNearUser(String userUid, GeoLocation location
+            , String createdByMe, Integer radius, GeographicSearchType searchType) {
 
         User user = userRepository.findOneByUid(userUid);
 

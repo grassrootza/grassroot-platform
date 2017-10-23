@@ -1,6 +1,5 @@
 package za.org.grassroot.webapp.controller.ussd;
 
-import org.hibernate.annotations.Parameter;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -40,7 +39,7 @@ public class USSDAdvancedHomeControllerTest extends USSDAbstractUnitTest{
     private static final String phoneForTests = "27810001111";
     private static final String testUserName = "Test User";
 
-    private static final String openingMenu = "/ussd/more";
+    private static final String advancedMenuOptionsRoot = "/ussd/more";
     private static final String phoneParameter = "msisdn";
 
     private static final String meetingParameter = "meetingUid";
@@ -58,7 +57,7 @@ public class USSDAdvancedHomeControllerTest extends USSDAbstractUnitTest{
     private USSDAdvancedHomeController ussdAdvancedHomeController;
 
     @Mock
-    private UssdLocationServicesBroker ussdLocationServicesBroker;
+    private UssdLocationServicesBroker ussdLocationServicesBrokerMock;
 
     @Mock
     private ObjectLocationBroker objectLocationBrokerMock;
@@ -75,10 +74,9 @@ public class USSDAdvancedHomeControllerTest extends USSDAbstractUnitTest{
     @Test//(expected = URISyntaxException.class)
     @Rollback
     public void advancedUssdWelcomeMenuShouldWork() throws Exception{
-
         when(userManagementServiceMock.findByInputNumber(phoneForTests)).thenReturn(testUser);
 
-        mockMvc.perform(get(openingMenu + "/start").param(phoneParameter, phoneForTests)).andExpect(status().isOk());
+        mockMvc.perform(get(advancedMenuOptionsRoot + "/start").param(phoneParameter, phoneForTests)).andExpect(status().isOk());
     }
 
     @Test//(expected = URISyntaxException.class)
@@ -103,8 +101,7 @@ public class USSDAdvancedHomeControllerTest extends USSDAbstractUnitTest{
         when(objectLocationBrokerMock.fetchMeetingLocationsNearUser(testUser,testLocation,testRadius, GeographicSearchType.PUBLIC,null))
                 .thenReturn(actualObjectLocations);
 
-        Assert.assertNotNull(objectLocationBrokerMock.fetchMeetingLocationsNearUser(testUser,testLocation,testRadius, GeographicSearchType.PUBLIC,null));
-        mockMvc.perform(get(openingMenu + "/public/mtgs").param(phoneParameter, phoneForTests)).andExpect(status().is(200));
+        mockMvc.perform(get(advancedMenuOptionsRoot + "/public/mtgs").param(phoneParameter, phoneForTests)).andExpect(status().is(200));
     }
 
     @Test//(expected = URISyntaxException.class)
@@ -117,6 +114,6 @@ public class USSDAdvancedHomeControllerTest extends USSDAbstractUnitTest{
 
     @Test//(expected = URISyntaxException.class)
     public void trackUserShouldWork() throws Exception{
-        Assert.assertFalse(ussdLocationServicesBroker.addUssdLocationLookupAllowed(testUser.getUid(), UserInterfaceType.USSD));
+        Assert.assertFalse(ussdLocationServicesBrokerMock.addUssdLocationLookupAllowed(testUser.getUid(), UserInterfaceType.USSD));
     }
 }

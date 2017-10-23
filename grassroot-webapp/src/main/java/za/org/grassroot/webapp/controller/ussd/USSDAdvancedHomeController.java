@@ -97,7 +97,7 @@ public class USSDAdvancedHomeController extends USSDController {
     @RequestMapping(value = ROOT_PATH + "/public/mtgs/details")
     @ResponseBody
     public Request meetingDetails(@RequestParam(value = phoneNumber) String inputNumber,
-                                  @RequestParam(value = "meetingUid") String meetingUid) throws URISyntaxException {
+                                  @RequestParam String meetingUid) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber);
         Meeting meeting = (Meeting) eventBroker.load(meetingUid);
 
