@@ -7,7 +7,13 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.test.annotation.Rollback;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
@@ -29,6 +35,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -42,14 +50,19 @@ public class USSDAdvancedHomeControllerTest extends USSDAbstractUnitTest{
     private static final String advancedMenuOptionsRoot = "/ussd/more";
     private static final String phoneParameter = "msisdn";
 
+
     private static final String meetingParameter = "meetingUid";
 
     private static final double testLat = -11.00;
     private static final double testLong = 12.00;
     private static final Integer testRadius = 5;
 
-    private User testUser = new User(phoneForTests, testUserName);
+    private static final User testUser = new User(phoneForTests, testUserName);
+    protected final static String testGroupName = "test_group";
 
+    protected final static Group testGroup = new Group(testGroupName, testUser);
+    @Autowired
+    private static final Logger logger = LoggerFactory.getLogger(USSDAdvancedHomeControllerTest.class);
     @InjectMocks
     private USSDHomeController ussdHomeController;
 
@@ -101,22 +114,43 @@ public class USSDAdvancedHomeControllerTest extends USSDAbstractUnitTest{
         when(objectLocationBrokerMock.fetchMeetingLocationsNearUser(testUser,testLocation,testRadius, GeographicSearchType.PUBLIC,null))
                 .thenReturn(actualObjectLocations);
 
-        mockMvc.perform(get(advancedMenuOptionsRoot + "/public/mtgs").param(phoneParameter, phoneForTests)).andExpect(status().is(200));
+        mockMvc.perform(get(advancedMenuOptionsRoot + "/public/mtgs")
+                .param(phoneParameter, phoneForTests))
+                .andExpect(status().is(200));
 
         // todo: add verifications
+        verify(objectLocationBrokerMock,times(1)).fetchBestGuessUserLocation(testUser.getUid());
+        verify(objectLocationBrokerMock,times(1)).fetchMeetingLocationsNearUser(testUser,testLocation,testRadius, GeographicSearchType.PUBLIC,null);
     }
 
     @Test//(expected = URISyntaxException.class)
     public void meetingDetailsShouldWork() throws Exception{
-        Meeting testMeeting = eventBroker.loadMeeting(meetingParameter);
+        Meeting testMeeting = new MeetingBuilder().setName("test meeting")
+                .setStartDateTime(Instant.now().plus(1, ChronoUnit.DAYS))
+                .setUser(testUser).setParent(testGroup).setEventLocation("place").createMeeting();
 
-        when(userManagementServiceMock.findByInputNumber(phoneForTests)).thenReturn(testUser);
-        when(eventBroker.loadMeeting(meetingParameter)).thenReturn(testMeeting);
+        when(userManagementServiceMock.findByInputNumber(testUser.getUid())).thenReturn(testUser);
+
+        when(eventBroker.loadMeeting(testMeeting.getUid())).thenReturn(testMeeting);
+
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders
+                .get(advancedMenuOptionsRoot + "/public/mtgs/details")
+                .param(phoneParameter,""+phoneForTests)
+                .accept(MediaType.APPLICATION_JSON))
+                .andReturn();
+        logger.info("Meeting Details Result = {}",result.getResponse().getStatus());
     }
 
     @Test//(expected = URISyntaxException.class)
     public void trackUserShouldWork() throws Exception{
         // todo: actual test (MVC call)
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders
+                .get(advancedMenuOptionsRoot + "/start/track-me")
+                .param(phoneParameter,""+phoneForTests)
+                .accept(MediaType.APPLICATION_JSON))
+                .andReturn();
+
+        logger.info("Tracking User Location = {}",result.getResponse().getStatus());
         Assert.assertFalse(ussdLocationServicesBrokerMock.addUssdLocationLookupAllowed(testUser.getUid(), UserInterfaceType.USSD));
     }
 }

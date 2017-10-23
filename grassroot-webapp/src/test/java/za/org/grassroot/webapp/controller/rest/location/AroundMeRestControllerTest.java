@@ -5,6 +5,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -37,6 +40,9 @@ import java.util.List;
 import static org.mockito.Mockito.*;
 
 public class AroundMeRestControllerTest extends RestAbstractUnitTest {
+
+    @Autowired
+    private static final Logger logger = LoggerFactory.getLogger(AroundMeRestControllerTest.class);
 
     @InjectMocks
     private AroundMeRestController aroundMeRestControllerMock;
@@ -94,11 +100,15 @@ public class AroundMeRestControllerTest extends RestAbstractUnitTest {
                 .fetchMeetingLocationsNearUser(testUser,testLocation,testRadiusMetres, GeographicSearchType.PUBLIC,testSearchTerm))
                 .thenReturn(objectLocationList);
 
-        // todo: make work by calling actual method
         MvcResult result = mockMvc.perform(MockMvcRequestBuilders
-                .get(path + "?latitude=0&longitude=200&radius=3&token=234324")
+                .get(path + "/all/{userUid}",testUser.getUid())
+                .param("longitude",""+testLocation.getLongitude())
+                .param("latitude",""+testLocation.getLatitude())
+                .param("radiusMetres",""+ testRadiusMetres)
                 .accept(MediaType.APPLICATION_JSON))
                 .andReturn();
+
+        logger.info("Testing All Entities Results = {}",result.getResponse().getStatus());
 
         // just reaffirms 'when' set up above
         Assert.assertNotNull(objectLocationBrokerMock.fetchMeetingLocationsNearUser(testUser,testLocation,testRadiusMetres, GeographicSearchType.PUBLIC,testSearchTerm));
@@ -112,6 +122,8 @@ public class AroundMeRestControllerTest extends RestAbstractUnitTest {
     public void getPublicGroupsNearUserShouldWork() throws Exception{
         GeoLocation testLocation = new GeoLocation(testLat,testLong);
 
+        User testUser = new User(phoneForTests,testUserName);
+
         Group testGroup = new Group("test Group", new User("121212121"));
         GroupLocation groupLocation = new GroupLocation(testGroup,LocalDate.now(),testLocation,0,LocationSource.LOGGED_APPROX);
 
@@ -120,9 +132,21 @@ public class AroundMeRestControllerTest extends RestAbstractUnitTest {
         objectLocations.add(objectLocation);
 
         when(objectLocationBrokerMock
-                .fetchGroupsNearby(uidParameter,testLocation,testRadiusMetres,testFilterTerm,GeographicSearchType.PUBLIC))
+                .fetchGroupsNearby(testUser.getUid(),testLocation,testRadiusMetres,testFilterTerm,GeographicSearchType.PUBLIC))
                 .thenReturn(objectLocations);
 
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders
+                .get(path + "/all/groups/{userUid}",testUser.getUid())
+                .param("longitude",""+testLocation.getLongitude())
+                .param("latitude",""+testLocation.getLatitude())
+                .param("radiusMetres",""+ testRadiusMetres)
+                .param("filterTerm",testFilterTerm)
+                .accept(MediaType.APPLICATION_JSON))
+                .andReturn();
+        logger.info("Testing Groups Near User Results = {}",result.getResponse().getStatus());
+
+        verify(objectLocationBrokerMock,times(1))
+                .fetchGroupsNearby(testUser.getUid(),testLocation,testRadiusMetres,testFilterTerm,GeographicSearchType.PUBLIC);
         Assert.assertNotNull(objectLocationBrokerMock.fetchGroupsNearby(uidParameter,testLocation,testRadiusMetres,testFilterTerm,GeographicSearchType.PUBLIC));
     }
 
@@ -143,8 +167,20 @@ public class AroundMeRestControllerTest extends RestAbstractUnitTest {
         List<LiveWireAlert> liveWireAlerts = new ArrayList<>();
         liveWireAlerts.add(liveWireAlert);
 
-        when(liveWireAlertBrokerMock.fetchAlertsNearUser(uidParameter,testLocation,testCreatedByMe,testRadiusMetres,GeographicSearchType.PUBLIC)).thenReturn(liveWireAlerts);
+        when(liveWireAlertBrokerMock
+                .fetchAlertsNearUser(testUser.getUid(),testLocation,testCreatedByMe,testRadiusMetres,GeographicSearchType.PUBLIC)).thenReturn(liveWireAlerts);
 
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders
+                .get(path + "/all/alerts/{userUid}",testUser.getUid())
+                .param("longitude",""+testLocation.getLongitude())
+                .param("latitude",""+testLocation.getLatitude())
+                .param("radiusMetres",""+ testRadiusMetres)
+                .param("createdByMe",testCreatedByMe)
+                .accept(MediaType.APPLICATION_JSON))
+                .andReturn();
+        logger.info("Testing All Alerts Results = {}",result.getResponse().getStatus());
+        verify(liveWireAlertBrokerMock,times(1))
+                .fetchAlertsNearUser(testUser.getUid(),testLocation,testCreatedByMe,testRadiusMetres,GeographicSearchType.PUBLIC);
         Assert.assertNotNull(liveWireAlertBrokerMock.fetchAlertsNearUser(uidParameter,testLocation,testCreatedByMe,testRadiusMetres,GeographicSearchType.PUBLIC));
     }
 
