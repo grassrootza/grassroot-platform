@@ -26,20 +26,20 @@ import java.util.Set;
 
 @Slf4j
 @RestController @Grassroot2RestController
-@Api("/api/task/create")
-@RequestMapping(value = "/api/task/create")
-public class TaskCreateController {
+@Api("/api/task/create/meeting")
+@RequestMapping(value = "/api/task/create/meeting")
+public class MeetingCreateController {
 
     private final EventBroker eventBroker;
     private final UserManagementService userService;
 
     @Autowired
-    public TaskCreateController(UserManagementService userManagementService, EventBroker eventBroker, TaskImageBroker taskImageBroker) {
+    public MeetingCreateController(UserManagementService userManagementService, EventBroker eventBroker, TaskImageBroker taskImageBroker) {
         this.userService = userManagementService;
         this.eventBroker = eventBroker;
     }
 
-    @RequestMapping(value = "/create/{parentType}/{userUid}/{parentUid}", method = RequestMethod.POST)
+    @RequestMapping(value = "/{userUid}/{parentType}/{parentUid}", method = RequestMethod.POST)
     @ApiOperation(value = "Call a meeting", notes = "Creates a meeting, that starts at the specified date and time, passed in " +
             "as epoch millis. The first six params are necessary, the rest are optional")
     public ResponseEntity<TaskFullDTO> createMeeting(@PathVariable String userUid,

@@ -2,8 +2,8 @@ package za.org.grassroot.services.task;
 
 import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
 import za.org.grassroot.core.domain.JpaEntityType;
-import za.org.grassroot.core.domain.task.TodoAssignment;
 import za.org.grassroot.core.domain.task.TodoType;
 
 import java.time.Instant;
@@ -22,9 +22,11 @@ public class TodoHelper {
     private String responseTag;
     private Instant dueDateTime;
 
-    private Set<TodoAssignment> assignments;
+    @Setter private Set<String> assignedMemberUids;
+    @Setter private Set<String> confirmingMemberUids;
+    @Setter private Set<String> mediaFileUids; // todo : actually, use taskImage, since we'll want to analyze
 
-    public void validateMinimumFields() {
+    void validateMinimumFields() {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(parentUid);
         Objects.requireNonNull(parentType);
@@ -34,6 +36,18 @@ public class TodoHelper {
         Objects.requireNonNull(dueDateTime);
 
         // todo : add checking logic on assignment set, depending on type
+    }
+
+    boolean isInformationTodo() {
+        return TodoType.INFORMATION_REQUIRED.equals(todoType);
+    }
+
+    boolean hasAssignedMembers() {
+        return assignedMemberUids != null && !assignedMemberUids.isEmpty();
+    }
+
+    boolean hasConfirmationMembers() {
+        return confirmingMemberUids != null && !confirmingMemberUids.isEmpty();
     }
 
 }

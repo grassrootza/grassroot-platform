@@ -3,6 +3,7 @@ package za.org.grassroot.services.task;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Group;
@@ -12,17 +13,20 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.domain.task.TodoContainer;
 import za.org.grassroot.core.domain.task.TodoLog;
+import za.org.grassroot.core.domain.task.TodoType;
 import za.org.grassroot.core.enums.TodoLogType;
 import za.org.grassroot.core.repository.TodoRepository;
 import za.org.grassroot.core.repository.UidIdentifiableRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.services.PermissionBroker;
+import za.org.grassroot.services.exception.MemberLacksPermissionException;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import java.time.Instant;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 @Slf4j
@@ -49,6 +53,12 @@ public class TodoBrokerNewImpl implements TodoBrokerNew {
     }
 
     @Override
+    public Todo load(String todoUid) {
+        Objects.requireNonNull(todoUid);
+        return todoRepository.findOneByUid(todoUid);
+    }
+
+    @Override
     @Transactional
     public String create(TodoHelper todoHelper) {
         todoHelper.validateMinimumFields();
@@ -59,13 +69,35 @@ public class TodoBrokerNewImpl implements TodoBrokerNew {
 
         validateUserCanCreate(user, parent.getThisOrAncestorGroup());
 
-        Todo todo = new Todo(user, parent, todoHelper.getDescription(), todoHelper.getDueDateTime());
+        Todo todo = new Todo(user, parent, todoHelper.getTodoType(), todoHelper.getDescription(), todoHelper.getDueDateTime());
 
-        Set<Notification> notifications = new HashSet<>();
+        Set<Notification> notifications = wireUpTodoForType(todo, todoHelper);
         createAndStoreTodoLog(user, todo, TodoLogType.CREATED, null, notifications);
 
         todo = todoRepository.save(todo);
         return todo.getUid();
+    }
+
+    private Set<Notification> wireUpTodoForType(Todo todo, TodoHelper todoHelper) {
+        Set<Notification> notifications = new HashSet<>();
+        if (todoHelper.isInformationTodo()) {
+            todo.setResponseTag(todoHelper.getResponseTag());
+        }
+
+        if (todoHelper.hasAssignedMembers()) {
+
+        } else {
+            notifications = todo.getParent().getMembers().forEach();
+        }
+
+        if (todoHelper.hasConfirmationMembers()) {
+
+        }
+        return notifications;
+    }
+
+    private Notification generateTodoCreatedNotification(TodoType todoType, User target) {
+        return null;
     }
 
     @Override
@@ -118,7 +150,11 @@ public class TodoBrokerNewImpl implements TodoBrokerNew {
     }
 
     private void validateUserCanCreate(User user, Group group) {
-        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY);
+        try {
+            permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY);
+        } catch (AccessDeniedException e) {
+            throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY);
+        }
     }
 
     private void validateUserCanModify(User user, Todo todo) {

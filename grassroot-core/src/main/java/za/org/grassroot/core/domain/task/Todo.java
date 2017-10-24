@@ -1,6 +1,8 @@
 package za.org.grassroot.core.domain.task;
 
+import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.Group;
@@ -20,6 +22,7 @@ import java.util.Set;
 /**
  * Created by aakilomar on 12/3/15.
  */
+@Builder
 @Entity
 @Table(name = "action_todo",
         indexes = {
@@ -33,6 +36,8 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
     @Transient
     @Value("{grassroot.todos.number.reminders:1")
     private int DEFAULT_NUMBER_REMINDERS;
+
+    private static final int DEFAULT_REMINDER_MINUTES = 60; // todo: just use group?
 
     @Column(name = "cancelled")
     protected boolean cancelled;
@@ -48,18 +53,18 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
 
     @ManyToOne
     @JoinColumn(name = "source_todo")
-    private Todo sourceTodo;
+    @Getter private Todo sourceTodo;
 
     @ManyToMany(cascade = CascadeType.ALL)
     @JoinTable(name = "action_todo_assigned_members",
             joinColumns = @JoinColumn(name = "action_todo_id", nullable = false),
             inverseJoinColumns = @JoinColumn(name = "user_id", nullable = false)
     )
-    private Set<User> assignedMembers = new HashSet<>();
+    @Setter private Set<User> assignedMembers = new HashSet<>();
 
     @ManyToOne
    	@JoinColumn(name = "ancestor_group_id", nullable = false)
-   	private Group ancestorGroup;
+   	@Getter private Group ancestorGroup;
 
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "todo", orphanRemoval = true)
     private Set<TodoCompletionConfirmation> completionConfirmations = new HashSet<>();
@@ -69,7 +74,7 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
     @Getter private TodoType type;
 
     @Column(name = "response_tag")
-    @Getter private String responseTag;
+    @Getter @Setter private String responseTag;
 
     private Todo() {
         // for JPA
@@ -77,6 +82,17 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
 
     public Todo(User createdByUser, TodoContainer parent, String message, Instant actionByDate) {
         this(createdByUser, parent, message, actionByDate, 60, null, null, true);
+    }
+
+    public Todo(User createdByUser, TodoContainer parent, TodoType todoType, String description,
+                Instant dueByDate) {
+        super(createdByUser, parent, description, dueByDate, DEFAULT_REMINDER_MINUTES, true);
+
+        this.type = todoType;
+        this.ancestorGroup = parent.getThisOrAncestorGroup();
+        this.ancestorGroup.addDescendantTodo(this);
+        this.numberOfRemindersLeftToSend = DEFAULT_NUMBER_REMINDERS;
+        this.cancelled = false;
     }
 
     public Todo(User createdByUser, TodoContainer parent, String message, Instant actionByDate, int reminderMinutes,
@@ -112,11 +128,6 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
     @Override
     public TaskType getTaskType() {
         return TaskType.TODO;
-    }
-
-    @Override
-    public Group getAncestorGroup() {
-        return ancestorGroup;
     }
 
     @Override
@@ -217,8 +228,6 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
     public Instant getDeadlineTime() {
         return actionByDate;
     }
-
-    public Todo getSourceTodo() { return sourceTodo; }
 
     @Override
     public String toString() {
