@@ -130,6 +130,10 @@ public abstract class Notification implements Serializable {
 		this.createdDateTime = Instant.now();
 		this.lastStatusChange = createdDateTime;
 		this.message = Objects.requireNonNull(message);
+
+		if (this.message.length() > 255)
+			this.message = message.substring(0, 255);
+
 		this.priority = DEFAULT_PRIORITY;
 		this.deliveryChannel = target.getMessagingPreference();
 
