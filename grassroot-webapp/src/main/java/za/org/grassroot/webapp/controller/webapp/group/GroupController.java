@@ -437,7 +437,7 @@ public class GroupController extends BaseController {
 
     @RequestMapping(value = "add_bulk", method = RequestMethod.POST)
     public String addMembersBulkDo(Model model, @RequestParam String groupUid, @RequestParam String list,
-                                   HttpServletRequest request) {
+                                   RedirectAttributes attributes, HttpServletRequest request) {
 
         Group group = groupBroker.load(groupUid);
 
@@ -463,11 +463,12 @@ public class GroupController extends BaseController {
         // todo : fix this (error page etc)
         if (mapOfNumbers.get("error").isEmpty()) {
             if (!sizeExceeded) {
-                addMessage(model, MessageType.SUCCESS, "group.bulk.success", new Integer[]{numbersToBeAdded.size()}, request);
+                addMessage(attributes, MessageType.SUCCESS, "group.bulk.success", new Integer[]{numbersToBeAdded.size()}, request);
             } else {
-                addMessage(model, MessageType.ERROR, "group.addmember.limit", request);
+                addMessage(attributes, MessageType.ERROR, "group.addmember.limit", request);
             }
-            return viewGroupIndex(model, groupUid);
+            attributes.addAttribute("groupUid", groupUid);
+            return "redirect:/group/view";
         } else {
             model.addAttribute("errors", true);
             model.addAttribute("group", group);
