@@ -281,16 +281,12 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
 
     public Set<Membership> addMembers(Collection<User> newMembers, String roleName) {
         Objects.requireNonNull(roleName);
-        Role role = getRole(roleName);
-        return addMembers(newMembers, role);
-    }
-
-    public Set<Membership> addMembers(Collection<User> newMembers, Role role) {
         Objects.requireNonNull(newMembers);
 
+        Role role = getRole(roleName);
         Set<Membership> memberships = new HashSet<>();
         for (User newMember : newMembers) {
-            Membership membership = addMember(newMember, role);
+            Membership membership = addMemberInternal(newMember, role);
             if (membership != null) {
                 memberships.add(membership);
             }
@@ -298,17 +294,16 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         return memberships;
     }
 
-    public Membership addMember(User newMember) {
-        return addMember(newMember, BaseRoles.ROLE_ORDINARY_MEMBER);
-    }
 
     public Membership addMember(User newMember, String roleName) {
         Objects.requireNonNull(roleName);
         Role role = getRole(roleName);
-        return addMember(newMember, role);
+        return addMemberInternal(newMember, role);
     }
 
-    public Membership addMember(User newMember, Role role) {
+
+    private Membership addMemberInternal(User newMember, Role role) {
+
         Objects.requireNonNull(newMember);
         Objects.requireNonNull(role);
 

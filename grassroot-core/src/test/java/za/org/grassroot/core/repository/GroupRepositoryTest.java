@@ -483,7 +483,7 @@ public class GroupRepositoryTest {
         assertThat(groupRepository.count(), is(0L));
         User userForTest = userRepository.save(new User("0814441111"));
         Group groupToCreate = groupRepository.save(new Group("testGroup", userForTest));
-        groupToCreate.addMember(userForTest);
+        groupToCreate.addMember(userForTest, BaseRoles.ROLE_ORDINARY_MEMBER);
         groupToCreate = groupRepository.save(groupToCreate);
         assertThat(groupRepository.count(), is(1L));
         assertNotNull(groupToCreate);
@@ -653,8 +653,8 @@ public class GroupRepositoryTest {
         User user = userRepository.save(new User("3331115555"));
         Group group1 = new Group("gc1", user);
         Group group2 = new Group("gc2", user);
-        group1.addMember(user);
-        group2.addMember(user);
+        group1.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER);
+        group2.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER);
         group1 = groupRepository.save(group1);
         group2 = groupRepository.save(group2);
         group2.setActive(false);
@@ -670,7 +670,7 @@ public class GroupRepositoryTest {
         assertThat(groupRepository.count(), is(0L));
         User user = userRepository.save(new User("3331110000"));
         List<Group> testGroups = Arrays.asList(new Group("gc1", user), new Group("gc2", user), new Group("gc3", user), new Group("gc4", user));
-        for (Group group : testGroups) group.addMember(user);
+        for (Group group : testGroups) group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER);
         testGroups = groupRepository.save(testGroups);
         assertThat(groupRepository.count(), is(4L));
         Page<Group> pageTest1 = groupRepository.findByCreatedByUserAndActiveTrueOrderByCreatedDateTimeDesc(user, new PageRequest(0, 3));
@@ -792,8 +792,8 @@ public class GroupRepositoryTest {
         User user1 = new User("56789");
         User user2 = new User("12345");
         Group group1 = new Group("test", user1);
-        group1.addMember(user1);
-        group1.addMember(user2);
+        group1.addMember(user1, BaseRoles.ROLE_ORDINARY_MEMBER);
+        group1.addMember(user2, BaseRoles.ROLE_ORDINARY_MEMBER);
         groupRepository.save(group1);
         assertThat(groupRepository.count(), is(1L));
 

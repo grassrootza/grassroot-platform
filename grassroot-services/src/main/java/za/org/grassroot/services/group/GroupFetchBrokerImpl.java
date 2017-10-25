@@ -7,9 +7,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.dto.group.GroupTimeChangedDTO;
 import za.org.grassroot.core.dto.group.GroupFullDTO;
 import za.org.grassroot.core.dto.group.GroupMinimalDTO;
+import za.org.grassroot.core.dto.group.GroupTimeChangedDTO;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.MembershipRepository;
 import za.org.grassroot.core.repository.UserRepository;
@@ -138,5 +138,6 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
                 .setParameter("user", user)
                 .getResultList());
     }
+
 
 }

@@ -7,7 +7,9 @@ import org.mockito.Mock;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.domain.task.MeetingBuilder;
 import za.org.grassroot.core.domain.task.Vote;
@@ -181,7 +183,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
 
         for (User user : votingUsers) {
 
-            testGroup.addMember(user); // this may be redundant
+            testGroup.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER); // this may be redundant
             user.setHasInitiatedSession(false);
 
             when(userManagementServiceMock.loadOrCreateUser(user.getPhoneNumber())).thenReturn(user);

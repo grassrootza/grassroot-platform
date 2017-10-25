@@ -59,4 +59,5 @@ public final class GroupSpecifications {
         return (root, query, cb) -> cb.equal(root.get(Group_.imageUrl), imageUrl);
     }
 
+
 }
