@@ -54,6 +54,8 @@ public interface LiveWireAlertBroker {
 
     void updateDescription(String userUid, String alertUid, String description);
 
+    void addMediaFile(String userUid, String alertUid, MediaFileRecord mediaFileRecord);
+
     // pass null to have it be the public account
     void updateAlertDestination(String userUid, String alertUid, String subscriberUid, LiveWireAlertDestType destType);
 

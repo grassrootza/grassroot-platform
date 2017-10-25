@@ -27,6 +27,38 @@
     </div>
   </section>
 
+  <div th:fragment="block_row(fieldname, label, text)" class="row">
+    <div class="col-md-10 col-md-offset-1 col-sm-10 col-sm-offset-1 col-xs-12">
+      <div class="row detail-row">
+        <div class="col-md-3 col-sm-4 col-xs-12">
+          <label class="grassroot-sidebar" th:for="${fieldname}" th:text="${label}">Subject</label>
+        </div>
+        <div class="col-md-9 col-sm-8 col-xs-12">
+          <p class="description" th:text="${text}">Text</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div th:fragment="block_row_modal(fieldname, label, text, btn_text, modal_name)" class="row">
+    <div class="col-md-10 col-md-offset-1 col-sm-10 col-sm-offset-1 col-xs-12">
+      <div class="row detail-row">
+        <div class="col-md-3 col-sm-3 col-xs-12">
+          <label class="grassroot-sidebar" th:text="${label}" th:for="${fieldname}"></label>
+        </div>
+        <div class="col-md-6 col-sm-6 col-xs-12">
+          <p th:id="${fieldname}" class="description" th:text="${text}"></p>
+        </div>
+        <div class="col-md-3 col-sm-3 col-xs-12">
+          <button type="button" class="btn default-button full-width-button" data-toggle="modal"
+                  th:attr="data-target=${modal_name}" th:text="${btn_text}">
+            Add
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div th:fragment="member-picker (messageKey)" class="form-group" >
     <label class="control-label" th:text="#{__${messageKey}__}"></label>
     <div class="radio">

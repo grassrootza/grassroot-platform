@@ -32,11 +32,9 @@
                     <a th:if="${alerts.hasPrevious()}" class="header-link" href="#"
                       th:href="@{/livewire/alert/list(page=${lastPage},size=${pageSize}, sort=${currentSort},
                       __${currentSort + '.dir'}__=${currentSortDir})}">Back</a>
-                    <!-- <span th:unless="${alerts.hasPrevious()}" class="disabled-link">Back</span>-->
                     <a th:if="${alerts.hasNext()}" class="header-link" href="#"
                       th:href="@{/livewire/alert/list(page=${nextPage},size=${pageSize}, sort=${currentSort},
                       __${currentSort + '.dir'}__=${currentSortDir})}">Next</a>
-                    <!-- <span th:unless="${alerts.hasNext()}" class="disabled-link">Next</span> -->
                   </div>
                 </div>
               </div>
