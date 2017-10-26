@@ -12,6 +12,7 @@ import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.GroupJoinMethod;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.domain.task.TodoLog;
@@ -89,7 +90,7 @@ public class TodoRepositoryTest {
     public void shouldSaveAndRetrieveLogBookAssignedToUserAndCompleted()  {
         User user = userRepository.save(new User("001111145"));
         Group group = new Group("test action", user);
-        group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER);
+        group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_ADMIN);
         groupRepository.save(group);
 
         Todo lb1 = new Todo(user, group, "assigned 1", addHoursFromNow(2), 60, null, 3, true);
@@ -179,7 +180,7 @@ public class TodoRepositoryTest {
     public void shouldRetrieveTodosWithTimeChanged() {
         User user = userRepository.save(new User("0601110000"));
         Group group = new Group("test", user);
-        group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER);
+        group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_ADMIN);
         groupRepository.save(group);
 
         Todo todo1 = todoRepository.save(new Todo(user, group, "firstOne", addHoursFromNow(2), 60, null, 3, true));

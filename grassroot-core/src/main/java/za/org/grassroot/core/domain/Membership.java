@@ -29,6 +29,11 @@ public class Membership implements Serializable {
     @Column(name = "join_time", nullable = false)
     private Instant joinTime;
 
+
+    @Column(name = "user_join_method")
+    @Enumerated(EnumType.STRING)
+    private GroupJoinMethod joinMethod;
+
     @Basic
     @Column(name = "alias", length = 50, nullable = true)
     private String alias;
@@ -37,11 +42,12 @@ public class Membership implements Serializable {
         // for JPA
     }
 
-    public Membership(Group group, User user, Role role, Instant joinTime) {
+    public Membership(Group group, User user, Role role, Instant joinTime, GroupJoinMethod joinMethod) {
         this.group = Objects.requireNonNull(group);
         this.user = Objects.requireNonNull(user);
         this.role = Objects.requireNonNull(role);
         this.joinTime = Objects.requireNonNull(joinTime);
+        this.joinMethod = joinMethod;
     }
 
     public Long getId() {

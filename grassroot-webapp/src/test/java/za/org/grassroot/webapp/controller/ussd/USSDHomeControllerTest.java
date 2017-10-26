@@ -9,6 +9,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.GroupJoinMethod;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.domain.task.MeetingBuilder;
@@ -175,7 +176,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
         testUser.setDisplayName(testUserName);
         testUser.setLanguageCode("en");
         Group testGroup = new Group(testGroupName, testUser);
-        testGroup.addMember(testUser, BaseRoles.ROLE_GROUP_ORGANIZER);
+        testGroup.addMember(testUser, BaseRoles.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_BY_ADMIN);
         Vote vote = new Vote("are unit tests working?", Instant.now().plus(1, ChronoUnit.HOURS), testUser, testGroup);
 
         List<User> votingUsers = new ArrayList<>(languageUsers);
@@ -183,7 +184,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
 
         for (User user : votingUsers) {
 
-            testGroup.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER); // this may be redundant
+            testGroup.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_ADMIN); // this may be redundant
             user.setHasInitiatedSession(false);
 
             when(userManagementServiceMock.loadOrCreateUser(user.getPhoneNumber())).thenReturn(user);
@@ -211,7 +212,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
     public void meetingRsvpShouldWorkInAllLanguages() throws Exception {
         resetTestUser();
         Group testGroup = new Group(testGroupName, testUser);
-        testGroup.addMember(testUser, BaseRoles.ROLE_GROUP_ORGANIZER);
+        testGroup.addMember(testUser, BaseRoles.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_BY_ADMIN);
         Meeting meeting = new MeetingBuilder().setName("Meeting about testing").setStartDateTime(Instant.now()).setUser(testUser).setParent(testGroup).setEventLocation("someLocation").createMeeting();
 
         List<User> groupMembers = new ArrayList<>(languageUsers);

@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.GroupJoinMethod;
 import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.task.EventLog;
 import za.org.grassroot.core.domain.task.EventReminderType;
@@ -102,7 +103,7 @@ public class MeetingRestControllerTest extends RestAbstractUnitTest {
 
     @Test
     public void viewRsvpingShouldWork() throws Exception {
-        testGroup.addMember(sessionTestUser, BaseRoles.ROLE_GROUP_ORGANIZER);
+        testGroup.addMember(sessionTestUser, BaseRoles.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_BY_ADMIN);
         ResponseTotalsDTO testResponseTotalsDTO = ResponseTotalsDTO.makeForTest(40, 20, 10, 0, 70);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);

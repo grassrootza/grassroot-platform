@@ -6,12 +6,12 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.junit4.SpringRunner;
 import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.GroupJoinMethod;
 import za.org.grassroot.core.domain.User;
 
 import javax.transaction.Transactional;
@@ -47,8 +47,8 @@ public class UserGroupRoleTest {
         Group group1 = new Group("Red Devils", user);
         Group group2 = new Group("Code Nation", user);
 
-        group1.addMember(user, BaseRoles.ROLE_GROUP_ORGANIZER);
-        group2.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER);
+        group1.addMember(user, BaseRoles.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_BY_ADMIN);
+        group2.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_ADMIN);
 
         group1 = groupRepository.save(group1);
         group2 = groupRepository.save(group2);

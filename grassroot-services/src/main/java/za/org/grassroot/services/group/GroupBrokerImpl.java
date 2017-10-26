@@ -316,13 +316,13 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         List<User> users = userRepository.findByUidIn(memberUids);
         Set<User> userSet = new HashSet<>(users);
         logger.info("list size {}, set size {}", users.size(), userSet.size());
-        group.addMembers(userSet, BaseRoles.ROLE_ORDINARY_MEMBER);
+        group.addMembers(userSet, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_ADMIN);
 
 
         // recursively add users to all parent groups
         Group parentGroup = group.getParent();
         while (parentGroup != null) {
-            parentGroup.addMembers(userSet, BaseRoles.ROLE_ORDINARY_MEMBER);
+            parentGroup.addMembers(userSet, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_ADMIN);
             parentGroup = parentGroup.getParent();
         }
 
@@ -347,12 +347,12 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
             throw new InvalidTokenException("Invalid token: " + tokenPassed);
 
         logger.info("Adding a member via token code: group={}, user={}, code={}", group, user, tokenPassed);
-        group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER);
+        group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_ADMIN);
 
         // recursively add user to all parent groups
         Group parentGroup = group.getParent();
         while (parentGroup != null) {
-            parentGroup.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER);
+            parentGroup.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_ADMIN);
             parentGroup = parentGroup.getParent();
         }
 
@@ -456,7 +456,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
             String roleName = membershipInfo.getRoleName();
             if (roleName == null)
                 roleName = BaseRoles.ROLE_ORDINARY_MEMBER;
-            Membership membership = group.addMember(user, roleName);
+            Membership membership = group.addMember(user, roleName, GroupJoinMethod.ADDED_BY_ADMIN);
             if (membership != null) {
                 memberships.add(membership);
             }

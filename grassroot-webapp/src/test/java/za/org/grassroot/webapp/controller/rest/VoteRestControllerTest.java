@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.GroupJoinMethod;
 import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.task.EventLog;
 import za.org.grassroot.core.domain.task.Vote;
@@ -80,7 +81,7 @@ public class VoteRestControllerTest extends RestAbstractUnitTest {
     @Test
     public void viewingAVoteShouldWork() throws Exception {
 
-        testGroup.addMember(sessionTestUser, BaseRoles.ROLE_GROUP_ORGANIZER);
+        testGroup.addMember(sessionTestUser, BaseRoles.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_BY_ADMIN);
         EventLog eventLog = new EventLog(sessionTestUser, voteEvent, EventLogType.RSVP, EventRSVPResponse.YES);
         ResponseTotalsDTO rsvpTotalsDTO = ResponseTotalsDTO.makeForTest(1, 2, 3, 4, 5);
 

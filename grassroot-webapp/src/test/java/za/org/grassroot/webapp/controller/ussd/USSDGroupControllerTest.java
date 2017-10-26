@@ -4,10 +4,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import za.org.grassroot.core.domain.BaseRoles;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.Permission;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.services.group.GroupPermissionTemplate;
 
@@ -65,7 +62,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
     @Test
     public void openingMenuShouldWorkWithNoGroups() throws Exception {
         resetTestGroup();
-        testGroup.addMember(testUser, BaseRoles.ROLE_ORDINARY_MEMBER);
+        testGroup.addMember(testUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_ADMIN);
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(permissionBrokerMock.getActiveGroupsWithPermission(testUser, null)).thenReturn(new HashSet<>());
         mockMvc.perform(get(path + "start").param(phoneParam, testUserPhone)).andExpect(status().isOk());
@@ -503,7 +500,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
      */
     private void resetTestGroup() {
         testGroup.setGroupName("test testGroup");
-        testGroup.addMember(testUser, BaseRoles.ROLE_ORDINARY_MEMBER);
+        testGroup.addMember(testUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_ADMIN);
     }
 
 }
