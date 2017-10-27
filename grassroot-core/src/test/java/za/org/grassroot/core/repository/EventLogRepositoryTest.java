@@ -46,7 +46,7 @@ public class EventLogRepositoryTest {
         User user = userRepository.save(new User("001111111"));
         Group group = groupRepository.save(new Group("test eventlog", user));
         User user2 = userRepository.save(new User("00111112"));
-        group.addMember(user2, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_ADMIN);
+        group.addMember(user2, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_GROUP_ADMIN);
         Event event = eventRepository.save(new MeetingBuilder().setName("test meeting").setStartDateTime(Instant.now()).setUser(user).setParent(group).setEventLocation("someLoc").createMeeting());
         eventLogRepository.save(new EventLog(user, event, EventLogType.CREATED));
         assertEquals(1, eventLogRepository.count());
@@ -61,7 +61,7 @@ public class EventLogRepositoryTest {
         User user = userRepository.save(new User("001111113"));
         Group group = groupRepository.save(new Group("test eventlog 2", user));
         User user2 = userRepository.save(new User("00111114"));
-        group.addMember(user2, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_ADMIN);
+        group.addMember(user2, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_GROUP_ADMIN);
         Event event = eventRepository.save(new MeetingBuilder().setName("test meeting 2").setStartDateTime(Instant.now()).setUser(user).setParent(group).setEventLocation("someLoc").createMeeting());
         eventLogRepository.save(new EventLog(user2, event, EventLogType.REMINDER));
         assertEquals(1, eventLogRepository.count());
@@ -78,8 +78,8 @@ public class EventLogRepositoryTest {
         User user = userRepository.save(new User("001111117"));
         User user2 = userRepository.save(new User("00111118"));
         Group group = new Group("test eventlog 5", user);
-        group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_ADMIN);
-        group.addMember(user2, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_ADMIN);
+        group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_GROUP_ADMIN);
+        group.addMember(user2, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_GROUP_ADMIN);
         groupRepository.save(group);
         Event event = eventRepository.save(new MeetingBuilder().setName("test meeting 5").setStartDateTime(Instant.now()).setUser(user).setParent(group).setEventLocation("someLoc").createMeeting());
         EventLog eventLog = new EventLog(user, event, EventLogType.REMINDER);
@@ -94,7 +94,7 @@ public class EventLogRepositoryTest {
         User user = userRepository.save(new User("001111119"));
         Group group = groupRepository.save(new Group("test meeting 6", user));
         User user2 = userRepository.save(new User("00111110"));
-        group.addMember(user2, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_ADMIN);
+        group.addMember(user2, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_GROUP_ADMIN);
         Event event = eventRepository.save(new MeetingBuilder().setName("test meeting 6").setStartDateTime(Instant.now()).setUser(user).setParent(group).setEventLocation("someLoc").createMeeting());
         Boolean aBoolean = eventLogRepository.findByEventAndUserAndEventLogType(event, user2, EventLogType.REMINDER) != null;
         assertEquals(false, Boolean.parseBoolean(aBoolean.toString()));
@@ -108,7 +108,7 @@ public class EventLogRepositoryTest {
         User user = userRepository.save(new User("001111120"));
         Group group = groupRepository.save(new Group("test minutes 1", user));
         User user2 = userRepository.save(new User("001111121"));
-        group.addMember(user2, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_ADMIN);
+        group.addMember(user2, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_GROUP_ADMIN);
         Event event = eventRepository.save(new MeetingBuilder().setName("test meeting 7").setStartDateTime(Instant.now()).setUser(user).setParent(group).setEventLocation("someLoc").createMeeting());
         event.setCanceled(true);
         eventRepository.save(event);

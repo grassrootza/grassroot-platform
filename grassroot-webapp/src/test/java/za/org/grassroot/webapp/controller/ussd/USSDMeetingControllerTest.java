@@ -97,7 +97,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         List<Group> existingGroupList = Arrays.asList(new Group("gc1", testUser),
                                                       new Group("gc2", testUser),
                                                       new Group("gc3", testUser));
-        existingGroupList.forEach(g -> g.addMember(testUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_ADMIN));
+        existingGroupList.forEach(g -> g.addMember(testUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_GROUP_ADMIN));
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(eventBrokerMock.userHasEventsToView(testUser, EventType.MEETING, EventListTimeType.FUTURE)).thenReturn(false);

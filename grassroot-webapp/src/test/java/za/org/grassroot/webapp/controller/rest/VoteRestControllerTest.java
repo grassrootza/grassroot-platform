@@ -81,7 +81,7 @@ public class VoteRestControllerTest extends RestAbstractUnitTest {
     @Test
     public void viewingAVoteShouldWork() throws Exception {
 
-        testGroup.addMember(sessionTestUser, BaseRoles.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_BY_ADMIN);
+        testGroup.addMember(sessionTestUser, BaseRoles.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_BY_GROUP_ADMIN);
         EventLog eventLog = new EventLog(sessionTestUser, voteEvent, EventLogType.RSVP, EventRSVPResponse.YES);
         ResponseTotalsDTO rsvpTotalsDTO = ResponseTotalsDTO.makeForTest(1, 2, 3, 4, 5);
 

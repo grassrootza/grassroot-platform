@@ -47,8 +47,8 @@ public class UserGroupRoleTest {
         Group group1 = new Group("Red Devils", user);
         Group group2 = new Group("Code Nation", user);
 
-        group1.addMember(user, BaseRoles.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_BY_ADMIN);
-        group2.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_ADMIN);
+        group1.addMember(user, BaseRoles.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_BY_GROUP_ADMIN);
+        group2.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_GROUP_ADMIN);
 
         group1 = groupRepository.save(group1);
         group2 = groupRepository.save(group2);

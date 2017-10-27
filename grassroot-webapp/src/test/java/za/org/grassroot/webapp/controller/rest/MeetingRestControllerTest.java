@@ -103,7 +103,7 @@ public class MeetingRestControllerTest extends RestAbstractUnitTest {
 
     @Test
     public void viewRsvpingShouldWork() throws Exception {
-        testGroup.addMember(sessionTestUser, BaseRoles.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_BY_ADMIN);
+        testGroup.addMember(sessionTestUser, BaseRoles.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_BY_GROUP_ADMIN);
         ResponseTotalsDTO testResponseTotalsDTO = ResponseTotalsDTO.makeForTest(40, 20, 10, 0, 70);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);

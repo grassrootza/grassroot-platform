@@ -138,13 +138,13 @@ public class EventBrokerTest {
         User user = userRepository.save(new User("0825555511"));
         Group grouplevel1 = groupRepository.save(new Group("rsvp level1",user));
         User userl1 = userRepository.save(new User("0825555512"));
-        grouplevel1.addMember(userl1, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_ADMIN);
+        grouplevel1.addMember(userl1, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_GROUP_ADMIN);
         grouplevel1 = groupRepository.save(grouplevel1);
         Group grouplevel2 = groupRepository.save(new Group("rsvp level2",user));
         grouplevel2.setParent(grouplevel1);
         grouplevel2 = groupRepository.save(grouplevel2);
         User userl2 = userRepository.save(new User("0825555521"));
-        grouplevel2.addMember(userl2, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_ADMIN);
+        grouplevel2.addMember(userl2, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_GROUP_ADMIN);
         grouplevel2 = groupRepository.save(grouplevel2);
         List<Event> outstanding =  eventBroker.getOutstandingResponseForUser(userl2, EventType.MEETING);
         assertNotNull(outstanding);

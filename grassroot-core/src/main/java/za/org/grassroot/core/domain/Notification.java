@@ -107,6 +107,7 @@ public abstract class Notification implements Serializable {
 	private MessagingProvider sentViaProvider = null;
 
 
+	@Setter
 	@Column(name = "use_only_free_channels")
 	private boolean useOnlyFreeChannels = false;
 
@@ -161,7 +162,7 @@ public abstract class Notification implements Serializable {
 		if (group != null) {
 			Membership membership = target.getGroupMembership(group.getUid());
 			if (membership != null) {
-				this.useOnlyFreeChannels = membership.getJoinMethod() == GroupJoinMethod.VIA_JOIN_CODE;
+				this.useOnlyFreeChannels = membership.getJoinMethod() == GroupJoinMethod.SELF_JOINED;
 			}
 		}
 
