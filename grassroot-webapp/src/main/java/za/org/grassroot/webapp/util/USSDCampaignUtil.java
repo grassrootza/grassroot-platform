@@ -17,6 +17,7 @@ public class USSDCampaignUtil {
     public static final String MORE_INFO_URL = "more-info";
     public static final String EXIT_URL = "exit";
     public static final String MESSAGE_UID = "messageUid";
+    public static final String SET_LANGUAGE_URL ="set-lang";
 
     private static Map<CampaignActionType, String> campaignUrlMap = new HashMap<>();
 

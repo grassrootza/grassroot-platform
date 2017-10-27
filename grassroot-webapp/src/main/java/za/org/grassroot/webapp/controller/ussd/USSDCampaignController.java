@@ -1,6 +1,7 @@
 package za.org.grassroot.webapp.controller.ussd;
 
 
+import com.google.common.collect.Sets;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -15,9 +16,10 @@ import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignActionType;
 import za.org.grassroot.core.domain.campaign.CampaignMessage;
 import za.org.grassroot.core.domain.campaign.CampaignMessageAction;
+import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.services.campaign.CampaignBroker;
 import za.org.grassroot.services.campaign.util.CampaignUtil;
-import za.org.grassroot.services.group.GroupJoinRequestService;
+import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
@@ -27,6 +29,7 @@ import java.net.URISyntaxException;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
@@ -37,15 +40,14 @@ public class USSDCampaignController extends USSDController{
 
     private static final String campaignMenus = "campaign/";
     private static final String campaignUrl = homePath + campaignMenus;
-    private static final String JOIN_GROUP_DESCRIPTION = "Join Campaign Master Group";
     private final CampaignBroker campaignBroker;
-    private final GroupJoinRequestService groupJoinRequestService;
+    private final GroupBroker groupBroker;
     private final UserManagementService userManagementService;
 
     @Autowired
-    public USSDCampaignController(CampaignBroker campaignBroker,GroupJoinRequestService groupJoinRequestService, UserManagementService userManagementService ){
+    public USSDCampaignController(CampaignBroker campaignBroker,GroupBroker groupBroker, UserManagementService userManagementService ){
         this.campaignBroker = campaignBroker;
-        this.groupJoinRequestService = groupJoinRequestService;
+        this.groupBroker = groupBroker;
         this.userManagementService = userManagementService;
     }
 
@@ -54,16 +56,14 @@ public class USSDCampaignController extends USSDController{
     public Request processTagMeRequest(@RequestParam(value = phoneNumber) String inputNumber,
                                       @RequestParam (value = USSDCampaignUtil.CODE_PARAMETER) String campaignCode,
                                       @RequestParam (value = USSDCampaignUtil.LANGUAGE_PARAMETER) String languageCode,
-                                      @RequestParam (value = USSDCampaignUtil.MESSAGE_UID)String messageUid
+                                      @RequestParam (value = USSDCampaignUtil.MESSAGE_UID)String parentMessageUid
                                       )  throws URISyntaxException{
 
         User user = userManagementService.loadOrCreateUser(inputNumber);
         Campaign campaign = campaignBroker.getCampaignDetailsByCode(campaignCode);
-        //TO do: Ask Luke. Will this require approval.
-        groupJoinRequestService.open(user.getUid(), campaign.getMasterGroup().getUid(), JOIN_GROUP_DESCRIPTION);
-        updateMembership(user,campaign,messageUid);
-        CampaignMessage message =  CampaignUtil.getNextCampaignMessageByActionType(campaign,CampaignActionType.TAG_ME,messageUid);
-        return menuBuilder(buildUSSDMenu(message,languageCode, campaignCode));
+        updateMembership(user,campaign,parentMessageUid);
+        CampaignMessage message =  CampaignUtil.getNextCampaignMessageByActionType(campaign,CampaignActionType.TAG_ME,parentMessageUid);
+        return menuBuilder(buildCampaignUSSDMenu(message,languageCode, campaignCode));
 
     }
 
@@ -74,7 +74,20 @@ public class USSDCampaignController extends USSDController{
                                                 @RequestParam (value = USSDCampaignUtil.LANGUAGE_PARAMETER) String languageCode,
                                                 @RequestParam (value = USSDCampaignUtil.MESSAGE_UID)String parentMessageUid)  throws URISyntaxException{
         CampaignMessage message = addUserToMasterGroup(campaignCode,inputNumber,CampaignActionType.JOIN_MASTER_GROUP, parentMessageUid);
-        return menuBuilder(buildUSSDMenu(message,languageCode, campaignCode));
+        return menuBuilder(buildCampaignUSSDMenu(message,languageCode, campaignCode));
+    }
+
+    @RequestMapping(value = campaignUrl + USSDCampaignUtil.SET_LANGUAGE_URL)
+    @ResponseBody
+    public Request userPromptLanguage(@RequestParam(value= phoneNumber, required=true) String inputNumber,
+                                      @RequestParam (value = USSDCampaignUtil.CODE_PARAMETER) String campaignCode,
+                                      @RequestParam (value = USSDCampaignUtil.LANGUAGE_PARAMETER) String languageCode) throws URISyntaxException {
+
+        User user = userManager.findByInputNumber(inputNumber);
+        userManager.updateUserLanguage(user.getUid(),new Locale(languageCode));
+        Campaign campaign =  campaignBroker.getCampaignDetailsByCode(campaignCode);
+        CampaignMessage campaignMessage = CampaignUtil.getFirstCampaignMessageByLocale(campaign,languageCode);
+        return  menuBuilder(buildCampaignUSSDMenu(campaignMessage, languageCode,campaignCode));
     }
 
     @RequestMapping(value = campaignUrl + USSDCampaignUtil.SIGN_PETITION_URL)
@@ -85,7 +98,7 @@ public class USSDCampaignController extends USSDController{
         Campaign campaign = campaignBroker.getCampaignDetailsByCode(campaignCode);
         CampaignMessage message = CampaignUtil.getNextCampaignMessageByActionType(campaign,CampaignActionType.SIGN_PETITION,parentMessageUid);
         //TO do. integrate to petition API
-        return menuBuilder(buildUSSDMenu(message,languageCode, campaignCode));
+        return menuBuilder(buildCampaignUSSDMenu(message,languageCode, campaignCode));
     }
 
     @RequestMapping(value = campaignUrl + USSDCampaignUtil.MORE_INFO_URL)
@@ -95,7 +108,7 @@ public class USSDCampaignController extends USSDController{
                                           @RequestParam (value = USSDCampaignUtil.MESSAGE_UID)String parentMessageUid)  throws URISyntaxException{
         Campaign campaign = campaignBroker.getCampaignDetailsByCode(campaignCode);
         CampaignMessage message = CampaignUtil.getNextCampaignMessageByActionType(campaign,CampaignActionType.MORE_INFO,parentMessageUid);
-        return menuBuilder(buildUSSDMenu(message,languageCode, campaignCode));
+        return menuBuilder(buildCampaignUSSDMenu(message,languageCode, campaignCode));
     }
 
     @RequestMapping(value = campaignUrl + USSDCampaignUtil.EXIT_URL)
@@ -105,10 +118,10 @@ public class USSDCampaignController extends USSDController{
                                      @RequestParam (value = USSDCampaignUtil.MESSAGE_UID)String parentMessageUid )  throws URISyntaxException{
         Campaign campaign = campaignBroker.getCampaignDetailsByCode(campaignCode);
         CampaignMessage message = CampaignUtil.getNextCampaignMessageByActionType(campaign,CampaignActionType.EXIT,parentMessageUid);
-        return menuBuilder(buildUSSDMenu(message,languageCode, campaignCode));
+        return menuBuilder(buildCampaignUSSDMenu(message,languageCode, campaignCode));
     }
 
-    private USSDMenu buildUSSDMenu(CampaignMessage campaignMessage,String languageCode, String campaignCode){
+    private USSDMenu buildCampaignUSSDMenu(CampaignMessage campaignMessage, String languageCode, String campaignCode){
         String promptMessage = campaignMessage.getMessage();
         Map<String, String> linksMap = new HashMap<>();
         if(campaignMessage.getCampaignMessageActionSet() != null && !campaignMessage.getCampaignMessageActionSet().isEmpty()){
@@ -132,13 +145,11 @@ public class USSDCampaignController extends USSDController{
     private CampaignMessage addUserToMasterGroup(String campaignCode, String phoneNumber, CampaignActionType type, String parentMessageUid) {
         User user = userManagementService.loadOrCreateUser(phoneNumber);
         Campaign campaign = campaignBroker.getCampaignDetailsByCode(campaignCode);
-        groupJoinRequestService.open(user.getUid(), campaign.getMasterGroup().getUid(), JOIN_GROUP_DESCRIPTION);
+        MembershipInfo newMember = new MembershipInfo(phoneNumber, null, null);
+        groupBroker.addMembers(user.getUid(), campaign.getMasterGroup().getUid(), Sets.newHashSet(newMember), false);
         return CampaignUtil.getNextCampaignMessageByActionType(campaign, type, parentMessageUid);
     }
 
-    //check with Luke:
-    //Question: should joining of master group require approval?
-    //when is Membership updated...what is the flow?
     private void updateMembership(User user, Campaign campaign, String messageUid){
         CampaignMessage message = CampaignUtil.getCampaignMessageFromCampaignByMessageUid(campaign,messageUid);
         if(message != null && message.getTagList() != null && message.getTagList().isEmpty()){

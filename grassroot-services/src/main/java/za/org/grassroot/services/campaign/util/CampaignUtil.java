@@ -94,4 +94,24 @@ public class CampaignUtil {
         }
         return null;
     }
+
+    public static Set<Locale> getCampaignSupportedLanguages(Campaign campaign){
+        Set<Locale> localeSet = new HashSet<>();
+        for(CampaignMessage message : campaign.getCampaignMessages()){
+            localeSet.add(message.getLocale());
+        }
+        return localeSet;
+
+    }
+
+    public static CampaignMessage getFirstCampaignMessageByLocale(Campaign campaign, String languageCode){
+        if(campaign != null && campaign.getCampaignMessages() != null && !campaign.getCampaignMessages().isEmpty()){
+            for(CampaignMessage message: campaign.getCampaignMessages()){
+                if(message.getLocale().equals(new Locale(languageCode))){
+                    return message;
+                }
+            }
+        }
+        return null;
+    }
 }
