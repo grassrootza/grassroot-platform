@@ -158,14 +158,6 @@ public abstract class Notification implements Serializable {
 			throw new IllegalArgumentException("Unsupported action log: " + actionLog);
 		}
 
-		Group group = getRelevantGroup();
-		if (group != null) {
-			Membership membership = target.getGroupMembership(group.getUid());
-			if (membership != null) {
-				this.useOnlyFreeChannels = membership.getJoinMethod() == GroupJoinMethod.SELF_JOINED;
-			}
-		}
-
 	}
 
 

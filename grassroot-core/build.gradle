@@ -21,8 +21,8 @@ publishing {
 
 
 bintray {
-    user = "$bintray_user"// hasProperty('bintray_user') ? getProperty('bintray_user') : ''
-    key =  "$bintray_api_key"// hasProperty('bintray_api_key') ? getProperty('bintray_api_key') : ''
+    user =  hasProperty('bintray_user') ? getProperty('bintray_user') : ''
+    key =   hasProperty('bintray_api_key') ? getProperty('bintray_api_key') : ''
     pkg {
 
         repo = 'grassroot-platform'
