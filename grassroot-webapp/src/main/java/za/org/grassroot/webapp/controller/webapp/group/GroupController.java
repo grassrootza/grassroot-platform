@@ -845,7 +845,8 @@ public class GroupController extends BaseController {
     @RequestMapping(value = "user-joins")
     @ResponseBody
     public Map<String, Object> myGroupsRecentUserJoins(@RequestParam("gcd") Integer maxGroupAgeInDays,
-                                                       @RequestParam("ujd") Integer joinedInLastXDays, Pageable pageable) {
+                                                       @RequestParam("ujd") Integer joinedInLastXDays,
+                                                       Pageable pageable) {
 
         Instant joinedAfter = Instant.now().minus(joinedInLastXDays, ChronoUnit.DAYS);
         Instant groupCreatedAfter = Instant.now().minus(maxGroupAgeInDays, ChronoUnit.DAYS);

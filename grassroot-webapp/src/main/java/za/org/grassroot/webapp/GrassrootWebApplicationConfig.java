@@ -83,7 +83,7 @@ public class GrassrootWebApplicationConfig implements ApplicationContextAware {
     @Profile({ "staging", "production", "localpg" })
     public EmbeddedServletContainerFactory servletContainer() {
 
-       /* TomcatEmbeddedServletContainerFactory tomcat = new TomcatEmbeddedServletContainerFactory(){
+       return new TomcatEmbeddedServletContainerFactory(){
             @Override
             protected void postProcessContext(Context context) {
                 if (environment.acceptsProfiles("staging", "production")) {
@@ -97,7 +97,7 @@ public class GrassrootWebApplicationConfig implements ApplicationContextAware {
             }
         };
 
-        if (environment.acceptsProfiles("staging", "production")) {
+        /* if (environment.acceptsProfiles("staging", "production")) {
             Integer httpPort = environment.getRequiredProperty("grassroot.http.port", Integer.class);
             Integer httpsPort = environment.getRequiredProperty("grassroot.https.port", Integer.class);
             logger.info("starting up tomcat, http port obtained = {}, and https obtained = {}", httpPort, httpsPort);
@@ -105,7 +105,7 @@ public class GrassrootWebApplicationConfig implements ApplicationContextAware {
             tomcat.addAdditionalTomcatConnectors(nonSSLConnector);
         }
 
-        return tomcat; */
+        return tomcat;*/
     }
 
     private Connector createNonSSLConnectorWithRedirect(int httpPort, int httpsPort) {
