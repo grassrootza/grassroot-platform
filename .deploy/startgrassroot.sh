@@ -25,4 +25,4 @@ else
 fi
 
 #./scripts/startmqtt.sh
-java -Djava.security.egd=file:/dev/urandom -Dspring.profiles.active=$PROFILE,fast -jar -Xmx1024m grassroot-webapp/build/libs/grassroot-webapp-1.0.0.RC1.jar > log/grassroot-app.log 2>&1 &
+java -Djava.security.egd=file:/dev/urandom -Dspring.profiles.active=$PROFILE,fast -jar -Xmx1024m grassroot-webapp/build/libs/grassroot-webapp-1.0.0.RC3.jar > log/grassroot-app.log 2>&1 &
