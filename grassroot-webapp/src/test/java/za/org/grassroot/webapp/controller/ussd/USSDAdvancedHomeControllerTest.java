@@ -98,6 +98,13 @@ public class USSDAdvancedHomeControllerTest extends USSDAbstractUnitTest{
         when(userManagementServiceMock.findByInputNumber(phoneForTests)).thenReturn(testUser);
         when(objectLocationBrokerMock.fetchBestGuessUserLocation(testUser.getUid())).thenReturn(testLocation);
 
+        when(objectLocationBrokerMock.fetchMeetingLocationsNearUser(testUser,null,testRadius,GeographicSearchType.PUBLIC,
+                null)).thenThrow(new IllegalArgumentException("Invalid location"));
+
+        when(objectLocationBrokerMock.fetchMeetingLocationsNearUser(testUser,testLocation,null,GeographicSearchType.PUBLIC,
+                null)).thenThrow(new IllegalArgumentException("Invalid radius"));
+
+
         List<ObjectLocation> actualObjectLocations = new ArrayList<>();
 
         Group testGroup = new Group("test Group", testUser);
