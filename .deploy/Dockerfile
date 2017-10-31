@@ -13,7 +13,7 @@ ENV GRADLE_USER_HOME=/usr/src/grassroot/.gradle
 RUN mkdir -p /usr/src/grassroot/environment && mkdir -p /usr/src/grassroot/log
 
 # COPY ALL SOURCE CODE, ALTERNATIVELY WE COULD BE COPYING JUST THE JAR FILES (TO REVIEW LATER)
-# COPY . /usr/src/grassroot
+COPY . /usr/src/grassroot
 
 # START SUPERVISORD
 CMD ["supervisord", "-n"]
