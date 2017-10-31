@@ -83,7 +83,7 @@ public class GrassrootWebApplicationConfig implements ApplicationContextAware {
     @Profile({ "staging", "production", "localpg" })
     public EmbeddedServletContainerFactory servletContainer() {
 
-        TomcatEmbeddedServletContainerFactory tomcat = new TomcatEmbeddedServletContainerFactory(){
+       /* TomcatEmbeddedServletContainerFactory tomcat = new TomcatEmbeddedServletContainerFactory(){
             @Override
             protected void postProcessContext(Context context) {
                 if (environment.acceptsProfiles("staging", "production")) {
@@ -105,14 +105,14 @@ public class GrassrootWebApplicationConfig implements ApplicationContextAware {
             tomcat.addAdditionalTomcatConnectors(nonSSLConnector);
         }
 
-        return tomcat;
+        return tomcat; */
     }
 
     private Connector createNonSSLConnectorWithRedirect(int httpPort, int httpsPort) {
         logger.info("setting non SSL port inside connector");
         Connector connector = new Connector("org.apache.coyote.http11.Http11NioProtocol");
         connector.setPort(httpPort);
-        connector.setRedirectPort(httpsPort);
+        //connector.setRedirectPort(httpsPort);
         return connector;
     }
 

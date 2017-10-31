@@ -1,3 +1,17 @@
+# localhost logs #
+log
+log/*
+
+# localhost environment files #
+environment/*
+
+# localhost deployment scripts #
+/startgrassroot.sh
+
+# ignore docker files #
+/docker-compose.yml
+/Dockerfile
+
 # Java Compiled Files #
 *.class
 

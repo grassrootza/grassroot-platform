@@ -1,11 +1,50 @@
 machine:
   java:
     version: oraclejdk8
+  services:
+    - docker
+
+dependencies:
+  pre:
+    - pip install awscli
+    - pip install awsebcli
+
+    # SETUP KEYS TO ACCESS BUILD SERVER IF NEEDED
+    - aws configure set profile.default.s3.signature_version s3v4
+    #- aws s3 cp s3://grassroot-circleci/circleci_key circleci_key --region ap-southeast-2
+    #- cat circleci_key >> ~/.ssh/authorized_keys@
+
 test:
   post:
     - mkdir -p $CIRCLE_TEST_REPORTS/junit/
     - find . -type f -regex ".*/build/test-results/.*xml" -exec cp {} $CIRCLE_TEST_REPORTS/junit/ \;
+
 general:
   artifacts:
-    - "grassroot-core/build/libs/grassroot-core-1.0.0.M3.jar"
-    - "grassroot-webapp/build/libs/grassroot-webapp-1.0.0.M3.jar"
+    #- "grassroot-core/build/libs/grassroot-core-1.0.0.M3.jar"
+    #- "grassroot-webapp/build/libs/grassroot-webapp-1.0.0.M3.jar"
+
+deployment:
+  production:
+    branch: master
+    commands:
+
+  staging:
+    branch: staging
+    commands:
+      # define environment
+      #- export ENVIRONMENT=staging
+      - echo 'export ENVIRONMENT=staging' >> ~/.circlerc
+      - echo 'export EBENVIRONMENT=gr-stg' >> ~/.circlerc
+      - echo $ENVIRONMENT
+      #- export EBENVIRONMENT=gr-stg
+
+      # build image and deploy to docker hub
+      - mv .deploy/buildimage.sh buildimage.sh
+      - chmod +x buildimage.sh
+      - ./buildimage.sh $CIRCLE_SHA1 $ENVIRONMENT
+
+      # deploy files to beanstalk
+      - mv .deploy/ebdeploy.sh ebdeploy.sh
+      - chmod +x ebdeploy.sh
+      - ./ebdeploy.sh $CIRCLE_SHA1 $ENVIRONMENT $EBENVIRONMENT

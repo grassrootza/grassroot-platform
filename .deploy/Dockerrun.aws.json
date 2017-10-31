@@ -1,0 +1,23 @@
+{
+  "AWSEBDockerrunVersion": "1",
+  "Image": {
+    "Name": "awsassembly/grassroot:<TAG>",
+    "Update": "true"
+  },
+  "Ports": [
+    {
+      "ContainerPort": "80"
+    }
+  ],
+  "Volumes": [
+    {
+      "HostDirectory": "/var/app/current/environment",
+      "ContainerDirectory": "/usr/src/grassroot/environment"
+    },
+    {
+      "HostDirectory": "/var/app/current/log",
+      "ContainerDirectory": "/usr/src/grassroot/log"
+    }
+  ],
+  "Logging": "/var/log/nginx"
+}
