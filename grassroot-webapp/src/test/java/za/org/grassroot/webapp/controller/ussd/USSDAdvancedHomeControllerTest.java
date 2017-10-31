@@ -61,8 +61,7 @@ public class USSDAdvancedHomeControllerTest extends USSDAbstractUnitTest{
     protected final static String testGroupName = "test_group";
 
     protected final static Group testGroup = new Group(testGroupName, testUser);
-    @Autowired
-    private static final Logger logger = LoggerFactory.getLogger(USSDAdvancedHomeControllerTest.class);
+
     @InjectMocks
     private USSDHomeController ussdHomeController;
 
@@ -84,7 +83,7 @@ public class USSDAdvancedHomeControllerTest extends USSDAbstractUnitTest{
         wireUpMessageSourceAndGroupUtil(ussdAdvancedHomeController);
     }
 
-    @Test//(expected = URISyntaxException.class)
+    @Test
     @Rollback
     public void advancedUssdWelcomeMenuShouldWork() throws Exception{
         when(userManagementServiceMock.findByInputNumber(phoneForTests)).thenReturn(testUser);
@@ -92,7 +91,7 @@ public class USSDAdvancedHomeControllerTest extends USSDAbstractUnitTest{
         mockMvc.perform(get(advancedMenuOptionsRoot + "/start").param(phoneParameter, phoneForTests)).andExpect(status().isOk());
     }
 
-    @Test//(expected = URISyntaxException.class)
+    @Test
     public void getPublicMeetingsNearUserShouldWork() throws Exception{
         GeoLocation testLocation = new GeoLocation(testLat,testLong);
 
@@ -106,7 +105,8 @@ public class USSDAdvancedHomeControllerTest extends USSDAbstractUnitTest{
         Meeting testMeeting = new MeetingBuilder().setName("test meeting")
                 .setStartDateTime(Instant.now().plus(1, ChronoUnit.DAYS))
                 .setUser(testUser).setParent(testGroup).setEventLocation("place").createMeeting();
-        MeetingLocation meetingLocation = new MeetingLocation(testMeeting,testLocation,0, EventType.MEETING, LocationSource.LOGGED_APPROX);
+        MeetingLocation meetingLocation = new MeetingLocation(testMeeting,testLocation,0,
+                EventType.MEETING, LocationSource.LOGGED_APPROX);
 
         ObjectLocation objectLocation = new ObjectLocation(testMeeting, meetingLocation);
         actualObjectLocations.add(objectLocation);
@@ -117,13 +117,11 @@ public class USSDAdvancedHomeControllerTest extends USSDAbstractUnitTest{
         mockMvc.perform(get(advancedMenuOptionsRoot + "/public/mtgs")
                 .param(phoneParameter, phoneForTests))
                 .andExpect(status().is(200));
-
-        // todo: add verifications
         verify(objectLocationBrokerMock,times(1)).fetchBestGuessUserLocation(testUser.getUid());
         verify(objectLocationBrokerMock,times(1)).fetchMeetingLocationsNearUser(testUser,testLocation,testRadius, GeographicSearchType.PUBLIC,null);
     }
 
-    @Test//(expected = URISyntaxException.class)
+    @Test
     public void meetingDetailsShouldWork() throws Exception{
         Meeting testMeeting = new MeetingBuilder().setName("test meeting")
                 .setStartDateTime(Instant.now().plus(1, ChronoUnit.DAYS))
@@ -138,19 +136,15 @@ public class USSDAdvancedHomeControllerTest extends USSDAbstractUnitTest{
                 .param(phoneParameter,""+phoneForTests)
                 .accept(MediaType.APPLICATION_JSON))
                 .andReturn();
-        logger.info("Meeting Details Result = {}",result.getResponse().getStatus());
     }
 
-    @Test//(expected = URISyntaxException.class)
+    @Test
     public void trackUserShouldWork() throws Exception{
-        // todo: actual test (MVC call)
         MvcResult result = mockMvc.perform(MockMvcRequestBuilders
                 .get(advancedMenuOptionsRoot + "/start/track-me")
                 .param(phoneParameter,""+phoneForTests)
                 .accept(MediaType.APPLICATION_JSON))
                 .andReturn();
-
-        logger.info("Tracking User Location = {}",result.getResponse().getStatus());
         Assert.assertFalse(ussdLocationServicesBrokerMock.addUssdLocationLookupAllowed(testUser.getUid(), UserInterfaceType.USSD));
     }
 }
