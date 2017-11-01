@@ -101,6 +101,9 @@ public class USSDAdvancedHomeControllerTest extends USSDAbstractUnitTest{
         when(objectLocationBrokerMock.fetchMeetingLocationsNearUser(testUser,null,testRadius,GeographicSearchType.PUBLIC,
                 null)).thenThrow(new IllegalArgumentException("Invalid location"));
 
+        when(objectLocationBrokerMock.fetchMeetingLocationsNearUser(testUser,testLocation,-5,GeographicSearchType.PUBLIC,
+                null)).thenThrow(new IllegalArgumentException("Invalid radius parameter"));
+
         when(objectLocationBrokerMock.fetchMeetingLocationsNearUser(testUser,testLocation,null,GeographicSearchType.PUBLIC,
                 null)).thenThrow(new IllegalArgumentException("Invalid radius"));
 

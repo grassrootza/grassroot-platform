@@ -7,6 +7,7 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.context.ApplicationEventPublisher;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.services.livewire.LiveWireAlertBrokerImpl;
@@ -52,6 +53,8 @@ public class LiveWireAlertBrokerTest {
     private User testUser;
     private Integer testRadius = 5;
     private String testCreatedByMe = "mine";
+    private GeoLocation testLocation;
+    private double testLat = -11.00,testLong = 11.0;
 
     @Before
     public void setUp () {
@@ -60,6 +63,7 @@ public class LiveWireAlertBrokerTest {
                 applicationEventPublisherMock,logsAndNotificationsBrokerMock);
 
         testUser = new User("1234567899","Testing");
+        testLocation = new GeoLocation(-11.0,11.0);
         given(mockQuery.setParameter(anyString(),any())).willReturn(mockQuery);
         given(mockQuery.getResultList()).willAnswer(l -> Arrays.asList());
         given(entityManagerMock.createQuery(anyString(),eq(LiveWireAlert.class))).willReturn(mockQuery);

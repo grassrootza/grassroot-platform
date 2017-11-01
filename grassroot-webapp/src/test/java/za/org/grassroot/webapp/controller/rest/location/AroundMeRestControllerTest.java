@@ -82,9 +82,6 @@ public class AroundMeRestControllerTest extends RestAbstractUnitTest {
         User testUser = new User(phoneForTests,testUserName);
         String testSearchTerm = "searchTerm";
 
-        //when(!testLocation.isValid()).thenThrow(new InvalidParameterException("Invalid Geolocation object"));
-        //Assert.assertNotNull(objectLocationBrokerMock.fetchGroupsNearby(user.getUid(),testLocation,testRadiusMetres,testFilterTerm,GeographicSearchType.BOTH));
-
         Meeting testMeeting = new MeetingBuilder().setName("test meeting")
                 .setStartDateTime(Instant.now().plus(1, ChronoUnit.DAYS))
                 .setUser(testUser).setParent(testGroup).setEventLocation("place").createMeeting();
@@ -101,6 +98,10 @@ public class AroundMeRestControllerTest extends RestAbstractUnitTest {
         when(objectLocationBrokerMock
                 .fetchMeetingLocationsNearUser(testUser,null,testRadiusMetres, GeographicSearchType.PUBLIC,testSearchTerm))
                 .thenThrow(new InvalidParameterException("Invalid Location parameter"));
+
+        when(objectLocationBrokerMock
+                .fetchMeetingLocationsNearUser(testUser,testLocation,-5, GeographicSearchType.PUBLIC,testSearchTerm))
+                .thenThrow(new InvalidParameterException("Invalid Radius parameter"));
 
         when(objectLocationBrokerMock
                 .fetchMeetingLocationsNearUser(testUser,testLocation,testRadiusMetres, GeographicSearchType.PUBLIC,testSearchTerm))
@@ -142,6 +143,10 @@ public class AroundMeRestControllerTest extends RestAbstractUnitTest {
                 .thenThrow(new InvalidParameterException("Invalid location parameter"));
 
         when(objectLocationBrokerMock
+                .fetchGroupsNearby(testUser.getUid(),testLocation,-5,testFilterTerm,GeographicSearchType.PUBLIC))
+                .thenThrow(new InvalidParameterException("Invalid radius parameter"));
+
+        when(objectLocationBrokerMock
                 .fetchGroupsNearby(testUser.getUid(),testLocation,testRadiusMetres,testFilterTerm,GeographicSearchType.PUBLIC))
                 .thenReturn(objectLocations);
 
@@ -180,6 +185,11 @@ public class AroundMeRestControllerTest extends RestAbstractUnitTest {
         when(liveWireAlertBrokerMock
                 .fetchAlertsNearUser(testUser.getUid(),null,testCreatedByMe,
                         testRadiusMetres,GeographicSearchType.PUBLIC)).thenThrow(new IllegalArgumentException("Invalid location parameter"));
+
+        when(liveWireAlertBrokerMock
+                .fetchAlertsNearUser(testUser.getUid(),null,testCreatedByMe,
+                        -5,GeographicSearchType.PUBLIC)).thenThrow(new IllegalArgumentException("Invalid radius parameter"));
+
 
         when(liveWireAlertBrokerMock
                 .fetchAlertsNearUser(testUser.getUid(),testLocation,testCreatedByMe,
