@@ -509,8 +509,9 @@ public class USSDHomeController extends USSDController {
         if(user.getLanguageCode() != null && supportedCampaignLanguages.contains(new Locale(user.getLanguageCode()))){
             return assembleCampaignResponse(campaign,new Locale(user.getLanguageCode()));
         }
-        //Discuss this with Luke. The user needs to chose a language for campaign but that language may not be their prefered language
-        return assembleCampaignResponseForSupportedLanguage(campaign);
+        //Discuss this with Luke. The user needs to chose a language for campaign but that language may not be their
+        // preferred language
+        return assembleCampaignResponseForSupportedLanguage(campaign,user);
     }
 
     private USSDMenu assembleCampaignResponse(Campaign campaign,Locale userLocale){
@@ -534,8 +535,23 @@ public class USSDHomeController extends USSDController {
         return new USSDMenu(promptMessage,linksMap);
     }
 
-    private USSDMenu assembleCampaignResponseForSupportedLanguage(Campaign campaign){
-        return null;
+    private USSDMenu assembleCampaignResponseForSupportedLanguage(Campaign campaign, User user){
+        Locale userLocale = (user.getLanguageCode() != null)? new Locale(user.getLanguageCode()):Locale.ENGLISH;
+        String optionKey = USSDCampaignUtil.CAMPAIGN_PREFIX + USSDCampaignUtil.SET_LANGUAGE_URL;
+        String promptMessage = getMessage(optionKey,userLocale.getLanguage());
+        Map<String, String> linksMap = new HashMap<>();
+        Set<Locale> localeSet = CampaignUtil.getCampaignSupportedLanguages(campaign);
+        for(Locale locale : localeSet){
+            String option = locale.getLanguage();
+            StringBuilder url = new StringBuilder();
+            url.append(USSDCampaignUtil.SET_LANGUAGE_URL);
+            url.append(USSDCampaignUtil.CODE_PARAMETER);
+            url.append(campaign.getCampaignCode());
+            url.append(USSDCampaignUtil.LANGUAGE_PARAMETER);
+            url.append(locale.getLanguage());
+            linksMap.put(option,url.toString());
+        }
+        return new USSDMenu(promptMessage,linksMap);
     }
 
 
