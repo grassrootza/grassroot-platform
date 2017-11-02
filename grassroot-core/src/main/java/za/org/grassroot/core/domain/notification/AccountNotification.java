@@ -26,6 +26,7 @@ public abstract class AccountNotification extends Notification {
         super(destination, message, accountLog);
         this.deliveryChannel = UserMessagingPreference.SMS;
         this.account = accountLog.getAccount();
+		this.setUseOnlyFreeChannels(true);
 	}
 
 	@Override

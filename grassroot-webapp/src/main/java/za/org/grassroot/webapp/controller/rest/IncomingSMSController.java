@@ -154,10 +154,10 @@ public class IncomingSMSController {
         // todo: not the most elegant thing in the world, but can clean up later
         recentNotifications.stream().sorted(Comparator.comparing(Notification::getCreatedDateTime))
                 .forEach(n -> {
-                    Map<ActionLog, Group> logGroupMap = getNotificationLog(n);
-                    for (Group g : logGroupMap.values()) {
-                        messagesAndGroups.put(g, n.getMessage());
-                    }
+
+                    Group group = n.getRelevantGroup();
+                    if (group != null)
+                        messagesAndGroups.put(group, n.getMessage());
                 });
 
         log.info("okay, we have {} distinct groups", messagesAndGroups.size());
@@ -192,29 +192,6 @@ public class IncomingSMSController {
         else return "Unknown notification type";
     }
 
-    private Map<ActionLog, Group> getNotificationLog(Notification notification) {
-
-        Map<ActionLog, Group> logGroupMap = new HashMap<>();
-
-        if (notification.getEventLog() != null)
-            logGroupMap.put(notification.getEventLog(), notification.getEventLog().getEvent().getAncestorGroup());
-
-        else if (notification.getTodoLog() != null)
-            logGroupMap.put(notification.getTodoLog(), notification.getTodoLog().getTodo().getAncestorGroup());
-
-        else if (notification.getGroupLog() != null)
-            logGroupMap.put(notification.getGroupLog(), notification.getGroupLog().getGroup());
-
-        else if (notification.getLiveWireLog() != null)
-            logGroupMap.put(notification.getLiveWireLog(), notification.getLiveWireLog().getAlert().getGroup());
-
-        else if (notification.getAccountLog() != null)
-            logGroupMap.put(notification.getAccountLog(), notification.getAccountLog().getGroup());
-
-        // note: user log and address are not address related, so just watch the overall user logs for those
-
-        return logGroupMap;
-    }
 
     private boolean hasVoteOption(String option, Event vote) {
         if (vote.getTags() != null) {

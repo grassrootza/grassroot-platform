@@ -160,7 +160,8 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         group.setReminderMinutes((reminderMinutes == null) ? (24 * 60) : reminderMinutes);
         group.setParent(parent);
 
-        LogsAndNotificationsBundle bundle = addMemberships(user, group, membershipInfos, true, true);
+        LogsAndNotificationsBundle bundle = addMemberships(user, group, membershipInfos,
+                GroupJoinMethod.ADDED_AT_CREATION, true, true);
 
         bundle.addLog(new GroupLog(group, user, GroupLogType.GROUP_ADDED, null));
         if (parent != null) {
@@ -279,7 +280,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
     @Override
     @Transactional
-    public void addMembers(String userUid, String groupUid, Set<MembershipInfo> membershipInfos, boolean adminUserCalling) {
+    public void addMembers(String userUid, String groupUid, Set<MembershipInfo> membershipInfos, GroupJoinMethod joinMethod, boolean adminUserCalling) {
         User user = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
 
@@ -294,7 +295,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
         logger.info("Adding members: group={}, memberships={}, user={}", group, membershipInfos, user);
         try {
-            LogsAndNotificationsBundle bundle = addMemberships(user, group, membershipInfos, false, true);
+            LogsAndNotificationsBundle bundle = addMemberships(user, group, membershipInfos, joinMethod, false, true);
             storeBundleAfterCommit(bundle);
         } catch (InvalidPhoneNumberException e) {
             logger.error("Error! Invalid phone number : " + e.getMessage());
@@ -316,13 +317,13 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         List<User> users = userRepository.findByUidIn(memberUids);
         Set<User> userSet = new HashSet<>(users);
         logger.info("list size {}, set size {}", users.size(), userSet.size());
-        group.addMembers(userSet, BaseRoles.ROLE_ORDINARY_MEMBER);
+        group.addMembers(userSet, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.COPIED_INTO_GROUP);
 
 
         // recursively add users to all parent groups
         Group parentGroup = group.getParent();
         while (parentGroup != null) {
-            parentGroup.addMembers(userSet, BaseRoles.ROLE_ORDINARY_MEMBER);
+            parentGroup.addMembers(userSet, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.COPIED_INTO_GROUP);
             parentGroup = parentGroup.getParent();
         }
 
@@ -347,12 +348,12 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
             throw new InvalidTokenException("Invalid token: " + tokenPassed);
 
         logger.info("Adding a member via token code: group={}, user={}, code={}", group, user, tokenPassed);
-        group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER);
+        group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.SELF_JOINED);
 
         // recursively add user to all parent groups
         Group parentGroup = group.getParent();
         while (parentGroup != null) {
-            parentGroup.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER);
+            parentGroup.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
             parentGroup = parentGroup.getParent();
         }
 
@@ -407,15 +408,15 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
     @Transactional
     @Async
     public void asyncAddMemberships(String initiatorUid, String groupId, Set<MembershipInfo> membershipInfos,
-                                    boolean duringGroupCreation, boolean createWelcomeNotifications) {
+                                    GroupJoinMethod joinMethod, boolean duringGroupCreation, boolean createWelcomeNotifications) {
         User initiator = userRepository.findOneByUid(initiatorUid);
         Group group = groupRepository.findOneByUid(groupId);
-        addMemberships(initiator, group, membershipInfos, duringGroupCreation, createWelcomeNotifications);
+        addMemberships(initiator, group, membershipInfos, joinMethod, duringGroupCreation, createWelcomeNotifications);
     }
 
 
     private LogsAndNotificationsBundle addMemberships(User initiator, Group group, Set<MembershipInfo> membershipInfos,
-                                                      boolean duringGroupCreation, boolean createWelcomeNotifications) {
+                                                      GroupJoinMethod joinMethod, boolean duringGroupCreation, boolean createWelcomeNotifications) {
         // note: User objects should only ever store phone numbers in the msisdn format (i.e, with country code at front, no '+')
 
 
@@ -456,7 +457,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
             String roleName = membershipInfo.getRoleName();
             if (roleName == null)
                 roleName = BaseRoles.ROLE_ORDINARY_MEMBER;
-            Membership membership = group.addMember(user, roleName);
+            Membership membership = group.addMember(user, roleName, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
             if (membership != null) {
                 memberships.add(membership);
             }
@@ -495,15 +496,17 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
             triggerWelcomeMessagesAfterCommit(initiator.getUid(), group.getUid(), addedUserUids);
 
         if (group.getParent() != null) {
-            triggerAddMembersToParentGroup(initiator, group.getParent(), membershipInfos);
+            triggerAddMembersToParentGroup(initiator, group.getParent(), membershipInfos, joinMethod);
         }
 
         return bundle;
     }
 
-    private void triggerAddMembersToParentGroup(User initiator, Group group, Set<MembershipInfo> membershipInfos) {
+    private void triggerAddMembersToParentGroup(User initiator, Group group, Set<MembershipInfo> membershipInfos,
+                                                GroupJoinMethod joinMethod) {
         AfterTxCommitTask afterTxCommitTask = () -> {
-            applicationContext.getBean(GroupBroker.class).asyncAddMemberships(initiator.getUid(), group.getUid(), membershipInfos, false, false);
+            applicationContext.getBean(GroupBroker.class)
+                    .asyncAddMemberships(initiator.getUid(), group.getUid(), membershipInfos, joinMethod, false, false);
         };
         applicationEventPublisher.publishEvent(afterTxCommitTask);
     }
@@ -677,7 +680,9 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
         if (!membersToAdd.isEmpty() && checkGroupSizeLimit(group, membersToAdd.size())) {
             // note: as above, only call if non-empty so permission check only happens
-            LogsAndNotificationsBundle addMembershipsBundle = addMemberships(user, group, membersToAdd, false, true);
+            // and since by definition this is only ever called by group organizer, method is added by other
+            LogsAndNotificationsBundle addMembershipsBundle = addMemberships(user, group, membersToAdd,
+                    GroupJoinMethod.ADDED_BY_OTHER_MEMBER, false, true);
             bundle.addBundle(addMembershipsBundle);
         }
 
@@ -731,7 +736,8 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         } else {
 
             Set<MembershipInfo> membershipInfos = MembershipInfo.createFromMembers(groupFrom.getMemberships());
-            LogsAndNotificationsBundle bundle = addMemberships(user, groupInto, membershipInfos, false, true);
+            LogsAndNotificationsBundle bundle = addMemberships(user, groupInto, membershipInfos,
+                    GroupJoinMethod.COPIED_INTO_GROUP, false, true);
             resultGroup = groupInto;
             if (!leaveActive) {
                 deactivate(user.getUid(), groupFrom.getUid(), false);
