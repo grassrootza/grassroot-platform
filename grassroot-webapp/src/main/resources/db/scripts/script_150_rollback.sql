@@ -1,0 +1,5 @@
+DROP INDEX notification_sending_status_index;
+DROP INDEX notification_send_only_after_index;
+DROP INDEX notification_delivery_channel_index;
+DROP INDEX notification_last_status_change_index;
+DROP INDEX notification_sent_via_provider_index;

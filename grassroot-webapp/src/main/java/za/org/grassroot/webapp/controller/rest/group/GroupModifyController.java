@@ -8,9 +8,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
+import za.org.grassroot.core.domain.GroupJoinMethod;
+import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.services.exception.GroupSizeLimitExceededException;
+import za.org.grassroot.services.exception.MemberLacksPermissionException;
+import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
@@ -19,7 +23,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@RestController
+@RestController @Grassroot2RestController
 @Api("/api/group/modify")
 @RequestMapping(value = "/api/group/modify")
 public class GroupModifyController extends GroupBaseController {
@@ -41,8 +45,13 @@ public class GroupModifyController extends GroupBaseController {
                 .map(AddMemberInfo::convertToMembershipInfo)
                 .collect(Collectors.toSet());
         List<String> invalidNumbers = findInvalidNumbers(memberInfos);
-        groupBroker.addMembers(userUid, groupUid, memberInfos, false);
-        return ResponseEntity.ok(new GroupModifiedResponse(membersToAdd.size() - invalidNumbers.size(), invalidNumbers));
+        try {
+            groupBroker.addMembers(userUid, groupUid, memberInfos,
+                    GroupJoinMethod.ADDED_BY_OTHER_MEMBER, false);
+            return ResponseEntity.ok(new GroupModifiedResponse(membersToAdd.size() - invalidNumbers.size(), invalidNumbers));
+        } catch (AccessDeniedException e) {
+            throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER);
+        }
     }
 
     private List<String> findInvalidNumbers(Set<MembershipInfo> members) {
@@ -64,12 +73,6 @@ public class GroupModifyController extends GroupBaseController {
     @ExceptionHandler(GroupSizeLimitExceededException.class)
     public ResponseEntity<ResponseWrapper> handleGroupSizeLimitExceeded() {
         return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.GROUP_SIZE_LIMIT);
-    }
-
-    // todo : move up and distinguish it for permissions
-    @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<ResponseWrapper> accessDenied() {
-        return RestUtil.accessDeniedResponse();
     }
 
 }

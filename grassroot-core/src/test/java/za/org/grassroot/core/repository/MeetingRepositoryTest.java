@@ -12,7 +12,10 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.BaseRoles;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.GroupJoinMethod;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.enums.EventLogType;
 
@@ -102,7 +105,7 @@ public class MeetingRepositoryTest {
 
         User user = userRepository.save(new User("0710001111"));
         Group group = groupRepository.save(new Group("tg1", user));
-        group.addMember(user);
+        group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
         groupRepository.save(group);
 
         Meeting mtg = new MeetingBuilder().setName("count check").setStartDateTime(Instant.now().plus(2, DAYS)).setUser(user).setParent(group).setEventLocation("someLoc").createMeeting();
@@ -138,7 +141,7 @@ public class MeetingRepositoryTest {
 
         User user = userRepository.save(new User("0710001111"));
         Group group = groupRepository.save(new Group("tg2", user));
-        group.addMember(user);
+        group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
         groupRepository.save(group);
 
         LocalDate yesterday = LocalDate.now().minus(1, DAYS);

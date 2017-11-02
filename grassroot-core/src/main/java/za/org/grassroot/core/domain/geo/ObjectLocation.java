@@ -1,13 +1,18 @@
 package za.org.grassroot.core.domain.geo;
 
+import lombok.Getter;
+import lombok.Setter;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.task.Meeting;
 
 import javax.persistence.Column;
 import javax.persistence.Embeddable;
+import javax.persistence.Transient;
+import java.time.Instant;
 
 @Embeddable
+@Getter @Setter
 public class ObjectLocation {
 
     @Column(name = "uid", nullable = false)
@@ -37,97 +42,15 @@ public class ObjectLocation {
     @Column(name = "canAccess")
     private boolean canAccess;
 
+    @Transient
+    private Instant createdDateTime;
+
+    @Transient
+    private String locationDescription;
+
     private int groupSize;
 
     private int groupTasks;
-
-    public String getUid () {
-        return uid;
-    }
-
-    public void setUid (String uid) {
-        this.uid = uid;
-    }
-
-    public String getName () {
-        return name;
-    }
-
-    public void setName (String name) {
-        this.name = name;
-    }
-
-    public void setLatitude (double latitude) {
-        this.latitude = latitude;
-    }
-
-    public void setLongitude (double longitude) {
-        this.longitude = longitude;
-    }
-
-    public double getLatitude () {
-        return latitude;
-    }
-
-    public double getLongitude () {
-        return longitude;
-    }
-
-    public float getScore () {
-        return score;
-    }
-
-    public void setScore (float score) {
-        this.score = score;
-    }
-
-    public String getType () {
-        return type;
-    }
-
-    public void setType (String type) {
-        this.type = type;
-    }
-
-    public String getUrl () {
-        return url;
-    }
-
-    public void setUrl (String url) {
-        this.url = url;
-    }
-
-    public String getDescription () {
-        return description;
-    }
-
-    public void setDescription (String description) {
-        this.description = description;
-    }
-
-    public boolean isCanAccess() {
-        return canAccess;
-    }
-
-    public void setCanAccess(boolean canAccess) {
-        this.canAccess = canAccess;
-    }
-
-    public int getGroupSize() {
-        return groupSize;
-    }
-
-    public void setGroupSize(int groupSize) {
-        this.groupSize = groupSize;
-    }
-
-    public int getGroupTasks() {
-        return groupTasks;
-    }
-
-    public void setGroupTasks(int groupTasks) {
-        this.groupTasks = groupTasks;
-    }
 
     private ObjectLocation () {
         // for JPA
@@ -149,19 +72,21 @@ public class ObjectLocation {
                 meeting.getName(), meetingLocation.getLocation().getLatitude(),
                 meetingLocation.getLocation().getLongitude(), meetingLocation.getScore(),
                 "MEETING",
-                "<strong>Where: </strong>" + meeting.getEventLocation() +
-                "<br/><strong>Date and Time: </strong>" + meeting.getEventStartDateTime() +
-                "<br/><strong>Creation Date: </strong>" + meeting.getCreatedDateTime(),
+                "Where: " + meeting.getEventLocation() +
+                "Date and Time: " + meeting.getEventStartDateTime() +
+                "Creation Date: " + meeting.getCreatedDateTime(),
                 meeting.isPublic(),
                 meeting.getAncestorGroup().getMemberships().size(),
                 (meeting.getAncestorGroup().getDescendantEvents().size() + meeting.getAncestorGroup().getDescendantTodos().size()));
+        this.locationDescription = meeting.getEventLocation();
     }
 
     public ObjectLocation (String uid, String name, double latitude, double longitude, float score, String type, boolean isPublic) {
         this(uid, name, latitude, longitude, score, type, isPublic, 0, 0);
     }
 
-    public ObjectLocation (String uid, String name, double latitude, double longitude, float score, String type, String description, boolean isPublic) {
+    public ObjectLocation (String uid, String name, double latitude, double longitude, float score, String type,
+                           String description, boolean isPublic) {
         this(uid, name, latitude, longitude, score, type, description, isPublic, 0, 0);
     }
 

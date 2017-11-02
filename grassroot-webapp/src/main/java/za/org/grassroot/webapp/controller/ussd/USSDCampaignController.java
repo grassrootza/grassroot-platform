@@ -8,10 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
-import za.org.grassroot.core.domain.BaseRoles;
-import za.org.grassroot.core.domain.Membership;
-import za.org.grassroot.core.domain.Role;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignActionType;
 import za.org.grassroot.core.domain.campaign.CampaignMessage;
@@ -146,7 +143,8 @@ public class USSDCampaignController extends USSDController{
         User user = userManagementService.loadOrCreateUser(phoneNumber);
         Campaign campaign = campaignBroker.getCampaignDetailsByCode(campaignCode);
         MembershipInfo newMember = new MembershipInfo(phoneNumber, null, null);
-        groupBroker.addMembers(user.getUid(), campaign.getMasterGroup().getUid(), Sets.newHashSet(newMember), false);
+        groupBroker.addMembers(user.getUid(), campaign.getMasterGroup().getUid(), Sets.newHashSet(newMember),
+                GroupJoinMethod.SELF_JOINED, false);
         return CampaignUtil.getNextCampaignMessageByActionType(campaign, type, parentMessageUid);
     }
 
@@ -160,7 +158,8 @@ public class USSDCampaignController extends USSDController{
                     }
                 }
             }else {
-                Membership membership = new Membership(campaign.getMasterGroup(), user, new Role(BaseRoles.ROLE_ORDINARY_MEMBER, null), Instant.now());
+                Membership membership = new Membership(campaign.getMasterGroup(), user, new Role(BaseRoles.ROLE_ORDINARY_MEMBER, null),
+                        Instant.now(), GroupJoinMethod.SELF_JOINED);
                 addTagsOnMembership(membership, message.getTagList());
                 user.getMemberships().add(membership);
                 userManagementService.createUserProfile(user);

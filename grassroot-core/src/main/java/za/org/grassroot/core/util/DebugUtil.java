@@ -1,7 +1,6 @@
 package za.org.grassroot.core.util;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.InvocationTargetException;
 
@@ -9,15 +8,14 @@ import java.lang.reflect.InvocationTargetException;
  * Created by luke on 2017/02/01.
  * Helper class for double checking transaction boundaries
  */
+@Slf4j
 public class DebugUtil {
-
-    private static final Logger logger = LoggerFactory.getLogger(DebugUtil.class);
 
     private static final boolean transactionDebugging = true;
     private static final boolean verboseTransactionDebugging = false;
 
     private static void showTransactionStatus(String message) {
-        logger.info(((transactionActive()) ? "[+] " : "[-] ") + message);
+        log.info(((transactionActive()) ? "[+] " : "[-] ") + message);
     }
 
     @SuppressWarnings("unchecked")

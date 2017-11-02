@@ -74,7 +74,8 @@ public class AdminManager implements AdminService {
     @Transactional
     public void addMemberToGroup(String adminUserUid, String groupUid, MembershipInfo membershipInfo) {
         validateAdminRole(adminUserUid);
-        groupBroker.addMembers(adminUserUid, groupUid, Collections.singleton(membershipInfo), true);
+        groupBroker.addMembers(adminUserUid, groupUid, Collections.singleton(membershipInfo),
+                GroupJoinMethod.ADDED_BY_SYS_ADMIN, true);
     }
 
     @Override

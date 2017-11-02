@@ -1,5 +1,7 @@
 package za.org.grassroot.webapp.controller.rest;
 
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,13 +26,12 @@ import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.EventLogBroker;
 import za.org.grassroot.services.task.VoteBroker;
 import za.org.grassroot.services.user.UserManagementService;
-import za.org.grassroot.webapp.model.AatMsgStatus;
-import za.org.grassroot.webapp.model.SMSDeliveryStatus;
 
 import java.text.MessageFormat;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,9 +40,9 @@ import java.util.stream.Collectors;
 /**
  * Created by paballo on 2016/02/17.
  */
-
+@Api("/api/inbound/sms/")
 @RestController
-@RequestMapping("/sms/")
+@RequestMapping("/api/inbound/sms/")
 public class IncomingSMSController {
 
     private static final Logger log = LoggerFactory.getLogger(IncomingSMSController.class);
@@ -59,13 +60,6 @@ public class IncomingSMSController {
 
     private static final String FROM_PARAMETER ="fn";
     private static final String MESSAGE_TEXT_PARAM ="ms";
-
-    private static final String TO_PARAMETER = "tn";
-    private static final String SUCCESS_PARAMETER = "sc";
-    private static final String REF_PARAMETER = "rf";
-    private static final String STATUS_PARAMETER = "st";
-    private static final String TIME_PARAMETER = "ts";
-
 
     private static final Duration NOTIFICATION_WINDOW = Duration.of(6, ChronoUnit.HOURS);
 
@@ -88,11 +82,13 @@ public class IncomingSMSController {
 
 
     @RequestMapping(value = "incoming", method = RequestMethod.GET)
+    @ApiOperation(value = "Send in an incoming SMS", notes = "For when an end-user SMSs a reply to the platform. " +
+            "Parameters are phone number and the message sent")
     public void receiveSms(@RequestParam(value = FROM_PARAMETER) String phoneNumber,
                            @RequestParam(value = MESSAGE_TEXT_PARAM) String msg) {
 
 
-        log.info("Inside AATIncomingSMSController -" + " following param values were received + ms ="+msg+ " fn= "+phoneNumber);
+        log.info("Inside IncomingSMSController -" + " following param values were received + ms ="+msg+ " fn= "+phoneNumber);
 
         User user = userManager.findByInputNumber(phoneNumber);
         String trimmedMsg =  msg.toLowerCase().trim();
@@ -102,8 +98,8 @@ public class IncomingSMSController {
             return;
         }
 
-        EventRSVPResponse response = EventRSVPResponse.fromString(msg);
-        boolean isYesNoResponse = response == EventRSVPResponse.YES || response == EventRSVPResponse.NO || response == EventRSVPResponse.MAYBE;
+        EventRSVPResponse responseType = EventRSVPResponse.fromString(msg);
+        boolean isYesNoResponse = responseType == EventRSVPResponse.YES || responseType == EventRSVPResponse.NO || responseType == EventRSVPResponse.MAYBE;
 
         List<Event> outstandingVotes = eventBroker.getOutstandingResponseForUser(user, EventType.VOTE);
         List<Event> outstandingYesNoVotes = outstandingVotes.stream()
@@ -116,52 +112,34 @@ public class IncomingSMSController {
 
         List<Event> outstandingMeetings = eventBroker.getOutstandingResponseForUser(user, EventType.MEETING);
 
-        if (isYesNoResponse && !outstandingMeetings.isEmpty())  // user sent yes-no response and there is a meeting awaiting yes-no response
-            eventLogManager.rsvpForEvent(outstandingMeetings.get(0).getUid(), user.getUid(), response); // recording rsvp for meeting
-
-        else if (isYesNoResponse && !outstandingYesNoVotes.isEmpty()) // user sent yes-no response and there is a vote awaiting yes-no response
+        if (isYesNoResponse && !outstandingMeetings.isEmpty()) {  // user sent yes-no response and there is a meeting awaiting yes-no response
+            log.info("User response is {}, type {} and there are outstanding meetings for that user. Recording RSVP...", trimmedMsg, responseType);
+            eventLogManager.rsvpForEvent(outstandingMeetings.get(0).getUid(), user.getUid(), responseType); // recording rsvp for meeting
+        } else if (isYesNoResponse && !outstandingYesNoVotes.isEmpty()) { // user sent yes-no response and there is a vote awaiting yes-no response
+            log.info("User response is {}, type {} and there are outstanding YES_NO votes for that user. Recording vote...", trimmedMsg, responseType);
             voteBroker.recordUserVote(user.getUid(), outstandingYesNoVotes.get(0).getUid(), trimmedMsg); // recording user vote
+        }
 
         else if (!outstandingOptionsVotes.isEmpty()) { // user sent something other then yes-no, and there is a vote that has this option (tag)
+            log.info("User response is {}, type {} and there are outstanding votes with custom option matching user's answer. Recording vote...", trimmedMsg, responseType);
             Event vote = outstandingOptionsVotes.get(0);
             String option = getVoteOption(trimmedMsg, vote);
             voteBroker.recordUserVote(user.getUid(), vote.getUid(), option); // recording user vote
-        }
-
-        else // we have not found any meetings or votes that this could be response to
+        } else {// we have not found any meetings or votes that this could be response to
+            log.info("User response is {}, type {} and there are no outstanding meetings or votes this answer is. Recording vote...", trimmedMsg, responseType);
             handleUnknownResponse(user, trimmedMsg);
-
-    }
-
-
-    @RequestMapping(value = "receipt")
-    public void deliveryReceipt(
-            @RequestParam(value = FROM_PARAMETER) String fromNumber,
-            @RequestParam(value = TO_PARAMETER, required = false) String toNumber,
-            @RequestParam(value = SUCCESS_PARAMETER, required = false) String success,
-            @RequestParam(value = REF_PARAMETER) String msgKey,
-            @RequestParam(value = STATUS_PARAMETER) Integer status,
-            @RequestParam(value = TIME_PARAMETER, required = false) String time) {
-
-        log.info("AATIncomingSMSController -" + " message delivery receipt from number: {}, message key: {}", fromNumber, msgKey);
-
-        Notification notification = notificationService.loadBySeningKey(msgKey);
-        if (notification != null) {
-            AatMsgStatus aatMsgStatus = AatMsgStatus.fromCode(status);
-            SMSDeliveryStatus deliveryStatus = aatMsgStatus.toSMSDeliveryStatus();
-            if (deliveryStatus == SMSDeliveryStatus.DELIVERED)
-                notificationService.updateNotificationStatus(notification.getUid(), NotificationStatus.DELIVERED, null, null);
-            else if (deliveryStatus == SMSDeliveryStatus.DELIVERY_FAILED)
-                notificationService.updateNotificationStatus(notification.getUid(), NotificationStatus.DELIVERY_FAILED, "Message delivery failed: " + aatMsgStatus.name(), null);
         }
 
     }
+
 
 
     private void handleUnknownResponse(User user, String trimmedMsg) {
 
+        log.info("Handling unexpected user SMS message");
         notifyUnableToProcessReply(user);
 
+        log.info("Recording  unexpected user SMS message user log.");
         UserLog userLog = new UserLog(user.getUid(), UserLogType.SENT_UNEXPECTED_SMS_MESSAGE,
                 trimmedMsg,
                 UserInterfaceType.INCOMING_SMS);
@@ -169,23 +147,30 @@ public class IncomingSMSController {
         userLogRepository.save(userLog);
 
         List<Notification> recentNotifications = notificationService
-                .fetchAndroidNotificationsSince(user.getUid(), Instant.now().minus(NOTIFICATION_WINDOW));
+                .fetchSentOrBetterSince(user.getUid(), Instant.now().minus(NOTIFICATION_WINDOW), null);
 
-        for (Notification notification : recentNotifications) {
+        Map<Group, String> messagesAndGroups = new HashMap<>();
 
-            Map<ActionLog, Group> logs = getNotificationLog(notification);
+        // todo: not the most elegant thing in the world, but can clean up later
+        recentNotifications.stream().sorted(Comparator.comparing(Notification::getCreatedDateTime))
+                .forEach(n -> {
 
-            for (Map.Entry<ActionLog, Group> entry : logs.entrySet()) {
-                ActionLog aLog = entry.getKey();
+                    Group group = n.getRelevantGroup();
+                    if (group != null)
+                        messagesAndGroups.put(group, n.getMessage());
+                });
 
-                Group group = entry.getValue();
+        log.info("okay, we have {} distinct groups", messagesAndGroups.size());
 
-                // String notificationType = getNotificationType(aLog);
-                String description = MessageFormat.format("{0}; {1}", trimmedMsg, notification.getMessage());
-                GroupLog groupLog = new GroupLog(group, user, GroupLogType.USER_SENT_UNKNOWN_RESPONSE, user.getId(), description);
-                groupLogRepository.save(groupLog);
-            }
+        for (Map.Entry<Group, String> entry : messagesAndGroups.entrySet()) {
+            // String notificationType = getNotificationType(aLog);
+            String description = MessageFormat.format("From user: {0}; likely responding to: {1}",
+                    trimmedMsg, entry.getValue());
+            GroupLog groupLog = new GroupLog(entry.getKey(), user, GroupLogType.USER_SENT_UNKNOWN_RESPONSE, user.getId(),
+                    description.substring(0, Math.min(255, description.length()))); // since could be very long ...
+            groupLogRepository.save(groupLog);
         }
+
     }
 
     // might need this in future so just leaving it here
@@ -207,29 +192,6 @@ public class IncomingSMSController {
         else return "Unknown notification type";
     }
 
-    private Map<ActionLog, Group> getNotificationLog(Notification notification) {
-
-        Map<ActionLog, Group> logGroupMap = new HashMap<>();
-
-        if (notification.getEventLog() != null)
-            logGroupMap.put(notification.getEventLog(), notification.getEventLog().getEvent().getAncestorGroup());
-
-        else if (notification.getTodoLog() != null)
-            logGroupMap.put(notification.getTodoLog(), notification.getTodoLog().getTodo().getAncestorGroup());
-
-        else if (notification.getGroupLog() != null)
-            logGroupMap.put(notification.getGroupLog(), notification.getGroupLog().getGroup());
-
-        else if (notification.getLiveWireLog() != null)
-            logGroupMap.put(notification.getLiveWireLog(), notification.getLiveWireLog().getAlert().getGroup());
-
-        else if (notification.getAccountLog() != null)
-            logGroupMap.put(notification.getAccountLog(), notification.getAccountLog().getGroup());
-
-        // note: user log and address are not address related, so just watch the overall user logs for those
-
-        return logGroupMap;
-    }
 
     private boolean hasVoteOption(String option, Event vote) {
         if (vote.getTags() != null) {

@@ -38,6 +38,59 @@
 
 <main layout:fragment="content">
 
+
+  <section class="history-task-list" th:unless="${#lists.isEmpty(recentlyFailedNotifications)}">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-10 col-md-offset-1">
+          <div class="panel-group">
+            <div class="panel panel-default">
+              <div class="panel-heading">
+                <h4 class="panel-title">
+                  <a data-toggle="collapse" href="#collapse1">
+                    <span th:if="${month == null}">Failed notifications so far this month</span>
+                    <span th:if="${month != null}">Failed notifications in the month</span>
+                    <i class="fa fa-caret-up" aria-hidden="true"></i>
+                  </a>
+                </h4>
+              </div>
+              <div id="collapse1" class="panel-collapse collapse in">
+                <table class="table table-striped">
+                  <thead>
+                  <th>Created</th>
+                  <th>Phone number</th>
+                  <th>Error</th>
+
+                  </thead>
+                  <tbody>
+                  <tr th:each="ntf : ${recentlyFailedNotifications}">
+                    <td><span
+                            th:text="${#temporals.format(ntf.createdDateTime.atZone(T(za.org.grassroot.core.util.DateTimeUtil).getSAST()).toLocalDateTime(), 'dd MMM yyyy, HH:mm')}">Date time</span>
+                    </td>
+                    <td><span th:text="${ntf.target.phoneNumber}"></span></td>
+                    <td>
+                      <table>
+                        <tr th:each="err : ${ntf.sendingErrors}">
+                          <td><span th:text="${#temporals.format(err.errorTime, 'dd MMM yyyy, HH:mm')}">Date time</span>
+                            &nbsp;&nbsp;
+                          </td>
+                          <td><span th:text="${err.errorMessage}"></span></td>
+                        </tr>
+
+                      </table>
+                    </td>
+
+                  </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section class="history-task-list" th:unless="${#lists.isEmpty(tasksInPeriod)}">
     <div class="container">
       <div class="row">
@@ -91,7 +144,7 @@
               <div class="panel-heading">
                 <h4 class="panel-title">
                   <a data-toggle="collapse" href="#collapse2">
-                    Changes to the group during this period:
+                    Group records (logs) during this period:
                     <i class="fa fa-caret-up" aria-hidden="true"></i>
                   </a>
                 </h4>
@@ -109,7 +162,11 @@
                     <tr th:each="entry : ${groupLogsInPeriod}">
                       <td><span th:text="${#dates.format(entry.createdDateTime, 'dd MMM yyyy, HH:mm')}">Date time</span></td>
                       <td>
-                        <span th:unless="${entry.groupLogType == null}" th:text="${#strings.capitalize(entry.groupLogType)}">Description</span>
+                        <span th:unless="${entry.groupLogType == null}" th:text="${#strings.capitalize(entry.groupLogType) + '.'}">Description</span>
+                        <span th:if="${entry.groupLogType.name() == 'USER_SENT_UNKNOWN_RESPONSE'}">
+                          <i><span th:text="${' ' + entry.description}" class=""></span>.
+                            User phone number: <span th:text="${entry.user.nationalNumber}"></span></i>
+                        </span>
                       </td>
                       <td><span th:text="${entry.user.nameToDisplay()}">User</span></td>
                     </tr>

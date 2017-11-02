@@ -150,7 +150,10 @@
     <include file="change_144.xml" relativeToChangelogFile="true" />
     <include file="change_145.xml" relativeToChangelogFile="true" />
     <include file="change_146.xml" relativeToChangelogFile="true" />
-    <include file="change_147.xml" relativeToChangelogFile="true" />
-    <include file="change_148.xml" relativeToChangelogFile="true" />
+    <include file="change_147.xml" relativeToChangelogFile="true"/>
+    <include file="change_148.xml" relativeToChangelogFile="true"/>
+    <include file="change_149.xml" relativeToChangelogFile="true"/>
+    <include file="change_150.xml" relativeToChangelogFile="true"/>
+    <include file="change_151.xml" relativeToChangelogFile="true"/>
 
 </databaseChangeLog>

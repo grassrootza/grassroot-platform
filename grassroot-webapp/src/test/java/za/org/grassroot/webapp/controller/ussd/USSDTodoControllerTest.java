@@ -8,10 +8,12 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.GroupJoinMethod;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.domain.task.TodoRequest;
-import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.TodoCompletionConfirmType;
 import za.org.grassroot.webapp.util.USSDUrlUtil;
 
@@ -29,7 +31,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static za.org.grassroot.core.domain.Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY;
 import static za.org.grassroot.core.util.DateTimeUtil.convertDateStringToLocalDateTime;
 import static za.org.grassroot.core.util.DateTimeUtil.reformatDateInput;
-import static za.org.grassroot.webapp.util.USSDUrlUtil.*;
+import static za.org.grassroot.webapp.util.USSDUrlUtil.saveToDoMenu;
+import static za.org.grassroot.webapp.util.USSDUrlUtil.todosViewGroupCompleteEntries;
 
 /**
  * Created by luke on 2015/12/18.
@@ -78,7 +81,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
         List<Group> testGroups = Arrays.asList(new Group("tg1", testUser),
                 new Group("tg2", testUser),
                 new Group("tg3", testUser));
-        testGroups.stream().forEach(tg -> tg.addMember(testUser));
+        testGroups.stream().forEach(tg -> tg.addMember(testUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER));
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(permissionBrokerMock.countActiveGroupsWithPermission(testUser, GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY)).thenReturn(3);
@@ -180,7 +183,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
     public void confirmTodoWorksWhenAssignedToUser() throws Exception {
 
         Group testGroup = new Group("testGroup", testUser);
-        testGroup.addMember(testUser);
+        testGroup.addMember(testUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
         TodoRequest dummyLogBook = TodoRequest.makeEmpty(testUser, testGroup);
 
         testUser.setDisplayName("Paballo");
@@ -260,7 +263,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
     public void viewEntryMenuWorks() throws Exception {
         Group testGroup = new Group("test testGroup", testUser);
         Todo dummyTodo = new Todo(testUser, testGroup, "Some logbook subject", Instant.now());
-        dummyTodo.getAncestorGroup().addMember(testUser);
+        dummyTodo.getAncestorGroup().addMember(testUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
         dummyTodo.addCompletionConfirmation(testUser, TodoCompletionConfirmType.COMPLETED, Instant.now(), 20);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, saveToDoMenu(viewEntryMenu, dummyTodo.getUid()))).thenReturn(testUser);
@@ -279,7 +282,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
     public void todoCompleteMenuWorks() throws Exception {
 
         Group testGroup = new Group("tg2", testUser);
-        testGroup.addMember(testUser);
+        testGroup.addMember(testUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
         Todo dummyTodo = new Todo(testUser, testGroup, "test todo", Instant.now().minus(7, ChronoUnit.DAYS));
 
         dummyTodo.addCompletionConfirmation(testUser, TodoCompletionConfirmType.COMPLETED, Instant.now(), 20);
@@ -305,7 +308,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
     public void setActionTodoComplete() throws Exception {
 
         Group testGroup = new Group("tg2", testUser);
-        testGroup.addMember(testUser);
+        testGroup.addMember(testUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
         Todo dummyTodo = new Todo(testUser, testGroup, "test logbook", Instant.now().plus(1, ChronoUnit.DAYS));
         dummyTodo.assignMembers(Collections.singleton(testUser.getUid()));
         dummyTodo.addCompletionConfirmation(testUser, TodoCompletionConfirmType.COMPLETED, Instant.now(), 20);

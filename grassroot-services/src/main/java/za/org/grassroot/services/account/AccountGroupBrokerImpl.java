@@ -14,6 +14,7 @@ import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountLog;
 import za.org.grassroot.core.domain.account.PaidGroup;
 import za.org.grassroot.core.domain.notification.FreeFormMessageNotification;
+import za.org.grassroot.core.domain.notification.GroupWelcomeNotification;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.enums.AccountLogType;
 import za.org.grassroot.core.enums.GroupLogType;
@@ -66,6 +67,7 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
     private Instant eventLimitStart;
 
     private static final int LARGE_EVENT_LIMIT = 99;
+    private static final long WELCOME_MSG_INTERVAL = 60 * 1000; // 1 minute
 
     private static final String addedDescription = "Group added to Grassroot Extra";
     private static final String removedDescription = "Group removed from Grassroot Extra";
@@ -668,10 +670,10 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
 
     @Override
     @Transactional
-    public void generateGroupWelcomeNotifications(String addingUserUid, String groupUid, Set<String> addedMemberMsisdns) {
+    public void generateGroupWelcomeNotifications(String addingUserUid, String groupUid, Set<String> addedMemberUids) {
         Objects.requireNonNull(groupUid);
         Objects.requireNonNull(addingUserUid);
-        Objects.requireNonNull(addedMemberMsisdns);
+        Objects.requireNonNull(addedMemberUids);
 
         DebugUtil.transactionRequired("");
 
@@ -697,34 +699,33 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
                     .build();
 
             bundle.addLog(accountLog);
-            template.getTemplateStrings().forEach(templateString -> {
-                bundle.addNotifications(generateNotifications(template, templateString, group, addedMemberMsisdns, accountLog));
-            });
+            for (int i = 0; i < template.getTemplateStrings().size(); i++) {
+                bundle.addNotifications(generateNotifications(template, i, group, addedMemberUids, accountLog));
+            }
 
-            // todo : work out why this only actually stores if it's async
+            // todo : work out why this only actually stores if it's async (which should violate usual async issues, but ..)
             logsAndNotificationsBroker.asyncStoreBundle(bundle);
-            logger.info("sent logs and notifications for storage, exiting");
+            logger.info("sent {} logs and {} notifications for storage, exiting", bundle.getLogs().size(), bundle.getNotifications().size());
         }
     }
 
-    private Set<Notification> generateNotifications(NotificationTemplate templateEntity, String templateString,
+    private Set<Notification> generateNotifications(NotificationTemplate templateEntity, int templateStringIndex,
                                                     Group group, Set<String> memberUids, AccountLog accountLog) {
-        Instant now = Instant.now();
-        return userRepository.findByUidIn(memberUids).stream()
-                .map(user -> fromTemplate(templateEntity, templateString, group.getMembership(user), accountLog, now))
+        logger.debug("generating notifications for {} member", memberUids.size());
+        Instant now = Instant.now().plus(templateStringIndex * WELCOME_MSG_INTERVAL, ChronoUnit.MILLIS);
+        Set<Notification> notifications = userRepository.findByUidIn(memberUids).stream()
+                .map(user -> fromTemplate(templateEntity, templateStringIndex, group.getMembership(user), accountLog, now))
                 .collect(Collectors.toSet());
+        logger.debug("generated {} notifications", notifications.size());
+        return notifications;
     }
 
-    private Notification fromTemplate(NotificationTemplate template, String templateString,
+    private Notification fromTemplate(NotificationTemplate template, int templateStringIndex,
                                       Membership membership, AccountLog accountLog, Instant referenceTime) {
-        // todo : handle truncating better
-        // todo : handle null delays
-        Notification notification = new FreeFormMessageNotification(membership.getUser(),
-                messageFromTemplateString(templateString, membership, 160), accountLog);
+        // todo : handle truncating better, handle null delays, handle send only via free
+        Notification notification = new GroupWelcomeNotification(membership.getUser(),
+                messageFromTemplateString(template.getTemplateStrings().get(templateStringIndex), membership, 160), accountLog);
         notification.setSendOnlyAfter(referenceTime.plus(template.getDelayIntervalMillis(), ChronoUnit.MILLIS));
-        /*if (template.isOnlyUseFreeChannels()) {
-            notification.setForAndroidTimeline(false); // todo : port to new design
-        }*/
         return notification;
     }
 

@@ -67,6 +67,6 @@ public interface AccountGroupBroker {
 
     NotificationTemplate loadTemplate(String groupUid);
 
-    void generateGroupWelcomeNotifications(String addingUserUid, String groupUid, Set<String> addedMemberMsisdns);
+    void generateGroupWelcomeNotifications(String addingUserUid, String groupUid, Set<String> addedMemberUids);
 
 }

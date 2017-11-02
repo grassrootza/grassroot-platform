@@ -33,7 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 public class IncomingSMSControllerTest extends RestAbstractUnitTest {
 
-    private static final String path = "/sms/";
+    private static final String path = "/api/inbound/sms/";
     private Event meeting;
 
     @Mock
@@ -118,7 +118,7 @@ public class IncomingSMSControllerTest extends RestAbstractUnitTest {
                 .andExpect(status().isOk());
 
         verify(userLogRepositoryMock, times(1)).save(any(UserLog.class));
-        verify(notificationServiceMock, times(1)).fetchAndroidNotificationsSince(anyString(), anyObject());
+        verify(notificationServiceMock, times(1)).fetchSentOrBetterSince(anyString(), anyObject(), eq(null));
         verifyZeroInteractions(voteBrokerMock);
         verifyZeroInteractions(eventLogBrokerMock);
         verifyZeroInteractions(groupLogRepositoryMock);
@@ -219,7 +219,7 @@ public class IncomingSMSControllerTest extends RestAbstractUnitTest {
                 .andExpect(status().isOk());
 
         verify(userLogRepositoryMock, times(1)).save(any(UserLog.class));
-        verify(notificationServiceMock, times(1)).fetchAndroidNotificationsSince(anyString(), anyObject());
+        verify(notificationServiceMock, times(1)).fetchSentOrBetterSince(anyString(), anyObject(), eq(null));
         verifyZeroInteractions(eventLogBrokerMock);
         verifyZeroInteractions(voteBrokerMock);
         verifyZeroInteractions(groupLogRepositoryMock);
@@ -248,7 +248,7 @@ public class IncomingSMSControllerTest extends RestAbstractUnitTest {
 
         verify(userLogRepositoryMock).save(any(UserLog.class));
         verify(messagingServiceBroker).sendSMS(anyString(), anyString(), anyBoolean());
-        verify(notificationServiceMock).fetchAndroidNotificationsSince(anyString(), anyObject());
+        verify(notificationServiceMock).fetchSentOrBetterSince(anyString(), anyObject(), eq(null));
 
         verifyZeroInteractions(voteBrokerMock);
         verifyZeroInteractions(eventLogBrokerMock);
@@ -278,14 +278,14 @@ public class IncomingSMSControllerTest extends RestAbstractUnitTest {
                 new EventLog(sessionTestUser, meeting, EventLogType.CREATED));
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
-        when(notificationServiceMock.fetchAndroidNotificationsSince(anyString(), anyObject())).thenReturn(Collections.singletonList(ntf));
+        when(notificationServiceMock.fetchSentOrBetterSince(anyString(), anyObject(), eq(null))).thenReturn(Collections.singletonList(ntf));
 
         mockMvc.perform(get(path + "incoming").param("fn", testUserPhone).param("ms", msg))
                 .andExpect(status().isOk());
 
         verify(userLogRepositoryMock).save(any(UserLog.class));
         verify(messagingServiceBroker).sendSMS(anyString(), anyString(), anyBoolean());
-        verify(notificationServiceMock).fetchAndroidNotificationsSince(anyString(), anyObject());
+        verify(notificationServiceMock).fetchSentOrBetterSince(anyString(), anyObject(), eq(null));
         verify(groupLogRepositoryMock).save(any(GroupLog.class));
 
         verifyZeroInteractions(voteBrokerMock);

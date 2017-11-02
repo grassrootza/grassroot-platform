@@ -3,6 +3,8 @@ package za.org.grassroot.integration.location;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.enums.UserInterfaceType;
 
+import java.util.concurrent.CompletableFuture;
+
 /**
  * Created by luke on 2017/04/19.
  */
@@ -20,7 +22,6 @@ public interface UssdLocationServicesBroker {
 
     GeoLocation getUssdLocationForUser(String userUid);
 
-    // just an async wrapper for the above
-    void asyncUssdLocationLookupAndStorage(String userUid);
+    CompletableFuture<GeoLocation> getUssdLocation(String userUid);
 
 }

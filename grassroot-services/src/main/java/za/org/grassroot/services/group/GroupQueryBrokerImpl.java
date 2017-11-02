@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -16,11 +17,12 @@ import za.org.grassroot.core.domain.geo.GroupLocation;
 import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.EventLog;
+import za.org.grassroot.core.dto.MembershipDTO;
 import za.org.grassroot.core.dto.group.GroupTreeDTO;
-
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.GroupSpecifications;
+import za.org.grassroot.core.specifications.MembershipSpecifications;
 import za.org.grassroot.core.specifications.PaidGroupSpecifications;
 import za.org.grassroot.services.ChangedSinceData;
 import za.org.grassroot.services.PermissionBroker;
@@ -79,6 +81,9 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
 
     @Autowired
     private PermissionBroker permissionBroker;
+
+    @Autowired
+    private MembershipRepository membershipRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -264,7 +269,7 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
     @Override
     @Transactional(readOnly = true)
     public List<GroupLog> getLogsForGroup(Group group, LocalDateTime periodStart, LocalDateTime periodEnd) {
-        Sort sort = new Sort(Sort.Direction.ASC, "CreatedDateTime");
+        Sort sort = new Sort(Sort.Direction.DESC, "CreatedDateTime");
         return groupLogRepository.findByGroupAndCreatedDateTimeBetween(group, convertToSystemTime(periodStart, getSAST()),
                 convertToSystemTime(periodEnd, getSAST()), sort);
     }
@@ -405,5 +410,17 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
         }
     }
 
+
+    @Override
+    public long countMembershipsInGroups(User groupCreator, Instant groupCreatedAfter, Instant userJoinedAfter) {
+        return membershipRepository.count(MembershipSpecifications.membershipsInGroups(groupCreator, groupCreatedAfter, userJoinedAfter));
+    }
+
+    @Override
+    public Page<MembershipDTO> getMembershipsInGroups(User groupCreator, Instant groupCreatedAfter, Instant userJoinedAfter, Pageable pageable) {
+        Page<Membership> page = membershipRepository.findAll(MembershipSpecifications.membershipsInGroups(groupCreator, groupCreatedAfter, userJoinedAfter), pageable);
+        return page.map(m -> new MembershipDTO(m));
+
+    }
 
 }

@@ -32,6 +32,7 @@ import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.location.UssdLocationServicesBroker;
+import za.org.grassroot.services.geo.GeographicSearchType;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
@@ -43,6 +44,7 @@ import java.security.InvalidParameterException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -70,6 +72,8 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
 
     private MessageSourceAccessor messageSource;
     private UssdLocationServicesBroker locationServicesBroker;
+
+    protected final static double KM_PER_DEGREE = 111.045;
 
     @Value("${grassroot.livewire.instant.minsize:100}")
     private int minGroupSizeForInstantAlert;
@@ -292,7 +296,7 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
 
         User user = userRepository.findOneByUid(userUid);
         LiveWireAlert alert = alertRepository.findOneByUid(alertUid);
-        validateCreatingUser(user, alert);
+        validateCreatingOrReviewUser(user, alert);
 
         alert.setHeadline(headline);
     }
@@ -306,9 +310,23 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
 
         User user = userRepository.findOneByUid(userUid);
         LiveWireAlert alert = alertRepository.findOneByUid(alertUid);
-        validateCreatingUser(user, alert);
+        validateCreatingOrReviewUser(user, alert);
 
         alert.setDescription(description);
+    }
+
+    @Override
+    @Transactional
+    public void addMediaFile(String userUid, String alertUid, MediaFileRecord mediaFileRecord) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(alertUid);
+        Objects.requireNonNull(mediaFileRecord);
+
+        User user = userRepository.findOneByUid(userUid);
+        LiveWireAlert alert = alertRepository.findOneByUid(alertUid);
+        validateCreatingOrReviewUser(user, alert);
+
+        alert.addMediaFile(mediaFileRecord);
     }
 
     @Override
@@ -508,6 +526,13 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
         }
     }
 
+    private void validateCreatingOrReviewUser(User user, LiveWireAlert alert) throws AccessDeniedException {
+        logger.info("user UID = {}, alert creating user = {}", user, alert);
+        if (!alert.getCreatingUser().equals(user) && !canUserRelease(user.getUid())) {
+            throw new AccessDeniedException("Only the user creating the alert can do that, or a reviewer");
+        }
+    }
+
     private Query groupsForInstantAlertQuery(User user, boolean countOnly) {
         String firstLine = countOnly ? "select count(g)" : "select g";
         return entityManager.createQuery(firstLine + " from Group g " +
@@ -541,4 +566,57 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
                 log);
     }
 
+    @Override
+    public List<LiveWireAlert> fetchAlertsNearUser(String userUid, GeoLocation location,
+                                                   Integer radius, GeographicSearchType searchType) {
+
+        User user = userRepository.findOneByUid(userUid);
+
+        if(location == null || !location.isValid()){
+            throw new InvalidParameterException("Invalid GeoLocation object.");
+        }
+
+        String mineFilter = searchType.equals(GeographicSearchType.PUBLIC) ? " AND l.creatingUser <>:user "
+                : searchType.equals(GeographicSearchType.PRIVATE) ? " AND l.creatingUser = :user " : "";
+
+        logger.info("searchType = {}, on whether mine? = {}", searchType, mineFilter);
+
+        Instant lastWeekTime = getLastWeekTime();
+
+        String query = "SELECT l FROM LiveWireAlert l" +
+                " WHERE l.sent = true " +
+                " AND creationTime > :lastWeekTime" +
+                mineFilter +
+                " AND l.location.latitude " +
+                "      BETWEEN :latpoint  - (:radius / :distance_unit) " +
+                "          AND :latpoint  + (:radius / :distance_unit) " +
+                "  AND l.location.longitude " +
+                "      BETWEEN :longpoint - (:radius / (:distance_unit * COS(RADIANS(:latpoint)))) " +
+                "          AND :longpoint + (:radius / (:distance_unit * COS(RADIANS(:latpoint)))) " +
+                "  AND :radius >= (:distance_unit " +
+                "           * DEGREES(ACOS(COS(RADIANS(:latpoint)) " +
+                "           * COS(RADIANS(l.location.latitude)) " +
+                "           * COS(RADIANS(:longpoint - l.location.longitude)) " +
+                "           + SIN(RADIANS(:latpoint)) " +
+                "           * SIN(RADIANS(l.location.latitude))))) ";
+
+        logger.info("livewire alert location search = {}", query);
+
+        TypedQuery<LiveWireAlert> typedQuery = entityManager.createQuery(query,LiveWireAlert.class)
+                .setParameter("radius", (double)radius)
+                .setParameter("distance_unit", KM_PER_DEGREE)
+                .setParameter("latpoint",location.getLatitude())
+                .setParameter("longpoint",location.getLongitude())
+                .setParameter("lastWeekTime",lastWeekTime);
+
+        if (!searchType.equals(GeographicSearchType.BOTH)) {
+            typedQuery = typedQuery.setParameter("user",user);
+        }
+
+        return typedQuery.getResultList();
+    }
+
+    private Instant getLastWeekTime(){
+        return Instant.now().minus(14, ChronoUnit.DAYS);
+    }
 }
