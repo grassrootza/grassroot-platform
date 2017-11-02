@@ -86,7 +86,7 @@ public class GrassrootWebApplicationConfig implements ApplicationContextAware {
        return new TomcatEmbeddedServletContainerFactory(){
             @Override
             protected void postProcessContext(Context context) {
-                if (environment.acceptsProfiles("staging", "production")) {
+                if (environment.acceptsProfiles("~staging", "~production")) {
                     SecurityConstraint securityConstraint = new SecurityConstraint();
                     securityConstraint.setUserConstraint("CONFIDENTIAL");
                     SecurityCollection collection = new SecurityCollection();

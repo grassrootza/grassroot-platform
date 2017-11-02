@@ -10,10 +10,10 @@ HOSTNAME=$PROFILE$INSTANCE_ID
 echo $HOSTNAME > /etc/hostname
 
 # SETUP PAPERTRAIL
-wget -qO - --header="X-Papertrail-Token: zZJTlxJZTvV5r18UunSF" https://papertrailapp.com/destinations/6213432/setup.sh | bash
+wget -qO - --header="X-Papertrail-Token: vKq7LsMYOJAo9lPBCfY" https://papertrailapp.com/destinations/6213432/setup.sh | bash
 wget https://github.com/papertrail/remote_syslog2/releases/download/v0.19/remote-syslog2_0.19_amd64.deb
 dpkg -i remote-syslog2_0.19_amd64.deb
-remote_syslog -p 48972 -d logs6.papertrailapp.com --pid-file=/var/run/remote_syslog.pid  /usr/src/grassroot/log/grassroot-app.log
+remote_syslog -p 38961 -d logs6.papertrailapp.com --pid-file=/var/run/remote_syslog.pid  /usr/src/grassroot/log/grassroot-app.log --hostname $HOSTNAME
 
 # START GRASSROOT
 cd /usr/src/grassroot/
