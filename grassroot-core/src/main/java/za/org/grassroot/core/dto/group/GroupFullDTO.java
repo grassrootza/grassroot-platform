@@ -12,13 +12,11 @@ import java.util.stream.Collectors;
 public class GroupFullDTO extends GroupHeavyDTO {
 
     private final String joinCode;
-    private final String description;
     private final Set<MembershipDTO> members;
 
     public GroupFullDTO(Group group, Membership membership) {
         super(group, membership);
         this.joinCode = group.getGroupTokenCode();
-        this.description = group.getDescription();
         this.memberCount = (long) group.getMemberships().size();
         this.members = group.getMemberships().stream()
                 .map(MembershipDTO::new).collect(Collectors.toSet());

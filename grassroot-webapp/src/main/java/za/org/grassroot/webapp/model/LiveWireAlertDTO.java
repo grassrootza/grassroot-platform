@@ -42,6 +42,7 @@ public class LiveWireAlertDTO {
 
     private LiveWireAlertDestType destType;
 
+    // todo : make a 'public' version that hides some details
     public LiveWireAlertDTO(LiveWireAlert alert) {
         this.uid = alert.getUid();
         this.headline = alert.getHeadline();

@@ -3,6 +3,7 @@ package za.org.grassroot.webapp.controller.rest.location;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +17,7 @@ import za.org.grassroot.services.geo.GeographicSearchType;
 import za.org.grassroot.services.geo.ObjectLocationBroker;
 import za.org.grassroot.services.livewire.LiveWireAlertBroker;
 import za.org.grassroot.webapp.enums.RestMessage;
+import za.org.grassroot.webapp.model.LiveWireAlertDTO;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
@@ -24,7 +26,9 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
+@Slf4j
 @RestController
 @Api("/api/location")
 @RequestMapping(value = "/api/location")
@@ -73,20 +77,26 @@ public class AroundMeRestController {
                                                                     @RequestParam int radiusMetres,
                                                                     @RequestParam(required = false) String filterTerm){
         GeoLocation location = new GeoLocation(latitude,longitude);
+
         return ResponseEntity.ok(objectLocationBroker.fetchGroupsNearby(userUid,location,radiusMetres,filterTerm,
                 GeographicSearchType.PUBLIC));
     }
 
     @RequestMapping(value = "/all/alerts/{userUid}", method = RequestMethod.GET)
     @ApiOperation(value = "All public alerts near user", notes = "Fetch all public alerts near to the user")
-    public ResponseEntity<List<LiveWireAlert>> getAlertsNearUser(@PathVariable String userUid,
-                                                                  @RequestParam double longitude,
-                                                                  @RequestParam double latitude,
-                                                                  @RequestParam int radiusMetres,
-                                                                  @RequestParam String createdByMe){
+    public ResponseEntity<List<LiveWireAlertDTO>> getAlertsNearUser(@PathVariable String userUid,
+                                                                    @RequestParam double longitude,
+                                                                    @RequestParam double latitude,
+                                                                    @RequestParam int radiusMetres,
+                                                                    @RequestParam(required = false) GeographicSearchType searchType){
         GeoLocation location = new GeoLocation(latitude,longitude);
-        List<LiveWireAlert> liveWireAlerts = liveWireAlertBroker.fetchAlertsNearUser(userUid,location,createdByMe,radiusMetres, GeographicSearchType.PUBLIC);
-        return ResponseEntity.ok(liveWireAlerts);
+        GeographicSearchType type = searchType == null ? GeographicSearchType.PUBLIC : searchType;
+        log.info("searching for alerts near user at location : {}", location);
+        List<LiveWireAlert> liveWireAlerts = liveWireAlertBroker.fetchAlertsNearUser(userUid,location,
+                radiusMetres, type);
+        log.info("found alerts ? {}, look like : {}", !liveWireAlerts.isEmpty(), liveWireAlerts);
+        return ResponseEntity.ok(liveWireAlerts.stream()
+                .map(LiveWireAlertDTO::new).collect(Collectors.toList()));
     }
 
     @ExceptionHandler(InvalidParameterException.class)
