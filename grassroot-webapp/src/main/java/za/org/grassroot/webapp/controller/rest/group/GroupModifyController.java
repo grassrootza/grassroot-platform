@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
+import za.org.grassroot.core.domain.GroupJoinMethod;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
@@ -45,7 +46,8 @@ public class GroupModifyController extends GroupBaseController {
                 .collect(Collectors.toSet());
         List<String> invalidNumbers = findInvalidNumbers(memberInfos);
         try {
-            groupBroker.addMembers(userUid, groupUid, memberInfos, false);
+            groupBroker.addMembers(userUid, groupUid, memberInfos,
+                    GroupJoinMethod.ADDED_BY_OTHER_MEMBER, false);
             return ResponseEntity.ok(new GroupModifiedResponse(membersToAdd.size() - invalidNumbers.size(), invalidNumbers));
         } catch (AccessDeniedException e) {
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER);

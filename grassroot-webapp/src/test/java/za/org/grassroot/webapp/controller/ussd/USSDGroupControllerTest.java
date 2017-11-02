@@ -62,7 +62,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
     @Test
     public void openingMenuShouldWorkWithNoGroups() throws Exception {
         resetTestGroup();
-        testGroup.addMember(testUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_GROUP_ADMIN);
+        testGroup.addMember(testUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(permissionBrokerMock.getActiveGroupsWithPermission(testUser, null)).thenReturn(new HashSet<>());
         mockMvc.perform(get(path + "start").param(phoneParam, testUserPhone)).andExpect(status().isOk());
@@ -279,7 +279,8 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
                 param("request", "0801110001")).andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(groupBrokerMock, times(1)).addMembers(testUser.getUid(), testGroup.getUid(), ordinaryMember("0801110001"), false);
+        verify(groupBrokerMock, times(1)).addMembers(testUser.getUid(), testGroup.getUid(), ordinaryMember("0801110001"),
+                GroupJoinMethod.ADDED_BY_OTHER_MEMBER, false);
         verifyNoMoreInteractions(groupBrokerMock);
         verifyZeroInteractions(eventBrokerMock);
     }
@@ -475,7 +476,8 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(groupBrokerMock, times(1)).addMembers(testUser.getUid(), testGroup.getUid(), member, false);
+        verify(groupBrokerMock, times(1)).addMembers(testUser.getUid(), testGroup.getUid(), member,
+                GroupJoinMethod.ADDED_BY_OTHER_MEMBER, false);
         verifyNoMoreInteractions(groupBrokerMock);
         verifyZeroInteractions(eventBrokerMock);
     }
@@ -500,7 +502,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
      */
     private void resetTestGroup() {
         testGroup.setGroupName("test testGroup");
-        testGroup.addMember(testUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_GROUP_ADMIN);
+        testGroup.addMember(testUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
     }
 
 }

@@ -72,7 +72,7 @@ public class GroupCreateControllerTest extends WebAppAbstractUnitTest {
                                                       BaseRoles.ROLE_GROUP_ORGANIZER, sessionTestUser.getDisplayName());
         dummyGroupCreator.addMember(organizer);
         Group dummyGroup = new Group(dummyGroupCreator.getGroupName(), sessionTestUser);
-        dummyGroup.addMember(sessionTestUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_GROUP_ADMIN);
+        dummyGroup.addMember(sessionTestUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
 
         when(groupBrokerMock.create(sessionTestUser.getUid(), dummyGroupCreator.getGroupName(), null,
                                     new HashSet<>(dummyGroupCreator.getAddedMembers()),

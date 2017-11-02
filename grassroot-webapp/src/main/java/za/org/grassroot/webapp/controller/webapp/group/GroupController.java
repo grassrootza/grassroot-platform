@@ -216,7 +216,8 @@ public class GroupController extends BaseController {
         if (PhoneNumberUtil.testInputNumber(phoneNumber)) {
             MembershipInfo newMember = new MembershipInfo(phoneNumber, roleName, displayName);
             try {
-                groupBroker.addMembers(getUserProfile().getUid(), groupUid, Sets.newHashSet(newMember), false);
+                groupBroker.addMembers(getUserProfile().getUid(), groupUid, Sets.newHashSet(newMember),
+                        GroupJoinMethod.ADDED_BY_OTHER_MEMBER, false);
                 addMessage(attributes, MessageType.SUCCESS, "group.addmember.success", request);
             } catch (GroupSizeLimitExceededException e) {
                 addMessage(attributes, MessageType.ERROR, "group.addmember.limit", request);
@@ -452,7 +453,8 @@ public class GroupController extends BaseController {
                 membershipInfoSet.add(new MembershipInfo(number, BaseRoles.ROLE_ORDINARY_MEMBER, null));
             // todo : intercept before it gets here (i.e., put a count and do a validation)
             try {
-                groupBroker.addMembers(getUserProfile().getUid(), groupUid, membershipInfoSet, false);
+                groupBroker.addMembers(getUserProfile().getUid(), groupUid, membershipInfoSet,
+                        GroupJoinMethod.BULK_IMPORT, false);
             } catch (GroupSizeLimitExceededException e) {
                 sizeExceeded = true;
             }
@@ -616,7 +618,7 @@ public class GroupController extends BaseController {
     }
 
     @RequestMapping(value = "link", method = RequestMethod.POST)
-    public String linkToParent(Model model, @RequestParam String groupUid, @RequestParam String parentUid,
+    public String linkToParent(@RequestParam String groupUid, @RequestParam String parentUid,
                                RedirectAttributes redirectAttributes, HttpServletRequest request) {
         // call will only succeed if user has requisite permissions (and link is only present on view page if so)
         groupBroker.link(getUserProfile().getUid(), groupUid, parentUid);

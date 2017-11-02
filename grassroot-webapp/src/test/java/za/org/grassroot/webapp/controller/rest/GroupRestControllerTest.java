@@ -87,7 +87,7 @@ public class GroupRestControllerTest extends RestAbstractUnitTest {
 
     private void settingUpDummyData(Group group, List<Group> groups, MembershipInfo membershipInfo, Set<MembershipInfo> membersToAdd) {
         membersToAdd.add(membershipInfo);
-        group.addMember(sessionTestUser, BaseRoles.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_BY_GROUP_ADMIN);
+        group.addMember(sessionTestUser, BaseRoles.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
         groups.add(group);
         group.setDescription(testEventDescription);
     }

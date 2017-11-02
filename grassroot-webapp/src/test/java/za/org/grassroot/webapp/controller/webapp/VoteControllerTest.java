@@ -117,7 +117,7 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
             testUsers.add(new User("050111000" + i));
         }
 
-        testUsers.forEach(usr -> testGroup.addMember(usr, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_GROUP_ADMIN));
+        testUsers.forEach(usr -> testGroup.addMember(usr, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER));
 
         Vote testVote = new Vote("test", Instant.now(), sessionTestUser, testGroup);
         Map<String, Long> testVoteResults = new LinkedHashMap<>();

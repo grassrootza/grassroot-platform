@@ -8,10 +8,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.BaseRoles;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.Permission;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.association.GroupJoinRequest;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.util.PhoneNumberUtil;
@@ -305,7 +302,8 @@ public class USSDGroupUtil extends USSDUtil {
             throws URISyntaxException {
         Map<String, List<String>> enteredNumbers = PhoneNumberUtil.splitPhoneNumbers(userInput);
         try {
-            groupBroker.addMembers(user.getUid(), groupUid, turnNumbersIntoMembers(enteredNumbers.get(validNumbers)), false);
+            groupBroker.addMembers(user.getUid(), groupUid, turnNumbersIntoMembers(enteredNumbers.get(validNumbers)),
+                    GroupJoinMethod.ADDED_BY_OTHER_MEMBER, false);
             return checkForErrorsAndSetPrompt(user, section, new USSDMenu(true), groupUid, enteredNumbers.get(invalidNumbers), returnUrl);
         } catch (GroupSizeLimitExceededException e) {
             USSDMenu menu = new USSDMenu(getMessage(USSDSection.GROUP_MANAGER, groupKeyForMessages, promptKey + ".add.limit", user));
