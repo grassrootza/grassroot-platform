@@ -42,7 +42,7 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
     @Column(name = "name", nullable = false, length = 50)
     private String campaignName;
 
-    @Column(name = "code", nullable = false, length = 3)
+    @Column(name = "code", nullable = false, length = 5)
     private String campaignCode;
 
     @Column(name = "description")

@@ -5,7 +5,6 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignActionType;
 import za.org.grassroot.core.domain.campaign.CampaignMessage;
-import za.org.grassroot.core.domain.campaign.CampaignMessageAction;
 import za.org.grassroot.core.enums.MessageVariationAssignment;
 import za.org.grassroot.core.enums.UserInterfaceType;
 
@@ -121,16 +120,7 @@ public interface CampaignBroker {
      * @param campaignActionTypes
      * @return
      */
-    Campaign addActionsToCampaignMessage(String campaignCode, String messageUid, List<CampaignActionType> campaignActionTypes);
-
-    /**
-     *
-     * @param campaignCode
-     * @param messageUid
-     * @param campaignMessageActionList
-     * @return
-     */
-    Campaign addMessageActionsToCampaignMessage(String campaignCode, String messageUid, List<CampaignMessageAction> campaignMessageActionList);
+    Campaign addActionsToCampaignMessage(String campaignCode, String messageUid, List<CampaignActionType> campaignActionTypes, User user);
 
     /**
      *

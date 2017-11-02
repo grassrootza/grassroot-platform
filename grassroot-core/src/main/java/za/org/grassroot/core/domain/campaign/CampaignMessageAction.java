@@ -54,12 +54,13 @@ public class CampaignMessageAction implements Serializable, Comparable<CampaignM
 
     public CampaignMessageAction(){}
 
-    public CampaignMessageAction(CampaignMessage parentCampaignMessage,CampaignMessage actionMessage,CampaignActionType actionType){
+    public CampaignMessageAction(CampaignMessage parentCampaignMessage,CampaignMessage actionMessage,CampaignActionType actionType, User createdByUser){
         this.uid = UIDGenerator.generateId();
         this.createdDateTime = Instant.now();
         this.actionMessage = actionMessage;
         this.parentCampaignMessage = parentCampaignMessage;
         this.actionType = Objects.requireNonNull(actionType);
+        this.createdByUser = Objects.requireNonNull(createdByUser);
     }
 
     @Override

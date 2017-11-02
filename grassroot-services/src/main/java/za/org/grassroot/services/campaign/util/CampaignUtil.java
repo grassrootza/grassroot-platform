@@ -1,6 +1,7 @@
 package za.org.grassroot.services.campaign.util;
 
 
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignActionType;
 import za.org.grassroot.core.domain.campaign.CampaignMessage;
@@ -44,11 +45,11 @@ public class CampaignUtil {
         return campaignMessageSet;
     }
 
-    public static Set<CampaignMessageAction> createCampaignMessageActionSet(CampaignMessage message, List<CampaignActionType> campaignActionTypes){
+    public static Set<CampaignMessageAction> createCampaignMessageActionSet(CampaignMessage message, List<CampaignActionType> campaignActionTypes, User user){
         Set<CampaignMessageAction> messageActions = new HashSet<>();
         if(campaignActionTypes != null && !campaignActionTypes.isEmpty()){
             for(CampaignActionType type: campaignActionTypes){
-                CampaignMessageAction action = new CampaignMessageAction(message, null, type);
+                CampaignMessageAction action = new CampaignMessageAction(message, null, type, user);
                 messageActions.add(action);
             }
         }
@@ -101,7 +102,6 @@ public class CampaignUtil {
             localeSet.add(message.getLocale());
         }
         return localeSet;
-
     }
 
     public static CampaignMessage getFirstCampaignMessageByLocale(Campaign campaign, String languageCode){

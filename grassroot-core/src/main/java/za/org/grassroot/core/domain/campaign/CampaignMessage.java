@@ -25,6 +25,7 @@ import javax.persistence.Table;
 import javax.persistence.Version;
 import java.io.Serializable;
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
@@ -231,6 +232,9 @@ public class CampaignMessage implements Serializable, Comparable<CampaignMessage
     }
 
     public Set<CampaignMessageAction> getCampaignMessageActionSet() {
+        if(campaignMessageActionSet == null){
+            campaignMessageActionSet = new HashSet<>();
+        }
         return campaignMessageActionSet;
     }
 

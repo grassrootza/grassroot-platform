@@ -39,14 +39,14 @@ public class CampaignLog implements ActionLog {
     @Column(name="campaign_log_type", nullable = false, length = 50)
     private CampaignLogType campaignLogType;
 
-    @Column(name="user_id", nullable = false)
+    @Column(name="user_id", nullable = true)
     private String userId;
 
     @ManyToOne
-    @JoinColumn(name="campaign_id", nullable = false)
+    @JoinColumn(name="campaign_id", nullable = true)
     private Campaign campaign;
 
-    @Column(name="description", nullable = false)
+    @Column(name="description", nullable = true)
     private String description;
 
     public CampaignLog(String userId, CampaignLogType campaignLogType,Campaign campaign) {
@@ -55,6 +55,15 @@ public class CampaignLog implements ActionLog {
         this.userId = userId;
         this.campaignLogType = Objects.requireNonNull(campaignLogType);
         this.campaign = Objects.requireNonNull(campaign);
+    }
+
+    public CampaignLog(String userId, CampaignLogType campaignLogType,Campaign campaign, String searchValue) {
+        this.uid = UIDGenerator.generateId();
+        this.creationTime = Instant.now();
+        this.userId = userId;
+        this.campaignLogType = Objects.requireNonNull(campaignLogType);
+        this.campaign = Objects.requireNonNull(campaign);
+        this.description = Objects.requireNonNull(searchValue);
     }
 
     public CampaignLog(String userId, CampaignLogType campaignLogType, String searchValue) {

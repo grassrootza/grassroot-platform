@@ -58,6 +58,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -271,7 +272,7 @@ public class USSDHomeController extends USSDController {
             returnMenu = defaultStartMenu(user);
         } else if(isCampaignTrailingCode(trailingDigits)){
             Campaign campaign = campaignBroker.getCampaignDetailsByCode(trailingDigits);
-            returnMenu = assembleCampaignResponse(campaign,user);
+            returnMenu = assembleCampaignMessageResponse(campaign,user);
         }
         else {
             Optional<Group> searchResult = groupQueryBroker.findGroupFromJoinCode(trailingDigits.trim());
@@ -500,9 +501,19 @@ public class USSDHomeController extends USSDController {
         return new USSDMenu(message, optionsHomeExit(user, false));
     }
 
-    private USSDMenu assembleCampaignResponse(Campaign campaign, User user){
-        Locale userLocale  = (user != null && user.getLanguageCode() != null)?
-                new Locale(user.getLanguageCode()): Locale.ENGLISH;
+    private USSDMenu assembleCampaignMessageResponse(Campaign campaign, User user){
+        Set<Locale> supportedCampaignLanguages = CampaignUtil.getCampaignSupportedLanguages(campaign);
+        if(supportedCampaignLanguages.size() == 1){
+            return assembleCampaignResponse(campaign,supportedCampaignLanguages.iterator().next());
+        }
+        if(user.getLanguageCode() != null && supportedCampaignLanguages.contains(new Locale(user.getLanguageCode()))){
+            return assembleCampaignResponse(campaign,new Locale(user.getLanguageCode()));
+        }
+        //Discuss this with Luke. The user needs to chose a language for campaign but that language may not be their prefered language
+        return assembleCampaignResponseForSupportedLanguage(campaign);
+    }
+
+    private USSDMenu assembleCampaignResponse(Campaign campaign,Locale userLocale){
         CampaignMessage campaignMessage = CampaignUtil.getCampaignMessageByAssignmentVariationAndUserInterfaceTypeAndLocale(campaign,
                 MessageVariationAssignment.CONTROL, UserInterfaceType.USSD, userLocale);
         String promptMessage = campaignMessage.getMessage();
@@ -522,6 +533,11 @@ public class USSDHomeController extends USSDController {
         }
         return new USSDMenu(promptMessage,linksMap);
     }
+
+    private USSDMenu assembleCampaignResponseForSupportedLanguage(Campaign campaign){
+        return null;
+    }
+
 
     /*
     Menus to process responses to votes and RSVPs,
