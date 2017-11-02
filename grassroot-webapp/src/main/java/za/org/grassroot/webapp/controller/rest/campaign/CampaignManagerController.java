@@ -1,5 +1,7 @@
 package za.org.grassroot.webapp.controller.rest.campaign;
 
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -7,15 +9,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.services.campaign.CampaignBroker;
 import za.org.grassroot.services.user.UserManagementService;
+import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.model.web.CampaignMessageWrapper;
@@ -30,7 +29,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
-@RestController
+@RestController @Grassroot2RestController
+@Api("/api/group/modify")
 @RequestMapping(value = "/api/campaign/manage")
 public class CampaignManagerController {
 
@@ -46,7 +46,8 @@ public class CampaignManagerController {
         this.userManager = userManager;
     }
 
-    @RequestMapping(value = "/list/{userUid}")
+    @RequestMapping(value = "/list/{userUid}", method = RequestMethod.GET)
+    @ApiOperation(value = "List user's campaigns", notes = "Lists the campaigns a user has created")
     public ResponseEntity<ResponseWrapper> fetchCampaignsManagedByUser(@PathVariable String userUid) {
         return RestUtil.okayResponseWithData(RestMessage.USER_ACTIVITIES,
                 campaignBroker.getCampaignsCreatedByUser(userUid));
