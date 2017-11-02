@@ -6,6 +6,7 @@ import org.mockito.InjectMocks;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.GroupJoinMethod;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Vote;
 import za.org.grassroot.core.domain.task.VoteRequest;
@@ -66,7 +67,7 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
                                                new Group("tg2", testUser),
                                                new Group("tg3", testUser));
 
-        testGroups.forEach(tg -> tg.addMember(testUser, BaseRoles.ROLE_ORDINARY_MEMBER));
+        testGroups.forEach(tg -> tg.addMember(testUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER));
 
         when(userManagementServiceMock.findByInputNumber(eq(testUserPhone), anyString())).thenReturn(testUser);
         when(permissionBrokerMock.countActiveGroupsWithPermission(testUser, GROUP_PERMISSION_CREATE_GROUP_VOTE)).thenReturn(3);
