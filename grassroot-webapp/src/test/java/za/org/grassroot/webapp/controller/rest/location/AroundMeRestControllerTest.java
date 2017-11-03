@@ -155,11 +155,14 @@ public class AroundMeRestControllerTest extends RestAbstractUnitTest {
         GeoLocation testLocation = new GeoLocation(testLat,testLong);
         String testCreatedByMe = "createdByMe";
         User testUser = new User(phoneForTests,testUserName);
+        Group testGroup = new Group("test group", testUser);
 
         LiveWireAlert.Builder builder = LiveWireAlert.newBuilder();
         builder.creatingUser(testUser)
                 .description("Test alert")
-                .type(LiveWireAlertType.MEETING)
+                .contactUser(testUser)
+                .type(LiveWireAlertType.INSTANT)
+                .group(testGroup)
                 .destType(LiveWireAlertDestType.PUBLIC_LIST);
 
         LiveWireAlert liveWireAlert = builder.build();
@@ -168,7 +171,7 @@ public class AroundMeRestControllerTest extends RestAbstractUnitTest {
         liveWireAlerts.add(liveWireAlert);
 
         when(liveWireAlertBrokerMock
-                .fetchAlertsNearUser(testUser.getUid(),testLocation,testCreatedByMe,testRadiusMetres,GeographicSearchType.PUBLIC)).thenReturn(liveWireAlerts);
+                .fetchAlertsNearUser(testUser.getUid(),testLocation,testRadiusMetres,GeographicSearchType.PUBLIC)).thenReturn(liveWireAlerts);
 
         MvcResult result = mockMvc.perform(MockMvcRequestBuilders
                 .get(path + "/all/alerts/{userUid}",testUser.getUid())
@@ -180,8 +183,9 @@ public class AroundMeRestControllerTest extends RestAbstractUnitTest {
                 .andReturn();
         logger.info("Testing All Alerts Results = {}",result.getResponse().getStatus());
         verify(liveWireAlertBrokerMock,times(1))
-                .fetchAlertsNearUser(testUser.getUid(),testLocation,testCreatedByMe,testRadiusMetres,GeographicSearchType.PUBLIC);
-        Assert.assertNotNull(liveWireAlertBrokerMock.fetchAlertsNearUser(uidParameter,testLocation,testCreatedByMe,testRadiusMetres,GeographicSearchType.PUBLIC));
+                .fetchAlertsNearUser(testUser.getUid(),testLocation,testRadiusMetres,GeographicSearchType.PUBLIC);
+        Assert.assertNotNull(liveWireAlertBrokerMock
+                .fetchAlertsNearUser(uidParameter,testLocation,testRadiusMetres,GeographicSearchType.PUBLIC));
     }
 
 }

@@ -14,14 +14,11 @@ import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
-
 import java.security.InvalidParameterException;
 import java.util.Arrays;
 
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
+import static org.mockito.Matchers.*;
 
 @RunWith(MockitoJUnitRunner.class)
 public class LiveWireAlertBrokerTest {
@@ -67,6 +64,6 @@ public class LiveWireAlertBrokerTest {
 
     @Test(expected = InvalidParameterException.class)
     public void nullOrInvalidLocationShouldThrowInvalidParameterException(){
-        liveWireAlertBroker.fetchAlertsNearUser(testUser.getUid(),null,testCreatedByMe,testRadius,GeographicSearchType.BOTH);
+        liveWireAlertBroker.fetchAlertsNearUser(testUser.getUid(),null,testRadius,GeographicSearchType.BOTH);
     }
 }
