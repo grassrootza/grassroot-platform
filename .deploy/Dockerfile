@@ -15,5 +15,7 @@ RUN mkdir -p /usr/src/grassroot/environment && mkdir -p /usr/src/grassroot/log
 # COPY ALL SOURCE CODE, ALTERNATIVELY WE COULD BE COPYING JUST THE JAR FILES (TO REVIEW LATER)
 COPY . /usr/src/grassroot
 
+RUN /usr/src/grassroot/build-jar.sh
+
 # START SUPERVISORD
 CMD ["supervisord", "-n"]

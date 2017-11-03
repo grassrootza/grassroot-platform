@@ -232,7 +232,9 @@ function initiate_dockers {
 
   # COPY THE STARTUP SCRIPT TO THE ROOT DIR FOLDER
   { echo "copying startup scripts to the root folder"; } 2> /dev/null
-  cp .deploy/startgrassroot.sh startgrassroot.sh
+  cp .deploy/startgrassroot.sh.localdeploy startgrassroot.sh
+  cp .deploy/build-jar.sh build-jar.sh
+  chmod +x build-jar.sh
   chmod +x startgrassroot.sh
   if [ "$DOCKERMODE" = "clean" ]; then
     { echo "CLEAN MODE STARTED"; } 2> /dev/null
