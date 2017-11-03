@@ -81,6 +81,12 @@ public class ObjectLocation {
         this.locationDescription = meeting.getEventLocation();
     }
 
+    public ObjectLocation(Group group,GroupLocation groupLocation){
+        this(group.getUid(),
+                group.getName(), groupLocation.getLocation().getLatitude(),
+                groupLocation.getLocation().getLongitude(),groupLocation.getScore(),"GROUP",group.isDiscoverable());
+    }
+
     public ObjectLocation (String uid, String name, double latitude, double longitude, float score, String type, boolean isPublic) {
         this(uid, name, latitude, longitude, score, type, isPublic, 0, 0);
     }
