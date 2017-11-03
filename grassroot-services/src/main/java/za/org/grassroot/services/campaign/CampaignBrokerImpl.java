@@ -1,14 +1,22 @@
 package za.org.grassroot.services.campaign;
 
+import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.GroupJoinMethod;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.domain.campaign.*;
+import za.org.grassroot.core.domain.campaign.Campaign;
+import za.org.grassroot.core.domain.campaign.CampaignActionType;
+import za.org.grassroot.core.domain.campaign.CampaignLog;
+import za.org.grassroot.core.domain.campaign.CampaignMessage;
+import za.org.grassroot.core.domain.campaign.CampaignMessageAction;
+import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.enums.CampaignLogType;
 import za.org.grassroot.core.enums.MessageVariationAssignment;
 import za.org.grassroot.core.enums.UserInterfaceType;
@@ -16,11 +24,12 @@ import za.org.grassroot.core.repository.CampaignLogRepository;
 import za.org.grassroot.core.repository.CampaignRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
-import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.campaign.util.CampaignUtil;
 import za.org.grassroot.services.exception.CampaignMessageNotFoundException;
 import za.org.grassroot.services.exception.CampaignNotFoundException;
 import za.org.grassroot.services.exception.GroupNotFoundException;
+import za.org.grassroot.services.group.GroupBroker;
+import za.org.grassroot.services.user.UserManagementService;
 
 import java.time.Instant;
 import java.util.List;
@@ -39,13 +48,18 @@ public class CampaignBrokerImpl implements CampaignBroker {
     private final UserRepository userRepository;
     private final GroupRepository groupRepository;
     private final CampaignLogRepository campaignLogRepository;
+    private final GroupBroker groupBroker;
+    private final UserManagementService userManagementService;
 
     @Autowired
-    public CampaignBrokerImpl(CampaignRepository campaignRepository, UserRepository userRepository, GroupRepository groupRepository, CampaignLogRepository campaignLogRepository){
+    public CampaignBrokerImpl(CampaignRepository campaignRepository, UserRepository userRepository, GroupRepository groupRepository, CampaignLogRepository campaignLogRepository,
+                              GroupBroker groupBroker,UserManagementService userManagementService){
         this.campaignRepository = campaignRepository;
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
         this.campaignLogRepository = campaignLogRepository;
+        this.groupBroker = groupBroker;
+        this.userManagementService = userManagementService;
     }
 
     @Override
@@ -229,11 +243,11 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
     @Override
     @Transactional
-    public Campaign linkCampaignToMasterGroup(String campaignCode, Long groupId, String phoneNumber){
+    public Campaign linkCampaignToMasterGroup(String campaignCode, Long groupId, String userUid){
         Objects.requireNonNull(campaignCode);
         Objects.requireNonNull(groupId);
         Group group = groupRepository.findOne(groupId);
-        User user = userRepository.findByPhoneNumber(PhoneNumberUtil.convertPhoneNumber(phoneNumber));
+        User user = userRepository.findOneByUid(userUid);
         Campaign campaign = campaignRepository.findByCampaignCodeAndEndDateTimeAfter(campaignCode,Instant.now());
         if(group != null && campaign != null){
             campaign.setMasterGroup(group);
@@ -271,6 +285,19 @@ public class CampaignBrokerImpl implements CampaignBroker {
         }
         LOG.error("No Campaign message found for uid = {}" + messageUid);
         throw new CampaignMessageNotFoundException(CAMPAIGN_MESSAGE_NOT_FOUND_CODE);
+    }
+
+    @Override
+    @Transactional
+    public Campaign addUserToCampaignMasterGroup(String campaignCode,String phoneNumber){
+        User user = userManagementService.loadOrCreateUser(phoneNumber);
+        Campaign campaign = getCampaignDetailsByCode(campaignCode);
+        MembershipInfo newMember = new MembershipInfo(phoneNumber, BaseRoles.ROLE_ORDINARY_MEMBER, null);
+        groupBroker.addMembers(user.getUid(), campaign.getMasterGroup().getUid(), Sets.newHashSet(newMember),
+                GroupJoinMethod.ADDED_BY_OTHER_MEMBER, true);
+        CampaignLog campaignLog = new CampaignLog(campaign.getCreatedByUser().getUid(), CampaignLogType.CAMPAIGN_USER_ADDED_TO_MASTER_GROUP,campaign);
+        campaignLogRepository.saveAndFlush(campaignLog);
+        return campaign;
     }
 
 

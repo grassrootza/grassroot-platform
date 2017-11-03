@@ -11,12 +11,14 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
+import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignActionType;
 import za.org.grassroot.core.domain.campaign.CampaignMessage;
 import za.org.grassroot.core.enums.MessageVariationAssignment;
 import za.org.grassroot.core.enums.UserInterfaceType;
+import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.campaign.CampaignBroker;
 
@@ -38,7 +40,11 @@ public class CampaignBrokerTest {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private GroupRepository groupRepository;
+
     private User testUser;
+    private Group testGroup;
 
     @Before
     public void setUp(){
@@ -46,6 +52,8 @@ public class CampaignBrokerTest {
         String userNumber = "0605550000";
         testUser = new User(userNumber, "test user");
         userRepository.save(testUser);
+        String groupName = "testGroup";
+        testGroup = groupRepository.save(new Group(groupName, testUser));
     }
 
 
@@ -85,6 +93,15 @@ public class CampaignBrokerTest {
         Set<CampaignMessage> campaignMessageSet1 = campaignBroker.getCampaignMessagesByCampaignCodeAndLocale("234",MessageVariationAssignment.CONTROL, Locale.ENGLISH,UserInterfaceType.USSD);
         Assert.assertNotNull(campaignMessageSet1);
         Assert.assertEquals(campaignMessageSet1.size(), 1);
+
+        Campaign linkedCampaign = campaignBroker.linkCampaignToMasterGroup("234",testGroup.getId(),testUser.getUid());
+        Assert.assertNotNull(linkedCampaign);
+        Assert.assertNotNull(linkedCampaign.getMasterGroup());
+        Assert.assertEquals(linkedCampaign.getMasterGroup().getId(),testGroup.getId());
+
+        //TO DO: I need to get rules around user roles and group permission
+        //Campaign cam = campaignBroker.addUserToCampaignMasterGroup("234","0605550000");
+        //Assert.assertNotNull(cam);
     }
 
 }

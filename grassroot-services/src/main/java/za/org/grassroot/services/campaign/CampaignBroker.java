@@ -143,7 +143,7 @@ public interface CampaignBroker {
      * @param groupId
      * @return
      */
-    Campaign linkCampaignToMasterGroup(String campaignCode, Long groupId, String phoneNumber);
+    Campaign linkCampaignToMasterGroup(String campaignCode, Long groupId, String userUid);
 
     /**
      *
@@ -157,5 +157,11 @@ public interface CampaignBroker {
      */
     CampaignMessage getCampaignMessageByCampaignCodeAndActionType(String campaignCode, MessageVariationAssignment assignment,UserInterfaceType channel, CampaignActionType actionType, String inputNumber, Locale locale);
 
-
+    /**
+     *
+     * @param campaignCode
+     * @param phoneNumber
+     * @return
+     */
+    Campaign addUserToCampaignMasterGroup(String campaignCode,String phoneNumber);
 }
