@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# SET ENVIRONMENT VARIABLES BASED ON THE ENVIRONMENT PREVIOUSLY SETUP VIA
-. /usr/src/grassroot/environment/environment-variables
-
 # BUILD JAR FILES
 if [[ ! -f .clean ]]; then
   #if .clean file exist, removes it, so gradlew will run without "clean".
