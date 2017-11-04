@@ -12,10 +12,12 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.messaging.CreateJwtTokenRequest;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.integration.messaging.JwtType;
 import za.org.grassroot.services.exception.InvalidOtpException;
+import za.org.grassroot.services.exception.UsernamePasswordLoginFailedException;
 import za.org.grassroot.services.user.PasswordTokenService;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.enums.RestMessage;
@@ -68,6 +70,35 @@ public class AuthenticationController {
         } catch (InvalidOtpException e) {
            logger.error("Failed to generate authentication token for:  " + phoneNumber);
             return RestUtil.errorResponse(HttpStatus.UNAUTHORIZED, RestMessage.INVALID_OTP);
+        }
+
+    }
+
+
+    @RequestMapping(value = "/login-password", method = RequestMethod.GET)
+    public ResponseEntity<ResponseWrapper> webLogin(@RequestParam("phoneNumber") String phoneNumber,
+                                                    @RequestParam("password") String password) {
+        try {
+            final String msisdn = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
+            passwordTokenService.validatePassword(msisdn, password);
+
+            // get the user object
+            User user = userService.findByInputNumber(msisdn);
+
+            // Generate a token for the user (for the moment assuming it is Android client)
+            CreateJwtTokenRequest tokenRequest = new CreateJwtTokenRequest(JwtType.ANDROID_CLIENT);
+
+            String token = jwtService.createJwt(tokenRequest);
+
+            // Assemble response entity
+            AndroidAuthToken response = new AndroidAuthToken(user, token);
+
+            // Return the token on the response
+            return RestUtil.okayResponseWithData(RestMessage.LOGIN_SUCCESS, response);
+
+        } catch (UsernamePasswordLoginFailedException e) {
+            logger.error("Failed to generate authentication token for:  " + phoneNumber);
+            return RestUtil.errorResponse(HttpStatus.UNAUTHORIZED, RestMessage.INVALID_PASSWORD);
         }
 
     }

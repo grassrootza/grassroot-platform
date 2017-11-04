@@ -20,7 +20,6 @@ import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.NotificationService;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.PermissionBroker;
-import za.org.grassroot.services.exception.UsernamePasswordLoginFailedException;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.user.PasswordTokenService;
 import za.org.grassroot.services.user.UserManagementService;
@@ -155,28 +154,6 @@ public class UserRestController {
     }
 
 
-    @RequestMapping(value = "/login", method = RequestMethod.GET)
-    public ResponseEntity<ResponseWrapper> webLogin(@RequestParam("phoneNumber") String phoneNumber,
-                                                    @RequestParam("password") String password) {
-        try {
-            // authenticate user before issuing token
-            passwordTokenService.validatePassword(phoneNumber, password);
-
-            User user = userManagementService.findByInputNumber(phoneNumber);
-
-            VerificationTokenCode longLivedToken = passwordTokenService.generateLongLivedAuthCode(user.getUid());
-            boolean hasGroups = permissionBroker.countActiveGroupsWithPermission(user, null) != 0;
-            int notificationCount = notificationService.countUnviewedAndroidNotifications(user.getUid());
-
-            AuthWrapper authWrapper = AuthWrapper.create(false, longLivedToken, user, hasGroups, notificationCount);
-            return new ResponseEntity<>(authWrapper, HttpStatus.OK);
-
-        } catch (UsernamePasswordLoginFailedException e) {
-            log.error("Failed to generate authentication token for:  " + phoneNumber);
-            return RestUtil.errorResponse(HttpStatus.UNAUTHORIZED, RestMessage.INVALID_PASSWORD);
-        }
-
-    }
 
     @RequestMapping(value = "/connect/{phoneNumber}/{code}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> checkConnection(@PathVariable String phoneNumber,
