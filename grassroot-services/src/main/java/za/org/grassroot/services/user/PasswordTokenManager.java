@@ -3,6 +3,7 @@ package za.org.grassroot.services.user;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.User;
@@ -13,7 +14,7 @@ import za.org.grassroot.core.repository.VerificationTokenCodeRepository;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.exception.InvalidOtpException;
-import za.org.grassroot.services.exception.InvalidTokenException;
+import za.org.grassroot.services.exception.UsernamePasswordLoginFailedException;
 
 import java.math.BigInteger;
 import java.security.SecureRandom;
@@ -37,11 +38,15 @@ public class PasswordTokenManager implements PasswordTokenService {
     private final VerificationTokenCodeRepository verificationTokenCodeRepository;
 
     private final UserRepository userRepository;
+    private PasswordEncoder passwordEncoder;
+
 
     @Autowired
-    public PasswordTokenManager(VerificationTokenCodeRepository verificationTokenCodeRepository, UserRepository userRepository) {
+    public PasswordTokenManager(VerificationTokenCodeRepository verificationTokenCodeRepository, UserRepository userRepository,
+                                PasswordEncoder passwordEncoder) {
         this.verificationTokenCodeRepository = verificationTokenCodeRepository;
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -133,6 +138,17 @@ public class PasswordTokenManager implements PasswordTokenService {
         VerificationTokenCode token = verificationTokenCodeRepository.findByUsernameAndType(username, VerificationCodeType.SHORT_OTP);
         if (token == null || Instant.now().isAfter(token.getExpiryDateTime()) || !token.getCode().equals(otp)) {
             throw new InvalidOtpException();
+        }
+    }
+
+    @Override
+    public void validatePassword(String phoneNumber, String password) {
+        Objects.requireNonNull(phoneNumber);
+        Objects.requireNonNull(password);
+
+        User user = userRepository.findByPhoneNumber(phoneNumber);
+        if (user == null || !passwordEncoder.matches(password, user.getPassword())) {
+            throw new UsernamePasswordLoginFailedException();
         }
     }
 

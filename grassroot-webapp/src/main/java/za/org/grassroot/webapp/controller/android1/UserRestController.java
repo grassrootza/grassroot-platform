@@ -1,6 +1,5 @@
 package za.org.grassroot.webapp.controller.android1;
 
-import org.apache.pdfbox.pdmodel.encryption.InvalidPasswordException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,15 +18,13 @@ import za.org.grassroot.core.enums.VerificationCodeType;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.NotificationService;
-import za.org.grassroot.integration.messaging.CreateJwtTokenRequest;
-import za.org.grassroot.integration.messaging.JwtType;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.PermissionBroker;
+import za.org.grassroot.services.exception.UsernamePasswordLoginFailedException;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.user.PasswordTokenService;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.enums.RestMessage;
-import za.org.grassroot.webapp.model.rest.AndroidAuthToken;
 import za.org.grassroot.webapp.model.rest.wrappers.AuthWrapper;
 import za.org.grassroot.webapp.model.rest.wrappers.ProfileSettingsDTO;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
@@ -158,26 +155,24 @@ public class UserRestController {
     }
 
 
-    @RequestMapping(value = "/web-login", method = RequestMethod.GET)
+    @RequestMapping(value = "/login", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> webLogin(@RequestParam("phoneNumber") String phoneNumber,
                                                     @RequestParam("password") String password) {
         try {
             // authenticate user before issuing token
-            passwordTokenService. (phoneNumber, password);
+            passwordTokenService.validatePassword(phoneNumber, password);
 
-            // get the user object
-            User user = userService.findByInputNumber(phoneNumber);
+            User user = userManagementService.findByInputNumber(phoneNumber);
 
-            // Generate a token for the user
-            String token = jwtService.createJwt(new CreateJwtTokenRequest(JwtType.ANDROID_CLIENT));
+            VerificationTokenCode longLivedToken = passwordTokenService.generateLongLivedAuthCode(user.getUid());
+            boolean hasGroups = permissionBroker.countActiveGroupsWithPermission(user, null) != 0;
+            int notificationCount = notificationService.countUnviewedAndroidNotifications(user.getUid());
 
-            // Assemble response entity
-            AndroidAuthToken response = new AndroidAuthToken(user, token);
+            AuthWrapper authWrapper = AuthWrapper.create(false, longLivedToken, user, hasGroups, notificationCount);
+            return new ResponseEntity<>(authWrapper, HttpStatus.OK);
 
-            // Return the token on the response
-            return RestUtil.okayResponseWithData(RestMessage.LOGIN_SUCCESS, response);
-        } catch (InvalidPasswordException e) {
-            logger.error("Failed to generate authentication token for:  " + phoneNumber);
+        } catch (UsernamePasswordLoginFailedException e) {
+            log.error("Failed to generate authentication token for:  " + phoneNumber);
             return RestUtil.errorResponse(HttpStatus.UNAUTHORIZED, RestMessage.INVALID_PASSWORD);
         }
 
