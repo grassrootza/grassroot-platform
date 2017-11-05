@@ -44,16 +44,16 @@ public class AuthenticationController {
     }
 
     @RequestMapping(value = "/login", method = RequestMethod.GET)
-    @ApiOperation(value = "Login and retrieve a JWT token", notes = "The JWT token is returned as a string in the 'data' property")
+    @ApiOperation(value = "Login using otp and retrieve a JWT token", notes = "The JWT token is returned as a string in the 'data' property")
     public ResponseEntity<ResponseWrapper> login(@RequestParam("phoneNumber")String phoneNumber,
                                                  @RequestParam("otp") String otp,
                                                  @RequestParam(value = "durationMillis", required = false) Long durationMillis) {
         try {
-            // authenticate user before issuing token
-            passwordTokenService.validateOtp(phoneNumber, otp);
+            final String msisdn = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
+            passwordTokenService.validateOtp(msisdn, otp);
 
             // get the user object
-            User user = userService.findByInputNumber(phoneNumber);
+            User user = userService.findByInputNumber(msisdn);
 
             // Generate a token for the user (for the moment assuming it is Android client)
             CreateJwtTokenRequest tokenRequest = new CreateJwtTokenRequest(JwtType.ANDROID_CLIENT);
@@ -75,6 +75,7 @@ public class AuthenticationController {
     }
 
 
+    @ApiOperation(value = "Login using password and retrieve a JWT token", notes = "The JWT token is returned as a string in the 'data' property")
     @RequestMapping(value = "/login-password", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> webLogin(@RequestParam("phoneNumber") String phoneNumber,
                                                     @RequestParam("password") String password) {

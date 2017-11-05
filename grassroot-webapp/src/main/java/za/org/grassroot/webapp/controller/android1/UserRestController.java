@@ -18,12 +18,16 @@ import za.org.grassroot.core.enums.VerificationCodeType;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.NotificationService;
+import za.org.grassroot.integration.messaging.CreateJwtTokenRequest;
+import za.org.grassroot.integration.messaging.JwtService;
+import za.org.grassroot.integration.messaging.JwtType;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.user.PasswordTokenService;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.enums.RestMessage;
+import za.org.grassroot.webapp.model.rest.AndroidAuthToken;
 import za.org.grassroot.webapp.model.rest.wrappers.AuthWrapper;
 import za.org.grassroot.webapp.model.rest.wrappers.ProfileSettingsDTO;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
@@ -47,18 +51,20 @@ public class UserRestController {
     private final MessagingServiceBroker messagingServiceBroker;
     private final NotificationService notificationService;
     private final PermissionBroker permissionBroker;
+    private final JwtService jwtService;
     private final Environment environment;
 
     @Autowired
     public UserRestController(UserManagementService userManagementService, PasswordTokenService passwordTokenService,
                               GeoLocationBroker geoLocationBroker, MessagingServiceBroker messagingServiceBroker, NotificationService notificationService,
-                              PermissionBroker permissionBroker, Environment environment) {
+                              PermissionBroker permissionBroker, JwtService jwtService, Environment environment) {
         this.userManagementService = userManagementService;
         this.passwordTokenService = passwordTokenService;
         this.geoLocationBroker = geoLocationBroker;
         this.messagingServiceBroker = messagingServiceBroker;
         this.notificationService = notificationService;
         this.permissionBroker = permissionBroker;
+        this.jwtService = jwtService;
         this.environment = environment;
     }
 
@@ -80,6 +86,53 @@ public class UserRestController {
         }
     }
 
+
+    @RequestMapping(value = "/register", method = RequestMethod.GET)
+    public ResponseEntity<ResponseWrapper> register(@RequestParam("phoneNumber") String phoneNumber, @RequestParam("displayName") String displayName) {
+
+        try {
+
+            if (!ifExists(phoneNumber)) {
+                log.info("Creating a verifier for a new user with phoneNumber ={}", phoneNumber);
+                String tokenCode = temporaryTokenSend(userManagementService.generateAndroidUserVerifier(phoneNumber, displayName), phoneNumber, false);
+                return RestUtil.okayResponseWithData(RestMessage.VERIFICATION_TOKEN_SENT, tokenCode);
+            } else {
+                log.info("Creating a verifier for user with phoneNumber ={}, user already exists.", phoneNumber);
+                return RestUtil.errorResponse(HttpStatus.CONFLICT, RestMessage.USER_ALREADY_EXISTS);
+            }
+        } catch (InvalidPhoneNumberException e) {
+            return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.INVALID_MSISDN);
+        }
+    }
+
+    @RequestMapping(value = "/register/verify/{phoneNumber}/{code}", method = RequestMethod.GET)
+    public ResponseEntity<ResponseWrapper> verifyRegistration(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String otpEntered)
+            throws Exception {
+
+        final String msisdn = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
+        if (passwordTokenService.isShortLivedOtpValid(msisdn, otpEntered)) {
+            log.info("user dto and code verified, now creating user with phoneNumber={}", phoneNumber);
+
+            UserDTO userDTO = userManagementService.loadUserCreateRequest(msisdn);
+            User user = userManagementService.createAndroidUserProfile(userDTO);
+            passwordTokenService.generateLongLivedAuthCode(user.getUid());
+            passwordTokenService.expireVerificationCode(user.getUid(), VerificationCodeType.SHORT_OTP);
+
+            CreateJwtTokenRequest tokenRequest = new CreateJwtTokenRequest(JwtType.ANDROID_CLIENT);
+
+            String token = jwtService.createJwt(tokenRequest);
+
+            // Assemble response entity
+            AndroidAuthToken response = new AndroidAuthToken(user, token);
+
+            // Return the token on the response
+            return RestUtil.okayResponseWithData(RestMessage.LOGIN_SUCCESS, response);
+        } else {
+            log.info("Token verification for new user failed");
+            return RestUtil.errorResponse(HttpStatus.UNAUTHORIZED, RestMessage.INVALID_OTP);
+        }
+    }
+
     @RequestMapping(value = "/verify/resend/{phoneNumber}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> resendOtp(@PathVariable("phoneNumber") String phoneNumber) {
         final String msisdn = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
@@ -96,10 +149,11 @@ public class UserRestController {
     public ResponseEntity<ResponseWrapper> verify(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String otpEntered)
             throws Exception {
 
-        if (passwordTokenService.isShortLivedOtpValid(phoneNumber, otpEntered)) {
+        final String msisdn = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
+        if (passwordTokenService.isShortLivedOtpValid(msisdn, otpEntered)) {
             log.info("user dto and code verified, now creating user with phoneNumber={}", phoneNumber);
 
-            UserDTO userDTO = userManagementService.loadUserCreateRequest(PhoneNumberUtil.convertPhoneNumber(phoneNumber));
+            UserDTO userDTO = userManagementService.loadUserCreateRequest(msisdn);
             User user = userManagementService.createAndroidUserProfile(userDTO);
             VerificationTokenCode token = passwordTokenService.generateLongLivedAuthCode(user.getUid());
             passwordTokenService.expireVerificationCode(user.getUid(), VerificationCodeType.SHORT_OTP);
