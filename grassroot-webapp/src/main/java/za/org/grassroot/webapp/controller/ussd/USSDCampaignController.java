@@ -127,14 +127,15 @@ public class USSDCampaignController extends USSDController{
                 String optionKey = USSDCampaignUtil.CAMPAIGN_PREFIX + action.getActionType().name().toLowerCase();
                 String option  = getMessage(optionKey,languageCode);
                 StringBuilder embeddedUrl = new StringBuilder();
+                embeddedUrl.append(campaignMenus);
                 embeddedUrl.append(USSDCampaignUtil.getCampaignUrlPrefixs().get(action.getActionType()));
                 embeddedUrl.append(USSDCampaignUtil.CODE_PARAMETER);
                 embeddedUrl.append(campaignCode);
                 embeddedUrl.append(USSDCampaignUtil.LANGUAGE_PARAMETER);
                 embeddedUrl.append(languageCode);
-                embeddedUrl.append(USSDCampaignUtil.MESSAGE_UID);
+                embeddedUrl.append(USSDCampaignUtil.MESSAGE_UID_PARAMETER);
                 embeddedUrl.append(campaignMessage.getUid());
-                linksMap.put(option,embeddedUrl.toString());
+                linksMap.put(embeddedUrl.toString(),option);
             }
         }
         return new USSDMenu(promptMessage,linksMap);
