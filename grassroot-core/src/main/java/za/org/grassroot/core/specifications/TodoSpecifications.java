@@ -88,4 +88,17 @@ public final class TodoSpecifications {
         };
     }
 
+    /*
+    closing in on completion of this ...
+    public static Specification<Todo> todosAssignedToUser(User user) {
+        return (root, query, cb) -> {
+            Join<Todo, TodoAssignment> join = root.join(Todo_.assignments, JoinType.INNER);
+            return cb.equal(join.get())
+        };
+    }
+
+    public static Specification<Todo> todoType(TodoType type) {
+
+    }*/
+
 }

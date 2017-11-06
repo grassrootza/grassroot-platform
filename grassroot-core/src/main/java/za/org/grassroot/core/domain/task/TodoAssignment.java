@@ -8,7 +8,6 @@ import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
 import java.time.Instant;
-import java.util.UUID;
 
 @Getter
 public class TodoAssignment {
@@ -26,8 +25,8 @@ public class TodoAssignment {
     private Todo todo;
 
     @ManyToOne(optional = false)
-    @JoinColumn(name = "member_id", nullable = false, foreignKey = @ForeignKey(name = "fk_action_todo_compl_confirm_member"))
-    private User member;
+    @JoinColumn(name = "user_id", nullable = false, foreignKey = @ForeignKey(name = "fk_action_todo_compl_confirm_member"))
+    private User user;
 
     @Column(name = "creation_time", nullable = false, updatable = false) // i.e., when the user was assigned to this
     private Instant creationTime;
@@ -50,10 +49,10 @@ public class TodoAssignment {
     @Column
     private String responseText;
 
-    public TodoAssignment(Todo todo, User member, boolean assigned, boolean canConfirm) {
+    public TodoAssignment(Todo todo, User user, boolean assigned, boolean canConfirm) {
         this.uid = UIDGenerator.generateId();
         this.todo = todo;
-        this.member = member;
+        this.user = user;
         this.assigned = assigned;
         this.canConfirm = canConfirm;
         this.creationTime = Instant.now();

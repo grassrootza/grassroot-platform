@@ -22,9 +22,14 @@ public class TodoHelper {
     private String responseTag;
     private Instant dueDateTime;
 
+    private boolean recurring = false;
+    private Long recurringPeriodMillis;
+
     @Setter private Set<String> assignedMemberUids;
     @Setter private Set<String> confirmingMemberUids;
     @Setter private Set<String> mediaFileUids; // todo : actually, use taskImage, since we'll want to analyze
+
+    private boolean requireImagesForConfirm;
 
     void validateMinimumFields() {
         Objects.requireNonNull(userUid);

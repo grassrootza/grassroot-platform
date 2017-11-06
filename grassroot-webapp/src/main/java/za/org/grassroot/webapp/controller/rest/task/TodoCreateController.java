@@ -1,6 +1,7 @@
 package za.org.grassroot.webapp.controller.rest.task;
 
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -37,6 +38,8 @@ public class TodoCreateController {
     be tagged with the 'response tag'. Paradigmatic case is to request ID numbers (e.g., in filling out member data).
      */
     @RequestMapping(value = "/information/{userUid}/{parentType}/{parentUid}", method = RequestMethod.POST)
+    @ApiOperation(value = "Create a todo that requests information from members, by a given date, and which tags their response " +
+            "with the response tag. Optional to assign or request only some members, or to add media files")
     public ResponseEntity<TaskFullDTO> createInformationRequestTodo(@PathVariable String userUid,
                                                                     @PathVariable String parentUid,
                                                                     @PathVariable JpaEntityType parentType,
@@ -73,6 +76,8 @@ public class TodoCreateController {
     Note 2: similarly, consider empty set to be 'anyone can confirm'
      */
     @RequestMapping(value = "/confirmation/{userUid}/{parentType}/{parentUid}", method = RequestMethod.POST)
+    @ApiOperation(value = "Create a todo that requires a confirmation it's been done, by some set of members, and that " +
+            "may or may not recur (at an interval given in milliseconds). Option is to require confirmations to include images")
     public ResponseEntity<TaskFullDTO> createConfirmationRequiredTodo(@PathVariable String userUid,
                                                                       @PathVariable String parentUid,
                                                                       @PathVariable JpaEntityType parentType,
@@ -81,6 +86,8 @@ public class TodoCreateController {
                                                                       @RequestParam boolean requireImages,
                                                                       @RequestParam Set<String> assignedMemberUids,
                                                                       @RequestParam Set<String> confirmingMemberUids,
+                                                                      @RequestParam boolean recurring,
+                                                                      @RequestParam(required = false) long recurringPeriodMillis,
                                                                       @RequestParam(required = false) Set<String> mediaFileUids) {
         TodoHelper todoHelper = TodoHelper.builder()
                 .todoType(TodoType.CONFIRMATION_REQUIRED)
@@ -90,7 +97,11 @@ public class TodoCreateController {
                 .description(description)
                 .dueDateTime(Instant.ofEpochMilli(dueDateTime))
                 .assignedMemberUids(assignedMemberUids)
-                .confirmingMemberUids(confirmingMemberUids).build();
+                .confirmingMemberUids(confirmingMemberUids)
+                .recurring(recurring)
+                .recurringPeriodMillis(recurringPeriodMillis)
+                .requireImagesForConfirm(requireImages)
+                .build();
 
         if (mediaFileUids != null && !mediaFileUids.isEmpty()) {
             todoHelper.setMediaFileUids(mediaFileUids);
@@ -104,12 +115,15 @@ public class TodoCreateController {
     (or two, if paid for). This can be, for example, 'please listen to the radio at this time'. Don't bother with confirmations.
      */
     @RequestMapping(value = "/action/{userUid}/{parentType}/{parentUid}", method = RequestMethod.POST)
+    @ApiOperation(value = "Create a simple to-do that just does that - tells the relevant members that something has to " +
+            "be done by a given time, with options for recurrence (recurring period given in milliseconds)")
     public ResponseEntity<TaskFullDTO> createActionRequiredTodo(@PathVariable String userUid,
                                                                 @PathVariable String parentUid,
                                                                 @PathVariable JpaEntityType parentType,
                                                                 @RequestParam String description,
                                                                 @RequestParam long dueDateTime,
-                                                                @RequestParam boolean numberReminders,
+                                                                @RequestParam boolean recurring,
+                                                                @RequestParam(required = false) Long recurringPeriodMillis,
                                                                 @RequestParam(required = false) Set<String> assignedMemberUids,
                                                                 @RequestParam(required = false) Set<String> mediaFileUids) {
         TodoHelper todoHelper = TodoHelper.builder()
@@ -119,6 +133,8 @@ public class TodoCreateController {
                 .parentUid(parentUid)
                 .description(description)
                 .dueDateTime(Instant.ofEpochMilli(dueDateTime))
+                .recurring(recurring)
+                .recurringPeriodMillis(recurringPeriodMillis)
                 .build();
 
         if (assignedMemberUids != null && !assignedMemberUids.isEmpty()) {

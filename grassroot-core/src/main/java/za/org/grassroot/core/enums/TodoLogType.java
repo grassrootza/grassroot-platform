@@ -1,13 +1,22 @@
 package za.org.grassroot.core.enums;
 
 public enum TodoLogType {
+
+	// creation logs
 	CREATED,
 	CHANGED,
-	REMINDER_SENT,
+
+	// modification logs
 	ASSIGNED_ADDED,
 	ASSIGNED_REMOVED,
 	IMAGE_RECORDED,
 	IMAGE_REMOVED,
 	CANCELLED,
-	EXTENDED
+	EXTENDED,
+
+	// notification logs
+	REMINDER_SENT,
+	RECURRING_SEND,
+
+	RESPONDED
 }

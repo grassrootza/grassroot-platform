@@ -20,6 +20,7 @@ import za.org.grassroot.integration.NotificationService;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.task.VoteBroker;
+import za.org.grassroot.webapp.controller.rest.incoming.IncomingSMSController;
 
 import java.util.Collections;
 import java.util.List;

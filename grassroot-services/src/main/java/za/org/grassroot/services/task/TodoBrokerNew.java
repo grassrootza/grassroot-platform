@@ -19,4 +19,8 @@ public interface TodoBrokerNew {
 
     void confirmCompletion(String userUid, String todoUid, String notes, Set<String> taskImageUids);
 
+    void hasInformationRequested(String userUid, String responseString);
+
+    void recordResponse(String userUid, String todoUid, String response);
+
 }

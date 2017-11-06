@@ -1,4 +1,4 @@
-package za.org.grassroot.webapp.controller.rest;
+package za.org.grassroot.webapp.controller.rest.incoming;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;

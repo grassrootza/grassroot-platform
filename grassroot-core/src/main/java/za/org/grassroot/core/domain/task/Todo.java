@@ -18,6 +18,7 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Created by aakilomar on 12/3/15.
@@ -62,6 +63,9 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
     )
     @Setter private Set<User> assignedMembers = new HashSet<>();
 
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "todo", orphanRemoval = true)
+    @Setter private Set<TodoAssignment> assignments;
+
     @ManyToOne
    	@JoinColumn(name = "ancestor_group_id", nullable = false)
    	@Getter private Group ancestorGroup;
@@ -73,8 +77,25 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
     @Column(name = "todo_type", nullable = false)
     @Getter private TodoType type;
 
+    @Basic
     @Column(name = "response_tag")
     @Getter @Setter private String responseTag;
+
+    @Basic
+    @Column(name = "response_regex")
+    @Getter @Setter private String responseRegex;
+
+    @Basic
+    @Column(name = "require_images")
+    @Getter @Setter private boolean requireImages;
+
+    @Basic
+    @Column(name = "recurring")
+    @Getter @Setter private boolean recurring = false;
+
+    @Basic
+    @Column(name = "recurring_interval")
+    @Getter @Setter private Long recurInterval;
 
     private Todo() {
         // for JPA
@@ -151,8 +172,32 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
         this.assignedMembers = assignedMembersCollection;
     }
 
+    // todo : make sure equals and hash code are working properly here
+    public void addAssignments(Set<TodoAssignment> todoAssignments) {
+        if (this.assignments == null) {
+            this.assignments = new HashSet<>();
+        }
+
+        this.assignments.addAll(todoAssignments);
+    }
+
+    public Set<User> getAssignedUsers() {
+        return assignments.stream()
+                .filter(TodoAssignment::isAssigned)
+                .map(TodoAssignment::getUser)
+                .collect(Collectors.toSet());
+    }
+
+    public Set<User> getConfirmingUsers() {
+        return assignments.stream()
+                .filter(TodoAssignment::isCanConfirm)
+                .map(TodoAssignment::getUser)
+                .collect(Collectors.toSet());
+    }
+
+    // todo : more refactoring of this
     public boolean addCompletionConfirmation(User member, TodoCompletionConfirmType confirmType, Instant completionTime,
-                                             double threshold) {
+                                             Double threshold) {
         Objects.requireNonNull(member);
 
         if (completionTime == null && this.completedDate == null) {
@@ -181,10 +226,14 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
         }
 
         this.completionConfirmations.add(confirmation);
-        boolean wasBelowThreshold = this.completionPercentage < threshold;
-        this.completionPercentage = calculateCompletionStatus().getPercentage();
 
-        return wasBelowThreshold && (this.completionPercentage > threshold);
+        if (threshold != null) {
+            boolean wasBelowThreshold = this.completionPercentage < threshold;
+            this.completionPercentage = calculateCompletionStatus().getPercentage();
+            return wasBelowThreshold && (this.completionPercentage > threshold);
+        } else {
+            return true;
+        }
     }
 
     private TodoCompletionStatus calculateCompletionStatus() {

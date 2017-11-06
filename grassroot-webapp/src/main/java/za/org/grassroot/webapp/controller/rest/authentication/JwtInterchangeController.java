@@ -1,4 +1,4 @@
-package za.org.grassroot.webapp.controller.rest;
+package za.org.grassroot.webapp.controller.rest.authentication;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;

@@ -6,14 +6,9 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.Notification;
-import za.org.grassroot.core.domain.Permission;
-import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.domain.task.Todo;
-import za.org.grassroot.core.domain.task.TodoContainer;
-import za.org.grassroot.core.domain.task.TodoLog;
-import za.org.grassroot.core.domain.task.TodoType;
+import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.task.*;
+import za.org.grassroot.core.enums.TodoCompletionConfirmType;
 import za.org.grassroot.core.enums.TodoLogType;
 import za.org.grassroot.core.repository.TodoRepository;
 import za.org.grassroot.core.repository.UidIdentifiableRepository;
@@ -21,13 +16,17 @@ import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
+import za.org.grassroot.services.exception.ResponseNotAllowedException;
+import za.org.grassroot.services.exception.TodoTypeMismatchException;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import java.time.Instant;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -84,19 +83,47 @@ public class TodoBrokerNewImpl implements TodoBrokerNew {
             todo.setResponseTag(todoHelper.getResponseTag());
         }
 
-        if (todoHelper.hasAssignedMembers()) {
-
+        if (todoHelper.getAssignedMemberUids() == null || todoHelper.getAssignedMemberUids().isEmpty()) {
+            setAllParentMembersAssigned(todo);
         } else {
-            notifications = todo.getParent().getMembers().forEach();
+            setAssignedMembers(todo, todoHelper.getAssignedMemberUids());
+            setConfirmingMembers(todo, todoHelper.getConfirmingMemberUids());
         }
 
-        if (todoHelper.hasConfirmationMembers()) {
+        Set<User> assignedUsers = todo.getAssignedUsers();
+        Set<User> confirmingUsers = todo.getConfirmingUsers();
 
-        }
+        Set<User> assignedNonConfirmingUsers = new HashSet<>(assignedUsers);
+        assignedNonConfirmingUsers.removeAll(confirmingUsers);
+
+        assignedNonConfirmingUsers.forEach(u -> notifications.add(generateTodoAssignedNotification(todo.getType(), u)));
+        confirmingUsers.forEach(u -> notifications.add(generateNotificationForConfirmingUsers(todo.getType(), u)));
+
         return notifications;
     }
 
-    private Notification generateTodoCreatedNotification(TodoType todoType, User target) {
+    // todo : as below, proper validation on types, combinations, etc (e.g., responses only within group)
+    // todo : handle properly where users are both assigned and confirming
+    private void setAllParentMembersAssigned(Todo todo) {
+        todo.setAssignments(todo.getParent().getMembers().stream()
+                .map(u -> new TodoAssignment(todo, u, true, false)).collect(Collectors.toSet()));
+    }
+
+    private void setAssignedMembers(Todo todo, Set<String> assignedMemberUids) {
+        List<User> users = userRepository.findByUidIn(assignedMemberUids);
+        todo.addAssignments(users.stream().map(u -> new TodoAssignment(todo, u, true, false)).collect(Collectors.toSet()));
+    }
+
+    private void setConfirmingMembers(Todo todo, Set<String> confirmingMemberUids) {
+        List<User> users = userRepository.findByUidIn(confirmingMemberUids);
+        todo.addAssignments(users.stream().map(u -> new TodoAssignment(todo, u, false, true)).collect(Collectors.toSet()));
+    }
+
+    private Notification generateTodoAssignedNotification(TodoType todoType, User target) {
+        return null;
+    }
+
+    private Notification generateNotificationForConfirmingUsers(TodoType todoType, User target) {
         return null;
     }
 
@@ -133,8 +160,60 @@ public class TodoBrokerNewImpl implements TodoBrokerNew {
     }
 
     @Override
+    @Transactional
     public void confirmCompletion(String userUid, String todoUid, String notes, Set<String> taskImageUids) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(todoUid);
 
+        Todo todo = todoRepository.findOneByUid(todoUid);
+        if (!todo.getType().equals(TodoType.CONFIRMATION_REQUIRED)) {
+            throw new TodoTypeMismatchException();
+        }
+
+        User user = userRepository.findOneByUid(userUid);
+        validateUserCanConfirm(user, todo);
+
+        todo.addCompletionConfirmation(user, TodoCompletionConfirmType.COMPLETED, Instant.now(), null);
+
+        createAndStoreTodoLog(user, todo, TodoLogType.RESPONDED, "todo confirmed", null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public void hasInformationRequested(String userUid, String responseString) {
+        Objects.requireNonNull(userUid);
+
+        User user = userRepository.findOneByUid(userUid);
+
+        todoRepository.findAll();
+    }
+
+    @Override
+    @Transactional
+    public void recordResponse(String userUid, String todoUid, String response) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(todoUid);
+        Objects.requireNonNull(response);
+
+        Todo todo = todoRepository.findOneByUid(todoUid);
+        if (!todo.getType().equals(TodoType.INFORMATION_REQUIRED)) {
+            throw new TodoTypeMismatchException();
+        }
+
+        // todo : decide if this is tagged in parent groups or just parent
+        // todo : enforce assignment only within group members when create
+
+        User user = userRepository.findOneByUid(userUid);
+        validateUserCanRespondToTodo(user, todo);
+
+        Group group = todo.getAncestorGroup();
+        Membership membership = group.getMembership(user);
+
+        // todo : some validation in here
+        final String memberTag = todo.getResponseTag() + ":" + response;
+        membership.addTag(memberTag);
+
+        createAndStoreTodoLog(user, todo, TodoLogType.RESPONDED, memberTag, null);
     }
 
     private void createAndStoreTodoLog(User user, Todo todo, TodoLogType todoLogType, String description,
@@ -161,6 +240,20 @@ public class TodoBrokerNewImpl implements TodoBrokerNew {
         if (!todo.getCreatedByUser().equals(user)) {
             permissionBroker.validateGroupPermission(user, todo.getAncestorGroup(),
                     Permission.GROUP_PERMISSION_ALTER_TODO);
+        }
+    }
+
+    private void validateUserCanConfirm(User user, Todo todo) {
+        if (!todo.getConfirmingUsers().contains(user)) {
+            throw new ResponseNotAllowedException();
+        }
+    }
+
+    private void validateUserCanRespondToTodo(User user, Todo todo) {
+        if (todo.getType().equals(TodoType.INFORMATION_REQUIRED)) {
+            if (!todo.getMembers().contains(user)) {
+                throw new ResponseNotAllowedException();
+            }
         }
     }
 }
