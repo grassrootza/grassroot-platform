@@ -26,8 +26,6 @@ import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.EventLogBroker;
 import za.org.grassroot.services.task.VoteBroker;
 import za.org.grassroot.services.user.UserManagementService;
-import za.org.grassroot.webapp.model.AatMsgStatus;
-import za.org.grassroot.webapp.model.SMSDeliveryStatus;
 
 import java.text.MessageFormat;
 import java.time.Duration;
@@ -62,12 +60,6 @@ public class IncomingSMSController {
 
     private static final String FROM_PARAMETER ="fn";
     private static final String MESSAGE_TEXT_PARAM ="ms";
-
-    private static final String TO_PARAMETER = "tn";
-    private static final String SUCCESS_PARAMETER = "sc";
-    private static final String REF_PARAMETER = "rf";
-    private static final String STATUS_PARAMETER = "st";
-    private static final String TIME_PARAMETER = "ts";
 
     private static final Duration NOTIFICATION_WINDOW = Duration.of(6, ChronoUnit.HOURS);
 
@@ -140,31 +132,6 @@ public class IncomingSMSController {
     }
 
 
-    @RequestMapping(value = "receipt", method = RequestMethod.GET)
-    @ApiOperation(value = "Obtain a delivery receipt (or failure)", notes = "Callback for when the gateway notifies us of " +
-            "the result of sending an SMS.")
-    public void deliveryReceipt(
-            @RequestParam(value = FROM_PARAMETER) String fromNumber,
-            @RequestParam(value = TO_PARAMETER, required = false) String toNumber,
-            @RequestParam(value = SUCCESS_PARAMETER, required = false) String success,
-            @RequestParam(value = REF_PARAMETER) String msgKey,
-            @RequestParam(value = STATUS_PARAMETER) Integer status,
-            @RequestParam(value = TIME_PARAMETER, required = false) String time) {
-
-        log.info("IncomingSMSController -" + " message delivery receipt from number: {}, message key: {}", fromNumber, msgKey);
-
-        Notification notification = notificationService.loadBySeningKey(msgKey);
-        if (notification != null) {
-            AatMsgStatus aatMsgStatus = AatMsgStatus.fromCode(status);
-            SMSDeliveryStatus deliveryStatus = aatMsgStatus.toSMSDeliveryStatus();
-            if (deliveryStatus == SMSDeliveryStatus.DELIVERED)
-                notificationService.updateNotificationStatus(notification.getUid(), NotificationStatus.DELIVERED, null, null);
-            else if (deliveryStatus == SMSDeliveryStatus.DELIVERY_FAILED)
-                notificationService.updateNotificationStatus(notification.getUid(), NotificationStatus.DELIVERY_FAILED, "Message delivery failed: " + aatMsgStatus.name(), null);
-        }
-
-    }
-
 
     private void handleUnknownResponse(User user, String trimmedMsg) {
 
@@ -186,10 +153,10 @@ public class IncomingSMSController {
         // todo: not the most elegant thing in the world, but can clean up later
         recentNotifications.stream().sorted(Comparator.comparing(Notification::getCreatedDateTime))
                 .forEach(n -> {
-                    Map<ActionLog, Group> logGroupMap = getNotificationLog(n);
-                    for (Group g : logGroupMap.values()) {
-                        messagesAndGroups.put(g, n.getMessage());
-                    }
+
+                    Group group = n.getRelevantGroup();
+                    if (group != null)
+                        messagesAndGroups.put(group, n.getMessage());
                 });
 
         log.info("okay, we have {} distinct groups", messagesAndGroups.size());
@@ -224,29 +191,6 @@ public class IncomingSMSController {
         else return "Unknown notification type";
     }
 
-    private Map<ActionLog, Group> getNotificationLog(Notification notification) {
-
-        Map<ActionLog, Group> logGroupMap = new HashMap<>();
-
-        if (notification.getEventLog() != null)
-            logGroupMap.put(notification.getEventLog(), notification.getEventLog().getEvent().getAncestorGroup());
-
-        else if (notification.getTodoLog() != null)
-            logGroupMap.put(notification.getTodoLog(), notification.getTodoLog().getTodo().getAncestorGroup());
-
-        else if (notification.getGroupLog() != null)
-            logGroupMap.put(notification.getGroupLog(), notification.getGroupLog().getGroup());
-
-        else if (notification.getLiveWireLog() != null)
-            logGroupMap.put(notification.getLiveWireLog(), notification.getLiveWireLog().getAlert().getGroup());
-
-        else if (notification.getAccountLog() != null)
-            logGroupMap.put(notification.getAccountLog(), notification.getAccountLog().getGroup());
-
-        // note: user log and address are not address related, so just watch the overall user logs for those
-
-        return logGroupMap;
-    }
 
     private boolean hasVoteOption(String option, Event vote) {
         if (vote.getTags() != null) {

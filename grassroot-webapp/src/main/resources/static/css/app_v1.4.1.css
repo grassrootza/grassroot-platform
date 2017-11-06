@@ -1,0 +1,61 @@
+/*
+Error: File to import not found or unreadable: pages/hom.
+        on line 17 of app_v1.4.1.scss
+
+12: @import "components/form";
+13: @import "components/modals";
+14: @import "components/dataTables";
+15: 
+16: /* Pages *\/
+17: @import "pages/hom";
+18: @import "pages/recovery";
+19: @import "pages/view_group";
+20: @import "pages/no-group";
+21: @import "pages/view_tasks";
+22: @import "pages/create_group";
+
+Backtrace:
+app_v1.4.1.scss:17
+/var/lib/gems/2.3.0/gems/sass-3.4.22/lib/sass/tree/import_node.rb:67:in `rescue in import'
+/var/lib/gems/2.3.0/gems/sass-3.4.22/lib/sass/tree/import_node.rb:45:in `import'
+/var/lib/gems/2.3.0/gems/sass-3.4.22/lib/sass/tree/import_node.rb:28:in `imported_file'
+/var/lib/gems/2.3.0/gems/sass-3.4.22/lib/sass/tree/import_node.rb:37:in `css_import?'
+/var/lib/gems/2.3.0/gems/sass-3.4.22/lib/sass/tree/visitors/perform.rb:313:in `visit_import'
+/var/lib/gems/2.3.0/gems/sass-3.4.22/lib/sass/tree/visitors/base.rb:36:in `visit'
+/var/lib/gems/2.3.0/gems/sass-3.4.22/lib/sass/tree/visitors/perform.rb:160:in `block in visit'
+/var/lib/gems/2.3.0/gems/sass-3.4.22/lib/sass/stack.rb:79:in `block in with_base'
+/var/lib/gems/2.3.0/gems/sass-3.4.22/lib/sass/stack.rb:115:in `with_frame'
+/var/lib/gems/2.3.0/gems/sass-3.4.22/lib/sass/stack.rb:79:in `with_base'
+/var/lib/gems/2.3.0/gems/sass-3.4.22/lib/sass/tree/visitors/perform.rb:160:in `visit'
+/var/lib/gems/2.3.0/gems/sass-3.4.22/lib/sass/tree/visitors/base.rb:52:in `block in visit_children'
+/var/lib/gems/2.3.0/gems/sass-3.4.22/lib/sass/tree/visitors/base.rb:52:in `map'
+/var/lib/gems/2.3.0/gems/sass-3.4.22/lib/sass/tree/visitors/base.rb:52:in `visit_children'
+/var/lib/gems/2.3.0/gems/sass-3.4.22/lib/sass/tree/visitors/perform.rb:169:in `block in visit_children'
+/var/lib/gems/2.3.0/gems/sass-3.4.22/lib/sass/tree/visitors/perform.rb:181:in `with_environment'
+/var/lib/gems/2.3.0/gems/sass-3.4.22/lib/sass/tree/visitors/perform.rb:168:in `visit_children'
+/var/lib/gems/2.3.0/gems/sass-3.4.22/lib/sass/tree/visitors/base.rb:36:in `block in visit'
+/var/lib/gems/2.3.0/gems/sass-3.4.22/lib/sass/tree/visitors/perform.rb:188:in `visit_root'
+/var/lib/gems/2.3.0/gems/sass-3.4.22/lib/sass/tree/visitors/base.rb:36:in `visit'
+/var/lib/gems/2.3.0/gems/sass-3.4.22/lib/sass/tree/visitors/perform.rb:159:in `visit'
+/var/lib/gems/2.3.0/gems/sass-3.4.22/lib/sass/tree/visitors/perform.rb:8:in `visit'
+/var/lib/gems/2.3.0/gems/sass-3.4.22/lib/sass/tree/root_node.rb:36:in `css_tree'
+/var/lib/gems/2.3.0/gems/sass-3.4.22/lib/sass/tree/root_node.rb:29:in `render_with_sourcemap'
+/var/lib/gems/2.3.0/gems/sass-3.4.22/lib/sass/engine.rb:381:in `_render_with_sourcemap'
+/var/lib/gems/2.3.0/gems/sass-3.4.22/lib/sass/engine.rb:298:in `render_with_sourcemap'
+/var/lib/gems/2.3.0/gems/sass-3.4.22/lib/sass/plugin/compiler.rb:492:in `update_stylesheet'
+/var/lib/gems/2.3.0/gems/sass-3.4.22/lib/sass/plugin/compiler.rb:215:in `block in update_stylesheets'
+/var/lib/gems/2.3.0/gems/sass-3.4.22/lib/sass/plugin/compiler.rb:209:in `each'
+/var/lib/gems/2.3.0/gems/sass-3.4.22/lib/sass/plugin/compiler.rb:209:in `update_stylesheets'
+/var/lib/gems/2.3.0/gems/sass-3.4.22/lib/sass/plugin.rb:82:in `update_stylesheets'
+/var/lib/gems/2.3.0/gems/sass-3.4.22/lib/sass/exec/sass_scss.rb:340:in `watch_or_update'
+/var/lib/gems/2.3.0/gems/sass-3.4.22/lib/sass/exec/sass_scss.rb:51:in `process_result'
+/var/lib/gems/2.3.0/gems/sass-3.4.22/lib/sass/exec/base.rb:52:in `parse'
+/var/lib/gems/2.3.0/gems/sass-3.4.22/lib/sass/exec/base.rb:19:in `parse!'
+/var/lib/gems/2.3.0/gems/sass-3.4.22/bin/scss:13:in `<top (required)>'
+/usr/local/bin/scss:23:in `load'
+/usr/local/bin/scss:23:in `<main>'
+*/
+body:before {
+  white-space: pre;
+  font-family: monospace;
+  content: "Error: File to import not found or unreadable: pages/hom.\A         on line 17 of app_v1.4.1.scss\A \A 12: @import \"components/form\";\A 13: @import \"components/modals\";\A 14: @import \"components/dataTables\";\A 15: \A 16: /* Pages */\A 17: @import \"pages/hom\";\A 18: @import \"pages/recovery\";\A 19: @import \"pages/view_group\";\A 20: @import \"pages/no-group\";\A 21: @import \"pages/view_tasks\";\A 22: @import \"pages/create_group\";"; }

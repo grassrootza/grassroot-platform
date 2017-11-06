@@ -20,12 +20,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
 import za.org.grassroot.core.domain.media.MediaFileRecord;
 import za.org.grassroot.core.domain.media.MediaFunction;
 import za.org.grassroot.core.enums.LiveWireAlertType;
+import za.org.grassroot.integration.MediaFileBroker;
 import za.org.grassroot.integration.storage.StorageBroker;
 import za.org.grassroot.services.livewire.DataSubscriberBroker;
 import za.org.grassroot.services.livewire.LiveWireAlertBroker;
@@ -54,13 +56,15 @@ public class LiveWireAlertReviewController extends BaseController {
     private final LiveWireSendingBroker liveWireSendingBroker;
     private final DataSubscriberBroker dataSubscriberBroker;
     private final StorageBroker storageBroker;
+    private final MediaFileBroker mediaFileBroker;
 
     @Autowired
-    public LiveWireAlertReviewController(LiveWireAlertBroker liveWireAlertBroker, LiveWireSendingBroker liveWireSendingBroker, DataSubscriberBroker dataSubscriberBroker, StorageBroker storageBroker) {
+    public LiveWireAlertReviewController(LiveWireAlertBroker liveWireAlertBroker, LiveWireSendingBroker liveWireSendingBroker, DataSubscriberBroker dataSubscriberBroker, StorageBroker storageBroker, MediaFileBroker mediaFileBroker) {
         this.liveWireAlertBroker = liveWireAlertBroker;
         this.liveWireSendingBroker = liveWireSendingBroker;
         this.dataSubscriberBroker = dataSubscriberBroker;
         this.storageBroker = storageBroker;
+        this.mediaFileBroker = mediaFileBroker;
     }
 
     @RequestMapping(value = {"/", ""}, method = RequestMethod.GET)
@@ -134,6 +138,41 @@ public class LiveWireAlertReviewController extends BaseController {
         MediaFileRecord record = storageBroker.retrieveMediaRecordsForFunction(MediaFunction.LIVEWIRE_MEDIA,
                 Collections.singleton(imageKey)).iterator().next();
         return new FileSystemResource(storageBroker.fetchFileFromRecord(record));
+    }
+
+    @RequestMapping(value = "modify/headline", method = RequestMethod.POST)
+    public String modifyHeadline(@RequestParam String alertUid, @RequestParam String headline,
+                                 RedirectAttributes attributes, HttpServletRequest request) {
+        liveWireAlertBroker.updateHeadline(getUserProfile().getUid(), alertUid, headline);
+        addMessage(attributes, MessageType.SUCCESS, "livewire.alert.modified.done", request);
+        attributes.addAttribute("alertUid", alertUid);
+        return "redirect:/livewire/alert/view";
+    }
+
+    @RequestMapping(value = "modify/description", method = RequestMethod.POST)
+    public String modifyDescription(@RequestParam String alertUid, @RequestParam String description,
+                                    RedirectAttributes attributes, HttpServletRequest request) {
+        liveWireAlertBroker.updateDescription(getUserProfile().getUid(), alertUid, description);
+        addMessage(attributes, MessageType.SUCCESS, "livewire.alert.modified.done", request);
+        attributes.addAttribute("alertUid", alertUid);
+        return "redirect:/livewire/alert/view";
+    }
+
+    @RequestMapping(value = "modify/images/add", method = RequestMethod.POST)
+    public @ResponseBody String addImage(@RequestParam String alertUid, @RequestParam MultipartFile image) {
+        String mediaRecordUid = mediaFileBroker.storeFile(image, MediaFunction.LIVEWIRE_MEDIA, "image/jpeg", null); // means UID will be used for key
+        liveWireAlertBroker.addMediaFile(getUserProfile().getUid(), alertUid, mediaFileBroker.load(mediaRecordUid));
+        logger.info("added media file, returning UID = {}", mediaRecordUid);
+        return mediaRecordUid;
+    }
+
+    @RequestMapping(value = "modify/images/delete", method = RequestMethod.POST)
+    public String removeImage(@RequestParam String alertUid, @RequestParam String mediaFileUid,
+                              RedirectAttributes attributes, HttpServletRequest request) {
+        // todo : actually do this
+        addMessage(attributes, MessageType.INFO, "livewire.alert.image.deleted", request);
+        attributes.addAttribute("alertUid", alertUid);
+        return "redirect:/livewire/alert/view";
     }
 
     @RequestMapping(value = "tag", method = RequestMethod.POST)

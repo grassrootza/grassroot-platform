@@ -54,6 +54,8 @@ public interface LiveWireAlertBroker {
 
     void updateDescription(String userUid, String alertUid, String description);
 
+    void addMediaFile(String userUid, String alertUid, MediaFileRecord mediaFileRecord);
+
     // pass null to have it be the public account
     void updateAlertDestination(String userUid, String alertUid, String subscriberUid, LiveWireAlertDestType destType);
 
@@ -78,6 +80,6 @@ public interface LiveWireAlertBroker {
     @PreAuthorize("hasRole('ROLE_LIVEWIRE_USER')")
     void reviewAlert(String userUid, String alertUid, List<String> tags, boolean send, List<String> publicListUids);
 
-    List<LiveWireAlert> fetchAlertsNearUser(String userUid, GeoLocation location, String createdByMe, Integer radius, GeographicSearchType searchType);
+    List<LiveWireAlert> fetchAlertsNearUser(String userUid, GeoLocation location, Integer radius, GeographicSearchType searchType);
 
 }

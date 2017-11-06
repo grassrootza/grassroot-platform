@@ -16,6 +16,7 @@ import za.org.grassroot.integration.messaging.CreateJwtTokenRequest;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.integration.messaging.JwtType;
 import za.org.grassroot.services.exception.InvalidOtpException;
+import za.org.grassroot.services.exception.InvalidPasswordException;
 import za.org.grassroot.services.user.PasswordTokenService;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.enums.RestMessage;
@@ -68,6 +69,32 @@ public class AuthenticationController {
         } catch (InvalidOtpException e) {
            logger.error("Failed to generate authentication token for:  " + phoneNumber);
             return RestUtil.errorResponse(HttpStatus.UNAUTHORIZED, RestMessage.INVALID_OTP);
+        }
+
+    }
+
+
+    @RequestMapping(value = "/web-login", method = RequestMethod.GET)
+    public ResponseEntity<ResponseWrapper> webLogin(@RequestParam("phoneNumber") String phoneNumber,
+                                                    @RequestParam("password") String password) {
+        try {
+            // authenticate user before issuing token
+            passwordTokenService.validatePassword(phoneNumber, password);
+
+            // get the user object
+            User user = userService.findByInputNumber(phoneNumber);
+
+            // Generate a token for the user
+            String token = jwtService.createJwt(new CreateJwtTokenRequest(JwtType.ANDROID_CLIENT));
+
+            // Assemble response entity
+            AndroidAuthToken response = new AndroidAuthToken(user, token);
+
+            // Return the token on the response
+            return RestUtil.okayResponseWithData(RestMessage.LOGIN_SUCCESS, response);
+        } catch (InvalidPasswordException e) {
+            logger.error("Failed to generate authentication token for:  " + phoneNumber);
+            return RestUtil.errorResponse(HttpStatus.UNAUTHORIZED, RestMessage.INVALID_PASSWORD);
         }
 
     }

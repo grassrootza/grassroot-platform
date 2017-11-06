@@ -12,7 +12,7 @@ import java.lang.reflect.InvocationTargetException;
 public class DebugUtil {
 
     private static final boolean transactionDebugging = true;
-    private static final boolean verboseTransactionDebugging = true;
+    private static final boolean verboseTransactionDebugging = false;
 
     private static void showTransactionStatus(String message) {
         log.info(((transactionActive()) ? "[+] " : "[-] ") + message);

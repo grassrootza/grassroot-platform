@@ -13,13 +13,24 @@ import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.SafetyEvent;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.campaign.Campaign;
+import za.org.grassroot.core.domain.campaign.CampaignMessage;
+import za.org.grassroot.core.domain.campaign.CampaignMessageAction;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.domain.task.Vote;
-import za.org.grassroot.core.enums.*;
+import za.org.grassroot.core.enums.EventRSVPResponse;
+import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.core.enums.MessageVariationAssignment;
+import za.org.grassroot.core.enums.TodoCompletionConfirmType;
+import za.org.grassroot.core.enums.UserInterfaceType;
+import za.org.grassroot.core.enums.UserLogType;
+import za.org.grassroot.integration.experiments.ExperimentBroker;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.SafetyEventBroker;
+import za.org.grassroot.services.campaign.CampaignBroker;
+import za.org.grassroot.services.campaign.util.CampaignUtil;
 import za.org.grassroot.services.group.GroupQueryBroker;
 import za.org.grassroot.services.livewire.LiveWireAlertBroker;
 import za.org.grassroot.services.task.EventLogBroker;
@@ -30,6 +41,7 @@ import za.org.grassroot.webapp.enums.USSDResponseTypes;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Option;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
+import za.org.grassroot.webapp.util.USSDCampaignUtil;
 import za.org.grassroot.webapp.util.USSDEventUtil;
 import za.org.grassroot.webapp.util.USSDUrlUtil;
 
@@ -38,12 +50,29 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.LocalDateTime;
 import java.util.AbstractMap.SimpleEntry;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
-import static za.org.grassroot.webapp.enums.USSDSection.*;
+import static za.org.grassroot.webapp.enums.USSDSection.GROUP_MANAGER;
+import static za.org.grassroot.webapp.enums.USSDSection.HOME;
+import static za.org.grassroot.webapp.enums.USSDSection.LIVEWIRE;
+import static za.org.grassroot.webapp.enums.USSDSection.MEETINGS;
+import static za.org.grassroot.webapp.enums.USSDSection.MORE;
+import static za.org.grassroot.webapp.enums.USSDSection.SAFETY_GROUP_MANAGER;
+import static za.org.grassroot.webapp.enums.USSDSection.TODO;
+import static za.org.grassroot.webapp.enums.USSDSection.USER_PROFILE;
+import static za.org.grassroot.webapp.enums.USSDSection.VOTES;
+import static za.org.grassroot.webapp.enums.USSDSection.fromString;
 
 /**
  * Controller for the USSD menu
@@ -74,7 +103,13 @@ public class USSDHomeController extends USSDController {
     private LiveWireAlertBroker liveWireAlertBroker;
 
     @Autowired
+    private ExperimentBroker experimentBroker;
+
+    @Autowired
     private Environment environment;
+
+    @Autowired
+    private CampaignBroker campaignBroker;
 
     private static final Logger log = LoggerFactory.getLogger(USSDHomeController.class);
 
@@ -235,7 +270,11 @@ public class USSDHomeController extends USSDController {
                 userManager.setHasInitiatedUssdSession(user.getUid());
             }
             returnMenu = defaultStartMenu(user);
-        } else {
+        } else if(isCampaignTrailingCode(trailingDigits)){
+            Campaign campaign = campaignBroker.getCampaignDetailsByCode(trailingDigits);
+            returnMenu = assembleCampaignMessageResponse(campaign,user);
+        }
+        else {
             Optional<Group> searchResult = groupQueryBroker.findGroupFromJoinCode(trailingDigits.trim());
             if (searchResult.isPresent()) {
                 Group group = searchResult.get();
@@ -253,6 +292,11 @@ public class USSDHomeController extends USSDController {
 
     private boolean codeHasTrailingDigits(String enteredUSSD) {
         return (enteredUSSD != null && enteredUSSD.length() > hashPosition + 1);
+    }
+
+    private boolean isCampaignTrailingCode(String digits){
+        //to do fix.
+        return false;
     }
 
     private USSDMenu defaultStartMenu(User sessionUser) throws URISyntaxException {
@@ -457,6 +501,60 @@ public class USSDHomeController extends USSDController {
         return new USSDMenu(message, optionsHomeExit(user, false));
     }
 
+    private USSDMenu assembleCampaignMessageResponse(Campaign campaign, User user){
+        Set<Locale> supportedCampaignLanguages = CampaignUtil.getCampaignSupportedLanguages(campaign);
+        if(supportedCampaignLanguages.size() == 1){
+            return assembleCampaignResponse(campaign,supportedCampaignLanguages.iterator().next());
+        }
+        if(user.getLanguageCode() != null && supportedCampaignLanguages.contains(new Locale(user.getLanguageCode()))){
+            return assembleCampaignResponse(campaign,new Locale(user.getLanguageCode()));
+        }
+        //Discuss this with Luke. The user needs to chose a language for campaign but that language may not be their
+        // preferred language
+        return assembleCampaignResponseForSupportedLanguage(campaign,user);
+    }
+
+    private USSDMenu assembleCampaignResponse(Campaign campaign,Locale userLocale){
+        CampaignMessage campaignMessage = CampaignUtil.getCampaignMessageByAssignmentVariationAndUserInterfaceTypeAndLocale(campaign,
+                MessageVariationAssignment.CONTROL, UserInterfaceType.USSD, userLocale);
+        String promptMessage = campaignMessage.getMessage();
+        Map<String, String> linksMap = new HashMap<>();
+        if(campaignMessage.getCampaignMessageActionSet() != null && !campaignMessage.getCampaignMessageActionSet().isEmpty()){
+            for(CampaignMessageAction action : campaignMessage.getCampaignMessageActionSet()){
+                String optionKey = USSDCampaignUtil.CAMPAIGN_PREFIX + action.getActionType().name().toLowerCase();
+                String option  = getMessage(optionKey,userLocale.getLanguage());
+                StringBuilder url = new StringBuilder();
+                url.append(USSDCampaignUtil.getCampaignUrlPrefixs().get(action.getActionType()));
+                url.append(USSDCampaignUtil.CODE_PARAMETER);
+                url.append(campaign.getCampaignCode());
+                url.append(USSDCampaignUtil.LANGUAGE_PARAMETER);
+                url.append(userLocale.getLanguage());
+                linksMap.put(option,url.toString());
+            }
+        }
+        return new USSDMenu(promptMessage,linksMap);
+    }
+
+    private USSDMenu assembleCampaignResponseForSupportedLanguage(Campaign campaign, User user){
+        Locale userLocale = (user.getLanguageCode() != null)? new Locale(user.getLanguageCode()):Locale.ENGLISH;
+        String optionKey = USSDCampaignUtil.CAMPAIGN_PREFIX + USSDCampaignUtil.SET_LANGUAGE_URL;
+        String promptMessage = getMessage(optionKey,userLocale.getLanguage());
+        Map<String, String> linksMap = new HashMap<>();
+        Set<Locale> localeSet = CampaignUtil.getCampaignSupportedLanguages(campaign);
+        for(Locale locale : localeSet){
+            String option = locale.getLanguage();
+            StringBuilder url = new StringBuilder();
+            url.append(USSDCampaignUtil.SET_LANGUAGE_URL);
+            url.append(USSDCampaignUtil.CODE_PARAMETER);
+            url.append(campaign.getCampaignCode());
+            url.append(USSDCampaignUtil.LANGUAGE_PARAMETER);
+            url.append(locale.getLanguage());
+            linksMap.put(option,url.toString());
+        }
+        return new USSDMenu(promptMessage,linksMap);
+    }
+
+
     /*
     Menus to process responses to votes and RSVPs,
      */
@@ -479,8 +577,16 @@ public class USSDHomeController extends USSDController {
             welcomeKey = String.join(".", Arrays.asList(homeKey, startMenu, promptKey, "rsvp-no"));
         }
 
+        recordExperimentResult(user.getUid(), attending);
         return menuBuilder(new USSDMenu(getMessage(welcomeKey, user), optionsHomeExit(user, false)));
+    }
 
+    private void recordExperimentResult(final String userUid, final String response) {
+        Map<String, Object> tags = new HashMap<>();
+        tags.put("revenue", 1);
+        tags.put("meeting_response", 1);
+        tags.put("content", response);
+        experimentBroker.recordEvent("meeting_response", userUid, null, tags);
     }
 
     // todo: move this into todo controller so we can request & log a location

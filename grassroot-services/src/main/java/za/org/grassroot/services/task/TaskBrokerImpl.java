@@ -70,7 +70,7 @@ public class TaskBrokerImpl implements TaskBroker {
     private final PermissionBroker permissionBroker;
 
     @Autowired
-    public TaskBrokerImpl(UserRepository userRepository, GroupBroker groupBroker, EventBroker eventBroker, EventRepository eventRepository, TodoRepository todoRepository, EventLogRepository eventLogRepository, TodoLogRepository todoLogRepository, TodoBroker todoBroker, PermissionBroker permissionBroker, EntityManager entityManager, VoteBroker voteBroker) {
+    public TaskBrokerImpl(UserRepository userRepository, GroupBroker groupBroker, EventBroker eventBroker, EventRepository eventRepository, TodoRepository todoRepository, EventLogRepository eventLogRepository, TodoLogRepository todoLogRepository, TodoBroker todoBroker, PermissionBroker permissionBroker, VoteBroker voteBroker) {
         this.userRepository = userRepository;
         this.groupBroker = groupBroker;
         this.eventBroker = eventBroker;

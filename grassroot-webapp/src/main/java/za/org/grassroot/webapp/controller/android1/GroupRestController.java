@@ -149,7 +149,8 @@ public class GroupRestController extends GroupAbstractRestController {
                 if (invalidNumbers.size() == membersToAdd.size()) {
                     throw new InvalidPhoneNumberException(String.join(" ", invalidNumbers));
                 }
-                groupBroker.addMembers(user.getUid(), group.getUid(), membersToAdd, false);
+                groupBroker.addMembers(user.getUid(), group.getUid(), membersToAdd,
+                        GroupJoinMethod.ADDED_BY_OTHER_MEMBER, false);
                 GroupResponseWrapper updatedGroup = createGroupWrapper(groupBroker.load(groupUid), user);
                 updatedGroup.setInvalidNumbers(invalidNumbers);
                 groupWrapper = Collections.singletonList(updatedGroup);

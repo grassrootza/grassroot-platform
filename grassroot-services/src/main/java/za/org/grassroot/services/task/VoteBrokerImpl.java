@@ -194,7 +194,6 @@ public class VoteBrokerImpl implements VoteBroker {
     private Map<String, Long> calculateMultiOptionResults(Vote vote, List<String> options) {
         Map<String, Long> results = new LinkedHashMap<>();
         List<EventLog> eventLogs = eventLogRepository.findAll(Specifications.where(isResponseToVote(vote)));
-        // logger.info("calculating multi option results, have {} eventlogs, look like {}", eventLogs);
         options.forEach(o -> results.put(o, eventLogs.stream().filter(el -> o.equalsIgnoreCase(el.getTag())).count()));
         return results;
     }

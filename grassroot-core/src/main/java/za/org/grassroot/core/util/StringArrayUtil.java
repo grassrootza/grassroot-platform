@@ -18,6 +18,9 @@ public class StringArrayUtil {
     }
 
     public static String[] listToArrayRemoveDuplicates(List<String> list) {
+        if (list == null) {
+            return new String[0];
+        }
         LinkedHashSet<String> set = new LinkedHashSet<>(list);
         return listToArray(new ArrayList<>(set));
     }

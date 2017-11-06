@@ -2,7 +2,10 @@ package za.org.grassroot.core.specifications;
 
 import org.springframework.data.jpa.domain.Specification;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.task.AbstractTodoEntity_;
 import za.org.grassroot.core.domain.task.*;
+import za.org.grassroot.core.domain.task.TodoCompletionConfirmation_;
+import za.org.grassroot.core.domain.task.Todo_;
 import za.org.grassroot.core.enums.TodoCompletionConfirmType;
 
 import javax.persistence.criteria.Join;

@@ -21,8 +21,8 @@ publishing {
 
 
 bintray {
-    user = hasProperty('bintray_user') ? getProperty('bintray_user') : ''
-    key = hasProperty('bintray_api_key') ? getProperty('bintray_api_key') : ''
+    user =  hasProperty('bintray_user') ? getProperty('bintray_user') : ''
+    key =   hasProperty('bintray_api_key') ? getProperty('bintray_api_key') : ''
     pkg {
 
         repo = 'grassroot-platform'
@@ -80,8 +80,9 @@ dependencies {
         exclude group: 'com.codahale.metrics'
         exclude group: 'org.springframework'
     }
-    compile 'io.dropwizard.metrics:metrics-core:3.1.2'
-    compile 'io.dropwizard.metrics:metrics-annotation:3.1.2'
+
+    compile 'io.dropwizard.metrics:metrics-core:3.2.4'
+    compile 'io.dropwizard.metrics:metrics-annotation:3.2.4'
 
     compile group: 'net.sf.ehcache', name: 'ehcache', version:'2.10.2.2.21'
     runtime group: 'org.postgresql', name: 'postgresql', version:'9.4.1210'

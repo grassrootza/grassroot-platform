@@ -296,7 +296,7 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
 
         User user = userRepository.findOneByUid(userUid);
         LiveWireAlert alert = alertRepository.findOneByUid(alertUid);
-        validateCreatingUser(user, alert);
+        validateCreatingOrReviewUser(user, alert);
 
         alert.setHeadline(headline);
     }
@@ -310,9 +310,23 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
 
         User user = userRepository.findOneByUid(userUid);
         LiveWireAlert alert = alertRepository.findOneByUid(alertUid);
-        validateCreatingUser(user, alert);
+        validateCreatingOrReviewUser(user, alert);
 
         alert.setDescription(description);
+    }
+
+    @Override
+    @Transactional
+    public void addMediaFile(String userUid, String alertUid, MediaFileRecord mediaFileRecord) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(alertUid);
+        Objects.requireNonNull(mediaFileRecord);
+
+        User user = userRepository.findOneByUid(userUid);
+        LiveWireAlert alert = alertRepository.findOneByUid(alertUid);
+        validateCreatingOrReviewUser(user, alert);
+
+        alert.addMediaFile(mediaFileRecord);
     }
 
     @Override
@@ -512,6 +526,13 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
         }
     }
 
+    private void validateCreatingOrReviewUser(User user, LiveWireAlert alert) throws AccessDeniedException {
+        logger.info("user UID = {}, alert creating user = {}", user, alert);
+        if (!alert.getCreatingUser().equals(user) && !canUserRelease(user.getUid())) {
+            throw new AccessDeniedException("Only the user creating the alert can do that, or a reviewer");
+        }
+    }
+
     private Query groupsForInstantAlertQuery(User user, boolean countOnly) {
         String firstLine = countOnly ? "select count(g)" : "select g";
         return entityManager.createQuery(firstLine + " from Group g " +
@@ -546,7 +567,8 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
     }
 
     @Override
-    public List<LiveWireAlert> fetchAlertsNearUser(String userUid, GeoLocation location, String createdByMe, Integer radius, GeographicSearchType searchType) {
+    public List<LiveWireAlert> fetchAlertsNearUser(String userUid, GeoLocation location,
+                                                   Integer radius, GeographicSearchType searchType) {
 
         User user = userRepository.findOneByUid(userUid);
 
@@ -556,6 +578,8 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
 
         String mineFilter = searchType.equals(GeographicSearchType.PUBLIC) ? " AND l.creatingUser <>:user "
                 : searchType.equals(GeographicSearchType.PRIVATE) ? " AND l.creatingUser = :user " : "";
+
+        logger.info("searchType = {}, on whether mine? = {}", searchType, mineFilter);
 
         Instant lastWeekTime = getLastWeekTime();
 
@@ -576,6 +600,7 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
                 "           + SIN(RADIANS(:latpoint)) " +
                 "           * SIN(RADIANS(l.location.latitude))))) ";
 
+        logger.info("livewire alert location search = {}", query);
 
         TypedQuery<LiveWireAlert> typedQuery = entityManager.createQuery(query,LiveWireAlert.class)
                 .setParameter("radius", (double)radius)
@@ -592,6 +617,6 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
     }
 
     private Instant getLastWeekTime(){
-        return Instant.now().minus(7, ChronoUnit.DAYS);
+        return Instant.now().minus(14, ChronoUnit.DAYS);
     }
 }
