@@ -51,6 +51,13 @@ COMMAND OPTIONS
 
 ** Note that the initial deployment will take between 10 - 20 min to download all the libraries dependencies. Subsequent deployments/buildings should take around 5 min as it just build and boot the jar files.
 
+** If you are having issues with running your Docker project, some of the following commands may help, use with care.
+
+docker system prune                #Remove all stopped containers, unused volumes and unused images
+docker kill $(docker ps -q);       #Stop all the containers
+docker rm $(docker ps -a -q);      #Remove all containers
+docker rmi $(docker images -q -a)  #Remove all images
+
 
 ### AWS Deployment using Beanstalk and Docker ###
 

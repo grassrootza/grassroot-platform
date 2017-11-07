@@ -91,6 +91,28 @@ function check_docker_status {
   fi
 }
 
+# check if other dockers or services are using the required ports
+function check_ports {
+  { echo "Checking if there is any container or services using the ports needed..."; } 2> /dev/null
+  TEST8080="$(nc localhost 8080 < /dev/null; echo $?)"
+  echo $TEST8080
+  TEST8081="$(nc localhost 8081 < /dev/null; echo $?)"
+  echo $TEST8081
+  if [ "$TEST8080" = "0" ]; then
+     { echo -e "${RED}There is another container using port 8080, please remove it and deploy again${NC}"; } 2> /dev/null
+     PORTSBEINGUSED="true"
+  fi
+  if [ "$TEST8081" = "0" ]; then
+     { echo -e "${RED}There is another container using port 8081, please remove it and deploy again${NC}"; } 2> /dev/null
+     PORTSBEINGUSED="true"
+  fi
+  if [ "$PORTSBEINGUSED" = "true" ]; then
+    unset ENVIRONMENTVARIABLESEXIST
+    exit 1
+  else
+    { echo "There are no containers or services using the required ports, continuing..."; } 2> /dev/null
+  fi
+}
 # check if previous dockers setup are running that dont belong to the same project and might cause conflicts
 function check_existent_dockers {
   # searching for docker-compose containers running for current project folder
@@ -98,7 +120,8 @@ function check_existent_dockers {
   { echo "#### CHECKING EXISTENT DOCKER SERVICES RUNNING THAT MIGHT CAUSE CONFLICT ####"; } 2> /dev/null
     DOCKERCOMPOSEOTHERPROJECTRUNNING=$(docker ps -a -q -f "name=_grassroot")
     if [ -z "$DOCKERCOMPOSEOTHERPROJECTRUNNING" ]; then
-      { echo "No other project running, continuing..."; } 2> /dev/null
+      { echo "No other grassroot projects running, continuing..."; } 2> /dev/null
+      check_ports
     else
       { echo "There is another project running, checking if running for current folder"; } 2> /dev/null
       echo $DOCKERCOMPOSEOTHERPROJECTRUNNING
