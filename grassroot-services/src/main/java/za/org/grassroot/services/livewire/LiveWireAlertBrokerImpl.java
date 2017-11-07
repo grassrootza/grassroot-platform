@@ -555,6 +555,14 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
             throw new InvalidParameterException("Invalid GeoLocation object.");
         }
 
+        if(radius < 0){
+            throw new InvalidParameterException("Invalid Radius,should be positive");
+        }
+
+        if(radius == null){
+            throw new NullPointerException("Invalid Radius,should not be null");
+        }
+
         String mineFilter = searchType.equals(GeographicSearchType.PUBLIC) ? " AND l.creatingUser <>:user "
                 : searchType.equals(GeographicSearchType.PRIVATE) ? " AND l.creatingUser = :user " : "";
 

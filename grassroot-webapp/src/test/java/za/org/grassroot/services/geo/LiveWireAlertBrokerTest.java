@@ -1,5 +1,6 @@
 package za.org.grassroot.services.geo;
 
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -18,11 +19,14 @@ import javax.persistence.TypedQuery;
 
 import java.security.InvalidParameterException;
 import java.util.Arrays;
+import java.util.List;
 
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 @RunWith(MockitoJUnitRunner.class)
 public class LiveWireAlertBrokerTest {
@@ -72,5 +76,27 @@ public class LiveWireAlertBrokerTest {
     @Test(expected = InvalidParameterException.class)
     public void nullOrInvalidLocationShouldThrowInvalidParameterException(){
         liveWireAlertBroker.fetchAlertsNearUser(testUser.getUid(),null,testCreatedByMe,testRadius,GeographicSearchType.BOTH);
+    }
+
+    @Test(expected = InvalidParameterException.class)
+    public void negativeRadiusShouldThrowInvalidParameterException(){
+        liveWireAlertBroker.fetchAlertsNearUser(testUser.getUid(),testLocation,testCreatedByMe,-5,GeographicSearchType.BOTH);
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void nullRadiusShouldThrowInvalidParameterException(){
+        liveWireAlertBroker.fetchAlertsNearUser(testUser.getUid(),testLocation,testCreatedByMe,null,GeographicSearchType.BOTH);
+    }
+
+    @Test
+    public void validRequestShouldBeSuccessfulWhenFetchingAlertsNearUser(){
+        List<LiveWireAlert> liveWireAlerts =
+                liveWireAlertBroker.fetchAlertsNearUser(testUser.getUid(),testLocation,testCreatedByMe,testRadius,GeographicSearchType.BOTH);
+
+        verify(mockQuery,times(1)).getResultList();
+        verify(entityManagerMock, times(1)).createQuery(anyString(), eq(LiveWireAlert.class));
+
+        Assert.assertNotNull(liveWireAlerts);
+        Assert.assertEquals(liveWireAlerts.size(), 0);
     }
 }
