@@ -1,6 +1,7 @@
 package za.org.grassroot.services.group;
 
 
+import za.org.grassroot.core.dto.MembershipDTO;
 import za.org.grassroot.core.dto.group.GroupTimeChangedDTO;
 import za.org.grassroot.core.dto.group.GroupFullDTO;
 import za.org.grassroot.core.dto.group.GroupMinimalDTO;
@@ -18,5 +19,7 @@ public interface GroupFetchBroker {
     List<GroupMinimalDTO> fetchAllUserGroupsSortByLatestTime(String userUid);
 
     Set<GroupFullDTO> fetchGroupFullInfo(String userUid, Set<String> groupUids);
+
+    Set<MembershipDTO> fetchGroupMembershipInfo(String userUid, String groupUid);
 
 }

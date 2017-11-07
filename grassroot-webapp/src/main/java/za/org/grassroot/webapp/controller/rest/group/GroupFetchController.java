@@ -2,6 +2,7 @@ package za.org.grassroot.webapp.controller.rest.group;
 
 import com.codahale.metrics.annotation.Timed;
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,11 +12,13 @@ import za.org.grassroot.core.dto.group.GroupFullDTO;
 import za.org.grassroot.core.dto.group.GroupMinimalDTO;
 import za.org.grassroot.core.dto.group.GroupTimeChangedDTO;
 import za.org.grassroot.services.group.GroupFetchBroker;
+import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
-@RestController
+@RestController @Grassroot2RestController
 @Api("/api/group/fetch")
 @RequestMapping(value = "/api/group/fetch")
 public class GroupFetchController {
@@ -64,8 +67,13 @@ public class GroupFetchController {
      * @return
      */
     @RequestMapping(value = "/full/{userUid}", method = RequestMethod.GET)
+    @ApiOperation(value = "Get full details about a group, including members (if permission to see details) and description")
     public ResponseEntity<Set<GroupFullDTO>> fetchFullGroupInfo(@PathVariable String userUid,
                                                                 @RequestParam(required = false) Set<String> groupUids) {
-        return ResponseEntity.ok(groupFetchBroker.fetchGroupFullInfo(userUid, groupUids));
+        final String descriptionTemplate = "Group '%1$s', created on %2$s, has %3$d members, with join code %4$s";
+        return ResponseEntity.ok(groupFetchBroker.fetchGroupFullInfo(userUid, groupUids).stream()
+                .map(g -> g.insertDefaultDescriptionIfEmpty(descriptionTemplate)).collect(Collectors.toSet()));
     }
+
+
 }

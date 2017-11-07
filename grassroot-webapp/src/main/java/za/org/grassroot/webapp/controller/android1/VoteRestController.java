@@ -8,7 +8,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.JpaEntityType;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.EventReminderType;
 import za.org.grassroot.core.domain.task.Vote;
@@ -172,7 +173,7 @@ public class VoteRestController {
             TaskDTO updatedTask = taskBroker.load(user.getUid(), voteUid, TaskType.VOTE);
             responseWrapper = RestUtil.okayResponseWithData(RestMessage.VOTE_DETAILS_UPDATED, Collections.singletonList(updatedTask));
         } catch (IllegalStateException e) {
-            responseWrapper = RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.VOTE_ALREADY_CANCELLED);
+            responseWrapper = RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.VOTE_ALREADY_CLOSED);
         }
 
         return responseWrapper;
@@ -188,7 +189,7 @@ public class VoteRestController {
             eventBroker.cancel(userUid,voteUid);
             responseWrapper = RestUtil.messageOkayResponse(RestMessage.VOTE_CANCELLED);
         }else{
-            responseWrapper = RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.VOTE_ALREADY_CANCELLED);
+            responseWrapper = RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.VOTE_ALREADY_CLOSED);
         }
 
         return responseWrapper;

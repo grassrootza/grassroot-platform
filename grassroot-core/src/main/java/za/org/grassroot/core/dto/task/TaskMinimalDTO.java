@@ -19,6 +19,7 @@ public class TaskMinimalDTO {
 
     private final String parentUid;
     private final JpaEntityType parentType;
+    private final String ancestorGroupName;
 
     private final String title;
 
@@ -33,6 +34,8 @@ public class TaskMinimalDTO {
         this.title = task.getName();
         this.parentType = task.getParent().getJpaEntityType();
         this.parentUid = task.getParent().getUid();
+
+        this.ancestorGroupName = task.getAncestorGroup().getName();
 
         this.createdDateTimeMillis = task.getCreatedDateTime().toEpochMilli();
         this.deadlineDateTimeMillis = task.getDeadlineTime().toEpochMilli();

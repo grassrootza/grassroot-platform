@@ -7,8 +7,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.ActionLog;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.media.ImageRecord;
 import za.org.grassroot.core.domain.task.*;
@@ -87,7 +89,7 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
 
     @Override
     @Transactional
-    public String storeImageForTask(String userUid, String taskUid, TaskType taskType, MultipartFile file, Double latitude, Double longitude) {
+    public String storeImageForTask(String userUid, String taskUid, TaskType taskType, MultipartFile file, String caption, Double latitude, Double longitude) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(taskUid);
         Objects.requireNonNull(taskType);
@@ -103,9 +105,9 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
 
         switch (taskType) {
             case MEETING:
-                return storeImageForMeeting(user, taskUid, location, file);
+                return storeImageForMeeting(user, taskUid, location, file, caption);
             case TODO:
-                return storeImageForTodo(user, taskUid, location, file);
+                return storeImageForTodo(user, taskUid, location, file, caption);
             default: // throw an exception
                 return null;
         }
@@ -295,7 +297,7 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
                 .and(actionLogType(actionLogType)));
     }
 
-    private String storeImageForMeeting(User user, String meetingUid, GeoLocation location, MultipartFile file) {
+    private String storeImageForMeeting(User user, String meetingUid, GeoLocation location, MultipartFile file, String caption) {
         DebugUtil.transactionRequired("");
 
         Meeting meeting = (Meeting) eventRepository.findOneByUid(meetingUid);
@@ -310,6 +312,10 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
             geoLocationBroker.calculateMeetingLocationInstant(meeting.getUid(), location, UserInterfaceType.WEB);
         }
 
+        if (!StringUtils.isEmpty(caption)) {
+            eventLog.setTag(caption);
+        }
+
         boolean uploadCompleted = storageBroker.storeImage(ActionLogType.EVENT_LOG, eventLog.getUid(), file);
         if (uploadCompleted) {
             eventLogRepository.save(eventLog);
@@ -320,7 +326,7 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
         }
     }
 
-    private String storeImageForTodo(User user, String todoUid, GeoLocation location, MultipartFile file) {
+    private String storeImageForTodo(User user, String todoUid, GeoLocation location, MultipartFile file, String caption) {
         DebugUtil.transactionRequired("");
 
         Todo todo = todoRepository.findOneByUid(todoUid);
@@ -332,6 +338,10 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
         if (location != null) {
             todoLog.setLocationWithSource(location, LocationSource.convertFromInterface(UserInterfaceType.ANDROID));
             geoLocationBroker.calculateTodoLocationInstant(todo.getUid(), location, UserInterfaceType.ANDROID);
+        }
+
+        if (!StringUtils.isEmpty(caption)) {
+            todoLog.setMessage(caption);
         }
 
         boolean uploadCompleted = storageBroker.storeImage(TODO_LOG, todoLog.getUid(), file);
