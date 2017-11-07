@@ -4,7 +4,7 @@
 SHA1=$1
 ENVIRONMENT=$2
 mv .deploy/Dockerfile Dockerfile
-mv .deploy/startgrassroot.sh.staging startgrassroot.sh
+mv .deploy/startgrassroot.sh.$ENVIRONMENT startgrassroot.sh
 mv .deploy/build-jar.sh build-jar.sh
 chmod +x build-jar.sh
 chmod +x startgrassroot.sh

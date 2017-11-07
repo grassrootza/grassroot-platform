@@ -41,7 +41,7 @@ OPTIONS:
            one if its the first deploy) and recompile (or compile if its
            the first deploy) the java application. Note that Gradlew Daemon
            will be restarted. Thats to be used when the container become unstable.
-           - external -> It will remove and download all the images again,
+           - clean -> It will remove and download all the images again,
            and rebuild the docker containers. Thats the case when you have modified
            the container images and want to reset to its initial state.
            Note that doing that, the Postgres container if user the option "-d docker"
@@ -93,6 +93,41 @@ function check_docker_status {
 
 # check if previous dockers setup are running that dont belong to the same project and might cause conflicts
 function check_existent_dockers {
+  # searching for docker-compose containers running for current project folder
+  #docker ps -q -f "name=$DOCKERCOMPOSEPROJECTFOLDER"
+  { echo "#### CHECKING EXISTENT DOCKER SERVICES RUNNING THAT MIGHT CAUSE CONFLICT ####"; } 2> /dev/null
+    DOCKERCOMPOSEOTHERPROJECTRUNNING=$(docker ps -a -q -f "name=_grassroot")
+    if [ -z "$DOCKERCOMPOSEOTHERPROJECTRUNNING" ]; then
+      { echo "No other project running, continuing..."; } 2> /dev/null
+    else
+      { echo "There is another project running, checking if running for current folder"; } 2> /dev/null
+      echo $DOCKERCOMPOSEOTHERPROJECTRUNNING
+      WORKINGFOLDER=${PWD##*/}
+      DOCKERCOMPOSEPROJECTFOLDER="${WORKINGFOLDER//-}"
+      DOCKERCOMPOSEPROJECTRUNNING=$(docker ps -a -q -f "name=$DOCKERCOMPOSEPROJECTFOLDER")
+      echo $DOCKERCOMPOSEPROJECTRUNNING
+      if [ -z "$DOCKERCOMPOSEPROJECTRUNNING" ]; then
+        { echo -e "${RED}Project is running but not for current folder, here is the list${NC}"; } 2> /dev/null
+        docker ps -a
+        while true; do
+            read -p "$* Are you sure you want to remove all you docker containers? This cannot be reversed [y/n]: " yn
+            case $yn in
+                [Yy]*) docker kill $(docker ps -q);
+                docker rm $(docker ps -a -q);
+                { echo "Docker containers removed, please try to deploy again."; } 2> /dev/null
+                exit 1  ;;
+                [Nn]*) echo "Aborted" ; exit  1 ;;
+            esac
+        done
+        # checking if there are other projects
+        exit 1
+      else
+        { echo  "project is running for current folder, continuing..."; } 2> /dev/null
+      fi
+  fi
+}
+
+function check_existent_dockers_old {
   { echo "#### CHECKING EXISTENT DOCKER SERVICES RUNNING THAT MIGHT CAUSE CONFLICT ####"; } 2> /dev/null
   WORKINGFOLDER=${PWD##*/}
   DOCKERCOMPOSEPROJECTFOLDER="${WORKINGFOLDER//-}"
@@ -227,14 +262,14 @@ function initiate_dockers {
 
   # DEFINE ENVIRONMENT VARIABLES
   DOCKERCOMPOSE_FILE=docker-compose.yml
-  DOCKERFILE=Dockerfile
-  cp .deploy/$DOCKERFILE $DOCKERFILE
+  DOCKERFILE=Dockerfile.localdeploy
+  cp .deploy/$DOCKERFILE Dockerfile
 
   # COPY THE STARTUP SCRIPT TO THE ROOT DIR FOLDER
   { echo "copying startup scripts to the root folder"; } 2> /dev/null
   cp .deploy/startgrassroot.sh.localdeploy startgrassroot.sh
-  cp .deploy/build-jar.sh build-jar.sh
-  chmod +x build-jar.sh
+  #cp .deploy/build-jar.sh build-jar.sh
+  #chmod +x build-jar.sh
   chmod +x startgrassroot.sh
   if [ "$DOCKERMODE" = "clean" ]; then
     { echo "CLEAN MODE STARTED"; } 2> /dev/null
@@ -247,7 +282,6 @@ function initiate_dockers {
     if [ ! "$(docker ps -q -f "name=_grassroot")" ]; then
       #starting docker
       { echo "DOCKER WASN'T STARTED, STARTING IT NOW"; } 2> /dev/null
-      clean_logs
       docker-compose up -d
     else
       { echo "QUICK DEPLOYMENT MODE STARTED"; } 2> /dev/null
@@ -328,6 +362,9 @@ check_existent_dockers
 
 # CHECK IF ENVIRONMENT VARIABLES WERE SET BEFORE CONTINUING
 check_environment_variables
+
+# CLEAN LOGS PRIOR NEW DEPLOYMENT
+clean_logs
 
 # CHECK PARAMETERS PROVIDED FOR -D AND -B
 while getopts ":d:b:" opt; do
