@@ -5,6 +5,7 @@ log/*
 # localhost environment files #
 environment/*
 /.clean
+/build-jar.sh
 
 # localhost deployment scripts #
 /startgrassroot.sh

@@ -3,13 +3,11 @@
 # SET ENVIRONMENT VARIABLES BASED ON THE ENVIRONMENT PREVIOUSLY SETUP VIA
 . /usr/src/grassroot/environment/environment-variables
 
-# GET THE COMMIT ID TO SET AS PART OF THE INSTANCE NAME
-COMMITID=$(git rev-parse --short HEAD)
-
+# SET HOSTNAME ACCORDINGLY TO BE UNIQUE WITHIN PAPERTRAIL
 wget http://s3.amazonaws.com/ec2metadata/ec2-metadata
 chmod 777 ec2-metadata
 INSTANCE_ID=$(./ec2-metadata -i | cut -b 14-)
-HOSTNAME=$PROFILE-$INSTANCE_ID-$COMMITID
+HOSTNAME=$PROFILE-$INSTANCE_ID-<BUILDID>
 echo $HOSTNAME > /etc/hostname
 
 # SETUP PAPERTRAIL

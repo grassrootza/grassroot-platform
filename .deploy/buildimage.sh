@@ -1,5 +1,9 @@
 #! /bin/bash
 
+# GET THE COMMIT ID TO SET AS PART OF THE INSTANCE NAME
+COMMITID=$(git rev-parse --short HEAD)
+sed -i "s/<BUILDID>/$COMMITID/" .deploy/startgrassroot.sh.$ENVIRONMENT
+
 # DEPLOY MODIFIED IMAGE TO DOCKER HUB
 SHA1=$1
 ENVIRONMENT=$2
