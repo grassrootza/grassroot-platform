@@ -11,7 +11,6 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.ObjectLocation;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
-import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.geo.GeographicSearchType;
 import za.org.grassroot.services.geo.ObjectLocationBroker;
 import za.org.grassroot.services.livewire.LiveWireAlertBroker;
@@ -86,7 +85,7 @@ public class AroundMeRestController {
                                                                   @RequestParam int radiusMetres,
                                                                   @RequestParam String createdByMe){
         GeoLocation location = new GeoLocation(latitude,longitude);
-        List<LiveWireAlert> liveWireAlerts = liveWireAlertBroker.fetchAlertsNearUser(userUid,location,createdByMe,radiusMetres, GeographicSearchType.PUBLIC);
+        List<LiveWireAlert> liveWireAlerts = liveWireAlertBroker.fetchAlertsNearUser(userUid,location, radiusMetres, GeographicSearchType.PUBLIC);
         return ResponseEntity.ok(liveWireAlerts);
     }
 

@@ -78,6 +78,6 @@ public interface LiveWireAlertBroker {
     @PreAuthorize("hasRole('ROLE_LIVEWIRE_USER')")
     void reviewAlert(String userUid, String alertUid, List<String> tags, boolean send, List<String> publicListUids);
 
-    List<LiveWireAlert> fetchAlertsNearUser(String userUid, GeoLocation location, String createdByMe, Integer radius, GeographicSearchType searchType);
+    List<LiveWireAlert> fetchAlertsNearUser(String userUid, GeoLocation location, Integer radius, GeographicSearchType searchType);
 
 }

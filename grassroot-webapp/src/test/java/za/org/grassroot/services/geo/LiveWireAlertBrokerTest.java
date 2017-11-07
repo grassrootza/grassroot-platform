@@ -56,7 +56,6 @@ public class LiveWireAlertBrokerTest {
 
     private User testUser;
     private Integer testRadius = 5;
-    private String testCreatedByMe = "mine";
     private GeoLocation testLocation;
     private double testLat = -11.00,testLong = 11.0;
 
@@ -67,7 +66,7 @@ public class LiveWireAlertBrokerTest {
                 applicationEventPublisherMock,logsAndNotificationsBrokerMock);
 
         testUser = new User("1234567899","Testing");
-        testLocation = new GeoLocation(-11.0,11.0);
+        testLocation = new GeoLocation(testLat,testLong);
         given(mockQuery.setParameter(anyString(),any())).willReturn(mockQuery);
         given(mockQuery.getResultList()).willAnswer(l -> Arrays.asList());
         given(entityManagerMock.createQuery(anyString(),eq(LiveWireAlert.class))).willReturn(mockQuery);
@@ -75,23 +74,33 @@ public class LiveWireAlertBrokerTest {
 
     @Test(expected = InvalidParameterException.class)
     public void nullOrInvalidLocationShouldThrowInvalidParameterException(){
-        liveWireAlertBroker.fetchAlertsNearUser(testUser.getUid(),null,testCreatedByMe,testRadius,GeographicSearchType.BOTH);
+        liveWireAlertBroker.fetchAlertsNearUser(testUser.getUid(),null, testRadius,GeographicSearchType.BOTH);
+    }
+    @Test(expected = InvalidParameterException.class)
+    public void nullOrInvalidLocationWithPublicSearchTypeShouldThrowInvalidParameterException(){
+        liveWireAlertBroker.fetchAlertsNearUser(testUser.getUid(),null, testRadius,GeographicSearchType.PUBLIC);
     }
 
     @Test(expected = InvalidParameterException.class)
+    public void nullOrInvalidLocationWithPrivateSearchTypeShouldThrowInvalidParameterException(){
+        liveWireAlertBroker.fetchAlertsNearUser(testUser.getUid(),null, testRadius,GeographicSearchType.PRIVATE);
+    }
+
+
+    @Test(expected = InvalidParameterException.class)
     public void negativeRadiusShouldThrowInvalidParameterException(){
-        liveWireAlertBroker.fetchAlertsNearUser(testUser.getUid(),testLocation,testCreatedByMe,-5,GeographicSearchType.BOTH);
+        liveWireAlertBroker.fetchAlertsNearUser(testUser.getUid(),testLocation, -5,GeographicSearchType.BOTH);
     }
 
     @Test(expected = NullPointerException.class)
     public void nullRadiusShouldThrowInvalidParameterException(){
-        liveWireAlertBroker.fetchAlertsNearUser(testUser.getUid(),testLocation,testCreatedByMe,null,GeographicSearchType.BOTH);
+        liveWireAlertBroker.fetchAlertsNearUser(testUser.getUid(),testLocation, null,GeographicSearchType.BOTH);
     }
 
     @Test
     public void validRequestShouldBeSuccessfulWhenFetchingAlertsNearUser(){
         List<LiveWireAlert> liveWireAlerts =
-                liveWireAlertBroker.fetchAlertsNearUser(testUser.getUid(),testLocation,testCreatedByMe,testRadius,GeographicSearchType.BOTH);
+                liveWireAlertBroker.fetchAlertsNearUser(testUser.getUid(),testLocation, testRadius,GeographicSearchType.BOTH);
 
         verify(mockQuery,times(1)).getResultList();
         verify(entityManagerMock, times(1)).createQuery(anyString(), eq(LiveWireAlert.class));

@@ -154,6 +154,11 @@ public class USSDAdvancedHomeControllerTest extends USSDAbstractUnitTest{
                 .param(phoneParameter,""+phoneForTests)
                 .accept(MediaType.APPLICATION_JSON))
                 .andReturn();
+
+        Assert.assertNotNull(result);
+        ResultActions response =
+                mockMvc.perform(get(advancedMenuOptionsRoot + "/public/mtgs/details").param(phoneParameter, phoneForTests));
+        Assert.assertNotNull(response);
     }
 
     @Test
@@ -163,6 +168,7 @@ public class USSDAdvancedHomeControllerTest extends USSDAbstractUnitTest{
                 .param(phoneParameter,""+phoneForTests)
                 .accept(MediaType.APPLICATION_JSON))
                 .andReturn();
+        Assert.assertNotNull(result);
         Assert.assertFalse(ussdLocationServicesBrokerMock.addUssdLocationLookupAllowed(testUser.getUid(), UserInterfaceType.USSD));
     }
 }

@@ -114,6 +114,7 @@ public class AroundMeRestControllerTest extends RestAbstractUnitTest {
                 .param("radiusMetres",""+ testRadiusMetres)
                 .accept(MediaType.APPLICATION_JSON))
                 .andReturn();
+        Assert.assertNotNull(result);
 
         logger.info("Testing All Entities Results = {}",result.getResponse().getStatus());
 
@@ -158,6 +159,7 @@ public class AroundMeRestControllerTest extends RestAbstractUnitTest {
                 .param("filterTerm",testFilterTerm)
                 .accept(MediaType.APPLICATION_JSON))
                 .andReturn();
+        Assert.assertNotNull(result);
         logger.info("Testing Groups Near User Results = {}",result.getResponse().getStatus());
 
         verify(objectLocationBrokerMock,times(1))
@@ -183,20 +185,20 @@ public class AroundMeRestControllerTest extends RestAbstractUnitTest {
         liveWireAlerts.add(liveWireAlert);
 
         when(liveWireAlertBrokerMock
-                .fetchAlertsNearUser(testUser.getUid(),null,testCreatedByMe,
+                .fetchAlertsNearUser(testUser.getUid(),null,
                         testRadiusMetres,GeographicSearchType.PUBLIC)).thenThrow(new IllegalArgumentException("Invalid location parameter"));
 
         when(liveWireAlertBrokerMock
-                .fetchAlertsNearUser(testUser.getUid(),null,testCreatedByMe,
+                .fetchAlertsNearUser(testUser.getUid(),null,
                         -5,GeographicSearchType.PUBLIC)).thenThrow(new IllegalArgumentException("Invalid radius parameter"));
 
         when(liveWireAlertBrokerMock
-                .fetchAlertsNearUser(testUser.getUid(),null,testCreatedByMe,
+                .fetchAlertsNearUser(testUser.getUid(),null,
                         null,GeographicSearchType.PUBLIC)).thenThrow(new IllegalArgumentException("Invalid radius parameter,should not be null"));
 
 
         when(liveWireAlertBrokerMock
-                .fetchAlertsNearUser(testUser.getUid(),testLocation,testCreatedByMe,
+                .fetchAlertsNearUser(testUser.getUid(),testLocation,
                         testRadiusMetres,GeographicSearchType.PUBLIC)).thenReturn(liveWireAlerts);
 
         MvcResult result = mockMvc.perform(MockMvcRequestBuilders
@@ -207,11 +209,12 @@ public class AroundMeRestControllerTest extends RestAbstractUnitTest {
                 .param("createdByMe",testCreatedByMe)
                 .accept(MediaType.APPLICATION_JSON))
                 .andReturn();
+        Assert.assertNotNull(result);
         logger.info("Testing All Alerts Results = {}",result.getResponse().getStatus());
         verify(liveWireAlertBrokerMock,times(1))
-                .fetchAlertsNearUser(testUser.getUid(),testLocation,testCreatedByMe,testRadiusMetres,GeographicSearchType.PUBLIC);
+                .fetchAlertsNearUser(testUser.getUid(),testLocation, testRadiusMetres,GeographicSearchType.PUBLIC);
         Assert.assertNotNull(liveWireAlertBrokerMock.fetchAlertsNearUser(uidParameter,testLocation,
-                testCreatedByMe,testRadiusMetres,GeographicSearchType.PUBLIC));
+                testRadiusMetres,GeographicSearchType.PUBLIC));
     }
 
 }
