@@ -3,7 +3,6 @@ package za.org.grassroot.webapp.controller.rest.location;
 import io.swagger.annotations.ApiModel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import za.org.grassroot.core.domain.JpaEntityType;
 
 @ApiModel
 @Getter @AllArgsConstructor
@@ -14,6 +13,8 @@ public class AroundMeDTO {
 
     private final String title;
     private final String description;
+
+    private final String ancestorGroupName;
 
     private final boolean fetchingUserIsMember;
 

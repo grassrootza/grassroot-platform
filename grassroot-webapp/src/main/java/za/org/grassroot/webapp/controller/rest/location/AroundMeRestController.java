@@ -14,6 +14,7 @@ import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.ObjectLocation;
 import za.org.grassroot.core.domain.livewire.LiveWireAlert;
 import za.org.grassroot.core.domain.task.Meeting;
+import za.org.grassroot.core.enums.LiveWireAlertType;
 import za.org.grassroot.core.repository.MeetingRepository;
 import za.org.grassroot.services.geo.GeographicSearchType;
 import za.org.grassroot.services.geo.ObjectLocationBroker;
@@ -129,6 +130,7 @@ public class AroundMeRestController {
                 GeoLocatedEntityType.GROUP,
                 groupLocation.getName(),
                 groupLocation.getDescription(),
+                groupLocation.getName(),
                 group.hasMember(user),
                 contactName,
                 groupLocation.getLatitude(),
@@ -141,6 +143,7 @@ public class AroundMeRestController {
                 GeoLocatedEntityType.MEETING,
                 mtgLocation.getName(),
                 mtgLocation.getDescription(),
+                meeting.getAncestorGroup().getName(),
                 meeting.getMembers().contains(user),
                 meeting.getName(),
                 mtgLocation.getLatitude(),
@@ -148,10 +151,13 @@ public class AroundMeRestController {
     }
 
     private AroundMeDTO convertLiveWireAlert(LiveWireAlert alert, User user) {
+        final String ancestorName = LiveWireAlertType.INSTANT.equals(alert.getType()) ?
+                alert.getGroup().getName() : alert.getMeeting().getAncestorGroup().getName();
         return new AroundMeDTO(alert.getUid(),
                 GeoLocatedEntityType.LIVE_WIRE_ALERT,
                 alert.getHeadline(),
                 alert.getDescription(),
+                ancestorName,
                 alert.getCreatingUser().equals(user),
                 alert.getContactName(),
                 alert.getLocation().getLatitude(),

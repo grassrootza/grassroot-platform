@@ -17,8 +17,8 @@ import java.util.Set;
 @Getter @Setter
 public class GroupMinimalDTO extends GroupTimeChangedDTO {
 
-    private final String name;
-    protected final String description;
+    protected final String name;
+    protected String description;
     private final String userRole;
     protected Long memberCount;
     private final Set<Permission> userPermissions;
