@@ -27,9 +27,9 @@ public interface MessageAssemblingService {
 
     String createTodoRecordedNotificationMessage(User target, Todo todo);
 
-    String createTodoUpdateNotificationMessage(User target, Todo todo);
+    String createTodoAssignedMessage(User user, Todo todo);
 
-    String createVoteResultsMessage(User user, Vote event, double yes, double no, double abstain, double noReply);
+    String createTodoConfirmerMessage(User user, Todo todo);
 
     String createMultiOptionVoteResultsMessage(User user, Vote vote, Map<String, Long> optionsWithCount);
 
@@ -40,8 +40,6 @@ public interface MessageAssemblingService {
     String createMeetingThankYourMessage(User target, Meeting meeting);
 
     String createWelcomeMessage(String messageId, User user);
-
-    String createMeetingAttendanceConfirmationMessage(User organiser, User member, EventLog eventLog);
 
     String createSafetyEventMessage(User respondent, User requestor, Address address, boolean reminder);
 

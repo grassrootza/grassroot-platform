@@ -22,7 +22,7 @@ public class TodoHelper {
     private String responseTag;
     private Instant dueDateTime;
 
-    private boolean recurring = false;
+    @Builder.Default private boolean recurring = false;
     private Long recurringPeriodMillis;
 
     @Setter private Set<String> assignedMemberUids;

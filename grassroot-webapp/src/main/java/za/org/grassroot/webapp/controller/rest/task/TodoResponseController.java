@@ -28,12 +28,15 @@ public class TodoResponseController {
 
     /*
     User is responding to a request for information to-do
+    todo: validation
      */
     @RequestMapping(value = "information/{todoUid}/{userUid}", method = RequestMethod.GET)
     @ApiOperation(value = "Record a user responding to a todo that requests information")
     public ResponseEntity recordUserInformationResponse(@PathVariable String todoUid,
-                                                        @PathVariable String userUid) {
-        todoBrokerNew.
+                                                        @PathVariable String userUid,
+                                                        @RequestParam String response) {
+        todoBrokerNew.recordResponse(userUid, todoUid, response);
+        return ResponseEntity.ok(RestMessage.TODO_RESPONSE_RECORDED);
     }
 
     @ExceptionHandler(TodoTypeMismatchException.class)

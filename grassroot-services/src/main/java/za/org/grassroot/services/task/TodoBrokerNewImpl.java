@@ -7,6 +7,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.notification.TodoInfoNotification;
 import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.enums.TodoCompletionConfirmType;
 import za.org.grassroot.core.enums.TodoLogType;
@@ -14,6 +15,7 @@ import za.org.grassroot.core.repository.TodoRepository;
 import za.org.grassroot.core.repository.UidIdentifiableRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.AfterTxCommitTask;
+import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
 import za.org.grassroot.services.exception.ResponseNotAllowedException;
@@ -39,15 +41,17 @@ public class TodoBrokerNewImpl implements TodoBrokerNew {
     private final PermissionBroker permissionBroker;
     private final LogsAndNotificationsBroker logsAndNotificationsBroker;
 
+    private final MessageAssemblingService messageService;
     private final ApplicationEventPublisher eventPublisher;
 
     @Autowired
-    public TodoBrokerNewImpl(TodoRepository todoRepository, UserRepository userRepository, UidIdentifiableRepository uidIdentifiableRepository, PermissionBroker permissionBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, ApplicationEventPublisher eventPublisher) {
+    public TodoBrokerNewImpl(TodoRepository todoRepository, UserRepository userRepository, UidIdentifiableRepository uidIdentifiableRepository, PermissionBroker permissionBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, MessageAssemblingService messageService, ApplicationEventPublisher eventPublisher) {
         this.todoRepository = todoRepository;
         this.userRepository = userRepository;
         this.uidIdentifiableRepository = uidIdentifiableRepository;
         this.permissionBroker = permissionBroker;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
+        this.messageService = messageService;
         this.eventPublisher = eventPublisher;
     }
 
@@ -69,15 +73,18 @@ public class TodoBrokerNewImpl implements TodoBrokerNew {
         validateUserCanCreate(user, parent.getThisOrAncestorGroup());
 
         Todo todo = new Todo(user, parent, todoHelper.getTodoType(), todoHelper.getDescription(), todoHelper.getDueDateTime());
-
-        Set<Notification> notifications = wireUpTodoForType(todo, todoHelper);
-        createAndStoreTodoLog(user, todo, TodoLogType.CREATED, null, notifications);
-
         todo = todoRepository.save(todo);
+
+        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+        TodoLog todoLog = new TodoLog(TodoLogType.CREATED, user, todo, null);
+        bundle.addLog(todoLog);
+        bundle.addNotifications(wireUpTodoForType(todo, todoHelper, todoLog));
+        logsAndNotificationsBroker.storeBundle(bundle);
+
         return todo.getUid();
     }
 
-    private Set<Notification> wireUpTodoForType(Todo todo, TodoHelper todoHelper) {
+    private Set<Notification> wireUpTodoForType(Todo todo, TodoHelper todoHelper, TodoLog todoLog) {
         Set<Notification> notifications = new HashSet<>();
         if (todoHelper.isInformationTodo()) {
             todo.setResponseTag(todoHelper.getResponseTag());
@@ -96,8 +103,8 @@ public class TodoBrokerNewImpl implements TodoBrokerNew {
         Set<User> assignedNonConfirmingUsers = new HashSet<>(assignedUsers);
         assignedNonConfirmingUsers.removeAll(confirmingUsers);
 
-        assignedNonConfirmingUsers.forEach(u -> notifications.add(generateTodoAssignedNotification(todo.getType(), u)));
-        confirmingUsers.forEach(u -> notifications.add(generateNotificationForConfirmingUsers(todo.getType(), u)));
+        assignedNonConfirmingUsers.forEach(user -> notifications.add(generateTodoAssignedNotification(todo, user, todoLog)));
+        confirmingUsers.forEach(user -> notifications.add(generateNotificationForConfirmingUsers(todo, user, todoLog)));
 
         return notifications;
     }
@@ -119,12 +126,14 @@ public class TodoBrokerNewImpl implements TodoBrokerNew {
         todo.addAssignments(users.stream().map(u -> new TodoAssignment(todo, u, false, true)).collect(Collectors.toSet()));
     }
 
-    private Notification generateTodoAssignedNotification(TodoType todoType, User target) {
-        return null;
+    private Notification generateTodoAssignedNotification(Todo todo, User target, TodoLog todoLog) {
+        String message = messageService.createTodoAssignedMessage(target, todo);
+        return new TodoInfoNotification(target, message, todoLog);
     }
 
-    private Notification generateNotificationForConfirmingUsers(TodoType todoType, User target) {
-        return null;
+    private Notification generateNotificationForConfirmingUsers(Todo todo, User target, TodoLog todoLog) {
+        String message = messageService.createTodoConfirmerMessage(target, todo);
+        return new TodoInfoNotification(target, message, todoLog);
     }
 
     @Override

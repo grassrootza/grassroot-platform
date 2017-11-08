@@ -1,6 +1,5 @@
 package za.org.grassroot.core.domain.task;
 
-import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,7 +22,6 @@ import java.util.stream.Collectors;
 /**
  * Created by aakilomar on 12/3/15.
  */
-@Builder
 @Entity
 @Table(name = "action_todo",
         indexes = {
