@@ -1,14 +1,21 @@
 package za.org.grassroot.core.domain;
 
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.Setter;
+
 import javax.persistence.*;
 import java.io.Serializable;
 import java.time.Instant;
 import java.util.Objects;
 
+@Getter
 @Entity
 @Table(name = "group_user_membership",
         uniqueConstraints = @UniqueConstraint(name = "uk_membership_group_user", columnNames = {"group_id", "user_id"}))
 public class Membership implements Serializable {
+
+    @Setter(AccessLevel.PRIVATE)
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
@@ -29,6 +36,12 @@ public class Membership implements Serializable {
     @Column(name = "join_time", nullable = false)
     private Instant joinTime;
 
+
+    @Column(name = "user_join_method")
+    @Enumerated(EnumType.STRING)
+    private GroupJoinMethod joinMethod;
+
+    @Setter
     @Basic
     @Column(name = "alias", length = 50, nullable = true)
     private String alias;
@@ -37,44 +50,18 @@ public class Membership implements Serializable {
         // for JPA
     }
 
-    public Membership(Group group, User user, Role role, Instant joinTime) {
+    public Membership(Group group, User user, Role role, Instant joinTime, GroupJoinMethod joinMethod) {
         this.group = Objects.requireNonNull(group);
         this.user = Objects.requireNonNull(user);
         this.role = Objects.requireNonNull(role);
         this.joinTime = Objects.requireNonNull(joinTime);
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public Group getGroup() {
-        return group;
-    }
-
-    public User getUser() {
-        return user;
-    }
-
-    public Role getRole() {
-        return role;
+        this.joinMethod = joinMethod;
     }
 
     public void setRole(Role role) {
         this.role = Objects.requireNonNull(role);
     }
 
-    public Instant getJoinTime() {
-        return joinTime;
-    }
-
-    public String getAlias() {
-        return alias;
-    }
-
-    public void setAlias(String alias) {
-        this.alias = alias;
-    }
 
     public String getDisplayName() {
         return alias == null || alias.trim().isEmpty() ? user.getName() : alias;
