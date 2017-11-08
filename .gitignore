@@ -52,6 +52,7 @@ build/
 
 # Grassroot.log
 grassroot.log*
+log/
 
 ## Hibernate schema export DDL script
 schema-export-create.sql

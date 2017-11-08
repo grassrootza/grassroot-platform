@@ -31,6 +31,7 @@ public class TaskFullDTO {
 
     private final String parentUid;
     private final String parentName;
+    private final String ancestorGroupName;
 
     private final Long createdTimeMillis;
     private final Long deadlineMillis;
@@ -52,6 +53,7 @@ public class TaskFullDTO {
 
         this.createdByUserName = task.getCreatedByUser().getName();
         this.createdByThisUser = task.getCreatedByUser().equals(user);
+        this.ancestorGroupName = task.getAncestorGroup().getName();
 
         this.type = task.getTaskType();
 
