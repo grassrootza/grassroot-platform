@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.Group;
@@ -39,6 +40,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -88,7 +90,13 @@ public class USSDAdvancedHomeControllerTest extends USSDAbstractUnitTest{
     public void advancedUssdWelcomeMenuShouldWork() throws Exception{
         when(userManagementServiceMock.findByInputNumber(phoneForTests)).thenReturn(testUser);
 
-        mockMvc.perform(get(advancedMenuOptionsRoot + "/start").param(phoneParameter, phoneForTests)).andExpect(status().isOk());
+        mockMvc.perform(get(advancedMenuOptionsRoot + "/start").
+                param(phoneParameter, phoneForTests)).andExpect(status().isOk());
+        ResultActions response =
+                mockMvc.perform(get(advancedMenuOptionsRoot + "/start").param(phoneParameter, phoneForTests));
+        Assert.assertNotNull(response);
+        response.andExpect(status().isOk());
+        response.andExpect(content().contentType(MediaType.APPLICATION_XML));
     }
 
     @Test
@@ -97,6 +105,16 @@ public class USSDAdvancedHomeControllerTest extends USSDAbstractUnitTest{
 
         when(userManagementServiceMock.findByInputNumber(phoneForTests)).thenReturn(testUser);
         when(objectLocationBrokerMock.fetchBestGuessUserLocation(testUser.getUid())).thenReturn(testLocation);
+
+        when(objectLocationBrokerMock.fetchMeetingLocationsNearUser(testUser,null,testRadius,GeographicSearchType.PUBLIC,
+                null)).thenThrow(new IllegalArgumentException("Invalid location"));
+
+        when(objectLocationBrokerMock.fetchMeetingLocationsNearUser(testUser,testLocation,-5,GeographicSearchType.PUBLIC,
+                null)).thenThrow(new IllegalArgumentException("Invalid radius parameter"));
+
+        when(objectLocationBrokerMock.fetchMeetingLocationsNearUser(testUser,testLocation,null,GeographicSearchType.PUBLIC,
+                null)).thenThrow(new IllegalArgumentException("Invalid radius"));
+
 
         List<ObjectLocation> actualObjectLocations = new ArrayList<>();
 
@@ -136,6 +154,11 @@ public class USSDAdvancedHomeControllerTest extends USSDAbstractUnitTest{
                 .param(phoneParameter,""+phoneForTests)
                 .accept(MediaType.APPLICATION_JSON))
                 .andReturn();
+
+        Assert.assertNotNull(result);
+        ResultActions response =
+                mockMvc.perform(get(advancedMenuOptionsRoot + "/public/mtgs/details").param(phoneParameter, phoneForTests));
+        Assert.assertNotNull(response);
     }
 
     @Test
@@ -145,6 +168,7 @@ public class USSDAdvancedHomeControllerTest extends USSDAbstractUnitTest{
                 .param(phoneParameter,""+phoneForTests)
                 .accept(MediaType.APPLICATION_JSON))
                 .andReturn();
+        Assert.assertNotNull(result);
         Assert.assertFalse(ussdLocationServicesBrokerMock.addUssdLocationLookupAllowed(testUser.getUid(), UserInterfaceType.USSD));
     }
 }
