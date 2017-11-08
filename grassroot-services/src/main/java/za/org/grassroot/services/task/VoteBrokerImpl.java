@@ -23,6 +23,7 @@ import za.org.grassroot.core.repository.VoteRepository;
 import za.org.grassroot.core.util.StringArrayUtil;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.PermissionBroker;
+import za.org.grassroot.services.exception.TaskFinishedException;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
@@ -119,8 +120,13 @@ public class VoteBrokerImpl implements VoteBroker {
         Objects.requireNonNull(voteUid);
         Objects.requireNonNull(voteOption);
 
-        User user = userRepository.findOneByUid(userUid);
         Vote vote = voteRepository.findOneByUid(voteUid);
+
+        if (vote.getEventStartDateTime().isBefore(Instant.now())) {
+            throw new TaskFinishedException();
+        }
+
+        User user = userRepository.findOneByUid(userUid);
 
         validateUserPartOfVote(user, vote, true);
 
@@ -194,7 +200,7 @@ public class VoteBrokerImpl implements VoteBroker {
     private Map<String, Long> calculateMultiOptionResults(Vote vote, List<String> options) {
         Map<String, Long> results = new LinkedHashMap<>();
         List<EventLog> eventLogs = eventLogRepository.findAll(Specifications.where(isResponseToVote(vote)));
-        options.forEach(o -> results.put(o, eventLogs.stream().filter(el -> o.equals(el.getTag())).count()));
+        options.forEach(o -> results.put(o, eventLogs.stream().filter(el -> o.equalsIgnoreCase(el.getTag())).count()));
         return results;
     }
 

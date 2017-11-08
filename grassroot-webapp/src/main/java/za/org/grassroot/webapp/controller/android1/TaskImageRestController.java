@@ -13,8 +13,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.TaskType;
-import za.org.grassroot.integration.exception.StoredMediaRetrievalFailure;
 import za.org.grassroot.integration.exception.NoMicroVersionException;
+import za.org.grassroot.integration.exception.StoredMediaRetrievalFailure;
 import za.org.grassroot.services.task.TaskImageBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.enums.RestMessage;
@@ -54,7 +54,7 @@ public class TaskImageRestController {
         logger.info("uploading an image with long={}, lat={}", longitude, latitude);
 
         try {
-            String actionLogUid = taskImageBroker.storeImageForTask(user.getUid(), taskUid, taskType, file, longitude, latitude);
+            String actionLogUid = taskImageBroker.storeImageForTask(user.getUid(), taskUid, taskType, file, null, longitude, latitude);
             return !StringUtils.isEmpty(actionLogUid) ?
                     RestUtil.okayResponseWithData(RestMessage.MEETING_IMAGE_ADDED, actionLogUid) :
                     RestUtil.errorResponse(RestMessage.MEETING_IMAGE_ERROR);

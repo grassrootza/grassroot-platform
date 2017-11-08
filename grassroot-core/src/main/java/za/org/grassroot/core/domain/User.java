@@ -251,6 +251,10 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
                 .collect(Collectors.toSet());
     }
 
+    public Membership getGroupMembership(String groupId) {
+        return getMemberships().stream().filter(m -> m.getGroup().getUid().equalsIgnoreCase(groupId)).findFirst().orElse(null);
+    }
+
     /**
      * This is just used to manually set inverse side of many-to-many relationship when it  is still not saved in db.
      * Afterwards Hibernate takes care to set both sides.

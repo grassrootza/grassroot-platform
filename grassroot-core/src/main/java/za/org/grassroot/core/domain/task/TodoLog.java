@@ -1,5 +1,6 @@
 package za.org.grassroot.core.domain.task;
 
+import lombok.Setter;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.enums.LocationSource;
@@ -35,7 +36,7 @@ public class TodoLog implements TaskLog {
 	private Todo todo;
 
 	@Column(name = "message")
-	private String message;
+	@Setter private String message;
 
 	@ManyToOne
 	@JoinColumn(name = "user_id")

@@ -26,8 +26,6 @@ import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.EventLogBroker;
 import za.org.grassroot.services.task.VoteBroker;
 import za.org.grassroot.services.user.UserManagementService;
-import za.org.grassroot.webapp.model.AatMsgStatus;
-import za.org.grassroot.webapp.model.SMSDeliveryStatus;
 
 import java.text.MessageFormat;
 import java.time.Duration;
@@ -62,12 +60,6 @@ public class IncomingSMSController {
 
     private static final String FROM_PARAMETER ="fn";
     private static final String MESSAGE_TEXT_PARAM ="ms";
-
-    private static final String TO_PARAMETER = "tn";
-    private static final String SUCCESS_PARAMETER = "sc";
-    private static final String REF_PARAMETER = "rf";
-    private static final String STATUS_PARAMETER = "st";
-    private static final String TIME_PARAMETER = "ts";
 
     private static final Duration NOTIFICATION_WINDOW = Duration.of(6, ChronoUnit.HOURS);
 
@@ -106,8 +98,8 @@ public class IncomingSMSController {
             return;
         }
 
-        EventRSVPResponse response = EventRSVPResponse.fromString(msg);
-        boolean isYesNoResponse = response == EventRSVPResponse.YES || response == EventRSVPResponse.NO || response == EventRSVPResponse.MAYBE;
+        EventRSVPResponse responseType = EventRSVPResponse.fromString(msg);
+        boolean isYesNoResponse = responseType == EventRSVPResponse.YES || responseType == EventRSVPResponse.NO || responseType == EventRSVPResponse.MAYBE;
 
         List<Event> outstandingVotes = eventBroker.getOutstandingResponseForUser(user, EventType.VOTE);
         List<Event> outstandingYesNoVotes = outstandingVotes.stream()
@@ -120,54 +112,34 @@ public class IncomingSMSController {
 
         List<Event> outstandingMeetings = eventBroker.getOutstandingResponseForUser(user, EventType.MEETING);
 
-        if (isYesNoResponse && !outstandingMeetings.isEmpty())  // user sent yes-no response and there is a meeting awaiting yes-no response
-            eventLogManager.rsvpForEvent(outstandingMeetings.get(0).getUid(), user.getUid(), response); // recording rsvp for meeting
-
-        else if (isYesNoResponse && !outstandingYesNoVotes.isEmpty()) // user sent yes-no response and there is a vote awaiting yes-no response
+        if (isYesNoResponse && !outstandingMeetings.isEmpty()) {  // user sent yes-no response and there is a meeting awaiting yes-no response
+            log.info("User response is {}, type {} and there are outstanding meetings for that user. Recording RSVP...", trimmedMsg, responseType);
+            eventLogManager.rsvpForEvent(outstandingMeetings.get(0).getUid(), user.getUid(), responseType); // recording rsvp for meeting
+        } else if (isYesNoResponse && !outstandingYesNoVotes.isEmpty()) { // user sent yes-no response and there is a vote awaiting yes-no response
+            log.info("User response is {}, type {} and there are outstanding YES_NO votes for that user. Recording vote...", trimmedMsg, responseType);
             voteBroker.recordUserVote(user.getUid(), outstandingYesNoVotes.get(0).getUid(), trimmedMsg); // recording user vote
+        }
 
         else if (!outstandingOptionsVotes.isEmpty()) { // user sent something other then yes-no, and there is a vote that has this option (tag)
+            log.info("User response is {}, type {} and there are outstanding votes with custom option matching user's answer. Recording vote...", trimmedMsg, responseType);
             Event vote = outstandingOptionsVotes.get(0);
             String option = getVoteOption(trimmedMsg, vote);
             voteBroker.recordUserVote(user.getUid(), vote.getUid(), option); // recording user vote
-        }
-
-        else // we have not found any meetings or votes that this could be response to
+        } else {// we have not found any meetings or votes that this could be response to
+            log.info("User response is {}, type {} and there are no outstanding meetings or votes this answer is. Recording vote...", trimmedMsg, responseType);
             handleUnknownResponse(user, trimmedMsg);
-
-    }
-
-
-    @RequestMapping(value = "receipt", method = RequestMethod.GET)
-    @ApiOperation(value = "Obtain a delivery receipt (or failure)", notes = "Callback for when the gateway notifies us of " +
-            "the result of sending an SMS.")
-    public void deliveryReceipt(
-            @RequestParam(value = FROM_PARAMETER) String fromNumber,
-            @RequestParam(value = TO_PARAMETER, required = false) String toNumber,
-            @RequestParam(value = SUCCESS_PARAMETER, required = false) String success,
-            @RequestParam(value = REF_PARAMETER) String msgKey,
-            @RequestParam(value = STATUS_PARAMETER) Integer status,
-            @RequestParam(value = TIME_PARAMETER, required = false) String time) {
-
-        log.info("IncomingSMSController -" + " message delivery receipt from number: {}, message key: {}", fromNumber, msgKey);
-
-        Notification notification = notificationService.loadBySeningKey(msgKey);
-        if (notification != null) {
-            AatMsgStatus aatMsgStatus = AatMsgStatus.fromCode(status);
-            SMSDeliveryStatus deliveryStatus = aatMsgStatus.toSMSDeliveryStatus();
-            if (deliveryStatus == SMSDeliveryStatus.DELIVERED)
-                notificationService.updateNotificationStatus(notification.getUid(), NotificationStatus.DELIVERED, null, null);
-            else if (deliveryStatus == SMSDeliveryStatus.DELIVERY_FAILED)
-                notificationService.updateNotificationStatus(notification.getUid(), NotificationStatus.DELIVERY_FAILED, "Message delivery failed: " + aatMsgStatus.name(), null);
         }
 
     }
+
 
 
     private void handleUnknownResponse(User user, String trimmedMsg) {
 
+        log.info("Handling unexpected user SMS message");
         notifyUnableToProcessReply(user);
 
+        log.info("Recording  unexpected user SMS message user log.");
         UserLog userLog = new UserLog(user.getUid(), UserLogType.SENT_UNEXPECTED_SMS_MESSAGE,
                 trimmedMsg,
                 UserInterfaceType.INCOMING_SMS);
@@ -182,10 +154,10 @@ public class IncomingSMSController {
         // todo: not the most elegant thing in the world, but can clean up later
         recentNotifications.stream().sorted(Comparator.comparing(Notification::getCreatedDateTime))
                 .forEach(n -> {
-                    Map<ActionLog, Group> logGroupMap = getNotificationLog(n);
-                    for (Group g : logGroupMap.values()) {
-                        messagesAndGroups.put(g, n.getMessage());
-                    }
+
+                    Group group = n.getRelevantGroup();
+                    if (group != null)
+                        messagesAndGroups.put(group, n.getMessage());
                 });
 
         log.info("okay, we have {} distinct groups", messagesAndGroups.size());
@@ -220,29 +192,6 @@ public class IncomingSMSController {
         else return "Unknown notification type";
     }
 
-    private Map<ActionLog, Group> getNotificationLog(Notification notification) {
-
-        Map<ActionLog, Group> logGroupMap = new HashMap<>();
-
-        if (notification.getEventLog() != null)
-            logGroupMap.put(notification.getEventLog(), notification.getEventLog().getEvent().getAncestorGroup());
-
-        else if (notification.getTodoLog() != null)
-            logGroupMap.put(notification.getTodoLog(), notification.getTodoLog().getTodo().getAncestorGroup());
-
-        else if (notification.getGroupLog() != null)
-            logGroupMap.put(notification.getGroupLog(), notification.getGroupLog().getGroup());
-
-        else if (notification.getLiveWireLog() != null)
-            logGroupMap.put(notification.getLiveWireLog(), notification.getLiveWireLog().getAlert().getGroup());
-
-        else if (notification.getAccountLog() != null)
-            logGroupMap.put(notification.getAccountLog(), notification.getAccountLog().getGroup());
-
-        // note: user log and address are not address related, so just watch the overall user logs for those
-
-        return logGroupMap;
-    }
 
     private boolean hasVoteOption(String option, Event vote) {
         if (vote.getTags() != null) {

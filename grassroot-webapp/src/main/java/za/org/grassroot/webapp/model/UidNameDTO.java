@@ -1,7 +1,9 @@
 package za.org.grassroot.webapp.model;
 
+import lombok.Getter;
 import za.org.grassroot.core.domain.UidIdentifiable;
 
+@Getter
 public class UidNameDTO {
 
     private final String uid;
@@ -12,11 +14,9 @@ public class UidNameDTO {
         this.name = entity.getName();
     }
 
-    public String getUid() {
-        return uid;
+    public UidNameDTO(String uid, String name) {
+        this.uid = uid;
+        this.name = name;
     }
 
-    public String getName() {
-        return name;
-    }
 }

@@ -16,7 +16,6 @@ import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
-
 import java.security.InvalidParameterException;
 import java.util.Arrays;
 import java.util.List;

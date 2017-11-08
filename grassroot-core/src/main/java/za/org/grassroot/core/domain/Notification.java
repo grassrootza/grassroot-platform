@@ -107,6 +107,11 @@ public abstract class Notification implements Serializable {
 	private MessagingProvider sentViaProvider = null;
 
 
+	@Setter
+	@Column(name = "use_only_free_channels")
+	private boolean useOnlyFreeChannels = false;
+
+
 	@ElementCollection
 	@CollectionTable(name = "notification_error", joinColumns = @JoinColumn(name = "notification_id"))
 	private List<NotificationSendError> sendingErrors = new ArrayList<>();
@@ -130,6 +135,10 @@ public abstract class Notification implements Serializable {
 		this.createdDateTime = Instant.now();
 		this.lastStatusChange = createdDateTime;
 		this.message = Objects.requireNonNull(message);
+
+		if (this.message.length() > 255)
+			this.message = message.substring(0, 255);
+
 		this.priority = DEFAULT_PRIORITY;
 		this.deliveryChannel = target.getMessagingPreference();
 
@@ -148,12 +157,13 @@ public abstract class Notification implements Serializable {
 		} else {
 			throw new IllegalArgumentException("Unsupported action log: " + actionLog);
 		}
+
 	}
 
 
 	/**
 	 * @param status                 status to be set
-	 * @param resultOfSendingAttempt if this staus update is result of sending attempt should be true, otherwise false
+	 * @param resultOfSendingAttempt if this status update is result of sending attempt should be true, otherwise false
 	 */
 	public void updateStatus(NotificationStatus status, boolean resultOfSendingAttempt, String error) {
 		NotificationStatus oldStatus = this.status;
@@ -165,6 +175,29 @@ public abstract class Notification implements Serializable {
 			NotificationSendError sendError = new NotificationSendError(LocalDateTime.now(), error, oldStatus, status);
 			this.sendingErrors.add(sendError);
 		}
+	}
+
+	/**
+	 * @return group relevant for action that triggered this notification
+	 */
+	public Group getRelevantGroup() {
+
+		if (this.eventLog != null)
+			return eventLog.getEvent().getAncestorGroup();
+
+		else if (this.groupLog != null)
+			return this.groupLog.getGroup();
+
+		else if (this.todoLog != null)
+			return this.todoLog.getTodo().getAncestorGroup();
+
+		else if (this.accountLog.getGroup() != null)
+			return this.accountLog.getGroup();
+
+		else if (this.liveWireLog != null)
+			return this.liveWireLog.getAlert().getGroup();
+
+		else return null;
 	}
 
 
