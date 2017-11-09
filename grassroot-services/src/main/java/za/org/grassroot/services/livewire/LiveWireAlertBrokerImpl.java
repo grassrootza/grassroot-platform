@@ -624,6 +624,6 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
     }
 
     private Instant getLastWeekTime(){
-        return Instant.now().minus(14, ChronoUnit.DAYS);
+        return Instant.now().minus(21, ChronoUnit.DAYS);
     }
 }

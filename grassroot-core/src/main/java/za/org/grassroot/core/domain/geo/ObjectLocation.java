@@ -6,6 +6,7 @@ import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.task.Meeting;
+import za.org.grassroot.core.util.DateTimeUtil;
 
 import javax.persistence.Column;
 import javax.persistence.Embeddable;
@@ -93,8 +94,8 @@ public class ObjectLocation {
     private String generateDescription(Meeting meeting) {
         return !StringUtils.isEmpty(meeting.getDescription()) ? meeting.getDescription() :
                 "Where: " + meeting.getEventLocation() +
-                        "Date and Time: " + meeting.getEventStartDateTime() +
-                        "Creation Date: " + meeting.getCreatedDateTime();
+                        ", date and time: " +
+                        DateTimeUtil.getPreferredDateTimeFormat().format(meeting.getEventDateTimeAtSAST());
     }
 
     public ObjectLocation(Group group,GroupLocation groupLocation) {

@@ -57,7 +57,7 @@ public class USSDAdvancedHomeControllerTest extends USSDAbstractUnitTest{
 
     private static final double testLat = -11.00;
     private static final double testLong = 12.00;
-    private static final Integer testRadius = 5;
+    private static final Integer testRadius = 5000;
 
     private static final User testUser = new User(phoneForTests, testUserName);
     protected final static String testGroupName = "test_group";

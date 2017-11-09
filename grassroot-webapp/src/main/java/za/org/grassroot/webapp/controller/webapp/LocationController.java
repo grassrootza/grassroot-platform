@@ -34,7 +34,7 @@ public class LocationController extends BaseController {
     private static final Logger logger = LoggerFactory.getLogger(LocationController.class);
 
     // Radius in Km
-    private static final int DEFAULT_RADIUS = 5;
+    private static final int DEFAULT_RADIUS = 5000;
 
     // Default position: Kliptown, South Africa
     private static final double defaultLatitude = -26.277636;
@@ -100,7 +100,7 @@ public class LocationController extends BaseController {
         // Load groups
         List<ObjectLocation> groups;
         try {
-            groups = objectLocationBroker.fetchPublicGroupsNearbyWithLocation(location, searchRadius);
+            groups = objectLocationBroker.fetchPublicGroupsNearbyWithLocation(location, searchRadius * 1000);
         }
         catch (InvalidParameterException e) {
             logger.info("KPI: POST - BAD REQUEST: " + e.getMessage());

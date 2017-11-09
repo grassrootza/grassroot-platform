@@ -58,24 +58,29 @@ public class AroundMeRestController {
     @ApiOperation(value = "All entities near user", notes = "Fetch all public groups, public meetings, " +
             "and public alerts near to the user, as well as those entities the user belongs to")
     public ResponseEntity<List<AroundMeDTO>> fetchAllEntitiesNearUser(@PathVariable String userUid,
-                                                                         @RequestParam double latitude,
-                                                                         @RequestParam double longitude,
-                                                                         @RequestParam int radiusMetres,
-                                                                         @ApiParam(value = "Whether to return entities that the user is part of (private), " +
-                                                                                 "or only those they are not (public), or both (default)")
-                                                                         @RequestParam(required = false) GeographicSearchType searchType,
-                                                                         @ApiParam(value = "An optional term to filter by " +
+                                                                      @RequestParam double latitude,
+                                                                      @RequestParam double longitude,
+                                                                      @RequestParam int radiusMetres,
+                                                                      @ApiParam(value = "Whether to return entities that the user is part of (private), " +
+                                                                              "or only those they are not (public), or both (default)")
+                                                                      @RequestParam(required = false) GeographicSearchType searchType,
+                                                                      @ApiParam(value = "Whether to include public groups in " +
+                                                                              "the results (which can expand result set a lot)")
+                                                                      @RequestParam(required = false) Boolean includeGroups,
+                                                                      @ApiParam(value = "An optional term to filter by " +
                                                                                  "name (subject etc) of the entities")
-                                                                         @RequestParam(required = false) String filterTerm) {
+                                                                      @RequestParam(required = false) String filterTerm) {
         GeoLocation location = new GeoLocation(latitude,longitude);
         User user = userManager.load(userUid);
 
         Set<AroundMeDTO> objectLocationSet = new HashSet<>();
 
         GeographicSearchType type = searchType == null ? GeographicSearchType.PUBLIC : searchType;
-        objectLocationSet.addAll(objectLocationBroker
-                .fetchGroupsNearby(userUid, location,radiusMetres, filterTerm, type)
-                .stream().map(gl -> convertGroupLocation(gl, user)).collect(Collectors.toList())); //Adding Groups near user
+        if (includeGroups != null && includeGroups) {
+            objectLocationSet.addAll(objectLocationBroker
+                    .fetchGroupsNearby(userUid, location, radiusMetres, filterTerm, type)
+                    .stream().map(gl -> convertGroupLocation(gl, user)).collect(Collectors.toList())); //Adding Groups near user
+        }
         objectLocationSet.addAll(objectLocationBroker
                 .fetchMeetingLocationsNearUser(user, location, radiusMetres, type, null)
                 .stream().map(ml -> convertMeetingLocation(ml, user)).collect(Collectors.toList())); // Adding Meetings near user

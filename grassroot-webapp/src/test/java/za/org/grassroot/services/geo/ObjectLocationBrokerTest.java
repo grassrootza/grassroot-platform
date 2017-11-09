@@ -103,7 +103,7 @@ public class ObjectLocationBrokerTest {
     @Test
     public void validRequestShouldBeSuccessfulWhenFetchingMeetingLocations () throws Exception {
         List<ObjectLocation> meetingLocations = objectLocationBroker.fetchMeetingLocationsNearUser(
-                testUser, new GeoLocation(53.4808, 2.2426), 10, GeographicSearchType.PUBLIC, null);
+                testUser, new GeoLocation(53.4808, 2.2426), 10000, GeographicSearchType.PUBLIC, null);
 
         verify(mockQuery, times(1)).getResultList();
         verify(mockEntityManager, times(1)).createQuery(anyString(), eq(ObjectLocation.class));
