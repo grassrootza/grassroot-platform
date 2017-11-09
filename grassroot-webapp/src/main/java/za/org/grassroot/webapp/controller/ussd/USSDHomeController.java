@@ -530,12 +530,13 @@ public class USSDHomeController extends USSDController {
                                          @RequestParam(value = "page") Integer pageNumber,
                                          @RequestParam(value = "existingUri") String existingUri,
                                          @RequestParam(value = "section", required = false) USSDSection section,
-                                         @RequestParam(value = "newUri", required = false) String newUri) throws URISyntaxException {
+                                         @RequestParam(value = "newUri", required = false) String newUri,
+                                         @RequestParam(value = "sendAllUri",required = false) String sendAllUri) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber);
         if (SAFETY_GROUP_MANAGER.equals(section)) {
             return menuBuilder(ussdGroupUtil.showUserCreatedGroupsForSafetyFeature(user, SAFETY_GROUP_MANAGER, existingUri, pageNumber));
         } else {
-            return menuBuilder(ussdGroupUtil.userGroupMenuPaginated(user, prompt, existingUri, newUri, pageNumber, null, section));
+            return menuBuilder(ussdGroupUtil.userGroupMenuPaginated(user, prompt, existingUri, newUri,sendAllUri, pageNumber, null, section));
         }
     }
 
