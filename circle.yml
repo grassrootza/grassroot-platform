@@ -30,7 +30,7 @@ deployment:
     commands:
 
   staging:
-    branch: docker-migration
+    branch: preprod
     commands:
       # define environment
       #- export ENVIRONMENT=staging

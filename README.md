@@ -58,6 +58,7 @@ docker kill $(docker ps -q);       #Stop all the containers
 docker rm $(docker ps -a -q);      #Remove all containers
 docker rmi $(docker images -q -a)  #Remove all images
 
+** We have a "always" restart policy set for the containers as long as the docker engine is running. So, its very likely that when you restart your computer and the docker engine starts as a daemon, the containers will also restart. To avoid that, make sure you remove the docker to start as a daemon on reboot.
 
 ### AWS Deployment using Beanstalk and Docker ###
 
