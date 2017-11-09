@@ -3,6 +3,7 @@ package za.org.grassroot.webapp.controller.ussd;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -60,7 +61,7 @@ public class USSDCampaignController extends USSDController{
         User user = userManagementService.loadOrCreateUser(inputNumber);
         Campaign campaign = campaignBroker.getCampaignDetailsByCode(campaignCode);
         updateMembership(user,campaign,parentMessageUid);
-        CampaignMessage message =  CampaignUtil.getNextCampaignMessageByActionType(campaign,CampaignActionType.TAG_ME,parentMessageUid);
+        CampaignMessage message =  CampaignUtil.getNextCampaignMessageByActionTypeAndLocale(campaign,CampaignActionType.TAG_ME,parentMessageUid, new Locale(languageCode));
         return menuBuilder(buildCampaignUSSDMenu(message,languageCode, campaignCode));
 
     }
@@ -71,18 +72,20 @@ public class USSDCampaignController extends USSDController{
                                                 @RequestParam (value = USSDCampaignUtil.CODE_PARAMETER) String campaignCode,
                                                 @RequestParam (value = USSDCampaignUtil.LANGUAGE_PARAMETER) String languageCode,
                                                 @RequestParam (value = USSDCampaignUtil.MESSAGE_UID)String parentMessageUid)  throws URISyntaxException{
-        CampaignMessage message = addUserToMasterGroup(campaignCode,inputNumber,CampaignActionType.JOIN_MASTER_GROUP, parentMessageUid);
+        CampaignMessage message = addUserToMasterGroup(campaignCode,inputNumber,CampaignActionType.JOIN_MASTER_GROUP, parentMessageUid, new Locale(languageCode));
         return menuBuilder(buildCampaignUSSDMenu(message,languageCode, campaignCode));
     }
 
     @RequestMapping(value = campaignUrl + USSDCampaignUtil.SET_LANGUAGE_URL)
     @ResponseBody
-    public Request userPromptLanguageForCampaign(@RequestParam(value= phoneNumber, required=true) String inputNumber,
+    public Request userSetLanguageForCampaign(@RequestParam(value= phoneNumber, required=true) String inputNumber,
                                       @RequestParam (value = USSDCampaignUtil.CODE_PARAMETER) String campaignCode,
                                       @RequestParam (value = USSDCampaignUtil.LANGUAGE_PARAMETER) String languageCode) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(inputNumber);
-        userManager.updateUserLanguage(user.getUid(),new Locale(languageCode));
+        if(StringUtils.isEmpty(user.getLanguageCode())) {
+            userManager.updateUserLanguage(user.getUid(), new Locale(languageCode));
+        }
         Campaign campaign =  campaignBroker.getCampaignDetailsByCode(campaignCode);
         CampaignMessage campaignMessage = CampaignUtil.getFirstCampaignMessageByLocale(campaign,languageCode);
         return  menuBuilder(buildCampaignUSSDMenu(campaignMessage, languageCode,campaignCode));
@@ -94,7 +97,7 @@ public class USSDCampaignController extends USSDController{
                                              @RequestParam (value = USSDCampaignUtil.LANGUAGE_PARAMETER) String languageCode,
                                              @RequestParam (value = USSDCampaignUtil.MESSAGE_UID)String parentMessageUid)  throws URISyntaxException{
         Campaign campaign = campaignBroker.getCampaignDetailsByCode(campaignCode);
-        CampaignMessage message = CampaignUtil.getNextCampaignMessageByActionType(campaign,CampaignActionType.SIGN_PETITION,parentMessageUid);
+        CampaignMessage message = CampaignUtil.getNextCampaignMessageByActionTypeAndLocale(campaign,CampaignActionType.SIGN_PETITION,parentMessageUid, new Locale(languageCode));
         //TO do. integrate to petition API
         return menuBuilder(buildCampaignUSSDMenu(message,languageCode, campaignCode));
     }
@@ -105,7 +108,7 @@ public class USSDCampaignController extends USSDController{
                                           @RequestParam (value = USSDCampaignUtil.LANGUAGE_PARAMETER) String languageCode,
                                           @RequestParam (value = USSDCampaignUtil.MESSAGE_UID)String parentMessageUid)  throws URISyntaxException{
         Campaign campaign = campaignBroker.getCampaignDetailsByCode(campaignCode);
-        CampaignMessage message = CampaignUtil.getNextCampaignMessageByActionType(campaign,CampaignActionType.MORE_INFO,parentMessageUid);
+        CampaignMessage message = CampaignUtil.getNextCampaignMessageByActionTypeAndLocale(campaign,CampaignActionType.MORE_INFO,parentMessageUid, new Locale(languageCode));
         return menuBuilder(buildCampaignUSSDMenu(message,languageCode, campaignCode));
     }
 
@@ -115,7 +118,7 @@ public class USSDCampaignController extends USSDController{
                                      @RequestParam (value = USSDCampaignUtil.LANGUAGE_PARAMETER) String languageCode,
                                      @RequestParam (value = USSDCampaignUtil.MESSAGE_UID)String parentMessageUid )  throws URISyntaxException{
         Campaign campaign = campaignBroker.getCampaignDetailsByCode(campaignCode);
-        CampaignMessage message = CampaignUtil.getNextCampaignMessageByActionType(campaign,CampaignActionType.EXIT,parentMessageUid);
+        CampaignMessage message = CampaignUtil.getNextCampaignMessageByActionTypeAndLocale(campaign,CampaignActionType.EXIT,parentMessageUid, new Locale(languageCode));
         return menuBuilder(buildCampaignUSSDMenu(message,languageCode, campaignCode));
     }
 
@@ -141,9 +144,9 @@ public class USSDCampaignController extends USSDController{
         return new USSDMenu(promptMessage,linksMap);
     }
 
-    private CampaignMessage addUserToMasterGroup(String campaignCode, String phoneNumber, CampaignActionType type, String parentMessageUid) {
+    private CampaignMessage addUserToMasterGroup(String campaignCode, String phoneNumber, CampaignActionType type, String parentMessageUid, Locale locale) {
         Campaign campaign = campaignBroker.addUserToCampaignMasterGroup(campaignCode,phoneNumber);
-        return CampaignUtil.getNextCampaignMessageByActionType(campaign, type, parentMessageUid);
+        return CampaignUtil.getNextCampaignMessageByActionTypeAndLocale(campaign, type, parentMessageUid, locale);
     }
 
     private void updateMembership(User user, Campaign campaign, String messageUid){

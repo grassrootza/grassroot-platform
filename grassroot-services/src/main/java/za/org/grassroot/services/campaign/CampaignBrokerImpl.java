@@ -1,22 +1,18 @@
 package za.org.grassroot.services.campaign;
 
-import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.GroupJoinMethod;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignActionType;
 import za.org.grassroot.core.domain.campaign.CampaignLog;
 import za.org.grassroot.core.domain.campaign.CampaignMessage;
 import za.org.grassroot.core.domain.campaign.CampaignMessageAction;
-import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.enums.CampaignLogType;
 import za.org.grassroot.core.enums.MessageVariationAssignment;
 import za.org.grassroot.core.enums.UserInterfaceType;
@@ -290,11 +286,11 @@ public class CampaignBrokerImpl implements CampaignBroker {
     @Override
     @Transactional
     public Campaign addUserToCampaignMasterGroup(String campaignCode,String phoneNumber){
+        Objects.requireNonNull(campaignCode);
+        Objects.requireNonNull(phoneNumber);
         User user = userManagementService.loadOrCreateUser(phoneNumber);
         Campaign campaign = getCampaignDetailsByCode(campaignCode);
-        MembershipInfo newMember = new MembershipInfo(phoneNumber, BaseRoles.ROLE_ORDINARY_MEMBER, null);
-        groupBroker.addMembers(user.getUid(), campaign.getMasterGroup().getUid(), Sets.newHashSet(newMember),
-                GroupJoinMethod.ADDED_BY_OTHER_MEMBER, true);
+        groupBroker.addMemberViaCampaign(user.getUid(),campaign.getMasterGroup().getUid(),campaign.getCampaignCode());
         CampaignLog campaignLog = new CampaignLog(campaign.getCreatedByUser().getUid(), CampaignLogType.CAMPAIGN_USER_ADDED_TO_MASTER_GROUP,campaign);
         campaignLogRepository.saveAndFlush(campaignLog);
         return campaign;

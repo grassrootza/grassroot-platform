@@ -99,9 +99,12 @@ public class CampaignBrokerTest {
         Assert.assertNotNull(linkedCampaign.getMasterGroup());
         Assert.assertEquals(linkedCampaign.getMasterGroup().getId(),testGroup.getId());
 
-        //TO DO: I need to get rules around user roles and group permission
-        //Campaign cam = campaignBroker.addUserToCampaignMasterGroup("234","0605550000");
-        //Assert.assertNotNull(cam);
+        Campaign cam = campaignBroker.addUserToCampaignMasterGroup("234","0605550000");
+        Assert.assertNotNull(cam);
+        Assert.assertNotNull(cam.getMasterGroup());
+        Assert.assertNotNull(cam.getMasterGroup().getMembers());
+        Assert.assertEquals(cam.getMasterGroup().getMembers().size(), 1);
+        Assert.assertEquals(cam.getMasterGroup().getMembers().iterator().next().getPhoneNumber(),"27605550000");
     }
 
 }

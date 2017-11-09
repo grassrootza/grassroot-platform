@@ -37,7 +37,7 @@ public class USSDCampaignControllerTest extends USSDAbstractUnitTest {
 
     private static final String testUserPhone = "27801110000";
     private static final String testCode = "234";
-    private static final String testLanguage = "eng";
+    private static final String testLanguage = "en";
     private static final String testMessageUid = "123";
     private static final String path = "/ussd/campaign/";
 
@@ -118,6 +118,16 @@ public class USSDCampaignControllerTest extends USSDAbstractUnitTest {
         response.andExpect(status().isOk());
         response.andExpect(content().contentType(MediaType.APPLICATION_XML));
         response.andExpect(xpath("/request/headertext").string("English Tag me Message"));
+    }
+
+    @Test
+    public void testUserSetLanguageForCampaign() throws Exception {
+        when(userManagementServiceMock.findByInputNumber(anyString())).thenReturn(testUser);
+        when(campaignBroker.getCampaignDetailsByCode(anyString())).thenReturn(testCampaign);
+        ResultActions response = mockMvc.perform(get(path + USSDCampaignUtil.SET_LANGUAGE_URL).params(params)).andExpect(status().isOk());
+        response.andExpect(status().isOk());
+        response.andExpect(content().contentType(MediaType.APPLICATION_XML));
+        response.andExpect(xpath("/request/headertext").string("First Test English Message"));
     }
 
     private Campaign createTestCampaign(){

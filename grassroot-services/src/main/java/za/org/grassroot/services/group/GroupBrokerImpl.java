@@ -1111,6 +1111,27 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         logActionLogsAfterCommit(actionLogs);
     }
 
+    @Override
+    @Transactional
+    public void addMemberViaCampaign(String userUidToAdd, String groupUid,String campaignCode){
+        User user = userRepository.findOneByUid(userUidToAdd);
+        Group group = groupRepository.findOneByUid(groupUid);
+        logger.info("Adding a member via campaign add request: group={}, user={}, code={}", group, user, campaignCode);
+        group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.SELF_JOINED);
+        Group parentGroup = group.getParent();
+        while (parentGroup != null) {
+            parentGroup.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+            parentGroup = parentGroup.getParent();
+        }
+        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+        GroupLog groupLog = new GroupLog(group, user, GroupLogType.GROUP_MEMBER_ADDED_VIA_CAMPAIGN, user.getId(),
+                "Member joined via campaign code: "+ campaignCode);
+        bundle.addLog(groupLog);
+        bundle.addLog(new UserLog(userUidToAdd, UserLogType.USED_A_CAMPAIGN, groupUid, UNKNOWN));
+        notifyNewMembersOfUpcomingMeetings(bundle, user, group, groupLog);
+        storeBundleAfterCommit(bundle);
+    }
+
     private boolean checkGroupSizeLimit(Group group, int numberOfMembersAdding) {
         return membersLeftForGroup(group) > numberOfMembersAdding;
     }

@@ -91,4 +91,6 @@ public interface GroupBroker {
     Group merge(String userUid, String firstGroupUid, String secondGroupUid,
                 boolean leaveActive, boolean orderSpecified, boolean createNew, String newGroupName);
 
+    void addMemberViaCampaign(String userUidToAdd, String groupUid,String campaignCode);
+
 }

@@ -67,10 +67,10 @@ public class CampaignUtil {
         return null;
     }
 
-    public static CampaignMessage getNextCampaignMessageByActionType(Campaign campaign, CampaignActionType action, String messageUid){
+    public static CampaignMessage getNextCampaignMessageByActionTypeAndLocale(Campaign campaign, CampaignActionType action, String messageUid, Locale locale){
         if(campaign != null && campaign.getCampaignMessages() != null && !campaign.getCampaignMessages().isEmpty()){
             for(CampaignMessage message: campaign.getCampaignMessages()){
-                if(message.getUid().trim().equalsIgnoreCase(messageUid.trim())){
+                if(message.getUid().trim().equalsIgnoreCase(messageUid.trim()) && message.getLocale().equals(locale)){
                     if(message.getCampaignMessageActionSet() != null && !message.getCampaignMessageActionSet().isEmpty()){
                         for(CampaignMessageAction campaignMessageAction: message.getCampaignMessageActionSet()){
                             if(campaignMessageAction.getActionType().equals(action)){
