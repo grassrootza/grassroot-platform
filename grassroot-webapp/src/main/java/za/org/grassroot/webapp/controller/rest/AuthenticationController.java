@@ -19,6 +19,7 @@ import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.integration.messaging.JwtType;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.exception.InvalidOtpException;
+import za.org.grassroot.services.exception.InvalidTokenException;
 import za.org.grassroot.services.exception.UsernamePasswordLoginFailedException;
 import za.org.grassroot.services.user.PasswordTokenService;
 import za.org.grassroot.services.user.UserManagementService;
@@ -62,7 +63,10 @@ public class AuthenticationController {
             if (!ifExists(phoneNumber)) {
                 phoneNumber = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
                 logger.info("Creating a verifier for a new user with phoneNumber ={}", phoneNumber);
-                String tokenCode = temporaryTokenSend(userService.generateAndroidUserVerifier(phoneNumber, displayName, password), phoneNumber, false);
+                String tokenCode = temporaryTokenSend(
+                        userService.generateAndroidUserVerifier(phoneNumber, displayName, password),
+                        phoneNumber, "Registration confirmation code: ");
+
                 //todo(beegor) this line below is security risk, discuss with luke
                 return RestUtil.okayResponseWithData(RestMessage.VERIFICATION_TOKEN_SENT, tokenCode);
             } else {
@@ -105,22 +109,45 @@ public class AuthenticationController {
     }
 
 
-    @RequestMapping(value = "/forgot-password", method = RequestMethod.GET)
-    @ApiOperation(value = "Reset user password", notes = "New password is returned as a string in the 'data' property")
-    public ResponseEntity<ResponseWrapper> resetPassword(@RequestParam("phoneNumber") String phoneNumber) {
+    @RequestMapping(value = "/reset-password-request", method = RequestMethod.GET)
+    @ApiOperation(value = "Reset user password request otp", notes = "Short lived token is sent to user in the 'data' property")
+    public ResponseEntity<ResponseWrapper> resetPasswordRequest(@RequestParam("phoneNumber") String phoneNumber) {
 
         try {
             if (ifExists(phoneNumber)) {
-                phoneNumber = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
-                logger.info("Generating new password for user with phoneNumber ={}", phoneNumber);
-                String newPassword = userService.generateAndSetUserPassword(phoneNumber);
-                sendNewPassword(newPassword, phoneNumber);
+                final String msisdn = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
+                String token = userService.regenerateUserVerifier(msisdn, false);
+                temporaryTokenSend(token, msisdn, "Password reset confirmation code: ");
+                return RestUtil.okayResponseWithData(RestMessage.VERIFICATION_TOKEN_SENT, token);
+            } else {
+                logger.info("Password reset requested for non-existing user: {}", phoneNumber);
+                return RestUtil.errorResponse(HttpStatus.NOT_FOUND, RestMessage.USER_DOES_NOT_EXIST);
+            }
+        } catch (InvalidPhoneNumberException e) {
+            return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.INVALID_MSISDN);
+        }
+    }
+
+    @RequestMapping(value = "/reset-password-confirm", method = RequestMethod.GET)
+    @ApiOperation(value = "Reset user password", notes = "New password is returned as a string in the 'data' property")
+    public ResponseEntity<ResponseWrapper> resetPassword(@RequestParam("phoneNumber") String phoneNumber,
+                                                         @RequestParam("password") String newPassword,
+                                                         @RequestParam("code") String otpCode) {
+
+        try {
+            final String msisdn = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
+
+            if (userService.userExist(msisdn)) {
+
+                userService.resetUserPassword(msisdn, newPassword, otpCode);
 
                 return RestUtil.okayResponseWithData(RestMessage.PASSWORD_RESET, newPassword);
             } else {
                 logger.info("Password reset requested for non-existing user: {}", phoneNumber);
                 return RestUtil.errorResponse(HttpStatus.NOT_FOUND, RestMessage.USER_DOES_NOT_EXIST);
             }
+        } catch (InvalidTokenException e) {
+            return RestUtil.errorResponse(HttpStatus.UNAUTHORIZED, RestMessage.INVALID_OTP);
         } catch (InvalidPhoneNumberException e) {
             return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.INVALID_MSISDN);
         }
@@ -215,12 +242,10 @@ public class AuthenticationController {
     }
 
 
-    private String temporaryTokenSend(String token, String destinationNumber, boolean resending) {
+    private String temporaryTokenSend(String token, String destinationNumber, String messagePrefix) {
         if (environment.acceptsProfiles("production")) {
             if (token != null) {
-                // todo : wire up a message source for this
-                final String prefix = resending ? "Grassroot code (resent): " : "Grassroot code: ";
-                messagingServiceBroker.sendPrioritySMS(prefix + token, destinationNumber);
+                messagingServiceBroker.sendPrioritySMS(messagePrefix + token, destinationNumber);
             } else {
                 logger.warn("Did not send verification message. No system messaging configuration found.");
             }
@@ -230,17 +255,6 @@ public class AuthenticationController {
         }
     }
 
-    private void sendNewPassword(String password, String destinationNumber) {
-        if (environment.acceptsProfiles("production")) {
-            if (password != null) {
-                // todo : wire up a message source for this
-                messagingServiceBroker.sendPrioritySMS("Your new password: " + password, destinationNumber);
-            } else {
-                logger.warn("Did not send verification message. No system messaging configuration found.");
-            }
-        } else {
-        }
-    }
 
     private boolean ifExists(String phoneNumber) {
         return userService.userExist(PhoneNumberUtil.convertPhoneNumber(phoneNumber));

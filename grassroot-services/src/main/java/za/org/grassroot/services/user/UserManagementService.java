@@ -69,9 +69,7 @@ public interface UserManagementService {
 
     void setHasInitiatedUssdSession(String userUid);
 
-    User resetUserPassword(String username, String newPassword, String token);
-
-    String generateAndSetUserPassword(String phoneNumber);
+    User resetUserPassword(String phoneNumber, String newPassword, String token);
 
     void updateEmailAddress(String userUid, String emailAddress);
 

@@ -242,12 +242,11 @@ public class UserManager implements UserManagementService, UserDetailsService {
         if (displayName != null) {
             UserCreateRequest userCreateRequest = userCreateRequestRepository.findByPhoneNumber(phoneNumber);
             if (userCreateRequest == null) {
-                userCreateRequest = new UserCreateRequest(phoneNumber, displayName, Instant.now());
+                userCreateRequest = new UserCreateRequest(phoneNumber, displayName, password, Instant.now());
             } else {
                 userCreateRequest.setDisplayName(displayName);
                 userCreateRequest.setCreationTime(Instant.now());
             }
-            userCreateRequest.setPassword(password);
             userCreateRequestRepository.save(userCreateRequest);
         }
         VerificationTokenCode token = passwordTokenService.generateShortLivedOTP(phoneNumber);
@@ -393,9 +392,9 @@ public class UserManager implements UserManagementService, UserDetailsService {
      */
 
     @Override
-    public User resetUserPassword(String username, String newPassword, String token) {
+    public User resetUserPassword(String phoneNumber, String newPassword, String token) throws InvalidTokenException {
 
-        User user = userRepository.findByUsername(PhoneNumberUtil.convertPhoneNumber(username));
+        User user = userRepository.findByUsername(PhoneNumberUtil.convertPhoneNumber(phoneNumber));
         log.info("Found this user: " + user);
 
         if (passwordTokenService.isShortLivedOtpValid(user.getPhoneNumber(), token.trim())) {
@@ -411,19 +410,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
 
-    @Override
-    public String generateAndSetUserPassword(String phoneNumber) {
-
-        User user = userRepository.findByPhoneNumber(PhoneNumberUtil.convertPhoneNumber(phoneNumber));
-        if (user != null) {
-            String newPassword = randomStringGenerator.generate(6);
-            String encodedPassword = passwordEncoder.encode(newPassword);
-            user.setPassword(encodedPassword);
-            userRepository.save(user);
-            return newPassword;
-        }
-        return null;
-    }
 
     @Override
     @Transactional

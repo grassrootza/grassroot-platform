@@ -37,10 +37,11 @@ public class UserCreateRequest {
         // for JPA
     }
 
-    public UserCreateRequest(String phoneNumber, String displayName, Instant creationTime) {
+    public UserCreateRequest(String phoneNumber, String displayName, String password, Instant creationTime) {
         this.uid = UIDGenerator.generateId();
         this.phoneNumber = phoneNumber;
         this.displayName = displayName;
+        this.password = password;
         this.creationTime = creationTime;
     }
 
