@@ -20,6 +20,8 @@ public class AroundMeDTO {
 
     private final String contactName;
 
+    private final Long entityDateTimeInMillis;
+
     private final double latitude;
     private final double longitude;
 

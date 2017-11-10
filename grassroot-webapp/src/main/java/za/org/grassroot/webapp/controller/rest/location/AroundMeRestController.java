@@ -99,7 +99,6 @@ public class AroundMeRestController {
                                                                     @RequestParam int radiusMetres,
                                                                     @RequestParam(required = false) String filterTerm){
         GeoLocation location = new GeoLocation(latitude,longitude);
-
         return ResponseEntity.ok(objectLocationBroker.fetchGroupsNearby(userUid,location,radiusMetres,filterTerm,
                 GeographicSearchType.PUBLIC));
     }
@@ -138,6 +137,7 @@ public class AroundMeRestController {
                 groupLocation.getName(),
                 group.hasMember(user),
                 contactName,
+                group.getCreatedDateTime().toEpochMilli(),
                 groupLocation.getLatitude(),
                 groupLocation.getLongitude());
     }
@@ -151,6 +151,7 @@ public class AroundMeRestController {
                 meeting.getAncestorGroup().getName(),
                 meeting.getMembers().contains(user),
                 meeting.getName(),
+                meeting.getEventStartDateTime().toEpochMilli(),
                 mtgLocation.getLatitude(),
                 mtgLocation.getLongitude());
     }
@@ -165,6 +166,7 @@ public class AroundMeRestController {
                 ancestorName,
                 alert.getCreatingUser().equals(user),
                 alert.getContactName(),
+                alert.getCreationTime().toEpochMilli(),
                 alert.getLocation().getLatitude(),
                 alert.getLocation().getLongitude());
     }
