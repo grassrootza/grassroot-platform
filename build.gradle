@@ -1,7 +1,7 @@
 allprojects  {
   apply plugin: 'maven'
   group = 'za.org.grassroot'
-  version = '1.1.0'
+  version = '1.1.0.1'
 }
 
 ext.libs = [
@@ -25,7 +25,7 @@ subprojects {
     maven { url "http://repo.maven.apache.org/maven2" }
   }
 
-  test { // major todo : rewire integration tests
+  test {
     exclude '**/*IT*'
     testLogging {
       events "failed"

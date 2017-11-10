@@ -189,12 +189,12 @@ function check_environment_variables {
   else
     { echo "grassroot-integration.properties FOUND, continuing..."; } 2> /dev/null
   fi
-  if [ ! -f environment/grassroot-payments.properties ]; then
-    { echo -e "${RED}environment/grassroot-payments.properties file NOT FOUND, deployment can't proceed! Templates can be found at .deploy/templates/ Refer to Readme for more information.${NC}"; } 2> /dev/null
-    ENVIRONMENTVARIABLESEXIST="false"
-  else
-    { echo "grassroot-payments.properties FOUND, continuing..."; } 2> /dev/null
-  fi
+  # if [ ! -f environment/grassroot-payments.properties ]; then
+  #  { echo -e "${RED}environment/grassroot-payments.properties file NOT FOUND, deployment can't proceed! Templates can be found at .deploy/templates/ Refer to Readme for more information.${NC}"; } 2> /dev/null
+  #  ENVIRONMENTVARIABLESEXIST="false"
+  #else
+  #  { echo "grassroot-payments.properties FOUND, continuing..."; } 2> /dev/null
+  # fi
   if [ "$ENVIRONMENTVARIABLESEXIST" = "false" ]; then
     unset ENVIRONMENTVARIABLESEXIST
     exit 1
