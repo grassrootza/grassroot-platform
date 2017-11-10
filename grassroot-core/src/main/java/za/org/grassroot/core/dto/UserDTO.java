@@ -25,6 +25,9 @@ public class UserDTO implements Serializable {
     private String displayName;
     private String phoneNumber;
 
+    @JsonIgnore
+    private String password;
+
     public UserDTO() {
     }
 
@@ -46,6 +49,7 @@ public class UserDTO implements Serializable {
     public UserDTO(UserCreateRequest userCreateRequest){
         this.phoneNumber = userCreateRequest.getPhoneNumber();
         this.displayName=userCreateRequest.getDisplayName();
+        this.password = userCreateRequest.getPassword();
     }
 
     public UserDTO(Object[] objArray) {

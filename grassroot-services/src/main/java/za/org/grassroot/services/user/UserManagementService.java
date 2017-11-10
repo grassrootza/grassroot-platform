@@ -1,6 +1,5 @@
 package za.org.grassroot.services.user;
 
-import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.enums.AlertPreference;
@@ -48,7 +47,7 @@ public interface UserManagementService {
 
     User createAndroidUserProfile(UserDTO userDTO) throws UserExistsException;
 
-    String generateAndroidUserVerifier(String phoneNumber, String displayName);
+    String generateAndroidUserVerifier(String phoneNumber, String displayName, String password);
 
     String regenerateUserVerifier(String phoneNumber, boolean createUserIfNotExists);
 
@@ -71,6 +70,8 @@ public interface UserManagementService {
     void setHasInitiatedUssdSession(String userUid);
 
     User resetUserPassword(String username, String newPassword, String token);
+
+    String generateAndSetUserPassword(String phoneNumber);
 
     void updateEmailAddress(String userUid, String emailAddress);
 

@@ -5,17 +5,19 @@ import io.swagger.annotations.ApiOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.dto.UserDTO;
+import za.org.grassroot.core.enums.VerificationCodeType;
+import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.messaging.CreateJwtTokenRequest;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.integration.messaging.JwtType;
+import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.exception.InvalidOtpException;
 import za.org.grassroot.services.exception.UsernamePasswordLoginFailedException;
 import za.org.grassroot.services.user.PasswordTokenService;
@@ -35,13 +37,95 @@ public class AuthenticationController {
     private final JwtService jwtService;
     private final PasswordTokenService passwordTokenService;
     private final UserManagementService userService;
+    private final MessagingServiceBroker messagingServiceBroker;
+    private final Environment environment;
 
     @Autowired
-    public AuthenticationController(JwtService jwtService, PasswordTokenService passwordTokenService, UserManagementService userService) {
+    public AuthenticationController(JwtService jwtService, PasswordTokenService passwordTokenService,
+                                    UserManagementService userService, MessagingServiceBroker messagingServiceBroker,
+                                    Environment environment) {
         this.jwtService = jwtService;
         this.passwordTokenService = passwordTokenService;
         this.userService = userService;
+        this.messagingServiceBroker = messagingServiceBroker;
+        this.environment = environment;
     }
+
+
+    @RequestMapping(value = "/register", method = RequestMethod.GET)
+    @ApiOperation(value = "Start new user registration using username, phone number and password", notes = "Short lived token is returned as a string in the 'data' property")
+    public ResponseEntity<ResponseWrapper> register(@RequestParam("phoneNumber") String phoneNumber,
+                                                    @RequestParam("displayName") String displayName,
+                                                    @RequestParam("password") String password) {
+
+        try {
+            if (!ifExists(phoneNumber)) {
+                phoneNumber = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
+                logger.info("Creating a verifier for a new user with phoneNumber ={}", phoneNumber);
+                String tokenCode = temporaryTokenSend(userService.generateAndroidUserVerifier(phoneNumber, displayName, password), phoneNumber, false);
+                //todo(beegor) this line below is security risk, discuss with luke
+                return RestUtil.okayResponseWithData(RestMessage.VERIFICATION_TOKEN_SENT, tokenCode);
+            } else {
+                logger.info("Creating a verifier for user with phoneNumber ={}, user already exists.", phoneNumber);
+                return RestUtil.errorResponse(HttpStatus.CONFLICT, RestMessage.USER_ALREADY_EXISTS);
+            }
+        } catch (InvalidPhoneNumberException e) {
+            return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.INVALID_MSISDN);
+        }
+    }
+
+    @RequestMapping(value = "/register/verify/{phoneNumber}/{code}", method = RequestMethod.GET)
+    @ApiOperation(value = "Finish new user registration using otp password", notes = "User data and JWT token is returned as AndroidAuthToken object in the 'data' property")
+    public ResponseEntity<ResponseWrapper> verifyRegistration(@PathVariable("phoneNumber") String phoneNumber,
+                                                              @PathVariable("code") String otpEntered)
+            throws Exception {
+
+        final String msisdn = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
+        if (passwordTokenService.isShortLivedOtpValid(msisdn, otpEntered)) {
+            logger.info("user dto and code verified, now creating user with phoneNumber={}", phoneNumber);
+
+            UserDTO userDTO = userService.loadUserCreateRequest(msisdn);
+            User user = userService.createAndroidUserProfile(userDTO);
+            passwordTokenService.generateLongLivedAuthCode(user.getUid());
+            passwordTokenService.expireVerificationCode(user.getUid(), VerificationCodeType.SHORT_OTP);
+
+            CreateJwtTokenRequest tokenRequest = new CreateJwtTokenRequest(JwtType.ANDROID_CLIENT);
+
+            String token = jwtService.createJwt(tokenRequest);
+
+            // Assemble response entity
+            AndroidAuthToken response = new AndroidAuthToken(user, token);
+
+            // Return the token on the response
+            return RestUtil.okayResponseWithData(RestMessage.LOGIN_SUCCESS, response);
+        } else {
+            logger.info("Token verification for new user failed");
+            return RestUtil.errorResponse(HttpStatus.UNAUTHORIZED, RestMessage.INVALID_OTP);
+        }
+    }
+
+
+    @RequestMapping(value = "/forgot-password", method = RequestMethod.GET)
+    @ApiOperation(value = "Reset user password", notes = "New password is returned as a string in the 'data' property")
+    public ResponseEntity<ResponseWrapper> resetPassword(@RequestParam("phoneNumber") String phoneNumber) {
+
+        try {
+            if (ifExists(phoneNumber)) {
+                phoneNumber = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
+                logger.info("Generating new password for user with phoneNumber ={}", phoneNumber);
+                String newPassword = userService.generateAndSetUserPassword(phoneNumber);
+                sendNewPassword(newPassword, phoneNumber);
+
+                return RestUtil.okayResponseWithData(RestMessage.PASSWORD_RESET, newPassword);
+            } else {
+                logger.info("Password reset requested for non-existing user: {}", phoneNumber);
+                return RestUtil.errorResponse(HttpStatus.NOT_FOUND, RestMessage.USER_DOES_NOT_EXIST);
+            }
+        } catch (InvalidPhoneNumberException e) {
+            return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.INVALID_MSISDN);
+        }
+    }
+
 
     @RequestMapping(value = "/login", method = RequestMethod.GET)
     @ApiOperation(value = "Login using otp and retrieve a JWT token", notes = "The JWT token is returned as a string in the 'data' property")
@@ -128,5 +212,37 @@ public class AuthenticationController {
         } else {
             return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.TOKEN_EXPIRED);
         }
+    }
+
+
+    private String temporaryTokenSend(String token, String destinationNumber, boolean resending) {
+        if (environment.acceptsProfiles("production")) {
+            if (token != null) {
+                // todo : wire up a message source for this
+                final String prefix = resending ? "Grassroot code (resent): " : "Grassroot code: ";
+                messagingServiceBroker.sendPrioritySMS(prefix + token, destinationNumber);
+            } else {
+                logger.warn("Did not send verification message. No system messaging configuration found.");
+            }
+            return "";
+        } else {
+            return token;
+        }
+    }
+
+    private void sendNewPassword(String password, String destinationNumber) {
+        if (environment.acceptsProfiles("production")) {
+            if (password != null) {
+                // todo : wire up a message source for this
+                messagingServiceBroker.sendPrioritySMS("Your new password: " + password, destinationNumber);
+            } else {
+                logger.warn("Did not send verification message. No system messaging configuration found.");
+            }
+        } else {
+        }
+    }
+
+    private boolean ifExists(String phoneNumber) {
+        return userService.userExist(PhoneNumberUtil.convertPhoneNumber(phoneNumber));
     }
 }

@@ -91,5 +91,7 @@ dependencies {
 
     compile group: 'org.projectlombok', name: 'lombok', version: '1.16.18'
 
+    compile group: 'org.apache.commons', name: 'commons-text', version: '1.1'
+
     testCompile group: 'org.springframework', name: 'spring-orm', version:libs.springVersion // else tests fail on dependency issues
 }
