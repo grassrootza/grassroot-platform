@@ -121,7 +121,7 @@ public class AuthenticationController {
                 return RestUtil.okayResponseWithData(RestMessage.VERIFICATION_TOKEN_SENT, token);
             } else {
                 logger.info("Password reset requested for non-existing user: {}", phoneNumber);
-                return RestUtil.errorResponse(HttpStatus.NOT_FOUND, RestMessage.USER_DOES_NOT_EXIST);
+                return RestUtil.errorResponse(HttpStatus.GONE, RestMessage.USER_DOES_NOT_EXIST);
             }
         } catch (InvalidPhoneNumberException e) {
             return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.INVALID_MSISDN);
