@@ -1,5 +1,7 @@
 package za.org.grassroot.integration;
 
+import com.google.cloud.speech.v1.*;
+import com.google.protobuf.ByteString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,11 +15,13 @@ import za.org.grassroot.integration.exception.SeloApiCallFailure;
 import za.org.grassroot.integration.exception.SeloParseDateTimeFailure;
 
 import javax.annotation.PostConstruct;
-import java.net.ProtocolException;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Created by shakka on 8/15/16.
@@ -112,6 +116,37 @@ public class LearningManager implements LearningService {
         } catch (ResourceAccessException|HttpStatusCodeException e) {
             log.warn("Error calling learning service! Error: " + e.toString());
             return new HashMap<>();
+        }
+    }
+
+    @Override
+    public String speechToText(ByteString rawSpeech) {
+        try {
+            log.info("converting speech to text via Google Cloud ... ");
+
+            // todo : handle auth
+            SpeechClient speech = SpeechClient.create();
+            RecognitionConfig config = RecognitionConfig.newBuilder()
+                    .setEncoding(RecognitionConfig.AudioEncoding.LINEAR16) // todo : align with client
+                    .setSampleRateHertz(1600) // as above
+                    .setLanguageCode("en-ZA")
+                    .build();
+            RecognitionAudio audio = RecognitionAudio.newBuilder()
+                    .setContent(rawSpeech)
+                    .build();
+
+            log.info("built call entities, initiating call to API ...");
+            RecognizeResponse response = speech.recognize(config, audio);
+            List<SpeechRecognitionResult> results = response.getResultsList();
+
+            log.info("got results, look like : {}", results);
+            String joinedResult = results.stream()
+                    .map(result -> result.getAlternatives(0).getTranscript())
+                    .collect(Collectors.joining("; "));
+            log.info("joined result : {}", joinedResult);
+            return joinedResult;
+        } catch (IOException e) {
+            return null;
         }
     }
 
