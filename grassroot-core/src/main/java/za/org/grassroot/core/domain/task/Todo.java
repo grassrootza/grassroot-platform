@@ -71,14 +71,6 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "todo", orphanRemoval = true)
     private Set<TodoCompletionConfirmation> completionConfirmations = new HashSet<>();
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "todo_type", nullable = false)
-    @Getter private TodoType type;
-
-    @Basic
-    @Column(name = "response_tag")
-    @Getter @Setter private String responseTag;
-
     @Basic
     @Column(name = "response_regex")
     @Getter @Setter private String responseRegex;
@@ -87,6 +79,7 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
     @Column(name = "require_images")
     @Getter @Setter private boolean requireImages;
 
+    // todo : decide how to use this
     @Basic
     @Column(name = "recurring")
     @Getter @Setter private boolean recurring = false;

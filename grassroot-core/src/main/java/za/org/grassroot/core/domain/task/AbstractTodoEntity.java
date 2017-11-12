@@ -1,5 +1,7 @@
 package za.org.grassroot.core.domain.task;
 
+import lombok.Getter;
+import lombok.Setter;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.DateTimeUtil;
@@ -33,6 +35,14 @@ public abstract class AbstractTodoEntity {
 	@ManyToOne(cascade = CascadeType.ALL, optional = false)
 	@JoinColumn(name = "created_by_user_id", nullable = false)
 	protected User createdByUser;
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "todo_type", nullable = false)
+	@Getter protected TodoType type;
+
+	@Basic
+	@Column(name = "response_tag")
+	@Getter @Setter protected String responseTag;
 
 	/*
 	Version used by hibernate to resolve conflicting updates. Do not update set it, it is for Hibernate only
