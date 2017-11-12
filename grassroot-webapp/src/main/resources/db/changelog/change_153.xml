@@ -4,11 +4,11 @@
         xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
          http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.0.xsd">
-    <changeSet id="change_152" author="beegor">
+    <changeSet id="change_153" author="beegor">
         <comment>Notifications sending refactor</comment>
-        <sqlFile path="db/scripts/script_152.sql" splitStatements="false"/>
+        <sqlFile path="db/scripts/script_153.sql" splitStatements="false"/>
         <rollback>
-            <sqlFile path="db/scripts/script_152_rollback.sql"/>
+            <sqlFile path="db/scripts/script_153_rollback.sql"/>
         </rollback>
     </changeSet>
 </databaseChangeLog>
