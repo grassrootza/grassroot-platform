@@ -684,8 +684,12 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
 
         Group group = groupRepository.findOneByUid(groupUid);
         PaidGroup latestRecord = paidGroupRepository.findTopByGroupOrderByExpireDateTimeDesc(group);
-        NotificationTemplate template = templateRepository.findTopByGroupAndTriggerTypeAndActiveTrue(group,
-                NotificationTriggerType.ADDED_TO_GROUP);
+        NotificationTemplate template = checkForGroupTemplate(group);
+
+        // note: at some point do this recursively, but for the moment, a one level check is fine
+        if ((template == null || !template.isActive()) && group.getParent() != null) {
+            template = checkForGroupTemplate(group.getParent());
+        }
 
         if (template != null && template.isActive()) {
             LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
@@ -707,6 +711,53 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
             logsAndNotificationsBroker.asyncStoreBundle(bundle);
             logger.info("sent {} logs and {} notifications for storage, exiting", bundle.getLogs().size(), bundle.getNotifications().size());
         }
+    }
+
+    private NotificationTemplate checkForGroupTemplate(Group group) {
+        return templateRepository.findTopByGroupAndTriggerTypeAndActiveTrue(group, NotificationTriggerType.ADDED_TO_GROUP);
+    }
+
+    @Override
+    @Transactional
+    public void cascadeWelcomeMessages(String userUid, String groupUid) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(groupUid);
+
+        validateUserAccountAdminForGroup(userUid, groupUid);
+
+        NotificationTemplate template = loadTemplate(groupUid);
+        template.setCascade(true);
+
+        createAndStoreSingleAccountLog(new AccountLog.Builder(template.getAccount())
+                .userUid(userUid)
+                .group(template.getGroup())
+                .accountLogType(AccountLogType.GROUP_WELCOME_CASCADE_ON)
+                .build());
+    }
+
+    @Override
+    @Transactional
+    public void disableCascadingMessages(String userUid, String groupUid) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(groupUid);
+
+        validateUserAccountAdminForGroup(userUid, groupUid);
+
+        NotificationTemplate template = loadTemplate(groupUid);
+        template.setCascade(false);
+
+        createAndStoreSingleAccountLog(new AccountLog.Builder(template.getAccount())
+                .userUid(userUid)
+                .group(template.getGroup())
+                .accountLogType(AccountLogType.GROUP_WELCOME_CASCADE_OFF)
+                .build());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean hasSubgroups(String groupUid) {
+        Group group = groupRepository.findOneByUid(groupUid);
+        return group.getDirectChildren() != null && !group.getDirectChildren().isEmpty();
     }
 
     private Set<Notification> generateNotifications(NotificationTemplate templateEntity, int templateStringIndex,

@@ -1,5 +1,6 @@
 package za.org.grassroot.services.user;
 
+import org.apache.commons.text.RandomStringGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -78,6 +79,8 @@ public class UserManager implements UserManagementService, UserDetailsService {
     private MessageAssemblingService messageAssemblingService;
     @Autowired
     private MessagingServiceBroker messagingServiceBroker;
+
+    private RandomStringGenerator randomStringGenerator = new RandomStringGenerator.Builder().withinRange('a', 'z').build();
 
     @Value("${grassroot.todos.completion.threshold:20}") // defaults to 20 percent
     private double COMPLETION_PERCENTAGE_BOUNDARY;
@@ -179,13 +182,18 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
         } else {
 
+            String newPassword = randomStringGenerator.generate(6);
+            String encodedPassword = passwordEncoder.encode(newPassword);
+
             userProfile.setPhoneNumber(phoneNumber);
             userProfile.setUsername(phoneNumber);
+            userProfile.setPassword(encodedPassword);
             userProfile.setDisplayName(userDTO.getDisplayName());
             userProfile.setHasSetOwnName(true);
             userProfile.setHasAndroidProfile(true);
             userProfile.setMessagingPreference(UserMessagingPreference.ANDROID_APP);
             userProfile.setAlertPreference(AlertPreference.NOTIFY_NEW_AND_REMINDERS);
+
             userToSave = userProfile;
         }
 
@@ -228,13 +236,13 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
-    public String generateAndroidUserVerifier(String phoneNumber, String displayName) {
+    public String generateAndroidUserVerifier(String phoneNumber, String displayName, String password) {
         Objects.nonNull(phoneNumber);
         phoneNumber = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
         if (displayName != null) {
             UserCreateRequest userCreateRequest = userCreateRequestRepository.findByPhoneNumber(phoneNumber);
             if (userCreateRequest == null) {
-                userCreateRequest = new UserCreateRequest(phoneNumber, displayName, Instant.now());
+                userCreateRequest = new UserCreateRequest(phoneNumber, displayName, password, Instant.now());
             } else {
                 userCreateRequest.setDisplayName(displayName);
                 userCreateRequest.setCreationTime(Instant.now());
@@ -384,9 +392,9 @@ public class UserManager implements UserManagementService, UserDetailsService {
      */
 
     @Override
-    public User resetUserPassword(String username, String newPassword, String token) {
+    public User resetUserPassword(String phoneNumber, String newPassword, String token) throws InvalidTokenException {
 
-        User user = userRepository.findByUsername(PhoneNumberUtil.convertPhoneNumber(username));
+        User user = userRepository.findByUsername(PhoneNumberUtil.convertPhoneNumber(phoneNumber));
         log.info("Found this user: " + user);
 
         if (passwordTokenService.isShortLivedOtpValid(user.getPhoneNumber(), token.trim())) {
@@ -400,6 +408,8 @@ public class UserManager implements UserManagementService, UserDetailsService {
             throw new InvalidTokenException("Invalid OTP submitted");
         }
     }
+
+
 
     @Override
     @Transactional

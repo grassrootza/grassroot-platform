@@ -77,7 +77,7 @@ public class UserRestController {
             final String msisdn = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
             if (!ifExists(msisdn)) {
                 log.info("Creating a verifier for a new user with phoneNumber ={}", phoneNumber);
-                String tokenCode = temporaryTokenSend(userManagementService.generateAndroidUserVerifier(phoneNumber, displayName), msisdn, false);
+                String tokenCode = temporaryTokenSend(userManagementService.generateAndroidUserVerifier(phoneNumber, displayName, null), msisdn, false);
                 return RestUtil.okayResponseWithData(RestMessage.VERIFICATION_TOKEN_SENT, tokenCode);
             } else {
                 log.info("Creating a verifier for user with phoneNumber ={}, user already exists.", phoneNumber);
@@ -87,6 +87,9 @@ public class UserRestController {
             return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.INVALID_MSISDN);
         }
     }
+
+
+
 
     @RequestMapping(value = "/verify/resend/{phoneNumber}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> resendOtp(@PathVariable("phoneNumber") String phoneNumber) {
@@ -104,10 +107,11 @@ public class UserRestController {
     public ResponseEntity<ResponseWrapper> verify(@PathVariable("phoneNumber") String phoneNumber, @PathVariable("code") String otpEntered)
             throws Exception {
 
-        if (passwordTokenService.isShortLivedOtpValid(phoneNumber, otpEntered)) {
+        final String msisdn = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
+        if (passwordTokenService.isShortLivedOtpValid(msisdn, otpEntered)) {
             log.info("user dto and code verified, now creating user with phoneNumber={}", phoneNumber);
 
-            UserDTO userDTO = userManagementService.loadUserCreateRequest(PhoneNumberUtil.convertPhoneNumber(phoneNumber));
+            UserDTO userDTO = userManagementService.loadUserCreateRequest(msisdn);
             User user = userManagementService.createAndroidUserProfile(userDTO);
             VerificationTokenCode token = passwordTokenService.generateLongLivedAuthCode(user.getUid());
             passwordTokenService.expireVerificationCode(user.getUid(), VerificationCodeType.SHORT_OTP);
@@ -127,7 +131,7 @@ public class UserRestController {
             final String msisdn = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
             if (ifExists(msisdn)) {
                 // this will send the token by SMS and return an empty string if in production, or return the token if on staging
-                String token = temporaryTokenSend(userManagementService.generateAndroidUserVerifier(msisdn, null), msisdn, false);
+                String token = temporaryTokenSend(userManagementService.generateAndroidUserVerifier(msisdn, null, null), msisdn, false);
                 return RestUtil.okayResponseWithData(RestMessage.VERIFICATION_TOKEN_SENT, token);
             } else {
                 return RestUtil.errorResponse(HttpStatus.NOT_FOUND, RestMessage.USER_DOES_NOT_EXIST);
@@ -160,6 +164,8 @@ public class UserRestController {
             return RestUtil.errorResponse(HttpStatus.UNAUTHORIZED, RestMessage.INVALID_OTP);
         }
     }
+
+
 
     @RequestMapping(value = "/connect/{phoneNumber}/{code}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> checkConnection(@PathVariable String phoneNumber,

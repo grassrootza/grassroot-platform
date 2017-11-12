@@ -3,10 +3,13 @@ package za.org.grassroot.services.group;
 import com.codahale.metrics.annotation.Timed;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.Specifications;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.dto.MembershipDTO;
 import za.org.grassroot.core.dto.group.GroupFullDTO;
 import za.org.grassroot.core.dto.group.GroupMinimalDTO;
 import za.org.grassroot.core.dto.group.GroupTimeChangedDTO;
@@ -14,6 +17,8 @@ import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.MembershipRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.specifications.GroupSpecifications;
+import za.org.grassroot.services.PermissionBroker;
+import za.org.grassroot.services.exception.MemberLacksPermissionException;
 
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
@@ -30,13 +35,15 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
     private final UserRepository userRepository;
     private final GroupRepository groupRepository;
     private final MembershipRepository membershipRepository;
+    private final PermissionBroker permissionBroker;
     private final EntityManager entityManager;
 
     @Autowired
-    public GroupFetchBrokerImpl(UserRepository userRepository, GroupRepository groupRepository, MembershipRepository membershipRepository, EntityManager entityManager) {
+    public GroupFetchBrokerImpl(UserRepository userRepository, GroupRepository groupRepository, MembershipRepository membershipRepository, PermissionBroker permissionBroker, EntityManager entityManager) {
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
         this.membershipRepository = membershipRepository;
+        this.permissionBroker = permissionBroker;
         this.entityManager = entityManager;
     }
 
@@ -137,6 +144,24 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
                 .setParameter("groupUids", groupUids)
                 .setParameter("user", user)
                 .getResultList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Set<MembershipDTO> fetchGroupMembershipInfo(String userUid, String groupUid) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(groupUid);
+
+        User user = userRepository.findOneByUid(userUid);
+        Group group = groupRepository.findOneByUid(groupUid);
+
+        try {
+            permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
+        } catch (AccessDeniedException e) {
+            throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
+        }
+
+        return group.getMemberships().stream().map(MembershipDTO::new).collect(Collectors.toSet());
     }
 
 

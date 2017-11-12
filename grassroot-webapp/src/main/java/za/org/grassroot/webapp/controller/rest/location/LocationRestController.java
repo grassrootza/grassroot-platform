@@ -26,13 +26,11 @@ public class LocationRestController extends BaseController {
     private static int LOCATION_RADIUS_DEFAULT = 5;
     private static int LOCATION_RADIUS_MAX = 16;
     private static final Logger logger = LoggerFactory.getLogger(LocationRestController.class);
-    private final GeoLocationBroker geoLocationBroker;
     private final ObjectLocationBroker objectLocationBroker;
 
     @Autowired
     public LocationRestController (ObjectLocationBroker objectLocationBroker, GeoLocationBroker geoLocationBroker) {
         this.objectLocationBroker = objectLocationBroker;
-        this.geoLocationBroker = geoLocationBroker;
     }
 
     @RequestMapping(value = "/list", method = RequestMethod.GET)

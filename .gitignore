@@ -1,3 +1,20 @@
+# localhost logs #
+log
+log/*
+
+# localhost environment files #
+environment/*
+/.clean
+/build-jar.sh
+/test.sh
+
+# localhost deployment scripts #
+/startgrassroot.sh
+
+# ignore docker files #
+/docker-compose.yml
+/Dockerfile
+
 # Java Compiled Files #
 *.class
 
@@ -52,6 +69,7 @@ build/
 
 # Grassroot.log
 grassroot.log*
+log/
 
 ## Hibernate schema export DDL script
 schema-export-create.sql

@@ -41,7 +41,7 @@ public class USSDAdvancedHomeController extends USSDController {
     private static final String ROOT_PATH = homePath + moreMenus;
 
     private static final int PAGE_SIZE = 2;
-    private static final Integer searchRadius = 5;
+    private static final Integer searchRadius = 5000;
     private static final USSDSection thisSection = USSDSection.HOME;
 
     private final UssdLocationServicesBroker ussdLocationServicesBroker;
@@ -83,7 +83,8 @@ public class USSDAdvancedHomeController extends USSDController {
         USSDMenu ussdMenu;
 
         if (guessedLocation != null) {
-            List<ObjectLocation> listOfPublicMeetingsNearUser = objectLocationBroker.fetchMeetingLocationsNearUser(user, guessedLocation, searchRadius, GeographicSearchType.PUBLIC, null);
+            List<ObjectLocation> listOfPublicMeetingsNearUser = objectLocationBroker
+                    .fetchMeetingLocationsNearUser(user, guessedLocation, searchRadius, GeographicSearchType.PUBLIC, null);
             log.info("Size of meetings array in home more controller= {}",listOfPublicMeetingsNearUser.size());
             ussdMenu = listOfPublicMeetingsNearUser.isEmpty() ?
                     haveLocationButNoMeetings(user, repeat) :

@@ -16,7 +16,8 @@ public interface TaskImageBroker {
     String storeImagePreTask(TaskType taskType, MultipartFile file);
 
     // use this one for an image passed directly to us
-    String storeImageForTask(String userUid, String taskUid, TaskType taskType, MultipartFile file, Double latitude, Double longitude);
+    String storeImageForTask(String userUid, String taskUid, TaskType taskType, MultipartFile file,
+                             String caption, Double latitude, Double longitude);
 
     // use this one for where image has previously been uploaded (e.g., via microservice)
     void recordImageForTask(String userUid, String taskUid, TaskType taskType, String imageKey, EventLogType logType);

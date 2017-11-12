@@ -6,11 +6,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.task.Event;
-import za.org.grassroot.core.domain.task.EventLog;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.notification.EventResponseNotification;
+import za.org.grassroot.core.domain.task.Event;
+import za.org.grassroot.core.domain.task.EventLog;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
@@ -21,6 +21,7 @@ import za.org.grassroot.core.repository.EventRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.specifications.EventLogSpecifications;
 import za.org.grassroot.services.MessageAssemblingService;
+import za.org.grassroot.services.exception.TaskFinishedException;
 import za.org.grassroot.services.util.CacheUtilService;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
@@ -69,8 +70,12 @@ public class EventLogBrokerImpl implements EventLogBroker {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(rsvpResponse);
 
-        User user = userRepository.findOneByUid(userUid);
         Event event = eventRepository.findOneByUid(eventUid);
+        if (event.getEventStartDateTime().isBefore(Instant.now())) {
+            throw new TaskFinishedException();
+        }
+
+        User user = userRepository.findOneByUid(userUid);
 
         log.trace("rsvpForEvent...event..." + event.getId() + "...user..." + user.getPhoneNumber() + "...rsvp..." + rsvpResponse.toString());
 
@@ -85,8 +90,8 @@ public class EventLogBrokerImpl implements EventLogBroker {
             } else if (event.getEventType().equals(EventType.MEETING) && !user.equals(event.getCreatedByUser())) {
                 generateMeetingResponseMessage(event, eventLog, rsvpResponse);
             }
-        } else if (event.getEventStartDateTime().isAfter(Instant.now())) {
-            // allow the user to change their rsvp / vote as long as meeting is open
+        } else {
+            // allow the user to change their rsvp / vote as long as meeting is open (which it is at this stage else exception thrown above)
             EventLog eventLog = eventLogRepository.findByEventAndUserAndEventLogType(event, user, EventLogType.RSVP);
             eventLog.setResponse(rsvpResponse);
             log.info("rsvpForEvent... changing response to {} on eventLog {}", rsvpResponse.toString(), eventLog);

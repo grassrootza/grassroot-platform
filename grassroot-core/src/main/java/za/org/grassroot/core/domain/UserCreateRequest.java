@@ -24,6 +24,9 @@ public class UserCreateRequest {
     @Column(name = "phone_number",insertable = true, nullable = false, unique = true)
     private String phoneNumber;
 
+    @Column(name = "user_password", nullable = false)
+    private String password;
+
     @Column(name="display_name", insertable = true)
     private String displayName;
 
@@ -34,10 +37,11 @@ public class UserCreateRequest {
         // for JPA
     }
 
-    public UserCreateRequest(String phoneNumber, String displayName, Instant creationTime) {
+    public UserCreateRequest(String phoneNumber, String displayName, String password, Instant creationTime) {
         this.uid = UIDGenerator.generateId();
         this.phoneNumber = phoneNumber;
         this.displayName = displayName;
+        this.password = password;
         this.creationTime = creationTime;
     }
 
@@ -55,6 +59,14 @@ public class UserCreateRequest {
 
     public void setDisplayName(String displayName) {
         this.displayName = displayName;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 
     public void setCreationTime(Instant creationTime){this.creationTime =creationTime;}

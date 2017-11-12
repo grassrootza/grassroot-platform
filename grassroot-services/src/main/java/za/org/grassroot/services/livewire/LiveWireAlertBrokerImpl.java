@@ -566,7 +566,6 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
                 log);
     }
 
-    @Override
     public List<LiveWireAlert> fetchAlertsNearUser(String userUid, GeoLocation location,
                                                    Integer radius, GeographicSearchType searchType) {
 
@@ -574,6 +573,14 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
 
         if(location == null || !location.isValid()){
             throw new InvalidParameterException("Invalid GeoLocation object.");
+        }
+
+        if(radius < 0){
+            throw new InvalidParameterException("Invalid Radius,should be positive");
+        }
+
+        if(radius == null){
+            throw new NullPointerException("Invalid Radius,should not be null");
         }
 
         String mineFilter = searchType.equals(GeographicSearchType.PUBLIC) ? " AND l.creatingUser <>:user "
@@ -617,6 +624,6 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
     }
 
     private Instant getLastWeekTime(){
-        return Instant.now().minus(14, ChronoUnit.DAYS);
+        return Instant.now().minus(21, ChronoUnit.DAYS);
     }
 }

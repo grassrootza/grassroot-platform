@@ -2,9 +2,11 @@ package za.org.grassroot.core.domain.geo;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.task.Meeting;
+import za.org.grassroot.core.util.DateTimeUtil;
 
 import javax.persistence.Column;
 import javax.persistence.Embeddable;
@@ -47,7 +49,7 @@ public class ObjectLocation {
 
     @Transient
     private String locationDescription;
-
+    
     private int groupSize;
 
     private int groupTasks;
@@ -56,15 +58,25 @@ public class ObjectLocation {
         // for JPA
     }
 
-    private ObjectLocation (String uid, String type, boolean isPublic) {
+    private ObjectLocation(String uid, String name, double latitude, double longitude, float score, String type, boolean isPublic,
+                           int groupSize, int groupTasks) {
         this.uid = uid;
         this.type = type;
         this.canAccess = isPublic;
+
         String access = ""; // (isPublic ? "public/" : "");
         if (JpaEntityType.GROUP.toString().equals(type))
             this.url = "/group/" + access + "view?groupUid=" + uid;
         else
             this.url = "/meeting/" + access + "view?eventUid=" + uid;
+
+        this.name = name;
+        this.latitude = latitude;
+        this.longitude = longitude;
+        this.score = score;
+        this.type = type;
+        this.groupSize = groupSize;
+        this.groupTasks = groupTasks;
     }
 
     public ObjectLocation (Meeting meeting, MeetingLocation meetingLocation) {
@@ -72,44 +84,42 @@ public class ObjectLocation {
                 meeting.getName(), meetingLocation.getLocation().getLatitude(),
                 meetingLocation.getLocation().getLongitude(), meetingLocation.getScore(),
                 "MEETING",
-                "Where: " + meeting.getEventLocation() +
-                "Date and Time: " + meeting.getEventStartDateTime() +
-                "Creation Date: " + meeting.getCreatedDateTime(),
                 meeting.isPublic(),
                 meeting.getAncestorGroup().getMemberships().size(),
                 (meeting.getAncestorGroup().getDescendantEvents().size() + meeting.getAncestorGroup().getDescendantTodos().size()));
         this.locationDescription = meeting.getEventLocation();
+        this.description = generateDescription(meeting);
     }
 
-    public ObjectLocation (String uid, String name, double latitude, double longitude, float score, String type, boolean isPublic) {
-        this(uid, name, latitude, longitude, score, type, isPublic, 0, 0);
+    private String generateDescription(Meeting meeting) {
+        return !StringUtils.isEmpty(meeting.getDescription()) ? meeting.getDescription() :
+                "Where: " + meeting.getEventLocation() +
+                        ", date and time: " +
+                        DateTimeUtil.getPreferredDateTimeFormat().format(meeting.getEventDateTimeAtSAST());
+    }
+
+    public ObjectLocation(Group group,GroupLocation groupLocation) {
+        this(group.getUid(),
+                group.getName(),
+                groupLocation.getLocation().getLatitude(),
+                groupLocation.getLocation().getLongitude(),
+                groupLocation.getScore(),
+                "GROUP",
+                group.isDiscoverable(),
+                group.getMemberships().size(),
+                group.getDescendantEvents().size() + group.getDescendantTodos().size());
+        this.description = generateDescription(group);
+    }
+
+    private String generateDescription(Group group) {
+        return !StringUtils.isEmpty(group.getDescription()) ? group.getDescription() :
+                "Size: " + groupSize + ", activity: " + groupTasks + " tasks";
     }
 
     public ObjectLocation (String uid, String name, double latitude, double longitude, float score, String type,
                            String description, boolean isPublic) {
-        this(uid, name, latitude, longitude, score, type, description, isPublic, 0, 0);
-    }
-
-    public ObjectLocation (String uid, String name, double latitude, double longitude, float score, String type, String description, boolean isPublic, Group group) {
-        this(uid, name, latitude, longitude, score, type, description, isPublic, group.getMemberships().size(), (group.getDescendantEvents().size() + group.getDescendantTodos().size()));
-    }
-
-    public ObjectLocation (String uid, String name, double latitude, double longitude, float score, String type, boolean isPublic,
-                           int groupSize, int groupTasks) {
-        this(uid, name, latitude, longitude, score, type, "", isPublic,  groupSize, groupTasks);
-    }
-
-    public ObjectLocation (String uid, String name, double latitude, double longitude, float score, String type, String description, boolean isPublic,
-                           int groupSize, int groupTasks) {
-        this(uid, type, isPublic);
-        this.name = name;
-        this.latitude = latitude;
-        this.longitude = longitude;
-        this.score = score;
-        this.type = type;
+        this(uid, name, latitude, longitude, score, type, isPublic, 0, 0);
         this.description = description;
-        this.groupSize = groupSize;
-        this.groupTasks = groupTasks;
     }
 
     @Override

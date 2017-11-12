@@ -63,6 +63,10 @@
               <input type="hidden" id="duration_millis" name="durationMillis" />
             </div>
             <div class="form-group pull-right top-buffer">
+              <a th:if="${hasTemplate and hasChildren}" role="button" class="btn default-button btn-neutral"
+                 data-toggle="modal" data-target="#cascade_modal">
+                <span th:text="${existingTemplate.cascade ? 'Stop duplicate' : 'Duplicate'}">Duplicate</span>
+              </a>
               <a th:if="${hasTemplate}" role="button" class="btn default-button btn-neutral"
                  data-toggle="modal" data-target="#deactivate_modal">Deactivate</a>
               <a th:href="${backUrl}" role="button" class="btn default-button btn-neutral">Cancel</a>
@@ -77,6 +81,18 @@
   <div th:if="${existingTemplate != null}">
     <div th:replace="~{form_fragments :: confirm_cancel_modal('deactivate_modal',
     'Deactivate', 'Deactivate group welcome message?', 'groupUid', ${groupUid}, 'deactivate')}"></div>
+  </div>
+
+  <div th:if="${hasChildren and existingTemplate != null and existingTemplate.cascade}">
+    <div th:replace="~{form_fragments :: confirm_cancel_modal('cascade_modal',
+    'Stop duplicate', 'Stop duplicating welcome messages? People added to subgroups will not get messages',
+    'groupUid', ${groupUid}, 'cascade/disable')}"></div>
+  </div>
+
+  <div th:if="${hasChildren and existingTemplate != null and not existingTemplate.cascade}">
+    <div th:replace="~{form_fragments :: confirm_cancel_modal('cascade_modal',
+    'Duplicate', 'Duplicate welcome messages for subgroups? People added to subgroups will get the messages',
+    'groupUid', ${groupUid}, 'cascade/enable')}"></div>
   </div>
 
 </main>

@@ -7,6 +7,7 @@ import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
+import za.org.grassroot.core.domain.geo.LocationHolder;
 import za.org.grassroot.core.domain.media.MediaFileRecord;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.enums.LiveWireAlertDestType;
@@ -29,7 +30,7 @@ import java.util.*;
  */
 @Entity
 @Table(name = "live_wire_alert")
-public class LiveWireAlert {
+public class LiveWireAlert implements LocationHolder {
 
     private static final Logger logger = LoggerFactory.getLogger(LiveWireAlert.class);
 
@@ -472,8 +473,19 @@ public class LiveWireAlert {
         this.sent = sent;
     }
 
+    @Override
     public GeoLocation getLocation() {
         return location;
+    }
+
+    @Override
+    public boolean hasLocation() {
+        return location != null;
+    }
+
+    @Override
+    public LocationSource getSource() {
+        return locationSource;
     }
 
     public void setLocation(GeoLocation location) {
