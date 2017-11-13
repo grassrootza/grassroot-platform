@@ -18,6 +18,7 @@ import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.notification.EventInfoNotification;
+import za.org.grassroot.core.domain.notification.JoinCodeNotification;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.enums.EventType;
@@ -1120,6 +1121,16 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         actionLogs.add(new GroupLog(parent, user, GroupLogType.SUBGROUP_ADDED, child.getId(), "Subgroup added"));
         actionLogs.add(new GroupLog(child, user, GroupLogType.PARENT_CHANGED, parent.getId(), "Parent group added or changed"));
         logActionLogsAfterCommit(actionLogs);
+    }
+
+    @Override
+    public void sendGroupJoinCodeNotification(User sessionUser, String message, UserLog userLog) {
+        Notification notification = new JoinCodeNotification(sessionUser,message,userLog);
+
+        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+        bundle.addLog(userLog);
+        bundle.addNotification(notification);
+        logsAndNotificationsBroker.storeBundle(bundle);
     }
 
     private boolean checkGroupSizeLimit(Group group, int numberOfMembersAdding) {

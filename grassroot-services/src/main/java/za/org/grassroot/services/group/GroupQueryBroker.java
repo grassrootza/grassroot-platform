@@ -77,6 +77,6 @@ public interface GroupQueryBroker {
 
     Page<MembershipDTO> getMembershipsInGroups(User groupCreator, Instant groupCreatedAfter, Instant userJoinedAfter, Pageable pageable);
 
-
+    List<Group> findByCreatedByUser(User user);
 
 }

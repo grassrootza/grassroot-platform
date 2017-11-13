@@ -161,6 +161,10 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
         return Optional.of(groupToReturn);
     }
 
+    public List<Group> findByCreatedByUser(User user){
+        return groupRepository.findByCreatedByUserAndActiveTrueOrderByCreatedDateTimeDesc(user);
+    }
+
     @Override
     public Set<Group> subGroups(String groupUid) {
         Group group = groupRepository.findOneByUid(groupUid);

@@ -57,9 +57,7 @@ public class USSDGroupController extends USSDController {
     private final PermissionBroker permissionBroker;
     private final GroupQueryBroker groupQueryBroker;
     private final GeoLocationBroker geoLocationBroker;
-    private final GroupRepository groupRepository;
-    private LogsAndNotificationsBroker logsAndNotificationsBroker;
-    private final UserLogRepository userLogRepository;
+    private final LogsAndNotificationsBroker logsAndNotificationsBroker;
 
     private static final Logger log = LoggerFactory.getLogger(USSDGroupController.class);
 
@@ -82,7 +80,7 @@ public class USSDGroupController extends USSDController {
             inactiveMenu = "inactive",
             validity = "validity",
             invalidGroups = "clean",
-            sendJoidCodeForCreatedGroup = "send-join-code",
+            sendJoidCodeForCreatedGroup = "send-code",
             sendAllGroupsJoinCodes = "sendall";
 
     private static final String groupPath = homePath + groupMenus;
@@ -98,9 +96,7 @@ public class USSDGroupController extends USSDController {
         this.permissionBroker = permissionBroker;
         this.groupQueryBroker = groupQueryBroker;
         this.geoLocationBroker = geoLocationBroker;
-        this.groupRepository = groupRepository;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
-        this.userLogRepository = userLogRepository;
     }
 
     /*
@@ -209,6 +205,8 @@ public class USSDGroupController extends USSDController {
                 getMessage(thisSection, createGroupMenu + doSuffix, optionsKey + "numbers", user));
         menu.addMenuOption(groupMenuWithId(closeGroupToken, groupUid),
                 getMessage(thisSection, createGroupMenu + doSuffix, optionsKey + "token", user));
+        menu.addMenuOption(groupMenuWithId(sendJoidCodeForCreatedGroup,groupUid),
+                getMessage(thisSection,"sendcode","prompt",user));
         return menu;
     }
 
@@ -815,32 +813,56 @@ public class USSDGroupController extends USSDController {
     @RequestMapping(value = groupPath + sendAllGroupsJoinCodes)
     @ResponseBody
     public Request sendAllJoinCodesPrompt(@RequestParam(value = phoneNumber) String inputNumber) throws URISyntaxException {
-        User sessionUser = userManager.findByInputNumber(inputNumber, groupMenus + createGroupMenu);
+        final User sessionUser = userManager.findByInputNumber(inputNumber);
 
         final String prompt = getMessage(thisSection,"sent","prompt",sessionUser);
         USSDMenu ussdMenu = new USSDMenu(prompt);
-        List<Group> groups = groupRepository.findByCreatedByUserAndActiveTrueOrderByCreatedDateTimeDesc(sessionUser);
-        String messageToSend = "Your group's join codes:\n";
+        List<Group> groups = groupQueryBroker.findByCreatedByUser(sessionUser);
+        String messageToSend = "Your group's join codes:";
         for (Group group : groups){
             if(group.hasValidGroupTokenCode()){
-                messageToSend += group.getGroupName() + " ,Join Code: " + group.getGroupTokenCode() + "\n";
+                messageToSend += group.getGroupName() + " ,Join Code: " + group.getGroupTokenCode() +", "                                               ;
             }
         }
 
-        UserLog userLog = new UserLog(sessionUser.getUid(), UserLogType.SENT_GROUP_JOIN_CODE,"All groups join codes", UserInterfaceType.UNKNOWN);
-        userLogRepository.save(userLog);
+        UserLog userLog = new UserLog(sessionUser.getUid(), UserLogType.SENT_GROUP_JOIN_CODE,
+                "All groups join codes", UserInterfaceType.UNKNOWN);
 
-        Notification notification = new JoinCodeNotification(sessionUser,messageToSend,userLog);
-
-        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
-        bundle.addNotification(notification);
-        logsAndNotificationsBroker.storeBundle(bundle);
+        groupBroker.sendGroupJoinCodeNotification(sessionUser,messageToSend,userLog);
 
         log.info("Message = {}",messageToSend);
 
 
-        ussdMenu.addMenuOption(thisSection.toPath() + startMenu, getMessage(thisSection, listGroupMembers, optionsKey + "back-grp", sessionUser));
+        ussdMenu.addMenuOption(thisSection.toPath() + startMenu,
+                getMessage(thisSection, listGroupMembers, optionsKey + "back-grp", sessionUser));
         ussdMenu.addMenuOption("start_force", getMessage("start", sessionUser));
+        return menuBuilder(ussdMenu);
+    }
+
+    @RequestMapping(value = groupPath + sendJoidCodeForCreatedGroup)
+    @ResponseBody
+    public  Request sendCreatedGroupJoinCode(@RequestParam(value = phoneNumber) String inputNumber,
+                                             @RequestParam String groupUid) throws URISyntaxException{
+        final User sessionUser = userManager.findByInputNumber(inputNumber);
+
+        final Group group = groupQueryBroker.load(groupUid);
+
+        final String prompt = getMessage(thisSection,"sent-code","prompt",sessionUser);
+        USSDMenu ussdMenu = new USSDMenu(prompt);
+
+        String message = "Your join code for group:" +
+                group.getGroupName() +
+                "Is:" + group.getGroupTokenCode();
+
+        UserLog userLog = new UserLog(sessionUser.getUid(), UserLogType.SENT_GROUP_JOIN_CODE,
+                "Group join code sent", UserInterfaceType.UNKNOWN);
+
+        groupBroker.sendGroupJoinCodeNotification(sessionUser,message,userLog);
+
+        ussdMenu.addMenuOption(thisSection.toPath() + startMenu,
+                getMessage(thisSection, listGroupMembers, optionsKey + "back-grp", sessionUser));
+        ussdMenu.addMenuOption("start_force", getMessage("start", sessionUser));
+
         return menuBuilder(ussdMenu);
     }
 
