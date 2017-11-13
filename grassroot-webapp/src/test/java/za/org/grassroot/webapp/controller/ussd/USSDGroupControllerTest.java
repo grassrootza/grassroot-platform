@@ -4,11 +4,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.notification.JoinCodeNotification;
@@ -528,7 +523,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         groups.add(testGroup2);
 
         String testMessage = "Test message";
-        when(messageAssemblingService.createAllGroupsJoinCodesMessage(testUser.getUid())).thenReturn(testMessage);
+        when(messageAssemblingService.createAllGroupsJoinCodesMessage(groups)).thenReturn(testMessage);
 
         Notification notification = new JoinCodeNotification(testUser,"Your groups codes",
                 new UserLog(testUser.getUid(), UserLogType.SENT_GROUP_JOIN_CODE,"All groups join codes", UserInterfaceType.UNKNOWN));
@@ -549,7 +544,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
 
         Group testGroup = new Group("test Group", new User("121212121"));
         String testMessage = "Group join code";
-        when(messageAssemblingService.createGroupJoinCodeMessage(testGroup.getUid())).thenReturn(testMessage);
+        when(messageAssemblingService.createGroupJoinCodeMessage(testGroup)).thenReturn(testMessage);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
 

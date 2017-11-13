@@ -1122,12 +1122,36 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
     @Override
     @Transactional
-    public void sendGroupJoinCodeNotification(String userUid, String message, String logMessage) {
+    public void sendGroupJoinCodeNotification(String userUid, String groupUid) {
         User user = userRepository.findOneByUid(userUid);
+        Group group = groupRepository.findOneByUid(groupUid);
+
+        String message = messageAssemblingService.createGroupJoinCodeMessage(group);
+
+        String logMessage = "Group join code sent";
 
         UserLog userLog = new UserLog(user.getUid(), UserLogType.SENT_GROUP_JOIN_CODE,
                 logMessage, UserInterfaceType.UNKNOWN);
         Notification notification = new JoinCodeNotification(user,message,userLog);
+
+        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+        bundle.addLog(userLog);
+        bundle.addNotification(notification);
+        logsAndNotificationsBroker.storeBundle(bundle);
+    }
+
+    @Override
+    public void sendAllGroupJoinCodesNotification(String userUid) {
+        User user = userRepository.findOneByUid(userUid);
+
+        List<Group> groups = groupRepository.findByCreatedByUserAndActiveTrueOrderByCreatedDateTimeDesc(user);
+
+        String logMessage = "All groups join codes sent";
+        String messageToSend = messageAssemblingService.createAllGroupsJoinCodesMessage(groups);
+
+        UserLog userLog = new UserLog(user.getUid(), UserLogType.SENT_GROUP_JOIN_CODE,
+                logMessage, UserInterfaceType.UNKNOWN);
+        Notification notification = new JoinCodeNotification(user,messageToSend,userLog);
 
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
         bundle.addLog(userLog);

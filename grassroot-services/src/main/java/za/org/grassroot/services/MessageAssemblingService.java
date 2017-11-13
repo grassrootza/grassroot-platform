@@ -73,8 +73,8 @@ public interface MessageAssemblingService {
 
     String createAndroidLinkSms(User user);
 
-    String createAllGroupsJoinCodesMessage(String userUid);
+    String createAllGroupsJoinCodesMessage(List<Group> groups);
 
-    String createGroupJoinCodeMessage(String groupUid);
+    String createGroupJoinCodeMessage(Group group);
 
 }

@@ -817,12 +817,7 @@ public class USSDGroupController extends USSDController {
         log.info("UserUid in USSDGroupController = {}",sessionUser.getUid());
         List<Group> groups = groupQueryBroker.findByCreatedByUser(sessionUser);
 
-        String logMessage = "All groups join codes sent";
-        String messageToSend = messageAssemblingService.createAllGroupsJoinCodesMessage(sessionUser.getUid());
-
-        groupBroker.sendGroupJoinCodeNotification(sessionUser.getUid(),messageToSend,logMessage);
-
-        log.info("Message = {}",messageToSend);
+        groupBroker.sendAllGroupJoinCodesNotification(sessionUser.getUid());
 
         ussdMenu.addMenuOption(thisSection.toPath() + startMenu,
                 getMessage(thisSection, listGroupMembers, optionsKey + "back-grp", sessionUser));
@@ -843,10 +838,7 @@ public class USSDGroupController extends USSDController {
 
         log.info("GroupUid in USSDGroupController = {}",group.getUid());
 
-        String message = messageAssemblingService.createGroupJoinCodeMessage(group.getUid());
-
-        String logMessage = "Group join code sent";
-        groupBroker.sendGroupJoinCodeNotification(sessionUser.getUid(),message,logMessage );
+        groupBroker.sendGroupJoinCodeNotification(sessionUser.getUid(),group.getUid());
 
         ussdMenu.addMenuOption(thisSection.toPath() + startMenu,
                 getMessage(thisSection, listGroupMembers, optionsKey + "back-grp", sessionUser));

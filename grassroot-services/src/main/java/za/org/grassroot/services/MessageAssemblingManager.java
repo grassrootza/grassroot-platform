@@ -36,16 +36,10 @@ public class MessageAssemblingManager implements MessageAssemblingService {
     private static final DateTimeFormatter sdf = DateTimeFormatter.ofPattern("EEE d MMM, h:mm a");
 
     private final MessageSourceAccessor messageSourceAccessor;
-    private final UserRepository userRepository;
-    private final GroupQueryBroker groupQueryBroker;
 
     @Autowired
-    public MessageAssemblingManager(@Qualifier("servicesMessageSourceAccessor") MessageSourceAccessor messageSourceAccessor,
-                                    UserRepository userRepository,
-                                    GroupQueryBroker groupQueryBroker) {
+    public MessageAssemblingManager(@Qualifier("servicesMessageSourceAccessor") MessageSourceAccessor messageSourceAccessor) {
         this.messageSourceAccessor = messageSourceAccessor;
-        this.userRepository = userRepository;
-        this.groupQueryBroker = groupQueryBroker;
     }
 
     @Override
@@ -361,11 +355,7 @@ public class MessageAssemblingManager implements MessageAssemblingService {
     }
 
     @Override
-    public String createAllGroupsJoinCodesMessage(String userUid) {
-        log.info("UserUid = {}",userUid);
-        User user = userRepository.findOneByUid(userUid);
-
-        List<Group> groups = groupQueryBroker.findByCreatedByUser(user);
+    public String createAllGroupsJoinCodesMessage(List<Group> groups) {
         String messageToSend = "Your group's join codes:";
         for (Group group : groups){
             if(group.hasValidGroupTokenCode()){
@@ -376,10 +366,7 @@ public class MessageAssemblingManager implements MessageAssemblingService {
     }
 
     @Override
-    public String createGroupJoinCodeMessage(String groupUid) {
-        log.info("GroupUid = {}",groupUid);
-        final Group group = groupQueryBroker.load(groupUid);
-
+    public String createGroupJoinCodeMessage(Group group) {
         String message = "Your join code for group:" +
                 group.getGroupName() +
                 "Is:" + group.getGroupTokenCode();
