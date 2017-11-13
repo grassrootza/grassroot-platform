@@ -15,6 +15,7 @@ import za.org.grassroot.core.domain.notification.JoinCodeNotification;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
+import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.group.GroupPermissionTemplate;
 import za.org.grassroot.services.group.GroupQueryBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
@@ -54,6 +55,9 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
 
     @Mock
     private GroupQueryBroker groupQueryBrokerMock;
+
+    @Mock
+    private MessageAssemblingService messageAssemblingService;
 
     @InjectMocks
     private USSDGroupController ussdGroupController;
@@ -523,6 +527,9 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         groups.add(testGroup1);
         groups.add(testGroup2);
 
+        String testMessage = "Test message";
+        when(messageAssemblingService.createAllGroupsJoinCodesMessage(testUser.getUid())).thenReturn(testMessage);
+
         Notification notification = new JoinCodeNotification(testUser,"Your groups codes",
                 new UserLog(testUser.getUid(), UserLogType.SENT_GROUP_JOIN_CODE,"All groups join codes", UserInterfaceType.UNKNOWN));
 
@@ -541,16 +548,12 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         testUser = new User(testUserPhone,"Test User");
 
         Group testGroup = new Group("test Group", new User("121212121"));
+        String testMessage = "Group join code";
+        when(messageAssemblingService.createGroupJoinCodeMessage(testGroup.getUid())).thenReturn(testMessage);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
 
         when(groupQueryBrokerMock.load(groupParam)).thenReturn(testGroup);
-
-        String message = "Your join code for group:\n" + testGroup.getGroupName() + "\nIs:" + testGroup.getGroupTokenCode();
-
-        Notification notification = new JoinCodeNotification(testUser,"Your group code",
-                new UserLog(testUser.getUid(), UserLogType.SENT_GROUP_JOIN_CODE,"Group join code sent", UserInterfaceType.UNKNOWN));
-
 
         mockMvc.perform(get(path + "send-code")
                 .param(phoneParam,""+testUserPhone)

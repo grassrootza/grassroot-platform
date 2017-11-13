@@ -21,10 +21,7 @@ import za.org.grassroot.core.domain.notification.EventInfoNotification;
 import za.org.grassroot.core.domain.notification.JoinCodeNotification;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.dto.MembershipInfo;
-import za.org.grassroot.core.enums.EventType;
-import za.org.grassroot.core.enums.GroupDefaultImage;
-import za.org.grassroot.core.enums.GroupLogType;
-import za.org.grassroot.core.enums.UserLogType;
+import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.repository.GroupLogRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.MembershipRepository;
@@ -1124,8 +1121,13 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
     }
 
     @Override
-    public void sendGroupJoinCodeNotification(User sessionUser, String message, UserLog userLog) {
-        Notification notification = new JoinCodeNotification(sessionUser,message,userLog);
+    @Transactional
+    public void sendGroupJoinCodeNotification(String userUid, String message, String logMessage) {
+        User user = userRepository.findOneByUid(userUid);
+
+        UserLog userLog = new UserLog(user.getUid(), UserLogType.SENT_GROUP_JOIN_CODE,
+                logMessage, UserInterfaceType.UNKNOWN);
+        Notification notification = new JoinCodeNotification(user,message,userLog);
 
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
         bundle.addLog(userLog);

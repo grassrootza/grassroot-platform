@@ -13,7 +13,9 @@ import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.FormatUtil;
+import za.org.grassroot.services.group.GroupQueryBroker;
 
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
@@ -34,10 +36,16 @@ public class MessageAssemblingManager implements MessageAssemblingService {
     private static final DateTimeFormatter sdf = DateTimeFormatter.ofPattern("EEE d MMM, h:mm a");
 
     private final MessageSourceAccessor messageSourceAccessor;
+    private final UserRepository userRepository;
+    private final GroupQueryBroker groupQueryBroker;
 
     @Autowired
-    public MessageAssemblingManager(@Qualifier("servicesMessageSourceAccessor") MessageSourceAccessor messageSourceAccessor) {
+    public MessageAssemblingManager(@Qualifier("servicesMessageSourceAccessor") MessageSourceAccessor messageSourceAccessor,
+                                    UserRepository userRepository,
+                                    GroupQueryBroker groupQueryBroker) {
         this.messageSourceAccessor = messageSourceAccessor;
+        this.userRepository = userRepository;
+        this.groupQueryBroker = groupQueryBroker;
     }
 
     @Override
@@ -350,5 +358,31 @@ public class MessageAssemblingManager implements MessageAssemblingService {
                 dateString,
                 assignment
         };
+    }
+
+    @Override
+    public String createAllGroupsJoinCodesMessage(String userUid) {
+        log.info("UserUid = {}",userUid);
+        User user = userRepository.findOneByUid(userUid);
+
+        List<Group> groups = groupQueryBroker.findByCreatedByUser(user);
+        String messageToSend = "Your group's join codes:";
+        for (Group group : groups){
+            if(group.hasValidGroupTokenCode()){
+                messageToSend += group.getGroupName() + "-Join Code: " + group.getGroupTokenCode() +", "                                               ;
+            }
+        }
+        return messageToSend;
+    }
+
+    @Override
+    public String createGroupJoinCodeMessage(String groupUid) {
+        log.info("GroupUid = {}",groupUid);
+        final Group group = groupQueryBroker.load(groupUid);
+
+        String message = "Your join code for group:" +
+                group.getGroupName() +
+                "Is:" + group.getGroupTokenCode();
+        return message;
     }
 }

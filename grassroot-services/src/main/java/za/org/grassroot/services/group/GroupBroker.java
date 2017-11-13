@@ -88,6 +88,6 @@ public interface GroupBroker {
     Group merge(String userUid, String firstGroupUid, String secondGroupUid,
                 boolean leaveActive, boolean orderSpecified, boolean createNew, String newGroupName);
 
-    void sendGroupJoinCodeNotification(User sessionUser, String message, UserLog userLog);
+    void sendGroupJoinCodeNotification(String userUid, String message, String logMessage);
 
 }

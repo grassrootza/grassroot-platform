@@ -11,22 +11,17 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.domain.account.AccountLog;
-import za.org.grassroot.core.domain.notification.GroupWelcomeNotification;
-import za.org.grassroot.core.domain.notification.JoinCodeNotification;
 import za.org.grassroot.core.dto.MembershipInfo;
-import za.org.grassroot.core.enums.UserInterfaceType;
-import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserLogRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.GroupDeactivationNotAvailableException;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.group.GroupPermissionTemplate;
 import za.org.grassroot.services.group.GroupQueryBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
-import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
@@ -57,7 +52,7 @@ public class USSDGroupController extends USSDController {
     private final PermissionBroker permissionBroker;
     private final GroupQueryBroker groupQueryBroker;
     private final GeoLocationBroker geoLocationBroker;
-    private final LogsAndNotificationsBroker logsAndNotificationsBroker;
+    private final MessageAssemblingService messageAssemblingService;
 
     private static final Logger log = LoggerFactory.getLogger(USSDGroupController.class);
 
@@ -92,11 +87,12 @@ public class USSDGroupController extends USSDController {
     public USSDGroupController(PermissionBroker permissionBroker, GroupQueryBroker groupQueryBroker,
                                GeoLocationBroker geoLocationBroker,GroupRepository groupRepository,
                                LogsAndNotificationsBroker logsAndNotificationsBroker,
-                               UserLogRepository userLogRepository) {
+                               UserLogRepository userLogRepository,
+                               MessageAssemblingService messageAssemblingService) {
         this.permissionBroker = permissionBroker;
         this.groupQueryBroker = groupQueryBroker;
         this.geoLocationBroker = geoLocationBroker;
-        this.logsAndNotificationsBroker = logsAndNotificationsBroker;
+        this.messageAssemblingService = messageAssemblingService;
     }
 
     /*
@@ -817,21 +813,16 @@ public class USSDGroupController extends USSDController {
 
         final String prompt = getMessage(thisSection,"sent","prompt",sessionUser);
         USSDMenu ussdMenu = new USSDMenu(prompt);
+
+        log.info("UserUid in USSDGroupController = {}",sessionUser.getUid());
         List<Group> groups = groupQueryBroker.findByCreatedByUser(sessionUser);
-        String messageToSend = "Your group's join codes:";
-        for (Group group : groups){
-            if(group.hasValidGroupTokenCode()){
-                messageToSend += group.getGroupName() + " ,Join Code: " + group.getGroupTokenCode() +", "                                               ;
-            }
-        }
 
-        UserLog userLog = new UserLog(sessionUser.getUid(), UserLogType.SENT_GROUP_JOIN_CODE,
-                "All groups join codes", UserInterfaceType.UNKNOWN);
+        String logMessage = "All groups join codes sent";
+        String messageToSend = messageAssemblingService.createAllGroupsJoinCodesMessage(sessionUser.getUid());
 
-        groupBroker.sendGroupJoinCodeNotification(sessionUser,messageToSend,userLog);
+        groupBroker.sendGroupJoinCodeNotification(sessionUser.getUid(),messageToSend,logMessage);
 
         log.info("Message = {}",messageToSend);
-
 
         ussdMenu.addMenuOption(thisSection.toPath() + startMenu,
                 getMessage(thisSection, listGroupMembers, optionsKey + "back-grp", sessionUser));
@@ -850,14 +841,12 @@ public class USSDGroupController extends USSDController {
         final String prompt = getMessage(thisSection,"sent-code","prompt",sessionUser);
         USSDMenu ussdMenu = new USSDMenu(prompt);
 
-        String message = "Your join code for group:" +
-                group.getGroupName() +
-                "Is:" + group.getGroupTokenCode();
+        log.info("GroupUid in USSDGroupController = {}",group.getUid());
 
-        UserLog userLog = new UserLog(sessionUser.getUid(), UserLogType.SENT_GROUP_JOIN_CODE,
-                "Group join code sent", UserInterfaceType.UNKNOWN);
+        String message = messageAssemblingService.createGroupJoinCodeMessage(group.getUid());
 
-        groupBroker.sendGroupJoinCodeNotification(sessionUser,message,userLog);
+        String logMessage = "Group join code sent";
+        groupBroker.sendGroupJoinCodeNotification(sessionUser.getUid(),message,logMessage );
 
         ussdMenu.addMenuOption(thisSection.toPath() + startMenu,
                 getMessage(thisSection, listGroupMembers, optionsKey + "back-grp", sessionUser));
