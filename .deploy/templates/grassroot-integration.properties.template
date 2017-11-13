@@ -42,6 +42,7 @@ grassroot.account.view.url=http://localhost:8080/account/view?requestUid=
 
 grassroot.task.images.view.url=https://app.grassroot.org.za/image
 grassroot.task.images.bucket=grassroot-task-images
+grassroot.media.user-photo.bucket=grassroot-user-profile-images
 grassroot.task.images.resized.bucket=grassroot-task-images-resized
 grassroot.task.images.analyzed.bucket=grassroot-task-images-analyzed
 

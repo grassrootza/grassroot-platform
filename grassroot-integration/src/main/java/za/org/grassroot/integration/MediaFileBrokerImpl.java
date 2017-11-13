@@ -22,6 +22,9 @@ public class MediaFileBrokerImpl implements MediaFileBroker {
     @Value("${grassroot.livewire.media.bucket:null}")
     private String liveWireMediaBucket;
 
+    @Value("${grassroot.media.user-photo.bucket:null}")
+    private String userProfilePhotoBucket;
+
     @Value("${grassroot.media.default.bucket:null}")
     private String defaultMediaBucket;
 
@@ -72,6 +75,8 @@ public class MediaFileBrokerImpl implements MediaFileBroker {
                 return taskImagesBucket;
             case LIVEWIRE_MEDIA:
                 return liveWireMediaBucket;
+            case USER_PROFILE_IMAGE:
+                return userProfilePhotoBucket;
             default:
                 return defaultMediaBucket;
         }
