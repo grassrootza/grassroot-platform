@@ -1,0 +1,13 @@
+branch-defaults:
+  master:
+    environment: gr-prod
+  staging:
+    environment: gr-stg
+
+global:
+  application_name: gr
+  default_ec2_keyname: gr-prod
+  default_platform: 64bit Amazon Linux 2017.03 v2.7.1 running Docker 17.03.1-ce
+  default_region: eu-west-1
+  profile: default
+  sc: git

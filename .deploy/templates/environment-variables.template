@@ -1,0 +1,6 @@
+PROFILE=localpg
+CONFIG_FOLDER=/usr/src/grassroot/
+LEARNING_IP=
+AWS_CREDENTIAL_PROFILES_FILE=/usr/src/grassroot/environment/aws-credentials
+DATABASE_URL='jdbc:postgresql://db:5432/grassroot?user=grassroot&password=verylongpassword'
+export PROFILE LEARNING_IP AWS_CREDENTIAL_PROFILES_FILE DATABASE_URL
