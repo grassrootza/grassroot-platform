@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
+import za.org.grassroot.core.domain.EntityForUserResponse;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.SafetyEvent;
 import za.org.grassroot.core.domain.User;
@@ -20,15 +21,11 @@ import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.domain.task.Vote;
-import za.org.grassroot.core.enums.EventRSVPResponse;
-import za.org.grassroot.core.enums.EventType;
-import za.org.grassroot.core.enums.MessageVariationAssignment;
-import za.org.grassroot.core.enums.TodoCompletionConfirmType;
-import za.org.grassroot.core.enums.UserInterfaceType;
-import za.org.grassroot.core.enums.UserLogType;
+import za.org.grassroot.core.enums.*;
 import za.org.grassroot.integration.experiments.ExperimentBroker;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.SafetyEventBroker;
+import za.org.grassroot.services.UserResponseBroker;
 import za.org.grassroot.services.campaign.CampaignBroker;
 import za.org.grassroot.services.campaign.util.CampaignUtil;
 import za.org.grassroot.services.group.GroupQueryBroker;
@@ -50,29 +47,12 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.LocalDateTime;
 import java.util.AbstractMap.SimpleEntry;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
-import static za.org.grassroot.webapp.enums.USSDSection.GROUP_MANAGER;
-import static za.org.grassroot.webapp.enums.USSDSection.HOME;
-import static za.org.grassroot.webapp.enums.USSDSection.LIVEWIRE;
-import static za.org.grassroot.webapp.enums.USSDSection.MEETINGS;
-import static za.org.grassroot.webapp.enums.USSDSection.MORE;
-import static za.org.grassroot.webapp.enums.USSDSection.SAFETY_GROUP_MANAGER;
-import static za.org.grassroot.webapp.enums.USSDSection.TODO;
-import static za.org.grassroot.webapp.enums.USSDSection.USER_PROFILE;
-import static za.org.grassroot.webapp.enums.USSDSection.VOTES;
-import static za.org.grassroot.webapp.enums.USSDSection.fromString;
+import static za.org.grassroot.webapp.enums.USSDSection.*;
 
 /**
  * Controller for the USSD menu
@@ -110,6 +90,9 @@ public class USSDHomeController extends USSDController {
 
     @Autowired
     private CampaignBroker campaignBroker;
+
+    @Autowired
+    private UserResponseBroker userResponseBroker;
 
     private static final Logger log = LoggerFactory.getLogger(USSDHomeController.class);
 
@@ -171,7 +154,6 @@ public class USSDHomeController extends USSDController {
 
         Long startTime = System.currentTimeMillis();
 
-        USSDMenu openingMenu;
         final boolean trailingDigitsPresent = codeHasTrailingDigits(enteredUSSD);
 
         // first off, check if (a) the user has entered no special code after and (b) there is a cache entry for an
@@ -183,31 +165,39 @@ public class USSDHomeController extends USSDController {
         User sessionUser = userManager.loadOrCreateUser(inputNumber);
         userLogger.recordUserSession(sessionUser.getUid(), UserInterfaceType.USSD);
 
-        /*
-        Adding some logic here to check for one of these things:
-        (1) The user has appended a joining code, so we need to add them to a group, or has asked to trigger a panic call
-        (2) The user has an outstanding RSVP request for a meeting
-        (3) The user has not named themselves, or a prior group
-         */
-
-        if (trailingDigitsPresent) {
-            String trailingDigits = enteredUSSD.substring(hashPosition + 1, enteredUSSD.length() - 1);
-            // check for livewire & interruption (as user may have been in middle of alert)
-            // but since some users keep using join code, and get interrupted, use that in case
-            openingMenu = userInterrupted(inputNumber) && !safetyCode.equals(trailingDigits) ?
-                    interruptedPrompt(inputNumber) : processTrailingDigits(trailingDigits, sessionUser);
-        } else {
-            if (!sessionUser.isHasInitiatedSession()) {
-                userManager.setHasInitiatedUssdSession(sessionUser.getUid());
-            }
-            USSDResponseTypes neededResponse = neededResponse(sessionUser);
-            openingMenu = neededResponse.equals(USSDResponseTypes.NONE)
-                    ? defaultStartMenu(sessionUser)
-                    : requestUserResponse(sessionUser, neededResponse);
+        if (!sessionUser.isHasInitiatedSession()) {
+            userManager.setHasInitiatedUssdSession(sessionUser.getUid());
         }
+
+        USSDMenu openingMenu = trailingDigitsPresent ?
+                handleResponseHasDigits(enteredUSSD, inputNumber, sessionUser) :
+                checkForResponseOrDefault(sessionUser);
+
         Long endTime = System.currentTimeMillis();
         log.info(String.format("Generating home menu, time taken: %d msecs", endTime - startTime));
         return menuBuilder(openingMenu, true);
+    }
+
+    /*
+       Adding some logic here to check for one of these things:
+       (1) The user has appended a joining code, so we need to add them to a group, or has asked to trigger a panic call
+       (2) The user has an outstanding RSVP request for a meeting
+       (3) The user has not named themselves, or a prior group
+    */
+    private USSDMenu handleResponseHasDigits(final String enteredUSSD, final String inputNumber, User user) throws URISyntaxException {
+        String trailingDigits = enteredUSSD.substring(hashPosition + 1, enteredUSSD.length() - 1);
+        // check for livewire & interruption (as user may have been in middle of alert)
+        // but since some users keep using join code, and get interrupted, use that in case
+        return userInterrupted(inputNumber) && !safetyCode.equals(trailingDigits) ?
+                interruptedPrompt(inputNumber) : processTrailingDigits(trailingDigits, user);
+    }
+
+    private USSDMenu checkForResponseOrDefault(final User user) throws URISyntaxException {
+        EntityForUserResponse entity = userResponseBroker.checkForEntityForUserResponse(user.getUid(), true);
+        USSDResponseTypes neededResponse = neededResponse(entity, user);
+        return neededResponse.equals(USSDResponseTypes.NONE)
+                ? defaultStartMenu(user)
+                : requestUserResponse(user, neededResponse, entity);
     }
 
     /*
@@ -243,16 +233,13 @@ public class USSDHomeController extends USSDController {
     /* Note: the sequence in which these are checked and returned sets the order of priority of responses */
     /* Note: this involves around four DB pings on first menu -- somewhat expensive -- need to consolidate somehow */
 
-    private USSDResponseTypes neededResponse(User user) {
-
-        if (safetyEventBroker.needsToRespondToSafetyEvent(user)) return USSDResponseTypes.RESPOND_SAFETY;
-        if (eventBroker.userHasResponsesOutstanding(user, EventType.VOTE)) return USSDResponseTypes.VOTE;
-        if (eventBroker.userHasResponsesOutstanding(user, EventType.MEETING)) return USSDResponseTypes.MTG_RSVP;
-        if (todoBroker.userHasTodosForResponse(user.getUid(), false)) return USSDResponseTypes.RESPOND_TODO;
-        if (userManager.needsToRenameSelf(user)) return USSDResponseTypes.RENAME_SELF;
-
-        return USSDResponseTypes.NONE;
-
+    private USSDResponseTypes neededResponse(EntityForUserResponse userResponse, User user) {
+        if (userResponse == null) {
+            return userManager.needsToRenameSelf(user) ?
+                    USSDResponseTypes.RENAME_SELF : USSDResponseTypes.NONE;
+        } else {
+            return USSDResponseTypes.fromJpaEntityType(userResponse.getJpaEntityType());
+        }
     }
 
     private USSDMenu processTrailingDigits(String trailingDigits, User user) throws URISyntaxException {
@@ -295,7 +282,7 @@ public class USSDHomeController extends USSDController {
     }
 
     private boolean isCampaignTrailingCode(String digits){
-        //to do fix.
+        //todo fix.
         return false;
     }
 
@@ -305,21 +292,21 @@ public class USSDHomeController extends USSDController {
         return welcomeMenu(welcomeMessage, sessionUser);
     }
 
-    private USSDMenu requestUserResponse(User user, USSDResponseTypes response) throws URISyntaxException {
+    private USSDMenu requestUserResponse(User user, USSDResponseTypes response, EntityForUserResponse entity) throws URISyntaxException {
         USSDMenu openingMenu = new USSDMenu();
         switch (response) {
             case RESPOND_SAFETY:
-                SafetyEvent safetyEvent = safetyEventBroker.getOutstandingUserSafetyEventsResponse(user.getUid()).get(0);
+                SafetyEvent safetyEvent = (SafetyEvent) entity;
                 openingMenu = assemblePanicButtonActivationResponse(user, safetyEvent);
                 break;
             case VOTE:
-                openingMenu = assembleVoteMenu(user);
+                openingMenu = assembleVoteMenu(user, entity);
                 break;
             case MTG_RSVP:
-                openingMenu = assembleRsvpMenu(user);
+                openingMenu = assembleRsvpMenu(user, entity);
                 break;
             case RESPOND_TODO:
-                openingMenu = assembleActionTodoMenu(user);
+                openingMenu = assembleActionTodoMenu(user, entity);
                 break;
             case RENAME_SELF:
                 openingMenu.setPromptMessage(getMessage(thisSection, USSDController.startMenu, promptKey + "-rename", user));
@@ -409,8 +396,8 @@ public class USSDHomeController extends USSDController {
     todo: add timing aspect to these and use DTOs to get the fields in fewer queries
      */
 
-    private USSDMenu assembleVoteMenu(User sessionUser) {
-        Vote vote = (Vote) eventBroker.getOutstandingResponseForUser(sessionUser, EventType.VOTE).get(0);
+    private USSDMenu assembleVoteMenu(User sessionUser, EntityForUserResponse entity) {
+        Vote vote = (Vote) entity;
 
         final String[] promptFields = new String[]{vote.getAncestorGroup().getName(""),
                 vote.getAncestorGroup().getMembership(vote.getCreatedByUser()).getDisplayName(),
@@ -434,8 +421,8 @@ public class USSDHomeController extends USSDController {
         return openingMenu;
     }
 
-    private USSDMenu assembleRsvpMenu(User sessionUser) {
-        Event meeting = eventBroker.getOutstandingResponseForUser(sessionUser, EventType.MEETING).get(0);
+    private USSDMenu assembleRsvpMenu(User sessionUser, EntityForUserResponse entity) {
+        Event meeting = (Event) entity;
 
         String[] meetingDetails = new String[]{meeting.getAncestorGroup().getName(""),
                 meeting.getAncestorGroup().getMembership(meeting.getCreatedByUser()).getDisplayName(),
@@ -453,21 +440,15 @@ public class USSDHomeController extends USSDController {
         return openingMenu;
     }
 
-    private USSDMenu assembleActionTodoMenu(User user) {
-        Optional<Todo> optionalTodo = todoBroker.fetchTodoForUserResponse(user.getUid(), false);
-        if (!optionalTodo.isPresent()) {
-            log.info("For some reason, should have found an action to respond to, but didnt, user = {}", user);
-            return welcomeMenu(getMessage(thisSection, startMenu, promptKey, user), user);
-        } else {
-            Todo todo = optionalTodo.get();
-            String[] promptFields = new String[]{todo.getParent().getName(), todo.getMessage(), todo.getActionByDateAtSAST().format(dateFormat)};
-            String prompt = getMessage(thisSection, startMenu, promptKey + ".todo", promptFields, user);
-            String completeUri = "todo-complete" + entityUidUrlSuffix + todo.getUid();
-            USSDMenu menu = new USSDMenu(prompt);
-            menu.addMenuOptions(new LinkedHashMap<>(optionsYesNo(user, completeUri, completeUri)));
-            menu.addMenuOption(completeUri + "&confirmed=unknown", getMessage(thisSection, startMenu, logKey + "." + optionsKey + "unknown", user));
-            return menu;
-        }
+    private USSDMenu assembleActionTodoMenu(User user, EntityForUserResponse entity) {
+        Todo todo = (Todo) entity;
+        String[] promptFields = new String[]{todo.getParent().getName(), todo.getMessage(), todo.getActionByDateAtSAST().format(dateFormat)};
+        String prompt = getMessage(thisSection, startMenu, promptKey + ".todo", promptFields, user);
+        String completeUri = "todo-complete" + entityUidUrlSuffix + todo.getUid();
+        USSDMenu menu = new USSDMenu(prompt);
+        menu.addMenuOptions(new LinkedHashMap<>(optionsYesNo(user, completeUri, completeUri)));
+        menu.addMenuOption(completeUri + "&confirmed=unknown", getMessage(thisSection, startMenu, logKey + "." + optionsKey + "unknown", user));
+        return menu;
     }
 
     private USSDMenu assemblePanicButtonActivationMenu(User user) {

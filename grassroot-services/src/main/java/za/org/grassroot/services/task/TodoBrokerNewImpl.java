@@ -189,6 +189,13 @@ public class TodoBrokerNewImpl implements TodoBrokerNew {
 
     @Override
     @Transactional(readOnly = true)
+    public Todo checkForTodoNeedingResponse(String userUid) {
+        // todo : insert
+        return null;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public void hasInformationRequested(String userUid, String responseString) {
         Objects.requireNonNull(userUid);
 
