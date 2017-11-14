@@ -55,7 +55,14 @@ public class MediaFileBrokerImpl implements MediaFileBroker {
     @Override
     @Transactional
     public String storeFile(MultipartFile file, MediaFunction function, String mimeType, String imageKey) {
-        MediaFileRecord record = new MediaFileRecord(getBucketForFunction(function), imageKey);
+
+
+        String bucket = getBucketForFunction(function);
+        // todo(beegor) this enables overwriting (needed for user profile images), check with luke if this breaks something else
+        MediaFileRecord record = recordRepository.findByBucketAndKey(bucket, imageKey);
+        if (record == null)
+            record = new MediaFileRecord(bucket, imageKey);
+
         logger.info("created media record ...");
 
         if (storageBroker.storeMedia(record, file)) {
@@ -76,7 +83,7 @@ public class MediaFileBrokerImpl implements MediaFileBroker {
             case LIVEWIRE_MEDIA:
                 return liveWireMediaBucket;
             case USER_PROFILE_IMAGE:
-                return userProfilePhotoBucket;
+                return defaultMediaBucket;
             default:
                 return defaultMediaBucket;
         }

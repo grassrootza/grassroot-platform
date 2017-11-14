@@ -3,7 +3,10 @@ package za.org.grassroot.webapp.controller.rest.user;
 import com.amazonaws.util.IOUtils;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,7 +33,11 @@ public class UserController {
 
 
     private final MediaFileBroker mediaFileBroker;
-    private StorageBroker storageBroker;
+
+    private final StorageBroker storageBroker;
+
+    @Value("${grassroot.media.user-photo.folder}")
+    private String userProfileImagesFolder;
 
     public UserController(MediaFileBroker mediaFileBroker, StorageBroker storageBroker) {
         this.mediaFileBroker = mediaFileBroker;
@@ -44,13 +51,15 @@ public class UserController {
     public ResponseEntity<ResponseWrapper> uploadProfileImage(@PathVariable String userUid,
                                                               @RequestParam MultipartFile photo) {
 
+        String imageKey = userProfileImagesFolder + "/" + userUid;
         MediaFunction mediaFunction = MediaFunction.USER_PROFILE_IMAGE;
         // store the media, depending on its function (if task image stick in there so analysis etc is triggered)
-        log.info("storing a media file, with imageKey = {}, and mediaFunction = {}", userUid, mediaFunction);
+        log.info("storing a media file, with imageKey = {}, and mediaFunction = {}", imageKey, mediaFunction);
 
-        String storedFileUid = mediaFileBroker.storeFile(photo, mediaFunction, null, userUid);
+        String storedFileUid = mediaFileBroker.storeFile(photo, mediaFunction, null, imageKey);
         return RestUtil.okayResponseWithData(RestMessage.UPLOADED, storedFileUid);
     }
+
 
 
     @RequestMapping(value = "/profile-image/{userUid}", method = RequestMethod.GET)
@@ -58,10 +67,16 @@ public class UserController {
 
         try {
 
-            MediaFileRecord mediaFileRecord = mediaFileBroker.load(userUid);
+            String imageKey = userProfileImagesFolder + "/" + userUid;
+            MediaFunction mediaFunction = MediaFunction.USER_PROFILE_IMAGE;
+
+            MediaFileRecord mediaFileRecord = mediaFileBroker.load(mediaFunction, imageKey);
             File imageFile = storageBroker.fetchFileFromRecord(mediaFileRecord);
             byte[] data = IOUtils.toByteArray(new FileInputStream(imageFile));
-            ResponseEntity<byte[]> response = new ResponseEntity(data, HttpStatus.OK);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.IMAGE_PNG);
+            ResponseEntity<byte[]> response = new ResponseEntity(data, headers, HttpStatus.OK);
+
             return response;
 
         } catch (Exception e) {
