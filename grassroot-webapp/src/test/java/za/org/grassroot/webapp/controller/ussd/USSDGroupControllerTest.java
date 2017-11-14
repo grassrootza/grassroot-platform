@@ -13,7 +13,6 @@ import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.group.GroupPermissionTemplate;
 import za.org.grassroot.services.group.GroupQueryBroker;
-import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -46,13 +45,10 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
     private GroupPermissionTemplate template = GroupPermissionTemplate.DEFAULT_GROUP;
 
     @Mock
-    private LogsAndNotificationsBroker logsAndNotificationsBrokerMock;
-
-    @Mock
     private GroupQueryBroker groupQueryBrokerMock;
 
     @Mock
-    private MessageAssemblingService messageAssemblingService;
+    private MessageAssemblingService messageAssemblingServiceMock;
 
     @InjectMocks
     private USSDGroupController ussdGroupController;
@@ -60,7 +56,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
     @Before
     public void setUp() {
 
-        mockMvc = MockMvcBuilders.standaloneSetup(ussdGroupController,logsAndNotificationsBrokerMock)
+        mockMvc = MockMvcBuilders.standaloneSetup(ussdGroupController)
                 .setHandlerExceptionResolvers(exceptionResolver())
                 .setValidator(validator())
                 .setViewResolvers(viewResolver())
@@ -513,38 +509,32 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
 
     @Test
     public void sendAllGroupJoinCodesNotificationShouldWork()throws Exception{
+        resetTestGroup();
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
 
-        Group testGroup1 = new Group("test Group", testUser);
-        Group testGroup2 = new Group("test Group", testUser);
-
         List<Group> groups = new ArrayList<>();
-        groups.add(testGroup1);
-        groups.add(testGroup2);
+        groups.add(testGroup);
 
         String testMessage = "Test message";
-        when(messageAssemblingService.createAllGroupsJoinCodesMessage(groups)).thenReturn(testMessage);
+        when(messageAssemblingServiceMock.createAllGroupsJoinCodesMessage(groups)).thenReturn(testMessage);
 
         Notification notification = new JoinCodeNotification(testUser,"Your groups codes",
                 new UserLog(testUser.getUid(), UserLogType.SENT_GROUP_JOIN_CODE,"All groups join codes", UserInterfaceType.UNKNOWN));
 
-
-        when(groupQueryBrokerMock.findByCreatedByUser(testUser)).thenReturn(groups);
         mockMvc.perform(get(path + "sendall")
                 .param(phoneParam,""+testUserPhone)
                 .param("notification",""+notification))
                 .andExpect(status().is(200));
         verify(userManagementServiceMock,times(1)).findByInputNumber(testUserPhone);
-        verify(groupQueryBrokerMock,times(1)).findByCreatedByUser(testUser);
+        verify(messageAssemblingServiceMock,times(1)).createAllGroupsJoinCodesMessage(groups);
     }
 
     @Test
     public void sendCreatedGroupJoinCodeShouldWork() throws Exception{
+        resetTestGroup();
         testUser = new User(testUserPhone,"Test User");
-
-        Group testGroup = new Group("test Group", new User("121212121"));
         String testMessage = "Group join code";
-        when(messageAssemblingService.createGroupJoinCodeMessage(testGroup)).thenReturn(testMessage);
+        when(messageAssemblingServiceMock.createGroupJoinCodeMessage(testGroup)).thenReturn(testMessage);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
 

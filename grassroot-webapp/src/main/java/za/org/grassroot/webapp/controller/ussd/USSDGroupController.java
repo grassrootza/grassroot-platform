@@ -815,7 +815,6 @@ public class USSDGroupController extends USSDController {
         USSDMenu ussdMenu = new USSDMenu(prompt);
 
         log.info("UserUid in USSDGroupController = {}",sessionUser.getUid());
-        List<Group> groups = groupQueryBroker.findByCreatedByUser(sessionUser);
 
         groupBroker.sendAllGroupJoinCodesNotification(sessionUser.getUid());
 
