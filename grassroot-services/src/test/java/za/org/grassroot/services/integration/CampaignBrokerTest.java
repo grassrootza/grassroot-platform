@@ -16,6 +16,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignActionType;
 import za.org.grassroot.core.domain.campaign.CampaignMessage;
+import za.org.grassroot.core.domain.campaign.CampaignType;
 import za.org.grassroot.core.enums.MessageVariationAssignment;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.repository.GroupRepository;
@@ -59,7 +60,7 @@ public class CampaignBrokerTest {
 
     @Test
     public void testCreateAndUpdateCampaign(){
-       Campaign campaign = campaignBroker.createCampaign("national campaign","234","our national campaign",testUser.getUid(), Instant.now(), java.time.Instant.MAX, null);
+       Campaign campaign = campaignBroker.createCampaign("national campaign","234","our national campaign",testUser.getUid(), Instant.now(), java.time.Instant.MAX, null, CampaignType.Information,null);
         Assert.assertNotNull(campaign);
         Assert.assertNotNull(campaign.getCreatedByUser().getPhoneNumber(), "0605550000");
         Assert.assertNotNull(campaign.getCampaignCode(), "234");

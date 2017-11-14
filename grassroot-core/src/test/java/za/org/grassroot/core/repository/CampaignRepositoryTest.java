@@ -14,6 +14,7 @@ import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignMessage;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.campaign.CampaignType;
 import za.org.grassroot.core.enums.MessageVariationAssignment;
 import za.org.grassroot.core.enums.UserInterfaceType;
 
@@ -40,7 +41,7 @@ public class CampaignRepositoryTest {
     @Test
     public void testCreateCampaign(){
         User user = userRepository.save(new User("3456"));
-        Campaign campaign = campaignRepository.saveAndFlush(new Campaign("Test","234","Durban campaign",user, Instant.now(), Instant.now()));
+        Campaign campaign = campaignRepository.saveAndFlush(new Campaign("Test","234","Durban campaign",user, Instant.now(), Instant.now(), CampaignType.Aquisition,null));
         Assert.assertNotNull(campaign);
         Assert.assertNotNull(campaign.getUid());
         Assert.assertNotNull(campaign.getCreatedDateTime());
@@ -48,6 +49,7 @@ public class CampaignRepositoryTest {
         Assert.assertEquals(campaign.getCampaignCode(),"234");
         Assert.assertNotNull(campaign.getCreatedByUser());
         Assert.assertEquals(campaign.getCreatedByUser().getPhoneNumber(),"3456");
+        Assert.assertEquals(campaign.getCampaignType(), CampaignType.Aquisition);
     }
 
     @Test
@@ -56,7 +58,7 @@ public class CampaignRepositoryTest {
         Set<CampaignMessage> messageSet = new HashSet<>();
         CampaignMessage campaignMessage = new CampaignMessage("Please join Campaign", user, MessageVariationAssignment.CONTROL, Locale.forLanguageTag("en-US"), UserInterfaceType.USSD);
         messageSet.add(campaignMessage);
-        Campaign campaign =  new Campaign("Test","234","Durban campaign",user, Instant.now(), Instant.now());
+        Campaign campaign =  new Campaign("Test","234","Durban campaign",user, Instant.now(), Instant.now(), CampaignType.Aquisition, null);
         campaign.setCampaignMessages(messageSet);
         Campaign persistedCampaign = campaignRepository.saveAndFlush(campaign);
         Assert.assertNotNull(persistedCampaign);
@@ -73,7 +75,7 @@ public class CampaignRepositoryTest {
         Set<CampaignMessage> messageSet = new HashSet<>();
         CampaignMessage campaignMessage = new CampaignMessage("Please join Campaign", user, MessageVariationAssignment.CONTROL,Locale.forLanguageTag("en-US"),UserInterfaceType.USSD);
         messageSet.add(campaignMessage);
-        Campaign campaign =  new Campaign("Test","234","Durban campaign",user, Instant.now(), Instant.MAX);
+        Campaign campaign =  new Campaign("Test","234","Durban campaign",user, Instant.now(), Instant.MAX, CampaignType.Information, null);
         campaign.setCampaignMessages(messageSet);
         campaign.setTags(tags);
         Campaign persistedCampaign = campaignRepository.saveAndFlush(campaign);

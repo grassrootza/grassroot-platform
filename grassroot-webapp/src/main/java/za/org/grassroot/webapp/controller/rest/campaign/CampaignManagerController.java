@@ -12,6 +12,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.campaign.Campaign;
+import za.org.grassroot.core.domain.campaign.CampaignType;
 import za.org.grassroot.services.campaign.CampaignBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
@@ -50,10 +51,11 @@ public class CampaignManagerController {
     @ApiOperation(value = "List user's campaigns", notes = "Lists the campaigns a user has created")
     public ResponseEntity<ResponseWrapper> fetchCampaignsManagedByUser(@PathVariable String userUid) {
         return RestUtil.okayResponseWithData(RestMessage.USER_ACTIVITIES,
-                campaignBroker.getCampaignsCreatedByUser(userUid));
+                CampaignWebUtil.createCampaignWrapperList(campaignBroker.getCampaignsCreatedByUser(userUid)));
     }
 
     @RequestMapping(value = "/create")
+    @ApiOperation(value = "create campaign", notes = "create a campaign using given values")
     public ResponseEntity<ResponseWrapper> createCampaign(@RequestBody CampaignWrapper campaignWrapper){
         List<String> tagList = null;
         if(campaignWrapper.getTags() != null && !campaignWrapper.getTags().isEmpty()){
@@ -65,11 +67,14 @@ public class CampaignManagerController {
         LocalDate secondDate = LocalDate.parse(campaignWrapper.getEndDate());
         Instant campaignEndDate = secondDate.atStartOfDay(ZoneId.of(SA_TIME_ZONE)).toInstant();
 
-        Campaign campaign = campaignBroker.createCampaign(campaignWrapper.getName(),campaignWrapper.getCode(),campaignWrapper.getDescription(),campaignWrapper.getUserUid(),campaignStartDate, campaignEndDate, tagList);
+        Campaign campaign = campaignBroker.createCampaign(campaignWrapper.getName(),campaignWrapper.getCode(),
+                campaignWrapper.getDescription(),campaignWrapper.getUserUid(),campaignStartDate, campaignEndDate, tagList,
+                CampaignType.valueOf(campaignWrapper.getType()),campaignWrapper.getUrl());
         return RestUtil.okayResponseWithData(RestMessage.CAMPAIGN_CREATED,campaign);
     }
 
     @RequestMapping("/add/tag")
+    @ApiOperation(value = "add tag to campaign", notes = "add tag to a campaign")
     public ResponseEntity<ResponseWrapper> addCampaignTag(@RequestParam(value="campaignCode", required = true) String campaignCode,
                                  @RequestParam(value="tag", required = true) String tag) {
         List<String> tagList = new ArrayList<>();
@@ -79,6 +84,7 @@ public class CampaignManagerController {
     }
 
     @RequestMapping("/add/message")
+    @ApiOperation(value = "add message to campaign", notes = "add message to a campaign")
     public ResponseEntity<ResponseWrapper> addCampaignMessage(@RequestBody CampaignMessageWrapper messageWrapper,
                                      BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
@@ -96,16 +102,16 @@ public class CampaignManagerController {
 
     @RequestMapping("/view")
     public ResponseEntity<ResponseWrapper> viewCampaign(@RequestParam(value = "code",required = false)String code,
-                                                        @RequestParam(value = "name",required = false)String tag){
+                                                        @RequestParam(value = "name",required = false)String name){
         Campaign campaign = null;
-        if(StringUtils.isEmpty(code) && StringUtils.isEmpty(tag)){
+        if(StringUtils.isEmpty(code) && StringUtils.isEmpty(name)){
             return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.INVALID_INPUT);
         }
         if(!StringUtils.isEmpty(code)){
             campaign =  campaignBroker.getCampaignDetailsByCode(code);
         }
-        if(campaign == null && !StringUtils.isEmpty(tag)){
-            campaign = campaignBroker.getCampaignByTag(tag);
+        if(campaign == null && !StringUtils.isEmpty(name)){
+            campaign = campaignBroker.getCampaignDetailsByName(name);
         }
         return RestUtil.okayResponseWithData(RestMessage.CAMPAIGN_FOUND,campaign);
 

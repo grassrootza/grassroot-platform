@@ -36,5 +36,4 @@ public class USSDCampaignUtil {
     public static Map<CampaignActionType, String> getCampaignUrlPrefixs() {
         return campaignUrlMap;
     }
-
 }

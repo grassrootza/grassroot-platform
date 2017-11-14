@@ -13,6 +13,7 @@ import za.org.grassroot.core.domain.campaign.CampaignActionType;
 import za.org.grassroot.core.domain.campaign.CampaignLog;
 import za.org.grassroot.core.domain.campaign.CampaignMessage;
 import za.org.grassroot.core.domain.campaign.CampaignMessageAction;
+import za.org.grassroot.core.domain.campaign.CampaignType;
 import za.org.grassroot.core.enums.CampaignLogType;
 import za.org.grassroot.core.enums.MessageVariationAssignment;
 import za.org.grassroot.core.enums.UserInterfaceType;
@@ -164,9 +165,9 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
     @Override
     @Transactional
-    public Campaign createCampaign(String campaignName, String campaignCode, String description, String userUid, Instant startDate, Instant endDate, List<String> campaignTags){
+    public Campaign createCampaign(String campaignName, String campaignCode, String description, String userUid, Instant startDate, Instant endDate, List<String> campaignTags, CampaignType campaignType, String url){
         User user = userRepository.findOneByUid(userUid);
-        Campaign newCampaign = new Campaign(campaignName, campaignCode, description,user, startDate, endDate);
+        Campaign newCampaign = new Campaign(campaignName, campaignCode, description,user, startDate, endDate,campaignType, url);
         if(campaignTags != null && !campaignTags.isEmpty()){
             newCampaign.getTagList().addAll(campaignTags);
         }
@@ -178,11 +179,11 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
     @Override
     @Transactional
-    public Campaign createCampaign(String campaignName, String campaignCode, String description, User createUser, Long groupId, Instant startDate, Instant endDate, List<String> campaignTags){
+    public Campaign createCampaign(String campaignName, String campaignCode, String description, User createUser, Long groupId, Instant startDate, Instant endDate, List<String> campaignTags, CampaignType campaignType){
         Objects.requireNonNull(groupId);
         Group group = groupRepository.findOne(groupId);
         if(group != null){
-            Campaign newCampaign = new Campaign(campaignName, campaignCode, description,createUser, startDate, endDate);
+            Campaign newCampaign = new Campaign(campaignName, campaignCode, description,createUser, startDate, endDate, campaignType, null);
             newCampaign.setMasterGroup(group);
             if(campaignTags != null && !campaignTags.isEmpty()){
                 newCampaign.getTagList().addAll(campaignTags);

@@ -11,6 +11,8 @@ create table campaign (
   created_by_user bigint,
   tags text[] default '{}',
   ancestor_group_id bigint,
+  type varchar(50),
+  url varchar(60),
   primary key (id));
 
   create table campaign_message (
