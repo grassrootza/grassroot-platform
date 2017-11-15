@@ -6,14 +6,14 @@ import lombok.Getter;
 import lombok.ToString;
 
 @Getter @AllArgsConstructor @ToString
-public class LanguageEntity {
+public class NluServerResponse {
 
-    @JsonProperty("entity")
-    private String entityType;
+    private String conversationUid;
 
-    private String value;
+    @JsonProperty("parsed")
+    private NluParseResult result;
 
-    private int start;
-    private int end;
+    @JsonProperty("date")
+    private String dateTimeParsed;
 
 }

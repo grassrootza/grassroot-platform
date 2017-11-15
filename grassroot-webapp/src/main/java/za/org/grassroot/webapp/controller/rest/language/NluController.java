@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.integration.LearningService;
 import za.org.grassroot.integration.language.NluBroker;
-import za.org.grassroot.integration.language.NluResponse;
+import za.org.grassroot.integration.language.NluParseResult;
 
 import java.time.ZoneOffset;
 
@@ -40,8 +40,8 @@ public class NluController {
 
     @RequestMapping(value = "/intent", method = RequestMethod.GET)
     @ApiOperation(value = "Parse a string for intents and entities")
-    public ResponseEntity<NluResponse> parseFreeText(@RequestParam String text,
-                                                     @RequestParam(required = false) String conversationUid) {
+    public ResponseEntity<NluParseResult> parseFreeText(@RequestParam String text,
+                                                        @RequestParam(required = false) String conversationUid) {
         return ResponseEntity.ok(nluBroker.parseText(text, conversationUid));
     }
 

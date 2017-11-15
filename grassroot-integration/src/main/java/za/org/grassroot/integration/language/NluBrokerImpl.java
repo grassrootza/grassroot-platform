@@ -38,20 +38,20 @@ public class NluBrokerImpl implements NluBroker {
 
     @PostConstruct
     public void init() {
-        nluHost = environment.getProperty("grassroot.learning.host", "localhost");
-        nluPort = environment.getProperty("grassroot.learning.port", Integer.class, 5000);
+        nluHost = environment.getProperty("grassroot.nlu.host", "localhost");
+        nluPort = environment.getProperty("grassroot.nlu.port", Integer.class, 5000);
         googleApiKeyPresent = environment.getProperty("GOOGLE_APPLICATION_CREDENTIALS") != null;
     }
 
     @Override
-    public NluResponse parseText(String text, String conversationUid) {
+    public NluParseResult parseText(String text, String conversationUid) {
         // note : the rest template is autowired to use a default character encoding (UTF 8), so putting encode
         // here will double encode and throw errors, hence leave it out
         UriComponentsBuilder builder = UriComponentsBuilder.newInstance()
                 .scheme("http")
                 .host(nluHost)
                 .port(nluPort)
-                .path("/")
+                .path("/parse")
                 .queryParam("text", text);
 
         if (!StringUtils.isEmpty(conversationUid)) {
@@ -61,9 +61,9 @@ public class NluBrokerImpl implements NluBroker {
         final URI uriToCall = builder.build().toUri();
         log.info("invoking NLU service, with URI: {}", uriToCall);
         try {
-            ResponseEntity<NluResponse> response = restTemplate.getForEntity(uriToCall, NluResponse.class);
+            ResponseEntity<NluServerResponse> response = restTemplate.getForEntity(uriToCall, NluServerResponse.class);
             log.info("returned NLU response: {}", response);
-            return response.getBody();
+            return response.getBody().getResult();
         } catch (RestClientException e) {
             log.error("Error calling NLU service", e);
             return null;
@@ -105,7 +105,7 @@ public class NluBrokerImpl implements NluBroker {
     }
 
     @Override
-    public NluResponse speechToIntent(ByteString rawSpeech, String encoding, int sampleRate) {
+    public NluParseResult speechToIntent(ByteString rawSpeech, String encoding, int sampleRate) {
         List<ConvertedSpeech> speechList = speechToText(rawSpeech, encoding, sampleRate);
         final String fullTranscript = speechList.stream()
                 .map(ConvertedSpeech::getSpeech)
