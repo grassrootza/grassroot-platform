@@ -7,6 +7,8 @@ import za.org.grassroot.integration.PublicCredentials;
  */
 public interface JwtService {
 
+    String USER_UID_KEY = "USER_UID";
+
     PublicCredentials getPublicCredentials();
     String createJwt(CreateJwtTokenRequest request);
 
@@ -19,6 +21,11 @@ public interface JwtService {
      * Otherwise, return <code></code>null.
      */
     String refreshToken(String oldToken, JwtType jwtType, Long shortExpiryMillis);
+
     boolean isJwtTokenValid(String token);
+
     boolean isJwtTokenExpired(String token);
+
+    String getUserIdFromJwtToken(String token);
+
 }

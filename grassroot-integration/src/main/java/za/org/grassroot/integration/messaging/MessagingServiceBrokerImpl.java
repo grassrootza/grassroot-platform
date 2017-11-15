@@ -144,7 +144,7 @@ public class MessagingServiceBrokerImpl implements MessagingServiceBroker, Comma
     // this means duplication but getting extreme weirdness on doing generic but
     private HttpHeaders jwtHeaders() {
         HttpHeaders headers = new HttpHeaders();
-        headers.add("Authorization", "Bearer " + jwtService.createJwt(new CreateJwtTokenRequest(JwtType.GRASSROOT_MICROSERVICE)));
+        headers.add("Authorization", "Bearer " + jwtService.createJwt(new CreateJwtTokenRequest(JwtType.GRASSROOT_MICROSERVICE, null)));
         return headers;
     }
 
