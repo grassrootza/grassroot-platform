@@ -3,7 +3,7 @@ FROM openjdk:8
 WORKDIR /usr/src/grassroot
 
 # SETUP SUPERVISORD TO RUN JAVA AS A PROCESS + OTHER FANCY THINGS SUPERVISORD PROVIDES
-RUN apt-get update && apt-get install supervisor -y
+RUN apt-get update && apt-get install supervisor vim nano -y
 COPY .deploy/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # DEFINE ENVIRONMENT VARIABLES
