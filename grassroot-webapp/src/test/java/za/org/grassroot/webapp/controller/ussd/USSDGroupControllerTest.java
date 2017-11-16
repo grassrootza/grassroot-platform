@@ -339,7 +339,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
 
         verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(groupQueryBrokerMock, times(2)).mergeCandidates(testUser.getUid(), testGroup.getUid());
+        // verify(groupQueryBrokerMock, times(2)).mergeCandidates(testUser.getUid(), testGroup.getUid());
         verifyNoMoreInteractions(groupQueryBrokerMock);
         verifyZeroInteractions(eventBrokerMock);
     }
@@ -540,14 +540,13 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
 
-        when(groupQueryBrokerMock.load(groupParam)).thenReturn(testGroup);
-
         mockMvc.perform(get(path + "send-code")
                 .param(phoneParam,""+testUserPhone)
-                .param(groupParam,""+groupParam))
+                .param(groupParam,""+testGroup.getUid())
+                .param("message",""+testMessage))
                 .andExpect(status().is(200));
         verify(userManagementServiceMock,times(1)).findByInputNumber(testUserPhone);
-        verify(groupQueryBrokerMock,times(1)).load(groupParam);
+        verify(groupBrokerMock,times(1)).sendGroupJoinCodeNotification(testUser.getUid(),testGroup.getUid());
     }
 
     /*

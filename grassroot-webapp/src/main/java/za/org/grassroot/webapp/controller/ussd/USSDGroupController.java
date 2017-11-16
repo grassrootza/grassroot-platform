@@ -830,14 +830,12 @@ public class USSDGroupController extends USSDController {
                                              @RequestParam String groupUid) throws URISyntaxException{
         final User sessionUser = userManager.findByInputNumber(inputNumber);
 
-        final Group group = groupQueryBroker.load(groupUid);
-
         final String prompt = getMessage(thisSection,"sent-code","prompt",sessionUser);
         USSDMenu ussdMenu = new USSDMenu(prompt);
 
-        log.info("GroupUid in USSDGroupController = {}",group.getUid());
+        //log.info("GroupUid in USSDGroupController = {}",group.getUid());
 
-        groupBroker.sendGroupJoinCodeNotification(sessionUser.getUid(),group.getUid());
+        groupBroker.sendGroupJoinCodeNotification(sessionUser.getUid(), groupUid);
 
         ussdMenu.addMenuOption(thisSection.toPath() + startMenu,
                 getMessage(thisSection, listGroupMembers, optionsKey + "back-grp", sessionUser));

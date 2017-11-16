@@ -1148,7 +1148,6 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
         List<Group> groups = groupRepository.findByCreatedByUserAndActiveTrueOrderByCreatedDateTimeDesc(user);
 
-
         UserLog userLog = new UserLog(user.getUid(), UserLogType.SENT_GROUP_JOIN_CODE,
                 "All groups join codes sent", UserInterfaceType.UNKNOWN);
 
@@ -1164,22 +1163,6 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
             logger.info("Length....={}",s.length());
         }
     }
-
-    private List<String> messages(String message){
-        List<String> messagesList = new ArrayList<>();
-        int length = message.length();
-        int limit = 160;
-
-        int c = (int) Math.ceil((double) length/limit);
-
-        for(int i = 0; i < c; i++) {
-            int start = i*limit;
-            int end = Math.min( (i+1)*limit, length);
-            messagesList.add(message.substring(start, end));
-        }
-        return messagesList;
-    }
-
 
     private boolean checkGroupSizeLimit(Group group, int numberOfMembersAdding) {
         return membersLeftForGroup(group) > numberOfMembersAdding;
