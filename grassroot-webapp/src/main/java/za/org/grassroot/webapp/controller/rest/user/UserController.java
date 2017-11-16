@@ -30,11 +30,12 @@ import za.org.grassroot.webapp.util.RestUtil;
 import javax.servlet.http.HttpServletRequest;
 import java.io.File;
 import java.io.FileInputStream;
+import java.util.Locale;
 
 
 @Slf4j
 @Controller
-@RequestMapping("/api/user")
+@RequestMapping("/api/user/profile")
 public class UserController {
 
 
@@ -60,10 +61,12 @@ public class UserController {
 
     @ApiOperation(value = "Store a users profile photo, and get the server key back",
             notes = " 'data' field contains a string that will have the UID of the file record on the server (storedFileUid)")
-    @RequestMapping(value = "/change-profile-img/{userUid}", method = RequestMethod.POST)
-    public ResponseEntity<ResponseWrapper> uploadProfileImage(@PathVariable String userUid,
-                                                              @RequestParam MultipartFile photo) {
+    @RequestMapping(value = "/image/change", method = RequestMethod.POST)
+    public ResponseEntity<ResponseWrapper> uploadProfileImage(@RequestParam MultipartFile photo, HttpServletRequest request) {
 
+
+        String jwtToken = getJwtTokenFromRequest(request);
+        String userUid = getUserIdFromToken(jwtToken);
         String imageKey = userProfileImagesFolder + "/" + userUid;
         MediaFunction mediaFunction = MediaFunction.USER_PROFILE_IMAGE;
         // store the media, depending on its function (if task image stick in there so analysis etc is triggered)
@@ -74,8 +77,7 @@ public class UserController {
     }
 
 
-
-    @RequestMapping(value = "/profile-image/{userUid}", method = RequestMethod.GET)
+    @RequestMapping(value = "/image/view/{userUid}", method = RequestMethod.GET)
     public ResponseEntity<byte[]> viewProfileImage(@PathVariable String userUid) {
 
         try {
@@ -100,31 +102,51 @@ public class UserController {
 
     @ApiOperation(value = "Updates user profile data",
             notes = "Update result message is returned as a string in the 'data' property")
-    @RequestMapping(value = "/update-profile-data", method = RequestMethod.POST)
+    @RequestMapping(value = "/data/update", method = RequestMethod.POST)
     public ResponseEntity<ResponseWrapper> updateProfileData(@RequestParam String displayName,
                                                              @RequestParam String phoneNumber,
                                                              @RequestParam String email,
                                                              HttpServletRequest request) {
 
-        String jwtToken = null;
-        String userUid = null;
-        AuthorizationHeader authorizationHeader = new AuthorizationHeader(request);
-        if (authorizationHeader.hasBearerToken()) {
-            jwtToken = authorizationHeader.getBearerToken();
-            userUid = jwtService.getUserIdFromJwtToken(jwtToken);
-        }
-
-        if (userUid == null)
-            return RestUtil.errorResponse(HttpStatus.UNAUTHORIZED, RestMessage.INVALID_TOKEN);
-
-        User user = userService.load(userUid);
+        String jwtToken = getJwtTokenFromRequest(request);
+        User user = getUserFromToken(jwtToken);
 
         if (user == null)
             return RestUtil.errorResponse(HttpStatus.UNAUTHORIZED, RestMessage.INVALID_TOKEN);
 
+        user.setDisplayName(displayName);
+        user.setEmailAddress(email);
+        userService.updateUser(user.getUid(), displayName, email, user.getAlertPreference(), new Locale(user.getLanguageCode()));
+
         AndroidAuthToken response = new AndroidAuthToken(user, jwtToken);
-        return RestUtil.okayResponseWithData(RestMessage.LOGIN_SUCCESS, response);
+        return RestUtil.okayResponseWithData(RestMessage.UPDATED, response);
     }
 
 
+    private String getJwtTokenFromRequest(HttpServletRequest request) {
+
+        String jwtToken = null;
+        AuthorizationHeader authorizationHeader = new AuthorizationHeader(request);
+        if (authorizationHeader.hasBearerToken()) {
+            jwtToken = authorizationHeader.getBearerToken();
+        }
+        return jwtToken;
+    }
+
+    private User getUserFromToken(String jwtToken) {
+
+        if (jwtToken != null) {
+            String userUid = jwtService.getUserIdFromJwtToken(jwtToken);
+            return userService.load(userUid);
+        } else
+            return null;
+    }
+
+    private String getUserIdFromToken(String jwtToken) {
+
+        if (jwtToken != null) {
+            return jwtService.getUserIdFromJwtToken(jwtToken);
+        } else
+            return null;
+    }
 }

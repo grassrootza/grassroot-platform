@@ -118,9 +118,14 @@ public class JwtServiceImpl implements JwtService {
     @Override
     public String getUserIdFromJwtToken(String token) {
 
-        Claims claims = Jwts.parser().setSigningKey(keyPairProvider.getJWTKey().getPublic())
-                .parseClaimsJws(token).getBody();
-        return claims.get("userUid", String.class);
+        try {
+            Claims claims = Jwts.parser().setSigningKey(keyPairProvider.getJWTKey().getPublic())
+                    .parseClaimsJws(token).getBody();
+            return claims.get(USER_UID_KEY, String.class);
+        } catch (Exception e) {
+            logger.error("Failed to get user id from jwt token", e);
+            return null;
+        }
     }
 
     @Override
