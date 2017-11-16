@@ -1,6 +1,5 @@
 package za.org.grassroot.webapp.controller.rest.language;
 
-import com.google.protobuf.ByteString;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
@@ -10,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 import za.org.grassroot.integration.LearningService;
 import za.org.grassroot.integration.language.NluBroker;
 import za.org.grassroot.integration.language.NluParseResult;
@@ -48,13 +48,13 @@ public class NluController {
 
     @RequestMapping(value = "/speech", method = RequestMethod.GET)
     @ApiOperation(value = "Convert speech to text, optionally parsing for entities")
-    public ResponseEntity parseSpeech(@RequestParam ByteString speech,
-                                      @RequestParam(required = false) String encoding,
+    public ResponseEntity parseSpeech(@RequestParam(required = false) String encoding,
                                       @RequestParam int sampleRate,
+                                      @RequestParam MultipartFile file,
                                       @RequestParam boolean parseForIntent) {
         return parseForIntent ?
-                ResponseEntity.ok(nluBroker.speechToIntent(speech, encoding, sampleRate)) :
-                ResponseEntity.ok(nluBroker.speechToText(speech, encoding, sampleRate));
+                ResponseEntity.ok(nluBroker.speechToIntent(file, encoding, sampleRate)) :
+                ResponseEntity.ok(nluBroker.speechToText(file, encoding, sampleRate));
     }
 
 }

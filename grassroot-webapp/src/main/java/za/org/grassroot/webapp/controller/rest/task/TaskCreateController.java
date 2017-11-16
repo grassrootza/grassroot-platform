@@ -86,7 +86,7 @@ public class TaskCreateController {
         try {
             Meeting createdMeeting = eventBroker.createMeeting(helper);
             return ResponseEntity.ok(new TaskFullDTO(createdMeeting, userService.load(userUid),
-                    createdMeeting.getCreatedDateTime(), false));
+                    createdMeeting.getCreatedDateTime(), null));
         } catch (AccessDeniedException e) {
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING);
         }

@@ -110,7 +110,12 @@ public class TodoLog implements TaskLog {
 		return TodoLogType.CREATED.equals(type);
 	}
 
-	public void setLocation(GeoLocation location) {
+    @Override
+    public String getTag() {
+        return message;
+    }
+
+    public void setLocation(GeoLocation location) {
 		this.location = location;
 	}
 

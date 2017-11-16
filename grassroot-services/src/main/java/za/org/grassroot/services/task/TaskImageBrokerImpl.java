@@ -27,6 +27,7 @@ import za.org.grassroot.services.geo.GeoLocationBroker;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -143,18 +144,8 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
     @Override
     @Transactional(readOnly = true)
     public List<ImageRecord> fetchImagesForTask(String userUid, String taskUid, TaskType taskType) {
-        Objects.requireNonNull(userUid);
-        Objects.requireNonNull(taskUid);
-        Objects.requireNonNull(taskType);
-
-        boolean isTodo = TaskType.TODO.equals(taskType);
-        User user = userRepository.findOneByUid(userUid);
-        Task task = isTodo ? todoRepository.findOneByUid(taskUid) : eventRepository.findOneByUid(taskUid);
-
-        if (!task.getMembers().contains(user)) {
-            throw new AccessDeniedException("Error! Only a member of a task can fetch its images");
-        }
-
+        Task task = validateFieldsAndFetch(userUid, taskUid, taskType);
+        boolean isTodo = TaskType.TODO.equals(task.getTaskType());
         ActionLogType logType = isTodo ? TODO_LOG : ActionLogType.EVENT_LOG;
         List<String> imageLogUids = isTodo ?
                 todoLogRepository.findAll(where(forTodo((Todo) task)).and(ofType(TodoLogType.IMAGE_RECORDED)))
@@ -169,6 +160,46 @@ public class TaskImageBrokerImpl implements TaskImageBroker {
                 .filter(Objects::nonNull)
                 .sorted(Comparator.comparing(ImageRecord::getCreationTime))
                 .collect(Collectors.toList());
+    }
+
+    // todo: massively clean & refactor this so it's not terrible
+    @Override
+    @Transactional(readOnly = true)
+    public Map<TaskLog, ImageRecord> fetchTaskPosts(String userUid, String taskUid, TaskType taskType) {
+        Task task = validateFieldsAndFetch(userUid, taskUid, taskType);
+        List<? extends TaskLog> taskLogs = fetchTaskLogs(task);
+
+        ActionLogType logType = TaskType.TODO.equals(task.getTaskType()) ? TODO_LOG : ActionLogType.EVENT_LOG;
+
+        return taskLogs.stream()
+                .collect(Collectors.toMap(tl -> (TaskLog) tl, tl -> fetchLogImageDetails(tl.getUid(), logType)));
+
+    }
+
+    private Task validateFieldsAndFetch(String userUid, String taskUid, TaskType taskType) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(taskUid);
+        Objects.requireNonNull(taskType);
+
+        boolean isTodo = TaskType.TODO.equals(taskType);
+        User user = userRepository.findOneByUid(userUid);
+        Task task = isTodo ? todoRepository.findOneByUid(taskUid) : eventRepository.findOneByUid(taskUid);
+        validateUserInTask(user, task);
+
+        return task;
+    }
+
+    private List<? extends TaskLog> fetchTaskLogs(Task task) {
+        boolean isTodo = TaskType.TODO.equals(task.getTaskType());
+        return isTodo ?
+                todoLogRepository.findAll(where(forTodo((Todo) task)).and(ofType(TodoLogType.IMAGE_RECORDED))) :
+                eventLogRepository.findAll((where(forEvent((Event) task))).and(isImageLog()));
+    }
+
+    private void validateUserInTask(User user, Task task) {
+        if (!task.getMembers().contains(user)) {
+            throw new AccessDeniedException("Error! Only a member of a task can fetch its images");
+        }
     }
 
     @Override

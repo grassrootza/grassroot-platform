@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.annotation.PostConstruct;
@@ -71,11 +72,13 @@ public class NluBrokerImpl implements NluBroker {
     }
 
     @Override
-    public List<ConvertedSpeech> speechToText(ByteString rawSpeech, String encoding, int sampleRate) {
+    public List<ConvertedSpeech> speechToText(MultipartFile file, String encoding, int sampleRate) {
         try {
             if (!googleApiKeyPresent) {
                 log.error("Error! Attempt to call speech to text without API credentials");
             }
+
+            ByteString rawSpeech = ByteString.copyFrom(file.getBytes());
 
             log.info("credentials present, converting speech to text via Google Cloud ... ");
 
@@ -100,18 +103,24 @@ public class NluBrokerImpl implements NluBroker {
                             result.getAlternatives(0).getConfidence()
                     )).collect(Collectors.toList());
         } catch (IOException e) {
+            log.error("IO exception copying file to audio", e);
             return null;
         }
     }
 
     @Override
-    public NluParseResult speechToIntent(ByteString rawSpeech, String encoding, int sampleRate) {
-        List<ConvertedSpeech> speechList = speechToText(rawSpeech, encoding, sampleRate);
-        final String fullTranscript = speechList.stream()
-                .map(ConvertedSpeech::getSpeech)
-                .collect(Collectors.joining(" "));
-        log.info("full transcript of returned results: {}", fullTranscript);
-        return parseText(fullTranscript, null);
+    public NluParseResult speechToIntent(MultipartFile file, String encoding, int sampleRate) {
+        List<ConvertedSpeech> speechList = speechToText(file, encoding, sampleRate);
+        if (speechList != null) {
+            final String fullTranscript = speechList.stream()
+                    .map(ConvertedSpeech::getSpeech)
+                    .collect(Collectors.joining(" "));
+            log.info("full transcript of returned results: {}", fullTranscript);
+            return parseText(fullTranscript, null);
+        } else {
+            log.error("Error! Could not convert file to audio");
+            return null;
+        }
     }
 
 }

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.annotations.ApiModel;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.domain.task.Task;
@@ -40,12 +41,13 @@ public class TaskFullDTO {
     private final boolean wholeGroupAssigned;
     private final boolean thisUserAssigned;
 
+    private final String userResponse;
     private final boolean hasResponded;
     private final boolean canEdit;
 
     @Setter private Map<String, Long> voteResults;
 
-    public TaskFullDTO(Task task, User user, Instant lastChangedTime, boolean hasResponded) {
+    public TaskFullDTO(Task task, User user, Instant lastChangedTime, String userResponse) {
         this.taskUid = task.getUid();
         this.title = task.getName();
         this.description = task.getDescription();
@@ -69,7 +71,8 @@ public class TaskFullDTO {
         this.thisUserAssigned = wholeGroupAssigned || task.getAssignedMembers().contains(user);
 
         this.canEdit = createdByThisUser;
-        this.hasResponded = hasResponded;
+        this.userResponse = userResponse;
+        this.hasResponded = !StringUtils.isEmpty(userResponse);
     }
 
 }

@@ -7,6 +7,7 @@ import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.TaskType;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by luke on 2017/02/21.
@@ -25,6 +26,8 @@ public interface TaskImageBroker {
     String getShortUrl(String imageKey);
 
     List<ImageRecord> fetchImagesForTask(String userUid, String taskUid, TaskType taskType);
+
+    Map<TaskLog, ImageRecord> fetchTaskPosts(String userUid, String taskUid, TaskType taskType);
 
     ImageRecord fetchImageRecord(String logUid, TaskType taskType);
 

@@ -19,4 +19,6 @@ public interface TaskLog<T extends Task> extends ActionLog {
 
     boolean isCreationLog();
 
+    String getTag();
+
 }

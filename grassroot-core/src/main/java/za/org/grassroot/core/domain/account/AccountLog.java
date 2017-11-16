@@ -3,6 +3,7 @@ package za.org.grassroot.core.domain.account;
 import lombok.Getter;
 import za.org.grassroot.core.domain.ActionLog;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.AccountLogType;
 import za.org.grassroot.core.util.UIDGenerator;
 
@@ -37,8 +38,9 @@ public class AccountLog implements ActionLog {
     @Column(name="account_log_type", nullable = false, length = 50)
     private AccountLogType accountLogType;
 
-    @Column(name="user_uid", nullable = false)
-    private String userUid;
+    @ManyToOne
+    @JoinColumn(name = "user_uid")
+    private User user;
 
     @ManyToOne
     @JoinColumn(name = "group_uid", referencedColumnName = "uid")
@@ -53,9 +55,14 @@ public class AccountLog implements ActionLog {
     @Column(name="reference_amount")
     private Long amountBilledOrPaid;
 
+    @Override
+    public User getUser() {
+        return null;
+    }
+
     public static class Builder {
         private Account account;
-        private String userUid;
+        private User user;
         private AccountLogType accountLogType;
         private Group group;
         private String paidGroupUid;
@@ -66,8 +73,8 @@ public class AccountLog implements ActionLog {
             this.account = account;
         }
 
-        public Builder userUid(String userUid) {
-            this.userUid = userUid;
+        public Builder user(User user) {
+            this.user = user;
             return this;
         }
 
@@ -98,10 +105,9 @@ public class AccountLog implements ActionLog {
 
         public AccountLog build() {
             Objects.requireNonNull(account);
-            Objects.requireNonNull(userUid);
             Objects.requireNonNull(accountLogType);
 
-            AccountLog accountLog = new AccountLog(account, userUid, accountLogType);
+            AccountLog accountLog = new AccountLog(account, user, accountLogType);
             accountLog.description = description;
             accountLog.group = group;
             accountLog.paidGroupUid = paidGroupUid;
@@ -115,10 +121,10 @@ public class AccountLog implements ActionLog {
         // for JPA
     }
 
-    private AccountLog(Account account, String userUid, AccountLogType accountLogType) {
+    private AccountLog(Account account, User user, AccountLogType accountLogType) {
         this.uid = UIDGenerator.generateId();
         this.account = account;
-        this.userUid = userUid;
+        this.user = user;
         this.accountLogType = accountLogType;
         this.creationTime = Instant.now();
     }
@@ -143,7 +149,7 @@ public class AccountLog implements ActionLog {
         return "AccountLog{" +
                 "id=" + id +
                 ", creationTime =" + creationTime +
-                ", userUid=" + userUid +
+                ", userUid=" + user.getUid() +
                 ", groupUid=" + group.getUid() +
                 ", accountLogType=" + accountLogType +
                 ", description='" + description + '\'' +
