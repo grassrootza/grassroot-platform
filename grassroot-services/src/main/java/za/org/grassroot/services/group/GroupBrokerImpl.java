@@ -82,6 +82,8 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
     private final MessageAssemblingService messageAssemblingService;
     private final MessagingServiceBroker messagingServiceBroker;
 
+    private final int GROUPS_LIMIT = 12;
+
     private GcmRegistrationBroker gcmRegistrationBroker;
 
     private final AccountGroupBroker accountGroupBroker;
@@ -1128,10 +1130,9 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
         String message = messageAssemblingService.createGroupJoinCodeMessage(group);
 
-        String logMessage = "Group join code sent";
-
         UserLog userLog = new UserLog(user.getUid(), UserLogType.SENT_GROUP_JOIN_CODE,
-                logMessage, UserInterfaceType.UNKNOWN);
+                "Group join code sent", UserInterfaceType.UNKNOWN);
+
         Notification notification = new JoinCodeNotification(user,message,userLog);
 
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
@@ -1141,23 +1142,44 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
     }
 
     @Override
+    @Transactional
     public void sendAllGroupJoinCodesNotification(String userUid) {
         User user = userRepository.findOneByUid(userUid);
 
         List<Group> groups = groupRepository.findByCreatedByUserAndActiveTrueOrderByCreatedDateTimeDesc(user);
 
-        String logMessage = "All groups join codes sent";
-        String messageToSend = messageAssemblingService.createAllGroupsJoinCodesMessage(groups);
 
         UserLog userLog = new UserLog(user.getUid(), UserLogType.SENT_GROUP_JOIN_CODE,
-                logMessage, UserInterfaceType.UNKNOWN);
-        Notification notification = new JoinCodeNotification(user,messageToSend,userLog);
+                "All groups join codes sent", UserInterfaceType.UNKNOWN);
 
-        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
-        bundle.addLog(userLog);
-        bundle.addNotification(notification);
-        logsAndNotificationsBroker.storeBundle(bundle);
+        List<String> strings = messageAssemblingService.getMessagesForGroups(groups);
+        logger.info("List Size....={}",strings.size());
+        for (String s:strings){
+            Notification notification = new JoinCodeNotification(user,s,userLog);
+            LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+            bundle.addLog(userLog);
+            bundle.addNotification(notification);
+            logsAndNotificationsBroker.storeBundle(bundle);
+            logger.info("MSG....={}",s);
+            logger.info("Length....={}",s.length());
+        }
     }
+
+    private List<String> messages(String message){
+        List<String> messagesList = new ArrayList<>();
+        int length = message.length();
+        int limit = 160;
+
+        int c = (int) Math.ceil((double) length/limit);
+
+        for(int i = 0; i < c; i++) {
+            int start = i*limit;
+            int end = Math.min( (i+1)*limit, length);
+            messagesList.add(message.substring(start, end));
+        }
+        return messagesList;
+    }
+
 
     private boolean checkGroupSizeLimit(Group group, int numberOfMembersAdding) {
         return membersLeftForGroup(group) > numberOfMembersAdding;

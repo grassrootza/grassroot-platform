@@ -75,6 +75,8 @@ public interface MessageAssemblingService {
 
     String createAllGroupsJoinCodesMessage(List<Group> groups);
 
+    List<String> getMessagesForGroups(List<Group> groups);
+
     String createGroupJoinCodeMessage(Group group);
 
 }

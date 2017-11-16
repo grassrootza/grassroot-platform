@@ -515,8 +515,11 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         List<Group> groups = new ArrayList<>();
         groups.add(testGroup);
 
+        when(groupRepositoryMock.findByCreatedByUserAndActiveTrueOrderByCreatedDateTimeDesc(testUser)).thenReturn(groups);
         String testMessage = "Test message";
-        when(messageAssemblingServiceMock.createAllGroupsJoinCodesMessage(groups)).thenReturn(testMessage);
+        List<String> testMessages = new ArrayList<>();
+        testMessages.add(testMessage);
+        when(messageAssemblingServiceMock.getMessagesForGroups(groups)).thenReturn(testMessages);
 
         Notification notification = new JoinCodeNotification(testUser,"Your groups codes",
                 new UserLog(testUser.getUid(), UserLogType.SENT_GROUP_JOIN_CODE,"All groups join codes", UserInterfaceType.UNKNOWN));
@@ -526,7 +529,6 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
                 .param("notification",""+notification))
                 .andExpect(status().is(200));
         verify(userManagementServiceMock,times(1)).findByInputNumber(testUserPhone);
-        verify(messageAssemblingServiceMock,times(1)).createAllGroupsJoinCodesMessage(groups);
     }
 
     @Test
