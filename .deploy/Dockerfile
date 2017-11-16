@@ -2,9 +2,6 @@
 FROM openjdk:8
 WORKDIR /usr/src/grassroot
 
-# SETUP BASIC TOOLS
-RUN apt-get install vim -y
-
 # SETUP SUPERVISORD TO RUN JAVA AS A PROCESS + OTHER FANCY THINGS SUPERVISORD PROVIDES
 RUN apt-get update && apt-get install supervisor vim nano -y
 COPY .deploy/supervisord.conf /etc/supervisor/conf.d/supervisord.conf

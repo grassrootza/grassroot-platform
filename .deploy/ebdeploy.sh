@@ -35,6 +35,7 @@ git commit -m "$ENVIRONMENT-$COMMIT_MESSAGE"
 
 # DEPLOY APP
 mv .deploy/.elasticbeanstalk .elasticbeanstalk
+mv .deploy/.ebextensions .ebextensions
 mv .deploy/.ebignore .ebignore
 mv .deploy/Dockerrun.aws.json Dockerrun.aws.json
 eb use $EBENVIRONMENT
