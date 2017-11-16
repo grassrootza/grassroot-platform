@@ -19,7 +19,7 @@ import java.net.URISyntaxException;
 @Slf4j
 @RestController
 @RequestMapping(method = RequestMethod.GET, produces = MediaType.APPLICATION_XML_VALUE)
-public class USSDTodoNewController extends USSDController {
+public class USSDTodoNewController extends USSDBaseController {
 
     private final TodoBrokerNew todoBrokerNew;
 

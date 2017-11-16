@@ -123,6 +123,14 @@ public class EventLogBrokerImpl implements EventLogBroker {
 
     @Override
     @Transactional(readOnly = true)
+    public EventLog findUserResponseIfExists(String userUid, String eventUid) {
+        User user = userRepository.findOneByUid(userUid);
+        Event event = eventRepository.findOneByUid(eventUid);
+        return eventLogRepository.findByEventAndUserAndEventLogType(event, user, EventLogType.RSVP);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public ResponseTotalsDTO getResponseCountForEvent(Event event) {
         List<EventLog> responseEventLogs = eventLogRepository.findByEventAndEventLogType(event, EventLogType.RSVP);
         return new ResponseTotalsDTO(responseEventLogs, event);

@@ -157,7 +157,7 @@ public class TodoCreateController {
                 createdTodo,
                 userManager.load(todoHelper.getUserUid()),
                 createdTodo.getCreatedDateTime(),
-                false));
+                null));
     }
 
 }

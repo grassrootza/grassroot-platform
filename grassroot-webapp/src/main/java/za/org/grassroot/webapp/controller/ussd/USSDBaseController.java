@@ -2,34 +2,54 @@ package za.org.grassroot.webapp.controller.ussd;
 
 import com.google.common.collect.ImmutableMap;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.MessageSource;
-import org.springframework.context.NoSuchMessageException;
+import org.springframework.stereotype.Controller;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.integration.experiments.ExperimentBroker;
 import za.org.grassroot.services.async.AsyncUserLogger;
-import za.org.grassroot.services.group.GroupBroker;
-import za.org.grassroot.services.group.GroupJoinRequestService;
-import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.user.UserManagementService;
-import za.org.grassroot.services.util.CacheUtilService;
+import za.org.grassroot.services.util.CacheUtilManager;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
-import za.org.grassroot.webapp.util.USSDGroupUtil;
 import za.org.grassroot.webapp.util.USSDMenuUtil;
 import za.org.grassroot.webapp.util.USSDUrlUtil;
 
 import java.net.URISyntaxException;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static za.org.grassroot.webapp.enums.USSDSection.*;
 
 /**
  * Created by luke on 2015/08/14.
  *
  */
-public class USSDController {
+@Controller
+public class USSDBaseController {
+
+    @Autowired
+    private ExperimentBroker experimentBroker;
+
+    @Autowired
+    protected UserManagementService userManager;
+
+    @Autowired
+    protected AsyncUserLogger userLogger;
+
+    @Autowired
+    protected CacheUtilManager cacheManager;
+
+    @Autowired
+    protected USSDMessageAssembler messageAssembler;
+
+    protected USSDMenuUtil ussdMenuUtil;
+
+    @Autowired
+    protected void setUssdMenuUtil(USSDMenuUtil ussdMenuUtil) {
+        this.ussdMenuUtil = ussdMenuUtil;
+    }
 
     /**
      * SECTION: Constants used throughout the code
@@ -85,38 +105,20 @@ public class USSDController {
     protected Request tooLongError = new Request("Error! Menu is too long.", new ArrayList<>());
     protected Request noUserError = new Request("Error! Couldn't find you as a user.", new ArrayList<>());
 
-    /*
-    Utility classes that pull together some often used methods
-     */
-    @Autowired
-    private USSDMenuUtil ussdMenuUtil;
-    @Autowired
-    protected USSDGroupUtil ussdGroupUtil;
-    @Autowired
-    protected UserManagementService userManager;
-    @Autowired
-    protected GroupBroker groupBroker;
-    @Autowired
-    protected EventBroker eventBroker;
-    @Autowired
-    protected CacheUtilService cacheManager;
-    @Autowired
-    protected AsyncUserLogger userLogger;
+    private static final String openingMenuKey = String.join(".", Arrays.asList(homeKey, startMenu, optionsKey));
 
-    @Autowired
-    protected GroupJoinRequestService groupJoinRequestService;
+    private static final Map<USSDSection, String[]> openingMenuOptions = Collections.unmodifiableMap(Stream.of(
+            new AbstractMap.SimpleEntry<>(MEETINGS, new String[]{meetingMenus + startMenu, openingMenuKey + mtgKey}),
+            new AbstractMap.SimpleEntry<>(VOTES, new String[]{voteMenus + startMenu, openingMenuKey + voteKey}),
+            new AbstractMap.SimpleEntry<>(TODO, new String[]{todoMenus + startMenu, openingMenuKey + logKey}),
+            new AbstractMap.SimpleEntry<>(GROUP_MANAGER, new String[]{groupMenus + startMenu, openingMenuKey + groupKey}),
+            new AbstractMap.SimpleEntry<>(USER_PROFILE, new String[]{userMenus + startMenu, openingMenuKey + userKey}),
+            new AbstractMap.SimpleEntry<>(MORE, new String[]{moreMenus + startMenu, openingMenuKey + moreKey})).
+            //new SimpleEntry<>(SAFETY_GROUP_MANAGER, new String[]{safetyMenus + startMenu, openingMenuKey + safetyKey})).
+                    collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue)));
 
-    @Autowired
-    @Qualifier("messageSource")
-    protected MessageSource messageSource;
-
-    /*
-    Setters for mocking and unit test
-     */
-
-    public void setMessageSource(MessageSource messageSource) { this.messageSource = messageSource; }
-    protected void setUssdGroupUtil(USSDGroupUtil ussdGroupUtil) { this.ussdGroupUtil = ussdGroupUtil; }
-    protected void setUssdMenuUtil(USSDMenuUtil ussdMenuUtil) { this.ussdMenuUtil = ussdMenuUtil; }
+    private static final List<USSDSection> openingSequenceWithGroups = Arrays.asList(
+            MEETINGS, VOTES, TODO, GROUP_MANAGER, USER_PROFILE, MORE);
 
     /*
     Methods that form the menu objects
@@ -128,6 +130,26 @@ public class USSDController {
 
     protected Request menuBuilder(USSDMenu ussdMenu, boolean isFirstMenu) throws URISyntaxException {
         return ussdMenuUtil.menuBuilder(ussdMenu, isFirstMenu);
+    }
+
+    protected USSDMenu welcomeMenu(String opening, User user) {
+        USSDMenu homeMenu = new USSDMenu(opening);
+        openingSequenceWithGroups.forEach(s -> {
+            String[] urlMsgPair = openingMenuOptions.get(s);
+            homeMenu.addMenuOption(urlMsgPair[0], getMessage(urlMsgPair[1], user));
+        });
+        return homeMenu;
+    }
+
+    /*
+    Method for experiment tracking
+     */
+    protected void recordExperimentResult(final String userUid, final String response) {
+        Map<String, Object> tags = new HashMap<>();
+        tags.put("revenue", 1);
+        tags.put("meeting_response", 1);
+        tags.put("content", response);
+        experimentBroker.recordEvent("meeting_response", userUid, null, tags);
     }
 
     /**
@@ -155,44 +177,30 @@ public class USSDController {
      */
 
     protected String getMessage(USSDSection section, String menu, String messageType, User user) {
-        final String messageKey = "ussd." + section.toKey() + menu + "." + messageType;
-        try {
-            return messageSource.getMessage(messageKey, null, new Locale(getLanguage(user)));
-        } catch (NoSuchMessageException e) {
-            return messageSource.getMessage(messageKey, null, new Locale("EN"));
-        }
+        return messageAssembler.getMessage(section, menu, messageType, user);
     }
 
     // convenience function for when passing just a name (of user or group, for example)
     protected String getMessage(USSDSection section, String menuKey, String messageLocation, String parameter, User sessionUser) {
-        final String messageKey = "ussd." + section.toKey() + menuKey + "." + messageLocation;
-        return messageSource.getMessage(messageKey, new String[]{ parameter }, new Locale(getLanguage(sessionUser)));
+        return messageAssembler.getMessage(section, menuKey, messageLocation, parameter, sessionUser);
     }
 
     protected String getMessage(USSDSection section, String menu, String messageType, String[] parameters, User user) {
-        final String messageKey = "ussd." + section.toKey() + menu + "." + messageType;
-        return messageSource.getMessage(messageKey, parameters, new Locale(getLanguage(user)));
+        return messageAssembler.getMessage(section, menu, messageType, parameters, user);
     }
 
     // for convenience, sometimes easier to read this way than passing around user instance
     protected String getMessage(String section, String menuKey, String messageLocation, Locale sessionLocale) {
-        final String messageKey = "ussd." + section + "." + menuKey + "." + messageLocation;
-        return messageSource.getMessage(messageKey, null, sessionLocale);
+        return messageAssembler.getMessage(section, menuKey, messageLocation, sessionLocale);
     }
 
     // final convenience version, for the root strings, stripping out "."
     protected String getMessage(String messageKey, User sessionUser) {
-        return messageSource.getMessage("ussd." + messageKey, null, new Locale(getLanguage(sessionUser)));
+        return messageAssembler.getMessage(messageKey, sessionUser);
     }
+
     protected String getMessage(String messageKey, String language) {
-        return messageSource.getMessage("ussd." + messageKey, null, new Locale(language));
+        return messageAssembler.getMessage(messageKey, language);
     }
-
-    // provides a null safe helper method to get language code from user
-    private String getLanguage(User user) {
-        return (user.getLanguageCode() == null) ? Locale.US.getLanguage(): user.getLanguageCode();
-    }
-
-
 
 }

@@ -36,7 +36,7 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
 @Slf4j
 @RequestMapping(method = GET, produces = MediaType.APPLICATION_XML_VALUE)
 @RestController
-public class USSDAdvancedHomeController extends USSDController {
+public class USSDAdvancedHomeController extends USSDBaseController {
 
     private static final String ROOT_PATH = homePath + moreMenus;
 

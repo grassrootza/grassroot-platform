@@ -9,7 +9,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.EntityForUserResponse;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.Permission;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.domain.task.TodoRequest;
 import za.org.grassroot.core.enums.TodoCompletionConfirmType;
@@ -30,22 +33,19 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 import static za.org.grassroot.core.enums.TodoCompletionConfirmType.COMPLETED;
 import static za.org.grassroot.core.enums.TodoCompletionConfirmType.NOT_COMPLETED;
 import static za.org.grassroot.core.util.DateTimeUtil.*;
-import static za.org.grassroot.webapp.util.USSDUrlUtil.*;
+import static za.org.grassroot.webapp.util.USSDUrlUtil.saveToDoMenu;
 
 /**
  * Created by luke on 2015/12/15.
  */
 @RequestMapping(method = RequestMethod.GET, produces = MediaType.APPLICATION_XML_VALUE)
 @RestController
-public class USSDTodoController extends USSDController {
+public class USSDTodoController extends USSDBaseController {
 
     private static final Logger log = LoggerFactory.getLogger(USSDTodoController.class);
 
@@ -55,17 +55,15 @@ public class USSDTodoController extends USSDController {
     @Value("${grassroot.ussd.location.enabled:false}")
     private boolean locationRequestEnabled;
 
-    @Autowired
-    private PermissionBroker permissionBroker;
+    private final PermissionBroker permissionBroker;
 
-    @Autowired
-    private TodoBroker todoBroker;
+    private final TodoBroker todoBroker;
 
-    @Autowired
-    private TodoRequestBroker todoRequestBroker;
+    private final TodoRequestBroker todoRequestBroker;
 
-    @Autowired
-    private LearningService learningService;
+    private final LearningService learningService;
+
+    private final USSDGroupUtil groupUtil;
 
     private static final USSDSection thisSection = USSDSection.TODO;
     private static final String path = homePath + todoMenus;
@@ -96,6 +94,15 @@ public class USSDTodoController extends USSDController {
     private static final int PAGE_LENGTH = 3;
     private static final int stdHour =13, stdMinute = 0;
 
+    @Autowired
+    public USSDTodoController(PermissionBroker permissionBroker, TodoBroker todoBroker, TodoRequestBroker todoRequestBroker, LearningService learningService, USSDGroupUtil groupUtil) {
+        this.permissionBroker = permissionBroker;
+        this.todoBroker = todoBroker;
+        this.todoRequestBroker = todoRequestBroker;
+        this.learningService = learningService;
+        this.groupUtil = groupUtil;
+    }
+
     private String menuPrompt(String menu, User user) {
         return getMessage(thisSection, menu, promptKey, user);
     }
@@ -112,6 +119,42 @@ public class USSDTodoController extends USSDController {
     private String backUrl(String menu, String todoUid) {
         return returnUrl(menu, todoUid) + "&" + revisingFlag + "=1";
     }
+
+    /*
+    Opening menu, which will be massively refactored
+     */
+    public USSDMenu assembleActionTodoMenu(User user, EntityForUserResponse entity) {
+        Todo todo = (Todo) entity;
+        String[] promptFields = new String[]{todo.getParent().getName(), todo.getMessage(), todo.getActionByDateAtSAST().format(dateFormat)};
+        String prompt = getMessage(thisSection, startMenu, promptKey + ".todo", promptFields, user);
+        String completeUri = "todo-complete" + entityUidUrlSuffix + todo.getUid();
+        USSDMenu menu = new USSDMenu(prompt);
+        menu.addMenuOptions(new LinkedHashMap<>(optionsYesNo(user, completeUri, completeUri)));
+        menu.addMenuOption(completeUri + "&confirmed=unknown", getMessage(thisSection, startMenu, logKey + "." + optionsKey + "unknown", user));
+        return menu;
+    }
+
+    @RequestMapping(value = homePath + "todo-complete")
+    @ResponseBody
+    public Request todoEntryMarkComplete(@RequestParam(value = phoneNumber) String inputNumber,
+                                         @RequestParam(value = entityUidParam) String todoUid,
+                                         @RequestParam(value = yesOrNoParam) String response) throws URISyntaxException {
+
+        User user = userManager.findByInputNumber(inputNumber);
+        TodoCompletionConfirmType type = "yes".equals(response) ? TodoCompletionConfirmType.COMPLETED
+                : "no".equals(response) ? TodoCompletionConfirmType.NOT_COMPLETED : TodoCompletionConfirmType.NOT_KNOWN;
+
+        boolean stateChanged = todoBroker.confirmCompletion(user.getUid(), todoUid, type, LocalDateTime.now());
+        final String prompt = (!"yes".equals(response)) ? getMessage(thisSection, startMenu, promptKey + ".todo-marked-no", user) :
+                !stateChanged ?  getMessage(thisSection, startMenu, promptKey + ".todo-unchanged", user)
+                        : getMessage(thisSection, startMenu, promptKey + ".todo-completed", user);
+
+        return menuBuilder(welcomeMenu(prompt, user));
+    }
+
+    /*
+    Menus to create to-do
+     */
 
     @RequestMapping(path + startMenu)
     @ResponseBody
@@ -138,34 +181,13 @@ public class USSDTodoController extends USSDController {
         return menuBuilder(thisMenu);
     }
 
-    @RequestMapping(path + groupMenu)
-    @ResponseBody
-    public Request groupList(@RequestParam(value = phoneNumber) String inputNumber,
-                             @RequestParam(value = "new") boolean newEntry) throws URISyntaxException {
-        User user = userManager.findByInputNumber(inputNumber);
-        int countGroups = permissionBroker.countActiveGroupsWithPermission(user, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY);
-        if (newEntry) {
-            return menuBuilder(initiateNewAction(user, countGroups));
-        } else {
-            if (countGroups == 1) {
-                Group group = permissionBroker.getActiveGroupsWithPermission(user, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY).iterator().next();
-                return listCompleteEntriesForGroup(user.getPhoneNumber(), 0, group.getUid());
-            } else {
-                return menuBuilder(ussdGroupUtil.askForGroup(new USSDGroupUtil.GroupMenuBuilder(user, thisSection)
-                        .urlForExistingGroup(listEntriesMenu + "?pageNumber=0")
-                        .messageKey("history")
-                        .numberOfGroups(countGroups)));
-            }
-        }
-    }
-
     private USSDMenu initiateNewAction(User user, int groupCount) throws URISyntaxException {
         if (groupCount == 1) {
             Group group = permissionBroker.getActiveGroupsWithPermission(user, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY).iterator().next();
             final String prompt = getMessage(thisSection, subjectMenu, promptKey + ".skipped", group.getName(""), user);
             return setActionGroupAndInitiateRequest(null, group.getUid(), prompt, false, user);
         } else {
-            return ussdGroupUtil.askForGroup(new USSDGroupUtil.GroupMenuBuilder(user, thisSection)
+            return groupUtil.askForGroup(new USSDGroupUtil.GroupMenuBuilder(user, thisSection)
                     .urlForExistingGroup(subjectMenu)
                     .messageKey("new")
                     .numberOfGroups(groupCount));
@@ -316,52 +338,6 @@ public class USSDTodoController extends USSDController {
             menu.addMenuOption(todoMenus + incompleteEntries + "?pageNumber=" + (pageNumber - 1), getMessage("options.back", user));
         } else {
             menu.addMenuOption(todoMenus + startMenu, getMessage("options.back", user));
-        }
-        return menuBuilder(menu);
-    }
-
-    @RequestMapping(path + listEntriesMenu)
-    @ResponseBody
-    public Request listCompleteEntriesForGroup(@RequestParam String msisdn,
-                                               @RequestParam int pageNumber,
-                                               @RequestParam String groupUid) throws URISyntaxException {
-
-        // major todo : in future, adjust menus to strip out groups with nothing to view
-        final User user = userManager.findByInputNumber(msisdn, todosViewGroupCompleteEntries(listEntriesMenu, groupUid, pageNumber));
-        final Group group = groupBroker.load(groupUid);
-        final String urlBase = todoMenus + viewEntryMenu + todoUrlSuffix;
-        final String urlSuffix = "&back=" + encodeParameter(listEntriesMenu + "?groupUid=" + groupUid + "&pageNumber=" + pageNumber);
-
-        final Page<Todo> entries = todoBroker.fetchPageOfTodosForGroup(user.getUid(), groupUid,
-                new PageRequest(pageNumber, PAGE_LENGTH, new Sort(Sort.Direction.DESC, "actionByDate")));
-        // for controlling if option to jump to record todos appears
-        boolean canRecordTodo = permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY);
-        // for controlling back behaviour
-        boolean hasMultipleGroups = permissionBroker.countActiveGroupsWithPermission(user, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY) > 1;
-        String backUrl = hasMultipleGroups ? todoMenus + groupMenu + "?new=false" : todoMenus + startMenu;
-
-        USSDMenu menu;
-        if (!entries.hasContent()) {
-            menu = new USSDMenu(getMessage(thisSection, listEntriesMenu, "complete.noentry", group.getName(), user));
-            if (canRecordTodo) {
-                menu.addMenuOption(todoMenus + subjectMenu + groupUidUrlSuffix + groupUid, getMessage(thisSection, listEntriesMenu, optionsKey + "create", user));
-            }
-            menu.addMenuOption(backUrl, getMessage(thisSection, listEntriesMenu, optionsKey + "back", user));
-            menu.addMenuOptions(optionsHomeExit(user, false));
-        } else {
-            menu = new USSDMenu(getMessage(thisSection, listEntriesMenu, promptKey, user));
-            entries.forEach(t -> menu.addMenuOption(urlBase + t.getUid() + urlSuffix, truncateEntryDescription(t, user)));
-            final String pagingUrl = todoMenus + listEntriesMenu + groupUidUrlSuffix + groupUid + "&pageNumber=";
-            if (entries.hasNext()) {
-                menu.addMenuOption(pagingUrl + (pageNumber + 1), getMessage("options.more", user));
-            }
-            if (entries.hasPrevious()) {
-                menu.addMenuOption(pagingUrl + (pageNumber - 1), getMessage("options.back", user));
-            } else {
-                menu.addMenuOption(backUrl, getMessage("options.back", user));
-            }
-            if (canRecordTodo && menu.getMenuCharLength() < 140)
-                menu.addMenuOption(todoMenus + subjectMenu + groupUidUrlSuffix + groupUid, getMessage(thisSection, listEntriesMenu, optionsKey + "create", user));
         }
         return menuBuilder(menu);
     }

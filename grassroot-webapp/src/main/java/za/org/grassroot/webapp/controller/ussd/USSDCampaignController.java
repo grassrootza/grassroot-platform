@@ -33,7 +33,7 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
 
 @RequestMapping(method = GET, produces = MediaType.APPLICATION_XML_VALUE)
 @RestController
-public class USSDCampaignController extends USSDController{
+public class USSDCampaignController extends USSDBaseController {
 
     private static final String campaignMenus = "campaign/";
     private static final String campaignUrl = homePath + campaignMenus;

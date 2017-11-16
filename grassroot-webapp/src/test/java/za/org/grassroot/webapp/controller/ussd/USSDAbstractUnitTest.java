@@ -152,7 +152,7 @@ public abstract class USSDAbstractUnitTest {
         return messageSource;
     }
 
-    protected void wireUpMessageSourceAndGroupUtil(USSDController controller) {
+    protected void wireUpMessageSourceAndGroupUtil(USSDBaseController controller) {
         controller.setMessageSource(messageSource());
         ussdMenuUtil.setForTests(); // since inject mocks will not autowire
         ussdGroupUtil.setMessageSource(messageSource());
