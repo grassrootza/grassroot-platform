@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -436,7 +437,7 @@ public class TaskBrokerImpl implements TaskBroker {
 
     private Function<Task, TaskFullDTO> transformToDTO(User user, Map<String, Instant> uidTimeMap) {
         return t-> {
-            TaskFullDTO taskFullDTO = new TaskFullDTO(t, user, uidTimeMap.get(t.getUid()), hasUserResponded(t, user));
+            TaskFullDTO taskFullDTO = new TaskFullDTO(t, user, uidTimeMap.get(t.getUid()), getUserResponse(t, user));
             if (t instanceof Vote) {
                 taskFullDTO.setVoteResults(voteBroker.fetchVoteResults(user.getUid(), t.getUid(), true));
             }
@@ -506,6 +507,29 @@ public class TaskBrokerImpl implements TaskBroker {
         return task.getTaskType().equals(TaskType.TODO) ? ((Todo) task).hasUserResponded(user) :
                 eventLogRepository.count(Specifications.where(forEvent((Event) task))
                 .and(forUser(user)).and(isResponseToAnEvent())) > 0;
+    }
+
+    private String getUserResponse(Task task, User user) {
+        switch (task.getTaskType()) {
+            case MEETING:
+                EventLog mtgRsvp = findMostRecentResponseLog(user, (Event) task);
+                return mtgRsvp != null ? mtgRsvp.getResponse().name() : null;
+            case VOTE:
+                EventLog voteResponse = findMostRecentResponseLog(user, (Event) task);
+                return voteResponse != null  ? voteResponse.getTag() : null;
+            case TODO:
+                // hack, but going to change in to-do refactor anyway
+                return ((Todo) task).hasUserResponded(user) ? "COMPLETE" : null;
+            default:
+                return null;
+        }
+    }
+
+    private EventLog findMostRecentResponseLog(User user, Event event) {
+        List<EventLog> responseLogs = eventLogRepository.findAll(Specifications.where(forEvent(event))
+                        .and(forUser(user)).and(isResponseToAnEvent()),
+        new Sort(Sort.Direction.DESC, "createdDateTime"));
+        return responseLogs != null && !responseLogs.isEmpty() ? responseLogs.get(0) : null;
     }
 
     private Set<TaskDTO> resolveEventTaskDtos(List<Event> events, User user, Instant changedSince) {

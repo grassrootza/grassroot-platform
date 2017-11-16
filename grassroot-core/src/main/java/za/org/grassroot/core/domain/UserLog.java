@@ -60,6 +60,12 @@ public class UserLog implements ActionLog {
 
     public String getUid() { return uid; }
 
+    @Override
+    public User getUser() {
+        // todo : return this user (cleanse old technical debt on user uid field)
+        return null;
+    }
+
     public Instant getCreationTime() {
         return creationTime;
     }
