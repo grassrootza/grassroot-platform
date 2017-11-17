@@ -3,17 +3,21 @@ package za.org.grassroot.webapp.controller.ussd;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.notification.JoinCodeNotification;
 import za.org.grassroot.core.dto.MembershipInfo;
+import za.org.grassroot.core.enums.UserInterfaceType;
+import za.org.grassroot.core.enums.UserLogType;
+import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.group.GroupPermissionTemplate;
+import za.org.grassroot.services.group.GroupQueryBroker;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -39,6 +43,12 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
     private Group testGroup;
     private Set<MembershipInfo> testMembers = new HashSet<>();
     private GroupPermissionTemplate template = GroupPermissionTemplate.DEFAULT_GROUP;
+
+    @Mock
+    private GroupQueryBroker groupQueryBrokerMock;
+
+    @Mock
+    private MessageAssemblingService messageAssemblingServiceMock;
 
     @InjectMocks
     private USSDGroupController ussdGroupController;
@@ -329,7 +339,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
 
         verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(groupQueryBrokerMock, times(2)).mergeCandidates(testUser.getUid(), testGroup.getUid());
+        // verify(groupQueryBrokerMock, times(2)).mergeCandidates(testUser.getUid(), testGroup.getUid());
         verifyNoMoreInteractions(groupQueryBrokerMock);
         verifyZeroInteractions(eventBrokerMock);
     }
@@ -495,6 +505,48 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         verify(groupBrokerMock, times(1)).load(testGroup.getUid());
         verifyNoMoreInteractions(groupBrokerMock);
         verifyZeroInteractions(eventBrokerMock);
+    }
+
+    @Test
+    public void sendAllGroupJoinCodesNotificationShouldWork()throws Exception{
+        resetTestGroup();
+        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
+
+        List<Group> groups = new ArrayList<>();
+        groups.add(testGroup);
+
+        when(groupRepositoryMock.findByCreatedByUserAndActiveTrueOrderByCreatedDateTimeDesc(testUser)).thenReturn(groups);
+        String testMessage = "Test message";
+        List<String> testMessages = new ArrayList<>();
+        testMessages.add(testMessage);
+        when(messageAssemblingServiceMock.getMessagesForGroups(groups)).thenReturn(testMessages);
+
+        Notification notification = new JoinCodeNotification(testUser,"Your groups codes",
+                new UserLog(testUser.getUid(), UserLogType.SENT_GROUP_JOIN_CODE,"All groups join codes", UserInterfaceType.UNKNOWN));
+
+        mockMvc.perform(get(path + "sendall")
+                .param(phoneParam,""+testUserPhone)
+                .param("notification",""+notification))
+                .andExpect(status().is(200));
+        verify(userManagementServiceMock,times(1)).findByInputNumber(testUserPhone);
+    }
+
+    @Test
+    public void sendCreatedGroupJoinCodeShouldWork() throws Exception{
+        resetTestGroup();
+        testUser = new User(testUserPhone,"Test User");
+        String testMessage = "Group join code";
+        when(messageAssemblingServiceMock.createGroupJoinCodeMessage(testGroup)).thenReturn(testMessage);
+
+        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
+
+        mockMvc.perform(get(path + "send-code")
+                .param(phoneParam,""+testUserPhone)
+                .param(groupParam,""+testGroup.getUid())
+                .param("message",""+testMessage))
+                .andExpect(status().is(200));
+        verify(userManagementServiceMock,times(1)).findByInputNumber(testUserPhone);
+        verify(groupBrokerMock,times(1)).sendGroupJoinCodeNotification(testUser.getUid(),testGroup.getUid());
     }
 
     /*

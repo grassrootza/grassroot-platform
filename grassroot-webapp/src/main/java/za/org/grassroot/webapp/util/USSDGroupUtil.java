@@ -113,6 +113,8 @@ public class USSDGroupUtil extends USSDUtil {
         private String urlForCreateNewGroupPrompt;
         private String urlToCreateNewGroup;
         private String urlForNoGroups;
+        private String urlForSendGroupJoidCode;
+        private String urlForSendAllGroupJoidCodes;
         private Integer numberOfGroups; // if known
 
         public GroupMenuBuilder(User user, USSDSection section) {
@@ -149,6 +151,16 @@ public class USSDGroupUtil extends USSDUtil {
             this.numberOfGroups = numberOfGroups;
             return this;
         }
+
+        public GroupMenuBuilder urlForSendGroupJoinCode(String urlForSendGroupJoinCode){
+            this.urlForSendGroupJoidCode = urlForSendGroupJoinCode;
+            return this;
+        }
+
+        public GroupMenuBuilder urlForSendAllGroupJoinCodes(String urlForSendAllGroupJoidCodes){
+            this.urlForSendAllGroupJoidCodes = urlForSendAllGroupJoidCodes;
+            return this;
+        }
     }
 
     public USSDMenu askForGroup(GroupMenuBuilder builder) throws URISyntaxException {
@@ -174,7 +186,9 @@ public class USSDGroupUtil extends USSDUtil {
             String existingGroupUri = section.toPath() + builder.urlForExistingGroup;
             String newGroupUri = StringUtils.isEmpty(builder.urlForCreateNewGroupPrompt) ?
                     GROUP_MANAGER.toPath() + "create" : section.toPath() + builder.urlForCreateNewGroupPrompt;
-            groupMenu = userGroupMenuPaginated(user, prompt, existingGroupUri, newGroupUri, 0, groupCount, section);
+            String allJoidCodesUri = StringUtils.isEmpty(builder.urlForSendAllGroupJoidCodes) ?
+                    GROUP_MANAGER.toPath() + "sendall" : section.toPath() + builder.urlForSendAllGroupJoidCodes;
+            groupMenu = userGroupMenuPaginated(user, prompt, existingGroupUri, newGroupUri,allJoidCodesUri, 0, groupCount, section);
         }
         return groupMenu;
     }
@@ -223,7 +237,7 @@ public class USSDGroupUtil extends USSDUtil {
      * @param section              current section  @return
      * @throws URISyntaxException
      */
-    public USSDMenu userGroupMenuPaginated(User user, String prompt, String urlForExistingGroups, String urlForNewGroup,
+    public USSDMenu userGroupMenuPaginated(User user, String prompt, String urlForExistingGroups, String urlForNewGroup,String urlForSendAllJoidCodes,
                                            int pageNumber, Integer totalResults, USSDSection section) throws URISyntaxException {
 
         USSDMenu menu = new USSDMenu(prompt);
@@ -243,6 +257,8 @@ public class USSDGroupUtil extends USSDUtil {
             menu.addMenuOption(paginatedGroupUrl(prompt, urlForExistingGroups, urlForNewGroup, section, pageNumber - 1), getMessage("group.back", user));
         if (urlForNewGroup != null)
             menu.addMenuOption(urlForNewGroup, getMessage(groupKeyForMessages, "create", "option", user));
+        if(urlForSendAllJoidCodes != null)
+            menu.addMenuOption(urlForSendAllJoidCodes,getMessage(groupKeyForMessages,"sendall","prompt",user));
 
         if (GROUP_MANAGER.equals(section) && (!groupQueryBroker.fetchGroupsWithOneCharNames(user, 2).isEmpty()))
             menu.addMenuOption(section.toPath() + "clean", getMessage(groupKeyForMessages, "clean", "option", user));

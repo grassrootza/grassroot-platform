@@ -1,9 +1,6 @@
 package za.org.grassroot.services.group;
 
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.GroupJoinMethod;
-import za.org.grassroot.core.domain.Permission;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.enums.GroupDefaultImage;
 
@@ -90,5 +87,10 @@ public interface GroupBroker {
 
     Group merge(String userUid, String firstGroupUid, String secondGroupUid,
                 boolean leaveActive, boolean orderSpecified, boolean createNew, String newGroupName);
+
+    void sendGroupJoinCodeNotification(String userUid, String groupUid);
+
+    void sendAllGroupJoinCodesNotification(String userUid);
+
 
 }

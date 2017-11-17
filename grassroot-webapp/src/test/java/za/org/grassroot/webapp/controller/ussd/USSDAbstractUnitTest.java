@@ -16,6 +16,7 @@ import org.springframework.web.servlet.view.InternalResourceViewResolver;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.MembershipInfo;
+import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.integration.LearningService;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.SafetyEventBroker;
@@ -52,6 +53,9 @@ public abstract class USSDAbstractUnitTest {
 
     @Mock
     protected GroupBroker groupBrokerMock;
+
+    @Mock
+    protected GroupRepository groupRepositoryMock;
 
     @Mock
     protected EventLogBroker eventLogBrokerMock;
