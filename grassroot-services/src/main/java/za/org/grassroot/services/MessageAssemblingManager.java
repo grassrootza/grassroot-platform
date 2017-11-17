@@ -360,7 +360,7 @@ public class MessageAssemblingManager implements MessageAssemblingService {
         StringBuilder completedMessage = new StringBuilder("Join codes:");
         String msgSegmentHolder;
 
-        for(Group group : groups){
+        for(Group group : groups) {
             if( group.hasValidGroupTokenCode()){
                 msgSegmentHolder = group.getGroupName() + "-" +group.getGroupTokenCode() +",";
                 if((msgSegmentHolder.length() + completedMessage.length()) > 160){

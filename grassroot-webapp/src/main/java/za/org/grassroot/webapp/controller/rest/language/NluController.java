@@ -46,7 +46,7 @@ public class NluController {
     }
 
 
-    @RequestMapping(value = "/speech", method = RequestMethod.GET)
+    @RequestMapping(value = "/speech", method = RequestMethod.POST)
     @ApiOperation(value = "Convert speech to text, optionally parsing for entities")
     public ResponseEntity parseSpeech(@RequestParam(required = false) String encoding,
                                       @RequestParam int sampleRate,

@@ -12,7 +12,6 @@ import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.group.GroupPermissionTemplate;
-import za.org.grassroot.services.group.GroupQueryBroker;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -43,9 +42,6 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
     private Group testGroup;
     private Set<MembershipInfo> testMembers = new HashSet<>();
     private GroupPermissionTemplate template = GroupPermissionTemplate.DEFAULT_GROUP;
-
-    @Mock
-    private GroupQueryBroker groupQueryBrokerMock;
 
     @Mock
     private MessageAssemblingService messageAssemblingServiceMock;
@@ -339,7 +335,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
 
         verify(userManagementServiceMock, times(2)).findByInputNumber(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
-        // verify(groupQueryBrokerMock, times(2)).mergeCandidates(testUser.getUid(), testGroup.getUid());
+        verify(groupQueryBrokerMock, times(2)).mergeCandidates(testUser.getUid(), testGroup.getUid());
         verifyNoMoreInteractions(groupQueryBrokerMock);
         verifyZeroInteractions(eventBrokerMock);
     }
@@ -387,7 +383,6 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
 
     @Test
     public void consolidateGroupDoneScreenShouldWork() throws Exception {
-        // todo: also test the exception catch & error menu
         resetTestGroup();
         Group mergingGroup = new Group("tg1", testUser);
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);

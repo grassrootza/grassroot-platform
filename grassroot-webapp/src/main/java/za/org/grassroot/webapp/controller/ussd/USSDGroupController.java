@@ -32,6 +32,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static za.org.grassroot.webapp.util.USSDUrlUtil.*;
@@ -625,11 +626,12 @@ public class USSDGroupController extends USSDController {
     @ResponseBody
     public Request selectMergeGroups(@RequestParam(value = phoneNumber) String inputNumber,
                                      @RequestParam(value = groupUidParam) String groupUid) throws URISyntaxException {
-
         USSDMenu menu;
         User user = userManager.findByInputNumber(inputNumber, saveGroupMenu(mergeGroupMenu, groupUid));
 
-        List<Group> mergeCandidates = new ArrayList<>(groupQueryBroker.mergeCandidates(user.getUid(), groupUid));
+        log.info("selecting merge candidates, with groupUid = {}", groupUid);
+        Set<Group> mergeCandidates = groupQueryBroker.mergeCandidates(user.getUid(), groupUid);
+        log.info("selected merge candidates, returned = {}", mergeCandidates);
 
         if (mergeCandidates.size() == 0) {
             menu = new USSDMenu(getMessage(thisSection, mergeGroupMenu, promptKey + ".error", user));
@@ -639,7 +641,7 @@ public class USSDGroupController extends USSDController {
         } else {
             menu = new USSDMenu(getMessage(thisSection, mergeGroupMenu, promptKey, user));
             menu = ussdGroupUtil.addGroupsToMenu(menu, groupMenus + mergeGroupMenu + "-confirm?firstGroupSelected=" + groupUid,
-                    mergeCandidates, user);
+                    new ArrayList<>(mergeCandidates), user);
         }
         return menuBuilder(menu);
     }

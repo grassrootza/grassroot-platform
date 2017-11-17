@@ -259,7 +259,7 @@ public class USSDGroupUtil extends USSDUtil {
             menu.addMenuOption(paginatedGroupUrl(prompt, urlForExistingGroups, urlForNewGroup, section, pageNumber - 1), getMessage("group.back", user));
         if (urlForNewGroup != null)
             menu.addMenuOption(urlForNewGroup, getMessage(groupKeyForMessages, "create", "option", user));
-        if (section.equals(GROUP_MANAGER) && pageNumber == 0)
+        if (section != null && section.equals(GROUP_MANAGER) && pageNumber == 0)
             menu.addMenuOption(GROUP_MANAGER.toPath() + "sendall", getMessage(groupKeyForMessages,"sendall","prompt",user));
 
         if (GROUP_MANAGER.equals(section) && (!groupQueryBroker.fetchGroupsWithOneCharNames(user, 2).isEmpty()))
