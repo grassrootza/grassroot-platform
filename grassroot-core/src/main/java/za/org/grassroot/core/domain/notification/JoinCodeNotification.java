@@ -15,7 +15,6 @@ public class JoinCodeNotification extends UserNotification {
         super(destination, message, userLog);
     }
 
-
     @Override
     public NotificationDetailedType getNotificationDetailedType() {
         return NotificationDetailedType.SEND_JOIN_CODE;

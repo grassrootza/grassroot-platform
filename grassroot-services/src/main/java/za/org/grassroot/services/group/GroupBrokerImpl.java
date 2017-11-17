@@ -120,10 +120,6 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         this.gcmRegistrationBroker = gcmRegistrationBroker;
     }
 
-    @Autowired(required = false)
-    public void setGroupChatService(GroupChatBroker groupChatService) {
-    }
-
     @Override
     @Transactional(readOnly = true)
     public Group load(String groupUid) {
