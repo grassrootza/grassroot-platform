@@ -13,9 +13,7 @@ import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
-import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.FormatUtil;
-import za.org.grassroot.services.group.GroupQueryBroker;
 
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
@@ -356,32 +354,20 @@ public class MessageAssemblingManager implements MessageAssemblingService {
     }
 
     @Override
-    public String createAllGroupsJoinCodesMessage(List<Group> groups) {
-        String messageToSend = "Your join codes:";
-        for (Group group : groups){
-            if(group.hasValidGroupTokenCode()){
-                messageToSend += group.getGroupName() + ": " + group.getGroupTokenCode() +",";
-            }
-        }
-        return messageToSend;
-    }
-
-    @Override
     public List<String> getMessagesForGroups(List<Group> groups){
         List<String> messages = new ArrayList<>();
 
-        String msg = "Join codes:";
-        String tempMsg;
+        StringBuilder completedMessage = new StringBuilder("Join codes:");
+        String msgSegmentHolder;
 
-        for(int x = 0;x < groups.size();x++){
-            Group group = groups.get(x);
-            if(group.hasValidGroupTokenCode()){
-                tempMsg = group.getGroupName() + "-" +group.getGroupTokenCode() +",";
-                if((msg.length() + tempMsg.length()) > 160){
-                    messages.add(msg);
-                    msg = "Join codes:";
+        for(Group group : groups){
+            if( group.hasValidGroupTokenCode()){
+                msgSegmentHolder = group.getGroupName() + "-" +group.getGroupTokenCode() +",";
+                if((msgSegmentHolder.length() + completedMessage.length()) > 160){
+                    messages.add(completedMessage.toString());
+                    completedMessage = new StringBuilder("Join codes:");
                 }
-                msg += tempMsg;
+                completedMessage.append(msgSegmentHolder);
             }
         }
         return messages;
@@ -389,9 +375,9 @@ public class MessageAssemblingManager implements MessageAssemblingService {
 
     @Override
     public String createGroupJoinCodeMessage(Group group) {
-        String message = "Your join code for group:" +
+        // todo : use messages.properties in services
+        return "Your join code for group:" +
                 group.getGroupName() +
                 "Is:" + group.getGroupTokenCode();
-        return message;
     }
 }

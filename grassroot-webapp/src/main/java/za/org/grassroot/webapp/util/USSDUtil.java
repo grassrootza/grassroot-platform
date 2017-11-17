@@ -19,7 +19,7 @@ public class USSDUtil {
     @Autowired
     protected MessageSource messageSource;
 
-    protected static final Integer PAGE_LENGTH = 2;
+    protected static final Integer PAGE_LENGTH = 3;
     protected static final String
             promptKey = "prompt",
             optionsKey = "options.";

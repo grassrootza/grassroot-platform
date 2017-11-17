@@ -12,8 +12,6 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.MembershipInfo;
-import za.org.grassroot.core.repository.GroupRepository;
-import za.org.grassroot.core.repository.UserLogRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.PermissionBroker;
@@ -21,7 +19,6 @@ import za.org.grassroot.services.exception.GroupDeactivationNotAvailableExceptio
 import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.group.GroupPermissionTemplate;
 import za.org.grassroot.services.group.GroupQueryBroker;
-import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
@@ -52,7 +49,6 @@ public class USSDGroupController extends USSDController {
     private final PermissionBroker permissionBroker;
     private final GroupQueryBroker groupQueryBroker;
     private final GeoLocationBroker geoLocationBroker;
-    private final MessageAssemblingService messageAssemblingService;
 
     private static final Logger log = LoggerFactory.getLogger(USSDGroupController.class);
 
@@ -85,14 +81,10 @@ public class USSDGroupController extends USSDController {
 
     @Autowired
     public USSDGroupController(PermissionBroker permissionBroker, GroupQueryBroker groupQueryBroker,
-                               GeoLocationBroker geoLocationBroker,GroupRepository groupRepository,
-                               LogsAndNotificationsBroker logsAndNotificationsBroker,
-                               UserLogRepository userLogRepository,
-                               MessageAssemblingService messageAssemblingService) {
+                               GeoLocationBroker geoLocationBroker, MessageAssemblingService messageAssemblingService) {
         this.permissionBroker = permissionBroker;
         this.groupQueryBroker = groupQueryBroker;
         this.geoLocationBroker = geoLocationBroker;
-        this.messageAssemblingService = messageAssemblingService;
     }
 
     /*
@@ -202,7 +194,7 @@ public class USSDGroupController extends USSDController {
         menu.addMenuOption(groupMenuWithId(closeGroupToken, groupUid),
                 getMessage(thisSection, createGroupMenu + doSuffix, optionsKey + "token", user));
         menu.addMenuOption(groupMenuWithId(sendJoidCodeForCreatedGroup,groupUid),
-                getMessage(thisSection,"sendcode","prompt",user));
+                getMessage(thisSection,"sendcode", promptKey, user));
         return menu;
     }
 
@@ -637,7 +629,6 @@ public class USSDGroupController extends USSDController {
         USSDMenu menu;
         User user = userManager.findByInputNumber(inputNumber, saveGroupMenu(mergeGroupMenu, groupUid));
 
-        // todo: debug why this is returning inactive groups (service method has active flag)
         List<Group> mergeCandidates = new ArrayList<>(groupQueryBroker.mergeCandidates(user.getUid(), groupUid));
 
         if (mergeCandidates.size() == 0) {
@@ -814,7 +805,7 @@ public class USSDGroupController extends USSDController {
         final String prompt = getMessage(thisSection,"sent","prompt",sessionUser);
         USSDMenu ussdMenu = new USSDMenu(prompt);
 
-        log.info("UserUid in USSDGroupController = {}",sessionUser.getUid());
+        log.debug("UserUid in USSDGroupController = {}",sessionUser.getUid());
 
         groupBroker.sendAllGroupJoinCodesNotification(sessionUser.getUid());
 

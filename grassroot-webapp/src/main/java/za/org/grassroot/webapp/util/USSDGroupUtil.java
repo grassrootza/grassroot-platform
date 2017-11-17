@@ -86,7 +86,7 @@ public class USSDGroupUtil extends USSDUtil {
         this.groupJoinRequestService = groupJoinRequestService;
     }
 
-    /**
+    /*
      * SECTION 1: menus to ask a user to pick a group, including via pagination
      */
     /**
@@ -186,9 +186,7 @@ public class USSDGroupUtil extends USSDUtil {
             String existingGroupUri = section.toPath() + builder.urlForExistingGroup;
             String newGroupUri = StringUtils.isEmpty(builder.urlForCreateNewGroupPrompt) ?
                     GROUP_MANAGER.toPath() + "create" : section.toPath() + builder.urlForCreateNewGroupPrompt;
-            String allJoidCodesUri = StringUtils.isEmpty(builder.urlForSendAllGroupJoidCodes) ?
-                    GROUP_MANAGER.toPath() + "sendall" : section.toPath() + builder.urlForSendAllGroupJoidCodes;
-            groupMenu = userGroupMenuPaginated(user, prompt, existingGroupUri, newGroupUri,allJoidCodesUri, 0, groupCount, section);
+            groupMenu = userGroupMenuPaginated(user, prompt, existingGroupUri, newGroupUri, 0, groupCount, section);
         }
         return groupMenu;
     }
@@ -237,8 +235,12 @@ public class USSDGroupUtil extends USSDUtil {
      * @param section              current section  @return
      * @throws URISyntaxException
      */
-    public USSDMenu userGroupMenuPaginated(User user, String prompt, String urlForExistingGroups, String urlForNewGroup,String urlForSendAllJoidCodes,
-                                           int pageNumber, Integer totalResults, USSDSection section) throws URISyntaxException {
+    public USSDMenu userGroupMenuPaginated(User user, String prompt,
+                                           String urlForExistingGroups,
+                                           String urlForNewGroup,
+                                           int pageNumber,
+                                           Integer totalResults,
+                                           USSDSection section) throws URISyntaxException {
 
         USSDMenu menu = new USSDMenu(prompt);
         Permission filter = SECTION_PERMISSION_MAP.get(section); // returning null is what we want if key not present
@@ -257,8 +259,8 @@ public class USSDGroupUtil extends USSDUtil {
             menu.addMenuOption(paginatedGroupUrl(prompt, urlForExistingGroups, urlForNewGroup, section, pageNumber - 1), getMessage("group.back", user));
         if (urlForNewGroup != null)
             menu.addMenuOption(urlForNewGroup, getMessage(groupKeyForMessages, "create", "option", user));
-        if(urlForSendAllJoidCodes != null)
-            menu.addMenuOption(urlForSendAllJoidCodes,getMessage(groupKeyForMessages,"sendall","prompt",user));
+        if (section.equals(GROUP_MANAGER) && pageNumber == 0)
+            menu.addMenuOption(GROUP_MANAGER.toPath() + "sendall", getMessage(groupKeyForMessages,"sendall","prompt",user));
 
         if (GROUP_MANAGER.equals(section) && (!groupQueryBroker.fetchGroupsWithOneCharNames(user, 2).isEmpty()))
             menu.addMenuOption(section.toPath() + "clean", getMessage(groupKeyForMessages, "clean", "option", user));
