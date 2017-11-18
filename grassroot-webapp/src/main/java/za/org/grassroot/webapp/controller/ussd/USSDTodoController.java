@@ -1,7 +1,5 @@
 package za.org.grassroot.webapp.controller.ussd;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -46,8 +44,6 @@ import static za.org.grassroot.webapp.util.USSDUrlUtil.saveToDoMenu;
 @RequestMapping(method = RequestMethod.GET, produces = MediaType.APPLICATION_XML_VALUE)
 @RestController
 public class USSDTodoController extends USSDBaseController {
-
-    private static final Logger log = LoggerFactory.getLogger(USSDTodoController.class);
 
     @Value("${grassroot.todos.completion.threshold:20}") // defaults to 20 percent
     private double COMPLETION_PERCENTAGE_BOUNDARY;

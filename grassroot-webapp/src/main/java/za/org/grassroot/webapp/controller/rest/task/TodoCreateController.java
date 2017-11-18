@@ -90,7 +90,7 @@ public class TodoCreateController {
                                                                       @RequestParam(required = false) long recurringPeriodMillis,
                                                                       @RequestParam(required = false) Set<String> mediaFileUids) {
         TodoHelper todoHelper = TodoHelper.builder()
-                .todoType(TodoType.CONFIRMATION_REQUIRED)
+                .todoType(TodoType.VALIDATION_REQUIRED)
                 .parentType(parentType)
                 .userUid(userUid)
                 .parentUid(parentUid)

@@ -175,7 +175,7 @@ public class TodoBrokerNewImpl implements TodoBrokerNew {
         Objects.requireNonNull(todoUid);
 
         Todo todo = todoRepository.findOneByUid(todoUid);
-        if (!todo.getType().equals(TodoType.CONFIRMATION_REQUIRED)) {
+        if (!todo.getType().equals(TodoType.VALIDATION_REQUIRED)) {
             throw new TodoTypeMismatchException();
         }
 
@@ -190,7 +190,7 @@ public class TodoBrokerNewImpl implements TodoBrokerNew {
     @Override
     @Transactional(readOnly = true)
     public Todo checkForTodoNeedingResponse(String userUid) {
-        // todo : insert
+        // todo : insert (for validation - if passed, and no response)
         return null;
     }
 

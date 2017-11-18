@@ -2,7 +2,9 @@ package za.org.grassroot.core.domain.task;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.JpaEntityType;
@@ -79,6 +81,10 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
     @Column(name = "require_images")
     @Getter @Setter private boolean requireImages;
 
+    @Basic
+    @Column(name = "allow_simple")
+    @Getter @Setter private boolean allowSimpleConfirmation;
+
     // todo : decide how to use this
     @Basic
     @Column(name = "recurring")
@@ -144,6 +150,10 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
 
     @Override
     public String getName() { return message; }
+
+    public String getCreatorAlias() {
+        return ancestorGroup.getMembership(this.createdByUser).getAlias();
+    }
 
     @Override
     public boolean hasName() { return !StringUtils.isEmpty(message); }

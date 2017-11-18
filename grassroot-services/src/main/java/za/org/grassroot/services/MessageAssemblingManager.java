@@ -55,7 +55,7 @@ public class MessageAssemblingManager implements MessageAssemblingService {
     public void init() {
         todoAssignedMsgMap= new HashMap<>();
         todoAssignedMsgMap.put(TodoType.INFORMATION_REQUIRED, "text.todo.information.new");
-        todoAssignedMsgMap.put(TodoType.CONFIRMATION_REQUIRED, "text.todo.conf.assigned.new");
+        todoAssignedMsgMap.put(TodoType.VALIDATION_REQUIRED, "text.todo.conf.assigned.new");
         todoAssignedMsgMap.put(TodoType.ACTION_REQUIRED, "text.todo.action.new");
         todoAssignedMsgMap.put(TodoType.VOLUNTEERS_NEEDED, "text.todo.volunteer.new");
     }

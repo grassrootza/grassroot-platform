@@ -14,11 +14,15 @@ import java.util.Locale;
 @Component
 public class USSDMessageAssembler {
 
-    protected MessageSource messageSource;
+    private MessageSource messageSource;
 
     @Autowired
     public void setMessageSource(@Qualifier("messageSource") MessageSource messageSource) {
         this.messageSource = messageSource;
+    }
+
+    protected String getMessage(String key, Object[] params, User user) {
+        return messageSource.getMessage("ussd." + key, params, new Locale(getLanguage(user)));
     }
 
     protected String getMessage(USSDSection section, String menu, String messageType, User user) {

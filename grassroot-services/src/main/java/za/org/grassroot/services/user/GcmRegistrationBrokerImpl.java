@@ -5,7 +5,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.*;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -15,7 +14,6 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import za.org.grassroot.core.domain.GcmRegistration;
 import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.GroupChatSettings;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.repository.GcmRegistrationRepository;
 import za.org.grassroot.core.repository.GroupChatSettingsRepository;
@@ -79,33 +77,6 @@ public class GcmRegistrationBrokerImpl implements GcmRegistrationBroker {
         }
 
         return gcmRegistrationRepository.save(gcmRegistration);
-    }
-
-    @Async
-    @Override
-    @Transactional
-    public void refreshAllGroupTopicSubscriptions(String userUid, final String registrationId) {
-        Objects.requireNonNull(userUid);
-        Objects.requireNonNull(registrationId);
-
-        User user = userRepository.findOneByUid(userUid);
-        List<Group> groupsPartOf = groupRepository.findByMembershipsUserAndActiveTrue(user);
-        for (Group group : groupsPartOf) {
-            try {
-                GroupChatSettings settings = groupChatSettingsRepository.findByUserAndGroup(user, group);
-                changeTopicSubscription(user.getUid(), group.getUid(), true);
-                if (settings == null || !settings.isCanReceive()) {
-                    GroupChatSettings thisGroupSettings = new GroupChatSettings(user, group, true, true, true, true);
-                    groupChatSettingsRepository.saveAndFlush(thisGroupSettings);
-                }
-            } catch (DataIntegrityViolationException e) {
-                log.error("Error storing group chat settings, possibly due to async loop");
-            } catch (IOException e) {
-                log.info("IO exception in loop ... GCM connection must be down");
-                e.printStackTrace();
-            }
-        }
-        log.info("Finished doing the registration");
     }
 
     @Override

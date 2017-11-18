@@ -16,7 +16,6 @@ import za.org.grassroot.core.domain.campaign.CampaignMessage;
 import za.org.grassroot.core.domain.campaign.CampaignMessageAction;
 import za.org.grassroot.core.enums.MessageVariationAssignment;
 import za.org.grassroot.core.enums.UserInterfaceType;
-import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.services.UserResponseBroker;
 import za.org.grassroot.services.campaign.CampaignBroker;
 import za.org.grassroot.services.campaign.util.CampaignUtil;
@@ -49,7 +48,7 @@ public class USSDHomeController extends USSDBaseController {
     private final USSDGroupController groupController;
     private final USSDVoteController voteController;
     private final USSDMeetingController meetingController;
-    private final USSDTodoController todoController;
+    private final USSDTodoNewController todoController;
     private final USSDSafetyGroupController safetyController;
     private final CampaignBroker campaignBroker;
 
@@ -71,7 +70,7 @@ public class USSDHomeController extends USSDBaseController {
     private String livewireSuffix;
 
     @Autowired
-    public USSDHomeController(UserResponseBroker userResponseBroker, USSDLiveWireController liveWireController, USSDGroupController groupController, USSDVoteController voteController, USSDMeetingController meetingController, USSDTodoController todoController, USSDSafetyGroupController safetyController, CampaignBroker campaignBroker) {
+    public USSDHomeController(UserResponseBroker userResponseBroker, USSDLiveWireController liveWireController, USSDGroupController groupController, USSDVoteController voteController, USSDMeetingController meetingController, USSDTodoNewController todoController, USSDSafetyGroupController safetyController, CampaignBroker campaignBroker) {
         this.userResponseBroker = userResponseBroker;
         this.liveWireController = liveWireController;
         this.groupController = groupController;
@@ -203,7 +202,7 @@ public class USSDHomeController extends USSDBaseController {
             case MTG_RSVP:
                 return meetingController.assembleRsvpMenu(user, entity);
             case RESPOND_TODO:
-                return todoController.assembleActionTodoMenu(user, entity);
+                return todoController.respondToTodo(user, entity);
             case RENAME_SELF:
                 return new USSDMenu(getMessage(thisSection, USSDBaseController.startMenu, promptKey + "-rename", user),
                         "rename-start");
