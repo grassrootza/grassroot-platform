@@ -11,6 +11,7 @@ public class AndroidAuthToken {
     private String userUid;
     private String msisdn;
     private String displayName;
+    private String email;
     private String systemRoleName;
 
     private String token;
@@ -19,6 +20,7 @@ public class AndroidAuthToken {
         this.userUid = user.getUid();
         this.msisdn = user.getPhoneNumber();
         this.displayName = user.getDisplayName();
+        this.email = user.getEmailAddress();
 
         Optional<Role> highestSystemRole = user.getStandardRoles().stream()
                 .sorted(BaseRoles.sortSystemRole.reversed())
@@ -42,6 +44,10 @@ public class AndroidAuthToken {
 
     public String getDisplayName() {
         return displayName;
+    }
+
+    public String getEmail() {
+        return email;
     }
 
     public String getSystemRoleName() {
