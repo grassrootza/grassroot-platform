@@ -12,38 +12,41 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.domain.task.TodoContainer;
-import za.org.grassroot.core.domain.task.TodoLog;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.JpaEntityType;
+import za.org.grassroot.core.domain.Notification;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.notification.TodoInfoNotification;
 import za.org.grassroot.core.domain.notification.TodoReminderNotification;
 import za.org.grassroot.core.domain.task.Todo;
+import za.org.grassroot.core.domain.task.TodoContainer;
+import za.org.grassroot.core.domain.task.TodoLog;
 import za.org.grassroot.core.enums.TodoCompletionConfirmType;
 import za.org.grassroot.core.enums.TodoLogType;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.TodoRepository;
 import za.org.grassroot.core.repository.UidIdentifiableRepository;
 import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.specifications.TodoSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.account.AccountGroupBroker;
-import za.org.grassroot.services.task.enums.TodoStatus;
 import za.org.grassroot.services.exception.AccountLimitExceededException;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
-import za.org.grassroot.core.specifications.TodoSpecifications;
+import za.org.grassroot.services.task.enums.TodoStatus;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.stream.Collectors;
 
+import static za.org.grassroot.core.specifications.TodoSpecifications.*;
 import static za.org.grassroot.core.util.DateTimeUtil.convertToSystemTime;
 import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
-import static za.org.grassroot.core.specifications.TodoSpecifications.*;
 
 @Service
 public class TodoBrokerImpl implements TodoBroker {
@@ -139,8 +142,8 @@ public class TodoBrokerImpl implements TodoBroker {
 			}
 		}
 
-		Todo todo = new Todo(user, parent, message, convertedActionByDate, reminderMinutes, null,
-				isInstantAction ? 0 : DEFAULT_NUMBER_REMINDERS, !isInstantAction);
+		Todo todo = new Todo(user, parent, message, convertedActionByDate, reminderMinutes,
+                !isInstantAction);
 
 		if (!assignedMemberUids.isEmpty()) {
 			assignedMemberUids.add(userUid);
@@ -273,11 +276,11 @@ public class TodoBrokerImpl implements TodoBroker {
 		logger.info("Confirming completion type={}, todo={}, completion time={}, user={}", todo, confirmType, completionTime, user);
 
 		Instant completionInstant = completionTime == null ? null : convertToSystemTime(completionTime, getSAST());
-		boolean tippedThreshold = todo.addCompletionConfirmation(user, confirmType, completionInstant, COMPLETION_PERCENTAGE_BOUNDARY);
+		boolean tippedThreshold = todo.addCompletionConfirmation(user, confirmType, completionInstant);
 
 		if (tippedThreshold || (todo.getCreatedByUser().equals(user) && confirmType.equals(TodoCompletionConfirmType.COMPLETED))) {
 			// to make sure reminders are turned off (reminder query should filter out, but just to be sure)
-			todo.setNumberOfRemindersLeftToSend(0);
+			todo.setNextNotificationTime(null);
 			todo.setReminderActive(false);
 			return true;
 		} else {
@@ -310,11 +313,8 @@ public class TodoBrokerImpl implements TodoBroker {
 			bundle.addLog(todoLog);
 		}
 
-		// reduce number of reminders to send and calculate new reminder minutes
-		todo.setNumberOfRemindersLeftToSend(todo.getNumberOfRemindersLeftToSend() - 1);
-		if (todo.getNumberOfRemindersLeftToSend() > 0) {
-			todo.setReminderMinutes(todo.getReminderMinutes() - DateTimeUtil.numberOfMinutesForDays(DAYS_AFTER_FOR_REMINDER));
-			todo.calculateScheduledReminderTime();
+		if (todo.isRecurring()) {
+			todo.setNextNotificationTime(Instant.now().plus(Duration.ofMillis(todo.getRecurInterval())));
 		} else {
 			todo.setReminderActive(false);
 		}
@@ -348,15 +348,7 @@ public class TodoBrokerImpl implements TodoBroker {
 		return todoRepository.findAll(Specifications.where(hasGroupAsParent(group)).and(createdDateBetween(start, end)), sort);
 	}
 
-	@Override
-	public List<Group> retrieveGroupsFromTodos(List<Todo> todos) {
-		return todos.stream()
-				.filter(todo -> todo.getParent().getJpaEntityType().equals(JpaEntityType.GROUP))
-				.map(todo -> (Group) todo.getParent())
-				.collect(Collectors.toList());
-	}
-
-	@Override
+    @Override
 	@Transactional(readOnly = true)
 	public List<Todo> fetchTodosForGroupByStatus(String groupUid, boolean futureTodosOnly, TodoStatus status) {
 		Objects.requireNonNull(groupUid);
@@ -518,18 +510,6 @@ public class TodoBrokerImpl implements TodoBroker {
 
 		validateUserCanModify(user, todo);
 		todo.setActionByDate(convertToSystemTime(revisedActionByDate, getSAST()));
-	}
-
-	@Override
-	@Transactional(readOnly = true)
-	public boolean hasReplicatedEntries(Todo todo) {
-		return todoRepository.countBySourceTodo(todo) != 0;
-	}
-
-	@Override
-	@Transactional(readOnly = true)
-	public List<Todo> getAllReplicatedEntriesFromParent(Todo todo) {
-		return todoRepository.findBySourceTodo(todo);
 	}
 
 	private void validateUserCanModify(User user, Todo todo) {

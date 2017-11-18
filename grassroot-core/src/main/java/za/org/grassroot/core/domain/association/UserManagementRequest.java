@@ -27,6 +27,10 @@ public class UserManagementRequest extends AbstractAssociationRequest<User, User
     @Type(type = "za.org.grassroot.core.util.StringArrayUserType")
     private String[] tags;
 
+    private UserManagementRequest() {
+        // for JPA
+    }
+
     public UserManagementRequest(User user, User manager) {
         this.manager = manager;
         this.user = user;

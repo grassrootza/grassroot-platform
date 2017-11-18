@@ -2,10 +2,9 @@ package za.org.grassroot.core.domain.task;
 
 public enum TodoType {
 
+    ACTION_REQUIRED,
     INFORMATION_REQUIRED,
     VALIDATION_REQUIRED,
-    ACTION_REQUIRED,
-    VOLUNTEERS_NEEDED,
-    OTHER
+    VOLUNTEERS_NEEDED
 
 }

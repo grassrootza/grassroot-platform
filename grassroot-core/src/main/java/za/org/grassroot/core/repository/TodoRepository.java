@@ -5,8 +5,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.dto.task.TaskTimeChangedDTO;
 
 import java.time.Instant;
@@ -24,9 +24,6 @@ public interface TodoRepository extends JpaRepository<Todo, Long>, JpaSpecificat
 
     // methods for analyzing action/to-do (for admin)
     Long countByCreatedDateTimeBetween(Instant start, Instant end);
-
-    List<Todo> findBySourceTodo(Todo sourceTodo);
-    int countBySourceTodo(Todo sourceTodo);
 
     @Query(value = "select l.* from action_todo l " +
         "inner join group_profile g on l.parent_group_id = g.id " +

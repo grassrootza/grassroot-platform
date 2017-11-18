@@ -2,10 +2,7 @@ package za.org.grassroot.core.specifications;
 
 import org.springframework.data.jpa.domain.Specification;
 import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.domain.task.AbstractTodoEntity_;
 import za.org.grassroot.core.domain.task.*;
-import za.org.grassroot.core.domain.task.TodoCompletionConfirmation_;
-import za.org.grassroot.core.domain.task.Todo_;
 import za.org.grassroot.core.enums.TodoCompletionConfirmType;
 
 import javax.persistence.criteria.Join;
@@ -38,11 +35,11 @@ public final class TodoSpecifications {
     }
 
     public static Specification<Todo> actionByDateAfter(Instant start) {
-        return (root, query, cb) -> cb.greaterThan(root.get(Todo_.actionByDate), start);
+        return (root, query, cb) -> cb.greaterThan(root.get(AbstractTodoEntity_.actionByDate), start);
     }
 
     public static Specification<Todo> actionByDateBetween(Instant start, Instant end) {
-        return (root, query, cb) -> cb.between(root.get(Todo_.actionByDate), start, end);
+        return (root, query, cb) -> cb.between(root.get(AbstractTodoEntity_.actionByDate), start, end);
     }
 
     public static Specification<Todo> completionConfirmsAbove(double threshold, boolean equalTo) {
@@ -60,12 +57,12 @@ public final class TodoSpecifications {
     }
 
     public static Specification<Todo> remindersLeftToSend() {
-        return (root, query, cb) -> cb.and(cb.greaterThan(root.get(Todo_.numberOfRemindersLeftToSend), 0),
-                cb.equal(root.get(Todo_.reminderActive), true));
+        return (root, query, cb) -> cb.and(cb.lessThan(root.get(Todo_.nextNotificationTime), Instant.now()),
+                cb.equal(root.get(AbstractTodoEntity_.reminderActive), true));
     }
 
     public static Specification<Todo> reminderTimeBefore(Instant time) {
-        return (root, query, cb) -> cb.lessThan(root.get(AbstractTodoEntity_.scheduledReminderTime), time);
+        return (root, query, cb) -> cb.lessThan(root.get(AbstractTodoEntity_.nextNotificationTime), time);
     }
 
     public static Specification<Todo> userPartOfGroup(final User user) {
@@ -80,25 +77,12 @@ public final class TodoSpecifications {
         return (root, query, cb) -> {
             // note : keep an eye on this (e.g., whether not should go in here, or outside
             query.distinct(true);
-            Join<Todo, TodoCompletionConfirmation> join = root.join(Todo_.completionConfirmations, JoinType.LEFT);
+            Join<Todo, TodoAssignment> join = root.join(Todo_.assignments, JoinType.LEFT);
 
-            return cb.or(cb.or(cb.isNull(join.get(TodoCompletionConfirmation_.member)),
-                    cb.or(cb.notEqual(root.get(Todo_.createdByUser), join.get(TodoCompletionConfirmation_.member))),
-                    cb.notEqual(join.get(TodoCompletionConfirmation_.confirmType), TodoCompletionConfirmType.COMPLETED)));
+            return cb.or(cb.or(cb.isNull(join.get(TodoAssignment_.user)),
+                    cb.or(cb.notEqual(root.get(AbstractTodoEntity_.createdByUser), join.get(TodoAssignment_.user))),
+                    cb.notEqual(join.get(TodoAssignment_.confirmType), TodoCompletionConfirmType.COMPLETED)));
         };
     }
-
-    /*
-    closing in on completion of this ...
-    public static Specification<Todo> todosAssignedToUser(User user) {
-        return (root, query, cb) -> {
-            Join<Todo, TodoAssignment> join = root.join(Todo_.assignments, JoinType.INNER);
-            return cb.equal(join.get())
-        };
-    }
-
-    public static Specification<Todo> todoType(TodoType type) {
-
-    }*/
 
 }

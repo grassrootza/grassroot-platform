@@ -182,7 +182,7 @@ public class TodoBrokerNewImpl implements TodoBrokerNew {
         User user = userRepository.findOneByUid(userUid);
         validateUserCanConfirm(user, todo);
 
-        todo.addCompletionConfirmation(user, TodoCompletionConfirmType.COMPLETED, Instant.now(), null);
+        todo.addCompletionConfirmation(user, TodoCompletionConfirmType.COMPLETED, Instant.now());
 
         createAndStoreTodoLog(user, todo, TodoLogType.RESPONDED, "todo confirmed", null);
     }

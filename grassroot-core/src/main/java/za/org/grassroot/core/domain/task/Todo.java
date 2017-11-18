@@ -2,9 +2,7 @@ package za.org.grassroot.core.domain.task;
 
 import lombok.Getter;
 import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.JpaEntityType;
@@ -24,15 +22,13 @@ import java.util.stream.Collectors;
 /**
  * Created by aakilomar on 12/3/15.
  */
-@Entity
+@Entity @Getter
 @Table(name = "action_todo",
         indexes = {
                 @Index(name = "idx_action_todo_group_id", columnList = "parent_group_id"),
-                @Index(name = "idx_action_todo_retries_left", columnList = "number_of_reminders_left_to_send"),
-                @Index(name = "idx_action_todo_ancestor_group_id", columnList = "ancestor_group_id")})
+                @Index(name = "idx_action_todo_ancestor_group_id", columnList = "ancestor_group_id"),
+                @Index(name = "index_action_todo_type ", columnList = "todo_type")})
 public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, VoteContainer, MeetingContainer {
-
-    // private static final Logger logger = LoggerFactory.getLogger();
 
     @Transient
     @Value("{grassroot.todos.number.reminders:1")
@@ -43,18 +39,11 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
     @Column(name = "cancelled")
     protected boolean cancelled;
 
-    @Column(name="completed_date")
-    private Instant completedDate;
-
-    @Column(name="number_of_reminders_left_to_send")
-    private int numberOfRemindersLeftToSend;
+    @Column(name="completed")
+    private boolean completed;
 
     @Column(name="completion_percentage", nullable = false)
     private double completionPercentage;
-
-    @ManyToOne
-    @JoinColumn(name = "source_todo")
-    @Getter private Todo sourceTodo;
 
     @ManyToMany(cascade = CascadeType.ALL)
     @JoinTable(name = "action_todo_assigned_members",
@@ -70,9 +59,6 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
    	@JoinColumn(name = "ancestor_group_id", nullable = false)
    	@Getter private Group ancestorGroup;
 
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "todo", orphanRemoval = true)
-    private Set<TodoCompletionConfirmation> completionConfirmations = new HashSet<>();
-
     @Basic
     @Column(name = "response_regex")
     @Getter @Setter private String responseRegex;
@@ -85,7 +71,6 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
     @Column(name = "allow_simple")
     @Getter @Setter private boolean allowSimpleConfirmation;
 
-    // todo : decide how to use this
     @Basic
     @Column(name = "recurring")
     @Getter @Setter private boolean recurring = false;
@@ -99,7 +84,7 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
     }
 
     public Todo(User createdByUser, TodoContainer parent, String message, Instant actionByDate) {
-        this(createdByUser, parent, message, actionByDate, 60, null, null, true);
+        this(createdByUser, parent, message, actionByDate, 60, true);
     }
 
     public Todo(User createdByUser, TodoContainer parent, TodoType todoType, String description,
@@ -109,19 +94,16 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
         this.type = todoType;
         this.ancestorGroup = parent.getThisOrAncestorGroup();
         this.ancestorGroup.addDescendantTodo(this);
-        this.numberOfRemindersLeftToSend = DEFAULT_NUMBER_REMINDERS;
         this.cancelled = false;
     }
 
-    public Todo(User createdByUser, TodoContainer parent, String message, Instant actionByDate, int reminderMinutes,
-                Todo sourceTodo, Integer numberOfRemindersLeftToSend, boolean reminderActive) {
+    public Todo(User createdByUser, TodoContainer parent, String message, Instant actionByDate,
+                int reminderMinutes, boolean reminderActive) {
         super(createdByUser, parent, message, actionByDate, reminderMinutes, reminderActive);
 
         this.ancestorGroup = parent.getThisOrAncestorGroup();
         this.ancestorGroup.addDescendantTodo(this);
 
-        this.sourceTodo = sourceTodo;
-        this.numberOfRemindersLeftToSend = numberOfRemindersLeftToSend == null ? DEFAULT_NUMBER_REMINDERS : numberOfRemindersLeftToSend;
         this.cancelled = false;
     }
 
@@ -129,18 +111,6 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
         Todo todo = new Todo();
         todo.uid = UIDGenerator.generateId();
         return todo;
-    }
-
-    public Instant getCompletedDate() {
-        return completedDate;
-    }
-
-    public int getNumberOfRemindersLeftToSend() {
-        return numberOfRemindersLeftToSend;
-    }
-
-    public void setNumberOfRemindersLeftToSend(int numberOfRemindersLeftToSend) {
-        this.numberOfRemindersLeftToSend = numberOfRemindersLeftToSend;
     }
 
     @Override
@@ -184,68 +154,45 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
 
     public Set<User> getAssignedUsers() {
         return assignments.stream()
-                .filter(TodoAssignment::isAssigned)
+                .filter(TodoAssignment::isAssignedAction)
                 .map(TodoAssignment::getUser)
                 .collect(Collectors.toSet());
     }
 
     public Set<User> getConfirmingUsers() {
         return assignments.stream()
-                .filter(TodoAssignment::isCanConfirm)
+                .filter(TodoAssignment::isCanWitness)
                 .map(TodoAssignment::getUser)
                 .collect(Collectors.toSet());
     }
 
-    // todo : more refactoring of this
-    public boolean addCompletionConfirmation(User member, TodoCompletionConfirmType confirmType, Instant completionTime,
-                                             Double threshold) {
+    // todo : move this to services, alter & handle return
+    public boolean addCompletionConfirmation(User member,
+                                             TodoCompletionConfirmType confirmType,
+                                             Instant completionTime) {
         Objects.requireNonNull(member);
 
-        if (completionTime == null && this.completedDate == null) {
-            throw new IllegalArgumentException("Completion time cannot be null when there is no completed time registered in todo: " + this);
+        Optional<TodoAssignment> findAssignment = assignments.stream()
+                .filter(TodoAssignment::isCanWitness)
+                .filter(a -> a.getUser().equals(member))
+                .findFirst();
+
+        if (!findAssignment.isPresent()) {
+            throw new IllegalArgumentException("Trying to add completion confirmation for non-assigned user");
         }
 
-        // we override current completion time with this latest specified one
-        if (completionTime != null) {
-            this.completedDate = completionTime;
-        }
+        TodoAssignment assignment = findAssignment.get();
+        assignment.setResponseTime(completionTime);
+        assignment.setConfirmType(confirmType);
 
-        Set<User> members = getMembers();
-        if (!members.contains(member)) {
-            throw new IllegalArgumentException("User " + member + " is not assigned to or in the group of this todo: " + this);
-        }
-
-        Optional<TodoCompletionConfirmation> confirmByMember = this.completionConfirmations.stream()
-                .filter(tc -> tc.getMember().equals(member)).findFirst();
-        TodoCompletionConfirmation confirmation;
-
-        if (confirmByMember.isPresent()) { // i.e., user is switching response
-            confirmation = confirmByMember.get();
-            confirmation.setConfirmType(confirmType);
-        } else {
-            confirmation = new TodoCompletionConfirmation(this, member, confirmType, completionTime);
-        }
-
-        this.completionConfirmations.add(confirmation);
-
-        if (threshold != null) {
-            boolean wasBelowThreshold = this.completionPercentage < threshold;
-            this.completionPercentage = calculateCompletionStatus().getPercentage();
-            return wasBelowThreshold && (this.completionPercentage > threshold);
-        } else {
-            return true;
-        }
+        return true;
     }
 
+    // todo : use JPA specs and move to services
     private TodoCompletionStatus calculateCompletionStatus() {
-        Set<User> members = getMembers();
-        int membersCount = members.size();
+        long membersCount = assignments.stream().filter(TodoAssignment::isCanWitness).count();
         // we count only those confirmations that mark as complete and are from users that are currently members (these can always change)
-        long confirmationsCount = completionConfirmations.stream()
-                .filter(confirmation -> TodoCompletionConfirmType.COMPLETED.equals(confirmation.getConfirmType())
-                        && members.contains(confirmation.getMember()))
-                .count();
-        return new TodoCompletionStatus((int) confirmationsCount, membersCount);
+        return new TodoCompletionStatus(countCompletions(), (int) membersCount);
     }
 
     public boolean isCompleted(double threshold) {
@@ -253,19 +200,26 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
     }
 
     public int countCompletions() {
-        return completionConfirmations.size();
+        return (int) assignments.stream()
+                .filter(TodoAssignment::isCanWitness)
+                .filter(TodoAssignment::hasConfirmed)
+                .count();
     }
 
+    // as general above, move to services and specs
     public boolean hasUserResponded(User member) {
         Objects.requireNonNull(member);
-        return completionConfirmations.stream().anyMatch(c -> c.getMember().equals(member));
+        return assignments.stream()
+                .filter(TodoAssignment::isHasResponded)
+                .anyMatch(a -> a.getUser().equals(member));
     }
 
     // note : only returns yes if response type is "completed"
     public boolean isCompletionConfirmedByMember(User member) {
         Objects.requireNonNull(member);
-        return completionConfirmations.stream().anyMatch(confirmation -> confirmation.getConfirmType().equals(TodoCompletionConfirmType.COMPLETED)
-                && confirmation.getMember().equals(member));
+        return assignments.stream()
+                .filter(TodoAssignment::hasConfirmed)
+                .anyMatch(a -> a.getUser().equals(member));
     }
 
     public double getCompletionPercentage() { return completionPercentage; }
@@ -284,11 +238,10 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
         return "Todo{" +
                 "id=" + id +
                 ", uid=" + uid +
-                ", completedDate=" + completedDate +
+                ", completed=" + completed +
                 ", message='" + message + '\'' +
                 ", actionByDate=" + actionByDate +
                 ", reminderMinutes=" + reminderMinutes +
-                ", numberOfRemindersLeftToSend=" + numberOfRemindersLeftToSend +
                 '}';
     }
 }

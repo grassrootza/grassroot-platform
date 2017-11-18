@@ -10,16 +10,18 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.JpaEntityType;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.AbstractTodoEntity;
 import za.org.grassroot.core.domain.task.EventReminderType;
 import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.domain.task.TodoContainer;
 import za.org.grassroot.core.enums.TodoCompletionConfirmType;
-import za.org.grassroot.services.task.enums.TodoStatus;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.TodoBroker;
+import za.org.grassroot.services.task.enums.TodoStatus;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.MemberPicker;
 import za.org.grassroot.webapp.model.web.TodoWrapper;
@@ -34,7 +36,6 @@ import static za.org.grassroot.core.domain.Permission.*;
 
 /**
  * Created by luke on 2016/01/02.
- * major todo : restore replication to subgroups when that feature is properly redesigned
  */
 @Controller
 @RequestMapping("/todo/")
@@ -190,7 +191,7 @@ public class TodoController extends BaseController {
         model.addAttribute("isAssigned", todoEntry.getAssignedMembers().contains(user));
         model.addAttribute("parent", todoEntry.getParent());
         model.addAttribute("isComplete", todoEntry.isCompleted(COMPLETION_PERCENTAGE_BOUNDARY));
-        model.addAttribute("hasReminders", todoEntry.isReminderActive() && todoEntry.getNumberOfRemindersLeftToSend() > 0);
+        model.addAttribute("hasReminders", todoEntry.isReminderActive());
         model.addAttribute("canModify", todoEntry.getCreatedByUser().equals(user) ||
                 permissionBroker.isGroupPermissionAvailable(user, todoEntry.getAncestorGroup(), GROUP_PERMISSION_UPDATE_GROUP_DETAILS));
         model.addAttribute("fromGroup", SourceMarker.GROUP.equals(source));

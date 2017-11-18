@@ -16,7 +16,6 @@ import za.org.grassroot.core.domain.GcmRegistration;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.repository.GcmRegistrationRepository;
-import za.org.grassroot.core.repository.GroupChatSettingsRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
 
@@ -37,7 +36,6 @@ public class GcmRegistrationBrokerImpl implements GcmRegistrationBroker {
     private final GcmRegistrationRepository gcmRegistrationRepository;
     private final GroupRepository groupRepository;
     private final RestTemplate restTemplate;
-    private final GroupChatSettingsRepository groupChatSettingsRepository;
 
     private final static String INSTANCE_ID_FIXED_PATH = "/iid/v1/";
 
@@ -57,12 +55,11 @@ public class GcmRegistrationBrokerImpl implements GcmRegistrationBroker {
     private final static Random random = new Random();
 
     @Autowired
-    public GcmRegistrationBrokerImpl(UserRepository userRepository, GcmRegistrationRepository gcmRegistrationRepository, GroupRepository groupRepository, RestTemplate restTemplate, GroupChatSettingsRepository groupChatSettingsRepository) {
+    public GcmRegistrationBrokerImpl(UserRepository userRepository, GcmRegistrationRepository gcmRegistrationRepository, GroupRepository groupRepository, RestTemplate restTemplate) {
         this.userRepository = userRepository;
         this.gcmRegistrationRepository = gcmRegistrationRepository;
         this.groupRepository = groupRepository;
         this.restTemplate = restTemplate;
-        this.groupChatSettingsRepository = groupChatSettingsRepository;
     }
 
     @Override

@@ -19,8 +19,9 @@ public class TodoHelper {
 
     private TodoType todoType;
     private String description;
-    private String responseTag;
     private Instant dueDateTime;
+
+    @Setter private String responseTag;
 
     @Builder.Default private boolean recurring = false;
     private Long recurringPeriodMillis;

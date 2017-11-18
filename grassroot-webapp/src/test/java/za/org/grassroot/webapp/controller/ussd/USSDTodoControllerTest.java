@@ -264,7 +264,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
         Group testGroup = new Group("test testGroup", testUser);
         Todo dummyTodo = new Todo(testUser, testGroup, "Some logbook subject", Instant.now());
         dummyTodo.getAncestorGroup().addMember(testUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
-        dummyTodo.addCompletionConfirmation(testUser, TodoCompletionConfirmType.COMPLETED, Instant.now(), 20);
+        dummyTodo.addCompletionConfirmation(testUser, TodoCompletionConfirmType.COMPLETED, Instant.now());
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, saveToDoMenu(viewEntryMenu, dummyTodo.getUid()))).thenReturn(testUser);
         when(todoBrokerMock.load(dummyTodo.getUid())).thenReturn(dummyTodo);
@@ -285,7 +285,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
         testGroup.addMember(testUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
         Todo dummyTodo = new Todo(testUser, testGroup, "test todo", Instant.now().minus(7, ChronoUnit.DAYS));
 
-        dummyTodo.addCompletionConfirmation(testUser, TodoCompletionConfirmType.COMPLETED, Instant.now(), 20);
+        dummyTodo.addCompletionConfirmation(testUser, TodoCompletionConfirmType.COMPLETED, Instant.now());
         dummyTodo.assignMembers(Collections.singleton(testUser.getUid()));
 
         String urlToSave = saveToDoMenu(setCompleteMenu, dummyTodo.getUid());
@@ -311,7 +311,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
         testGroup.addMember(testUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
         Todo dummyTodo = new Todo(testUser, testGroup, "test logbook", Instant.now().plus(1, ChronoUnit.DAYS));
         dummyTodo.assignMembers(Collections.singleton(testUser.getUid()));
-        dummyTodo.addCompletionConfirmation(testUser, TodoCompletionConfirmType.COMPLETED, Instant.now(), 20);
+        dummyTodo.addCompletionConfirmation(testUser, TodoCompletionConfirmType.COMPLETED, Instant.now());
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
         when(todoBrokerMock.load(dummyTodo.getUid())).thenReturn(dummyTodo);

@@ -4,21 +4,19 @@ import lombok.Getter;
 import lombok.Setter;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.TodoCompletionConfirmType;
-import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
 import java.time.Instant;
 
-@Getter
+@Entity @Getter
+@Table(name = "action_todo_assigned_members",
+        uniqueConstraints = @UniqueConstraint(name = "uk_todo_user_assignment", columnNames = {"action_todo_id", "user_id"}))
 public class TodoAssignment {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
     private Long id;
-
-    @Column(name = "uid", nullable = false, unique = true)
-    protected String uid;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "action_todo_id", nullable = false, foreignKey = @ForeignKey(name = "fk_action_todo_compl_confirm_action_todo"))
@@ -32,30 +30,41 @@ public class TodoAssignment {
     private Instant creationTime;
 
     @Basic
-    @Column(name = "assigned")
-    boolean assigned;
+    @Column(name = "assigned_action")
+    boolean assignedAction;
 
     @Basic
-    @Column(name = "can_confirm")
-    boolean canConfirm;
+    @Column(name = "assigned_witness")
+    boolean canWitness;
 
-    @Column(name = "confirmation_time")
-    @Setter private Instant confirmationTime;
+    @Basic
+    @Column(name = "has_responded")
+    boolean hasResponded;
+
+    @Column(name = "response_date_time")
+    @Setter private Instant responseTime;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "confirmation_type", nullable = false)
-    private TodoCompletionConfirmType confirmType;
+    @Column(name = "confirmation_type")
+    @Setter private TodoCompletionConfirmType confirmType;
 
     @Column
-    private String responseText;
+    @Setter private String responseText;
 
-    public TodoAssignment(Todo todo, User user, boolean assigned, boolean canConfirm) {
-        this.uid = UIDGenerator.generateId();
+    private TodoAssignment() {
+        // for JPA
+    }
+
+    public TodoAssignment(Todo todo, User user, boolean assignedAction, boolean canWitness) {
         this.todo = todo;
         this.user = user;
-        this.assigned = assigned;
-        this.canConfirm = canConfirm;
+        this.assignedAction = assignedAction;
+        this.canWitness = canWitness;
         this.creationTime = Instant.now();
+    }
+
+    protected boolean hasConfirmed() {
+        return TodoCompletionConfirmType.COMPLETED.equals(confirmType);
     }
 
 }

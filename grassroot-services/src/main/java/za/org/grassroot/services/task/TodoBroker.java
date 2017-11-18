@@ -2,7 +2,6 @@ package za.org.grassroot.services.task;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.enums.TodoCompletionConfirmType;
@@ -86,13 +85,4 @@ public interface TodoBroker {
 
 	boolean userHasOldActionsToView(String userUid);
 
-	/**
-	 * Methods to handle "replicaed" todos (i.e., that cascade down subgroups)
-	 */
-
-	boolean hasReplicatedEntries(Todo todo);
-
-	List<Group> retrieveGroupsFromTodos(List<Todo> todos);
-
-	List<Todo> getAllReplicatedEntriesFromParent(Todo todo);
 }

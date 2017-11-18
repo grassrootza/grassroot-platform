@@ -5,9 +5,6 @@ apply plugin: 'maven-publish'
 
 description = 'Grassroot Core'
 
-
-
-
 publishing {
     publications {
         MyPublication(MavenPublication) {
@@ -21,10 +18,8 @@ publishing {
 
 
 bintray {
-    // user =  hasProperty('bintray_user') ? getProperty('bintray_user') : ''
-    // key =   hasProperty('bintray_api_key') ? getProperty('bintray_api_key') : ''
-    user = 'luke-grassroot'
-    key = '1a55c87332b5034a3b2c7bcdbc84f258ba85e875'
+    user =  hasProperty('bintray_user') ? getProperty('bintray_user') : ''
+    key =   hasProperty('bintray_api_key') ? getProperty('bintray_api_key') : ''
     pkg {
 
         repo = 'grassroot-platform'
