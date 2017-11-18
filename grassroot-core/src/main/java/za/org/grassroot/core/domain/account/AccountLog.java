@@ -39,7 +39,7 @@ public class AccountLog implements ActionLog {
     private AccountLogType accountLogType;
 
     @ManyToOne
-    @JoinColumn(name = "user_uid")
+    @JoinColumn(name = "user_uid", referencedColumnName = "uid")
     private User user;
 
     @ManyToOne

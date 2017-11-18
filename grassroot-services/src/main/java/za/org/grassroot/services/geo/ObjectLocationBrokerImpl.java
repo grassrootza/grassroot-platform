@@ -84,7 +84,7 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
             " AND l.localDate = (SELECT MAX(ll.localDate) FROM GroupLocation ll WHERE ll.group = l.group) AND " +
             GeoLocationUtils.locationFilterSuffix("l.location");
 
-        log.info(query);
+        log.debug(query);
 
         TypedQuery<ObjectLocation> typedQuery = entityManager.createQuery(query, ObjectLocation.class)
                 .setParameter("date", LocalDate.now());
@@ -132,9 +132,6 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
             return new ArrayList<>();
         }
 
-        boolean onlyPublicMeetings = searchType.equals(GeographicSearchType.PUBLIC);
-        final String membershipClause = onlyPublicMeetings ? "NOT IN" : "IN";
-
         final String usersOwnGroups = "m.ancestorGroup IN (SELECT mm.group FROM Membership mm WHERE mm.user = :user)";
         final String publicGroupsNotUser = "m.isPublic = true AND m.ancestorGroup NOT IN (SELECT mm.group FROM Membership mm WHERE mm.user = :user)";
 
@@ -148,8 +145,8 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
                         "WHERE " + groupRestriction + " AND m.eventStartDateTime >= :present AND "
                         + GeoLocationUtils.locationFilterSuffix("l.location");
 
-        log.info("query = {}", strQuery);
-        log.debug("we have a search location, it looks like: {}", searchCentre);
+        log.debug("query = {}", strQuery);
+        log.info("we have a search location, it looks like: {}", searchCentre);
 
         TypedQuery<ObjectLocation> query = entityManager.createQuery(strQuery,ObjectLocation.class)
                 .setParameter("user", user)
@@ -171,7 +168,7 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
             objectLocationSet.addAll(fetchPublicGroupsNearbyWithLocation(location, radiusInMetres));
         }
 
-        log.info("After public fetch, set Size = {}",objectLocationSet.size());
+        log.info("Fetching groups, after public fetch, set size = {}", objectLocationSet.size());
 
         if (searchType.toInt() < PUBLIC_LEVEL) {
             objectLocationSet.addAll(fetchGroupsNearbyWithLocation(location, radiusInMetres,PRIVATE_LEVEL));
@@ -229,15 +226,6 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
 
     private Predicate<UserLocationLog> ofSourceNewerThan(Instant threshold, LocationSource source) {
         return log -> log.getTimestamp().isAfter(threshold) && log.getLocationSource().equals(source);
-    }
-
-
-    private void assertRestriction (Integer restriction) throws InvalidParameterException {
-        if (restriction == null) {
-            throw new InvalidParameterException("Invalid restriction object.");
-        } else if (restriction < PRIVATE_LEVEL || restriction > ALL_LEVEL) {
-            throw new InvalidParameterException("Invalid restriction object.");
-        }
     }
 
     private void assertRadius (Integer radius) throws InvalidParameterException {

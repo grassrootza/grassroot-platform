@@ -15,7 +15,6 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
-import java.util.Set;
 
 /**
  * Created by luke on 2017/05/23.
@@ -88,37 +87,6 @@ public class MessagingServiceBrokerImpl implements MessagingServiceBroker, Comma
             logger.error("Error connecting to: {}", serviceCallUri);
             throw e;
         }
-    }
-
-    @Override
-    public void markMessagesAsRead(String groupUid, Set<String> messageUids) {
-        URI serviceCallUri = baseUri()
-                .path("/groupchat/mark_read/{groupUid}")
-                .buildAndExpand(groupUid)
-                .toUri();
-        asyncRestTemplate.exchange(
-                serviceCallUri,
-                HttpMethod.POST,
-                new HttpEntity<>(messageUids, jwtHeaders()),
-                String.class
-        );
-    }
-
-    @Override
-    public void updateActivityStatus(String userUid, String groupUid, boolean active, boolean userInitiated) {
-        URI serviceCallUri = baseUri()
-                .pathSegment("/groupchat/update_activity/{userUid}")
-                .queryParam("groupUid", groupUid)
-                .queryParam("setActive", active)
-                .queryParam("selfInitiated", userInitiated)
-                .buildAndExpand(userUid)
-                .toUri();
-        asyncRestTemplate.exchange(
-                serviceCallUri,
-                HttpMethod.POST,
-                new HttpEntity<String>(jwtHeaders()),
-                String.class
-        );
     }
 
     @Override

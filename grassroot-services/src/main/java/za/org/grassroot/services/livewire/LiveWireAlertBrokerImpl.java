@@ -567,7 +567,7 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
     }
 
     public List<LiveWireAlert> fetchAlertsNearUser(String userUid, GeoLocation location,
-                                                   Integer radius, GeographicSearchType searchType) {
+                                                   int radius, GeographicSearchType searchType) {
 
         User user = userRepository.findOneByUid(userUid);
 
@@ -577,10 +577,6 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
 
         if(radius < 0){
             throw new InvalidParameterException("Invalid Radius,should be positive");
-        }
-
-        if(radius == null){
-            throw new NullPointerException("Invalid Radius,should not be null");
         }
 
         String mineFilter = searchType.equals(GeographicSearchType.PUBLIC) ? " AND l.creatingUser <>:user "
@@ -607,7 +603,7 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
                 "           + SIN(RADIANS(:latpoint)) " +
                 "           * SIN(RADIANS(l.location.latitude))))) ";
 
-        logger.info("livewire alert location search = {}", query);
+        logger.debug("livewire alert location search = {}", query);
 
         TypedQuery<LiveWireAlert> typedQuery = entityManager.createQuery(query,LiveWireAlert.class)
                 .setParameter("radius", (double)radius)

@@ -18,12 +18,10 @@ import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.notification.EventInfoNotification;
+import za.org.grassroot.core.domain.notification.JoinCodeNotification;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.dto.MembershipInfo;
-import za.org.grassroot.core.enums.EventType;
-import za.org.grassroot.core.enums.GroupDefaultImage;
-import za.org.grassroot.core.enums.GroupLogType;
-import za.org.grassroot.core.enums.UserLogType;
+import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.repository.GroupLogRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.MembershipRepository;
@@ -84,6 +82,8 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
     private final MessageAssemblingService messageAssemblingService;
     private final MessagingServiceBroker messagingServiceBroker;
 
+    private final int GROUPS_LIMIT = 12;
+
     private GcmRegistrationBroker gcmRegistrationBroker;
 
     private final AccountGroupBroker accountGroupBroker;
@@ -118,10 +118,6 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
     @Autowired(required = false)
     public void setGcmRegistrationBroker(GcmRegistrationBroker gcmRegistrationBroker) {
         this.gcmRegistrationBroker = gcmRegistrationBroker;
-    }
-
-    @Autowired(required = false)
-    public void setGroupChatService(GroupChatBroker groupChatService) {
     }
 
     @Override
@@ -1120,6 +1116,48 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         actionLogs.add(new GroupLog(parent, user, GroupLogType.SUBGROUP_ADDED, child.getId(), "Subgroup added"));
         actionLogs.add(new GroupLog(child, user, GroupLogType.PARENT_CHANGED, parent.getId(), "Parent group added or changed"));
         logActionLogsAfterCommit(actionLogs);
+    }
+
+    @Override
+    @Transactional
+    public void sendGroupJoinCodeNotification(String userUid, String groupUid) {
+        User user = userRepository.findOneByUid(userUid);
+        Group group = groupRepository.findOneByUid(groupUid);
+
+        String message = messageAssemblingService.createGroupJoinCodeMessage(group);
+
+        UserLog userLog = new UserLog(user.getUid(), UserLogType.SENT_GROUP_JOIN_CODE,
+                "Group join code sent", UserInterfaceType.UNKNOWN);
+
+        Notification notification = new JoinCodeNotification(user,message,userLog);
+
+        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+        bundle.addLog(userLog);
+        bundle.addNotification(notification);
+        logsAndNotificationsBroker.storeBundle(bundle);
+    }
+
+    @Override
+    @Transactional
+    public void sendAllGroupJoinCodesNotification(String userUid) {
+        User user = userRepository.findOneByUid(userUid);
+
+        List<Group> groups = groupRepository.findByCreatedByUserAndActiveTrueOrderByCreatedDateTimeDesc(user);
+
+        UserLog userLog = new UserLog(user.getUid(), UserLogType.SENT_GROUP_JOIN_CODE,
+                "All groups join codes sent", UserInterfaceType.UNKNOWN);
+
+        List<String> strings = messageAssemblingService.getMessagesForGroups(groups);
+        logger.info("List Size....={}",strings.size());
+        for (String s:strings){
+            Notification notification = new JoinCodeNotification(user,s,userLog);
+            LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+            bundle.addLog(userLog);
+            bundle.addNotification(notification);
+            logsAndNotificationsBroker.storeBundle(bundle);
+            logger.info("MSG....={}",s);
+            logger.info("Length....={}",s.length());
+        }
     }
 
     private boolean checkGroupSizeLimit(Group group, int numberOfMembersAdding) {

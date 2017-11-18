@@ -22,10 +22,7 @@ import za.org.grassroot.integration.experiments.VariationAssignment;
 import javax.annotation.PostConstruct;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 
 import static za.org.grassroot.services.util.MessageUtils.getUserLocale;
 import static za.org.grassroot.services.util.MessageUtils.shortDateFormatter;
@@ -364,5 +361,33 @@ public class MessageAssemblingManager implements MessageAssemblingService {
                 dateString,
                 assignment
         };
+    }
+
+    @Override
+    public List<String> getMessagesForGroups(List<Group> groups){
+        List<String> messages = new ArrayList<>();
+
+        StringBuilder completedMessage = new StringBuilder("Join codes:");
+        String msgSegmentHolder;
+
+        for(Group group : groups) {
+            if( group.hasValidGroupTokenCode()){
+                msgSegmentHolder = group.getGroupName() + "-" +group.getGroupTokenCode() +",";
+                if((msgSegmentHolder.length() + completedMessage.length()) > 160){
+                    messages.add(completedMessage.toString());
+                    completedMessage = new StringBuilder("Join codes:");
+                }
+                completedMessage.append(msgSegmentHolder);
+            }
+        }
+        return messages;
+    }
+
+    @Override
+    public String createGroupJoinCodeMessage(Group group) {
+        // todo : use messages.properties in services
+        return "Your join code for group:" +
+                group.getGroupName() +
+                "Is:" + group.getGroupTokenCode();
     }
 }
