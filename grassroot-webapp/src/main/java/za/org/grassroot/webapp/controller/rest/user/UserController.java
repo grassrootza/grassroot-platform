@@ -106,6 +106,7 @@ public class UserController {
     public ResponseEntity<ResponseWrapper> updateProfileData(@RequestParam String displayName,
                                                              @RequestParam String phoneNumber,
                                                              @RequestParam String email,
+                                                             @RequestParam String languageCode,
                                                              HttpServletRequest request) {
 
         String jwtToken = getJwtTokenFromRequest(request);
@@ -116,6 +117,7 @@ public class UserController {
 
         user.setDisplayName(displayName);
         user.setEmailAddress(email);
+        user.setLanguageCode(languageCode);
         userService.updateUser(user.getUid(), displayName, email, user.getAlertPreference(), new Locale(user.getLanguageCode()));
 
         AndroidAuthToken response = new AndroidAuthToken(user, jwtToken);
