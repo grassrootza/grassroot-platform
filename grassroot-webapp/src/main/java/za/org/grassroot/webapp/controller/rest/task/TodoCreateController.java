@@ -43,7 +43,7 @@ public class TodoCreateController {
     public ResponseEntity<TaskFullDTO> createInformationRequestTodo(@PathVariable String userUid,
                                                                     @PathVariable String parentUid,
                                                                     @PathVariable JpaEntityType parentType,
-                                                                    @RequestParam String description,
+                                                                    @RequestParam String subject,
                                                                     @RequestParam String responseTag,
                                                                     @RequestParam long dueDateTime,
                                                                     @RequestParam(required = false) Set<String> assignedUids,
@@ -53,7 +53,7 @@ public class TodoCreateController {
                 .parentType(parentType)
                 .userUid(userUid)
                 .parentUid(parentUid)
-                .description(description)
+                .subject(subject)
                 .responseTag(responseTag)
                 .dueDateTime(Instant.ofEpochMilli(dueDateTime)).build();
 
@@ -81,7 +81,7 @@ public class TodoCreateController {
     public ResponseEntity<TaskFullDTO> createConfirmationRequiredTodo(@PathVariable String userUid,
                                                                       @PathVariable String parentUid,
                                                                       @PathVariable JpaEntityType parentType,
-                                                                      @RequestParam String description,
+                                                                      @RequestParam String subject,
                                                                       @RequestParam long dueDateTime,
                                                                       @RequestParam boolean requireImages,
                                                                       @RequestParam Set<String> assignedMemberUids,
@@ -94,7 +94,7 @@ public class TodoCreateController {
                 .parentType(parentType)
                 .userUid(userUid)
                 .parentUid(parentUid)
-                .description(description)
+                .subject(subject)
                 .dueDateTime(Instant.ofEpochMilli(dueDateTime))
                 .assignedMemberUids(assignedMemberUids)
                 .confirmingMemberUids(confirmingMemberUids)
@@ -120,7 +120,7 @@ public class TodoCreateController {
     public ResponseEntity<TaskFullDTO> createActionRequiredTodo(@PathVariable String userUid,
                                                                 @PathVariable String parentUid,
                                                                 @PathVariable JpaEntityType parentType,
-                                                                @RequestParam String description,
+                                                                @RequestParam String subject,
                                                                 @RequestParam long dueDateTime,
                                                                 @RequestParam boolean recurring,
                                                                 @RequestParam(required = false) Long recurringPeriodMillis,
@@ -131,7 +131,7 @@ public class TodoCreateController {
                 .parentType(parentType)
                 .userUid(userUid)
                 .parentUid(parentUid)
-                .description(description)
+                .subject(subject)
                 .dueDateTime(Instant.ofEpochMilli(dueDateTime))
                 .recurring(recurring)
                 .recurringPeriodMillis(recurringPeriodMillis)
@@ -156,7 +156,7 @@ public class TodoCreateController {
     public ResponseEntity<TaskFullDTO> createActionRequiredTodo(@PathVariable String userUid,
                                                                 @PathVariable String parentUid,
                                                                 @PathVariable JpaEntityType parentType,
-                                                                @RequestParam String description,
+                                                                @RequestParam String subject,
                                                                 @RequestParam long dueDateTime,
                                                                 @RequestParam(required = false) Set<String> assignedMemberUids,
                                                                 @RequestParam(required = false) Set<String> mediaFileUids) {
@@ -165,7 +165,7 @@ public class TodoCreateController {
                 .parentType(parentType)
                 .userUid(userUid)
                 .parentUid(parentUid)
-                .description(description)
+                .subject(subject)
                 .dueDateTime(Instant.ofEpochMilli(dueDateTime))
                 .build();
 

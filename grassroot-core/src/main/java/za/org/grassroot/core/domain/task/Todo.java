@@ -2,17 +2,19 @@ package za.org.grassroot.core.domain.task;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.enums.TodoCompletionConfirmType;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Optional;
@@ -30,11 +32,10 @@ import java.util.stream.Collectors;
                 @Index(name = "index_action_todo_type ", columnList = "todo_type")})
 public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, VoteContainer, MeetingContainer {
 
-    @Transient
-    @Value("{grassroot.todos.number.reminders:1")
-    private int DEFAULT_NUMBER_REMINDERS;
-
     private static final int DEFAULT_REMINDER_MINUTES = 60; // todo: just use group?
+
+    @Column(name = "next_notification_time")
+    @Setter private Instant nextNotificationTime;
 
     @Column(name = "cancelled")
     protected boolean cancelled;
@@ -93,6 +94,8 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
         this.ancestorGroup.addDescendantTodo(this);
         this.cancelled = false;
         this.completed = false;
+
+        calculateScheduledReminderTime();
     }
 
     public Todo(User createdByUser, TodoContainer parent, String message, Instant actionByDate,
@@ -103,12 +106,32 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
         this.ancestorGroup.addDescendantTodo(this);
 
         this.cancelled = false;
+
+        calculateScheduledReminderTime();
     }
 
     public static Todo makeEmpty() {
         Todo todo = new Todo();
         todo.uid = UIDGenerator.generateId();
         return todo;
+    }
+
+    public LocalDateTime getReminderTimeAtSAST() { return nextNotificationTime.atZone(DateTimeUtil.getSAST()).toLocalDateTime(); }
+
+    public void calculateScheduledReminderTime() {
+        this.nextNotificationTime= reminderActive
+                ? DateTimeUtil.restrictToDaytime(actionByDate.minus(reminderMinutes, ChronoUnit.MINUTES), actionByDate,
+                DateTimeUtil.getSAST()) : null;
+
+        // if reminder time is already in the past (e.g., set to 1 week but deadline in 5 days), try set it to tomorrow, else set it to deadline
+        if (reminderActive && this.nextNotificationTime.isBefore(Instant.now())) {
+            if (Instant.now().plus(1, ChronoUnit.DAYS).isBefore(actionByDate)) {
+                this.nextNotificationTime= DateTimeUtil.restrictToDaytime(Instant.now().plus(1, ChronoUnit.DAYS),
+                        actionByDate, DateTimeUtil.getSAST());
+            } else {
+                this.nextNotificationTime = actionByDate;
+            }
+        }
     }
 
     @Override

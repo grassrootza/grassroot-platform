@@ -80,7 +80,7 @@ public class TodoBrokerNewImpl implements TodoBrokerNew {
 
         validateUserCanCreate(user, parent.getThisOrAncestorGroup());
 
-        Todo todo = new Todo(user, parent, todoHelper.getTodoType(), todoHelper.getDescription(), todoHelper.getDueDateTime());
+        Todo todo = new Todo(user, parent, todoHelper.getTodoType(), todoHelper.getSubject(), todoHelper.getDueDateTime());
         todo = todoRepository.save(todo);
 
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();

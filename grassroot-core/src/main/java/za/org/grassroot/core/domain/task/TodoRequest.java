@@ -3,24 +3,23 @@ package za.org.grassroot.core.domain.task;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.UIDGenerator;
 
-import javax.persistence.*;
-import java.util.HashSet;
-import java.util.Set;
+import javax.persistence.Entity;
+import javax.persistence.Table;
+import java.time.Instant;
 
 @Entity
 @Table(name = "action_todo_request")
 public class TodoRequest extends AbstractTodoEntity {
-	@Column(name = "replicate_to_subgroups", nullable = false)
-	private boolean replicateToSubgroups;
-
-	@ManyToMany(cascade = CascadeType.ALL)
-	@JoinTable(name = "action_todo_request_assigned_members",
-			joinColumns = @JoinColumn(name = "action_todo_request_id", nullable = false),
-			inverseJoinColumns = @JoinColumn(name = "user_id", nullable = false))
-	private Set<User> assignedMembers = new HashSet<>();
 
 	private TodoRequest() {
 		// for JPA
+	}
+
+	public TodoRequest(User creatingUser, TodoType type) {
+		this.uid = UIDGenerator.generateId();
+		this.createdDateTime = Instant.now();
+		this.createdByUser = creatingUser;
+		this.type = type;
 	}
 
 	public static TodoRequest makeEmpty(User createdByUser, TodoContainer parent) {
@@ -38,18 +37,13 @@ public class TodoRequest extends AbstractTodoEntity {
 		return request;
 	}
 
-	public boolean isReplicateToSubgroups() {
-		return replicateToSubgroups;
-	}
-
-	public void setReplicateToSubgroups(boolean replicateToSubgroups) {
-		this.replicateToSubgroups = replicateToSubgroups;
-	}
-
-	public Set<User> getAssignedMembers() {
-		if (assignedMembers == null) {
-			assignedMembers = new HashSet<>();
-		}
-		return new HashSet<>(assignedMembers);
+	@Override
+	public String toString() {
+		return "TodoRequest{" +
+				"type=" + type +
+				", message='" + message + '\'' +
+				", responseTag='" + responseTag + '\'' +
+				", actionByDate=" + actionByDate +
+				'}';
 	}
 }

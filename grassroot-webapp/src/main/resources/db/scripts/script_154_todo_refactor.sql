@@ -25,9 +25,13 @@ alter table action_todo add column recurring_interval bigint;
 
 alter table action_todo_request add column todo_type varchar(50);
 update action_todo_request set todo_type = 'ACTION_REQUIRED';
-
 alter table action_todo_request alter column todo_type set not null;
+
+alter table action_todo_request add column response_tag varchar(255);
+alter table action_todo_request alter column parent_group_id drop not null;
 alter table action_todo_request drop column replicate_to_subgroups;
+
+-- drop table action_todo_request_assigned_members; (do right at end as rollback painful)
 
 alter table action_todo_assigned_members drop constraint action_todo_assigned_members_pkey;
 alter table action_todo_assigned_members add column id bigserial not null primary key;

@@ -1,106 +1,91 @@
 package za.org.grassroot.services.task;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.*;
-import za.org.grassroot.core.domain.task.TodoContainer;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.Permission;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.TodoRequest;
+import za.org.grassroot.core.domain.task.TodoType;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.TodoRequestRepository;
-import za.org.grassroot.core.repository.UidIdentifiableRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.services.exception.AccountLimitExceededException;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.Objects;
-import java.util.Set;
 
 import static za.org.grassroot.core.util.DateTimeUtil.convertToSystemTime;
 import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
 
-@Service
+@Service @Slf4j
 public class TodoRequestBrokerImpl implements TodoRequestBroker {
-	private final Logger logger = LoggerFactory.getLogger(TodoRequestBrokerImpl.class);
 
-	@Autowired
-	private UserRepository userRepository;
-	@Autowired
-	private GroupRepository groupRepository;
-	@Autowired
-	private TodoBroker todoBroker;
-	@Autowired
-	private PermissionBroker permissionBroker;
-	@Autowired
-	private AccountGroupBroker accountGroupBroker;
+	private final UserRepository userRepository;
+	private final GroupRepository groupRepository;
+	private final TodoBrokerNew todoBroker;
+	private final PermissionBroker permissionBroker;
+	private final AccountGroupBroker accountGroupBroker;
+	private final TodoRequestRepository todoRequestRepository;
 
-	@Autowired
-	private TodoRequestRepository todoRequestRepository;
-	@Autowired
-	UidIdentifiableRepository genericEntityRepository;
+    @Autowired
+    public TodoRequestBrokerImpl(UserRepository userRepository, GroupRepository groupRepository, TodoBrokerNew todoBroker, PermissionBroker permissionBroker, AccountGroupBroker accountGroupBroker, TodoRequestRepository todoRequestRepository) {
+        this.userRepository = userRepository;
+        this.groupRepository = groupRepository;
+        this.todoBroker = todoBroker;
+        this.permissionBroker = permissionBroker;
+        this.accountGroupBroker = accountGroupBroker;
+        this.todoRequestRepository = todoRequestRepository;
+    }
 
-	@Override
+    @Override
 	public TodoRequest load(String requestUid) {
 		return todoRequestRepository.findOneByUid(requestUid);
 	}
 
-	@Override
-	@Transactional
-	public TodoRequest create(String userUid, String groupUid) {
-		Objects.requireNonNull(userUid);
-		Objects.requireNonNull(groupUid);
+    @Override
+    @Transactional
+    public TodoRequest create(String userUid, TodoType todoType) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(todoType);
 
-		User user = userRepository.findOneByUid(userUid);
-		Group group = groupRepository.findOneByUid(groupUid);
+        User user = userRepository.findOneByUid(userUid);
 
-		if (accountGroupBroker.numberTodosLeftForGroup(groupUid) < 1)
-			throw new AccountLimitExceededException();
+		TodoRequest request = new TodoRequest(user, todoType);
+		return todoRequestRepository.save(request);
+    }
 
-		TodoRequest request = TodoRequest.makeEmpty(user, group);
+    @Override
+    @Transactional
+    public void updateGroup(String userUid, String requestUid, String groupUid) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(requestUid);
+        Objects.requireNonNull(groupUid);
 
-		todoRequestRepository.save(request);
+        User user = userRepository.findOneByUid(userUid);
+        TodoRequest request= todoRequestRepository.findOneByUid(requestUid);
+        validateUserCanModify(user, request);
 
-		return request;
-	}
+        Group group = groupRepository.findOneByUid(groupUid);
 
-	@Override
-	@Transactional
-	public TodoRequest create(String userUid, String parentUid, JpaEntityType parentType, String message, LocalDateTime deadline, int reminderMinutes, boolean replicateToSubGroups) {
-		Objects.requireNonNull(userUid);
-		Objects.requireNonNull(parentUid);
-		Objects.requireNonNull(message);
-		Objects.requireNonNull(deadline);
-		Objects.requireNonNull(reminderMinutes);
+        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY);
+        if (accountGroupBroker.numberTodosLeftForGroup(group.getUid()) < 1)
+            throw new AccountLimitExceededException();
 
-		User user = userRepository.findOneByUid(userUid);
-		TodoContainer parent = genericEntityRepository.findOneByUid(TodoContainer.class, parentType, parentUid);
+        request.setParent(group);
+    }
 
-		if (parent instanceof Group)
-			permissionBroker.validateGroupPermission(user, (Group) parent, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY);
+    private void validateUserCanModify(User user, TodoRequest request) {
+        if (!request.getCreatedByUser().equals(user))
+            throw new AccessDeniedException("You are not the creator of this todo");
+    }
 
-		if (accountGroupBroker.numberTodosLeftForGroup(parent.getThisOrAncestorGroup().getUid()) < 1)
-			throw new AccountLimitExceededException();
-
-		TodoRequest todoRequest = TodoRequest.makeEmpty(user, parent);
-		todoRequest.setMessage(message);
-		todoRequest.setActionByDate(convertToSystemTime(deadline, getSAST()));
-		todoRequest.setReminderMinutes(reminderMinutes);
-		todoRequest.setReplicateToSubgroups(replicateToSubGroups);
-
-		todoRequestRepository.save(todoRequest);
-
-		logger.info("Leaving create request ... parent is: " + todoRequest.getParent());
-
-		return todoRequest;
-	}
-
-	@Override
+    @Override
     @Transactional
 	public void updateMessage(String userUid, String requestUid, String message) {
 		Objects.requireNonNull(userUid);
@@ -108,9 +93,9 @@ public class TodoRequestBrokerImpl implements TodoRequestBroker {
 
         User user = userRepository.findOneByUid(userUid);
         TodoRequest todoRequest = todoRequestRepository.findOneByUid(requestUid);
+        validateUserCanModify(user, todoRequest);
 
-        if (!todoRequest.getCreatedByUser().equals(user))
-            throw new AccessDeniedException("You are not the creator of this todo");
+        log.info("updating request subject to {}, request looks like {}", message, todoRequest);
 
         todoRequest.setMessage(message);
 	}
@@ -123,11 +108,27 @@ public class TodoRequestBrokerImpl implements TodoRequestBroker {
 
         User user = userRepository.findOneByUid(userUid);
         TodoRequest todoRequest = todoRequestRepository.findOneByUid(requestUid);
+        validateUserCanModify(user, todoRequest);
 
-        if (!todoRequest.getCreatedByUser().equals(user))
-            throw new AccessDeniedException("You are not the creator of this todo");
+        log.info("updating due date to {}, request looks like {}", dueDate, todoRequest);
 
         todoRequest.setActionByDate(dueDate != null ? convertToSystemTime(dueDate, getSAST()) : null);
+    }
+
+    @Override
+    @Transactional
+    public void updateResponseTag(String userUid, String requestUid, String responseTag) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(requestUid);
+        Objects.requireNonNull(responseTag);
+
+        User user = userRepository.findOneByUid(userUid);
+        TodoRequest request = todoRequestRepository.findOneByUid(requestUid);
+        validateUserCanModify(user, request);
+
+        log.info("updating response tag to {}, request looks like {}", responseTag, request);
+
+        request.setResponseTag(responseTag);
     }
 
     @Override
@@ -135,20 +136,17 @@ public class TodoRequestBrokerImpl implements TodoRequestBroker {
 	public void finish(String todoUid) {
 		Objects.requireNonNull(todoUid);
 
-		TodoRequest todoRequest = todoRequestRepository.findOneByUid(todoUid);
+		TodoRequest request = todoRequestRepository.findOneByUid(todoUid);
 
-		// Since requests are only used in the USSD, and since we are stripping user assignment from USSD as too compelx
-        // for both users and design, am defaulting this to whole group for now
+		TodoHelper helper = TodoHelper.builder()
+                .todoType(request.getType())
+                .userUid(request.getCreatedByUser().getUid())
+                .parentType(request.getParent().getJpaEntityType())
+                .parentUid(request.getParent().getUid())
+                .subject(request.getMessage())
+                .dueDateTime(request.getActionByDate()).build();
 
-        // Set<String> assignedMemberUids = todoRequest.getAssignedMembers().stream().map(User::getUid).collect(Collectors.toSet());
-		Set<String> assignedMemberUids = Collections.emptySet();
-        TodoContainer parent = todoRequest.getParent();
-		LocalDateTime actionDate = todoRequest.getActionByDate() != null ? LocalDateTime.from(todoRequest.getActionByDate().atZone(getSAST())) : null;
-
-		todoBroker.create(todoRequest.getCreatedByUser().getUid(), parent.getJpaEntityType(), parent.getUid(),
-				todoRequest.getMessage(), actionDate, todoRequest.getReminderMinutes(),
-				todoRequest.isReplicateToSubgroups(), assignedMemberUids);
-
-		todoRequestRepository.delete(todoRequest);
+		todoBroker.create(helper);
+		todoRequestRepository.delete(request);
 	}
 }

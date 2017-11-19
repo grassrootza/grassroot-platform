@@ -4,16 +4,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Todo;
-import za.org.grassroot.core.domain.task.TodoRequest;
 import za.org.grassroot.integration.LearningService;
 import za.org.grassroot.integration.exception.SeloApiCallFailure;
 import za.org.grassroot.integration.exception.SeloParseDateTimeFailure;
 import za.org.grassroot.services.PermissionBroker;
-import za.org.grassroot.services.exception.AccountLimitExceededException;
 import za.org.grassroot.services.task.TodoBroker;
 import za.org.grassroot.services.task.TodoRequestBroker;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
@@ -22,12 +18,12 @@ import za.org.grassroot.webapp.model.ussd.AAT.Request;
 import za.org.grassroot.webapp.util.USSDGroupUtil;
 
 import java.net.URISyntaxException;
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 
-import static za.org.grassroot.core.util.DateTimeUtil.*;
+import static za.org.grassroot.core.util.DateTimeUtil.convertDateStringToLocalDateTime;
+import static za.org.grassroot.core.util.DateTimeUtil.reformatDateInput;
 import static za.org.grassroot.webapp.util.USSDUrlUtil.saveToDoMenu;
 
 /**
@@ -99,152 +95,10 @@ public class USSDTodoController extends USSDBaseController {
         return todoMenus + nextMenu + todoUrlSuffix + todoUid;
     }
 
-    private String nextOrConfirmUrl(String thisMenu, String nextMenu, String todoUid, boolean revising) {
-        return revising ? returnUrl(confirmMenu, todoUid) + priorMenuSuffix + thisMenu :
-                returnUrl(nextMenu, todoUid);
-    }
-
-    private String backUrl(String menu, String todoUid) {
-        return returnUrl(menu, todoUid) + "&" + revisingFlag + "=1";
-    }
-
     /*
     Menus to create to-do
      */
 
-    private USSDMenu initiateNewAction(User user, int groupCount) throws URISyntaxException {
-        if (groupCount == 1) {
-            Group group = permissionBroker.getActiveGroupsWithPermission(user, Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY).iterator().next();
-            final String prompt = getMessage(thisSection, subjectMenu, promptKey + ".skipped", group.getName(""), user);
-            return setActionGroupAndInitiateRequest(null, group.getUid(), prompt, false, user);
-        } else {
-            return groupUtil.askForGroup(new USSDGroupUtil.GroupMenuBuilder(user, thisSection)
-                    .urlForExistingGroup(subjectMenu)
-                    .messageKey("new")
-                    .numberOfGroups(groupCount));
-        }
-    }
-
-    @RequestMapping(path + subjectMenu)
-    @ResponseBody
-    public Request askForSubject(@RequestParam(value = phoneNumber) String inputNumber,
-                                 @RequestParam(value = groupUidParam, required = false) String groupUid,
-                                 @RequestParam(value = revisingFlag, required = false) boolean revising,
-                                 @RequestParam(value = todoUidParam, required = false) String passedTodoUid) throws URISyntaxException {
-
-        User user = userManager.findByInputNumber(inputNumber);
-        final String prompt = getMessage(thisSection, subjectMenu, promptKey, user);
-        return menuBuilder(setActionGroupAndInitiateRequest(passedTodoUid, groupUid, prompt, revising, user));
-    }
-
-    private USSDMenu setActionGroupAndInitiateRequest(final String passedTodoUid, final String groupUid, final String prompt,
-                                                      final boolean revising, User user) {
-        try {
-            final String todoUid = passedTodoUid != null ? passedTodoUid : todoRequestBroker.create(user.getUid(), groupUid).getUid();
-            cacheManager.putUssdMenuForUser(user.getPhoneNumber(), saveToDoMenu(subjectMenu, todoUid));
-            return new USSDMenu(prompt, nextOrConfirmUrl(subjectMenu, instantMenu, todoUid, revising));
-        } catch (AccountLimitExceededException e) {
-            final String newPrompt = getMessage(thisSection, "new", promptKey + ".exceeded", user);
-            cacheManager.clearUssdMenuForUser(user.getPhoneNumber());
-            return new USSDMenu(newPrompt, optionsHomeExit(user, false));
-        }
-    }
-
-    @RequestMapping(path + instantMenu)
-    @ResponseBody
-    public Request askIfActionInstant(@RequestParam(value = phoneNumber) String inputNumber,
-                                      @RequestParam(value = userInputParam) String passedInput,
-                                      @RequestParam(value = todoUidParam) String todoUid,
-                                      @RequestParam(value = revisingFlag, required = false) boolean revising,
-                                      @RequestParam(value = interruptedFlag, required = false) boolean interrupted,
-                                      @RequestParam(value = interruptedInput, required = false) String priorInput) throws URISyntaxException {
-        final String userInput = (interrupted) ? priorInput : passedInput;
-        User user = userManager.findByInputNumber(inputNumber, saveToDoMenu(instantMenu, todoUid, userInput));
-        if (!revising) todoRequestBroker.updateMessage(user.getUid(), todoUid, userInput);
-
-        USSDMenu menu = new USSDMenu(menuPrompt(instantMenu, user));
-        // first option goes to the deadline menu
-        menu.addMenuOption(nextOrConfirmUrl(instantMenu, dueDateMenu, todoUid, revising),
-                getMessage(thisSection, instantMenu, optionsKey + "no", user));
-        // second option marks the action as done and proceeds
-        menu.addMenuOption(nextOrConfirmUrl(instantMenu, confirmMenu, todoUid, true),
-                getMessage(thisSection, instantMenu, optionsKey + "yes", user));
-        return menuBuilder(menu);
-    }
-
-    @RequestMapping(path + dueDateMenu)
-    @ResponseBody
-    public Request askForDueDate(@RequestParam(value = phoneNumber) String inputNumber,
-                                 @RequestParam(value = userInputParam) String passedInput,
-                                 @RequestParam(value = todoUidParam) String todoUid,
-                                 @RequestParam(value = revisingFlag, required = false) boolean revising,
-                                 @RequestParam(value = interruptedFlag, required = false) boolean interrupted,
-                                 @RequestParam(value = interruptedInput, required = false) String priorInput) throws URISyntaxException {
-
-        final String userInput = (interrupted) ? priorInput : passedInput;
-        User user = userManager.findByInputNumber(inputNumber, saveToDoMenu(dueDateMenu, todoUid, userInput));
-        return menuBuilder(new USSDMenu(menuPrompt(dueDateMenu, user),
-                                        nextOrConfirmUrl(dueDateMenu, confirmMenu, todoUid, true)));
-    }
-
-    @RequestMapping(path + confirmMenu)
-    @ResponseBody
-    public Request confirmActionTodo(@RequestParam(value = phoneNumber) String inputNumber,
-                                     @RequestParam(value = todoUidParam) String todoUid,
-                                     @RequestParam(value = userInputParam) String passedUserInput,
-                                     @RequestParam(value = previousMenu, required = false) String passedPriorMenu,
-                                     @RequestParam(value = interruptedFlag, required = false) boolean interrupted,
-                                     @RequestParam(value = interruptedInput, required = false) String priorInput) throws URISyntaxException {
-
-        final String userInput = (priorInput !=null) ? priorInput : passedUserInput;
-        final String priorMenu = (passedPriorMenu != null) ? passedPriorMenu: "";
-
-        String urlToSave = saveToDoMenu(confirmMenu, todoUid, priorMenu, userInput, !interrupted);
-
-        User user = userManager.findByInputNumber(inputNumber, urlToSave);
-
-        if (!interrupted) {
-            updateTodoRequest(user.getUid(), todoUid, priorMenu, userInput);
-        }
-
-        TodoRequest todoRequest = todoRequestBroker.load(todoUid);
-        Group group = (Group) todoRequest.getParent();
-
-        String prompt;
-        boolean isInstant = todoRequest.getActionByDate() == null;
-        boolean isInFuture;
-
-        if (!isInstant) {
-            isInFuture = todoRequest.getActionByDate().isAfter(Instant.now());
-            String formattedDueDate = dateTimeFormat.format(convertToUserTimeZone(todoRequest.getActionByDate(), getSAST()));
-            String[] promptFields = new String[]{todoRequest.getMessage(), group.getName(""), formattedDueDate};
-            prompt = isInFuture ? getMessage(thisSection, confirmMenu, promptKey + ".unassigned", promptFields, user)
-                    : getMessage(thisSection, confirmMenu, promptKey + ".err.past", formattedDueDate, user);
-        } else {
-            isInFuture = true;
-            prompt = getMessage(thisSection, confirmMenu, promptKey + ".instant", new String[]{ todoRequest.getMessage(), group.getName() }, user);
-        }
-
-        USSDMenu menu = new USSDMenu(prompt);
-        if (isInFuture) {
-            menu.addMenuOption(returnUrl(send, todoUid) + "&" + instantMenu + "=" + isInstant,
-                    getMessage(thisSection, confirmMenu, optionsKey + "send", user));
-        }
-        menu.addMenuOption(backUrl(subjectMenu, todoUid), getMessage(thisSection, confirmMenu, optionsKey + "subject", user));
-        menu.addMenuOption(backUrl(isInstant ? instantMenu : dueDateMenu, todoUid), getMessage(thisSection, confirmMenu, optionsKey + "duedate", user));
-        return menuBuilder(menu);
-    }
-
-    @RequestMapping(path + send)
-    @ResponseBody
-    public Request finishTodoEntry(@RequestParam(value = phoneNumber) String inputNumber,
-                                   @RequestParam(value = todoUidParam) String todoUid,
-                                   @RequestParam(value = instantMenu, required = false) boolean isInstant) throws URISyntaxException {
-
-        User user = userManager.findByInputNumber(inputNumber, null);
-        todoRequestBroker.finish(todoUid);
-        return menuBuilder(new USSDMenu(menuPrompt(send + (isInstant ? ("." + instantMenu) : ""), user), optionsHomeExit(user, false)));
-    }
 
     /**
      * SECTION: Select and view prior to-do entries

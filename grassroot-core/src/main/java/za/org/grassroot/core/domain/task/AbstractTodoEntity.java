@@ -10,7 +10,6 @@ import za.org.grassroot.core.util.UIDGenerator;
 import javax.persistence.*;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 
 /**
@@ -83,11 +82,8 @@ public abstract class AbstractTodoEntity {
 	@Column(name = "reminder_minutes")
 	@Setter protected int reminderMinutes;
 
-	@Column(name = "next_notification_time")
-	@Setter private Instant nextNotificationTime;
-
 	@Column(name = "reminder_active")
-	@Setter private boolean reminderActive;
+	@Setter protected boolean reminderActive;
 
 	protected AbstractTodoEntity() {
 		// for JPA
@@ -107,29 +103,9 @@ public abstract class AbstractTodoEntity {
 
 		this.reminderMinutes = reminderMinutes;
 		this.reminderActive = reminderActive;
-		calculateScheduledReminderTime();
-
 	}
 
 	public LocalDateTime getActionByDateAtSAST() { return actionByDate.atZone(DateTimeUtil.getSAST()).toLocalDateTime(); }
-
-	public LocalDateTime getReminderTimeAtSAST() { return nextNotificationTime.atZone(DateTimeUtil.getSAST()).toLocalDateTime(); }
-
-	public void calculateScheduledReminderTime() {
-		this.nextNotificationTime= reminderActive
-				? DateTimeUtil.restrictToDaytime(actionByDate.minus(reminderMinutes, ChronoUnit.MINUTES), actionByDate,
-				DateTimeUtil.getSAST()) : null;
-
-		// if reminder time is already in the past (e.g., set to 1 week but deadline in 5 days), try set it to tomorrow, else set it to deadline
-		if (reminderActive && this.nextNotificationTime.isBefore(Instant.now())) {
-			if (Instant.now().plus(1, ChronoUnit.DAYS).isBefore(actionByDate)) {
-				this.nextNotificationTime= DateTimeUtil.restrictToDaytime(Instant.now().plus(1, ChronoUnit.DAYS),
-						actionByDate, DateTimeUtil.getSAST());
-			} else {
-				this.nextNotificationTime = actionByDate;
-			}
-		}
-	}
 
 	public TodoContainer getParent() {
 		if (parentGroup != null) {

@@ -18,7 +18,7 @@ public class TodoHelper {
     private JpaEntityType parentType;
 
     private TodoType todoType;
-    private String description;
+    private String subject;
     private Instant dueDateTime;
 
     @Setter private String responseTag;
@@ -38,7 +38,7 @@ public class TodoHelper {
         Objects.requireNonNull(parentType);
 
         Objects.requireNonNull(todoType);
-        Objects.requireNonNull(description);
+        Objects.requireNonNull(subject);
         Objects.requireNonNull(dueDateTime);
 
         // todo : add checking logic on assignment set, depending on type

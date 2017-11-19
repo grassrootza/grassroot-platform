@@ -17,6 +17,8 @@ alter table action_todo drop column recurring;
 alter table action_todo drop column recurring_interval;
 
 alter table action_todo_request drop column todo_type;
+alter table action_todo_request drop column response_tag;
+
 alter table action_todo_request add column replicate_to_subgroups boolean default false;
 
 alter table action_todo_assigned_members drop column id;

@@ -53,7 +53,7 @@ public final class TodoSpecifications {
     }
 
     public static Specification<Todo> reminderTimeBefore(Instant time) {
-        return (root, query, cb) -> cb.lessThan(root.get(AbstractTodoEntity_.nextNotificationTime), time);
+        return (root, query, cb) -> cb.lessThan(root.get(Todo_.nextNotificationTime), time);
     }
 
     public static Specification<Todo> userPartOfGroup(final User user) {

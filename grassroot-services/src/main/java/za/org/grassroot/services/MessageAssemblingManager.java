@@ -22,6 +22,7 @@ import za.org.grassroot.integration.experiments.VariationAssignment;
 import javax.annotation.PostConstruct;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 import static za.org.grassroot.services.util.MessageUtils.getUserLocale;
@@ -39,7 +40,7 @@ public class MessageAssemblingManager implements MessageAssemblingService {
     private final MessageSourceAccessor messageSourceAccessor;
     private final ExperimentBroker experimentBroker;
 
-    private Map<TodoType, String> todoAssignedMsgMap;
+    private Map<TodoType, String> todoMsgKeyRootMap;
     private static final String defaultTodoKey = "sms.todo.new.notassigned";
 
     @Autowired
@@ -50,11 +51,11 @@ public class MessageAssemblingManager implements MessageAssemblingService {
 
     @PostConstruct
     public void init() {
-        todoAssignedMsgMap= new HashMap<>();
-        todoAssignedMsgMap.put(TodoType.INFORMATION_REQUIRED, "text.todo.information.new");
-        todoAssignedMsgMap.put(TodoType.VALIDATION_REQUIRED, "text.todo.conf.assigned.new");
-        todoAssignedMsgMap.put(TodoType.ACTION_REQUIRED, "text.todo.action.new");
-        todoAssignedMsgMap.put(TodoType.VOLUNTEERS_NEEDED, "text.todo.volunteer.new");
+        todoMsgKeyRootMap= new HashMap<>();
+        todoMsgKeyRootMap.put(TodoType.INFORMATION_REQUIRED, "text.todo.information");
+        todoMsgKeyRootMap.put(TodoType.VALIDATION_REQUIRED, "text.todo.conf.assigned");
+        todoMsgKeyRootMap.put(TodoType.ACTION_REQUIRED, "text.todo.action");
+        todoMsgKeyRootMap.put(TodoType.VOLUNTEERS_NEEDED, "text.todo.volunteer");
     }
 
     @Override
@@ -109,7 +110,7 @@ public class MessageAssemblingManager implements MessageAssemblingService {
     public String createTodoReminderMessage(User user, Todo todo) {
         Locale locale = getUserLocale(user);
         String[] args = populateTodoFields(todo);
-        final String msgKey = todo.getActionByDate().isAfter(Instant.now()) ? "sms.todo.reminder" : "sms.todo.reminder.past";
+        final String msgKey = todoMsgKeyRootMap.getOrDefault(todo.getType(), defaultTodoKey) + ".reminder";
         return messageSourceAccessor.getMessage(msgKey, args, locale);
     }
 
@@ -132,7 +133,8 @@ public class MessageAssemblingManager implements MessageAssemblingService {
                 todo.getMessage(),
                 sdf.format(todo.getActionByDateAtSAST())
         };
-        final String messageKey = todoAssignedMsgMap.getOrDefault(todo.getType(), defaultTodoKey);
+        final String messageKey = todoMsgKeyRootMap.getOrDefault(todo.getType(), defaultTodoKey) + ".new" +
+                (todo.getActionByDate().isBefore(Instant.now().plus(1, ChronoUnit.HOURS)) ? ".instant" : "");
         return messageSourceAccessor.getMessage(messageKey, todoFields, locale);
     }
 

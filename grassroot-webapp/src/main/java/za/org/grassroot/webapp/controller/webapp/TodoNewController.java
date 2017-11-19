@@ -71,7 +71,7 @@ public class TodoNewController extends BaseController {
                 .parentType(JpaEntityType.GROUP)
                 .parentUid(parentUid)
                 .todoType(type)
-                .description(messsage)
+                .subject(messsage)
                 .dueDateTime(DateTimeUtil.convertToSystemTime(deadline, DateTimeUtil.getSAST()))
                 .userUid(getUserProfile().getUid()).build();
 
