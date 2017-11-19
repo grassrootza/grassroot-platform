@@ -35,7 +35,7 @@ public class TodoResponseController {
     public ResponseEntity recordUserInformationResponse(@PathVariable String todoUid,
                                                         @PathVariable String userUid,
                                                         @RequestParam String response) {
-        todoBrokerNew.recordResponse(userUid, todoUid, response);
+        todoBrokerNew.recordResponse(userUid, todoUid, response, false);
         return ResponseEntity.ok(RestMessage.TODO_RESPONSE_RECORDED);
     }
 

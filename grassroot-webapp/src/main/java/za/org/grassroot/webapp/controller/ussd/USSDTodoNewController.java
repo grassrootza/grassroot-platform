@@ -64,7 +64,7 @@ public class USSDTodoNewController extends USSDBaseController {
                                      @RequestParam String todoUid,
                                      @RequestParam(value = yesOrNoParam) String userResponse) throws URISyntaxException {
         User user = userManager.findByInputNumber(msisdn);
-        todoBrokerNew.recordResponse(user.getUid(), todoUid, userResponse);
+        todoBrokerNew.recordResponse(user.getUid(), todoUid, userResponse, false);
         // todo : if user responds yes, allow them to share? in case yes, leaving a little duplication in here
         String promptMessage = "yes".equalsIgnoreCase(userResponse) ?
                 getMessage("todo2.volunteer.yes.prompt", user) :
@@ -80,9 +80,9 @@ public class USSDTodoNewController extends USSDBaseController {
         final String userInput = StringUtils.isEmpty(priorInput) ? userResponse : priorInput;
         User user = userManager.findByInputNumber(msisdn, saveUrl("/respond/info", todoUid, userInput));
         USSDMenu menu = new USSDMenu(getMessage(USSDSection.TODO2, "info", promptKey + ".confirm", userInput, user));
-        menu.addMenuOption(fullPath + "/respond/info/confirmed?todoUid=" + todoUid + "&response=" + userInput,
+        menu.addMenuOption(thisPath + "/respond/info/confirmed?todoUid=" + todoUid + "&response=" + userInput,
                 getMessage("options.yes", user));
-        menu.addMenuOption(fullPath + "/respond/info/revise", getMessage("todo2.info.response.change", user));
+        menu.addMenuOption(thisPath + "/respond/info/revise", getMessage("todo2.info.response.change", user));
         return menuBuilder(menu);
     }
 
@@ -91,7 +91,7 @@ public class USSDTodoNewController extends USSDBaseController {
                                       @RequestParam String todoUid,
                                       @RequestParam String response) throws URISyntaxException {
         User user = userManager.findByInputNumber(msisdn, null);
-        todoBrokerNew.recordResponse(user.getUid(), todoUid, response);
+        todoBrokerNew.recordResponse(user.getUid(), todoUid, response, false);
         return menuBuilder(welcomeMenu(getMessage("todo2.info.prompt.done", user), user));
     }
 
@@ -114,11 +114,10 @@ public class USSDTodoNewController extends USSDBaseController {
                                           @RequestParam(value = yesOrNoParam) String userResponse) throws URISyntaxException {
         User user = userManager.findByInputNumber(msisdn);
         if (!"unsure".equalsIgnoreCase(userResponse)) {
-            todoBrokerNew.recordResponse(user.getUid(), todoUid, userResponse);
+            todoBrokerNew.recordResponse(user.getUid(), todoUid, userResponse, false);
         }
         return menuBuilder(welcomeMenu(getMessage("todo2.validate." + userResponse + ".prompt", user), user));
     }
-
 
     private String saveUrl(String menu, String todoUid, String userInput) {
         return thisPath + menu + "?todoUid=" + todoUid + "&priorInput=" + USSDUrlUtil.encodeParameter(userInput);

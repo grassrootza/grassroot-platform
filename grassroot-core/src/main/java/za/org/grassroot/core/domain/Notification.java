@@ -78,7 +78,7 @@ public abstract class Notification implements Serializable {
 
 	@ManyToOne
 	@JoinColumn(name = "action_todo_log_id")
-	private TodoLog todoLog;
+	@Setter private TodoLog todoLog;
 
 	@ManyToOne
 	@JoinColumn(name = "group_log_id", foreignKey = @ForeignKey(name = "fk_notification_group_log"))

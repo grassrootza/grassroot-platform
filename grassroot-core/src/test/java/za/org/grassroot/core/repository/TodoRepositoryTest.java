@@ -18,6 +18,7 @@ import za.org.grassroot.core.domain.task.TodoLog;
 import za.org.grassroot.core.dto.task.TaskTimeChangedDTO;
 import za.org.grassroot.core.enums.TodoCompletionConfirmType;
 import za.org.grassroot.core.enums.TodoLogType;
+import za.org.grassroot.core.specifications.TodoSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
 
 import javax.transaction.Transactional;
@@ -56,7 +57,7 @@ public class TodoRepositoryTest {
         Group groupUnrelated = groupRepository.save(new Group("not related action", user));
         Todo lb1 = todoRepository.save(new Todo(user, group, "just do it", addHoursFromNow(2)));
         Todo lbUnrelated = todoRepository.save(new Todo(user, groupUnrelated, "just do it too", addHoursFromNow(2)));
-        List<Todo> list = todoRepository.findByParentGroupAndCancelledFalse(group);
+        List<Todo> list = todoRepository.findAll(TodoSpecifications.hasGroupAsParent(group));
         assertEquals(1,list.size());
         assertEquals(lb1.getId(),list.get(0).getId());
     }
@@ -82,7 +83,7 @@ public class TodoRepositoryTest {
     }
 
     @Test
-    public void shouldSaveAndRetrieveLogBookAssignedToUserAndCompleted()  {
+    public void shouldSaveAndRetrieveTodoAssignedToUserAndCompleted()  {
         User user = userRepository.save(new User("001111145"));
         Group group = new Group("test action", user);
         group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
@@ -97,13 +98,13 @@ public class TodoRepositoryTest {
 
         // todo : move these into services, given transition to using specifications
         Sort sort = new Sort(Sort.Direction.DESC, "actionByDate");
-        List<Todo> list = todoRepository.findByAssignedMembersAndActionByDateBetweenAndCompletionPercentageGreaterThanEqual(user, Instant.now(),
-                DateTimeUtil.getVeryLongAwayInstant(), 50, sort);
+        List<Todo> list = todoRepository.findByAssignedMembersAndActionByDateBetweenAndCompletedTrue(user, Instant.now(),
+                DateTimeUtil.getVeryLongAwayInstant(), sort);
         assertEquals(0, list.size());
         lb1.addCompletionConfirmation(user, TodoCompletionConfirmType.COMPLETED, Instant.now());
         todoRepository.save(lb1);
-        list = todoRepository.findByAssignedMembersAndActionByDateBetweenAndCompletionPercentageGreaterThanEqual(user, Instant.now(),
-                DateTimeUtil.getVeryLongAwayInstant(), 50, sort);
+        list = todoRepository.findByAssignedMembersAndActionByDateBetweenAndCompletedTrue(user, Instant.now(),
+                DateTimeUtil.getVeryLongAwayInstant(), sort);
         assertEquals(1,list.size());
     }
 

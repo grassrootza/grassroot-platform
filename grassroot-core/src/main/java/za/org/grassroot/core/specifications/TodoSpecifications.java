@@ -1,6 +1,7 @@
 package za.org.grassroot.core.specifications;
 
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.domain.Specifications;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.enums.TodoCompletionConfirmType;
@@ -42,16 +43,6 @@ public final class TodoSpecifications {
         return (root, query, cb) -> cb.between(root.get(AbstractTodoEntity_.actionByDate), start, end);
     }
 
-    public static Specification<Todo> completionConfirmsAbove(double threshold, boolean equalTo) {
-        return (root, query, cb) -> equalTo ? cb.greaterThanOrEqualTo(root.get(Todo_.completionPercentage), threshold) :
-                cb.greaterThan(root.get(Todo_.completionPercentage), threshold);
-    }
-
-    public static Specification<Todo> completionConfirmsBelow(double threshold, boolean equalTo) {
-        return (root, query, cb) -> equalTo ? cb.lessThanOrEqualTo(root.get(Todo_.completionPercentage), threshold) :
-                cb.lessThan(root.get(Todo_.completionPercentage), threshold);
-    }
-
     public static Specification<Todo> createdDateBetween(Instant start, Instant end) {
         return (root, query, cb) -> cb.between(root.get(AbstractTodoEntity_.createdDateTime), start, end);
     }
@@ -83,6 +74,24 @@ public final class TodoSpecifications {
                     cb.or(cb.notEqual(root.get(AbstractTodoEntity_.createdByUser), join.get(TodoAssignment_.user))),
                     cb.notEqual(join.get(TodoAssignment_.confirmType), TodoCompletionConfirmType.COMPLETED)));
         };
+    }
+
+    public static Specifications<Todo> todosForUserResponse(User user) {
+        Specification<Todo> isOfType = (root, query, cb) -> root.get(Todo_.type).in(TodoType.typesRequiringResponse());
+        Specification<Todo> isAssigned = (root, query, cb) -> {
+            Join<Todo, TodoAssignment> join = root.join(Todo_.assignments);
+            return cb.and(
+                    cb.equal(join.get(TodoAssignment_.user), user),
+                    cb.isFalse(join.get(TodoAssignment_.hasResponded)),
+                    cb.or(cb.isTrue(join.get(TodoAssignment_.assignedAction)),
+                            cb.isTrue(join.get(TodoAssignment_.canWitness))));
+        };
+        return Specifications.where(isOfType).and(isAssigned);
+    }
+
+    public static Specification<TodoAssignment> userAssignment(User user, Todo todo) {
+        return (root, query, cb) -> cb.and(cb.equal(root.get(TodoAssignment_.todo), todo),
+                cb.equal(root.get(TodoAssignment_.user), user));
     }
 
 }

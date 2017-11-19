@@ -87,7 +87,7 @@ public class TodoCreateController {
                                                                       @RequestParam Set<String> assignedMemberUids,
                                                                       @RequestParam Set<String> confirmingMemberUids,
                                                                       @RequestParam boolean recurring,
-                                                                      @RequestParam(required = false) long recurringPeriodMillis,
+                                                                      @RequestParam(required = false) Long recurringPeriodMillis,
                                                                       @RequestParam(required = false) Set<String> mediaFileUids) {
         TodoHelper todoHelper = TodoHelper.builder()
                 .todoType(TodoType.VALIDATION_REQUIRED)
@@ -146,6 +146,38 @@ public class TodoCreateController {
         }
 
         return handleCreationAndReturn(todoHelper);
+    }
+
+    /*
+    To-do that needs volunteers ...
+     */
+    @RequestMapping(value = "/volunteer/{userUid}/{parentType}/{parentUid}", method = RequestMethod.POST)
+    @ApiOperation(value = "Create a todo that requests volunteers, and notifies the creator when someone replies yes")
+    public ResponseEntity<TaskFullDTO> createActionRequiredTodo(@PathVariable String userUid,
+                                                                @PathVariable String parentUid,
+                                                                @PathVariable JpaEntityType parentType,
+                                                                @RequestParam String description,
+                                                                @RequestParam long dueDateTime,
+                                                                @RequestParam(required = false) Set<String> assignedMemberUids,
+                                                                @RequestParam(required = false) Set<String> mediaFileUids) {
+        TodoHelper helper = TodoHelper.builder()
+                .todoType(TodoType.VOLUNTEERS_NEEDED)
+                .parentType(parentType)
+                .userUid(userUid)
+                .parentUid(parentUid)
+                .description(description)
+                .dueDateTime(Instant.ofEpochMilli(dueDateTime))
+                .build();
+
+        if (assignedMemberUids != null && !assignedMemberUids.isEmpty()) {
+            helper.setAssignedMemberUids(assignedMemberUids);
+        }
+
+        if (mediaFileUids != null && !mediaFileUids.isEmpty()) {
+            helper.setMediaFileUids(mediaFileUids);
+        }
+
+        return handleCreationAndReturn(helper);
     }
 
     private ResponseEntity<TaskFullDTO> handleCreationAndReturn(TodoHelper todoHelper) {

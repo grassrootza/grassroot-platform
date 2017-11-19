@@ -39,7 +39,7 @@ public class TodoAssignment {
 
     @Basic
     @Column(name = "has_responded")
-    boolean hasResponded;
+    @Setter boolean hasResponded;
 
     @Column(name = "response_date_time")
     @Setter private Instant responseTime;

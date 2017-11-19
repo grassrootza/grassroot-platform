@@ -326,7 +326,6 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
         verify(todoBrokerMock, times(1)).load(dummyTodo.getUid());
         verify(todoBrokerMock, times(1)).confirmCompletion(eq(testUser.getUid()), eq(dummyTodo.getUid()), eq(TodoCompletionConfirmType.COMPLETED),
                 any(LocalDateTime.class));
-        verify(todoBrokerMock, times(1)).userHasIncompleteActionsToView(testUser.getUid());
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(todoBrokerMock);
 

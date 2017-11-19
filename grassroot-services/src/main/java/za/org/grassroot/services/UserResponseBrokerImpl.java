@@ -71,6 +71,7 @@ public class UserResponseBrokerImpl implements UserResponseBroker {
 
         Todo todo = todoBroker.checkForTodoNeedingResponse(userUid);
         if (todo != null) {
+            log.info("found a todo for user to respond: {}", todo);
             return todo;
         }
 
@@ -141,7 +142,7 @@ public class UserResponseBrokerImpl implements UserResponseBroker {
                 voteBroker.recordUserVote(userUid, entityUid, userResponse);
                 break;
             case TODO:
-                todoBroker.recordResponse(userUid, entityUid, userResponse);
+                todoBroker.recordResponse(userUid, entityUid, userResponse, false);
                 break;
             case SAFETY:
                 safetyEventBroker.recordResponse(userUid, entityUid, !"false_alarm".equalsIgnoreCase(userResponse));

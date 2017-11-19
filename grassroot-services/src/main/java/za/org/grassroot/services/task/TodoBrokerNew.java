@@ -21,8 +21,6 @@ public interface TodoBrokerNew {
 
     Todo checkForTodoNeedingResponse(String userUid);
 
-    void hasInformationRequested(String userUid, String responseString);
-
-    void recordResponse(String userUid, String todoUid, String response);
+    void recordResponse(String userUid, String todoUid, String response, boolean confirmRecorded);
 
 }

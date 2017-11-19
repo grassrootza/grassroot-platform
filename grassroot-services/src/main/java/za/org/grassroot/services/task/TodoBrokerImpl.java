@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -21,6 +20,7 @@ import za.org.grassroot.core.domain.notification.TodoReminderNotification;
 import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.domain.task.TodoContainer;
 import za.org.grassroot.core.domain.task.TodoLog;
+import za.org.grassroot.core.domain.task.Todo_;
 import za.org.grassroot.core.enums.TodoCompletionConfirmType;
 import za.org.grassroot.core.enums.TodoLogType;
 import za.org.grassroot.core.repository.GroupRepository;
@@ -332,23 +332,11 @@ public class TodoBrokerImpl implements TodoBroker {
 		Specifications<Todo> specifications = Specifications
 				.where(notCancelled())
 				.and(hasGroupAsParent(group))
-				.and(completionConfirmsAbove(COMPLETION_PERCENTAGE_BOUNDARY, false));
+				.and((root, query, cb) -> cb.isTrue(root.get(Todo_.completed)));
 		return todoRepository.findAll(specifications, pageRequest);
 	}
 
 	@Override
-	@Transactional(readOnly = true)
-	public List<Todo> fetchTodosForGroupCreatedDuring(String groupUid, LocalDateTime periodStart, LocalDateTime periodEnd) {
-		Group group = groupRepository.findOneByUid(groupUid);
-		Sort sort = new Sort(Sort.Direction.ASC, "createdDateTime");
-
-		Instant start = convertToSystemTime(periodStart, getSAST());
-		Instant end = convertToSystemTime(periodEnd, getSAST());
-
-		return todoRepository.findAll(Specifications.where(hasGroupAsParent(group)).and(createdDateBetween(start, end)), sort);
-	}
-
-    @Override
 	@Transactional(readOnly = true)
 	public List<Todo> fetchTodosForGroupByStatus(String groupUid, boolean futureTodosOnly, TodoStatus status) {
 		Objects.requireNonNull(groupUid);
@@ -363,70 +351,12 @@ public class TodoBrokerImpl implements TodoBroker {
 		logger.info("Looking with status {}, and boundary {}", status, COMPLETION_PERCENTAGE_BOUNDARY);
 
 		if (TodoStatus.COMPLETE.equals(status)) {
-			specifications = specifications.and(TodoSpecifications.completionConfirmsAbove(COMPLETION_PERCENTAGE_BOUNDARY, true));
+			specifications = specifications.and((root, query, cb) -> cb.isTrue(root.get(Todo_.completed)));
 		} else if (TodoStatus.INCOMPLETE.equals(status)) {
-			specifications = specifications.and(TodoSpecifications.completionConfirmsBelow(COMPLETION_PERCENTAGE_BOUNDARY, false));
+			specifications = specifications.and((root, query, cb) -> cb.isFalse(root.get(Todo_.completed)));
 		}
 
 		return todoRepository.findAll(specifications);
-	}
-
-	@Override
-	@Transactional(readOnly = true)
-	public Optional<Todo> fetchTodoForUserResponse(String userUid, boolean assignedTodosOnly) {
-		final User user = userRepository.findOneByUid(userUid);
-		final Sort sort = new Sort(Sort.Direction.ASC, "actionByDate"); // get the most overdue
-		final List<Todo> result = todoRepository.findAll(incompleteTodoSpecifications(user, DAYS_PAST_FOR_TODO_CHECKING, false), sort);
-		if (result == null || result.isEmpty()) {
-			return Optional.empty();
-		} else {
-			return result.stream()
-					.filter(t -> !assignedTodosOnly || t.isAllGroupMembersAssigned() || t.getAssignedMembers().contains(user))
-					.filter(t -> !t.hasUserResponded(user)) // might be able to include in specifications, but could be overloading for small gain
-					.findFirst();
-		}
-	}
-
-	@Override
-	@Transactional(readOnly = true)
-	public boolean userHasTodosForResponse(String userUid, boolean assignedTodosOnly) {
-		return fetchTodoForUserResponse(userUid, assignedTodosOnly).isPresent();
-	}
-
-	@Override
-	@Transactional(readOnly = true)
-	public boolean userHasIncompleteActionsToView(String userUid) {
-		User user = userRepository.findOneByUid(userUid);
-		return todoRepository.count(incompleteTodoSpecifications(user, 90, true)) > 0;
-	}
-
-	@Override
-	@Transactional(readOnly = true)
-	public Page<Todo> fetchIncompleteActionsToView(String userUid, Pageable pageable) {
-		// important: we assume that the pageable has sort instructions embedded in it
-		User user = userRepository.findOneByUid(userUid);
-		return todoRepository.findAll(incompleteTodoSpecifications(user, 90, true), pageable);
-	}
-
-	private Specifications<Todo> incompleteTodoSpecifications(User user, long daysPastToCheck, boolean dueInFutureToo) {
-		// what we want: todos on groups that the user is part of, with action by date in a defined interval, where the action by date is in the
-		// range and the to-do has not been marked completed by the creator of the to-do
-		return Specifications
-				.where(notCancelled())
-				.and(userPartOfGroup(user))
-				.and(actionByDateBetween(Instant.now().minus(daysPastToCheck, ChronoUnit.DAYS),
-						dueInFutureToo ? DateTimeUtil.getVeryLongAwayInstant() : Instant.now()))
-				.and(completionConfirmsBelow(COMPLETION_PERCENTAGE_BOUNDARY, false))
-				.and(todoNotConfirmedByCreator());
-	}
-
-	@Override
-	@Transactional(readOnly = true)
-	public boolean userHasOldActionsToView(String userUid) {
-		User user = userRepository.findOneByUid(userUid);
-		// note : we do not use the completion threshold because then actions which are under threshold but over 90 days old
-		// might get lost (since the view incomplete functionality is time limited) -- and this controls whether menu appears, so need to be cautious
-		return todoRepository.count(Specifications.where(notCancelled()).and(userPartOfGroup(user))) > 0;
 	}
 
 	@Override

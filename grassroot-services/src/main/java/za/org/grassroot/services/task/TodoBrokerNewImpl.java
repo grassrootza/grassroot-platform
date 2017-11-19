@@ -3,6 +3,10 @@ package za.org.grassroot.services.task;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,9 +15,11 @@ import za.org.grassroot.core.domain.notification.TodoInfoNotification;
 import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.enums.TodoCompletionConfirmType;
 import za.org.grassroot.core.enums.TodoLogType;
+import za.org.grassroot.core.repository.TodoAssignmentRepository;
 import za.org.grassroot.core.repository.TodoRepository;
 import za.org.grassroot.core.repository.UidIdentifiableRepository;
 import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.specifications.TodoSpecifications;
 import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.PermissionBroker;
@@ -35,6 +41,7 @@ import java.util.stream.Collectors;
 public class TodoBrokerNewImpl implements TodoBrokerNew {
 
     private final TodoRepository todoRepository;
+    private final TodoAssignmentRepository todoAssignmentRepository;
     private final UserRepository userRepository;
     private final UidIdentifiableRepository uidIdentifiableRepository;
 
@@ -45,8 +52,9 @@ public class TodoBrokerNewImpl implements TodoBrokerNew {
     private final ApplicationEventPublisher eventPublisher;
 
     @Autowired
-    public TodoBrokerNewImpl(TodoRepository todoRepository, UserRepository userRepository, UidIdentifiableRepository uidIdentifiableRepository, PermissionBroker permissionBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, MessageAssemblingService messageService, ApplicationEventPublisher eventPublisher) {
+    public TodoBrokerNewImpl(TodoRepository todoRepository, TodoAssignmentRepository todoAssignmentRepository, UserRepository userRepository, UidIdentifiableRepository uidIdentifiableRepository, PermissionBroker permissionBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, MessageAssemblingService messageService, ApplicationEventPublisher eventPublisher) {
         this.todoRepository = todoRepository;
+        this.todoAssignmentRepository = todoAssignmentRepository;
         this.userRepository = userRepository;
         this.uidIdentifiableRepository = uidIdentifiableRepository;
         this.permissionBroker = permissionBroker;
@@ -144,7 +152,7 @@ public class TodoBrokerNewImpl implements TodoBrokerNew {
         validateUserCanModify(user, todo);
         todo.setCancelled(true);
         // todo : send out notifications
-        createAndStoreTodoLog(user, todo, TodoLogType.CANCELLED, reason, null);
+        createAndStoreTodoLog(user, todo, TodoLogType.CANCELLED, reason);
     }
 
     @Override
@@ -155,7 +163,7 @@ public class TodoBrokerNewImpl implements TodoBrokerNew {
         validateUserCanModify(user, todo);
         todo.setActionByDate(newDueDateTime);
         // todo : consider notifications
-        createAndStoreTodoLog(user, todo, TodoLogType.EXTENDED, newDueDateTime.toString(), null);
+        createAndStoreTodoLog(user, todo, TodoLogType.EXTENDED, newDueDateTime.toString());
     }
 
     @Override
@@ -165,7 +173,7 @@ public class TodoBrokerNewImpl implements TodoBrokerNew {
         User user = userRepository.findOneByUid(userUid);
         validateUserCanModify(user, todo);
         todo.setDescription(newDescription);
-        createAndStoreTodoLog(user, todo, TodoLogType.CHANGED, "Changed description: " + newDescription, null);
+        createAndStoreTodoLog(user, todo, TodoLogType.CHANGED, "Changed description: " + newDescription);
     }
 
     @Override
@@ -183,64 +191,106 @@ public class TodoBrokerNewImpl implements TodoBrokerNew {
         validateUserCanConfirm(user, todo);
 
         todo.addCompletionConfirmation(user, TodoCompletionConfirmType.COMPLETED, Instant.now());
-
-        createAndStoreTodoLog(user, todo, TodoLogType.RESPONDED, "todo confirmed", null);
+        createAndStoreTodoLog(user, todo, TodoLogType.RESPONDED, "todo confirmed");
     }
 
     @Override
     @Transactional(readOnly = true)
     public Todo checkForTodoNeedingResponse(String userUid) {
-        // todo : insert (for validation - if passed, and no response)
-        return null;
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public void hasInformationRequested(String userUid, String responseString) {
-        Objects.requireNonNull(userUid);
-
         User user = userRepository.findOneByUid(userUid);
-
-        todoRepository.findAll();
+        // last in first out (at present - makes most sense if user is responding to something)
+        Pageable limit = new PageRequest(0, 1, new Sort(Sort.Direction.DESC, "createdDateTime"));
+        Page<Todo> result = todoRepository.findAll(TodoSpecifications.todosForUserResponse(user), limit);
+        return result.getNumberOfElements() == 0 ? null : result.getContent().get(0);
     }
 
     @Override
     @Transactional
-    public void recordResponse(String userUid, String todoUid, String response) {
+    public void recordResponse(String userUid, String todoUid, String response, boolean confirmRecorded) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(todoUid);
         Objects.requireNonNull(response);
 
         Todo todo = todoRepository.findOneByUid(todoUid);
-        if (!todo.getType().equals(TodoType.INFORMATION_REQUIRED)) {
-            throw new TodoTypeMismatchException();
-        }
 
-        // todo : decide if this is tagged in parent groups or just parent
         // todo : enforce assignment only within group members when create
 
         User user = userRepository.findOneByUid(userUid);
-        validateUserCanRespondToTodo(user, todo);
+        TodoAssignment todoAssignment = validateUserCanRespondToTodo(user, todo);
 
-        Group group = todo.getAncestorGroup();
-        Membership membership = group.getMembership(user);
+        todoAssignment.setResponseText(response);
+        todoAssignment.setResponseTime(Instant.now());
+        todoAssignment.setHasResponded(true);
 
-        // todo : some validation in here
-        final String memberTag = todo.getResponseTag() + ":" + response;
-        membership.addTag(memberTag);
+        TodoLog todoLog = new TodoLog(TodoLogType.RESPONDED, user, todo, response);
+        Set<Notification> notifications = new HashSet<>();
+        switch (todo.getType()) {
+            case INFORMATION_REQUIRED:
+                notifications.addAll(recordInformationResponse(todoAssignment, response, todoLog, confirmRecorded));
+                break;
+            case VALIDATION_REQUIRED:
+                notifications.addAll(processValidation(todoAssignment, response, todoLog));
+                break;
+            case VOLUNTEERS_NEEDED:
+                notifications.addAll(notifyCreatorOfVolunteer(todoAssignment, response, todoLog));
+                break;
+        }
 
-        createAndStoreTodoLog(user, todo, TodoLogType.RESPONDED, memberTag, null);
+        storeLogAndNotifications(todoLog, notifications);
     }
 
-    private void createAndStoreTodoLog(User user, Todo todo, TodoLogType todoLogType, String description,
-                                       Set<Notification> notifications) {
+    private Set<Notification> recordInformationResponse(TodoAssignment assignment, String response, TodoLog todoLog, boolean sendConfirmation) {
+        Set<Notification> notifications = new HashSet<>();
+
+        // todo: handle possible duplication
+        Group group = assignment.getTodo().getAncestorGroup();
+        Membership membership = group.getMembership(assignment.getUser());
+
+        final String memberTag = assignment.getTodo().getResponseTag() + ":" + response;
+        log.info("adding tag to member: {}", memberTag);
+        membership.addTag(memberTag);
+
+        if (sendConfirmation) {
+            notifications.add(new TodoInfoNotification(assignment.getUser(), "we recorded it", todoLog));
+        }
+        return notifications;
+    }
+
+    private Set<Notification> processValidation(TodoAssignment assignment, String response, TodoLog todoLog) {
+        Set<Notification> notifications = new HashSet<>();
+        // todo : restrict notifications to only if on paid account (else just do at deadline)
+        // todo : as below, handle different kinds of response better
+        if ("yes".equalsIgnoreCase(response)) {
+            notifications.add(new TodoInfoNotification(assignment.getTodo().getCreatedByUser(),
+                    "someone validated", todoLog));
+        }
+        return notifications;
+    }
+
+    private Set<Notification> notifyCreatorOfVolunteer(TodoAssignment assignment, String response, TodoLog todoLog) {
+        Set<Notification> notifications = new HashSet<>();
+        // todo : consider notifying if no volunteer (if on paid account ...)
+        // todo : handle non-predictable text entry (use NLU)
+        if ("yes".equalsIgnoreCase(response)) {
+            notifications.add(new TodoInfoNotification(assignment.getTodo().getCreatedByUser(),
+                    "someone volunteered", todoLog));
+        }
+        return notifications;
+    }
+
+    private void createAndStoreTodoLog(User user, Todo todo, TodoLogType todoLogType, String description) {
         TodoLog todoLog = new TodoLog(todoLogType, user, todo, description);
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
         bundle.addLog(todoLog);
-        if (notifications != null) {
-            bundle.addNotifications(notifications);
-        }
-        AfterTxCommitTask afterTxCommitTask = () -> logsAndNotificationsBroker.storeBundle(bundle);
+        AfterTxCommitTask afterTxCommitTask = () -> logsAndNotificationsBroker.asyncStoreBundle(bundle);
+        eventPublisher.publishEvent(afterTxCommitTask);
+    }
+
+    private void storeLogAndNotifications(TodoLog todoLog, Set<Notification> notifications) {
+        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+        bundle.addLog(todoLog);
+        bundle.addNotifications(notifications);
+        AfterTxCommitTask afterTxCommitTask = () -> logsAndNotificationsBroker.asyncStoreBundle(bundle);
         eventPublisher.publishEvent(afterTxCommitTask);
     }
 
@@ -265,11 +315,15 @@ public class TodoBrokerNewImpl implements TodoBrokerNew {
         }
     }
 
-    private void validateUserCanRespondToTodo(User user, Todo todo) {
-        if (todo.getType().equals(TodoType.INFORMATION_REQUIRED)) {
-            if (!todo.getMembers().contains(user)) {
-                throw new ResponseNotAllowedException();
-            }
+    private TodoAssignment validateUserCanRespondToTodo(User user, Todo todo) {
+        TodoAssignment todoAssignment = todoAssignmentRepository.findOne(
+                TodoSpecifications.userAssignment(user, todo));
+        if (todoAssignment == null) {
+            throw new ResponseNotAllowedException();
         }
+        if (TodoType.VALIDATION_REQUIRED.equals(todo.getType()) && !todoAssignment.isCanWitness()) {
+            throw new ResponseNotAllowedException();
+        }
+        return todoAssignment;
     }
 }

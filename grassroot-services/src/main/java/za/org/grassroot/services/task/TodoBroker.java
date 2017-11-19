@@ -9,7 +9,6 @@ import za.org.grassroot.services.task.enums.TodoStatus;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 public interface TodoBroker {
@@ -69,20 +68,5 @@ public interface TodoBroker {
 	Page<Todo> fetchPageOfTodosForGroup(String userUid, String groupUid, Pageable pageRequest);
 
 	List<Todo> fetchTodosForGroupByStatus(String groupUid, boolean futureTodosOnly, TodoStatus status);
-
-	List<Todo> fetchTodosForGroupCreatedDuring(String groupUid, LocalDateTime createdAfter, LocalDateTime createdBefore);
-
-	/*
-	Check if a user needs to respond to a to-do (note : will not return to-dos where user has marked 'I don't know', to avoid infinite & annoying pinging
-	 */
-	Optional<Todo> fetchTodoForUserResponse(String userUid, boolean assignedTodosOnly);
-
-	boolean userHasTodosForResponse(String userUid, boolean assignedTodosOnly);
-
-	boolean userHasIncompleteActionsToView(String userUid);
-
-	Page<Todo> fetchIncompleteActionsToView(String userUid, Pageable pageable);
-
-	boolean userHasOldActionsToView(String userUid);
 
 }

@@ -40,10 +40,7 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
     protected boolean cancelled;
 
     @Column(name="completed")
-    private boolean completed;
-
-    @Column(name="completion_percentage", nullable = false)
-    private double completionPercentage;
+    @Setter private boolean completed;
 
     @ManyToMany(cascade = CascadeType.ALL)
     @JoinTable(name = "action_todo_assigned_members",
@@ -95,6 +92,7 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
         this.ancestorGroup = parent.getThisOrAncestorGroup();
         this.ancestorGroup.addDescendantTodo(this);
         this.cancelled = false;
+        this.completed = false;
     }
 
     public Todo(User createdByUser, TodoContainer parent, String message, Instant actionByDate,
@@ -122,7 +120,7 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
     public String getName() { return message; }
 
     public String getCreatorAlias() {
-        return ancestorGroup.getMembership(this.createdByUser).getAlias();
+        return ancestorGroup.getMembership(this.createdByUser).getDisplayName();
     }
 
     @Override
@@ -221,8 +219,6 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
                 .filter(TodoAssignment::hasConfirmed)
                 .anyMatch(a -> a.getUser().equals(member));
     }
-
-    public double getCompletionPercentage() { return completionPercentage; }
 
     public boolean isCancelled() { return cancelled; }
 

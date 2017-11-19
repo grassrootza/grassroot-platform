@@ -6,6 +6,7 @@ alter table action_todo drop column number_of_reminders_left_to_send;
 
 alter table action_todo rename column scheduled_reminder_time to next_notification_time;
 
+-- not dropping completion_percentage as may contain historical info and is just a column
 alter table action_todo add column completed boolean default false;
 update action_todo set completed = true;
 
