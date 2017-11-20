@@ -56,9 +56,7 @@ public class MediaFileBrokerImpl implements MediaFileBroker {
     @Transactional
     public String storeFile(MultipartFile file, MediaFunction function, String mimeType, String imageKey) {
 
-
         String bucket = getBucketForFunction(function);
-        // todo(beegor) this enables overwriting (needed for user profile images), check with luke if this breaks something else
         MediaFileRecord record = recordRepository.findByBucketAndKey(bucket, imageKey);
         if (record == null)
             record = new MediaFileRecord(bucket, imageKey);

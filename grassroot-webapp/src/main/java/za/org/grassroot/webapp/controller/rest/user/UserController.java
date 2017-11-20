@@ -21,8 +21,8 @@ import za.org.grassroot.integration.MediaFileBroker;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.integration.storage.StorageBroker;
 import za.org.grassroot.services.user.UserManagementService;
+import za.org.grassroot.webapp.controller.rest.BaseRestController;
 import za.org.grassroot.webapp.enums.RestMessage;
-import za.org.grassroot.webapp.model.http.AuthorizationHeader;
 import za.org.grassroot.webapp.model.rest.AndroidAuthToken;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
@@ -36,7 +36,7 @@ import java.util.Locale;
 @Slf4j
 @Controller
 @RequestMapping("/api/user/profile")
-public class UserController {
+public class UserController extends BaseRestController {
 
 
     private final MediaFileBroker mediaFileBroker;
@@ -53,6 +53,7 @@ public class UserController {
 
     public UserController(MediaFileBroker mediaFileBroker, StorageBroker storageBroker,
                           UserManagementService userService, JwtService jwtService) {
+        super(jwtService, userService);
         this.mediaFileBroker = mediaFileBroker;
         this.storageBroker = storageBroker;
         this.userService = userService;
@@ -65,8 +66,7 @@ public class UserController {
     public ResponseEntity<ResponseWrapper> uploadProfileImage(@RequestParam MultipartFile photo, HttpServletRequest request) {
 
 
-        String jwtToken = getJwtTokenFromRequest(request);
-        String userUid = getUserIdFromToken(jwtToken);
+        String userUid = getUserIdFromRequest(request);
         String imageKey = userProfileImagesFolder + "/" + userUid;
         MediaFunction mediaFunction = MediaFunction.USER_PROFILE_IMAGE;
         // store the media, depending on its function (if task image stick in there so analysis etc is triggered)
@@ -109,6 +109,7 @@ public class UserController {
                                                              @RequestParam String languageCode,
                                                              HttpServletRequest request) {
 
+
         String jwtToken = getJwtTokenFromRequest(request);
         User user = getUserFromToken(jwtToken);
 
@@ -125,30 +126,5 @@ public class UserController {
     }
 
 
-    private String getJwtTokenFromRequest(HttpServletRequest request) {
 
-        String jwtToken = null;
-        AuthorizationHeader authorizationHeader = new AuthorizationHeader(request);
-        if (authorizationHeader.hasBearerToken()) {
-            jwtToken = authorizationHeader.getBearerToken();
-        }
-        return jwtToken;
-    }
-
-    private User getUserFromToken(String jwtToken) {
-
-        if (jwtToken != null) {
-            String userUid = jwtService.getUserIdFromJwtToken(jwtToken);
-            return userService.load(userUid);
-        } else
-            return null;
-    }
-
-    private String getUserIdFromToken(String jwtToken) {
-
-        if (jwtToken != null) {
-            return jwtService.getUserIdFromJwtToken(jwtToken);
-        } else
-            return null;
-    }
 }
