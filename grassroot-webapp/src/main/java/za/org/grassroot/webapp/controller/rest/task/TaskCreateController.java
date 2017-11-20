@@ -9,12 +9,16 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.Permission;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.task.Meeting;
+import za.org.grassroot.core.domain.task.Vote;
 import za.org.grassroot.core.dto.task.TaskFullDTO;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
+import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.MeetingBuilderHelper;
 import za.org.grassroot.services.task.TaskImageBroker;
@@ -22,6 +26,10 @@ import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Slf4j
@@ -32,11 +40,14 @@ public class TaskCreateController {
 
     private final EventBroker eventBroker;
     private final UserManagementService userService;
+    private final GroupBroker groupBroker;
 
     @Autowired
-    public TaskCreateController(UserManagementService userManagementService, EventBroker eventBroker, TaskImageBroker taskImageBroker) {
+    public TaskCreateController(UserManagementService userManagementService, EventBroker eventBroker, TaskImageBroker taskImageBroker,
+                                GroupBroker groupBroker) {
         this.userService = userManagementService;
         this.eventBroker = eventBroker;
+        this.groupBroker = groupBroker;
     }
 
     @RequestMapping(value = "/meeting/{userUid}/{parentType}/{parentUid}", method = RequestMethod.POST)
@@ -90,5 +101,39 @@ public class TaskCreateController {
         } catch (AccessDeniedException e) {
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING);
         }
+    }
+
+    @RequestMapping(value = "/vote/{userUid}/{parentType}/{parentUid}", method = RequestMethod.POST)
+    @ApiOperation(value = "Call a vote", notes = "Creates a vote, that starts at the specified date and time, passed in " +
+            "as epoch millis. The first six params are necessary, the rest are optional")
+    public ResponseEntity<TaskFullDTO> createVote(@PathVariable String userUid,
+                                                  @PathVariable String parentUid,
+                                                  @PathVariable JpaEntityType parentType,
+                                                  @RequestParam String voteSubject,
+                                                  @RequestParam List<String> voteOptions,
+                                                  @RequestParam(required = false) String description,
+                                                  @RequestParam long voteClosingDateTimeEpochMillis,
+                                                  @RequestParam(required = false)
+                                                      @ApiParam(value = "UIDs of assigned members, if left blank all " +
+                                                              "members of the parent are assigned") Set<String> assignedMemberUids){
+
+        LocalDateTime localDateTime = LocalDateTime.from(Instant.ofEpochMilli(voteClosingDateTimeEpochMillis));
+
+        Group parentGroup = groupBroker.load(parentUid);
+        Set<User> users = parentGroup.getMembers();
+
+        Set<String> memberUids = new HashSet<>();
+        for (User user:users){
+            memberUids.add(user.getUid());
+        }
+
+        Set<String> uids = assignedMemberUids.isEmpty() ? memberUids : assignedMemberUids;
+
+        Vote vote = eventBroker.createVote(userUid,parentUid,parentType,voteSubject,localDateTime
+                ,false,description, uids,voteOptions);
+
+
+        return ResponseEntity.ok(new TaskFullDTO(vote, userService.load(userUid),
+                vote.getCreatedDateTime(), null));
     }
 }

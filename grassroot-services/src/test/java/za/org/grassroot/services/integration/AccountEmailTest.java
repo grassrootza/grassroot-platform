@@ -71,7 +71,7 @@ public class AccountEmailTest {
     public void shouldCreateStatementEmail() {
         AccountLog dummyLog = new AccountLog.Builder(testAccount)
                 .accountLogType(AccountLogType.BILL_CALCULATED)
-                .userUid(testUser.getUid())
+                .user(testUser)
                 .build();
         AccountBillingRecord record = new AccountBillingRecord.BillingBuilder(testAccount)
                 .statementDateTime(Instant.now())
