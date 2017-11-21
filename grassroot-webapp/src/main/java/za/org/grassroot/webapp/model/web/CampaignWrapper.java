@@ -9,6 +9,7 @@ import java.util.Set;
 public class CampaignWrapper implements Serializable {
 
     private static final long serialVersionUID = -3263387305104374730L;
+    private String createUser;
     private String userUid;
     private String userRole;
     private String name;
@@ -142,5 +143,13 @@ public class CampaignWrapper implements Serializable {
 
     public void setNewUsers(Integer newUsers) {
         this.newUsers = newUsers;
+    }
+
+    public String getCreateUser() {
+        return createUser;
+    }
+
+    public void setCreateUser(String createUser) {
+        this.createUser = createUser;
     }
 }

@@ -58,6 +58,9 @@ public class CampaignManagerController {
     @RequestMapping(value = "/create" , method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "create campaign", notes = "create a campaign using given values")
     public ResponseEntity<ResponseWrapper> createCampaign(@RequestBody CampaignWrapper campaignWrapper){
+        if(campaignBroker.getCampaignDetailsByCode(campaignWrapper.getCode().trim()) != null){
+            return RestUtil.errorResponse(RestMessage.CAMPAIGN_WITH_SAME_CODE_EXIST);
+        }
         List<String> tagList = null;
         if(campaignWrapper.getTags() != null && !campaignWrapper.getTags().isEmpty()){
             tagList = Collections.list(Collections.enumeration(campaignWrapper.getTags()));
@@ -71,6 +74,12 @@ public class CampaignManagerController {
         Campaign campaign = campaignBroker.createCampaign(campaignWrapper.getName(),campaignWrapper.getCode(),
                 campaignWrapper.getDescription(),campaignWrapper.getUserUid(),campaignStartDate, campaignEndDate, tagList,
                 CampaignType.valueOf(campaignWrapper.getType()),campaignWrapper.getUrl());
+        if(!StringUtils.isEmpty(campaignWrapper.getGroupUid())){
+            campaign = campaignBroker.linkCampaignToMasterGroup(campaign.getCampaignCode(),campaignWrapper.getGroupUid(),campaignWrapper.getUserUid());
+        }
+        else if(!StringUtils.isEmpty(campaignWrapper.getGroupName())){
+            campaign = campaignBroker.createMasterGroupForCampaignAndLinkCampaign(campaign.getCampaignCode(),campaignWrapper.getGroupName(),campaignWrapper.getUserUid());
+        }
         return RestUtil.okayResponseWithData(RestMessage.CAMPAIGN_CREATED,CampaignWebUtil.createCampaignWrapper(campaign));
     }
 
@@ -81,7 +90,10 @@ public class CampaignManagerController {
         List<String> tagList = new ArrayList<>();
         tagList.add(tag);
         Campaign campaign = campaignBroker.addCampaignTags(campaignCode, tagList);
-        return RestUtil.okayResponseWithData(RestMessage.CAMPAIGN_TAG_ADDED,CampaignWebUtil.createCampaignWrapper(campaign));
+        if(campaign != null) {
+            return RestUtil.okayResponseWithData(RestMessage.CAMPAIGN_TAG_ADDED, CampaignWebUtil.createCampaignWrapper(campaign));
+        }
+        return RestUtil.messageOkayResponse(RestMessage.CAMPAIGN_NOT_FOUND);
     }
 
     @RequestMapping(value ="/add/message", method = RequestMethod.POST,  consumes = MediaType.APPLICATION_JSON_VALUE)
@@ -98,7 +110,10 @@ public class CampaignManagerController {
         User user = userManager.load(messageWrapper.getUserUid());
         Campaign campaign = campaignBroker.addCampaignMessage(messageWrapper.getCampaignCode(), messageWrapper.getMessage(),
                 Locale.forLanguageTag(messageWrapper.getLanguage()), null, messageWrapper.getChannel(), user, tagList);
-        return RestUtil.okayResponseWithData(RestMessage.CAMPAIGN_MESSAGE_ADDED,CampaignWebUtil.createCampaignWrapper(campaign));
+        if(campaign != null) {
+            return RestUtil.okayResponseWithData(RestMessage.CAMPAIGN_MESSAGE_ADDED, CampaignWebUtil.createCampaignWrapper(campaign));
+        }
+        return RestUtil.messageOkayResponse(RestMessage.CAMPAIGN_NOT_FOUND);
     }
 
     @RequestMapping(value="/view", method = RequestMethod.GET)
@@ -114,7 +129,10 @@ public class CampaignManagerController {
         if(campaign == null && !StringUtils.isEmpty(name)){
             campaign = campaignBroker.getCampaignDetailsByName(name);
         }
-        return RestUtil.okayResponseWithData(RestMessage.CAMPAIGN_FOUND,CampaignWebUtil.createCampaignWrapper(campaign));
+        if(campaign != null){
+            return RestUtil.okayResponseWithData(RestMessage.CAMPAIGN_FOUND,CampaignWebUtil.createCampaignWrapper(campaign));
+        }
+        return RestUtil.messageOkayResponse(RestMessage.CAMPAIGN_NOT_FOUND);
 
     }
 }

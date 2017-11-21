@@ -95,7 +95,7 @@ public class CampaignBrokerTest {
         Assert.assertNotNull(campaignMessageSet1);
         Assert.assertEquals(campaignMessageSet1.size(), 1);
 
-        Campaign linkedCampaign = campaignBroker.linkCampaignToMasterGroup("234",testGroup.getId(),testUser.getUid());
+        Campaign linkedCampaign = campaignBroker.linkCampaignToMasterGroup("234",testGroup.getUid(),testUser.getUid());
         Assert.assertNotNull(linkedCampaign);
         Assert.assertNotNull(linkedCampaign.getMasterGroup());
         Assert.assertEquals(linkedCampaign.getMasterGroup().getId(),testGroup.getId());

@@ -80,7 +80,10 @@ public class CampaignManagerControllerTest extends RestAbstractUnitTest{
 
     @Test
     public void testCreateCampaign() throws Exception{
+        when(campaignBroker.getCampaignDetailsByCode(anyString())).thenReturn(null);
         when(campaignBroker.createCampaign(anyString(),anyString(),anyString(),anyString(),any(Instant.class),any(Instant.class), anyList(),any(CampaignType.class),anyString())).thenReturn(testCampaign);
+        when(campaignBroker.linkCampaignToMasterGroup(anyString(),anyString(),anyString())).thenReturn(testCampaign);
+        when(campaignBroker.createMasterGroupForCampaignAndLinkCampaign(anyString(),anyString(),anyString())).thenReturn(testCampaign);
         ObjectMapper mapper = new ObjectMapper();
         mapper.configure(SerializationFeature.WRAP_ROOT_VALUE, false);
         String requestJson = mapper.writeValueAsString(campaignWrapper);

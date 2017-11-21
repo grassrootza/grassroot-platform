@@ -240,10 +240,10 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
     @Override
     @Transactional
-    public Campaign linkCampaignToMasterGroup(String campaignCode, Long groupId, String userUid){
+    public Campaign linkCampaignToMasterGroup(String campaignCode, String groupUid, String userUid){
         Objects.requireNonNull(campaignCode);
-        Objects.requireNonNull(groupId);
-        Group group = groupRepository.findOne(groupId);
+        Objects.requireNonNull(groupUid);
+        Group group = groupRepository.findOneByUid(groupUid);
         User user = userRepository.findOneByUid(userUid);
         Campaign campaign = campaignRepository.findByCampaignCodeAndEndDateTimeAfter(campaignCode,Instant.now());
         if(group != null && campaign != null){
@@ -255,6 +255,17 @@ public class CampaignBrokerImpl implements CampaignBroker {
         }
         LOG.error("No Campaign found for code = {}" + campaignCode);
         throw new CampaignNotFoundException(CAMPAIGN_NOT_FOUND_CODE);
+    }
+
+    @Override
+    @Transactional
+    public Campaign createMasterGroupForCampaignAndLinkCampaign(String campaignCode, String groupName, String userUid){
+        Objects.requireNonNull(groupName);
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(campaignCode);
+        User user = userRepository.findOneByUid(userUid);
+        Group group = groupRepository.save(new Group(groupName.trim(),user));
+        return linkCampaignToMasterGroup(campaignCode,group.getUid(),userUid);
     }
 
     @Override

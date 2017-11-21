@@ -141,10 +141,19 @@ public interface CampaignBroker {
     /**
      *
      * @param campaignCode
-     * @param groupId
+     * @param groupUid
      * @return
      */
-    Campaign linkCampaignToMasterGroup(String campaignCode, Long groupId, String userUid);
+    Campaign linkCampaignToMasterGroup(String campaignCode, String groupUid, String userUid);
+
+    /**
+     *
+     * @param campaignCode
+     * @param groupName
+     * @param userUid
+     * @return
+     */
+    Campaign createMasterGroupForCampaignAndLinkCampaign(String campaignCode, String groupName, String userUid);
 
     /**
      *
