@@ -39,4 +39,4 @@ mv .deploy/.ebextensions .ebextensions
 mv .deploy/.ebignore .ebignore
 mv .deploy/Dockerrun.aws.json Dockerrun.aws.json
 eb use $EBENVIRONMENT
-eb deploy $EBENVIRONMENT --label "$ENVIRONMENT-$COMMIT_MESSAGE"
+eb deploy $EBENVIRONMENT --label "$ENVIRONMENT-$COMMIT_MESSAGE" --timeout 20
