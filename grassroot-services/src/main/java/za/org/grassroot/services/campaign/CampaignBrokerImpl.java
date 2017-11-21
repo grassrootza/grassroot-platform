@@ -68,7 +68,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public Campaign getCampaignDetailsByCode(String campaignCode){
         Objects.requireNonNull(campaignCode);
         Campaign campaign = getCampaignByCampaignCode(campaignCode);
@@ -78,7 +78,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public Campaign getCampaignDetailsByName(String campaignName){
         Campaign campaign = getCampaignByCampaignName(campaignName);
         CampaignLogType campaignLogType = (campaign != null) ? CampaignLogType.CAMPAIGN_FOUND : CampaignLogType.CAMPAIGN_NOT_FOUND;
@@ -87,7 +87,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public CampaignMessage getCampaignMessageByCampaignCodeAndActionType(String campaignCode, MessageVariationAssignment assignment,UserInterfaceType channel, CampaignActionType actionType, String phoneNumber, Locale locale){
         Set<CampaignMessage> messageSet = findMessagesByCampaignCodeAndVariationAndUserInterfaceType(campaignCode,assignment, channel, locale);
         String searchValue = createSearchValue(campaignCode,assignment,null,null);
@@ -108,7 +108,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public Set<CampaignMessage> getCampaignMessagesByCampaignName(String campaignName, MessageVariationAssignment assignment, UserInterfaceType type, Locale locale){
         Objects.requireNonNull(campaignName);
         Objects.requireNonNull(assignment);
@@ -120,7 +120,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public Set<CampaignMessage> getCampaignMessagesByCampaignCodeAndLocale(String campaignCode, MessageVariationAssignment assignment, Locale locale, UserInterfaceType type){
         Objects.requireNonNull(locale);
         Set<CampaignMessage> messageSet = findMessagesByCampaignCodeAndVariationAndUserInterfaceType(campaignCode,assignment, type, locale);
@@ -131,7 +131,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public Set<CampaignMessage> getCampaignMessagesByCampaignNameAndLocale(String campaignName, MessageVariationAssignment assignment, Locale locale, UserInterfaceType type){
         Objects.requireNonNull(locale);
         Set<CampaignMessage>messageSet = findMessagesByCampaignNameAndVariationAndUserInterfaceType(campaignName,assignment, type, locale);
@@ -142,7 +142,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public Set<CampaignMessage> getCampaignMessagesByCampaignCodeAndMessageTag(String campaignCode, MessageVariationAssignment assignment, String messageTag, UserInterfaceType type, Locale locale){
         Objects.requireNonNull(messageTag);
         Set<CampaignMessage> messageSet = findMessagesByCampaignCodeAndVariationAndUserInterfaceType(campaignCode, assignment, type, locale);
@@ -153,7 +153,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public Set<CampaignMessage> getCampaignMessagesByCampaignNameAndMessageTag(String campaignName, MessageVariationAssignment assignment, String messageTag, UserInterfaceType type, Locale locale){
         Objects.requireNonNull(messageTag);
         Set<CampaignMessage> messageSet = findMessagesByCampaignNameAndVariationAndUserInterfaceType(campaignName, assignment, type, locale);
@@ -299,7 +299,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public Campaign getCampaignByTag(String tag){
         Objects.requireNonNull(tag);
         Campaign campaign = campaignRepository.findActiveCampaignByTag(tag);

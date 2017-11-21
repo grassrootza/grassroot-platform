@@ -44,10 +44,10 @@ create table campaign (
     id bigserial NOT NULL,
     uid varchar(50) NOT NULL,
     creation_time timestamp without time zone not null,
-    user_id varchar(50) NOT NULL,
+    user_id varchar(50),
     campaign_log_type varchar(50) NOT NULL,
     description character varying(255),
-    campaign_id bigserial NOT NULL,
+    campaign_id bigserial,
     CONSTRAINT uk_campaign_log_uid unique (uid),
     PRIMARY KEY (id));
 

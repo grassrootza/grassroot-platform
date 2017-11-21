@@ -71,7 +71,7 @@ public class CampaignManagerController {
         Campaign campaign = campaignBroker.createCampaign(campaignWrapper.getName(),campaignWrapper.getCode(),
                 campaignWrapper.getDescription(),campaignWrapper.getUserUid(),campaignStartDate, campaignEndDate, tagList,
                 CampaignType.valueOf(campaignWrapper.getType()),campaignWrapper.getUrl());
-        return RestUtil.okayResponseWithData(RestMessage.CAMPAIGN_CREATED,campaign);
+        return RestUtil.okayResponseWithData(RestMessage.CAMPAIGN_CREATED,CampaignWebUtil.createCampaignWrapper(campaign));
     }
 
     @RequestMapping(value ="/add/tag", method = RequestMethod.GET)
@@ -81,7 +81,7 @@ public class CampaignManagerController {
         List<String> tagList = new ArrayList<>();
         tagList.add(tag);
         Campaign campaign = campaignBroker.addCampaignTags(campaignCode, tagList);
-        return RestUtil.okayResponseWithData(RestMessage.CAMPAIGN_TAG_ADDED,campaign);
+        return RestUtil.okayResponseWithData(RestMessage.CAMPAIGN_TAG_ADDED,CampaignWebUtil.createCampaignWrapper(campaign));
     }
 
     @RequestMapping(value ="/add/message", method = RequestMethod.POST,  consumes = MediaType.APPLICATION_JSON_VALUE)
@@ -98,7 +98,7 @@ public class CampaignManagerController {
         User user = userManager.load(messageWrapper.getUserUid());
         Campaign campaign = campaignBroker.addCampaignMessage(messageWrapper.getCampaignCode(), messageWrapper.getMessage(),
                 Locale.forLanguageTag(messageWrapper.getLanguage()), null, messageWrapper.getChannel(), user, tagList);
-        return RestUtil.okayResponseWithData(RestMessage.CAMPAIGN_MESSAGE_ADDED,campaign);
+        return RestUtil.okayResponseWithData(RestMessage.CAMPAIGN_MESSAGE_ADDED,CampaignWebUtil.createCampaignWrapper(campaign));
     }
 
     @RequestMapping(value="/view", method = RequestMethod.GET)
@@ -114,7 +114,7 @@ public class CampaignManagerController {
         if(campaign == null && !StringUtils.isEmpty(name)){
             campaign = campaignBroker.getCampaignDetailsByName(name);
         }
-        return RestUtil.okayResponseWithData(RestMessage.CAMPAIGN_FOUND,campaign);
+        return RestUtil.okayResponseWithData(RestMessage.CAMPAIGN_FOUND,CampaignWebUtil.createCampaignWrapper(campaign));
 
     }
 }

@@ -75,7 +75,8 @@ public class CampaignManagerControllerTest extends RestAbstractUnitTest{
         when(campaignBroker.getCampaignsCreatedByUser(anyString())).thenReturn(campaignList);
         ResultActions response = mockMvc.perform(get("/api/campaign/manage/list/1234"));
         Assert.assertNotNull(response);
-        response.andExpect(status().isOk());    }
+        response.andExpect(status().isOk());
+    }
 
     @Test
     public void testCreateCampaign() throws Exception{

@@ -62,7 +62,7 @@ public class CampaignLog implements ActionLog {
         this.creationTime = Instant.now();
         this.userId = userId;
         this.campaignLogType = Objects.requireNonNull(campaignLogType);
-        this.campaign = Objects.requireNonNull(campaign);
+        this.campaign = campaign;
         this.description = Objects.requireNonNull(searchValue);
     }
 
