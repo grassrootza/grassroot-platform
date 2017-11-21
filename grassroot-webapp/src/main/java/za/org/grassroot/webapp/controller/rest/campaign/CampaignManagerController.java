@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.BindingResult;
@@ -54,7 +55,7 @@ public class CampaignManagerController {
                 CampaignWebUtil.createCampaignWrapperList(campaignBroker.getCampaignsCreatedByUser(userUid)));
     }
 
-    @RequestMapping(value = "/create")
+    @RequestMapping(value = "/create" , method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "create campaign", notes = "create a campaign using given values")
     public ResponseEntity<ResponseWrapper> createCampaign(@RequestBody CampaignWrapper campaignWrapper){
         List<String> tagList = null;
@@ -73,7 +74,7 @@ public class CampaignManagerController {
         return RestUtil.okayResponseWithData(RestMessage.CAMPAIGN_CREATED,campaign);
     }
 
-    @RequestMapping("/add/tag")
+    @RequestMapping(value ="/add/tag", method = RequestMethod.GET)
     @ApiOperation(value = "add tag to campaign", notes = "add tag to a campaign")
     public ResponseEntity<ResponseWrapper> addCampaignTag(@RequestParam(value="campaignCode", required = true) String campaignCode,
                                  @RequestParam(value="tag", required = true) String tag) {
@@ -83,7 +84,7 @@ public class CampaignManagerController {
         return RestUtil.okayResponseWithData(RestMessage.CAMPAIGN_TAG_ADDED,campaign);
     }
 
-    @RequestMapping("/add/message")
+    @RequestMapping(value ="/add/message", method = RequestMethod.POST,  consumes = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "add message to campaign", notes = "add message to a campaign")
     public ResponseEntity<ResponseWrapper> addCampaignMessage(@RequestBody CampaignMessageWrapper messageWrapper,
                                      BindingResult bindingResult) {
@@ -100,7 +101,7 @@ public class CampaignManagerController {
         return RestUtil.okayResponseWithData(RestMessage.CAMPAIGN_MESSAGE_ADDED,campaign);
     }
 
-    @RequestMapping("/view")
+    @RequestMapping(value="/view", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> viewCampaign(@RequestParam(value = "code",required = false)String code,
                                                         @RequestParam(value = "name",required = false)String name){
         Campaign campaign = null;
