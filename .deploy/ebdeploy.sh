@@ -21,6 +21,7 @@ aws s3 cp s3://$S3BUCKET/environment-variables.$ENVIRONMENT environment/environm
 aws s3 cp s3://$S3BUCKET/aws-credentials.$ENVIRONMENT environment/aws-credentials --region $S3REGION
 aws s3 cp s3://$S3BUCKET/grassroot-integration.properties.$ENVIRONMENT environment/grassroot-integration.properties --region $S3REGION
 aws s3 cp s3://$S3BUCKET/grassroot-payments.properties.$ENVIRONMENT environment/grassroot-payments.properties --region $S3REGION
+aws s3 cp s3://$S3BUCKET/jwt_keystore.jks.$ENVIRONMENT environment/jwt_keystore.jks --region $S3REGION
 
 # STORE DEPLOYMENT DETAILS FOR FURTHER DEBUG
 echo $COMMIT_MESSAGE > deploy_status.txt
@@ -34,7 +35,8 @@ git commit -m "$ENVIRONMENT-$COMMIT_MESSAGE"
 
 # DEPLOY APP
 mv .deploy/.elasticbeanstalk .elasticbeanstalk
+mv .deploy/.ebextensions .ebextensions
 mv .deploy/.ebignore .ebignore
 mv .deploy/Dockerrun.aws.json Dockerrun.aws.json
 eb use $EBENVIRONMENT
-eb deploy $EBENVIRONMENT --label "$ENVIRONMENT-$COMMIT_MESSAGE"
+eb deploy $EBENVIRONMENT --label "$ENVIRONMENT-$COMMIT_MESSAGE" --timeout 20

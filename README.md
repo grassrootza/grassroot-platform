@@ -24,13 +24,13 @@ Docker version 17.09.0-ce, build afdb6d4
 docker-compose version 1.16.1, build 6d1ac21
 
 * 2 -- Clone Master Branch to a DIR
-* 3 -- Inside the DIR, either copy  the files from DIR/.deploy/templates to DIR/environment, remove the .template extension and edit with your own configurations OR if you already have an integration properties file, just copy it directly into the DIR/environment folder.
-* 4 -- Run "./localdeploy.sh -d [docker/localhost/external] -b [quick/restart/clean] " from the DIR root. See the command options below to which parameter to choose. The quickest way to start is "./localdeploy.sh -d docker -b quick"
+* 3 -- Inside the DIR, either copy  the files from DIR/.deploy/templates to a folder OUTSIDE your project source (VERY IMPORTANT DUE TO SECURITY ISSUES), example /home/user/environment OR if you already have an integration properties file, just copy it directly into your folder OUTSIDE your project source.
+* 4 -- Inside the DIR/.deploy, rename the file envpath.txt.template to envpath.txt and update the path you copied and modified your environment variables at step 3 above.
+* 5 -- Run "./localdeploy.sh -d [docker/localhost/external] -b [quick/restart/clean]" from the DIR root. See the command options below to which parameter to choose. The quickest way to start is "./localdeploy.sh -d docker -b quick"
 
 COMMAND OPTIONS
 
 **-b**
-
 
 * -b quick #It will only restart the java application (or re-compile if its the first deploy) leaving the container and gradlew daemon running for faster deployment (or instantiate a new container if its the first deploy)
 

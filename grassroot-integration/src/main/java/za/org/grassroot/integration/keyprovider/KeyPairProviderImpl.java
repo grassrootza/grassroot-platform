@@ -38,9 +38,11 @@ public class KeyPairProviderImpl implements KeyPairProvider{
         String  jwtKeyAlias = getJWTKeyAlias();
         KeyPair keyPair;
         if (StringUtils.isEmpty(environment.getProperty("JWT_KEYSTORE_PATH"))) {
+            logger.info("could not find keystore path, generating key in memore");
             keyPair = RsaProvider.generateKeyPair(1024);
         } else {
             try {
+                logger.info("found a keystore path, trying to load: {}", environment.getProperty("JWT_KEYSTORE_PATH"));
                 File file = new File(environment.getProperty("JWT_KEYSTORE_PATH"));
                 FileInputStream is = new FileInputStream(file);
                 KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
@@ -53,8 +55,9 @@ public class KeyPairProviderImpl implements KeyPairProvider{
                 Certificate certificate = keyStore.getCertificate(jwtKeyAlias);
                 PublicKey publicKey = certificate.getPublicKey();
                 keyPair = new KeyPair(publicKey, privateKey);
+                logger.info("successfuly loaded keystore from file, continuing");
             } catch (Exception e) {
-                logger.error("Exception loading keystore, defaulting to in-memory generation");
+                logger.error("Exception loading keystore, defaulting to in-memory generation", e);
                 keyPair = RsaProvider.generateKeyPair(1024);
             }
         }
