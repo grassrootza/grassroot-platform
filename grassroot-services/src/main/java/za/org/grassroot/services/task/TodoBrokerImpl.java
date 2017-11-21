@@ -401,20 +401,6 @@ public class TodoBrokerImpl implements TodoBroker {
 		return todo;
 	}
 
-	@Override
-	@Transactional
-	public void updateSubject(String userUid, String todoUid, String newMessage) {
-		Objects.requireNonNull(userUid);
-		Objects.requireNonNull(todoUid);
-		Objects.requireNonNull(newMessage);
-
-		User user = userRepository.findOneByUid(userUid);
-		Todo todo = todoRepository.findOneByUid(todoUid);
-
-		validateUserCanModify(user, todo);
-		todo.setMessage(newMessage);
-	}
-
     @Override
 	@Transactional
     public void updateDescription(String userUid, String todoUid, String description) {

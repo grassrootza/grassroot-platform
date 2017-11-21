@@ -30,7 +30,6 @@ import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.task.enums.TaskSortType;
 import za.org.grassroot.services.util.FullTextSearchUtils;
 
-import javax.persistence.EntityManager;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -245,7 +244,7 @@ public class TaskBrokerImpl implements TaskBroker {
         List<Todo> todos = todoRepository.findAll(Specifications.where(notCancelled())
                 .and(actionByDateBetween(todoStart, todoEnd))
                 .and((root, query, cb) -> cb.isFalse(root.get(Todo_.completed)))
-                .and(userPartOfGroup(user)));
+                .and(userPartOfParent(user)));
 
         Set<TaskDTO> todoTaskDtos = resolveTodoTaskDtos(todos, user, null);
         taskDtos.addAll(todoTaskDtos);
@@ -360,7 +359,7 @@ public class TaskBrokerImpl implements TaskBroker {
                         EventSpecifications.userPartOfGroup(user)))
                 .stream().map(e -> (Task) e).collect(Collectors.toSet());
         Set<Task> userTodos = todoRepository.findAll(Specifications.where(
-                TodoSpecifications.notCancelled()).and(TodoSpecifications.userPartOfGroup(user)))
+                TodoSpecifications.notCancelled()).and(TodoSpecifications.userPartOfParent(user)))
                 .stream().map(t -> (Task) t).collect(Collectors.toSet());
 
         Map<String, Instant> uidTimeMap = Stream.concat(

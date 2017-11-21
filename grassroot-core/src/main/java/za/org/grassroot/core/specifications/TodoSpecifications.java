@@ -56,7 +56,7 @@ public final class TodoSpecifications {
         return (root, query, cb) -> cb.lessThan(root.get(Todo_.nextNotificationTime), time);
     }
 
-    public static Specification<Todo> userPartOfGroup(final User user) {
+    public static Specification<Todo> userPartOfParent(final User user) {
         return (root, query, cb) -> {
             Join<Todo, Group> groups = root.join(AbstractTodoEntity_.parentGroup);
             Join<Group, Membership> members = groups.join(Group_.memberships);
@@ -89,9 +89,31 @@ public final class TodoSpecifications {
         return Specifications.where(isOfType).and(isAssigned);
     }
 
+    public static Specifications<Todo> fetchTodosForUser(User user, boolean createdOnly, boolean openOnly) {
+        Specifications<Todo> specs = Specifications
+                .where(userPartOfParent(user))
+                .and(notCancelled());
+
+        if (createdOnly) {
+            specs = specs.and((root, query, cb) -> cb.equal(root.get(Todo_.createdByUser), user));
+        }
+
+        if (openOnly) {
+            specs = specs.and((root, query, cb) -> cb.isFalse(root.get(Todo_.completed)));
+        }
+
+        return specs;
+    }
+
     public static Specification<TodoAssignment> userAssignment(User user, Todo todo) {
         return (root, query, cb) -> cb.and(cb.equal(root.get(TodoAssignment_.todo), todo),
                 cb.equal(root.get(TodoAssignment_.user), user));
+    }
+
+    public static Specifications<TodoAssignment> userAssignmentCanRespond(User user, Todo todo) {
+        return Specifications.where(userAssignment(user, todo))
+                .and((root, query, cb) -> cb.or(
+                        cb.isTrue(root.get(TodoAssignment_.assignedAction)), cb.isTrue(root.get(TodoAssignment_.canWitness))));
     }
 
 }

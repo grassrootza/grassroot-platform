@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +26,7 @@ import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
 import za.org.grassroot.services.exception.ResponseNotAllowedException;
+import za.org.grassroot.services.exception.TodoDeadlineNotInFutureException;
 import za.org.grassroot.services.exception.TodoTypeMismatchException;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
@@ -79,6 +81,10 @@ public class TodoBrokerNewImpl implements TodoBrokerNew {
                 todoHelper.getParentType(), todoHelper.getParentUid());
 
         validateUserCanCreate(user, parent.getThisOrAncestorGroup());
+
+        if (todoHelper.getDueDateTime().isBefore(Instant.now())) {
+            throw new TodoDeadlineNotInFutureException();
+        }
 
         Todo todo = new Todo(user, parent, todoHelper.getTodoType(), todoHelper.getSubject(), todoHelper.getDueDateTime());
         todo = todoRepository.save(todo);
@@ -160,15 +166,17 @@ public class TodoBrokerNewImpl implements TodoBrokerNew {
     public void extend(String userUid, String todoUid, Instant newDueDateTime) {
         Todo todo = todoRepository.findOneByUid(todoUid);
         User user = userRepository.findOneByUid(userUid);
+        if (newDueDateTime.isBefore(Instant.now())) {
+            throw new TodoDeadlineNotInFutureException();
+        }
         validateUserCanModify(user, todo);
         todo.setActionByDate(newDueDateTime);
-        // todo : consider notifications
         createAndStoreTodoLog(user, todo, TodoLogType.EXTENDED, newDueDateTime.toString());
     }
 
     @Override
     @Transactional
-    public void updateDescription(String userUid, String todoUid, String newDescription) {
+    public void updateSubject(String userUid, String todoUid, String newDescription) {
         Todo todo = todoRepository.findOneByUid(todoUid);
         User user = userRepository.findOneByUid(userUid);
         validateUserCanModify(user, todo);
@@ -197,11 +205,25 @@ public class TodoBrokerNewImpl implements TodoBrokerNew {
     @Override
     @Transactional(readOnly = true)
     public Todo checkForTodoNeedingResponse(String userUid) {
+        Objects.requireNonNull(userUid);
+
         User user = userRepository.findOneByUid(userUid);
         // last in first out (at present - makes most sense if user is responding to something)
         Pageable limit = new PageRequest(0, 1, new Sort(Sort.Direction.DESC, "createdDateTime"));
         Page<Todo> result = todoRepository.findAll(TodoSpecifications.todosForUserResponse(user), limit);
         return result.getNumberOfElements() == 0 ? null : result.getContent().get(0);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean canUserRespond(String userUid, String todoUid) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(todoUid);
+
+        User user = userRepository.findOneByUid(userUid);
+        Todo todo = todoRepository.findOneByUid(todoUid);
+
+        return todoAssignmentRepository.count(TodoSpecifications.userAssignmentCanRespond(user, todo)) > 0;
     }
 
     @Override
@@ -237,6 +259,73 @@ public class TodoBrokerNewImpl implements TodoBrokerNew {
         }
 
         storeLogAndNotifications(todoLog, notifications);
+    }
+
+    @Override
+    @Transactional
+    public void updateTodoCompleted(String userUid, String todoUid, boolean completed) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(todoUid);
+
+        User user = userRepository.findOneByUid(userUid);
+        Todo todo = todoRepository.findOneByUid(todoUid);
+
+        validateUserCanModify(user, todo);
+
+        todo.setCompleted(completed);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Todo> fetchTodosForUser(String userUid, boolean createdOnly, boolean openOnly, Sort sort) {
+        Objects.requireNonNull(userUid);
+        User user = userRepository.findOneByUid(userUid);
+        Specifications<Todo> specs = TodoSpecifications.fetchTodosForUser(user, createdOnly, openOnly);
+        return sort == null ? todoRepository.findAll(specs) : todoRepository.findAll(specs, sort);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<Todo> fetchPageOfTodosForUser(String userUid, boolean createdOnly, boolean openOnly, Pageable pageRequest) {
+        Objects.requireNonNull(userUid);
+        User user = userRepository.findOneByUid(userUid);
+        return todoRepository.findAll(TodoSpecifications.todosForUserResponse(user), pageRequest);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<TodoAssignment> fetchAssignedUserResponses(String userUid, String todoUid, boolean respondedOnly, boolean assignedOnly, boolean witnessOnly) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(todoUid);
+
+        User user = userRepository.findOneByUid(userUid);
+        Todo todo = todoRepository.findOneByUid(todoUid);
+
+        // todo : better rules/logic for who can view
+        if (!todo.getCreatedByUser().equals(user)) {
+            throw new AccessDeniedException("Error, only creating user can see todo details");
+        }
+
+        Specifications<TodoAssignment> specs = Specifications.where((root, query, cb) -> cb.equal(root.get(TodoAssignment_.todo), todo));
+
+        if (respondedOnly) {
+            specs = specs.and((root, query, cb) -> cb.isTrue(root.get(TodoAssignment_.hasResponded)));
+        }
+
+        if (assignedOnly) {
+            specs = specs.and((root, query, cb) -> cb.isTrue(root.get(TodoAssignment_.assignedAction)));
+        }
+
+        if (witnessOnly) {
+            specs = specs.and((root, query, cb) -> cb.isTrue(root.get(TodoAssignment_.canWitness)));
+        }
+
+        return todoAssignmentRepository.findAll(specs, new Sort(Sort.Direction.DESC, "responseTime"));
+    }
+
+    @Override
+    public void emailTodoResponses(String userUid, String todoUid, String emailAddress) {
+        // okay actually do that
     }
 
     private Set<Notification> recordInformationResponse(TodoAssignment assignment, String response, TodoLog todoLog, boolean sendConfirmation) {

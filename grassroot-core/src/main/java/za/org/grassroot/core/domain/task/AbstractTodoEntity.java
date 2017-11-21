@@ -107,6 +107,10 @@ public abstract class AbstractTodoEntity {
 
 	public LocalDateTime getActionByDateAtSAST() { return actionByDate.atZone(DateTimeUtil.getSAST()).toLocalDateTime(); }
 
+	public LocalDateTime getCreatedDateTimeAtSAST() {
+		return createdDateTime.atZone(DateTimeUtil.getSAST()).toLocalDateTime();
+	}
+
 	public TodoContainer getParent() {
 		if (parentGroup != null) {
 			return parentGroup;
