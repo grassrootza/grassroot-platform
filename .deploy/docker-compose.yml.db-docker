@@ -23,5 +23,5 @@ services:
       - 8080:8080
     volumes:
       - "./:/usr/src/grassroot/"
-      - "/Users/santini/Desktop/env:/usr/src/grassroot/environment"
+      - "<ENVPATH>:/usr/src/grassroot/environment"
       # - "./log:/usr/src/grassroot/log"
