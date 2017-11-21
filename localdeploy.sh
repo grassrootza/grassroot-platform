@@ -13,7 +13,6 @@ export RED='\033[0;31m'
 export NC='\033[0m' # No Color
 
 # define path for environment variables, set the path without /, example  /etc/myfiles or /home/user/myfiles
-ENVPATH=""
 
 # FUNCTIONS
 # display help if tag -h is used, ignore everything else
@@ -180,6 +179,12 @@ function check_existent_dockers_old {
 function check_environment_variables {
   # CHECKING FOR ENVIRONMENT VARIABLES
   # check if ENVPATH has been set
+  if [ ! -f .deploy/envpath.txt ]; then
+    { echo -e "${RED}.deploy/envpath.txt file NOT FOUND, deployment can't proceed! Template can be found at .deploy/envpath.txt.template. Refer to Readme for more information.${NC}"; } 2> /dev/null
+    exit 1
+  else
+  # set envpath variable
+  ENVPATH="$(<.deploy/envpath.txt)"
   if [ ! -z "$ENVPATH" ]; then
     { echo "#### CHECKING FOR ENVIRONMENT VARIABLES ####"; } 2> /dev/null
     if [ ! -f $ENVPATH/environment-variables ]; then
@@ -204,9 +209,10 @@ function check_environment_variables {
       unset ENVIRONMENTVARIABLESEXIST
       exit 1
     fi
-  else
-    { echo -e "${RED}Environment Path variable is null or not set, please adjust ENVPATH on line 16  of this file before continuing...${NC}"; } 2> /dev/null
-    exit 1
+    else
+      { echo -e "${RED}Environment Path variable is null or not set, please adjust the path for the environment variables inside .deploy/envpath.txt before continuing...${NC}"; } 2> /dev/null
+      exit 1
+    fi
   fi
 }
 
@@ -250,11 +256,11 @@ function select_docker_compose_file {
     rm -f docker-compose.yml
     { echo "Deleted"; } 2> /dev/null
   fi
-  { echo "Updating environment path for docker compose file folder mapping"; } 2> /dev/null
-  sed -i '' -e "s#<ENVPATH>#$ENVPATH#" .deploy/docker-compose.yml.db-$DATABASEMODE
   { echo "Setting correct docker-compose file based on database mode set with optin -d"; } 2> /dev/null
   cp .deploy/docker-compose.yml.db-$DATABASEMODE docker-compose.yml
   { echo docker-compose.yml.db-$DATABASEMODE "set as the current docker-compose.yml, continuing..."; } 2> /dev/null
+  { echo "Updating environment path for docker compose file folder mapping"; } 2> /dev/null
+  sed -i '' -e "s#<ENVPATH>#$ENVPATH#" docker-compose.yml
 }
 
 # popup confirmation for user if option -d clean is selected
