@@ -93,7 +93,7 @@ public class AuthenticationController {
             passwordTokenService.generateLongLivedAuthCode(user.getUid());
             passwordTokenService.expireVerificationCode(user.getUid(), VerificationCodeType.SHORT_OTP);
 
-            CreateJwtTokenRequest tokenRequest = new CreateJwtTokenRequest(JwtType.ANDROID_CLIENT);
+            CreateJwtTokenRequest tokenRequest = new CreateJwtTokenRequest(JwtType.ANDROID_CLIENT, user.getUid());
 
             String token = jwtService.createJwt(tokenRequest);
 
@@ -167,7 +167,7 @@ public class AuthenticationController {
             User user = userService.findByInputNumber(msisdn);
 
             // Generate a token for the user (for the moment assuming it is Android client)
-            CreateJwtTokenRequest tokenRequest = new CreateJwtTokenRequest(JwtType.ANDROID_CLIENT);
+            CreateJwtTokenRequest tokenRequest = new CreateJwtTokenRequest(JwtType.ANDROID_CLIENT, user.getUid());
             if (durationMillis != null && durationMillis != 0) {
                 tokenRequest.setShortExpiryMillis(durationMillis);
             }
@@ -198,7 +198,7 @@ public class AuthenticationController {
             User user = userService.findByInputNumber(msisdn);
 
             // Generate a token for the user (for the moment assuming it is Android client)
-            CreateJwtTokenRequest tokenRequest = new CreateJwtTokenRequest(JwtType.ANDROID_CLIENT);
+            CreateJwtTokenRequest tokenRequest = new CreateJwtTokenRequest(JwtType.ANDROID_CLIENT, user.getUid());
 
             String token = jwtService.createJwt(tokenRequest);
 
