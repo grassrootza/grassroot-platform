@@ -12,7 +12,10 @@ set -o errexit -o pipefail
 export RED='\033[0;31m'
 export NC='\033[0m' # No Color
 
-# FUNCTONS
+# define path for environment variables, set the path without /, example  /etc/myfiles or /home/user/myfiles
+ENVPATH=""
+
+# FUNCTIONS
 # display help if tag -h is used, ignore everything else
 function usage {
 cat << EOF
@@ -68,7 +71,7 @@ function display_help {
 function check_basic_arguments {
   { echo "#### CHECKING IF ARGUMENTS WERE SET ####"; } 2> /dev/null
   if [ $@ -eq 0 ]; then
-    { printf "${RED}No arguments set. \nUsage: './localdeploy.sh -d [docker/localhost/external] -b [quick/restart/clean]'. \nThe quickest way to start is './localdeploy.sh -b quick -d docker'. \nSee README file for more info.\n${NC}"; } 2> /dev/null
+    { printf "${RED}No arguments set. \nUsage: './localdeploy.sh -d [docker/localhost/external] -b [quick/restart/clean]'. \nThe quickest way to start is './localdeploy.sh -d docker -b quick'. \nSee README file for more info.\n${NC}"; } 2> /dev/null
     exit 1
   else
     { echo "Arguments set, continuing..."; } 2> /dev/null
@@ -173,30 +176,36 @@ function check_existent_dockers_old {
   fi
 }
 
-# check the existent of environment variables at DIR/environment folder
+# check the existent of environment variables at ENVPATH  folder
 function check_environment_variables {
   # CHECKING FOR ENVIRONMENT VARIABLES
-  { echo "#### CHECKING FOR ENVIRONMENT VARIABLES ####"; } 2> /dev/null
-  if [ ! -f environment/environment-variables ]; then
-    { echo -e "${RED}environment/environment-variables file NOT FOUND, deployment can't proceed! Templates can be found at .deploy/templates/ Refer to Readme for more information.${NC}"; } 2> /dev/null
-    ENVIRONMENTVARIABLESEXIST="false"
+  # check if ENVPATH has been set
+  if [ ! -z "$ENVPATH" ]; then
+    { echo "#### CHECKING FOR ENVIRONMENT VARIABLES ####"; } 2> /dev/null
+    if [ ! -f $ENVPATH/environment-variables ]; then
+      { echo -e "${RED}$ENVPATH/environment-variables file NOT FOUND, deployment can't proceed! Templates can be found at .deploy/templates/ Refer to Readme for more information.${NC}"; } 2> /dev/null
+      ENVIRONMENTVARIABLESEXIST="false"
+    else
+      { echo "environment-variables files FOUND, continuing..."; } 2> /dev/null
+    fi
+    if [ ! -f $ENVPATH/grassroot-integration.properties ]; then
+      { echo -e "${RED}$ENVPATH/grassroot-integration.properties file NOT FOUND, deployment can't proceed! Templates can be found at .deploy/templates/ Refer to Readme for more information.${NC}"; } 2> /dev/null
+      ENVIRONMENTVARIABLESEXIST="false"
+    else
+      { echo "grassroot-integration.properties FOUND, continuing..."; } 2> /dev/null
+    fi
+    if [ ! -f $ENVPATH/grassroot-payments.properties ]; then
+      { echo -e "${RED}$ENVPATH/grassroot-payments.properties file NOT FOUND, deployment can't proceed! Templates can be found at .deploy/templates/ Refer to Readme for more information.${NC}"; } 2> /dev/null
+      ENVIRONMENTVARIABLESEXIST="false"
+    else
+      { echo "grassroot-payments.properties FOUND, continuing..."; } 2> /dev/null
+    fi
+    if [ "$ENVIRONMENTVARIABLESEXIST" = "false" ]; then
+      unset ENVIRONMENTVARIABLESEXIST
+      exit 1
+    fi
   else
-    { echo "environment-variables files FOUND, continuing..."; } 2> /dev/null
-  fi
-  if [ ! -f environment/grassroot-integration.properties ]; then
-    { echo -e "${RED}environment/grassroot-integration.properties file NOT FOUND, deployment can't proceed! Templates can be found at .deploy/templates/ Refer to Readme for more information.${NC}"; } 2> /dev/null
-    ENVIRONMENTVARIABLESEXIST="false"
-  else
-    { echo "grassroot-integration.properties FOUND, continuing..."; } 2> /dev/null
-  fi
-  if [ ! -f environment/grassroot-payments.properties ]; then
-    { echo -e "${RED}environment/grassroot-payments.properties file NOT FOUND, deployment can't proceed! Templates can be found at .deploy/templates/ Refer to Readme for more information.${NC}"; } 2> /dev/null
-    ENVIRONMENTVARIABLESEXIST="false"
-  else
-    { echo "grassroot-payments.properties FOUND, continuing..."; } 2> /dev/null
-  fi
-  if [ "$ENVIRONMENTVARIABLESEXIST" = "false" ]; then
-    unset ENVIRONMENTVARIABLESEXIST
+    { echo -e "${RED}Environment Path variable is null or not set, please adjust ENVPATH on line 16  of this file before continuing...${NC}"; } 2> /dev/null
     exit 1
   fi
 }
@@ -209,22 +218,22 @@ function check_db_variables {
   if [ -z $DATABASETYPE ]; then
     DATABASETYPE="db:5432"
     DATABASETYPE2="localhost:5432"
-    if [ grep -e "$DATABASETYPE" environment/environment-variables ]; then
-      { echo -e "${RED}External db not being used inside environment/environment-variables, exiting...${NC}" ; } 2> /dev/null
+    if [ grep -e "$DATABASETYPE" $ENVPATH/environment-variables ]; then
+      { echo -e "${RED}External db not being used inside $ENVPATH/environment-variables, exiting...${NC}" ; } 2> /dev/null
       exit 1
-    elif [ grep -e "$DATABASETYPE2" environment/environment-variables ]; then
-      { echo -e "${RED}External db not being used inside environment/environment-variables, exiting...${NC}"; } 2> /dev/null
+    elif [ grep -e "$DATABASETYPE2" $ENVPATH/environment-variables ]; then
+      { echo -e "${RED}External db not being used inside $ENVPATH/environment-variables, exiting...${NC}"; } 2> /dev/null
       exit 1
     else
       { echo "External db string seems to have been properly setup"; } 2> /dev/null
     fi
   # check in case -d is set docker or localhost
   else
-    if grep -e "$DATABASETYPE" environment/environment-variables
+    if grep -e "$DATABASETYPE" $ENVPATH/environment-variables
     then
-       { echo $DATABASETYPE "seems to have been properly setup inside environment/environment-variables"; } 2> /dev/null
+       { echo $DATABASETYPE "seems to have been properly setup inside $ENVPATH/environment-variables"; } 2> /dev/null
     else
-       { echo -e ${RED} $DATABASETYPE "could not been found inside environment/environment-variables, exiting... ${NC}"; } 2> /dev/null
+       { echo -e ${RED} $DATABASETYPE "could not been found inside $ENVPATH/environment-variables, exiting... ${NC}"; } 2> /dev/null
         exit 1
     fi
   fi
@@ -241,6 +250,8 @@ function select_docker_compose_file {
     rm -f docker-compose.yml
     { echo "Deleted"; } 2> /dev/null
   fi
+  { echo "Updating environment path for docker compose file folder mapping"; } 2> /dev/null
+  sed -i '' -e "s#<ENVPATH>#$ENVPATH#" .deploy/docker-compose.yml.db-$DATABASEMODE
   { echo "Setting correct docker-compose file based on database mode set with optin -d"; } 2> /dev/null
   cp .deploy/docker-compose.yml.db-$DATABASEMODE docker-compose.yml
   { echo docker-compose.yml.db-$DATABASEMODE "set as the current docker-compose.yml, continuing..."; } 2> /dev/null
