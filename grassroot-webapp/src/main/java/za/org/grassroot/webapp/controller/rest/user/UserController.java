@@ -48,7 +48,7 @@ public class UserController extends BaseRestController {
     private final JwtService jwtService;
 
 
-    @Value("${grassroot.media.user-photo.folder}")
+    @Value("${grassroot.media.user-photo.folder:user-profile-images-staging}")
     private String userProfileImagesFolder;
 
     public UserController(MediaFileBroker mediaFileBroker, StorageBroker storageBroker,

@@ -259,8 +259,8 @@ function select_docker_compose_file {
   { echo "Setting correct docker-compose file based on database mode set with optin -d"; } 2> /dev/null
   cp .deploy/docker-compose.yml.db-$DATABASEMODE docker-compose.yml
   { echo docker-compose.yml.db-$DATABASEMODE "set as the current docker-compose.yml, continuing..."; } 2> /dev/null
-  { echo "Updating environment path for docker compose file folder mapping"; } 2> /dev/null
-  sed -i '' -e "s#<ENVPATH>#$ENVPATH#" docker-compose.yml
+  { echo "Updating environment path ($ENVPATH) for docker compose file folder mapping"; } 2> /dev/null
+  sed -i -e "s#<ENVPATH>#$ENVPATH#" docker-compose.yml
 }
 
 # popup confirmation for user if option -d clean is selected
