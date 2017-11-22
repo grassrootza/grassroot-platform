@@ -2,6 +2,7 @@ package za.org.grassroot.webapp.model.rest;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Getter;
 import za.org.grassroot.core.domain.media.ImageRecord;
 import za.org.grassroot.core.domain.task.TaskLog;
 import za.org.grassroot.core.enums.ActionLogType;
@@ -9,6 +10,7 @@ import za.org.grassroot.core.enums.ActionLogType;
 /**
  * Created by luke on 2017/02/25.
  */
+@Getter
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ImageRecordDTO {
 
@@ -27,6 +29,7 @@ public class ImageRecordDTO {
     private Integer numberFaces;
     private boolean countModified;
     private Integer revisedFaces;
+    private String caption;
 
     public ImageRecordDTO(TaskLog taskLog, ImageRecord imageRecord) {
         this.actionLogUid = imageRecord.getActionLogUid();
@@ -44,6 +47,7 @@ public class ImageRecordDTO {
         this.numberFaces = imageRecord.getAnalyzedFaces();
         this.countModified = imageRecord.isCountModified();
         this.revisedFaces = imageRecord.getRevisedFaces();
+        this.caption = taskLog.getTag();
     }
 
     @JsonProperty("key")
@@ -55,43 +59,4 @@ public class ImageRecordDTO {
         return actionLogType;
     }
 
-    public String getTaskUid() {
-        return taskUid;
-    }
-
-    public String getBucket() {
-        return bucket;
-    }
-
-    public Long getCreationTime() {
-        return creationTime;
-    }
-
-    public Long getStorageTime() {
-        return storageTime;
-    }
-
-    public String getMd5() {
-        return md5;
-    }
-
-    public Double getLatitude() { return latitude; }
-
-    public Double getLongitude() { return longitude; }
-
-    public String getUserDisplayName() { return userDisplayName; }
-
-    public String getUserPhoneNumber() { return userPhoneNumber; }
-
-    public boolean isAnalyzed() { return analyzed; }
-
-    public Integer getNumberFaces() { return numberFaces; }
-
-    public boolean isCountModified() {
-        return countModified;
-    }
-
-    public Integer getRevisedFaces() {
-        return revisedFaces;
-    }
 }

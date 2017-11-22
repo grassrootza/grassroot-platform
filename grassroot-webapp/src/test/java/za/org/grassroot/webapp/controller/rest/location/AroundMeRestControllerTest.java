@@ -196,11 +196,6 @@ public class AroundMeRestControllerTest extends RestAbstractUnitTest {
                         -5,GeographicSearchType.PUBLIC)).thenThrow(new IllegalArgumentException("Invalid radius parameter"));
 
         when(liveWireAlertBrokerMock
-                .fetchAlertsNearUser(testUser.getUid(),null,
-                        null,GeographicSearchType.PUBLIC)).thenThrow(new IllegalArgumentException("Invalid radius parameter,should not be null"));
-
-
-        when(liveWireAlertBrokerMock
                 .fetchAlertsNearUser(testUser.getUid(),testLocation,
                         testRadiusMetres,GeographicSearchType.PUBLIC)).thenReturn(liveWireAlerts);
 

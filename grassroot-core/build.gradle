@@ -21,8 +21,10 @@ publishing {
 
 
 bintray {
-    user =  hasProperty('bintray_user') ? getProperty('bintray_user') : ''
-    key =   hasProperty('bintray_api_key') ? getProperty('bintray_api_key') : ''
+    // user =  hasProperty('bintray_user') ? getProperty('bintray_user') : ''
+    // key =   hasProperty('bintray_api_key') ? getProperty('bintray_api_key') : ''
+    user = 'luke-grassroot'
+    key = '1a55c87332b5034a3b2c7bcdbc84f258ba85e875'
     pkg {
 
         repo = 'grassroot-platform'

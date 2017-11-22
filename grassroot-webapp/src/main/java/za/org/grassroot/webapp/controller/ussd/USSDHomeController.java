@@ -535,7 +535,8 @@ public class USSDHomeController extends USSDController {
         if (SAFETY_GROUP_MANAGER.equals(section)) {
             return menuBuilder(ussdGroupUtil.showUserCreatedGroupsForSafetyFeature(user, SAFETY_GROUP_MANAGER, existingUri, pageNumber));
         } else {
-            return menuBuilder(ussdGroupUtil.userGroupMenuPaginated(user, prompt, existingUri, newUri, pageNumber, null, section));
+            return menuBuilder(ussdGroupUtil.userGroupMenuPaginated(user, prompt, existingUri,
+                    newUri, pageNumber, null, section == null ? HOME : section));
         }
     }
 

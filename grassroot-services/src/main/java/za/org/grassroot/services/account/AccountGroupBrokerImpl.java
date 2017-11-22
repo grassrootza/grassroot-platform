@@ -227,7 +227,7 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
             group.setPaidFor(true);
 
             bundle.addLog(new AccountLog.Builder(account)
-                    .userUid(user.getUid())
+                    .user(user)
                     .accountLogType(AccountLogType.GROUP_ADDED)
                     .group(group)
                     .paidGroupUid(paidGroup.getUid())
@@ -371,7 +371,7 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
             group.setPaidFor(false);
 
             bundle.addLog(new AccountLog.Builder(account)
-                    .userUid(user.getUid())
+                    .user(user)
                     .accountLogType(AccountLogType.GROUP_REMOVED)
                     .group(group)
                     .paidGroupUid(record.getUid())
@@ -409,7 +409,7 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
         String description = group.getMembers().size() + " members @ : " + account.getFreeFormCost(); // so it's recorded at cost of sending
 
         AccountLog accountLog = new AccountLog.Builder(account)
-                .userUid(userUid)
+                .user(user)
                 .accountLogType(AccountLogType.MESSAGE_SENT)
                 .group(group)
                 .paidGroupUid(paidGroup.getUid())
@@ -530,7 +530,7 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
                 .accountLogType(AccountLogType.GROUP_WELCOME_MESSAGES_CREATED)
                 .group(group)
                 .paidGroupUid(paidGroup.getUid())
-                .userUid(userUid)
+                .user(user)
                 .description(String.format("Duration: %s, messages: %s", delayToSend.toString(), messages.toString()))
                 .build());
 
@@ -568,7 +568,7 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
         if (template != null) {
             logger.error("Conflict in group welcome messages ... check logs and debug");
             storeAccountLogPostCommit(new AccountLog.Builder(template.getAccount())
-                    .userUid(user.getUid())
+                    .user(user)
                     .group(group)
                     .accountLogType(AccountLogType.GROUP_WELCOME_CONFLICT)
                     .description("Group welcome messages deactivated due to conflicting creation of new template").build());
@@ -622,7 +622,7 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
                 .accountLogType(AccountLogType.GROUP_WELCOME_MESSAGES_CHANGED)
                 .group(group)
                 .paidGroupUid(paidGroup.getUid())
-                .userUid(userUid)
+                .user(user)
                 .description(logDescription).build());
     }
 
@@ -649,7 +649,7 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
                 .accountLogType(AccountLogType.GROUP_WELCOME_DEACTIVATED)
                 .group(group)
                 .paidGroupUid(paidGroup.getUid())
-                .userUid(userUid).build());
+                .user(user).build());
 
     }
 
@@ -695,7 +695,7 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
             LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
             AccountLog accountLog = new AccountLog.Builder(account)
-                    .userUid(addingUserUid)
+                    .user(userRepository.findOneByUid(addingUserUid))
                     .group(group)
                     .paidGroupUid(latestRecord.getUid())
                     .accountLogType(AccountLogType.MESSAGE_SENT)
@@ -729,7 +729,7 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
         template.setCascade(true);
 
         createAndStoreSingleAccountLog(new AccountLog.Builder(template.getAccount())
-                .userUid(userUid)
+                .user(userRepository.findOneByUid(userUid))
                 .group(template.getGroup())
                 .accountLogType(AccountLogType.GROUP_WELCOME_CASCADE_ON)
                 .build());
@@ -747,7 +747,7 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
         template.setCascade(false);
 
         createAndStoreSingleAccountLog(new AccountLog.Builder(template.getAccount())
-                .userUid(userUid)
+                .user(userRepository.findOneByUid(userUid))
                 .group(template.getGroup())
                 .accountLogType(AccountLogType.GROUP_WELCOME_CASCADE_OFF)
                 .build());
@@ -824,7 +824,7 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
         bundle.addLog(new AccountLog.Builder(account)
-                .userUid(user.getUid())
+                .user(user)
                 .accountLogType(accountLogType)
                 .group(group)
                 .paidGroupUid(paidGroupUid)

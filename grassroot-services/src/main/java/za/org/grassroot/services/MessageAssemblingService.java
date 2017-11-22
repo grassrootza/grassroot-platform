@@ -72,4 +72,9 @@ public interface MessageAssemblingService {
     String[] populateEventFields(Event event, double yes, double no, double abstain, double noReply);
 
     String createAndroidLinkSms(User user);
+
+    List<String> getMessagesForGroups(List<Group> groups);
+
+    String createGroupJoinCodeMessage(Group group);
+
 }

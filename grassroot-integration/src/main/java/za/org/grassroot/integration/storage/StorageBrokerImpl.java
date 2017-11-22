@@ -96,6 +96,7 @@ public class StorageBrokerImpl implements StorageBroker {
         Objects.requireNonNull(record);
         Objects.requireNonNull(file);
 
+        logger.info("storing a media file in bucket {}, with key {}", record.getBucket(), record.getKey());
         String md5hash = uploadToS3(record.getBucket(), record.getKey(), file);
 
         if (md5hash != null) {

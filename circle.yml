@@ -28,16 +28,29 @@ deployment:
   production:
     branch: master
     commands:
+      # define environment
+      - echo 'export ENVIRONMENT=production' >> ~/.circlerc
+      - echo 'export EBENVIRONMENT=gr-prod' >> ~/.circlerc
+      - echo $ENVIRONMENT
+
+      # build image and deploy to docker hub
+      - mv .deploy/buildimage.sh buildimage.sh
+      - chmod +x buildimage.sh
+      - ./buildimage.sh $CIRCLE_SHA1 $ENVIRONMENT
+
+      # deploy files to beanstalk
+      - mv .deploy/ebdeploy.sh ebdeploy.sh
+      - chmod +x ebdeploy.sh
+      - ./ebdeploy.sh $CIRCLE_SHA1 $ENVIRONMENT $EBENVIRONMENT
+
 
   staging:
     branch: preprod
     commands:
       # define environment
-      #- export ENVIRONMENT=staging
       - echo 'export ENVIRONMENT=staging' >> ~/.circlerc
       - echo 'export EBENVIRONMENT=gr-stg' >> ~/.circlerc
       - echo $ENVIRONMENT
-      #- export EBENVIRONMENT=gr-stg
 
       # build image and deploy to docker hub
       - mv .deploy/buildimage.sh buildimage.sh

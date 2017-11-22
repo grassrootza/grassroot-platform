@@ -4,4 +4,6 @@ public interface ActionLog {
 
     String getUid();
 
+    User getUser();
+
 }

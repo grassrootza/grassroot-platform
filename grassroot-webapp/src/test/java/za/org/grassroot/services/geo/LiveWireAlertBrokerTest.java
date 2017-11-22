@@ -21,9 +21,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
+import static org.mockito.Matchers.*;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -89,11 +87,6 @@ public class LiveWireAlertBrokerTest {
     @Test(expected = InvalidParameterException.class)
     public void negativeRadiusShouldThrowInvalidParameterException(){
         liveWireAlertBroker.fetchAlertsNearUser(testUser.getUid(),testLocation, -5,GeographicSearchType.BOTH);
-    }
-
-    @Test(expected = NullPointerException.class)
-    public void nullRadiusShouldThrowInvalidParameterException(){
-        liveWireAlertBroker.fetchAlertsNearUser(testUser.getUid(),testLocation, null,GeographicSearchType.BOTH);
     }
 
     @Test

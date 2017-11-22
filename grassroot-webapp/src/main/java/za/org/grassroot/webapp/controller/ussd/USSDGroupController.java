@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.GroupDeactivationNotAvailableException;
 import za.org.grassroot.services.geo.GeoLocationBroker;
@@ -31,6 +32,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static za.org.grassroot.webapp.util.USSDUrlUtil.*;
@@ -69,7 +71,9 @@ public class USSDGroupController extends USSDController {
             mergeGroupMenu = "merge",
             inactiveMenu = "inactive",
             validity = "validity",
-            invalidGroups = "clean";
+            invalidGroups = "clean",
+            sendJoidCodeForCreatedGroup = "send-code",
+            sendAllGroupsJoinCodes = "sendall";
 
     private static final String groupPath = homePath + groupMenus;
     private static final USSDSection thisSection = USSDSection.GROUP_MANAGER;
@@ -77,7 +81,8 @@ public class USSDGroupController extends USSDController {
     private static final String groupUidParam = "groupUid";
 
     @Autowired
-    public USSDGroupController(PermissionBroker permissionBroker, GroupQueryBroker groupQueryBroker, GeoLocationBroker geoLocationBroker) {
+    public USSDGroupController(PermissionBroker permissionBroker, GroupQueryBroker groupQueryBroker,
+                               GeoLocationBroker geoLocationBroker, MessageAssemblingService messageAssemblingService) {
         this.permissionBroker = permissionBroker;
         this.groupQueryBroker = groupQueryBroker;
         this.geoLocationBroker = geoLocationBroker;
@@ -103,6 +108,7 @@ public class USSDGroupController extends USSDController {
                         .urlForCreateNewGroupPrompt(createGroupMenu)
                         .urlToCreateNewGroup(createGroupMenu + doSuffix)
                         .urlForNoGroups(createGroupMenu)
+                        .urlForSendAllGroupJoinCodes(sendAllGroupsJoinCodes)
                         .numberOfGroups(numberGroups);
                 return menuBuilder(ussdGroupUtil.askForGroup(builder));
             } else {
@@ -188,6 +194,8 @@ public class USSDGroupController extends USSDController {
                 getMessage(thisSection, createGroupMenu + doSuffix, optionsKey + "numbers", user));
         menu.addMenuOption(groupMenuWithId(closeGroupToken, groupUid),
                 getMessage(thisSection, createGroupMenu + doSuffix, optionsKey + "token", user));
+        menu.addMenuOption(groupMenuWithId(sendJoidCodeForCreatedGroup,groupUid),
+                getMessage(thisSection,"sendcode", promptKey, user));
         return menu;
     }
 
@@ -618,12 +626,12 @@ public class USSDGroupController extends USSDController {
     @ResponseBody
     public Request selectMergeGroups(@RequestParam(value = phoneNumber) String inputNumber,
                                      @RequestParam(value = groupUidParam) String groupUid) throws URISyntaxException {
-
         USSDMenu menu;
         User user = userManager.findByInputNumber(inputNumber, saveGroupMenu(mergeGroupMenu, groupUid));
 
-        // todo: debug why this is returning inactive groups (service method has active flag)
-        List<Group> mergeCandidates = new ArrayList<>(groupQueryBroker.mergeCandidates(user.getUid(), groupUid));
+        log.info("selecting merge candidates, with groupUid = {}", groupUid);
+        Set<Group> mergeCandidates = groupQueryBroker.mergeCandidates(user.getUid(), groupUid);
+        log.info("selected merge candidates, returned = {}", mergeCandidates);
 
         if (mergeCandidates.size() == 0) {
             menu = new USSDMenu(getMessage(thisSection, mergeGroupMenu, promptKey + ".error", user));
@@ -633,7 +641,7 @@ public class USSDGroupController extends USSDController {
         } else {
             menu = new USSDMenu(getMessage(thisSection, mergeGroupMenu, promptKey, user));
             menu = ussdGroupUtil.addGroupsToMenu(menu, groupMenus + mergeGroupMenu + "-confirm?firstGroupSelected=" + groupUid,
-                    mergeCandidates, user);
+                    new ArrayList<>(mergeCandidates), user);
         }
         return menuBuilder(menu);
     }
@@ -789,6 +797,44 @@ public class USSDGroupController extends USSDController {
         menu.addMenuOption(startMenu, getMessage(startMenu, user));
 
         return menuBuilder(menu);
+    }
+
+    @RequestMapping(value = groupPath + sendAllGroupsJoinCodes)
+    @ResponseBody
+    public Request sendAllJoinCodesPrompt(@RequestParam(value = phoneNumber) String inputNumber) throws URISyntaxException {
+        final User sessionUser = userManager.findByInputNumber(inputNumber);
+
+        final String prompt = getMessage(thisSection,"sent","prompt",sessionUser);
+        USSDMenu ussdMenu = new USSDMenu(prompt);
+
+        log.debug("UserUid in USSDGroupController = {}",sessionUser.getUid());
+
+        groupBroker.sendAllGroupJoinCodesNotification(sessionUser.getUid());
+
+        ussdMenu.addMenuOption(thisSection.toPath() + startMenu,
+                getMessage(thisSection, listGroupMembers, optionsKey + "back-grp", sessionUser));
+        ussdMenu.addMenuOption("start_force", getMessage("start", sessionUser));
+        return menuBuilder(ussdMenu);
+    }
+
+    @RequestMapping(value = groupPath + sendJoidCodeForCreatedGroup)
+    @ResponseBody
+    public  Request sendCreatedGroupJoinCode(@RequestParam(value = phoneNumber) String inputNumber,
+                                             @RequestParam String groupUid) throws URISyntaxException{
+        final User sessionUser = userManager.findByInputNumber(inputNumber);
+
+        final String prompt = getMessage(thisSection,"sent-code","prompt",sessionUser);
+        USSDMenu ussdMenu = new USSDMenu(prompt);
+
+        //log.info("GroupUid in USSDGroupController = {}",group.getUid());
+
+        groupBroker.sendGroupJoinCodeNotification(sessionUser.getUid(), groupUid);
+
+        ussdMenu.addMenuOption(thisSection.toPath() + startMenu,
+                getMessage(thisSection, listGroupMembers, optionsKey + "back-grp", sessionUser));
+        ussdMenu.addMenuOption("start_force", getMessage("start", sessionUser));
+
+        return menuBuilder(ussdMenu);
     }
 
     private boolean isValidGroupName(String groupName) {

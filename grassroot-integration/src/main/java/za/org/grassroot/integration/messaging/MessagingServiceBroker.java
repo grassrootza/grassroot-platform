@@ -14,13 +14,6 @@ public interface MessagingServiceBroker {
 
     MessageServicePushResponse sendPrioritySMS(String message, String destinationNumber);
 
-    /*
-    Second, relaying some calls on group chat (in time these should all go straight to xmpp server, but for now)
-     */
-    void markMessagesAsRead(String groupUid, Set<String> messageUids);
-
-    void updateActivityStatus(String userUid, String groupUid, boolean active, boolean userInitiated) throws Exception;
-
     void subscribeServerToGroupChatTopic(String groupUid);
 
 }

@@ -150,12 +150,12 @@ public class AccountBrokerImpl implements AccountBroker {
 
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
         bundle.addLog(new AccountLog.Builder(account)
-                .userUid(userUid)
+                .user(creatingUser)
                 .accountLogType(AccountLogType.ACCOUNT_CREATED)
                 .description(accountType.name()).build());
 
         bundle.addLog(new AccountLog.Builder(account)
-                .userUid(billedUserUid)
+                .user(billedUser)
                 .accountLogType(AccountLogType.ADMIN_ADDED)
                 .description("billed user set as admin").build());
 
@@ -169,7 +169,7 @@ public class AccountBrokerImpl implements AccountBroker {
 
             bundle.addLog(new AccountLog.Builder(account)
                     .accountLogType(AccountLogType.ACCOUNT_ENABLED)
-                    .userUid(userUid)
+                    .user(creatingUser)
                     .description("account enabled for free trial, at creation")
                     .build());
 
@@ -238,7 +238,7 @@ public class AccountBrokerImpl implements AccountBroker {
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
         bundle.addLog(new AccountLog.Builder(account)
                 .accountLogType(AccountLogType.ACCOUNT_ENABLED)
-                .userUid(userUid)
+                .user(user)
                 .description("account enabled")
                 .build());
 
@@ -250,7 +250,7 @@ public class AccountBrokerImpl implements AccountBroker {
 
             bundle.addLog(new AccountLog.Builder(account)
                     .accountLogType(AccountLogType.ADMIN_ADDED)
-                    .userUid(userUid)
+                    .user(user)
                     .description("account admin added during enabling")
                     .build());
         }
@@ -267,12 +267,13 @@ public class AccountBrokerImpl implements AccountBroker {
         // note : not validating user is admin as this may be called by a responding sponsor prior to payment being complete
 
         Account account = accountRepository.findOneByUid(accountUid);
+        User user = userRepository.findOneByUid(userUid);
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
         if (paymentType != null && !paymentType.equals(account.getDefaultPaymentType())) {
             account.setDefaultPaymentType(paymentType);
             bundle.addLog(new AccountLog.Builder(account)
-                    .userUid(userUid)
+                    .user(user)
                     .accountLogType(AccountLogType.PAYMENT_METHOD_CHANGED)
                     .description(paymentType.name()).build());
         }
@@ -284,7 +285,7 @@ public class AccountBrokerImpl implements AccountBroker {
             }
             account.setSubscriptionFee(calculateSubscriptionFee(account, account.getType()));
             bundle.addLog(new AccountLog.Builder(account)
-                    .userUid(userUid)
+                    .user(user)
                     .accountLogType(AccountLogType.BILLING_CYCLE_CHANGED)
                     .description(billingCycle.name()).build());
         }
@@ -308,7 +309,7 @@ public class AccountBrokerImpl implements AccountBroker {
 
         createAndStoreSingleAccountLog(new AccountLog.Builder(account)
                 .accountLogType(AccountLogType.PAYMENT_METHOD_CHANGED)
-                .userUid(userUid)
+                .user(user)
                 .description("Changed to payment method: " + paymentType.name()).build());
     }
 
@@ -362,7 +363,7 @@ public class AccountBrokerImpl implements AccountBroker {
         }
 
         createAndStoreSingleAccountLog(new AccountLog.Builder(account)
-                .userUid(administratorUid)
+                .user(user)
                 .accountLogType(AccountLogType.ACCOUNT_DISABLED)
                 .description(reasonToRecord).build());
     }
@@ -393,7 +394,7 @@ public class AccountBrokerImpl implements AccountBroker {
         accountGroupBroker.removeGroupsFromAccount(accountUid, paidGroupUids, userUid);
 
         createAndStoreSingleAccountLog(new AccountLog.Builder(account)
-                .userUid(userUid)
+                .user(user)
                 .accountLogType(AccountLogType.ACCOUNT_INVISIBLE)
                 .description("account closed and removed from view").build());
 
@@ -432,7 +433,7 @@ public class AccountBrokerImpl implements AccountBroker {
         setAccountLimits(account, newAccountType);
 
         createAndStoreSingleAccountLog(new AccountLog.Builder(account)
-                .userUid(userUid)
+                .user(user)
                 .accountLogType(AccountLogType.TYPE_CHANGED)
                 .description(newAccountType.name()).build());
     }
@@ -480,7 +481,7 @@ public class AccountBrokerImpl implements AccountBroker {
         }
 
         createAndStoreSingleAccountLog(new AccountLog.Builder(account)
-                .userUid(userUid)
+                .user(user)
                 .accountLogType(AccountLogType.DISCRETE_SETTING_CHANGE)
                 .description(sb.toString()).build());
     }
@@ -500,7 +501,7 @@ public class AccountBrokerImpl implements AccountBroker {
         account.setDefaultPaymentType(AccountPaymentType.CARD_PAYMENT);
 
         createAndStoreSingleAccountLog(new AccountLog.Builder(account)
-                .userUid(userUid)
+                .user(user)
                 .accountLogType(AccountLogType.PAYMENT_METHOD_CHANGED)
                 .description(paymentRef).build());
     }
@@ -527,7 +528,7 @@ public class AccountBrokerImpl implements AccountBroker {
         }
 
         createAndStoreSingleAccountLog(new AccountLog.Builder(account)
-                .userUid(userUid)
+                .user(changingUser)
                 .accountLogType(AccountLogType.ADMIN_ADDED)
                 .description(administrator.getUid()).build());
     }
@@ -566,7 +567,7 @@ public class AccountBrokerImpl implements AccountBroker {
         }
 
         createAndStoreSingleAccountLog(new AccountLog.Builder(account)
-                .userUid(userUid)
+                .user(changingUser)
                 .accountLogType(AccountLogType.ADMIN_REMOVED)
                 .description(administrator.getUid()).build());
     }
@@ -646,7 +647,7 @@ public class AccountBrokerImpl implements AccountBroker {
 
         createAndStoreSingleAccountLog(new AccountLog.Builder(account)
                 .accountLogType(AccountLogType.SYSADMIN_CHANGED_BALANCE)
-                .userUid(adminUid)
+                .user(admin)
                 .billedOrPaid(newBalance)
                 .description("Admin manually adjusted account balance").build());
     }
@@ -666,7 +667,7 @@ public class AccountBrokerImpl implements AccountBroker {
 
         createAndStoreSingleAccountLog(new AccountLog.Builder(account)
                 .accountLogType(AccountLogType.SYSADMIN_CHANGED_BALANCE)
-                .userUid(adminUid)
+                .user(admin)
                 .billedOrPaid(newFee)
                 .description("Admin manually adjusted account fee").build());
     }
@@ -706,7 +707,7 @@ public class AccountBrokerImpl implements AccountBroker {
 
         createAndStoreSingleAccountLog(new AccountLog.Builder(account)
                 .accountLogType(AccountLogType.SYSADMIN_MODIFIED_MULTIPLE)
-                .userUid(adminUid)
+                .user(user)
                 .description(sb.toString()).build());
     }
 
@@ -725,7 +726,7 @@ public class AccountBrokerImpl implements AccountBroker {
 
         createAndStoreSingleAccountLog(new AccountLog.Builder(account)
                 .accountLogType(AccountLogType.ACCOUNT_INVISIBLE)
-                .userUid(adminUid)
+                .user(user)
                 .description("System admin set account invisible").build());
     }
 
