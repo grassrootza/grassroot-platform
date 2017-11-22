@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.task.TodoType;
@@ -22,18 +23,20 @@ import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Controller @Slf4j
-@RequestMapping("/todo2/")
-public class TodoNewController extends BaseController {
+@RequestMapping("/todo/")
+public class TodoCreateController extends BaseController {
 
     private final TodoBrokerNew todoBroker;
     private final GroupBroker groupBroker;
     private final PermissionBroker permissionBroker;
 
     @Autowired
-    public TodoNewController(TodoBrokerNew todoBroker, GroupBroker groupBroker, PermissionBroker permissionBroker) {
+    public TodoCreateController(TodoBrokerNew todoBroker, GroupBroker groupBroker, PermissionBroker permissionBroker) {
         this.todoBroker = todoBroker;
         this.groupBroker = groupBroker;
         this.permissionBroker = permissionBroker;
@@ -43,14 +46,18 @@ public class TodoNewController extends BaseController {
     public String createTodoPrompt(Model model, @RequestParam(required = false) String parentUid) {
         model.addAttribute("parentSpecified", parentUid != null);
         if (parentUid == null) {
-            model.addAttribute("possibleGroups", permissionBroker.getActiveGroupsSorted(getUserProfile(),
-                    Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY)); // todo : change this enum finally
+            // todo : finally change 'logbook' in permissions enum
+            List<Group> groups = permissionBroker.getActiveGroupsSorted(getUserProfile(), Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY);
+            Map<String, String> groupOptions = groups.stream().collect(Collectors.toMap(Group::getUid, Group::getName));
+            model.addAttribute("possibleGroups", groupOptions);
         } else {
             model.addAttribute("group", groupBroker.load(parentUid));
         }
 
         List<TodoType> availableTypes = Arrays.asList(TodoType.ACTION_REQUIRED,
-                TodoType.INFORMATION_REQUIRED);
+                TodoType.INFORMATION_REQUIRED,
+                TodoType.VOLUNTEERS_NEEDED,
+                TodoType.VALIDATION_REQUIRED);
 
         model.addAttribute("availableTypes", availableTypes);
 
@@ -61,7 +68,7 @@ public class TodoNewController extends BaseController {
     @RequestMapping(value = "create", method = RequestMethod.POST)
     public String createTodoDone(@RequestParam String parentUid,
                                  @RequestParam TodoType type,
-                                 @RequestParam String messsage,
+                                 @RequestParam String explanation,
                                  @RequestParam LocalDateTime deadline,
                                  @RequestParam(required = false) String responseTag,
                                  @RequestParam(required = false) Set<String> assignedMemberUids,
@@ -71,7 +78,7 @@ public class TodoNewController extends BaseController {
                 .parentType(JpaEntityType.GROUP)
                 .parentUid(parentUid)
                 .todoType(type)
-                .subject(messsage)
+                .subject(explanation)
                 .dueDateTime(DateTimeUtil.convertToSystemTime(deadline, DateTimeUtil.getSAST()))
                 .userUid(getUserProfile().getUid()).build();
 

@@ -15,25 +15,37 @@ $(document).ready(function() {
     defTime.setTime(defTime.getTime() + 5*60*1000);
 
     var typeSelector = $("#type");
-    var responseLabel = $("#response_label");
+    var responseLabel = $("#resp_label_holder");
+    var assignMemberRadio = $("#assign_member_holder");
+    var validateMemberRadio = $("#validating_member_holder");
 
     responseLabel.hide();
+    assignMemberRadio.hide();
+    validateMemberRadio.hide();
 
     typeSelector.change(function() {
         var typeSelected = typeSelector.val();
         switch (typeSelected) {
           case 'INFORMATION_REQUIRED':
               responseLabel.show();
+              assignMemberRadio.hide();
+              validateMemberRadio.hide();
               break;
           case 'ACTION_REQUIRED':
               responseLabel.hide();
-              break;
+            assignMemberRadio.hide();
+            validateMemberRadio.hide();
+            break;
           case 'VOLUNTEERS_NEEDED':
               responseLabel.hide();
-              break;
+              assignMemberRadio.hide();
+              validateMemberRadio.hide();
+            break;
           case 'VALIDATION_REQUIRED':
             responseLabel.hide();
-              break;
+            assignMemberRadio.show();
+            validateMemberRadio.show();
+            break;
         }
     });
 

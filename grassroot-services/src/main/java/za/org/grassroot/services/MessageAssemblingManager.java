@@ -150,6 +150,27 @@ public class MessageAssemblingManager implements MessageAssemblingService {
     }
 
     @Override
+    public String createTodoVolunteerReceivedMessage(User target, TodoAssignment todoResponse) {
+        final Locale locale = getUserLocale(target);
+        final String[] fields = new String[] {
+                todoResponse.getUser().getName(),
+                todoResponse.getUser().getNationalNumber(),
+                todoResponse.getTodo().getName()
+        };
+        return messageSourceAccessor.getMessage("text.todo.volunteer.responded", fields, locale);
+    }
+
+    @Override
+    public String createTodoInfoConfirmationMessage(TodoAssignment todoResponse) {
+        final User user = todoResponse.getUser();
+        final Locale locale = getUserLocale(user);
+        final String[] fields = new String[] {
+                todoResponse.getResponseText(), todoResponse.getTodo().getName()
+        };
+        return messageSourceAccessor.getMessage("text.todo.information.responded", fields, locale);
+    }
+
+    @Override
     public String createMultiOptionVoteResultsMessage(User user, Vote vote, Map<String, Long> optionsWithCount) {
         Locale locale = getUserLocale(user);
         String messagePrefix = messageSourceAccessor.getMessage("sms.vote.send.results.prefix",

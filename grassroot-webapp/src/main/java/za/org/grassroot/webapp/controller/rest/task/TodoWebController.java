@@ -22,13 +22,13 @@ import java.util.Set;
 @RestController @Grassroot2RestController
 @Api("/api/task/create/todo")
 @RequestMapping(value = "/api/task/create/todo")
-public class TodoCreateController {
+public class TodoWebController {
 
     private final TodoBrokerNew todoBrokerNew;
     private final UserManagementService userManager;
 
     @Autowired
-    public TodoCreateController(TodoBrokerNew todoBrokerNew, UserManagementService userManager) {
+    public TodoWebController(TodoBrokerNew todoBrokerNew, UserManagementService userManager) {
         this.todoBrokerNew = todoBrokerNew;
         this.userManager = userManager;
     }

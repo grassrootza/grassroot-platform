@@ -11,12 +11,8 @@ import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.domain.task.AbstractTodoEntity;
-import za.org.grassroot.core.domain.task.EventReminderType;
 import za.org.grassroot.core.domain.task.Todo;
-import za.org.grassroot.core.domain.task.TodoContainer;
 import za.org.grassroot.core.enums.TodoCompletionConfirmType;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.task.EventBroker;
@@ -24,11 +20,9 @@ import za.org.grassroot.services.task.TodoBroker;
 import za.org.grassroot.services.task.enums.TodoStatus;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.MemberPicker;
-import za.org.grassroot.webapp.model.web.TodoWrapper;
 
 import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -65,96 +59,6 @@ public class TodoController extends BaseController {
     /**
      * SECTION: Views and methods for creating action/to-do entries
      */
-
-    @RequestMapping("create")
-    public String createTodo(Model model, @RequestParam(value="parentUid", required=false) String parentUid,
-                             @RequestParam(value="parentType", required=false) JpaEntityType passedParentType,
-                             RedirectAttributes attributes, HttpServletRequest request) {
-
-        TodoWrapper wrapper;
-        if (!StringUtils.isEmpty(parentUid)) {
-            JpaEntityType parentType = passedParentType == null ? JpaEntityType.GROUP : passedParentType;
-            boolean isParentGroup = JpaEntityType.GROUP.equals(parentType);
-            TodoContainer parent = isParentGroup ? groupBroker.load(parentUid) : eventBroker.load(parentUid);
-
-            wrapper = new TodoWrapper(parentType, parentUid, parent.getName());
-            model.addAttribute("parent", parent);
-            model.addAttribute("parentSpecified", true);
-
-            wrapper.setMemberPicker(MemberPicker.create(parent, parentType, false));
-            wrapper.setAssignmentType(JpaEntityType.GROUP.equals(parentType) ? "group" : "non-group");
-            wrapper.setReminderType(parent.getReminderType());
-            wrapper.setReminderMinutes(parent.getTodoReminderMinutes() == null ? AbstractTodoEntity.DEFAULT_REMINDER_MINUTES
-                    : parent.getTodoReminderMinutes());
-        } else {
-            // reload user entity in case things have changed during session (else bug w/ list of possible groups)
-            User userFromDb = userManagementService.load(getUserProfile().getUid());
-
-            if (permissionBroker.countActiveGroupsWithPermission(userFromDb, GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY) == 0) {
-                addMessage(attributes, MessageType.INFO, "todo.create.group", request);
-                return "redirect:/group/create";
-            }
-
-            model.addAttribute("parentSpecified", false);
-            model.addAttribute("userUid", userFromDb.getUid());
-            model.addAttribute("possibleGroups", permissionBroker.getActiveGroupsSorted(userFromDb, GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY));
-
-            wrapper = new TodoWrapper(JpaEntityType.GROUP);
-
-            wrapper.setAssignmentType("group");
-            wrapper.setReminderType(EventReminderType.GROUP_CONFIGURED);
-            wrapper.setReminderMinutes(AbstractTodoEntity.DEFAULT_REMINDER_MINUTES);
-
-        }
-
-        model.addAttribute("actionTodo", wrapper);
-        return "todo/create";
-    }
-
-    // todo : abstract & consolidate these two
-    @RequestMapping(value = "record", method = RequestMethod.POST)
-    public String recordTodo(@ModelAttribute("entry") TodoWrapper todoEntry,
-                             RedirectAttributes redirectAttributes, HttpServletRequest request) {
-
-        log.info("TodoWrapper received, looks like: {}", todoEntry.toString());
-
-        if (todoEntry.getReminderType().equals(EventReminderType.GROUP_CONFIGURED)) {
-            int convertedMinutes = -(groupBroker.load(todoEntry.getParentUid()).getReminderMinutes());
-            todoEntry.setReminderMinutes(convertedMinutes);
-        }
-
-        Set<String> assignedUids;
-        if ("members".equals(todoEntry.getAssignmentType())) {
-            assignedUids = todoEntry.getMemberPicker().getSelectedUids();
-            assignedUids.add(getUserProfile().getUid()); // to avoid accidental removal from own action
-        } else {
-            assignedUids = Collections.emptySet();
-        }
-
-        Long startTime = System.currentTimeMillis();
-        todoBroker.create(getUserProfile().getUid(), todoEntry.getParentEntityType(), todoEntry.getParentUid(),
-                todoEntry.getMessage(), todoEntry.getActionByDate(), todoEntry.getReminderMinutes(),
-                todoEntry.isReplicateToSubGroups(), assignedUids);
-
-        log.info("Time to create, store, todos: {} msecs", System.currentTimeMillis() - startTime);
-
-        addMessage(redirectAttributes, MessageType.SUCCESS, "todo.creation.success", request);
-        return "redirect:/home";
-    }
-
-    @RequestMapping(value = "record/meeting", method = RequestMethod.POST)
-    public String recordEntryWithMeetingParent(Model model, @ModelAttribute("actionTodo") TodoWrapper todo,
-                                               HttpServletRequest request, RedirectAttributes attributes) {
-
-        Todo created = todoBroker.create(getUserProfile().getUid(), todo.getParentEntityType(),
-                todo.getParentUid(), todo.getMessage(), todo.getActionByDate(),
-                todo.getReminderMinutes(), false, Collections.emptySet());
-
-        addMessage(attributes, MessageType.SUCCESS, "todo.creation.success", request);
-        attributes.addAttribute("todoUid", created.getUid());
-
-        return "redirect:/todo/view";
-    }
 
     /**
      * SECTION: Views and methods for examining a group's actions and todos

@@ -340,8 +340,10 @@ public class TodoBrokerNewImpl implements TodoBrokerNew {
         membership.addTag(memberTag);
 
         if (sendConfirmation) {
-            notifications.add(new TodoInfoNotification(assignment.getUser(), "we recorded it", todoLog));
+            final String message = messageService.createTodoInfoConfirmationMessage(assignment);
+            notifications.add(new TodoInfoNotification(assignment.getUser(), message, todoLog));
         }
+
         return notifications;
     }
 
@@ -361,8 +363,9 @@ public class TodoBrokerNewImpl implements TodoBrokerNew {
         // todo : consider notifying if no volunteer (if on paid account ...)
         // todo : handle non-predictable text entry (use NLU)
         if ("yes".equalsIgnoreCase(response)) {
-            notifications.add(new TodoInfoNotification(assignment.getTodo().getCreatedByUser(),
-                    "someone volunteered", todoLog));
+            // todo : consider sending messages to other organizers
+            final String message = messageService.createTodoVolunteerReceivedMessage(assignment.getTodo().getCreatedByUser(), assignment);
+            notifications.add(new TodoInfoNotification(assignment.getTodo().getCreatedByUser(), message, todoLog));
         }
         return notifications;
     }

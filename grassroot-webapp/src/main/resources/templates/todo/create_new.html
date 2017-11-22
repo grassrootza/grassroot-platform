@@ -19,7 +19,7 @@
     <div class="container">
       <div class="row">
         <div class="col-md-8 col-md-offset-2 col-sm-6 col-sm-offset-3 col-xs-12">
-          <form th:action="@{/todo2/record}" id="createForm" method="post">
+          <form th:action="@{/todo2/create}" id="createForm" method="post">
 
             <!-- if confirmation, who is assigned, who confirms, if the rest is okay -->
 
@@ -34,14 +34,14 @@
               </div>
             </div>
 
-            <div th:replace="~{form_fragments :: enum_selector('Type of todo:', 'type',
+            <div th:replace="~{form_fragments :: enum_selector('What must members do?', 'type',
               ${availableTypes}, 'web.todo.create.type')}"></div>
-            <div th:replace="~{form_fragments :: text_input('Subject', 'Describe the action todo', '40', 'subject')}"></div>
+            <div id="resp_label_holder" th:include="~{form_fragments :: text_input('Label', 'How will you label the responses? E.g., ID', '10', 'response_label')}"></div>
 
-            <div th:replace="~{form_fragments :: text_input('Label', 'How will you label the responses? E.g., ID', '10', 'response_label')}"
+            <div th:replace="~{form_fragments :: text_input('Explanation', 'Describe the action for members', '40', 'explanation')}"></div>
 
-            <div th:replace="~{form_fragments :: member-picker('Assign members', 'assigned_members')}"></div>
-            <div th:replace="~{form_fragments :: member-picker('Choose confirmers', 'confirming_members')}"></div>
+            <div id="assign_member_holder" th:include="~{form_fragments :: member-picker('Assign members', 'assigned_members')}"></div>
+            <div id="validating_member_holder" th:include="~{form_fragments :: member-picker('Choose confirmers', 'confirming_members')}"></div>
 
             <div th:replace="~{form_fragments :: date_picker('Deadline', 'deadline')}"></div>
 
@@ -50,7 +50,7 @@
 
             <div th:replace="~{form_fragments :: member-picker-modal('Who is assigned?', 'assignedMembers',
                 'assigned_members_modal', null)}"></div>
-            <div th:replace="~{form_fragments :: member-picker-modal('Who can witness?', confirmingMembers',
+            <div th:replace="~{form_fragments :: member-picker-modal('Who can witness?', 'confirmingMembers',
                 'validating_members_modal', null)}"></div>
 
           </form>

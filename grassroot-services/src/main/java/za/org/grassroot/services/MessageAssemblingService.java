@@ -1,9 +1,11 @@
 package za.org.grassroot.services;
 
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.SafetyEvent;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.association.GroupJoinRequest;
-import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.domain.geo.Address;
+import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 
@@ -30,6 +32,10 @@ public interface MessageAssemblingService {
     String createTodoAssignedMessage(User user, Todo todo);
 
     String createTodoConfirmerMessage(User user, Todo todo);
+
+    String createTodoVolunteerReceivedMessage(User target, TodoAssignment todoResponse);
+
+    String createTodoInfoConfirmationMessage(TodoAssignment todoResponse);
 
     String createMultiOptionVoteResultsMessage(User user, Vote vote, Map<String, Long> optionsWithCount);
 
