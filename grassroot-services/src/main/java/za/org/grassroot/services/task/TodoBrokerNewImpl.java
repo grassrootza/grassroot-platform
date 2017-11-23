@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.notification.TodoInfoNotification;
+import za.org.grassroot.core.domain.notification.TodoReminderNotification;
 import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.enums.TodoCompletionConfirmType;
 import za.org.grassroot.core.enums.TodoLogType;
@@ -31,11 +32,10 @@ import za.org.grassroot.services.exception.TodoTypeMismatchException;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
+import java.time.Duration;
 import java.time.Instant;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -80,6 +80,13 @@ public class TodoBrokerNewImpl implements TodoBrokerNew {
         TodoContainer parent = uidIdentifiableRepository.findOneByUid(TodoContainer.class,
                 todoHelper.getParentType(), todoHelper.getParentUid());
 
+        if (todoHelper.getParentType().equals(JpaEntityType.GROUP)) {
+            Todo possibleDuplicate = checkForDuplicate(user, (Group) parent, todoHelper);
+            if (possibleDuplicate != null) {
+                return possibleDuplicate.getUid();
+            }
+        }
+
         validateUserCanCreate(user, parent.getThisOrAncestorGroup());
 
         if (todoHelper.getDueDateTime().isBefore(Instant.now())) {
@@ -96,6 +103,14 @@ public class TodoBrokerNewImpl implements TodoBrokerNew {
         logsAndNotificationsBroker.storeBundle(bundle);
 
         return todo.getUid();
+    }
+
+    private Todo checkForDuplicate(User creator, Group group, TodoHelper helper) {
+        Instant intervalStart = helper.getDueDateTime().minus(180, ChronoUnit.SECONDS);;
+        Instant intervalEnd = helper.getDueDateTime().plus(180, ChronoUnit.SECONDS);
+
+        return todoRepository.findOne(TodoSpecifications.checkForDuplicates(intervalStart, intervalEnd, creator, group,
+                helper.getSubject()));
     }
 
     private Set<Notification> wireUpTodoForType(Todo todo, TodoHelper todoHelper, TodoLog todoLog) {
@@ -186,7 +201,7 @@ public class TodoBrokerNewImpl implements TodoBrokerNew {
 
     @Override
     @Transactional
-    public void confirmCompletion(String userUid, String todoUid, String notes, Set<String> taskImageUids) {
+    public void recordValidation(String userUid, String todoUid, String notes, Set<String> taskImageUids) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(todoUid);
 
@@ -272,7 +287,100 @@ public class TodoBrokerNewImpl implements TodoBrokerNew {
 
         validateUserCanModify(user, todo);
 
+        // to make sure reminders are turned off (reminder query should filter out, but just to be sure)
+        // todo  : extend to above as well
+        todo.setNextNotificationTime(null);
+        todo.setReminderActive(false);
+
         todo.setCompleted(completed);
+    }
+
+    @Override
+    @Transactional
+    public void addAssignments(String addingUserUid, String todoUid, Set<String> addedMemberUids) {
+        Objects.requireNonNull(addingUserUid);
+        Objects.requireNonNull(todoUid);
+        Objects.requireNonNull(addedMemberUids);
+
+        User user = userRepository.findOneByUid(addingUserUid);
+        Todo todo = todoRepository.findOneByUid(todoUid);
+        validateUserCanModify(user, todo);
+
+        Set<String> priorMembers = todo.getAssignments().stream().map(a -> a.getUser().getUid()).collect(Collectors.toSet());
+
+        // todo : log (esp if some drop out on filter above) and validate this step etc
+        addedMemberUids.removeAll(priorMembers);
+        List<User> newUsers = userRepository.findByUidIn(addedMemberUids);
+        todo.addAssignments(newUsers.stream().map(u -> new TodoAssignment(todo, u, true, false)).collect(Collectors.toSet()));
+
+        if (!addedMemberUids.isEmpty()) {
+            TodoLog newLog = new TodoLog(TodoLogType.ASSIGNED_ADDED, user, todo, "Assigned " + addedMemberUids.size() +
+                    " new members to todo");
+            Set<Notification> notifications = newUsers.stream()
+                    .map(t -> generateTodoAssignedNotification(todo, t, newLog)).collect(Collectors.toSet());
+            logsAndNotificationsBroker.storeBundle(new LogsAndNotificationsBundle(Collections.singleton(newLog), notifications));
+        }
+    }
+
+    @Override
+    @Transactional
+    public void addValidators(String addingUserUid, String todoUid, Set<String> validatingMemberUids) {
+        Objects.requireNonNull(addingUserUid);
+        Objects.requireNonNull(todoUid);
+        Objects.requireNonNull(validatingMemberUids);
+
+        User user = userRepository.findOneByUid(addingUserUid);
+        Todo todo = todoRepository.findOneByUid(todoUid);
+        validateUserCanModify(user, todo);
+
+        // todo : bunch of validation
+
+        Set<String> existingAssignments = new HashSet<>();
+        todo.getAssignments().stream()
+                .filter(a -> validatingMemberUids.contains(a.getUser().getUid()))
+                .forEach(a -> {
+                    a.setCanWitness(true);
+                    existingAssignments.add(a.getUser().getUid());
+                });
+
+        Set<String> newAssignmentUids = new HashSet<>(validatingMemberUids);
+        newAssignmentUids.removeAll(existingAssignments);
+
+        List<User> newValidators = userRepository.findByUidIn(newAssignmentUids);
+        todo.addAssignments(newValidators.stream().map(u -> new TodoAssignment(todo, u, false, true)).collect(Collectors.toSet()));
+
+        if (!validatingMemberUids.isEmpty()) {
+            TodoLog newLog = new TodoLog(TodoLogType.VALIDATORS_ADDED, user, todo, "Added " + validatingMemberUids.size() +
+                    " new validators to todo");
+            Set<Notification> notifications = newValidators.stream() // watch this, may want to also do the switched users...
+                    .map(t -> generateNotificationForConfirmingUsers(todo, t, newLog)).collect(Collectors.toSet());
+            logsAndNotificationsBroker.storeBundle(new LogsAndNotificationsBundle(Collections.singleton(newLog), notifications));
+        }
+    }
+
+    @Override
+    @Transactional
+    public void removeUsers(String removingUserUid, String todoUid, Set<String> memberUidsToRemove) {
+        Objects.requireNonNull(removingUserUid);
+        Objects.requireNonNull(todoUid);
+        Objects.requireNonNull(memberUidsToRemove);
+
+        User user = userRepository.findOneByUid(removingUserUid);
+        Todo todo = todoRepository.findOneByUid(todoUid);
+        validateUserCanModify(user, todo);
+
+        List<User> users = userRepository.findByUidIn(memberUidsToRemove);
+        // to preserve records, we set them to non-assigned, rather than delete
+        todoAssignmentRepository.findAll(TodoSpecifications.userInAndForTodo(new HashSet<>(users), todo))
+                .forEach(ta -> {
+                    ta.setAssignedAction(false);
+                    ta.setCanWitness(false);
+                });
+
+        if (!memberUidsToRemove.isEmpty()) {
+            TodoLog newLog = new TodoLog(TodoLogType.ASSIGNED_REMOVED, user, todo, "Removed " + memberUidsToRemove.size() + " from todo");
+            logsAndNotificationsBroker.storeBundle(new LogsAndNotificationsBundle(Collections.singleton(newLog), Collections.emptySet()));
+        }
     }
 
     @Override
@@ -326,6 +434,40 @@ public class TodoBrokerNewImpl implements TodoBrokerNew {
     @Override
     public void emailTodoResponses(String userUid, String todoUid, String emailAddress) {
         // okay actually do that
+    }
+
+    @Override
+    @Transactional
+    public void sendScheduledReminder(String todoUid) {
+        Objects.requireNonNull(todoUid);
+
+        Todo todo = todoRepository.findOneByUid(todoUid);
+        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+        TodoLog todoLog = new TodoLog(TodoLogType.REMINDER_SENT, null, todo, null);
+
+        Set<User> members = todo.isAllGroupMembersAssigned() ?
+                todo.getAncestorGroup().getMembers() : todo.getAssignedMembers();
+
+        members.stream().filter(m -> !todo.isCompletionConfirmedByMember(m))
+                .forEach(member -> {
+                    String message = messageService.createTodoReminderMessage(member, todo);
+                    Notification notification = new TodoReminderNotification(member, message, todoLog);
+                    bundle.addNotification(notification);
+                });
+
+        // we only want to include log if there are some notifications
+        if (!bundle.getNotifications().isEmpty()) {
+            bundle.addLog(todoLog);
+        }
+
+        if (todo.isRecurring()) {
+            todo.setNextNotificationTime(Instant.now().plus(Duration.ofMillis(todo.getRecurInterval())));
+        } else {
+            todo.setReminderActive(false);
+        }
+
+        logsAndNotificationsBroker.storeBundle(bundle);
+
     }
 
     private Set<Notification> recordInformationResponse(TodoAssignment assignment, String response, TodoLog todoLog, boolean sendConfirmation) {

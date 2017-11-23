@@ -1,4 +1,4 @@
-package za.org.grassroot.webapp.controller.webapp;
+package za.org.grassroot.webapp.controller.webapp.todo;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,14 +29,14 @@ import java.util.stream.Collectors;
 
 @Controller @Slf4j
 @RequestMapping("/todo/")
-public class TodoCreateController extends BaseController {
+public class TodoWebCreateController extends BaseController {
 
     private final TodoBrokerNew todoBroker;
     private final GroupBroker groupBroker;
     private final PermissionBroker permissionBroker;
 
     @Autowired
-    public TodoCreateController(TodoBrokerNew todoBroker, GroupBroker groupBroker, PermissionBroker permissionBroker) {
+    public TodoWebCreateController(TodoBrokerNew todoBroker, GroupBroker groupBroker, PermissionBroker permissionBroker) {
         this.todoBroker = todoBroker;
         this.groupBroker = groupBroker;
         this.permissionBroker = permissionBroker;
@@ -61,7 +61,7 @@ public class TodoCreateController extends BaseController {
 
         model.addAttribute("availableTypes", availableTypes);
 
-        return "todo/create_new";
+        return "todo/create";
     }
 
     // todo : align & standardize nomenclature
@@ -100,11 +100,7 @@ public class TodoCreateController extends BaseController {
 
         attributes.addAttribute("todoUid", todoUid);
         addMessage(attributes, MessageType.SUCCESS, "todo.created", request);
-        return "redirect:/todo2/view";
+        return "redirect:/todo/view";
     }
 
-    @RequestMapping(value = "view", method = RequestMethod.GET)
-    public String viewTodoDetails(Model model, @RequestParam String todoUid) {
-        return "todo/view_new";
-    }
 }

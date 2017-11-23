@@ -7,17 +7,17 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import za.org.grassroot.core.domain.SafetyEvent;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.Meeting;
-import za.org.grassroot.core.domain.SafetyEvent;
 import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.domain.task.Todo_;
 import za.org.grassroot.core.repository.*;
+import za.org.grassroot.core.specifications.TodoSpecifications;
 import za.org.grassroot.services.SafetyEventBroker;
 import za.org.grassroot.services.group.GroupBroker;
-import za.org.grassroot.core.specifications.TodoSpecifications;
 import za.org.grassroot.services.task.EventBroker;
-import za.org.grassroot.services.task.TodoBroker;
+import za.org.grassroot.services.task.TodoBrokerNew;
 import za.org.grassroot.services.task.VoteBroker;
 
 import java.time.Instant;
@@ -52,7 +52,7 @@ public class ScheduledTasks {
     private GroupBroker groupBroker;
 
     @Autowired
-    private TodoBroker todoBroker;
+    private TodoBrokerNew todoBroker;
 
     @Autowired
     private SafetyEventBroker safetyEventBroker;

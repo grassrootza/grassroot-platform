@@ -8,6 +8,7 @@ public enum TodoLogType {
 
 	// modification logs
 	ASSIGNED_ADDED,
+	VALIDATORS_ADDED,
 	ASSIGNED_REMOVED,
 	IMAGE_RECORDED,
 	IMAGE_REMOVED,

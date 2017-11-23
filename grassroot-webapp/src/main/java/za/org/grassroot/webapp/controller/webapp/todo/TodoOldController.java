@@ -1,4 +1,4 @@
-package za.org.grassroot.webapp.controller.webapp;
+package za.org.grassroot.webapp.controller.webapp.todo;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,16 +13,12 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Todo;
-import za.org.grassroot.core.enums.TodoCompletionConfirmType;
 import za.org.grassroot.services.group.GroupBroker;
-import za.org.grassroot.services.task.EventBroker;
-import za.org.grassroot.services.task.TodoBroker;
-import za.org.grassroot.services.task.enums.TodoStatus;
+import za.org.grassroot.services.task.TodoBrokerNew;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.web.MemberPicker;
 
 import javax.servlet.http.HttpServletRequest;
-import java.time.LocalDateTime;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -33,22 +29,20 @@ import static za.org.grassroot.core.domain.Permission.*;
  */
 @Controller
 @RequestMapping("/todo/")
-public class TodoController extends BaseController {
+public class TodoOldController extends BaseController {
 
-    private static final Logger log = LoggerFactory.getLogger(TodoController.class);
+    private static final Logger log = LoggerFactory.getLogger(TodoOldController.class);
 
     @Value("${grassroot.todos.completion.threshold:20}") // defaults to 20 percent
     private double COMPLETION_PERCENTAGE_BOUNDARY;
 
     private GroupBroker groupBroker;
-    private TodoBroker todoBroker;
-    private EventBroker eventBroker;
+    private TodoBrokerNew todoBroker;
 
     @Autowired
-    public TodoController(GroupBroker groupBroker, TodoBroker todoBroker, EventBroker eventBroker) {
+    public TodoOldController(GroupBroker groupBroker, TodoBrokerNew todoBroker) {
         this.groupBroker = groupBroker;
         this.todoBroker = todoBroker;
-        this.eventBroker = eventBroker;
     }
 
     @InitBinder
@@ -79,8 +73,8 @@ public class TodoController extends BaseController {
         model.addAttribute("canCallVote", permissionBroker.isGroupPermissionAvailable(user, group, GROUP_PERMISSION_CREATE_GROUP_VOTE));
         model.addAttribute("canRecordAction", permissionBroker.isGroupPermissionAvailable(user, group, GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY));
 
-        model.addAttribute("incompleteEntries", todoBroker.fetchTodosForGroupByStatus(group.getUid(), false, TodoStatus.INCOMPLETE));
-        model.addAttribute("completedEntries", todoBroker.fetchTodosForGroupByStatus(group.getUid(), false, TodoStatus.COMPLETE));
+        // model.addAttribute("incompleteEntries", todoBroker.fetchTodosForGroupByStatus(group.getUid(), false, TodoStatus.INCOMPLETE));
+        // model.addAttribute("completedEntries", todoBroker.fetchTodosForGroupByStatus(group.getUid(), false, TodoStatus.COMPLETE));
 
         return "todo/list";
     }
@@ -102,35 +96,6 @@ public class TodoController extends BaseController {
         model.addAttribute("memberPicker", MemberPicker.taskAssigned(todoEntry));
 
         return "todo/view";
-    }
-
-    @RequestMapping(value = "cancel", method = RequestMethod.POST)
-    public String cancelTodo(@RequestParam String todoUid, @RequestParam String parentUid,
-                             RedirectAttributes redirectAttributes, HttpServletRequest request) {
-        // service layer will test for permission etc and throw errors
-        todoBroker.cancel(getUserProfile().getUid(), todoUid);
-        addMessage(redirectAttributes, MessageType.INFO, "todo.cancelled.done", request);
-        // for now, assuming it's a group
-        redirectAttributes.addAttribute("groupUid", parentUid);
-        return "redirect:/group/view";
-    }
-
-    @PostMapping("description")
-    public String changeDescription(@RequestParam String todoUid, @RequestParam String description,
-                                    RedirectAttributes attributes, HttpServletRequest request) {
-        todoBroker.updateDescription(getUserProfile().getUid(), todoUid, description);
-        addMessage(attributes, MessageType.SUCCESS, "todo.description.updated", request);
-        attributes.addAttribute("todoUid", todoUid);
-        return "redirect:/todo/view";
-    }
-
-    @PostMapping("changeduedate")
-    public String changeDueDate(@RequestParam String todoUid, @RequestParam LocalDateTime actionByDate,
-                                RedirectAttributes attributes, HttpServletRequest request) {
-        todoBroker.updateActionByDate(getUserProfile().getUid(), todoUid, actionByDate);
-        addMessage(attributes, MessageType.SUCCESS, "todo.deadline.updated", request);
-        attributes.addAttribute("todoUid", todoUid);
-        return "redirect:/todo/view";
     }
 
     @PostMapping("assignment")
@@ -157,8 +122,8 @@ public class TodoController extends BaseController {
                 .filter(s -> !assignedUids.contains(s))
                 .collect(Collectors.toSet());
 
-        todoBroker.removeAssignedMembers(getUserProfile().getUid(), todoUid, removedUids);
-        todoBroker.assignMembers(getUserProfile().getUid(), todoUid, addedUids);
+        todoBroker.removeUsers(getUserProfile().getUid(), todoUid, removedUids);
+        todoBroker.addAssignments(getUserProfile().getUid(), todoUid, addedUids);
 
         addMessage(attributes, MessageType.SUCCESS, "todo.assigned.changed", request);
         return "redirect:/todo/view";
@@ -168,8 +133,9 @@ public class TodoController extends BaseController {
     public String confirmTodoComplete(@RequestParam String todoUid, @RequestParam(required = false) String source,
                                       RedirectAttributes attributes, HttpServletRequest request) {
 
+        // todo : or, is this for creator?
         Todo todo = todoBroker.load(todoUid);
-        todoBroker.confirmCompletion(getUserProfile().getUid(), todo.getUid(), TodoCompletionConfirmType.COMPLETED, LocalDateTime.now());
+        todoBroker.recordValidation(getUserProfile().getUid(), todo.getUid(), null, null);
 
         addMessage(attributes, MessageType.SUCCESS, "todo.completed.done", request);
         if (StringUtils.isEmpty(source) || "group".equalsIgnoreCase(source)) {

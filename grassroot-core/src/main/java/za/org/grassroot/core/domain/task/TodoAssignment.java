@@ -31,11 +31,11 @@ public class TodoAssignment {
 
     @Basic
     @Column(name = "assigned_action")
-    boolean assignedAction;
+    @Setter boolean assignedAction;
 
     @Basic
     @Column(name = "assigned_witness")
-    boolean canWitness;
+    @Setter boolean canWitness;
 
     @Basic
     @Column(name = "has_responded")

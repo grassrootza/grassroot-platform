@@ -8,17 +8,17 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.Task;
 import za.org.grassroot.core.domain.task.Todo;
-import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.task.TaskDTO;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.services.ChangedSinceData;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.TaskBroker;
-import za.org.grassroot.services.task.TodoBroker;
+import za.org.grassroot.services.task.TodoBrokerNew;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.wrappers.MembershipResponseWrapper;
@@ -44,11 +44,11 @@ public class TaskRestController {
     private final UserManagementService userManagementService;
     private final TaskBroker taskBroker;
 	private final EventBroker eventBroker;
-	private final TodoBroker todoBroker;
+	private final TodoBrokerNew todoBroker;
 	private final PermissionBroker permissionBroker;
 
 	@Autowired
-	public TaskRestController(UserManagementService userManagementService, TaskBroker taskBroker, EventBroker eventBroker, TodoBroker todoBroker, PermissionBroker permissionBroker) {
+	public TaskRestController(UserManagementService userManagementService, TaskBroker taskBroker, EventBroker eventBroker, TodoBrokerNew todoBroker, PermissionBroker permissionBroker) {
 		this.userManagementService = userManagementService;
 		this.taskBroker = taskBroker;
 		this.eventBroker = eventBroker;

@@ -9,19 +9,12 @@ import za.org.grassroot.core.enums.TodoCompletionConfirmType;
 import javax.persistence.criteria.Join;
 import javax.persistence.criteria.JoinType;
 import java.time.Instant;
+import java.util.Set;
 
 /**
  * Created by luke on 2016/09/15.
  */
 public final class TodoSpecifications {
-
-    public static Specification<Todo> createdByUser(final User user) {
-        return (root, query, cb) -> cb.equal(root.get(AbstractTodoEntity_.createdByUser), user);
-    }
-
-    public static Specification<Todo> messageIs(final String message) {
-        return (root, query, cb) -> cb.equal(root.get(AbstractTodoEntity_.message), message);
-    }
 
     public static Specification<Todo> hasGroupAsParent(final Group group) {
         return (root, query, cb) -> cb.equal(root.get(AbstractTodoEntity_.parentGroup), group);
@@ -105,9 +98,24 @@ public final class TodoSpecifications {
         return specs;
     }
 
+    public static Specifications<Todo> checkForDuplicates(Instant intervalStart, Instant intervalEnd, User creator, Group group,
+                                                          String explanation) {
+        return Specifications
+                .where(actionByDateBetween(intervalStart, intervalEnd))
+                .and((root, query, cb) -> cb.equal(root.get(AbstractTodoEntity_.message), explanation))
+                .and((root, query, cb) -> cb.equal(root.get(AbstractTodoEntity_.parentGroup), group))
+                .and((root, query, cb) -> cb.equal(root.get(AbstractTodoEntity_.createdByUser), creator));
+    }
+
     public static Specification<TodoAssignment> userAssignment(User user, Todo todo) {
         return (root, query, cb) -> cb.and(cb.equal(root.get(TodoAssignment_.todo), todo),
                 cb.equal(root.get(TodoAssignment_.user), user));
+    }
+
+    public static Specification<TodoAssignment> userInAndForTodo(Set<User> userSet, Todo todo) {
+        return Specifications.where((root, query, cb) -> cb.and(
+                cb.equal(root.get(TodoAssignment_.todo), todo),
+                root.get(TodoAssignment_.user).in(userSet)));
     }
 
     public static Specifications<TodoAssignment> userAssignmentCanRespond(User user, Todo todo) {
@@ -115,5 +123,6 @@ public final class TodoSpecifications {
                 .and((root, query, cb) -> cb.or(
                         cb.isTrue(root.get(TodoAssignment_.assignedAction)), cb.isTrue(root.get(TodoAssignment_.canWitness))));
     }
+
 
 }

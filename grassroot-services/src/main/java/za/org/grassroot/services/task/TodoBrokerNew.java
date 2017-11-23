@@ -16,13 +16,13 @@ public interface TodoBrokerNew {
 
     String create(TodoHelper todoHelper);
 
-    void cancel(String userUid, String todoUid, String cancel);
+    void cancel(String userUid, String todoUid, String reason);
 
     void extend(String userUid, String todoUid, Instant newDueDateTime);
 
     void updateSubject(String userUid, String todoUid, String newDescription);
 
-    void confirmCompletion(String userUid, String todoUid, String notes, Set<String> taskImageUids);
+    void recordValidation(String userUid, String todoUid, String notes, Set<String> taskImageUids);
 
     Todo checkForTodoNeedingResponse(String userUid);
 
@@ -31,6 +31,12 @@ public interface TodoBrokerNew {
     void recordResponse(String userUid, String todoUid, String response, boolean confirmRecorded);
 
     void updateTodoCompleted(String userUid, String todoUid, boolean completed);
+
+    void addAssignments(String addingUserUid, String todoUid, Set<String> addedMemberUids);
+
+    void addValidators(String addingUserUid, String todoUid, Set<String> validatingMemberUids);
+
+    void removeUsers(String removingUserUid, String todoUid, Set<String> memberUidsToRemove);
 
     /*
     Fetching and displaying todos
@@ -45,5 +51,10 @@ public interface TodoBrokerNew {
 
     // pass null to email address to send to user's one on file
     void emailTodoResponses(String userUid, String todoUid, String emailAddress);
+
+    /*
+    Handling reminders
+     */
+    void sendScheduledReminder(String todoUid);
 
 }
