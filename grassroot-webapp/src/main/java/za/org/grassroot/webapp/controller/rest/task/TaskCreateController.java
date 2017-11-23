@@ -55,15 +55,15 @@ public class TaskCreateController {
     private final EventBroker eventBroker;
     private final UserManagementService userService;
     private final GroupBroker groupBroker;
-    private final TaskBroker taskBroker;
+    private final PermissionBroker permissionBroker;
 
     @Autowired
     public TaskCreateController(UserManagementService userManagementService, EventBroker eventBroker, TaskImageBroker taskImageBroker,
-                                GroupBroker groupBroker,TaskBroker taskBroker) {
+                                GroupBroker groupBroker,PermissionBroker permissionBroker) {
         this.userService = userManagementService;
         this.eventBroker = eventBroker;
         this.groupBroker = groupBroker;
-        this.taskBroker = taskBroker;
+        this.permissionBroker = permissionBroker;
     }
 
     @RequestMapping(value = "/meeting/{userUid}/{parentType}/{parentUid}", method = RequestMethod.POST)
@@ -84,7 +84,7 @@ public class TaskCreateController {
                                                      @RequestParam(required = false)
                                                      @ApiParam(value = "Server UID of an optional image to include " +
                                                              "in the meeting call") String mediaFileUid) {
-        log.info("creating a meeting, subject ={}, location = {}", subject, location);
+        log.info("creating a meeting, subject ={}, location = {}, parentUid = {}", subject, location,parentUid);
 
         MeetingBuilderHelper helper = new MeetingBuilderHelper()
                 .userUid(userUid)
@@ -104,6 +104,8 @@ public class TaskCreateController {
 
         if (assignedMemberUids != null && !assignedMemberUids.isEmpty()) {
             helper.assignedMemberUids(assignedMemberUids);
+        }else{
+            helper.assignedMemberUids(Collections.EMPTY_SET);
         }
 
         if (!StringUtils.isEmpty(mediaFileUid)) {
@@ -111,6 +113,7 @@ public class TaskCreateController {
         }
 
         try {
+
             Meeting createdMeeting = eventBroker.createMeeting(helper);
             return ResponseEntity.ok(new TaskFullDTO(createdMeeting, userService.load(userUid),
                     createdMeeting.getCreatedDateTime(), null));
@@ -119,34 +122,43 @@ public class TaskCreateController {
         }
     }
 
-    @RequestMapping(value = "/vote/{userUid}/{parentUid}", method = RequestMethod.POST)
+    @RequestMapping(value = "/vote/{userUid}/{parentType}/{parentUid}", method = RequestMethod.POST)
     @ApiOperation(value = "Call a vote", notes = "Creates a vote, that starts at the specified date and time, passed in " +
             "as epoch millis. The first six params are necessary, the rest are optional")
     public ResponseEntity<TaskFullDTO> createVote(@PathVariable String userUid,
-                                                      @PathVariable String parentUid,
-                                                      @RequestParam String title,
-                                                      @RequestParam(required = false) List<String> voteOptions,
-                                                      @RequestParam(required = false) String description,
-                                                      @RequestParam String time,
-                                                      @RequestParam(required = false)
+                                                  @PathVariable String parentUid,
+                                                  @PathVariable JpaEntityType parentType,
+                                                  @RequestParam String title,
+                                                  @RequestParam(required = false) List<String> voteOptions,
+                                                  @RequestParam(required = false) String description,
+                                                  @RequestParam String time,
+                                                  @RequestParam(required = false)
                                                       @ApiParam(value = "UIDs of assigned members, if left blank all " +
                                                               "members of the parent are assigned") Set<String> assignedMemberUids){
 
         LocalDateTime eventStartDateTime = LocalDateTime.parse(time.trim(), getPreferredRestFormat());
+        VoteWrapper voteWrapper = VoteWrapper.makeEmpty();
+
         try{
             Group group = groupBroker.load(parentUid);
             User user = userService.load(userUid);
+            voteWrapper.setParentUid(parentUid);
 
-            List<String> options = StringArrayUtil.isAllEmptyOrNull(voteOptions) ? null : voteOptions;
+            List<String> options = VoteType.YES_NO.equals(voteWrapper.getType()) ? null : voteOptions;
 
-            Vote vote = eventBroker.createVote(user.getUid(), parentUid, JpaEntityType.VOTE, title, eventStartDateTime,
-                    false, description, assignedMemberUids, voteOptions);
+            assignedMemberUids = assignedMemberUids == null ? Collections.EMPTY_SET : assignedMemberUids;
 
-            log.info("Vote Id={},User ID*********** ={},Group Uid={}",vote.getUid(),user.getUid(),group.getUid());
-            return ResponseEntity.ok(new TaskFullDTO(vote, userService.load(userUid),
-                    vote.getCreatedDateTime(), null));
+            log.info("title={}, description={}",title,description);
+            log.info("time={}, members={}",time,assignedMemberUids);
+            log.info("options={}",voteOptions);
+
+            Vote vote = eventBroker.createVote(user.getUid(), parentUid, parentType, title, eventStartDateTime,
+                    false, description, assignedMemberUids, options);
+
+            log.info("Vote={},User={},Group={}",vote,user,group);
+            return ResponseEntity.ok(new TaskFullDTO(vote, user,vote.getCreatedDateTime(), null));
         }catch (AccessDeniedException e){
-            throw new MemberLacksPermissionException(Permission.VOTE_CREATE_PERMISSION);
+            throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE);
         }
     }
 }

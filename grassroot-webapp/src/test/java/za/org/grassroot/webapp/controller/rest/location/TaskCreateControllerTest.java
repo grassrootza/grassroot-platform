@@ -21,6 +21,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -55,29 +57,35 @@ public class TaskCreateControllerTest extends RestAbstractUnitTest {
                 "234345345"));
         Meeting dummyMeeting = new MeetingBuilder().setName("test meeting").setStartDateTime(oneDayAway).setUser(sessionTestUser).setParent(dummyGroup).setEventLocation("some place").createMeeting();
 
+        when(groupBrokerMock.load(dummyGroup.getUid())).thenReturn(dummyGroup);
         when(eventBrokerMock.loadMeeting(dummyMeeting.getUid())).thenReturn(dummyMeeting);
         mockMvc.perform(post(path + "/meeting/{userUid}/{parentType}/{parentUid}",sessionTestUser.getUid(),JpaEntityType.MEETING,dummyGroup.getUid())
                 .param("subject",""+testSubject)
                 .param("location",""+testEventLocation)
                 .param("dateTimeEpochMillis",""+testDateTimeEpochMillis)
         ).andExpect(status().is2xxSuccessful());
+        verify(eventBrokerMock,times(1)).loadMeeting(dummyMeeting.getUid());
     }
 
 
     @Test
     public void createVoteShouldWork() throws Exception{
-        when(userManagementServiceMock.load(sessionTestUser.getUid())).thenReturn(sessionTestUser);
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
+        when(userManagementServiceMock.load(sessionTestUser.getUid())).thenReturn(sessionTestUser);
 
-        when(eventBrokerMock.createVote(sessionTestUser.getUid(), testGroup.getUid(), JpaEntityType.VOTE,
+        when(eventBrokerMock.createVote(sessionTestUser.getUid(), testGroup.getUid(), JpaEntityType.GROUP,
                 testEventTitle, testDateTime, false, testEventDescription,
                 Collections.emptySet(), null)).thenReturn(testVote);
 
-        mockMvc.perform(post(path + "/vote/{userUid}/{parentUid}",sessionTestUser.getUid(),testGroup.getUid())
+        mockMvc.perform(post(path + "/vote/{userUid}/{parentType}/{parentUid}",sessionTestUser.getUid(),JpaEntityType.GROUP,testGroup.getUid())
                 .param("description",""+testEventDescription)
                 .param("time",testDateTime.format(getPreferredRestFormat()))
                 .param("title",""+ testEventTitle)
                 ).andExpect(status().is2xxSuccessful());
+
+        verify(userManagementServiceMock,times(1)).load(sessionTestUser.getUid());
+        verify(eventBrokerMock,times(1)).createVote(sessionTestUser.getUid(), testGroup.getUid(), JpaEntityType.GROUP, testVote.getName(),
+                testDateTime, false, testEventDescription, Collections.emptySet(), null);
     }
 
     Vote createVote(String[] options) {
