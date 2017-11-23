@@ -17,7 +17,7 @@ import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.exception.AccountLimitExceededException;
 import za.org.grassroot.services.task.TaskBroker;
-import za.org.grassroot.services.task.TodoBrokerNew;
+import za.org.grassroot.services.task.TodoBroker;
 import za.org.grassroot.services.task.TodoHelper;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.enums.RestMessage;
@@ -37,11 +37,11 @@ import java.util.Set;
 public class TodoLegacyController {
 
     private final UserManagementService userManagementService;
-    private final TodoBrokerNew todoBroker;
+    private final TodoBroker todoBroker;
     private final TaskBroker taskBroker;
 
     @Autowired
-    public TodoLegacyController(UserManagementService userManagementService, TodoBrokerNew todoBroker, TaskBroker taskBroker) {
+    public TodoLegacyController(UserManagementService userManagementService, TodoBroker todoBroker, TaskBroker taskBroker) {
         this.userManagementService = userManagementService;
         this.todoBroker = todoBroker;
         this.taskBroker = taskBroker;

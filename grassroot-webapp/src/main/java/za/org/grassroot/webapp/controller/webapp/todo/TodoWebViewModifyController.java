@@ -4,31 +4,48 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.util.DateTimeUtil;
-import za.org.grassroot.services.task.TodoBrokerNew;
+import za.org.grassroot.services.task.TodoBroker;
 import za.org.grassroot.webapp.controller.BaseController;
+import za.org.grassroot.webapp.model.web.MemberPicker;
 
 import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 
 @Controller @Slf4j
-@RequestMapping("/todo/modify")
+@RequestMapping("/todo/")
 public class TodoWebViewModifyController extends BaseController {
 
-    private final TodoBrokerNew todoBroker;
+    private final TodoBroker todoBroker;
 
     @Autowired
-    public TodoWebViewModifyController(TodoBrokerNew todoBroker) {
+    public TodoWebViewModifyController(TodoBroker todoBroker) {
         this.todoBroker = todoBroker;
     }
 
     @RequestMapping(value = "view", method = RequestMethod.GET)
     public String viewTodoDetails(Model model, @RequestParam String todoUid) {
+        Todo todo = todoBroker.load(todoUid);
+        model.addAttribute("todo", todo);
+
+        final String userUid = getUserProfile().getUid();
+        if (todoBroker.canUserViewResponses(userUid, todoUid)) {
+            model.addAttribute("responses", todoBroker.fetchAssignedUserResponses(userUid, todoUid, true, false, false));
+            model.addAttribute("userResponse", todoBroker.fetchUserTodoDetails(userUid, todoUid));
+        }
+
+        if (todoBroker.canUserModify(userUid, todoUid)) {
+            model.addAttribute("canModify", true);
+            model.addAttribute("memberPicker", MemberPicker.taskAssigned(todo));
+        } else {
+            model.addAttribute("canModify", false);
+        }
+
         return "todo/view_new";
     }
 

@@ -28,13 +28,13 @@ public class TodoRequestBrokerImpl implements TodoRequestBroker {
 
 	private final UserRepository userRepository;
 	private final GroupRepository groupRepository;
-	private final TodoBrokerNew todoBroker;
+	private final TodoBroker todoBroker;
 	private final PermissionBroker permissionBroker;
 	private final AccountGroupBroker accountGroupBroker;
 	private final TodoRequestRepository todoRequestRepository;
 
     @Autowired
-    public TodoRequestBrokerImpl(UserRepository userRepository, GroupRepository groupRepository, TodoBrokerNew todoBroker, PermissionBroker permissionBroker, AccountGroupBroker accountGroupBroker, TodoRequestRepository todoRequestRepository) {
+    public TodoRequestBrokerImpl(UserRepository userRepository, GroupRepository groupRepository, TodoBroker todoBroker, PermissionBroker permissionBroker, AccountGroupBroker accountGroupBroker, TodoRequestRepository todoRequestRepository) {
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
         this.todoBroker = todoBroker;

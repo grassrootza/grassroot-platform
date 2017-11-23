@@ -59,7 +59,7 @@ public class RestAbstractUnitTest {
     protected EventLogRepository eventLogRepositoryMock;
 
     @Mock
-    protected TodoBrokerNew todoBrokerMock;
+    protected TodoBroker todoBrokerMock;
 
     @Mock
     protected UserManagementService userManagementServiceMock;

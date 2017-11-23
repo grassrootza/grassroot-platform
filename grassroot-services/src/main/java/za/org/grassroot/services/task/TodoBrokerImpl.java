@@ -15,6 +15,7 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.notification.TodoInfoNotification;
 import za.org.grassroot.core.domain.notification.TodoReminderNotification;
 import za.org.grassroot.core.domain.task.*;
+import za.org.grassroot.core.dto.task.TaskTimeChangedDTO;
 import za.org.grassroot.core.enums.TodoCompletionConfirmType;
 import za.org.grassroot.core.enums.TodoLogType;
 import za.org.grassroot.core.repository.TodoAssignmentRepository;
@@ -29,6 +30,7 @@ import za.org.grassroot.services.exception.MemberLacksPermissionException;
 import za.org.grassroot.services.exception.ResponseNotAllowedException;
 import za.org.grassroot.services.exception.TodoDeadlineNotInFutureException;
 import za.org.grassroot.services.exception.TodoTypeMismatchException;
+import za.org.grassroot.services.util.FullTextSearchUtils;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
@@ -40,7 +42,7 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Service
-public class TodoBrokerNewImpl implements TodoBrokerNew {
+public class TodoBrokerImpl implements TodoBroker {
 
     private final TodoRepository todoRepository;
     private final TodoAssignmentRepository todoAssignmentRepository;
@@ -54,7 +56,7 @@ public class TodoBrokerNewImpl implements TodoBrokerNew {
     private final ApplicationEventPublisher eventPublisher;
 
     @Autowired
-    public TodoBrokerNewImpl(TodoRepository todoRepository, TodoAssignmentRepository todoAssignmentRepository, UserRepository userRepository, UidIdentifiableRepository uidIdentifiableRepository, PermissionBroker permissionBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, MessageAssemblingService messageService, ApplicationEventPublisher eventPublisher) {
+    public TodoBrokerImpl(TodoRepository todoRepository, TodoAssignmentRepository todoAssignmentRepository, UserRepository userRepository, UidIdentifiableRepository uidIdentifiableRepository, PermissionBroker permissionBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, MessageAssemblingService messageService, ApplicationEventPublisher eventPublisher) {
         this.todoRepository = todoRepository;
         this.todoAssignmentRepository = todoAssignmentRepository;
         this.userRepository = userRepository;
@@ -66,9 +68,17 @@ public class TodoBrokerNewImpl implements TodoBrokerNew {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Todo load(String todoUid) {
         Objects.requireNonNull(todoUid);
         return todoRepository.findOneByUid(todoUid);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<TaskTimeChangedDTO> fetchTodosWithTimeChanged(Set<String> todoUids) {
+        Objects.requireNonNull(todoUids);
+        return todoRepository.fetchTodosWithTimeChanged(todoUids);
     }
 
     @Override
@@ -106,7 +116,7 @@ public class TodoBrokerNewImpl implements TodoBrokerNew {
     }
 
     private Todo checkForDuplicate(User creator, Group group, TodoHelper helper) {
-        Instant intervalStart = helper.getDueDateTime().minus(180, ChronoUnit.SECONDS);;
+        Instant intervalStart = helper.getDueDateTime().minus(180, ChronoUnit.SECONDS);
         Instant intervalEnd = helper.getDueDateTime().plus(180, ChronoUnit.SECONDS);
 
         return todoRepository.findOne(TodoSpecifications.checkForDuplicates(intervalStart, intervalEnd, creator, group,
@@ -239,6 +249,27 @@ public class TodoBrokerNewImpl implements TodoBrokerNew {
         Todo todo = todoRepository.findOneByUid(todoUid);
 
         return todoAssignmentRepository.count(TodoSpecifications.userAssignmentCanRespond(user, todo)) > 0;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean canUserViewResponses(String userUid, String todoUid) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(todoUid);
+
+        User user = userRepository.findOneByUid(userUid);
+        Todo todo = todoRepository.findOneByUid(todoUid);
+
+        return todo.getCreatedByUser().equals(user) || todoAssignmentRepository.count(TodoSpecifications.userAssignment(user, todo)) != 0;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean canUserModify(String userUid, String todoUid) {
+        // for the moment, trivial, but we are likely to alter in future
+        User user = userRepository.findOneByUid(userUid);
+        Todo todo = todoRepository.findOneByUid(todoUid);
+        return todo.getCreatedByUser().equals(user);
     }
 
     @Override
@@ -385,10 +416,25 @@ public class TodoBrokerNewImpl implements TodoBrokerNew {
 
     @Override
     @Transactional(readOnly = true)
-    public List<Todo> fetchTodosForUser(String userUid, boolean createdOnly, boolean openOnly, Sort sort) {
+    public List<Todo> fetchTodosForUser(String userUid, boolean forceIncludeCreated, boolean limitToNeedingResponse, Instant intervalStart, Instant intervalEnd, Sort sort) {
         Objects.requireNonNull(userUid);
         User user = userRepository.findOneByUid(userUid);
-        Specifications<Todo> specs = TodoSpecifications.fetchTodosForUser(user, createdOnly, openOnly);
+        Specifications<Todo> specs = limitToNeedingResponse ?
+                TodoSpecifications.todosForUserResponse(user) :
+                Specifications.where(TodoSpecifications.userPartOfParent(user));
+
+        if (forceIncludeCreated) {
+            specs.or((root, query, cb) -> cb.equal(root.get(Todo_.createdByUser), user));
+        }
+
+        if (intervalStart != null) {
+            specs.and((root, query, cb) -> cb.greaterThan(root.get(Todo_.actionByDate), intervalStart));
+        }
+        if (intervalEnd != null) {
+            specs.and((root, query, cb) -> cb.lessThan(root.get(Todo_.actionByDate), intervalEnd));
+        }
+
+        specs.and((root, query, cb) -> cb.isFalse(root.get(Todo_.cancelled)));
         return sort == null ? todoRepository.findAll(specs) : todoRepository.findAll(specs, sort);
     }
 
@@ -402,6 +448,78 @@ public class TodoBrokerNewImpl implements TodoBrokerNew {
 
     @Override
     @Transactional(readOnly = true)
+    public List<Todo> fetchTodosForGroup(String userUid, String groupUid, boolean limitToNeedingResponse, boolean limitToIncomplete,
+                                         Instant start, Instant end, Sort sort) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(groupUid);
+
+        User user = userRepository.findOneByUid(userUid);
+        Group group = uidIdentifiableRepository.findOneByUid(Group.class, JpaEntityType.GROUP, groupUid);
+        // todo : validate user permission
+        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
+
+        Specifications<Todo> specs;
+        if (limitToNeedingResponse) {
+            specs = TodoSpecifications.todosForUserResponse(user).and(TodoSpecifications.hasGroupAsParent(group));
+        } else {
+            specs = Specifications.where(TodoSpecifications.hasGroupAsParent(group));
+        }
+
+        specs.and((root, query, cb) -> cb.isFalse(root.get(Todo_.cancelled)));
+        if (limitToIncomplete) {
+            specs.and((root, query, cb) -> cb.isFalse(root.get(Todo_.completed)));
+        }
+
+        if (start != null) {
+            specs.and((root, query, cb) -> cb.greaterThan(root.get(Todo_.actionByDate), start));
+        }
+        if (end != null) {
+            specs.and((root, query, cb) -> cb.lessThan(root.get(Todo_.actionByDate), end));
+        }
+
+        return sort != null ? todoRepository.findAll(specs, sort) : todoRepository.findAll(specs);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Todo> searchUserTodos(String userUid, String searchString) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(searchString);
+
+        User user = userRepository.findOneByUid(userUid);
+        String tsQuery = FullTextSearchUtils.encodeAsTsQueryText(searchString, true, false);
+        return todoRepository.findByParentGroupMembershipsUserAndMessageSearchTerm(user.getId(), tsQuery);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<TaskTimeChangedDTO> fetchGroupTodosWithTimeChanged(String groupUid) {
+        Objects.requireNonNull(groupUid);
+        Group group = uidIdentifiableRepository.findOneByUid(Group.class, JpaEntityType.GROUP, groupUid);
+        return todoRepository.fetchGroupTodosWithTimeChanged(group);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public TodoAssignment fetchUserTodoDetails(String userUid, String todoUid) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(todoUid);
+
+        User user = userRepository.findOneByUid(userUid);
+        Todo todo = todoRepository.findOneByUid(todoUid);
+        return todoAssignmentRepository.findOne(TodoSpecifications.userAssignment(user, todo));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<TaskTimeChangedDTO> fetchUserTodosWithTimeChanged(String userUid) {
+        Objects.requireNonNull(userUid);
+        User user = userRepository.findOneByUid(userUid);
+        return todoRepository.fetchTodosWithTimeChangedForUser(user);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<TodoAssignment> fetchAssignedUserResponses(String userUid, String todoUid, boolean respondedOnly, boolean assignedOnly, boolean witnessOnly) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(todoUid);
@@ -409,9 +527,8 @@ public class TodoBrokerNewImpl implements TodoBrokerNew {
         User user = userRepository.findOneByUid(userUid);
         Todo todo = todoRepository.findOneByUid(todoUid);
 
-        // todo : better rules/logic for who can view
-        if (!todo.getCreatedByUser().equals(user)) {
-            throw new AccessDeniedException("Error, only creating user can see todo details");
+        if (!todo.getCreatedByUser().equals(user) || todoAssignmentRepository.count(TodoSpecifications.userAssignment(user, todo)) == 0) {
+            throw new AccessDeniedException("Error, only creating or assigned user can see todo details");
         }
 
         Specifications<TodoAssignment> specs = Specifications.where((root, query, cb) -> cb.equal(root.get(TodoAssignment_.todo), todo));

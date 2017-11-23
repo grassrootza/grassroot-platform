@@ -10,7 +10,7 @@ import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.domain.task.TodoType;
 import za.org.grassroot.core.dto.task.TaskFullDTO;
-import za.org.grassroot.services.task.TodoBrokerNew;
+import za.org.grassroot.services.task.TodoBroker;
 import za.org.grassroot.services.task.TodoHelper;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
@@ -24,12 +24,12 @@ import java.util.Set;
 @RequestMapping(value = "/api/task/create/todo")
 public class TodoCreateController {
 
-    private final TodoBrokerNew todoBrokerNew;
+    private final TodoBroker todoBroker;
     private final UserManagementService userManager;
 
     @Autowired
-    public TodoCreateController(TodoBrokerNew todoBrokerNew, UserManagementService userManager) {
-        this.todoBrokerNew = todoBrokerNew;
+    public TodoCreateController(TodoBroker todoBroker, UserManagementService userManager) {
+        this.todoBroker = todoBroker;
         this.userManager = userManager;
     }
 
@@ -181,8 +181,8 @@ public class TodoCreateController {
     }
 
     private ResponseEntity<TaskFullDTO> handleCreationAndReturn(TodoHelper todoHelper) {
-        final String createdTodoUid = todoBrokerNew.create(todoHelper);
-        final Todo createdTodo = todoBrokerNew.load(createdTodoUid);
+        final String createdTodoUid = todoBroker.create(todoHelper);
+        final Todo createdTodo = todoBroker.load(createdTodoUid);
 
         // common handler will respond if throws no permission exception
         return ResponseEntity.ok(new TaskFullDTO(

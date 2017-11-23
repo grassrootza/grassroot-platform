@@ -77,7 +77,7 @@ public abstract class USSDAbstractUnitTest {
     protected EventRequestBroker eventRequestBrokerMock;
 
     @Mock
-    protected TodoBrokerNew todoBrokerMock;
+    protected TodoBroker todoBrokerMock;
 
     @Mock
     protected TodoRequestBroker todoRequestBrokerMock;

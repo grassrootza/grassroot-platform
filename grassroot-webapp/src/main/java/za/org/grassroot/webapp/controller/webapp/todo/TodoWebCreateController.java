@@ -15,7 +15,7 @@ import za.org.grassroot.core.domain.task.TodoType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.group.GroupBroker;
-import za.org.grassroot.services.task.TodoBrokerNew;
+import za.org.grassroot.services.task.TodoBroker;
 import za.org.grassroot.services.task.TodoHelper;
 import za.org.grassroot.webapp.controller.BaseController;
 
@@ -31,12 +31,12 @@ import java.util.stream.Collectors;
 @RequestMapping("/todo/")
 public class TodoWebCreateController extends BaseController {
 
-    private final TodoBrokerNew todoBroker;
+    private final TodoBroker todoBroker;
     private final GroupBroker groupBroker;
     private final PermissionBroker permissionBroker;
 
     @Autowired
-    public TodoWebCreateController(TodoBrokerNew todoBroker, GroupBroker groupBroker, PermissionBroker permissionBroker) {
+    public TodoWebCreateController(TodoBroker todoBroker, GroupBroker groupBroker, PermissionBroker permissionBroker) {
         this.todoBroker = todoBroker;
         this.groupBroker = groupBroker;
         this.permissionBroker = permissionBroker;

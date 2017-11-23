@@ -16,7 +16,7 @@ import za.org.grassroot.core.repository.UserLogRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.EventLogBroker;
-import za.org.grassroot.services.task.TodoBrokerNew;
+import za.org.grassroot.services.task.TodoBroker;
 import za.org.grassroot.services.task.VoteBroker;
 
 import java.util.List;
@@ -33,9 +33,9 @@ public class UserResponseBrokerImpl implements UserResponseBroker {
     private final VoteBroker voteBroker;
     private final EventLogBroker eventLogBroker;
     private final SafetyEventBroker safetyEventBroker;
-    private final TodoBrokerNew todoBroker;
+    private final TodoBroker todoBroker;
 
-    public UserResponseBrokerImpl(UserRepository userRepository, EventBroker eventBroker, VoteBroker voteBroker, EventLogBroker eventLogBroker, SafetyEventBroker safetyEventBroker, TodoBrokerNew todoBroker, UserLogRepository userLogRepository, GroupLogRepository groupLogRepository) {
+    public UserResponseBrokerImpl(UserRepository userRepository, EventBroker eventBroker, VoteBroker voteBroker, EventLogBroker eventLogBroker, SafetyEventBroker safetyEventBroker, TodoBroker todoBroker, UserLogRepository userLogRepository, GroupLogRepository groupLogRepository) {
         this.userRepository = userRepository;
         this.eventBroker = eventBroker;
         this.voteBroker = voteBroker;

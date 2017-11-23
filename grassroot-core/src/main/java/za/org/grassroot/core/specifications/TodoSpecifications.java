@@ -28,10 +28,6 @@ public final class TodoSpecifications {
         return (root, query, cb) -> cb.equal(root.get(Todo_.cancelled), false);
     }
 
-    public static Specification<Todo> actionByDateAfter(Instant start) {
-        return (root, query, cb) -> cb.greaterThan(root.get(AbstractTodoEntity_.actionByDate), start);
-    }
-
     public static Specification<Todo> actionByDateBetween(Instant start, Instant end) {
         return (root, query, cb) -> cb.between(root.get(AbstractTodoEntity_.actionByDate), start, end);
     }
@@ -82,22 +78,6 @@ public final class TodoSpecifications {
         return Specifications.where(isOfType).and(isAssigned);
     }
 
-    public static Specifications<Todo> fetchTodosForUser(User user, boolean createdOnly, boolean openOnly) {
-        Specifications<Todo> specs = Specifications
-                .where(userPartOfParent(user))
-                .and(notCancelled());
-
-        if (createdOnly) {
-            specs = specs.and((root, query, cb) -> cb.equal(root.get(Todo_.createdByUser), user));
-        }
-
-        if (openOnly) {
-            specs = specs.and((root, query, cb) -> cb.isFalse(root.get(Todo_.completed)));
-        }
-
-        return specs;
-    }
-
     public static Specifications<Todo> checkForDuplicates(Instant intervalStart, Instant intervalEnd, User creator, Group group,
                                                           String explanation) {
         return Specifications
@@ -123,6 +103,7 @@ public final class TodoSpecifications {
                 .and((root, query, cb) -> cb.or(
                         cb.isTrue(root.get(TodoAssignment_.assignedAction)), cb.isTrue(root.get(TodoAssignment_.canWitness))));
     }
+
 
 
 }

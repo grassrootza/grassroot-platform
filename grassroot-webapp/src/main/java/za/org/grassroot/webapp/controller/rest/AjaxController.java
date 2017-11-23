@@ -15,7 +15,7 @@ import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.group.GroupQueryBroker;
 import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.TaskBroker;
-import za.org.grassroot.services.task.TodoBrokerNew;
+import za.org.grassroot.services.task.TodoBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.enums.RestStatus;
@@ -48,12 +48,12 @@ public class AjaxController extends BaseController {
 
     private GroupQueryBroker groupQueryBroker;
     private EventBroker eventBroker;
-    private TodoBrokerNew todoBroker;
+    private TodoBroker todoBroker;
     private TaskBroker taskBroker;
     private GeoLocationBroker geoLocationBroker;
 
     @Autowired
-    public AjaxController(GroupQueryBroker groupQueryBroker, EventBroker eventBroker, TodoBrokerNew todoBroker,
+    public AjaxController(GroupQueryBroker groupQueryBroker, EventBroker eventBroker, TodoBroker todoBroker,
                           TaskBroker taskBroker, GeoLocationBroker geoLocationBroker) {
         this.groupQueryBroker = groupQueryBroker;
         this.eventBroker = eventBroker;

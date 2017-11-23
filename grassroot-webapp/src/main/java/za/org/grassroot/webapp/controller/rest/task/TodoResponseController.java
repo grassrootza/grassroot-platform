@@ -7,7 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.services.exception.TodoTypeMismatchException;
-import za.org.grassroot.services.task.TodoBrokerNew;
+import za.org.grassroot.services.task.TodoBroker;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
@@ -19,11 +19,11 @@ import za.org.grassroot.webapp.util.RestUtil;
 @RequestMapping("/api/task/respond/todo")
 public class TodoResponseController {
 
-    private final TodoBrokerNew todoBrokerNew;
+    private final TodoBroker todoBroker;
 
     @Autowired
-    public TodoResponseController(TodoBrokerNew todoBrokerNew) {
-        this.todoBrokerNew = todoBrokerNew;
+    public TodoResponseController(TodoBroker todoBroker) {
+        this.todoBroker = todoBroker;
     }
 
     /*
@@ -35,7 +35,7 @@ public class TodoResponseController {
     public ResponseEntity recordUserInformationResponse(@PathVariable String todoUid,
                                                         @PathVariable String userUid,
                                                         @RequestParam String response) {
-        todoBrokerNew.recordResponse(userUid, todoUid, response, false);
+        todoBroker.recordResponse(userUid, todoUid, response, false);
         return ResponseEntity.ok(RestMessage.TODO_RESPONSE_RECORDED);
     }
 
