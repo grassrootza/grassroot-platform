@@ -201,12 +201,12 @@ public class TodoBrokerImpl implements TodoBroker {
 
     @Override
     @Transactional
-    public void updateSubject(String userUid, String todoUid, String newDescription) {
+    public void updateSubject(String userUid, String todoUid, String newSubject) {
         Todo todo = todoRepository.findOneByUid(todoUid);
         User user = userRepository.findOneByUid(userUid);
         validateUserCanModify(user, todo);
-        todo.setDescription(newDescription);
-        createAndStoreTodoLog(user, todo, TodoLogType.CHANGED, "Changed description: " + newDescription);
+        todo.setMessage(newSubject);
+        createAndStoreTodoLog(user, todo, TodoLogType.CHANGED, "Changed description: " + newSubject);
     }
 
     @Override

@@ -8,7 +8,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Todo;
+import za.org.grassroot.core.domain.task.TodoAssignment;
+import za.org.grassroot.core.domain.task.TodoType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.task.TodoBroker;
 import za.org.grassroot.webapp.controller.BaseController;
@@ -16,6 +19,9 @@ import za.org.grassroot.webapp.model.web.MemberPicker;
 
 import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Controller @Slf4j
 @RequestMapping("/todo/")
@@ -35,7 +41,7 @@ public class TodoWebViewModifyController extends BaseController {
 
         final String userUid = getUserProfile().getUid();
         if (todoBroker.canUserViewResponses(userUid, todoUid)) {
-            model.addAttribute("responses", todoBroker.fetchAssignedUserResponses(userUid, todoUid, true, false, false));
+            model.addAttribute("responses", fetchResponses(getUserProfile(), todo));
             model.addAttribute("userResponse", todoBroker.fetchUserTodoDetails(userUid, todoUid));
         }
 
@@ -47,6 +53,20 @@ public class TodoWebViewModifyController extends BaseController {
         }
 
         return "todo/view_new";
+    }
+
+    private List<TodoAssignment> fetchResponses(User user, Todo todo) {
+        if (TodoType.INFORMATION_REQUIRED.equals(todo.getType())) {
+            return todoBroker.fetchAssignedUserResponses(user.getUid(), todo.getUid(), false, true, false)
+                    .stream().sorted(Comparator.comparing(TodoAssignment::isHasResponded, Comparator.reverseOrder()))
+                    .collect(Collectors.toList());
+        } else if (TodoType.VOLUNTEERS_NEEDED.equals(todo.getType())) {
+            return todoBroker.fetchAssignedUserResponses(user.getUid(), todo.getUid(), true, false, false);
+        } else if (TodoType.VALIDATION_REQUIRED.equals(todo.getType())) {
+            return todoBroker.fetchAssignedUserResponses(user.getUid(), todo.getUid(), false, false, true);
+        } else {
+            return todoBroker.fetchAssignedUserResponses(user.getUid(), todo.getUid(), false, true, false);
+        }
     }
 
     @RequestMapping(value = "cancel", method = RequestMethod.POST)
@@ -65,7 +85,7 @@ public class TodoWebViewModifyController extends BaseController {
                                     @RequestParam String explanation,
                                     RedirectAttributes attributes, HttpServletRequest request) {
         todoBroker.updateSubject(getUserProfile().getUid(), todoUid, explanation);
-        addMessage(attributes, MessageType.SUCCESS, "todo.description.updated", request);
+        addMessage(attributes, MessageType.SUCCESS, "todo.explanation.updated", request);
         attributes.addAttribute("todoUid", todoUid);
         return "redirect:/todo/view";
     }
