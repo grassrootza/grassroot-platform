@@ -55,15 +55,13 @@ public class TaskCreateController {
     private final EventBroker eventBroker;
     private final UserManagementService userService;
     private final GroupBroker groupBroker;
-    private final PermissionBroker permissionBroker;
 
     @Autowired
     public TaskCreateController(UserManagementService userManagementService, EventBroker eventBroker, TaskImageBroker taskImageBroker,
-                                GroupBroker groupBroker,PermissionBroker permissionBroker) {
+                                GroupBroker groupBroker) {
         this.userService = userManagementService;
         this.eventBroker = eventBroker;
         this.groupBroker = groupBroker;
-        this.permissionBroker = permissionBroker;
     }
 
     @RequestMapping(value = "/meeting/{userUid}/{parentType}/{parentUid}", method = RequestMethod.POST)
@@ -93,6 +91,7 @@ public class TaskCreateController {
                 .name(subject)
                 .location(location)
                 .startDateTimeInstant(Instant.ofEpochMilli(dateTimeEpochMillis));
+        log.info("Helper={}",helper);
 
         if (publicMeeting) {
             helper = helper.isPublic(true);
@@ -104,8 +103,6 @@ public class TaskCreateController {
 
         if (assignedMemberUids != null && !assignedMemberUids.isEmpty()) {
             helper.assignedMemberUids(assignedMemberUids);
-        }else{
-            helper.assignedMemberUids(Collections.EMPTY_SET);
         }
 
         if (!StringUtils.isEmpty(mediaFileUid)) {
@@ -146,7 +143,7 @@ public class TaskCreateController {
 
             List<String> options = VoteType.YES_NO.equals(voteWrapper.getType()) ? null : voteOptions;
 
-            assignedMemberUids = assignedMemberUids == null ? Collections.EMPTY_SET : assignedMemberUids;
+            assignedMemberUids = assignedMemberUids == null ? Collections.emptySet() : assignedMemberUids;
 
             log.info("title={}, description={}",title,description);
             log.info("time={}, members={}",time,assignedMemberUids);

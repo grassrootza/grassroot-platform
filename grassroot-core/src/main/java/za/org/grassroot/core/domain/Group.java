@@ -12,6 +12,7 @@ import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
 import java.io.Serializable;
+import java.io.UnsupportedEncodingException;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.Collection;
@@ -19,6 +20,8 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Entity
@@ -174,8 +177,9 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
     }
 
     public Group(String groupName, User createdByUser, Group parent) {
+        Objects.requireNonNull(groupName);
         this.uid = UIDGenerator.generateId();
-        this.groupName = Objects.requireNonNull(groupName);
+        this.groupName = removeUnwantedCharacters(groupName);
         this.createdByUser = Objects.requireNonNull(createdByUser);
         this.createdDateTime = Instant.now();
         this.lastGroupChangeTime = this.createdDateTime;
@@ -229,7 +233,7 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
     }
 
     public void setGroupName(String groupName) {
-        this.groupName = groupName;
+        this.groupName = removeUnwantedCharacters(groupName);
     }
 
     public Long getId() {
@@ -699,6 +703,27 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
             Instant otherCreatedDateTime = group.getCreatedDateTime();
             return createdDateTime.compareTo(otherCreatedDateTime);
         }
+    }
+
+    public String removeUnwantedCharacters(String content) {
+        String contentToReturn = "";
+
+        try{
+            byte[] contentBytes = content.getBytes("UTF-8");
+
+            contentToReturn = new String(contentBytes, "UTF-8");
+        }catch (UnsupportedEncodingException e){
+            e.printStackTrace();
+        }
+
+        Pattern unicodeOutliers = Pattern.compile("[\ud83c\udc00-\ud83c\udfff]|[\ud83d\udc00-\ud83d\udfff]|[\u2600-\u27ff]",
+                Pattern.UNICODE_CASE |
+                        Pattern.CANON_EQ |
+                        Pattern.CASE_INSENSITIVE);
+        Matcher unicodeOutlierMatcher = unicodeOutliers.matcher(contentToReturn);
+
+        contentToReturn = unicodeOutlierMatcher.replaceAll("");
+        return contentToReturn;
     }
 
 

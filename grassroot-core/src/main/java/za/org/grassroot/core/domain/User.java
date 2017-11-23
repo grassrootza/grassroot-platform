@@ -11,11 +11,14 @@ import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
+import java.io.UnsupportedEncodingException;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static za.org.grassroot.core.util.PhoneNumberUtil.invertPhoneNumber;
@@ -131,7 +134,7 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
         this.uid = UIDGenerator.generateId();
         this.phoneNumber = Objects.requireNonNull(phoneNumber);
         this.username = phoneNumber;
-        this.displayName = displayName;
+        this.displayName = removeUnwantedCharacters(displayName);
         this.languageCode = "en";
         this.messagingPreference = UserMessagingPreference.SMS; // as default
         this.createdDateTime = Instant.now();
@@ -191,11 +194,11 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
     public String getNationalNumber() { return PhoneNumberUtil.formattedNumber(phoneNumber); }
 
     public String getDisplayName() {
-        return displayName;
+        return removeUnwantedCharacters(displayName);
     }
 
     public void setDisplayName(String displayName) {
-        this.displayName = displayName;
+        this.displayName = removeUnwantedCharacters(displayName);
     }
 
     public boolean isHasSetOwnName() { return hasSetOwnName; }
@@ -515,6 +518,27 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
         } else {
             return unknownPrefix + " (" + invertPhoneNumber(phoneNumber) + ")";
         }
+    }
+
+    public String removeUnwantedCharacters(String content) {
+        String contentToReturn = "";
+
+        try{
+            byte[] contentBytes = content.getBytes("UTF-8");
+
+            contentToReturn = new String(contentBytes, "UTF-8");
+        }catch (UnsupportedEncodingException e){
+            e.printStackTrace();
+        }
+
+        Pattern unicodeOutliers = Pattern.compile("[\ud83c\udc00-\ud83c\udfff]|[\ud83d\udc00-\ud83d\udfff]|[\u2600-\u27ff]",
+                Pattern.UNICODE_CASE |
+                        Pattern.CANON_EQ |
+                        Pattern.CASE_INSENSITIVE);
+        Matcher unicodeOutlierMatcher = unicodeOutliers.matcher(contentToReturn);
+
+        contentToReturn = unicodeOutlierMatcher.replaceAll("");
+        return contentToReturn;
     }
 
     // can't call this the more natural getName, or any variant, or Spring's getter handling throws a fit
