@@ -3,7 +3,8 @@ log
 log/*
 
 # localhost environment files #
-environment/**
+environment/*
+.deploy/envpath.txt
 /.clean
 /build-jar.sh
 /test.sh

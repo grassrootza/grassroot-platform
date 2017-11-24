@@ -45,6 +45,9 @@ grassroot.task.images.bucket=grassroot-task-images
 grassroot.task.images.resized.bucket=grassroot-task-images-resized
 grassroot.task.images.analyzed.bucket=grassroot-task-images-analyzed
 
+grassroot.media.default.bucket=grassroot-media-files-general
+grassroot.media.user-photo.folder=user-profile-images-staging
+
 grassroot.mapzen.api.key=mapzen-Mpj19d7
 
 grassroot.shortener.api.url=https://api-ssl.bitly.com/v3/shorten
