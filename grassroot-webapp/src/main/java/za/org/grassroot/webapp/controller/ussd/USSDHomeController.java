@@ -168,10 +168,10 @@ public class USSDHomeController extends USSDBaseController {
             returnMenu = liveWireController.assembleLiveWireOpening(user, 0);
         } else if (sendMeLink.equals(trailingDigits)) {
             returnMenu = assembleSendMeAndroidLinkMenu(user);
-        } else if(isCampaignTrailingCode(trailingDigits)){
+        } /* else if(isCampaignTrailingCode(trailingDigits)){
             Campaign campaign = campaignBroker.getCampaignDetailsByCode(trailingDigits);
             returnMenu = assembleCampaignMessageResponse(campaign,user);
-        }  else {
+        } */ else {
             returnMenu = groupController.lookForJoinCode(user, trailingDigits);
         }
         return returnMenu;

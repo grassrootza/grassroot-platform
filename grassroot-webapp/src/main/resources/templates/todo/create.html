@@ -19,12 +19,11 @@
     <div class="container">
       <div class="row">
         <div class="col-md-8 col-md-offset-2 col-sm-6 col-sm-offset-3 col-xs-12">
-          <form th:action="@{/todo2/create}" id="createForm" method="post">
+          <form th:action="@{/todo/create}" id="createForm" method="post">
 
-            <!-- if confirmation, who is assigned, who confirms, if the rest is okay -->
-
-            <div th:unless="${parentSpecified}"
-                 th:replace="~{form_fragments :: list_selector('Group:', ${possibleGroups}, 'parentUid')}"></div>
+            <div th:unless="${parentSpecified}">
+              <div th:include="~{form_fragments :: list_selector('Group:', ${possibleGroups}, 'parentUid')}"></div>
+            </div>
 
             <div th:if="${parentSpecified}">
               <div class="form-group">

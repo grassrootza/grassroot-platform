@@ -121,7 +121,7 @@
       <div class="row">
         <div class="col-md-8 col-md-offset-2 col-sm-6 col-sm-offset-3 col-xs-12">
 
-          <div th:replace="~{fragments :: block_row('type', 'Type', ${todo.type})}"></div>
+          <div th:replace="~{fragments :: block_row('type', 'Type', #{web.todo.create.type.__${todo.type}__})}"></div>
           <div th:replace="~{fragments :: block_row('status', 'Status', ${todo.completed ? 'Complete' : 'Open'})}"></div>
           <div th:replace="~{fragments :: block_row('due_date', 'Due date', ${#dates.format(todo.actionByDate, 'dd MMM yyyy, HH:mm')})}"></div>
 

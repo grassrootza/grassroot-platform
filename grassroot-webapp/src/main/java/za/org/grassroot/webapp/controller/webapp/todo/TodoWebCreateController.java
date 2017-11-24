@@ -46,12 +46,13 @@ public class TodoWebCreateController extends BaseController {
     public String createTodoPrompt(Model model, @RequestParam(required = false) String parentUid) {
         model.addAttribute("parentSpecified", parentUid != null);
         if (parentUid == null) {
-            // todo : finally change 'logbook' in permissions enum
             List<Group> groups = permissionBroker.getActiveGroupsSorted(getUserProfile(), Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY);
             Map<String, String> groupOptions = groups.stream().collect(Collectors.toMap(Group::getUid, Group::getName));
             model.addAttribute("possibleGroups", groupOptions);
+            model.addAttribute("parentSpecified", false); // should be redundant but Thymeleaf being very annoying
         } else {
-            model.addAttribute("group", groupBroker.load(parentUid));
+            model.addAttribute("parent", groupBroker.load(parentUid));
+            model.addAttribute("parentSpecified", true);
         }
 
         List<TodoType> availableTypes = Arrays.asList(TodoType.ACTION_REQUIRED,

@@ -49,3 +49,6 @@ alter table action_todo_assigned_members add column has_responded boolean defaul
 alter table action_todo_assigned_members add column response_date_time timestamp;
 alter table action_todo_assigned_members add column confirmation_type varchar(50);
 alter table action_todo_assigned_members add column response_text varchar(255);
+
+-- need the following, though not completely related
+alter table event alter column location type varchar(255);

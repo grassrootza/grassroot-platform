@@ -1,5 +1,6 @@
 alter table action_todo add column source_todo bigint;
 alter table action_todo add column number_of_reminders_left_to_send int default 0;
+create index idx_action_todo_retries_left on action_todo(number_of_reminders_left_to_send);
 
 alter table action_todo rename column next_notification_time to scheduled_reminder_time;
 
@@ -34,3 +35,6 @@ alter table action_todo_assigned_members drop column has_responded;
 alter table action_todo_assigned_members drop column witness_time;
 alter table action_todo_assigned_members drop column confirmation_type;
 alter table action_todo_assigned_members drop column response_text;
+alter table action_todo_assigned_members drop column response_date_time;
+
+alter table event alter column location type varchar(50);

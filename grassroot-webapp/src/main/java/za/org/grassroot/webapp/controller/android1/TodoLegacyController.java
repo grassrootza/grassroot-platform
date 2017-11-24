@@ -77,7 +77,7 @@ public class TodoLegacyController {
                                                          @RequestParam int reminderMinutes,
                                                          @RequestParam(value="members", required = false) Set<String> members) {
 
-        log.info("REST : received logbook create request... with local date time: {}, and members: {}",
+        log.info("REST : received todo create request... with local date time: {}, and members: {}",
                 dueDate.toString(), members == null ? "null" : members.toString());
 
         User user = userManagementService.findByInputNumber(phoneNumber);
