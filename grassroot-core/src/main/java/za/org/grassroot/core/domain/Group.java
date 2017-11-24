@@ -8,6 +8,7 @@ import za.org.grassroot.core.domain.geo.GroupLocation;
 import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.core.util.FormatUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
@@ -23,6 +24,8 @@ import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import static za.org.grassroot.core.util.FormatUtil.removeUnwantedCharacters;
 
 @Entity
 @Table(name = "group_profile") // quoting table name in case "group" is a reserved keyword
@@ -704,28 +707,4 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
             return createdDateTime.compareTo(otherCreatedDateTime);
         }
     }
-
-    public String removeUnwantedCharacters(String content) {
-        String contentToReturn = "";
-
-        try{
-            byte[] contentBytes = content.getBytes("UTF-8");
-
-            contentToReturn = new String(contentBytes, "UTF-8");
-        }catch (UnsupportedEncodingException e){
-            e.printStackTrace();
-        }
-
-        Pattern unicodeOutliers = Pattern.compile("[\ud83c\udc00-\ud83c\udfff]|[\ud83d\udc00-\ud83d\udfff]|[\u2600-\u27ff]",
-                Pattern.UNICODE_CASE |
-                        Pattern.CANON_EQ |
-                        Pattern.CASE_INSENSITIVE);
-        Matcher unicodeOutlierMatcher = unicodeOutliers.matcher(contentToReturn);
-
-        contentToReturn = unicodeOutlierMatcher.replaceAll("");
-        return contentToReturn;
-    }
-
-
-
 }

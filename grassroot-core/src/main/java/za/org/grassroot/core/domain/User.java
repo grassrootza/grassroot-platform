@@ -7,6 +7,7 @@ import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.enums.AlertPreference;
 import za.org.grassroot.core.enums.UserMessagingPreference;
+import za.org.grassroot.core.util.FormatUtil;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 
@@ -21,6 +22,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static za.org.grassroot.core.util.FormatUtil.removeUnwantedCharacters;
 import static za.org.grassroot.core.util.PhoneNumberUtil.invertPhoneNumber;
 
 @Entity
@@ -518,27 +520,6 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
         } else {
             return unknownPrefix + " (" + invertPhoneNumber(phoneNumber) + ")";
         }
-    }
-
-    public String removeUnwantedCharacters(String content) {
-        String contentToReturn = "";
-
-        try{
-            byte[] contentBytes = content.getBytes("UTF-8");
-
-            contentToReturn = new String(contentBytes, "UTF-8");
-        }catch (UnsupportedEncodingException e){
-            e.printStackTrace();
-        }
-
-        Pattern unicodeOutliers = Pattern.compile("[\ud83c\udc00-\ud83c\udfff]|[\ud83d\udc00-\ud83d\udfff]|[\u2600-\u27ff]",
-                Pattern.UNICODE_CASE |
-                        Pattern.CANON_EQ |
-                        Pattern.CASE_INSENSITIVE);
-        Matcher unicodeOutlierMatcher = unicodeOutliers.matcher(contentToReturn);
-
-        contentToReturn = unicodeOutlierMatcher.replaceAll("");
-        return contentToReturn;
     }
 
     // can't call this the more natural getName, or any variant, or Spring's getter handling throws a fit
