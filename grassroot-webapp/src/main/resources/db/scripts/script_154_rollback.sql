@@ -29,6 +29,7 @@ alter table action_todo_assigned_members drop column creation_time;
 alter table action_todo_assigned_members drop column assigned_action;
 alter table action_todo_assigned_members drop column assigned_witness;
 
+alter table action_todo_assigned_members drop column should_respond;
 alter table action_todo_assigned_members drop column has_responded;
 alter table action_todo_assigned_members drop column witness_time;
 alter table action_todo_assigned_members drop column confirmation_type;

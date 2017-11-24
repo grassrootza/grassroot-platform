@@ -146,6 +146,8 @@ public class TaskBrokerImpl implements TaskBroker {
         Instant todoEnd = DateTimeUtil.getVeryLongAwayInstant();
         List<Todo> todos = todoBroker.fetchTodosForGroup(userUid, groupUid, false, true, todoStart, todoEnd, null);
 
+        log.info("number of todos fetched for group = {}", todos.size());
+
         for (Todo todo : todos) {
             taskDtos.add(new TaskDTO(todo, user));
         }

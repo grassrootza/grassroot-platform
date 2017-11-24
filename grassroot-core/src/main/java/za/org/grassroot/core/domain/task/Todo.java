@@ -182,7 +182,7 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
 
     public Set<User> getConfirmingUsers() {
         return assignments.stream()
-                .filter(TodoAssignment::isCanWitness)
+                .filter(TodoAssignment::isValidator)
                 .map(TodoAssignment::getUser)
                 .collect(Collectors.toSet());
     }
@@ -194,7 +194,7 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
         Objects.requireNonNull(member);
 
         Optional<TodoAssignment> findAssignment = assignments.stream()
-                .filter(TodoAssignment::isCanWitness)
+                .filter(TodoAssignment::isValidator)
                 .filter(a -> a.getUser().equals(member))
                 .findFirst();
 
@@ -209,25 +209,13 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
         return true;
     }
 
-    // todo : use JPA specs and move to services
-    private TodoCompletionStatus calculateCompletionStatus() {
-        long membersCount = assignments.stream().filter(TodoAssignment::isCanWitness).count();
-        // we count only those confirmations that mark as complete and are from users that are currently members (these can always change)
-        return new TodoCompletionStatus(countCompletions(), (int) membersCount);
+    public boolean canUserRespond(User member) {
+        Objects.requireNonNull(member);
+        return assignments.stream()
+                .filter(TodoAssignment::canRespond)
+                .anyMatch(a -> a.getUser().equals(member));
     }
 
-    public boolean isCompleted(double threshold) {
-        return calculateCompletionStatus().getPercentage() >= threshold;
-    }
-
-    public int countCompletions() {
-        return (int) assignments.stream()
-                .filter(TodoAssignment::isCanWitness)
-                .filter(TodoAssignment::hasConfirmed)
-                .count();
-    }
-
-    // as general above, move to services and specs
     public boolean hasUserResponded(User member) {
         Objects.requireNonNull(member);
         return assignments.stream()

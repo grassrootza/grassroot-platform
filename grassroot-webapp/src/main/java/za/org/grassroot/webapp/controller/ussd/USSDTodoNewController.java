@@ -20,6 +20,7 @@ import za.org.grassroot.integration.exception.SeloApiCallFailure;
 import za.org.grassroot.integration.exception.SeloParseDateTimeFailure;
 import za.org.grassroot.services.exception.TodoDeadlineNotInFutureException;
 import za.org.grassroot.services.exception.TodoTypeMismatchException;
+import za.org.grassroot.services.group.MemberDataExportBroker;
 import za.org.grassroot.services.task.TodoBroker;
 import za.org.grassroot.services.task.TodoRequestBroker;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
@@ -47,13 +48,16 @@ public class USSDTodoNewController extends USSDBaseController {
 
     private final TodoBroker todoBroker;
     private final TodoRequestBroker todoRequestBroker;
-    private final USSDMessageAssembler messageAssembler;
-    private final USSDGroupUtil groupUtil;
+    private final MemberDataExportBroker dataExportBroker;
     private final LearningService learningService;
 
-    public USSDTodoNewController(TodoBroker todoBroker, TodoRequestBroker todoRequestBroker, USSDMessageAssembler messageAssembler, USSDGroupUtil groupUtil, LearningService learningService) {
+    private final USSDMessageAssembler messageAssembler;
+    private final USSDGroupUtil groupUtil;
+
+    public USSDTodoNewController(TodoBroker todoBroker, TodoRequestBroker todoRequestBroker, MemberDataExportBroker dataExportBroker, USSDMessageAssembler messageAssembler, USSDGroupUtil groupUtil, LearningService learningService) {
         this.todoBroker = todoBroker;
         this.todoRequestBroker = todoRequestBroker;
+        this.dataExportBroker = dataExportBroker;
         this.messageAssembler = messageAssembler;
         this.groupUtil = groupUtil;
         this.learningService = learningService;
@@ -369,12 +373,13 @@ public class USSDTodoNewController extends USSDBaseController {
     /*
     View and modify a to-do entry
      */
-    @RequestMapping(value = "/view", method = RequestMethod.GET)
+    @RequestMapping(value = FULL_PATH + "/view", method = RequestMethod.GET)
     public Request viewTodoEntry(@RequestParam(value = phoneNumber) String inputNumber,
                                  @RequestParam String todoUid) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber);
         Todo todo = todoBroker.load(todoUid);
 
+        final String urlSuffix = "?todoUid=" + todo.getUid();
         List<TodoAssignment> todoAssignments = todoBroker.fetchAssignedUserResponses(user.getUid(), todoUid, true,
                 false, false);
 
@@ -386,14 +391,14 @@ public class USSDTodoNewController extends USSDBaseController {
         }, user));
 
         if (todo.getCreatedByUser().equals(user)) {
-            menu.addMenuOption(REL_PATH + "/view/email", messageAssembler.getMessage("todo.view.options.email", user));
-            menu.addMenuOption(REL_PATH + "/modify/complete", messageAssembler.getMessage("todo.view.options.complete", user));
-            menu.addMenuOption(REL_PATH + "/modify/", messageAssembler.getMessage("todo.view.options.modify", user));
+            menu.addMenuOption(REL_PATH + "/view/email" + urlSuffix, messageAssembler.getMessage("todo.view.options.email", user));
+            menu.addMenuOption(REL_PATH + "/modify/complete" + urlSuffix, messageAssembler.getMessage("todo.view.options.complete", user));
+            menu.addMenuOption(REL_PATH + "/modify/" + urlSuffix, messageAssembler.getMessage("todo.view.options.modify", user));
         } else if (todoAssignments.stream().anyMatch(ta -> ta.getUser().equals(user))) {
-            menu.addMenuOption(REL_PATH + "/respond?todoUid=" + todo.getUid(),
+            menu.addMenuOption(REL_PATH + "/respond" + urlSuffix,
                     messageAssembler.getMessage("todo.view.options.response.change", user));
         } else if (todoBroker.canUserRespond(user.getUid(), todoUid)) {
-            menu.addMenuOption(REL_PATH + "/respond?todoUid=" + todo.getUid(),
+            menu.addMenuOption(REL_PATH + "/respond" + urlSuffix,
                     messageAssembler.getMessage("todo.view.options.response.enter", user));
         }
 
@@ -401,7 +406,7 @@ public class USSDTodoNewController extends USSDBaseController {
         return menuBuilder(menu);
     }
 
-    @RequestMapping(value = "/view/email", method = RequestMethod.GET)
+    @RequestMapping(value = FULL_PATH + "/view/email", method = RequestMethod.GET)
     public Request emailTodoResponses(@RequestParam(value = phoneNumber) String inputNumber,
                                       @RequestParam String todoUid) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber, REL_PATH + "/view/email?todoUid=" + todoUid);
@@ -411,14 +416,15 @@ public class USSDTodoNewController extends USSDBaseController {
         return menuBuilder(new USSDMenu(messagePrompt, REL_PATH + "/view/email/send?todoUid=" + todoUid));
     }
 
-    @RequestMapping(value = "/view/email/send", method = RequestMethod.GET)
+    @RequestMapping(value = FULL_PATH + "/view/email/send", method = RequestMethod.GET)
     public Request emailResponsesDo(@RequestParam(value = phoneNumber) String inputNumber,
                                     @RequestParam String todoUid,
                                     @RequestParam(value = userInputParam) String emailAddress) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber, null);
         boolean isEmailValid = EmailValidator.getInstance().isValid(emailAddress);
         if (isEmailValid || user.hasEmailAddress() && emailAddress.length() == 1) {
-            todoBroker.emailTodoResponses(user.getUid(), todoUid, isEmailValid ? emailAddress : null);
+            final String emailToPass = emailAddress.length() == 1 ? user.getEmailAddress() : emailAddress;
+            dataExportBroker.emailTodoResponses(user.getUid(), todoUid, emailToPass);
             USSDMenu menu = new USSDMenu(messageAssembler.getMessage("todo.email.prompt.done", user));
             return menuBuilder(addBackHomeExit(menu, todoUid, user));
         } else {
@@ -428,7 +434,7 @@ public class USSDTodoNewController extends USSDBaseController {
     }
 
 
-    @RequestMapping(value = "/modify/complete", method = RequestMethod.GET)
+    @RequestMapping(value = FULL_PATH + "/modify/complete", method = RequestMethod.GET)
     public Request markTodoCompletePrompt(@RequestParam(value = phoneNumber) String inputNumber,
                                           @RequestParam String todoUid) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber);
@@ -438,7 +444,7 @@ public class USSDTodoNewController extends USSDBaseController {
         return menuBuilder(menu);
     }
 
-    @RequestMapping(value = "modify/complete/done", method = RequestMethod.GET)
+    @RequestMapping(value = FULL_PATH + "modify/complete/done", method = RequestMethod.GET)
     public Request markTodoCompleteDone(@RequestParam(value = phoneNumber) String inputNumber,
                                         @RequestParam String todoUid) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber, null);

@@ -130,9 +130,9 @@ public class TodoBrokerImpl implements TodoBroker {
         }
 
         if (todoHelper.getAssignedMemberUids() == null || todoHelper.getAssignedMemberUids().isEmpty()) {
-            setAllParentMembersAssigned(todo);
+            setAllParentMembersAssigned(todo, shouldAssignedUsersRespond(todo.getType()));
         } else {
-            setAssignedMembers(todo, todoHelper.getAssignedMemberUids());
+            setAssignedMembers(todo, todoHelper.getAssignedMemberUids(), shouldAssignedUsersRespond(todo.getType()));
             setConfirmingMembers(todo, todoHelper.getConfirmingMemberUids());
         }
 
@@ -148,21 +148,26 @@ public class TodoBrokerImpl implements TodoBroker {
         return notifications;
     }
 
-    // todo : as below, proper validation on types, combinations, etc (e.g., responses only within group)
-    // todo : handle properly where users are both assigned and confirming
-    private void setAllParentMembersAssigned(Todo todo) {
-        todo.setAssignments(todo.getParent().getMembers().stream()
-                .map(u -> new TodoAssignment(todo, u, true, false)).collect(Collectors.toSet()));
+    private boolean shouldAssignedUsersRespond(TodoType type) {
+        return TodoType.INFORMATION_REQUIRED.equals(type) || TodoType.VOLUNTEERS_NEEDED.equals(type);
     }
 
-    private void setAssignedMembers(Todo todo, Set<String> assignedMemberUids) {
+    // todo : as below, proper validation on types, combinations, etc (e.g., responses only within group)
+    // todo : handle properly where users are both assigned and confirming
+    private void setAllParentMembersAssigned(Todo todo, boolean shouldRespond) {
+        todo.setAssignments(todo.getParent().getMembers().stream()
+                .map(u -> new TodoAssignment(todo, u, true, false, shouldRespond && !u.equals(todo.getCreatedByUser()))).collect(Collectors.toSet()));
+    }
+
+    private void setAssignedMembers(Todo todo, Set<String> assignedMemberUids, boolean shouldRespond) {
         List<User> users = userRepository.findByUidIn(assignedMemberUids);
-        todo.addAssignments(users.stream().map(u -> new TodoAssignment(todo, u, true, false)).collect(Collectors.toSet()));
+        todo.addAssignments(users.stream().map(u -> new TodoAssignment(todo, u, true, false, shouldRespond && !u.equals(todo.getCreatedByUser())))
+                .collect(Collectors.toSet()));
     }
 
     private void setConfirmingMembers(Todo todo, Set<String> confirmingMemberUids) {
         List<User> users = userRepository.findByUidIn(confirmingMemberUids);
-        todo.addAssignments(users.stream().map(u -> new TodoAssignment(todo, u, false, true)).collect(Collectors.toSet()));
+        todo.addAssignments(users.stream().map(u -> new TodoAssignment(todo, u, false, true, true)).collect(Collectors.toSet()));
     }
 
     private Notification generateTodoAssignedNotification(Todo todo, User target, TodoLog todoLog) {
@@ -342,7 +347,8 @@ public class TodoBrokerImpl implements TodoBroker {
         // todo : log (esp if some drop out on filter above) and validate this step etc
         addedMemberUids.removeAll(priorMembers);
         List<User> newUsers = userRepository.findByUidIn(addedMemberUids);
-        todo.addAssignments(newUsers.stream().map(u -> new TodoAssignment(todo, u, true, false)).collect(Collectors.toSet()));
+        todo.addAssignments(newUsers.stream().map(u -> new TodoAssignment(todo, u, true, false,
+                shouldAssignedUsersRespond(todo.getType()))).collect(Collectors.toSet()));
 
         if (!addedMemberUids.isEmpty()) {
             TodoLog newLog = new TodoLog(TodoLogType.ASSIGNED_ADDED, user, todo, "Assigned " + addedMemberUids.size() +
@@ -370,7 +376,7 @@ public class TodoBrokerImpl implements TodoBroker {
         todo.getAssignments().stream()
                 .filter(a -> validatingMemberUids.contains(a.getUser().getUid()))
                 .forEach(a -> {
-                    a.setCanWitness(true);
+                    a.setValidator(true);
                     existingAssignments.add(a.getUser().getUid());
                 });
 
@@ -378,7 +384,7 @@ public class TodoBrokerImpl implements TodoBroker {
         newAssignmentUids.removeAll(existingAssignments);
 
         List<User> newValidators = userRepository.findByUidIn(newAssignmentUids);
-        todo.addAssignments(newValidators.stream().map(u -> new TodoAssignment(todo, u, false, true)).collect(Collectors.toSet()));
+        todo.addAssignments(newValidators.stream().map(u -> new TodoAssignment(todo, u, false, true, true)).collect(Collectors.toSet()));
 
         if (!validatingMemberUids.isEmpty()) {
             TodoLog newLog = new TodoLog(TodoLogType.VALIDATORS_ADDED, user, todo, "Added " + validatingMemberUids.size() +
@@ -405,7 +411,7 @@ public class TodoBrokerImpl implements TodoBroker {
         todoAssignmentRepository.findAll(TodoSpecifications.userInAndForTodo(new HashSet<>(users), todo))
                 .forEach(ta -> {
                     ta.setAssignedAction(false);
-                    ta.setCanWitness(false);
+                    ta.setValidator(false);
                 });
 
         if (!memberUidsToRemove.isEmpty()) {
@@ -424,17 +430,17 @@ public class TodoBrokerImpl implements TodoBroker {
                 Specifications.where(TodoSpecifications.userPartOfParent(user));
 
         if (forceIncludeCreated) {
-            specs.or((root, query, cb) -> cb.equal(root.get(Todo_.createdByUser), user));
+            specs = specs.or((root, query, cb) -> cb.equal(root.get(Todo_.createdByUser), user));
         }
 
         if (intervalStart != null) {
-            specs.and((root, query, cb) -> cb.greaterThan(root.get(Todo_.actionByDate), intervalStart));
+            specs = specs.and((root, query, cb) -> cb.greaterThan(root.get(Todo_.actionByDate), intervalStart));
         }
         if (intervalEnd != null) {
-            specs.and((root, query, cb) -> cb.lessThan(root.get(Todo_.actionByDate), intervalEnd));
+            specs = specs.and((root, query, cb) -> cb.lessThan(root.get(Todo_.actionByDate), intervalEnd));
         }
 
-        specs.and((root, query, cb) -> cb.isFalse(root.get(Todo_.cancelled)));
+        specs = specs.and((root, query, cb) -> cb.isFalse(root.get(Todo_.cancelled)));
         return sort == null ? todoRepository.findAll(specs) : todoRepository.findAll(specs, sort);
     }
 
@@ -465,16 +471,16 @@ public class TodoBrokerImpl implements TodoBroker {
             specs = Specifications.where(TodoSpecifications.hasGroupAsParent(group));
         }
 
-        specs.and((root, query, cb) -> cb.isFalse(root.get(Todo_.cancelled)));
+        specs = specs.and((root, query, cb) -> cb.isFalse(root.get(Todo_.cancelled)));
         if (limitToIncomplete) {
-            specs.and((root, query, cb) -> cb.isFalse(root.get(Todo_.completed)));
+            specs = specs.and((root, query, cb) -> cb.isFalse(root.get(Todo_.completed)));
         }
 
         if (start != null) {
-            specs.and((root, query, cb) -> cb.greaterThan(root.get(Todo_.actionByDate), start));
+            specs = specs.and((root, query, cb) -> cb.greaterThan(root.get(Todo_.actionByDate), start));
         }
         if (end != null) {
-            specs.and((root, query, cb) -> cb.lessThan(root.get(Todo_.actionByDate), end));
+            specs = specs.and((root, query, cb) -> cb.lessThan(root.get(Todo_.actionByDate), end));
         }
 
         return sort != null ? todoRepository.findAll(specs, sort) : todoRepository.findAll(specs);
@@ -542,15 +548,11 @@ public class TodoBrokerImpl implements TodoBroker {
         }
 
         if (witnessOnly) {
-            specs = specs.and((root, query, cb) -> cb.isTrue(root.get(TodoAssignment_.canWitness)));
+            specs = specs.and((root, query, cb) -> cb.isTrue(root.get(TodoAssignment_.validator)));
         }
 
-        return todoAssignmentRepository.findAll(specs, new Sort(Sort.Direction.DESC, "responseTime"));
-    }
-
-    @Override
-    public void emailTodoResponses(String userUid, String todoUid, String emailAddress) {
-        // okay actually do that
+        List<Sort.Order> orders = Arrays.asList(new Sort.Order("hasResponded"), new Sort.Order(Sort.Direction.DESC, "responseTime"));
+        return todoAssignmentRepository.findAll(specs, new Sort(orders));
     }
 
     @Override
@@ -672,7 +674,7 @@ public class TodoBrokerImpl implements TodoBroker {
         if (todoAssignment == null) {
             throw new ResponseNotAllowedException();
         }
-        if (TodoType.VALIDATION_REQUIRED.equals(todo.getType()) && !todoAssignment.isCanWitness()) {
+        if (TodoType.VALIDATION_REQUIRED.equals(todo.getType()) && !todoAssignment.isValidator()) {
             throw new ResponseNotAllowedException();
         }
         return todoAssignment;

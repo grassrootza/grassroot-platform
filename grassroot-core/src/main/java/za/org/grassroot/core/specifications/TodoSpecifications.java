@@ -72,8 +72,7 @@ public final class TodoSpecifications {
             return cb.and(
                     cb.equal(join.get(TodoAssignment_.user), user),
                     cb.isFalse(join.get(TodoAssignment_.hasResponded)),
-                    cb.or(cb.isTrue(join.get(TodoAssignment_.assignedAction)),
-                            cb.isTrue(join.get(TodoAssignment_.canWitness))));
+                    cb.isTrue(join.get(TodoAssignment_.shouldRespond)));
         };
         return Specifications.where(isOfType).and(isAssigned);
     }
@@ -101,9 +100,7 @@ public final class TodoSpecifications {
     public static Specifications<TodoAssignment> userAssignmentCanRespond(User user, Todo todo) {
         return Specifications.where(userAssignment(user, todo))
                 .and((root, query, cb) -> cb.or(
-                        cb.isTrue(root.get(TodoAssignment_.assignedAction)), cb.isTrue(root.get(TodoAssignment_.canWitness))));
+                        cb.isTrue(root.get(TodoAssignment_.assignedAction)), cb.isTrue(root.get(TodoAssignment_.validator))));
     }
-
-
 
 }

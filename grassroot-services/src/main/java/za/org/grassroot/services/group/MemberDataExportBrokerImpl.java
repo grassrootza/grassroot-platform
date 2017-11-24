@@ -1,29 +1,41 @@
 package za.org.grassroot.services.group;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.xssf.usermodel.*;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Membership;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.task.Todo;
+import za.org.grassroot.core.domain.task.TodoAssignment;
+import za.org.grassroot.integration.email.EmailSendingBroker;
+import za.org.grassroot.integration.email.GrassrootEmail;
+import za.org.grassroot.services.task.TodoBroker;
 
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.*;
 import java.util.stream.Collectors;
 
-@Service
-public class GroupExportBrokerImpl implements GroupExportBroker {
+@Service @Slf4j
+public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
 
     private final GroupBroker groupBroker;
+    private final TodoBroker todoBroker;
+    private final EmailSendingBroker emailBroker;
 
-    public GroupExportBrokerImpl(GroupBroker groupBroker) {
+    public MemberDataExportBrokerImpl(GroupBroker groupBroker, TodoBroker todoBroker, EmailSendingBroker emailBroker) {
         this.groupBroker = groupBroker;
+        this.todoBroker = todoBroker;
+        this.emailBroker = emailBroker;
     }
 
     @Override
     public XSSFWorkbook exportGroup(String groupUid) {
 
+        // todo : include tags where consistent
         Group group = groupBroker.load(groupUid);
 
         XSSFWorkbook workbook = new XSSFWorkbook();
@@ -99,6 +111,70 @@ public class GroupExportBrokerImpl implements GroupExportBroker {
         return workbook;
     }
 
+    @Override
+    public XSSFWorkbook exportTodoData(String userUid, String todoUid) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(todoUid);
+
+        Todo todo = todoBroker.load(todoUid);
+        List<TodoAssignment> todoAssignments = todoBroker.fetchAssignedUserResponses(userUid, todoUid, false, true, false);
+
+        XSSFWorkbook workbook = new XSSFWorkbook();
+        XSSFSheet sheet = workbook.createSheet("TodoResponses");
+
+        generateHeader(workbook, sheet, new String[]{
+                "Member name", "Phone number", "Responded?", "Response ('" + todo.getResponseTag() + "')", "Date of response"},
+                new int[]{7000, 5000, 3000, 7000, 10000});
+
+        //table content stuff
+        XSSFCellStyle contentStyle = workbook.createCellStyle();
+        XSSFFont contentFont = workbook.createFont();
+        contentStyle.setFont(contentFont);
+
+        XSSFCellStyle contentNumberStyle = workbook.createCellStyle();
+        contentNumberStyle.setDataFormat(workbook.createDataFormat().getFormat("#,##0.00"));
+
+        //we are starting from 1 because row number 0 is header
+        int rowIndex = 1;
+
+        for (TodoAssignment assignment : todoAssignments) {
+            addRow(sheet, rowIndex, new String[]{
+                    assignment.getUser().getName(),
+                    assignment.getUser().getPhoneNumber(),
+                    String.valueOf(assignment.isHasResponded()),
+                    assignment.getResponseText(),
+                    assignment.getResponseTime() == null ? "" : assignment.getResponseTime().toString() }); // todo: format
+            rowIndex++;
+        }
+
+        return workbook;
+    }
+
+    @Async
+    @Override
+    public void emailTodoResponses(String userUid, String todoUid, String emailAddress) {
+        log.info("generating email of todo responses ... should be on background thread");
+
+        Objects.requireNonNull(emailAddress); // export will check user and todo
+
+        Todo todo = todoBroker.load(todoUid);
+        File workbookFile = writeToFile(exportTodoData(userUid, todoUid), "todo_responses");
+
+        if (workbookFile == null) {
+            log.error("Could not generate workbook file to send");
+        } else {
+            // todo : make body more friendly, and create a special email address (no-reply) for from
+            GrassrootEmail email = new GrassrootEmail.EmailBuilder("Grassroot: todo responses")
+                    .address(emailAddress)
+                    .attachment("todo_responses", workbookFile)
+                    .content("Good day,\nThe responses to the todo is attached")
+                    .build();
+
+            log.info("email assembled, putting it in the queue");
+            emailBroker.sendMail(email);
+        }
+    }
+
     private void generateHeader(XSSFWorkbook workbook, XSSFSheet sheet, String[] columnNames, int[] columnWidths) {
 
         XSSFCellStyle headerStyle = workbook.createCellStyle();
@@ -115,6 +191,20 @@ public class GroupExportBrokerImpl implements GroupExportBroker {
             cell.setCellValue(columnName);
             sheet.setColumnWidth(i, columnWidths[i]);
             cell.setCellStyle(headerStyle);
+        }
+    }
+
+    private File writeToFile(XSSFWorkbook workbook, String fileName) {
+        try {
+            File outputFile = File.createTempFile(fileName, "xls"); // todo: extend to MIME types
+            FileOutputStream fos = new FileOutputStream(outputFile);
+            workbook.write(fos);
+            fos.flush();
+            fos.close();
+            return outputFile;
+        } catch (IOException e) {
+            log.error("Error generating temp file from workbook", e);
+            return null;
         }
     }
 

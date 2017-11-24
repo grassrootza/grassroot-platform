@@ -65,9 +65,6 @@ public interface TodoBroker {
     List<TodoAssignment> fetchAssignedUserResponses(String userUid, String todoUid, boolean respondedOnly,
                                                     boolean assignedOnly, boolean witnessOnly);
 
-    // pass null to email address to send to user's one on file
-    void emailTodoResponses(String userUid, String todoUid, String emailAddress);
-
     // Handling reminders
     void sendScheduledReminder(String todoUid);
 

@@ -130,20 +130,20 @@
     </div>
   </section>
 
-  <section class="group-members" th:unless="${#lists.isEmpty(responses)}">
+  <section class="group-members top-buffer" th:unless="${#lists.isEmpty(responses)}">
     <div class="container">
       <div class="row">
-        <div class="col-md-8 col-md-offset-1 col-xs-12">
+        <div class="col-md-6 col-md-offset-2 col-xs-12">
           <h4 class="green-title">Responses</h4>
         </div>
         <div class="col-md-2 col-xs-12 text-right">
-          <button type="button" class="main-button" data-toggle="modal" data-target="#exportModal">
-            <i class="fa fa-download" aria-hidden="true"></i>Export</button>
+          <a href="" th:href="@{export(todoUid=${todo.uid})}" class="main-button btn-small">
+            <i class="fa fa-download" aria-hidden="true"></i>Export</a>
         </div>
       </div>
 
       <div class="row group-members-list">
-        <div class="col-md-10 col-md-offset-1">
+        <div class="col-md-8 col-md-offset-2">
           <div class="panel-group">
             <div class="panel panel-default">
               <div class="panel-heading">

@@ -44,6 +44,7 @@ alter table action_todo_assigned_members alter column creation_time set not null
 alter table action_todo_assigned_members add column assigned_action boolean default false;
 alter table action_todo_assigned_members add column assigned_witness boolean default false;
 
+alter table action_todo_assigned_members add column should_respond boolean default false;
 alter table action_todo_assigned_members add column has_responded boolean default false;
 alter table action_todo_assigned_members add column response_date_time timestamp;
 alter table action_todo_assigned_members add column confirmation_type varchar(50);

@@ -30,6 +30,7 @@ import static za.org.grassroot.core.specifications.EventLogSpecifications.*;
 /**
  * Created by paballo on 2016/03/02.
  */
+@Getter
 @ApiModel(value = "Task", description = "Generic DTO for meetings, votes, and actions")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class TaskDTO implements Comparable<TaskDTO> {
@@ -60,7 +61,9 @@ public class TaskDTO implements Comparable<TaskDTO> {
     private boolean canEdit;
 
     private List<String> tags;
-    @Getter @Setter private Map<String, Long> voteCount;
+    @Setter private Map<String, Long> voteCount;
+
+    private TodoType todoType;
 
     @JsonIgnore
     private final Instant instant;
@@ -119,73 +122,13 @@ public class TaskDTO implements Comparable<TaskDTO> {
 
     public TaskDTO(Todo todo, User user) {
         this(user, todo);
-        this.hasResponded = todo.isCompletionConfirmedByMember(user);
+        this.hasResponded = todo.hasUserResponded(user);
         this.reply = hasResponded ? String.valueOf(TodoStatus.COMPLETED) : getTodoStatus(todo, user);
-        this.canAction = canActionOnLogBook(todo, user);
+        this.canAction = todo.canUserRespond(user);
         this.location = "";
         this.canEdit = todo.getCreatedByUser().equals(user); // may adjust in future
         this.tags = new ArrayList<>();
-    }
-
-    public String getTaskUid() {
-        return taskUid;
-    }
-    public String getDescription() {
-        return description;
-    }
-
-    public String getCreatedByUserName() {
-        return createdByUserName;
-    }
-
-    public String getParentUid() { return parentUid; }
-
-	public String getParentName() { return parentName; }
-
-    public String getType() {
-        return type;
-    }
-
-    public String getDeadline() {
-        return deadline;
-    }
-
-    public LocalDateTime getDeadlineDateTime() { return deadlineDateTime; }
-
-    public String getDeadlineISO() { return deadlineISO; }
-
-    public String getDeadlineAtSAST() { return deadlineAtSAST; }
-
-    public long getDeadlineMillis() { return deadlineMillis; }
-
-    public String getReply() {
-        return reply;
-    }
-
-    public boolean isHasResponded() {
-        return hasResponded;
-    }
-
-    public boolean isCanAction() {
-        return canAction;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public String getLocation() { return location; }
-
-    public boolean isWholeGroupAssigned() { return wholeGroupAssigned; }
-
-    public int getAssignedMemberCount() { return assignedMemberCount; }
-
-    public boolean isCanEdit() { return canEdit; }
-
-	public boolean isCreatedByUser() { return createdByUser; }
-
-    public List<String> getTags() {
-        return tags;
+        this.todoType = todo.getType();
     }
 
     private String getTodoStatus(Todo todo, User user) {
@@ -211,16 +154,6 @@ public class TaskDTO implements Comparable<TaskDTO> {
         }
         return false;
     }
-
-    private boolean canActionOnLogBook(Todo todo, User user) {
-        if (!todo.isCompletionConfirmedByMember(user) &&
-                (todo.getAssignedMembers().contains(user)
-                || todo.getAssignedMembers().isEmpty())) {
-            return true;
-        }
-        return false;
-    }
-
 
     private String formatAsLocalDateTime(Instant instant) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");

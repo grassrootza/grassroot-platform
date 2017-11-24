@@ -35,7 +35,11 @@ public class TodoAssignment {
 
     @Basic
     @Column(name = "assigned_witness")
-    @Setter boolean canWitness;
+    @Setter boolean validator;
+
+    @Basic
+    @Column(name = "should_respond")
+    @Setter boolean shouldRespond;
 
     @Basic
     @Column(name = "has_responded")
@@ -55,16 +59,21 @@ public class TodoAssignment {
         // for JPA
     }
 
-    public TodoAssignment(Todo todo, User user, boolean assignedAction, boolean canWitness) {
+    public TodoAssignment(Todo todo, User user, boolean assignedAction, boolean canWitness, boolean shouldRespond) {
         this.todo = todo;
         this.user = user;
         this.assignedAction = assignedAction;
-        this.canWitness = canWitness;
+        this.validator = canWitness;
+        this.shouldRespond = shouldRespond;
         this.creationTime = Instant.now();
     }
 
     protected boolean hasConfirmed() {
         return TodoCompletionConfirmType.COMPLETED.equals(confirmType);
+    }
+
+    public boolean canRespond() {
+        return shouldRespond && !hasResponded;
     }
 
 }
