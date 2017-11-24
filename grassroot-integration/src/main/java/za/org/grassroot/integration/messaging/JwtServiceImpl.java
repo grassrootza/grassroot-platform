@@ -1,8 +1,6 @@
 package za.org.grassroot.integration.messaging;
 
-import io.jsonwebtoken.ExpiredJwtException;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.*;
 import io.jsonwebtoken.impl.TextCodec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -104,7 +102,7 @@ public class JwtServiceImpl implements JwtService {
     @Override
     public boolean isJwtTokenExpired(String token) {
         try {
-            Jwts.parser().setSigningKey(keyPairProvider.getJWTKey().getPublic()).parse(token);
+            Jwts.parser().setSigningKey(keyPairProvider.getJWTKey().getPublic()).parse(token).getBody();
             return false;
         }
         catch (ExpiredJwtException e) {
@@ -118,12 +116,27 @@ public class JwtServiceImpl implements JwtService {
     }
 
     @Override
+    public String getUserIdFromJwtToken(String token) {
+
+        try {
+            Claims claims = Jwts.parser().setSigningKey(keyPairProvider.getJWTKey().getPublic())
+                    .parseClaimsJws(token).getBody();
+            return claims.get(USER_UID_KEY, String.class);
+        } catch (Exception e) {
+            logger.error("Failed to get user id from jwt token", e);
+            return null;
+        }
+    }
+
+    @Override
     public String refreshToken(String oldToken, JwtType jwtType, Long shortExpiryMillis) {
         boolean isTokenStillValid = false;
         Date expirationTime = null;
         String newToken = null;
+        String userId = null;
         try {
-            Jwts.parser().setSigningKey(keyPairProvider.getJWTKey().getPublic()).parse(oldToken);
+            Jwt<Header, Claims> jwt = Jwts.parser().setSigningKey(keyPairProvider.getJWTKey().getPublic()).parseClaimsJwt(oldToken);
+            userId = jwt.getBody().get(USER_UID_KEY, String.class);
             isTokenStillValid = true;
         }
         catch (ExpiredJwtException e) {
@@ -132,7 +145,9 @@ public class JwtServiceImpl implements JwtService {
         }
         if (isTokenStillValid || expirationTime != null
                 && expirationTime.toInstant().plus(jwtTokenExpiryGracePeriodInMilliseconds, ChronoUnit.MILLIS).isAfter(new Date().toInstant())) {
-            newToken =  createJwt(new CreateJwtTokenRequest(jwtType, shortExpiryMillis));
+            CreateJwtTokenRequest cjtRequest = new CreateJwtTokenRequest(jwtType, shortExpiryMillis, userId);
+
+            newToken = createJwt(cjtRequest);
         }
 
         return newToken;

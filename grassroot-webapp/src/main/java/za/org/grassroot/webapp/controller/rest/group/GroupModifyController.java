@@ -8,11 +8,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
+import za.org.grassroot.core.domain.GroupJoinMethod;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.services.exception.GroupSizeLimitExceededException;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
+import za.org.grassroot.services.exception.SoleOrganizerUnsubscribeException;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
@@ -45,10 +47,37 @@ public class GroupModifyController extends GroupBaseController {
                 .collect(Collectors.toSet());
         List<String> invalidNumbers = findInvalidNumbers(memberInfos);
         try {
-            groupBroker.addMembers(userUid, groupUid, memberInfos, false);
+            groupBroker.addMembers(userUid, groupUid, memberInfos,
+                    GroupJoinMethod.ADDED_BY_OTHER_MEMBER, false);
             return ResponseEntity.ok(new GroupModifiedResponse(membersToAdd.size() - invalidNumbers.size(), invalidNumbers));
         } catch (AccessDeniedException e) {
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER);
+        }
+    }
+
+    @RequestMapping(value = "/leave/{userUid}/{groupUid}", method = RequestMethod.GET)
+    @ApiOperation(value = "Unsubscribe user from a group", notes = "Unsubscribe from a group. Note that a user cannot leave a " +
+            "group where they are the only organizer")
+    public ResponseEntity<ResponseWrapper> leaveGroup(@PathVariable String userUid,
+                                                      @PathVariable String groupUid) {
+        try {
+            groupBroker.unsubscribeMember(userUid, groupUid);
+            return RestUtil.messageOkayResponse(RestMessage.MEMBER_UNSUBSCRIBED);
+        } catch (SoleOrganizerUnsubscribeException e) {
+            return RestUtil.errorResponse(RestMessage.SOLE_ORGANIZER);
+        }
+    }
+
+    @RequestMapping(value = "/description/modify/{userUid}/{groupUid}", method = RequestMethod.POST)
+    @ApiOperation(value = "Change the description of a group", notes = "Only group organizer, with UPDATE_DETAILS permission, can call")
+    public ResponseEntity<ResponseWrapper> changeGroupDescription(@PathVariable String userUid,
+                                                                  @PathVariable String groupUid,
+                                                                  @RequestParam String description) {
+        try {
+            groupBroker.updateDescription(userUid, groupUid, description);
+            return RestUtil.errorResponse(RestMessage.GROUP_DESCRIPTION_CHANGED);
+        } catch (AccessDeniedException e) {
+            throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
         }
     }
 

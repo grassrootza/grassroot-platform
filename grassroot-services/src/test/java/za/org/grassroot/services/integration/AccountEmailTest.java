@@ -10,10 +10,10 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountBillingRecord;
 import za.org.grassroot.core.domain.account.AccountLog;
-import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.association.AccountSponsorshipRequest;
 import za.org.grassroot.core.enums.AccountBillingCycle;
 import za.org.grassroot.core.enums.AccountLogType;
@@ -71,7 +71,7 @@ public class AccountEmailTest {
     public void shouldCreateStatementEmail() {
         AccountLog dummyLog = new AccountLog.Builder(testAccount)
                 .accountLogType(AccountLogType.BILL_CALCULATED)
-                .userUid(testUser.getUid())
+                .user(testUser)
                 .build();
         AccountBillingRecord record = new AccountBillingRecord.BillingBuilder(testAccount)
                 .statementDateTime(Instant.now())

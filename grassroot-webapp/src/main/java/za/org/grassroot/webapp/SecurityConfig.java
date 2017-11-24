@@ -25,6 +25,8 @@ import org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 import javax.sql.DataSource;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * @author Lesetse Kimwaga
@@ -75,7 +77,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                     .antMatchers("/grass-root-verification/*").permitAll()
                     .antMatchers("/livewire/public/**").permitAll()
                     .antMatchers("/cardauth/**").permitAll()
-                    .antMatchers("/ussd/**").hasIpAddress(environment.getProperty("grassroot.ussd.gateway", "127.0.0.1"))
+                    .antMatchers("/ussd/**").access(assembleUssdGatewayAccessString())
                     .anyRequest().authenticated()
                     .and()
                 .formLogin()
@@ -94,6 +96,22 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                     .useSecureCookie(true).and()
                 .headers().frameOptions().sameOrigin().and() // in future see if can path restrict this
                 .csrf().csrfTokenRepository(new HttpSessionCsrfTokenRepository());
+    }
+
+    private String assembleUssdGatewayAccessString() {
+        final String ussdGateways = environment.getProperty("grassroot.ussd.gateway", "127.0.0.1");
+        List<String> gatewayAddresses = Arrays.asList(ussdGateways.split(";"));
+        log.info("found gateway addresses, split them as : {}", gatewayAddresses);
+        String accessStringFormat = "hasIpAddress('%s')";
+        String returnString = String.format(accessStringFormat, gatewayAddresses.get(0));
+        if (gatewayAddresses.size() > 1) {
+            final StringBuilder sb = new StringBuilder(returnString);
+            gatewayAddresses.stream().skip(1)
+                    .forEach(ip -> sb.append(" or " + String.format(accessStringFormat, ip)));
+            returnString = sb.toString();
+        }
+        log.info("assembled USSD gateway access control : {}", returnString);
+        return returnString;
     }
 
     @Override

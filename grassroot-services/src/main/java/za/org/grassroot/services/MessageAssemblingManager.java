@@ -1,12 +1,14 @@
 package za.org.grassroot.services;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.stereotype.Component;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.JpaEntityType;
+import za.org.grassroot.core.domain.SafetyEvent;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.association.GroupJoinRequest;
 import za.org.grassroot.core.domain.geo.Address;
 import za.org.grassroot.core.domain.task.*;
@@ -14,12 +16,14 @@ import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.FormatUtil;
+import za.org.grassroot.integration.experiments.ExperimentBroker;
+import za.org.grassroot.integration.experiments.VariationAssignment;
 
+import javax.annotation.PostConstruct;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
 
 import static za.org.grassroot.services.util.MessageUtils.getUserLocale;
 import static za.org.grassroot.services.util.MessageUtils.shortDateFormatter;
@@ -27,24 +31,40 @@ import static za.org.grassroot.services.util.MessageUtils.shortDateFormatter;
 /**
  * Created by aakilomar on 8/24/15.
  */
+@Slf4j
 @Component
 public class MessageAssemblingManager implements MessageAssemblingService {
 
-    private static final Logger log = LoggerFactory.getLogger(MessageAssemblingManager.class);
     private static final DateTimeFormatter sdf = DateTimeFormatter.ofPattern("EEE d MMM, h:mm a");
 
     private final MessageSourceAccessor messageSourceAccessor;
+    private final ExperimentBroker experimentBroker;
+
+    private Map<TodoType, String> todoMsgKeyRootMap;
+    private static final String defaultTodoKey = "sms.todo.new.notassigned";
 
     @Autowired
-    public MessageAssemblingManager(@Qualifier("servicesMessageSourceAccessor") MessageSourceAccessor messageSourceAccessor) {
+    public MessageAssemblingManager(@Qualifier("servicesMessageSourceAccessor") MessageSourceAccessor messageSourceAccessor, ExperimentBroker experimentBroker) {
         this.messageSourceAccessor = messageSourceAccessor;
+        this.experimentBroker = experimentBroker;
+    }
+
+    @PostConstruct
+    public void init() {
+        todoMsgKeyRootMap= new HashMap<>();
+        todoMsgKeyRootMap.put(TodoType.INFORMATION_REQUIRED, "text.todo.information");
+        todoMsgKeyRootMap.put(TodoType.VALIDATION_REQUIRED, "text.todo.conf.assigned");
+        todoMsgKeyRootMap.put(TodoType.ACTION_REQUIRED, "text.todo.action");
+        todoMsgKeyRootMap.put(TodoType.VOLUNTEERS_NEEDED, "text.todo.volunteer");
     }
 
     @Override
     public String createEventInfoMessage(User user, Event event) {
+        VariationAssignment assignment = experimentBroker.assignUser("test_experiment_meetings", user.getUid(), null);
         String messageKey = event instanceof Vote ? "sms.vote.send.new" :
                 event.isHasImage() ? "sms.mtg.send.image" :
-                event.isHighImportance() ? "sms.mtg.send.special" : "sms.mtg.send.new.rsvp";
+                event.isHighImportance() || assignment.equals(VariationAssignment.EXPERIMENT) ?
+                        "sms.mtg.send.special" : "sms.mtg.send.new.rsvp";
         return messageSourceAccessor.getMessage(messageKey, populateEventFields(event), getUserLocale(user));
     }
 
@@ -90,7 +110,7 @@ public class MessageAssemblingManager implements MessageAssemblingService {
     public String createTodoReminderMessage(User user, Todo todo) {
         Locale locale = getUserLocale(user);
         String[] args = populateTodoFields(todo);
-        final String msgKey = todo.getActionByDate().isAfter(Instant.now()) ? "sms.todo.reminder" : "sms.todo.reminder.past";
+        final String msgKey = todoMsgKeyRootMap.getOrDefault(todo.getType(), defaultTodoKey) + ".reminder";
         return messageSourceAccessor.getMessage(msgKey, args, locale);
     }
 
@@ -105,21 +125,49 @@ public class MessageAssemblingManager implements MessageAssemblingService {
     }
 
     @Override
-    public String createTodoUpdateNotificationMessage(User target, Todo todo) {
-        Locale locale = getUserLocale(target);
-        String[] args = populateTodoFields(todo);
-        String messageKey = todo.isAllGroupMembersAssigned() ? "sms.todo.update.notassigned" :
-                (todo.getAssignedMembers().size()) == 1 ? "sms.todo.update.assigned.one" : "sms.todo.update.assigned.many";
-        return messageSourceAccessor.getMessage(messageKey, args, locale);
-
+    public String createTodoAssignedMessage(User user, Todo todo) {
+        final Locale locale = getUserLocale(user);
+        final String[] todoFields = new String[] {
+                todo.getAncestorGroup().getName(),
+                todo.getCreatedByUser().getName(),
+                todo.getMessage(),
+                sdf.format(todo.getActionByDateAtSAST())
+        };
+        final String messageKey = todoMsgKeyRootMap.getOrDefault(todo.getType(), defaultTodoKey) + ".new" +
+                (todo.getActionByDate().isBefore(Instant.now().plus(1, ChronoUnit.HOURS)) ? ".instant" : "");
+        return messageSourceAccessor.getMessage(messageKey, todoFields, locale);
     }
 
     @Override
-    public String createVoteResultsMessage(User user, Vote event, double yes, double no, double abstain, double noReply) {
-        Locale locale = getUserLocale(user);
-        String messageKey = "sms.vote.send.results";
-        String[] args = populateEventFields(event, yes, no, abstain, noReply);
-        return messageSourceAccessor.getMessage(messageKey, args, locale);
+    public String createTodoConfirmerMessage(User user, Todo todo) {
+        final Locale locale = getUserLocale(user);
+        final String[] todoFields = new String[] {
+                todo.getAncestorGroup().getName(),
+                todo.getCreatedByUser().getName(),
+                todo.getMessage()
+        };
+        return messageSourceAccessor.getMessage("text.todo.conf.confirms.new", todoFields, locale);
+    }
+
+    @Override
+    public String createTodoVolunteerReceivedMessage(User target, TodoAssignment todoResponse) {
+        final Locale locale = getUserLocale(target);
+        final String[] fields = new String[] {
+                todoResponse.getUser().getName(),
+                todoResponse.getUser().getNationalNumber(),
+                todoResponse.getTodo().getName()
+        };
+        return messageSourceAccessor.getMessage("text.todo.volunteer.responded", fields, locale);
+    }
+
+    @Override
+    public String createTodoInfoConfirmationMessage(TodoAssignment todoResponse) {
+        final User user = todoResponse.getUser();
+        final Locale locale = getUserLocale(user);
+        final String[] fields = new String[] {
+                todoResponse.getResponseText(), todoResponse.getTodo().getName()
+        };
+        return messageSourceAccessor.getMessage("text.todo.information.responded", fields, locale);
     }
 
     @Override
@@ -184,20 +232,6 @@ public class MessageAssemblingManager implements MessageAssemblingService {
                 user.getPhoneNumber()
         };
         return messageSourceAccessor.getMessage(messageId, welcomeFields, getUserLocale(user));
-    }
-
-    @Override
-    public String createMeetingAttendanceConfirmationMessage(User organiser, User member, EventLog eventLog) {
-        final Meeting meeting = ((Meeting) eventLog.getEvent());
-        String[] fields = new String[]{
-                meeting.getAncestorGroup().getName(),
-                member.getDisplayName(),
-                meeting.getName(),
-                meeting.getEventDateTimeAtSAST().format(shortDateFormatter),
-                meeting.getEventLocation()
-        };
-        return messageSourceAccessor.getMessage("sms.meeting.attendance." + eventLog.getResponse().toString().toLowerCase(),
-                fields, getUserLocale(organiser));
     }
 
     @Override
@@ -350,5 +384,33 @@ public class MessageAssemblingManager implements MessageAssemblingService {
                 dateString,
                 assignment
         };
+    }
+
+    @Override
+    public List<String> getMessagesForGroups(List<Group> groups){
+        List<String> messages = new ArrayList<>();
+
+        StringBuilder completedMessage = new StringBuilder("Join codes:");
+        String msgSegmentHolder;
+
+        for(Group group : groups) {
+            if( group.hasValidGroupTokenCode()){
+                msgSegmentHolder = group.getGroupName() + "-" +group.getGroupTokenCode() +",";
+                if((msgSegmentHolder.length() + completedMessage.length()) > 160){
+                    messages.add(completedMessage.toString());
+                    completedMessage = new StringBuilder("Join codes:");
+                }
+                completedMessage.append(msgSegmentHolder);
+            }
+        }
+        return messages;
+    }
+
+    @Override
+    public String createGroupJoinCodeMessage(Group group) {
+        // todo : use messages.properties in services
+        return "Your join code for group:" +
+                group.getGroupName() +
+                "Is:" + group.getGroupTokenCode();
     }
 }

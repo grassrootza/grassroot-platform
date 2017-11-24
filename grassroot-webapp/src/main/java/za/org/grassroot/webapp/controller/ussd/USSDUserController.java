@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
@@ -24,16 +25,29 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
 
 @RequestMapping(method = GET, produces = MediaType.APPLICATION_XML_VALUE)
 @RestController
-public class USSDUserController extends USSDController {
+public class USSDUserController extends USSDBaseController {
 
     private static final String keyStart = "start", keyName = "name";
-    private static final String keyLanguage = "language", keyPhone = "phone";
+    private static final String keyLanguage = "language";
     private static final String keyLink = "link";
     private static final USSDSection thisSection = USSDSection.USER_PROFILE;
 
-    /**
-     * Starting the user profile management flow here
-     */
+    @RequestMapping(value = homePath + "rename-start")
+    @ResponseBody
+    public Request renameAndStart(@RequestParam(value = phoneNumber) String inputNumber,
+                                  @RequestParam(value = userInputParam) String userName) throws URISyntaxException {
+
+        User sessionUser = userManager.findByInputNumber(inputNumber);
+        String welcomeMessage;
+        if ("0".equals(userName) || "".equals(userName.trim())) {
+            welcomeMessage = getMessage(thisSection, startMenu, promptKey, sessionUser);
+            userLogger.recordUserLog(sessionUser.getUid(), UserLogType.USER_SKIPPED_NAME, "");
+        } else {
+            userManager.updateDisplayName(sessionUser.getUid(), userName);
+            welcomeMessage = getMessage(thisSection, startMenu, promptKey + "-rename-do", sessionUser.nameToDisplay(), sessionUser);
+        }
+        return menuBuilder(welcomeMenu(welcomeMessage, sessionUser));
+    }
 
     @RequestMapping(value = homePath + userMenus + startMenu)
     @ResponseBody

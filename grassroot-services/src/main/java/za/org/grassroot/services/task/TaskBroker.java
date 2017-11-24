@@ -1,5 +1,6 @@
 package za.org.grassroot.services.task;
 
+import za.org.grassroot.core.domain.task.Task;
 import za.org.grassroot.core.dto.task.TaskDTO;
 import za.org.grassroot.core.dto.task.TaskFullDTO;
 import za.org.grassroot.core.dto.task.TaskMinimalDTO;
@@ -65,5 +66,7 @@ public interface TaskBroker {
      * @return Full information on the tasks
      */
     List<TaskFullDTO> fetchSpecifiedTasks(String userUid, Map<String, TaskType> taskUidsAndTypes, TaskSortType taskSortType);
+
+    List<Task> fetchTasksRequiringUserResponse(String userUid, String userResponse);
 
 }

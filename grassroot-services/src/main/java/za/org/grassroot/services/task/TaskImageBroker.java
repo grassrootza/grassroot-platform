@@ -7,6 +7,7 @@ import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.TaskType;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by luke on 2017/02/21.
@@ -16,7 +17,8 @@ public interface TaskImageBroker {
     String storeImagePreTask(TaskType taskType, MultipartFile file);
 
     // use this one for an image passed directly to us
-    String storeImageForTask(String userUid, String taskUid, TaskType taskType, MultipartFile file, Double latitude, Double longitude);
+    String storeImageForTask(String userUid, String taskUid, TaskType taskType, MultipartFile file,
+                             String caption, Double latitude, Double longitude);
 
     // use this one for where image has previously been uploaded (e.g., via microservice)
     void recordImageForTask(String userUid, String taskUid, TaskType taskType, String imageKey, EventLogType logType);
@@ -24,6 +26,8 @@ public interface TaskImageBroker {
     String getShortUrl(String imageKey);
 
     List<ImageRecord> fetchImagesForTask(String userUid, String taskUid, TaskType taskType);
+
+    Map<TaskLog, ImageRecord> fetchTaskPosts(String userUid, String taskUid, TaskType taskType);
 
     ImageRecord fetchImageRecord(String logUid, TaskType taskType);
 

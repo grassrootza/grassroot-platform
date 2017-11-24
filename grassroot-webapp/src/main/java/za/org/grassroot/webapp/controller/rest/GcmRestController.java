@@ -8,8 +8,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.UserMessagingPreference;
-import za.org.grassroot.services.user.GcmRegistrationBroker;
 import za.org.grassroot.services.exception.NoSuchProfileException;
+import za.org.grassroot.services.user.GcmRegistrationBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
@@ -43,7 +43,6 @@ public class GcmRestController {
         logger.info("Inside GCM registration ... for ID: {}", registrationId);
         User user = userManagementService.findByInputNumber(phoneNumber);
         gcmRegistrationBroker.registerUser(user, registrationId);
-        gcmRegistrationBroker.refreshAllGroupTopicSubscriptions(user.getUid(), registrationId); // separate this call from above as can be _very_ long so needs to be async
         userManagementService.setMessagingPreference(user.getUid(), UserMessagingPreference.ANDROID_APP);
         return RestUtil.messageOkayResponse(RestMessage.REGISTERED_FOR_PUSH);
     }

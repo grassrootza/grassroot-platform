@@ -25,8 +25,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.function.Predicate;
 
-import static za.org.grassroot.services.geo.GeoLocationUtils.KM_PER_DEGREE;
-
 @Service
 @Slf4j
 public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
@@ -40,8 +38,6 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
     private final MeetingLocationRepository meetingLocationRepository;
     private final UserLocationLogRepository userLocationLogRepository;
     private final PreviousPeriodUserLocationRepository avgLocationRepository;
-    private final UserRepository userRepository;
-
 
     @Autowired
     public ObjectLocationBrokerImpl(EntityManager entityManager, GroupLocationRepository groupLocationRepository,
@@ -53,27 +49,19 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
         this.meetingLocationRepository = meetingLocationRepository;
         this.userLocationLogRepository = userLocationLogRepository;
         this.avgLocationRepository = avgLocationRepository;
-        this.userRepository = userRepository;
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<ObjectLocation> fetchPublicGroupsNearbyWithLocation(GeoLocation location, Integer radius) throws InvalidParameterException {
-        return fetchGroupsNearbyWithLocation(location, radius, PUBLIC_LEVEL);
+    public List<ObjectLocation> fetchPublicGroupsNearbyWithLocation(GeoLocation location, Integer radiusInMetres) throws InvalidParameterException {
+        return fetchGroupsNearbyWithLocation(location, radiusInMetres, PUBLIC_LEVEL);
     }
 
-    /**
-     * TODO: 1) Use the user restrictions and search for public groups
-     *
-     * Fast nearest-location finder for SQL (MySQL, PostgreSQL, SQL Server)
-     * Source: http://www.plumislandmedia.net/mysql/haversine-mysql-nearest-loc/
-     */
-    @Override
     @Transactional(readOnly = true)
-    public List<ObjectLocation> fetchGroupsNearbyWithLocation(GeoLocation location, Integer radius, Integer publicOrPrivate) throws InvalidParameterException {
-        log.info("Fetching group locations ...");
+    public List<ObjectLocation> fetchGroupsNearbyWithLocation(GeoLocation location, Integer radiusInMetres, Integer publicOrPrivate) throws InvalidParameterException {
+        log.info("Fetching group locations, around {} ...", location);
 
-        assertRadius(radius);
+        assertRadius(radiusInMetres);
         assertGeolocation(location);
 
         // Mount restriction
@@ -93,32 +81,16 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
             "INNER JOIN l.group g " +
             "WHERE " + restrictionClause +
             " l.localDate <= :date " +
-            " AND l.localDate = (SELECT MAX(ll.localDate) FROM GroupLocation ll WHERE ll.group = l.group)" +
-            " AND l.location.latitude " +
-            "    BETWEEN :latpoint  - (:radius / :distance_unit) " +
-            "        AND :latpoint  + (:radius / :distance_unit) " +
-            " AND l.location.longitude " +
-            "    BETWEEN :longpoint - (:radius / (:distance_unit * COS(RADIANS(:latpoint)))) " +
-            "        AND :longpoint + (:radius / (:distance_unit * COS(RADIANS(:latpoint)))) " +
-            " AND :radius >= (:distance_unit " +
-            "         * DEGREES(ACOS(COS(RADIANS(:latpoint)) " +
-            "         * COS(RADIANS(l.location.latitude)) " +
-            "         * COS(RADIANS(:longpoint - l.location.longitude)) " +
-            "         + SIN(RADIANS(:latpoint)) " +
-            "         * SIN(RADIANS(l.location.latitude))))) ";
+            " AND l.localDate = (SELECT MAX(ll.localDate) FROM GroupLocation ll WHERE ll.group = l.group) AND " +
+            GeoLocationUtils.locationFilterSuffix("l.location");
 
-        log.info(query);
+        log.debug(query);
 
-        log.debug("Now: {}, radius: {}, location: {}" + LocalDate.now(), radius, location);
+        TypedQuery<ObjectLocation> typedQuery = entityManager.createQuery(query, ObjectLocation.class)
+                .setParameter("date", LocalDate.now());
+        GeoLocationUtils.addLocationParamsToQuery(typedQuery, location, radiusInMetres);
 
-        return entityManager.createQuery(query,
-                ObjectLocation.class)
-                .setParameter("date", LocalDate.now())
-                .setParameter("radius", (double)radius)
-                .setParameter("distance_unit", KM_PER_DEGREE)
-                .setParameter("latpoint", location.getLatitude())
-                .setParameter("longpoint", location.getLongitude())
-                .getResultList();
+        return typedQuery.getResultList();
 
     }
 
@@ -148,10 +120,10 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
         return locations;
     }
 
-    public List<ObjectLocation> fetchMeetingLocationsNearUser(User user, GeoLocation geoLocation, Integer radius, GeographicSearchType searchType, String searchTerm) {
+    public List<ObjectLocation> fetchMeetingLocationsNearUser(User user, GeoLocation geoLocation, Integer radiusInMetres, GeographicSearchType searchType, String searchTerm) {
         Objects.requireNonNull(user);
         Objects.requireNonNull(searchType);
-        assertRadius(radius);
+        assertRadius(radiusInMetres);
 
         GeoLocation searchCentre = geoLocation == null ? fetchBestGuessUserLocation(user.getUid()) : geoLocation;
         if (searchCentre == null) {
@@ -160,49 +132,50 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
             return new ArrayList<>();
         }
 
-        boolean onlyPublicMeetings = searchType.equals(GeographicSearchType.PUBLIC);
-        final String membershipClause = onlyPublicMeetings ? "NOT IN" : "IN ";
+        final String usersOwnGroups = "m.ancestorGroup IN (SELECT mm.group FROM Membership mm WHERE mm.user = :user)";
+        final String publicGroupsNotUser = "m.isPublic = true AND m.ancestorGroup NOT IN (SELECT mm.group FROM Membership mm WHERE mm.user = :user)";
+
+        final String groupRestriction = GeographicSearchType.PUBLIC.equals(searchType) ? publicGroupsNotUser :
+                GeographicSearchType.PRIVATE.equals(searchType) ? usersOwnGroups :
+                        "((" + usersOwnGroups +") OR (" + publicGroupsNotUser + "))";
 
         String strQuery =
                 "SELECT NEW za.org.grassroot.core.domain.geo.ObjectLocation(m, l) " +
                         "FROM MeetingLocation l INNER JOIN l.meeting m " +
-                        "WHERE m.ancestorGroup " + membershipClause + " (SELECT mm.group FROM Membership mm WHERE mm.user = :user) " +
-                        (onlyPublicMeetings ? " AND m.isPublic = true " : "") + "AND " +
-                        GeoLocationUtils.locationFilterSuffix("l.location");
+                        "WHERE " + groupRestriction + " AND m.eventStartDateTime >= :present AND "
+                        + GeoLocationUtils.locationFilterSuffix("l.location");
 
-        log.info("query = {}", strQuery);
+        log.debug("query = {}", strQuery);
+        log.info("we have a search location, it looks like: {}", searchCentre);
 
         TypedQuery<ObjectLocation> query = entityManager.createQuery(strQuery,ObjectLocation.class)
                 .setParameter("user", user)
-                .setParameter("radius", (double) radius)
-                .setParameter("distance_unit", KM_PER_DEGREE);
+                .setParameter("present", Instant.now());
+        GeoLocationUtils.addLocationParamsToQuery(query, geoLocation, radiusInMetres);
 
-        log.debug("we have a search location, it looks like: {}", searchCentre);
-        setLocationParams(query, searchCentre);
         return query.getResultList();
     }
 
-    private void setLocationParams(TypedQuery query, GeoLocation location) {
-        Objects.requireNonNull(location);
-        query.setParameter("latpoint",location.getLatitude()).setParameter("longpoint",location.getLongitude());
-    }
-
     @Override
-    public List<ObjectLocation> fetchGroupsNearby(String userUid, GeoLocation location, Integer radius, String filterTerm, GeographicSearchType searchType) throws InvalidParameterException {
+    @Transactional(readOnly = true)
+    public List<ObjectLocation> fetchGroupsNearby(String userUid, GeoLocation location, Integer radiusInMetres, String filterTerm, GeographicSearchType searchType) throws InvalidParameterException {
 
         assertGeolocation(location);
 
         Set<ObjectLocation> objectLocationSet = new HashSet<>();
 
         if (searchType.toInt() > PRIVATE_LEVEL) {
-            objectLocationSet.addAll(fetchPublicGroupsNearbyWithLocation(location,radius));
+            objectLocationSet.addAll(fetchPublicGroupsNearbyWithLocation(location, radiusInMetres));
         }
+
+        log.info("Fetching groups, after public fetch, set size = {}", objectLocationSet.size());
 
         if (searchType.toInt() < PUBLIC_LEVEL) {
-            objectLocationSet.addAll(fetchGroupsNearbyWithLocation(location,radius,PRIVATE_LEVEL));
+            objectLocationSet.addAll(fetchGroupsNearbyWithLocation(location, radiusInMetres,PRIVATE_LEVEL));
         }
 
-        log.info("Set Size = {}",objectLocationSet.size());
+        log.info("After private fetch, set size = {}", objectLocationSet.size());
+
 
         return new ArrayList<>(objectLocationSet);
     }
@@ -253,15 +226,6 @@ public class ObjectLocationBrokerImpl implements ObjectLocationBroker {
 
     private Predicate<UserLocationLog> ofSourceNewerThan(Instant threshold, LocationSource source) {
         return log -> log.getTimestamp().isAfter(threshold) && log.getLocationSource().equals(source);
-    }
-
-
-    private void assertRestriction (Integer restriction) throws InvalidParameterException {
-        if (restriction == null) {
-            throw new InvalidParameterException("Invalid restriction object.");
-        } else if (restriction < PRIVATE_LEVEL || restriction > ALL_LEVEL) {
-            throw new InvalidParameterException("Invalid restriction object.");
-        }
     }
 
     private void assertRadius (Integer radius) throws InvalidParameterException {

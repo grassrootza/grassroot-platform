@@ -10,11 +10,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.BaseRoles;
-import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.GroupJoinMethod;
 import za.org.grassroot.core.domain.GroupLog;
-import za.org.grassroot.core.enums.GroupLogType;
+import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.dto.MembershipInfo;
+import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.services.group.GroupPermissionTemplate;
 import za.org.grassroot.webapp.controller.android1.GroupQueryRestController;
 import za.org.grassroot.webapp.controller.android1.GroupRestController;
@@ -86,7 +87,7 @@ public class GroupRestControllerTest extends RestAbstractUnitTest {
 
     private void settingUpDummyData(Group group, List<Group> groups, MembershipInfo membershipInfo, Set<MembershipInfo> membersToAdd) {
         membersToAdd.add(membershipInfo);
-        group.addMember(sessionTestUser, BaseRoles.ROLE_GROUP_ORGANIZER);
+        group.addMember(sessionTestUser, BaseRoles.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
         groups.add(group);
         group.setDescription(testEventDescription);
     }

@@ -1,7 +1,7 @@
 allprojects  {
   apply plugin: 'maven'
   group = 'za.org.grassroot'
-  version = '1.0.0.RC3'
+  version = '1.1.0.3'
 }
 
 ext.libs = [
@@ -23,9 +23,12 @@ subprojects {
   repositories {
     mavenLocal()
     maven { url "http://repo.maven.apache.org/maven2" }
+    maven {
+      url "http://optimizely.bintray.com/optimizely"
+    }
   }
 
-  test { // major todo : rewire integration tests
+  test {
     exclude '**/*IT*'
     testLogging {
       events "failed"
@@ -38,12 +41,14 @@ subprojects {
   }
   
   dependencies {
-
     compile group: 'com.google.guava', name: 'guava', version:'19.0'
     compile group: 'io.springfox', name: 'springfox-swagger2', version: '2.7.0'
     compile group: 'io.springfox', name: 'springfox-swagger-ui', version: '2.7.0'
 
     compile group: 'org.projectlombok', name: 'lombok', version: '1.16.18'
+
+    compile 'com.optimizely.ab:core-api:1.7.0'
+    compile 'com.optimizely.ab:core-httpclient-impl:1.7.0'
 
     testCompile group: 'org.springframework', name: 'spring-test', version:libs.springVersion
     testCompile group: 'junit', name: 'junit', version:'4.12'

@@ -37,6 +37,16 @@ public class Vote extends Event<VoteContainer> {
 		setParent(parent);
 	}
 
+	public boolean hasOption(String option) {
+		if (getTags() != null) {
+			for (String tag : getTags()) {
+				if (tag.equalsIgnoreCase(option))
+					return true;
+			}
+		}
+		return false;
+	}
+
 	@Override
 	public EventType getEventType() {
 		return EventType.VOTE;

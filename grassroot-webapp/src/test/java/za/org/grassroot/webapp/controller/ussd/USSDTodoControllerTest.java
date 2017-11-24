@@ -10,6 +10,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.GroupJoinMethod;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.domain.task.TodoRequest;
@@ -38,8 +39,6 @@ import static za.org.grassroot.webapp.util.USSDUrlUtil.todosViewGroupCompleteEnt
  */
 public class USSDTodoControllerTest extends USSDAbstractUnitTest {
 
-    // private static final Logger log = LoggerFactory.getLogger(USSDTodoControllerTest.class);
-
     public static final String assignUserID = "assignUserUid";
 
     private static final String testUserPhone = "0601110001";
@@ -58,7 +57,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
     private static final String path = "/ussd/todo/";
 
     @InjectMocks
-    private USSDTodoController ussdTodoController;
+    private USSDTodoNewController ussdTodoController;
 
     private User testUser;
 
@@ -80,7 +79,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
         List<Group> testGroups = Arrays.asList(new Group("tg1", testUser),
                 new Group("tg2", testUser),
                 new Group("tg3", testUser));
-        testGroups.stream().forEach(tg -> tg.addMember(testUser, BaseRoles.ROLE_ORDINARY_MEMBER));
+        testGroups.stream().forEach(tg -> tg.addMember(testUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER));
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(permissionBrokerMock.countActiveGroupsWithPermission(testUser, GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY)).thenReturn(3);
@@ -127,7 +126,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
         PageRequest pageRequest = new PageRequest(0, 3, new Sort(Sort.Direction.DESC, "actionByDate"));
         String urlToSave = todosViewGroupCompleteEntries(listEntriesMenu, testGroup.getUid(), 0);
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
-        when(todoBrokerMock.fetchPageOfTodosForGroup(testUser.getUid(), testGroup.getUid(), pageRequest)).thenReturn(dummyPage);
+        when(todoBrokerMock.fetchPageOfTodosForUser(testUser.getUid(), true, false, pageRequest)).thenReturn(dummyPage);
 
         mockMvc.perform(get(path + listEntriesMenu).param(phoneParam, testUserPhone)
                 .param("groupUid", testGroup.getUid())
@@ -135,7 +134,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, urlToSave);
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(todoBrokerMock, times(1)).fetchPageOfTodosForGroup(testUser.getUid(), testGroup.getUid(), pageRequest);
+        verify(todoBrokerMock, times(1)).fetchPageOfTodosForUser(testUser.getUid(), true, false, pageRequest);
         verifyNoMoreInteractions(todoBrokerMock);
     }
 
@@ -145,7 +144,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
         TodoRequest dummyLogBook = TodoRequest.makeEmpty(testUser, dummyGroup);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
-        when(todoRequestBrokerMock.create(testUser.getUid(), dummyGroup.getUid())).thenReturn(dummyLogBook);
+        // when(todoRequestBrokerMock.create(testUser.getUid(), dummyGroup.getUid())).thenReturn(dummyLogBook);
 
         mockMvc.perform(get(path + "subject").param(phoneParam, testUserPhone).param("groupUid", dummyGroup.getUid()))
                 .andExpect(status().isOk());
@@ -154,7 +153,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
         verifyNoMoreInteractions(userManagementServiceMock);
         verify(cacheUtilManagerMock, times(1)).putUssdMenuForUser(testUserPhone, saveToDoMenu("subject", dummyLogBook.getUid()));
         verifyNoMoreInteractions(cacheUtilManagerMock);
-        verify(todoRequestBrokerMock, times(1)).create(testUser.getUid(), dummyGroup.getUid());
+        // verify(todoRequestBrokerMock, times(1)).create(testUser.getUid(), dummyGroup.getUid());
         verifyNoMoreInteractions(todoRequestBrokerMock);
     }
 
@@ -182,7 +181,7 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
     public void confirmTodoWorksWhenAssignedToUser() throws Exception {
 
         Group testGroup = new Group("testGroup", testUser);
-        testGroup.addMember(testUser, BaseRoles.ROLE_ORDINARY_MEMBER);
+        testGroup.addMember(testUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
         TodoRequest dummyLogBook = TodoRequest.makeEmpty(testUser, testGroup);
 
         testUser.setDisplayName("Paballo");
@@ -262,8 +261,8 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
     public void viewEntryMenuWorks() throws Exception {
         Group testGroup = new Group("test testGroup", testUser);
         Todo dummyTodo = new Todo(testUser, testGroup, "Some logbook subject", Instant.now());
-        dummyTodo.getAncestorGroup().addMember(testUser, BaseRoles.ROLE_ORDINARY_MEMBER);
-        dummyTodo.addCompletionConfirmation(testUser, TodoCompletionConfirmType.COMPLETED, Instant.now(), 20);
+        dummyTodo.getAncestorGroup().addMember(testUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+        dummyTodo.addCompletionConfirmation(testUser, TodoCompletionConfirmType.COMPLETED, Instant.now());
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, saveToDoMenu(viewEntryMenu, dummyTodo.getUid()))).thenReturn(testUser);
         when(todoBrokerMock.load(dummyTodo.getUid())).thenReturn(dummyTodo);
@@ -281,10 +280,10 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
     public void todoCompleteMenuWorks() throws Exception {
 
         Group testGroup = new Group("tg2", testUser);
-        testGroup.addMember(testUser, BaseRoles.ROLE_ORDINARY_MEMBER);
+        testGroup.addMember(testUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
         Todo dummyTodo = new Todo(testUser, testGroup, "test todo", Instant.now().minus(7, ChronoUnit.DAYS));
 
-        dummyTodo.addCompletionConfirmation(testUser, TodoCompletionConfirmType.COMPLETED, Instant.now(), 20);
+        dummyTodo.addCompletionConfirmation(testUser, TodoCompletionConfirmType.COMPLETED, Instant.now());
         dummyTodo.assignMembers(Collections.singleton(testUser.getUid()));
 
         String urlToSave = saveToDoMenu(setCompleteMenu, dummyTodo.getUid());
@@ -307,10 +306,10 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
     public void setActionTodoComplete() throws Exception {
 
         Group testGroup = new Group("tg2", testUser);
-        testGroup.addMember(testUser, BaseRoles.ROLE_ORDINARY_MEMBER);
+        testGroup.addMember(testUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
         Todo dummyTodo = new Todo(testUser, testGroup, "test logbook", Instant.now().plus(1, ChronoUnit.DAYS));
         dummyTodo.assignMembers(Collections.singleton(testUser.getUid()));
-        dummyTodo.addCompletionConfirmation(testUser, TodoCompletionConfirmType.COMPLETED, Instant.now(), 20);
+        dummyTodo.addCompletionConfirmation(testUser, TodoCompletionConfirmType.COMPLETED, Instant.now());
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, null)).thenReturn(testUser);
         when(todoBrokerMock.load(dummyTodo.getUid())).thenReturn(dummyTodo);
@@ -323,9 +322,8 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone, null);
 
         verify(todoBrokerMock, times(1)).load(dummyTodo.getUid());
-        verify(todoBrokerMock, times(1)).confirmCompletion(eq(testUser.getUid()), eq(dummyTodo.getUid()), eq(TodoCompletionConfirmType.COMPLETED),
-                any(LocalDateTime.class));
-        verify(todoBrokerMock, times(1)).userHasIncompleteActionsToView(testUser.getUid());
+        /* verify(todoBrokerMock, times(1)).recordValidation(eq(testUser.getUid()), eq(dummyTodo.getUid()), eq(TodoCompletionConfirmType.COMPLETED),
+                any(LocalDateTime.class));*/
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(todoBrokerMock);
 

@@ -15,7 +15,6 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
-import java.util.Set;
 
 /**
  * Created by luke on 2017/05/23.
@@ -91,37 +90,6 @@ public class MessagingServiceBrokerImpl implements MessagingServiceBroker, Comma
     }
 
     @Override
-    public void markMessagesAsRead(String groupUid, Set<String> messageUids) {
-        URI serviceCallUri = baseUri()
-                .path("/groupchat/mark_read/{groupUid}")
-                .buildAndExpand(groupUid)
-                .toUri();
-        asyncRestTemplate.exchange(
-                serviceCallUri,
-                HttpMethod.POST,
-                new HttpEntity<>(messageUids, jwtHeaders()),
-                String.class
-        );
-    }
-
-    @Override
-    public void updateActivityStatus(String userUid, String groupUid, boolean active, boolean userInitiated) {
-        URI serviceCallUri = baseUri()
-                .pathSegment("/groupchat/update_activity/{userUid}")
-                .queryParam("groupUid", groupUid)
-                .queryParam("setActive", active)
-                .queryParam("selfInitiated", userInitiated)
-                .buildAndExpand(userUid)
-                .toUri();
-        asyncRestTemplate.exchange(
-                serviceCallUri,
-                HttpMethod.POST,
-                new HttpEntity<String>(jwtHeaders()),
-                String.class
-        );
-    }
-
-    @Override
     public void subscribeServerToGroupChatTopic(String groupUid) {
         URI serviceCallUri = baseUri()
                 .pathSegment("/groupchat/server_subscribe/{groupUid}")
@@ -144,7 +112,7 @@ public class MessagingServiceBrokerImpl implements MessagingServiceBroker, Comma
     // this means duplication but getting extreme weirdness on doing generic but
     private HttpHeaders jwtHeaders() {
         HttpHeaders headers = new HttpHeaders();
-        headers.add("Authorization", "Bearer " + jwtService.createJwt(new CreateJwtTokenRequest(JwtType.GRASSROOT_MICROSERVICE)));
+        headers.add("Authorization", "Bearer " + jwtService.createJwt(new CreateJwtTokenRequest(JwtType.GRASSROOT_MICROSERVICE, null)));
         return headers;
     }
 

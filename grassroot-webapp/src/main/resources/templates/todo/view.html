@@ -2,7 +2,7 @@
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       data-layout-decorate="~{layout}">
 <head>
-  <title>View Action</title>
+  <title>View todo</title>
 </head>
 <body>
 
@@ -13,7 +13,7 @@
         <h2 class="text-center">
           <p class="group-title">Todo: </p><p class="group-name" th:text="${todo.message}">Todo title</p>
         </h2>
-        <h4 class="text-center header-content-subtitle" th:if="${fromGroup}">
+        <h4 class="text-center header-content-subtitle" th:if="${fromGroup}"> <!-- todo: restore -->
           <a th:href="@{/group/view(groupUid=${todo.parent.uid})}">Back to group</a>
         </h4>
       </div>
@@ -23,14 +23,14 @@
 
 <main layout:fragment="content">
 
-  <section th:if="${canModify and not isComplete}" class="task-buttons">
+  <section th:if="${canModify and not todo.completed}" class="task-buttons">
     <div class="container">
       <div class="row">
         <div class="col-md-8 col-md-offset-2 col-sm-8 col-sm-offset-2 col-xs-12">
           <div class="button-group text-center">
-            <button th:if="${hasReminders}" type="button" class="btn default-button btn-neutral" data-toggle="modal" data-target="#changeReminder">Change reminder time</button>
-            <button type="button" class="btn default-button btn-neutral" data-toggle="modal" data-target="#dateTimeChange">Change due date</button>
-            <button type="button" class="btn default-button btn-neutral" data-toggle="modal" data-target="#cancelTodo">Cancel todo</button>
+            <button type="button" class="btn default-button btn-neutral" data-toggle="modal" data-target="#dateTimeChange">Extend</button>
+            <button type="button" class="btn default-button btn-neutral" data-toggle="modal" data-target="#descriptionModal">Change text</button>
+            <button type="button" class="btn default-button btn-neutral" data-toggle="modal" data-target="#cancelTodo">Cancel</button>
           </div>
         </div>
       </div>
@@ -65,31 +65,6 @@
       </div>
     </div>
 
-    <div class="modal fade" id="changeReminder" tabindex="-1" role="dialog" aria-labelledby="changeReminderLabel">
-      <div class="modal-dialog" role="document">
-        <div class="modal-content">
-          <div class="modal-header">
-            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-            <h4 class="modal-title" id="changeReminderLabel">Changed scheduled reminder</h4>
-          </div>
-          <form th:action="@{/todo/reminder}" method="post">
-            <input type="hidden" name="todoUid" th:value="${todo.uid}" />
-            <div class="modal-body">
-              <div class="form-group">
-                <p>The reminder will currently be sent out at
-                  <span th:text="${#temporals.format(todo.getReminderTimeAtSAST(), 'EEE, dd/MM ''at'' HH:mm')}"></span>.
-                  What would you like to change it to?</p>
-              </div>
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn default-button btn-neutral" data-dismiss="modal">Cancel</button>
-              <button type="submit" class="btn default-button">Update</button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-
     <div class="modal fade" id="cancelTodo" tabindex="-1" role="dialog" aria-labelledby="cancelLabel">
       <div class="modal-dialog" role="document">
         <div class="modal-content">
@@ -113,107 +88,21 @@
       </div>
     </div>
 
-  </section>
-
-  <section class="grassroot-form">
-    <div class="container task-details">
-      <div class="row">
-        <div class="col-md-8 col-md-offset-2 col-sm-6 col-sm-offset-3 col-xs-12">
-          <div class="row detail-row">
-            <div class="col-md-3 col-sm-4 col-xs-12">
-              <label class="grassroot-sidebar">Action</label>
-            </div>
-            <div class="col-md-9 col-sm-8 col-xs-12">
-              <p class="description" th:text="${todo.message}"></p>
-            </div>
-          </div>
-
-          <div class="row detail-row" th:unless="${#strings.isEmpty(todo.description) and not canModify}">
-            <div class="col-md-3 col-sm-4 col-xs-12">
-              <label class="grassroot-sidebar">Notes</label>
-            </div>
-            <div class="col-md-9 col-sm-8 col-xs-12" th:unless="${#strings.isEmpty(todo.description)}">
-              <p class="description">
-                <span th:text="${todo.description}">Description.</span>
-                <a href="#descriptionModal" data-toggle="modal" data-target="#descriptionModal" th:if="${canModify}">Change description</a>
-              </p>
-            </div>
-            <div class="col-md-9 col-sm-8 col-xs-12" th:if="${#strings.isEmpty(todo.description) and canModify}">
-              <p class="description">There are no notes for this todo.
-                <a href="#descriptionModal" data-toggle="modal" data-target="#descriptionModal">Add a description?</a>
-                This will be visible to Android and web users.</p>
-            </div>
-          </div>
-
-          <div class="row detail-row">
-            <div class="col-md-3 col-sm-4 col-xs-12">
-              <label class="grassroot-sidebar">Status</label>
-            </div>
-            <div class="col-md-9 col-sm-8 col-xs-12" th:if="${isComplete}">
-              <p class="description complete">Complete (confirmed by <span th:text="${todo.countCompletions()}">X</span> members)</p>
-            </div>
-            <div class="col-md-9 col-sm-8 col-xs-12" th:if="${not isComplete}">
-              <p class="description incomplete">Not done yet, due by <span th:text="${#dates.format(todo.actionByDate, 'dd MMM yyyy')}">Date</span></p>
-            </div>
-          </div>
-
-          <div class="row detail-row">
-            <div class="col-md-3 col-sm-4 col-xs-12">
-              <label class="grassroot-sidebar">Dates</label>
-            </div>
-            <div class="col-md-9 col-sm-8 col-xs-12">
-              <p class="description">
-                Due by <span th:text="${#dates.format(todo.actionByDate, 'dd MMM yyyy, HH:mm')}"></span>. It was recorded on
-                <span th:text="${#dates.format(todo.createdDateTime, 'dd MMM yyyy, HH:mm')}"></span>,
-                by <span th:text="${todo.createdByUser.nameToDisplay()}"></span>
-              </p>
-            </div>
-          </div>
-
-          <div class="row detail-row">
-            <div class="col-md-3 col-sm-4 col-xs-12">
-              <label class="grassroot-sidebar">Assigned</label>
-            </div>
-            <div class="col-md-9 col-sm-8 col-xs-12">
-              <p class="description" th:switch="${todo.isAllGroupMembersAssigned()}">
-                <span th:case="true">All group members are assigned to this action.</span>
-                <span th:case="false">
-                  <span th:text="${todo.assignedMembers.size()}">X</span> group members are assigned to this action.</span>
-                <a href="#memberModal" data-toggle="modal" data-target="#memberModal" th:if="${canModify}">Change assignment</a>
-              </p>
-            </div>
-          </div>
-
-          <div class="row top-buffer">
-            <div class="btn-group button-md-align pull-right" th:unless="${isComplete}">
-              <a th:href="@{list(groupUid=${todo.parent.uid})}"><button class="btn default-button btn-neutral">Back to group</button></a>
-              <a th:if="${isAssigned}" th:href="@{complete(todoUid=${todo.uid}, source='todoview')}"><button class="btn default-button btn-positive">Mark as complete</button></a>
-            </div>
-            <div class="button-md-align pull-right" th:if="${isComplete}">
-              <a th:href="@{list(groupUid=${todo.parent.uid})}"><button class="btn default-button btn-neutral">Back to group</button></a>
-            </div>
-          </div>
-
-        </div>
-      </div>
-    </div>
-
-    <div th:if="${canModify}" class="modal fade" id="descriptionModal" tabindex="-1" role="dialog" aria-labelledby="descriptionModalLabel">
+    <div class="modal fade" id="descriptionModal" tabindex="-1" role="dialog" aria-labelledby="descriptionModalLabel">
       <div class="modal-dialog" role="document">
         <div class="modal-content">
           <div class="modal-header">
             <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             <h4 class="modal-title" id="descriptionModalLabel">Change description</h4>
           </div>
-          <form th:action="@{description}" method="post">
+          <form th:action="@{explanation}" method="post">
             <input type="hidden" name="todoUid" th:value="${todo.uid}" />
             <div class="modal-body">
               <div class="form-group">
-                <label for="description" class="control-label">Set a description for the action (one to three sentences):</label>
+                <label for="explanation" class="control-label">Set an explanation for the todo:</label>
               </div>
               <div class="form-group">
-              <textarea name="description" th:text="${todo.description}" id="description" class="form-control input-lg" rows="2" maxlength="250">
-              </textarea>
+                <input type="text" class="form-control input-lg" id="explanation" name="explanation" th:value="${todo.message}" />
               </div>
             </div>
             <div class="modal-footer">
@@ -225,35 +114,69 @@
       </div>
     </div>
 
-    <div th:if="${canModify}" class="modal fade" id="memberModal" tabindex="-1" role="dialog" aria-labelledby="memberModalLabel">
-      <div class="modal-dialog" role="document">
-        <div class="modal-content">
-          <div class="modal-header">
-            <button id="dismissMemberModal" type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-            <h4 class="modal-title" id="memberModalLabel">Member assignment</h4>
+  </section>
+
+  <section class="grassroot-form">
+    <div class="container task-details">
+      <div class="row">
+        <div class="col-md-8 col-md-offset-2 col-sm-6 col-sm-offset-3 col-xs-12">
+
+          <div th:replace="~{fragments :: block_row('type', 'Type', #{web.todo.create.type.__${todo.type}__})}"></div>
+          <div th:replace="~{fragments :: block_row('status', 'Status', ${todo.completed ? 'Complete' : 'Open'})}"></div>
+          <div th:replace="~{fragments :: block_row('due_date', 'Due date', ${#dates.format(todo.actionByDate, 'dd MMM yyyy, HH:mm')})}"></div>
+
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="group-members top-buffer" th:unless="${#lists.isEmpty(responses)}">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-6 col-md-offset-2 col-xs-12">
+          <h4 class="green-title">Responses</h4>
+        </div>
+        <div class="col-md-2 col-xs-12 text-right">
+          <a href="" th:href="@{export(todoUid=${todo.uid})}" class="main-button btn-small">
+            <i class="fa fa-download" aria-hidden="true"></i>Export</a>
+        </div>
+      </div>
+
+      <div class="row group-members-list">
+        <div class="col-md-8 col-md-offset-2">
+          <div class="panel-group">
+            <div class="panel panel-default">
+              <div class="panel-heading">
+                <h4 class="panel-title">
+                  <a data-toggle="collapse" href="#collapse2">
+                    List of responses to todo
+                    <i class="fa fa-caret-up" aria-hidden="true"></i>
+                  </a>
+                </h4>
+              </div>
+              <div id="collapse2" class="panel-collapse collapse in">
+                <table id="card-table" class="table group-members-table">
+                  <thead>
+                  <tr>
+                    <th class="col-md-4">Name</th>
+                    <th class="col-md-4">Phone number</th>
+                    <th class="col-md-4">Response</th>
+                  </tr>
+                  </thead>
+                  <tbody>
+                    <tr th:each="response: ${responses}">
+                      <td class="col-md-4" th:text="${response.user.name}"></td>
+                      <td class="col-md-4" th:text="${response.user.phoneNumber}"></td>
+                      <td class="col-md-4" th:text="${response.hasResponded + ', ' + response.responseText}"></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
-          <form th:action="@{assignment}" th:object="${memberPicker}" method="post">
-            <input type="hidden" name="todoUid" th:value="${todo.uid}" />
-            <div class="modal-body">
-              <div class="list-group checked-list-box">
-                <li class="list-group-item" th:each="member, iterStat: *{listOfMembers}">
-                  <label>
-                    <input type="checkbox" th:field="*{listOfMembers[__${iterStat.index}__].selected}" class="list-checkbox"/>
-                    <input type="hidden" th:field="*{listOfMembers[__${iterStat.index}__].userUid}" />
-                    <span th:text="${member.nameToDisplay}" class="list-checkbox-label">Name</span>
-                  </label>
-                </li>
-              </div>
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn default-button btn-neutral" data-dismiss="modal">Cancel</button>
-              <button type="submit" class="btn default-button">Update</button>
-            </div>
-          </form>
         </div>
       </div>
     </div>
-
   </section>
 </main>
 

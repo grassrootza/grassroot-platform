@@ -16,13 +16,12 @@ import org.springframework.web.servlet.view.InternalResourceViewResolver;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.MembershipInfo;
+import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.integration.LearningService;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.SafetyEventBroker;
 import za.org.grassroot.services.account.AccountGroupBroker;
-import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.group.GroupBroker;
-import za.org.grassroot.services.group.GroupJoinRequestService;
 import za.org.grassroot.services.group.GroupQueryBroker;
 import za.org.grassroot.services.livewire.DataSubscriberBroker;
 import za.org.grassroot.services.livewire.LiveWireAlertBroker;
@@ -54,6 +53,9 @@ public abstract class USSDAbstractUnitTest {
     protected GroupBroker groupBrokerMock;
 
     @Mock
+    protected GroupRepository groupRepositoryMock;
+
+    @Mock
     protected EventLogBroker eventLogBrokerMock;
 
     @Mock
@@ -82,12 +84,6 @@ public abstract class USSDAbstractUnitTest {
 
     @Mock
     protected CacheUtilService cacheUtilManagerMock;
-
-    @Mock
-    protected AsyncUserLogger asyncUserLoggerMock;
-
-    @Mock
-    protected GroupJoinRequestService groupJoinRequestService;
 
     @Mock
     protected SafetyEventBroker safetyEventBrokerMock;
@@ -152,7 +148,7 @@ public abstract class USSDAbstractUnitTest {
         return messageSource;
     }
 
-    protected void wireUpMessageSourceAndGroupUtil(USSDController controller) {
+    protected void wireUpMessageSourceAndGroupUtil(USSDBaseController controller) {
         controller.setMessageSource(messageSource());
         ussdMenuUtil.setForTests(); // since inject mocks will not autowire
         ussdGroupUtil.setMessageSource(messageSource());

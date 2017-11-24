@@ -1,8 +1,6 @@
 package za.org.grassroot.services.group;
 
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.Permission;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.enums.GroupDefaultImage;
 
@@ -40,7 +38,8 @@ public interface GroupBroker {
 
     int numberMembersBeforeLimit(String groupUid);
 
-    void addMembers(String userUid, String groupUid, Set<MembershipInfo> membershipInfos, boolean adminUserCalling);
+    void addMembers(String userUid, String groupUid, Set<MembershipInfo> membershipInfos,
+                    GroupJoinMethod joinMethod, boolean adminUserCalling);
 
     void copyMembersIntoGroup(String userUid, String groupUid, Set<String> memberUids);
 
@@ -49,7 +48,7 @@ public interface GroupBroker {
     void notifyOrganizersOfJoinCodeUse(Instant periodStart, Instant periodEnd);
 
     void asyncAddMemberships(String initiatorUid, String groupUid, Set<MembershipInfo> membershipInfos,
-                             boolean duringGroupCreation, boolean createWelcomeNotifications);
+                             GroupJoinMethod joinMethod, boolean duringGroupCreation, boolean createWelcomeNotifications);
 
 
     void removeMembers(String userUid, String groupUid, Set<String> memberUids);
@@ -88,5 +87,10 @@ public interface GroupBroker {
 
     Group merge(String userUid, String firstGroupUid, String secondGroupUid,
                 boolean leaveActive, boolean orderSpecified, boolean createNew, String newGroupName);
+
+    void sendGroupJoinCodeNotification(String userUid, String groupUid);
+
+    void sendAllGroupJoinCodesNotification(String userUid);
+
 
 }

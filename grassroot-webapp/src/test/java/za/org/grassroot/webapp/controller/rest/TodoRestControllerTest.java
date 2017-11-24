@@ -4,7 +4,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import za.org.grassroot.webapp.controller.android1.TodoRestController;
+import za.org.grassroot.webapp.controller.android1.TodoLegacyController;
 
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -17,7 +17,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class TodoRestControllerTest extends RestAbstractUnitTest {
 
     @InjectMocks
-    private TodoRestController todoRestController;
+    private TodoLegacyController todoRestController;
 
     private String path = "/api/todo";
 

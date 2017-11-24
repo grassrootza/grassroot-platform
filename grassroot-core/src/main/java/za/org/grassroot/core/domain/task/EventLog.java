@@ -4,6 +4,7 @@ package za.org.grassroot.core.domain.task;
  * Created by luke on 2015/07/16.
  * */
 
+import lombok.Getter;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.LocationHolder;
@@ -51,7 +52,7 @@ public class EventLog implements TaskLog, LocationHolder {
     private Boolean startTimeChanged; // intended only for logs of type CHANGED
 
     @Column(name = "tag")
-    private String tag;
+    @Getter private String tag;
 
     @Embedded
     @AttributeOverrides({
@@ -168,10 +169,6 @@ public class EventLog implements TaskLog, LocationHolder {
     public void setLocationWithSource(GeoLocation location, LocationSource source) {
         this.location = location;
         this.locationSource = source;
-    }
-
-    public String getTag() {
-        return tag;
     }
 
     public void setTag(String tag) {
