@@ -11,8 +11,10 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.Permission;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.task.Meeting;
+import za.org.grassroot.core.domain.task.Vote;
 import za.org.grassroot.core.dto.task.TaskFullDTO;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
 import za.org.grassroot.services.task.EventBroker;
@@ -20,9 +22,16 @@ import za.org.grassroot.services.task.MeetingBuilderHelper;
 import za.org.grassroot.services.task.TaskImageBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
+import za.org.grassroot.webapp.enums.VoteType;
+import za.org.grassroot.webapp.model.web.VoteWrapper;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.List;
 import java.util.Set;
+
+import static za.org.grassroot.core.util.DateTimeUtil.getPreferredRestFormat;
 
 @Slf4j
 @RestController @Grassroot2RestController
@@ -57,7 +66,7 @@ public class MeetingCreateController {
                                                      @RequestParam(required = false)
                                                      @ApiParam(value = "Server UID of an optional image to include " +
                                                              "in the meeting call") String mediaFileUid) {
-        log.info("creating a meeting, subject ={}, location = {}", subject, location);
+        log.info("creating a meeting, subject ={}, location = {}, parentUid = {}", subject, location,parentUid);
 
         MeetingBuilderHelper helper = new MeetingBuilderHelper()
                 .userUid(userUid)
@@ -66,6 +75,7 @@ public class MeetingCreateController {
                 .name(subject)
                 .location(location)
                 .startDateTimeInstant(Instant.ofEpochMilli(dateTimeEpochMillis));
+        log.info("Helper={}",helper);
 
         if (publicMeeting) {
             helper = helper.isPublic(true);
@@ -84,11 +94,49 @@ public class MeetingCreateController {
         }
 
         try {
+
             Meeting createdMeeting = eventBroker.createMeeting(helper);
             return ResponseEntity.ok(new TaskFullDTO(createdMeeting, userService.load(userUid),
                     createdMeeting.getCreatedDateTime(), null));
         } catch (AccessDeniedException e) {
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING);
+        }
+    }
+
+    @RequestMapping(value = "/vote/{userUid}/{parentType}/{parentUid}", method = RequestMethod.POST)
+    @ApiOperation(value = "Call a vote", notes = "Creates a vote, that starts at the specified date and time, passed in " +
+            "as epoch millis. The first six params are necessary, the rest are optional")
+    public ResponseEntity<TaskFullDTO> createVote(@PathVariable String userUid,
+                                                  @PathVariable String parentUid,
+                                                  @PathVariable JpaEntityType parentType,
+                                                  @RequestParam String title,
+                                                  @RequestParam(required = false) List<String> voteOptions,
+                                                  @RequestParam(required = false) String description,
+                                                  @RequestParam String time,
+                                                  @RequestParam(required = false)
+                                                      @ApiParam(value = "UIDs of assigned members, if left blank all " +
+                                                              "members of the parent are assigned") Set<String> assignedMemberUids){
+
+        LocalDateTime eventStartDateTime = LocalDateTime.parse(time.trim(), getPreferredRestFormat());
+        VoteWrapper voteWrapper = VoteWrapper.makeEmpty();
+
+        try{
+            User user = userService.load(userUid);
+            voteWrapper.setParentUid(parentUid);
+
+            List<String> options = VoteType.YES_NO.equals(voteWrapper.getType()) ? null : voteOptions;
+
+            assignedMemberUids = assignedMemberUids == null ? Collections.emptySet() : assignedMemberUids;
+
+            log.info("title={}, description={}, time={}, members={}, options={}",title,description,time,assignedMemberUids, voteOptions);
+
+            Vote vote = eventBroker.createVote(user.getUid(), parentUid, parentType, title, eventStartDateTime,
+                    false, description, assignedMemberUids, options);
+
+            log.debug("Vote={},User={}",vote,user);
+            return ResponseEntity.ok(new TaskFullDTO(vote, user,vote.getCreatedDateTime(), null));
+        }catch (AccessDeniedException e){
+            throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_CREATE_GROUP_VOTE);
         }
     }
 }
