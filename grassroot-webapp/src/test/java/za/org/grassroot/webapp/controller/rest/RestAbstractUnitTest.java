@@ -16,10 +16,7 @@ import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.group.GroupJoinRequestService;
 import za.org.grassroot.services.group.GroupQueryBroker;
-import za.org.grassroot.services.task.EventBroker;
-import za.org.grassroot.services.task.EventLogBroker;
-import za.org.grassroot.services.task.TaskBroker;
-import za.org.grassroot.services.task.TodoBroker;
+import za.org.grassroot.services.task.*;
 import za.org.grassroot.services.user.GcmRegistrationBroker;
 import za.org.grassroot.services.user.UserManagementService;
 

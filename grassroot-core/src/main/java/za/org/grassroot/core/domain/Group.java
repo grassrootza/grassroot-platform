@@ -8,12 +8,10 @@ import za.org.grassroot.core.domain.geo.GroupLocation;
 import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.core.util.DateTimeUtil;
-import za.org.grassroot.core.util.FormatUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
 import java.io.Serializable;
-import java.io.UnsupportedEncodingException;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.Collection;
@@ -21,8 +19,6 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static za.org.grassroot.core.util.FormatUtil.removeUnwantedCharacters;
@@ -30,7 +26,7 @@ import static za.org.grassroot.core.util.FormatUtil.removeUnwantedCharacters;
 @Entity
 @Table(name = "group_profile") // quoting table name in case "group" is a reserved keyword
 @DynamicUpdate
-public class Group implements TodoContainer, VoteContainer, MeetingContainer, Serializable, Comparable<Group> {
+public class Group implements TodoContainer, VoteContainer, MeetingContainer, Serializable, Comparable<Group>, TagHolder {
 
     private static final Logger logger = LoggerFactory.getLogger(Group.class);
 
@@ -171,6 +167,9 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
     @Type(type = "za.org.grassroot.core.util.StringArrayUserType")
     private String[] tags;
 
+    // @OneToMany(mappedBy = "masterGroup")
+    // private List<Campaign> campaign;
+
     private Group() {
         // for JPA
     }
@@ -193,7 +192,6 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         this.reminderMinutes = 24 * 60; // defaults to a day
         this.description = ""; // at some point may want to add to the constructor
         this.defaultImage = GroupDefaultImage.SOCIAL_MOVEMENT;
-        // this.tags = new String[0];
 
         if (parent != null) {
             parent.addChildGroup(this);
@@ -548,7 +546,6 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
     public String getDefaultLanguage() {
         return defaultLanguage;
     }
-
     public void setDefaultLanguage(String defaultLanguage) {
         this.defaultLanguage = defaultLanguage;
     }
@@ -707,4 +704,12 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
             return createdDateTime.compareTo(otherCreatedDateTime);
         }
     }
+
+    /* public List<Campaign> getCampaign() {
+        return campaign;
+    }*/
+
+    /* public void setCampaign(List<Campaign> campaign) {
+        this.campaign = campaign;
+    }*/
 }

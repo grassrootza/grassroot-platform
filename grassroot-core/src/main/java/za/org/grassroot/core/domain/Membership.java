@@ -3,6 +3,7 @@ package za.org.grassroot.core.domain;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.Type;
 
 import javax.persistence.*;
 import java.io.Serializable;
@@ -13,7 +14,7 @@ import java.util.Objects;
 @Entity
 @Table(name = "group_user_membership",
         uniqueConstraints = @UniqueConstraint(name = "uk_membership_group_user", columnNames = {"group_id", "user_id"}))
-public class Membership implements Serializable {
+public class Membership implements Serializable, TagHolder {
 
     @Setter(AccessLevel.PRIVATE)
     @Id
@@ -45,6 +46,10 @@ public class Membership implements Serializable {
     @Basic
     @Column(name = "alias", length = 50, nullable = true)
     private String alias;
+
+    @Column(name = "tags")
+    @Type(type = "za.org.grassroot.core.util.StringArrayUserType")
+    private String[] tags;
 
     private Membership() {
         // for JPA
@@ -101,5 +106,14 @@ public class Membership implements Serializable {
         sb.append(", role=").append(role);
         sb.append('}');
         return sb.toString();
+    }
+
+    public String[] getTags() {
+        return tags == null ? new String[0] : tags;
+    }
+
+    @Override
+    public void setTags(String[] tags) {
+        this.tags = tags;
     }
 }

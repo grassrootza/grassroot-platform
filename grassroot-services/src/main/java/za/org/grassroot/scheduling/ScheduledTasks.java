@@ -7,14 +7,15 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import za.org.grassroot.core.domain.SafetyEvent;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.Meeting;
-import za.org.grassroot.core.domain.SafetyEvent;
 import za.org.grassroot.core.domain.task.Todo;
+import za.org.grassroot.core.domain.task.Todo_;
 import za.org.grassroot.core.repository.*;
+import za.org.grassroot.core.specifications.TodoSpecifications;
 import za.org.grassroot.services.SafetyEventBroker;
 import za.org.grassroot.services.group.GroupBroker;
-import za.org.grassroot.core.specifications.TodoSpecifications;
 import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.TodoBroker;
 import za.org.grassroot.services.task.VoteBroker;
@@ -144,7 +145,7 @@ public class ScheduledTasks {
         List<Todo> todos = todoRepository.findAll(Specifications.where(TodoSpecifications.notCancelled())
                 .and(TodoSpecifications.remindersLeftToSend())
                 .and(TodoSpecifications.reminderTimeBefore(Instant.now()))
-                .and(TodoSpecifications.completionConfirmsBelow(COMPLETION_PERCENTAGE_BOUNDARY, false))
+                .and((root, query, cb) -> cb.isFalse(root.get(Todo_.completed)))
                 .and(TodoSpecifications.todoNotConfirmedByCreator()));
 
         logger.info("Sending scheduled reminders for {} todos, after using threshold of {}", todos.size(), COMPLETION_PERCENTAGE_BOUNDARY);

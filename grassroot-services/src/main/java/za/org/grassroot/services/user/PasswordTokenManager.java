@@ -38,8 +38,7 @@ public class PasswordTokenManager implements PasswordTokenService {
     private final VerificationTokenCodeRepository verificationTokenCodeRepository;
 
     private final UserRepository userRepository;
-    private PasswordEncoder passwordEncoder;
-
+    private final PasswordEncoder passwordEncoder;
 
     @Autowired
     public PasswordTokenManager(VerificationTokenCodeRepository verificationTokenCodeRepository, UserRepository userRepository,
@@ -140,6 +139,7 @@ public class PasswordTokenManager implements PasswordTokenService {
             throw new InvalidOtpException();
         }
     }
+
 
     @Override
     public void validatePassword(String phoneNumber, String password) {

@@ -163,6 +163,10 @@ public class USSDGroupUtil extends USSDUtil {
         }
     }
 
+    public String getGroupName(String groupUid) {
+        return groupBroker.load(groupUid).getName();
+    }
+
     public USSDMenu askForGroup(GroupMenuBuilder builder) throws URISyntaxException {
         USSDMenu groupMenu;
         final User user = builder.user;

@@ -1,8 +1,7 @@
 package za.org.grassroot.webapp.controller.ussd;
 
+import lombok.extern.slf4j.Slf4j;
 import org.h2.util.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -13,10 +12,11 @@ import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.util.DateTimeUtil;
-import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.GroupDeactivationNotAvailableException;
 import za.org.grassroot.services.geo.GeoLocationBroker;
+import za.org.grassroot.services.group.GroupBroker;
+import za.org.grassroot.services.group.GroupJoinRequestService;
 import za.org.grassroot.services.group.GroupPermissionTemplate;
 import za.org.grassroot.services.group.GroupQueryBroker;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
@@ -31,27 +31,31 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
+import static za.org.grassroot.webapp.enums.USSDSection.SAFETY_GROUP_MANAGER;
 import static za.org.grassroot.webapp.util.USSDUrlUtil.*;
 
 /**
  * @author luke on 2015/08/14.
  */
-@RequestMapping(method = GET, produces = MediaType.APPLICATION_XML_VALUE)
+@Slf4j
 @RestController
-public class USSDGroupController extends USSDController {
+@RequestMapping(method = GET, produces = MediaType.APPLICATION_XML_VALUE)
+public class USSDGroupController extends USSDBaseController {
 
     @Value("${grassroot.ussd.location.enabled:false}")
     private boolean locationRequestEnabled;
 
+    private final GroupBroker groupBroker;
     private final PermissionBroker permissionBroker;
     private final GroupQueryBroker groupQueryBroker;
     private final GeoLocationBroker geoLocationBroker;
+    private final GroupJoinRequestService groupJoinRequestService;
 
-    private static final Logger log = LoggerFactory.getLogger(USSDGroupController.class);
+    private final USSDGroupUtil ussdGroupUtil;
 
     private static final String
             existingGroupMenu = "menu",
@@ -81,16 +85,55 @@ public class USSDGroupController extends USSDController {
     private static final String groupUidParam = "groupUid";
 
     @Autowired
-    public USSDGroupController(PermissionBroker permissionBroker, GroupQueryBroker groupQueryBroker,
-                               GeoLocationBroker geoLocationBroker, MessageAssemblingService messageAssemblingService) {
+    public USSDGroupController(GroupBroker groupBroker, PermissionBroker permissionBroker, GroupQueryBroker groupQueryBroker, GeoLocationBroker geoLocationBroker, GroupJoinRequestService groupJoinRequestService, USSDGroupUtil ussdGroupUtil) {
+        this.groupBroker = groupBroker;
         this.permissionBroker = permissionBroker;
         this.groupQueryBroker = groupQueryBroker;
         this.geoLocationBroker = geoLocationBroker;
+        this.groupJoinRequestService = groupJoinRequestService;
+        this.ussdGroupUtil = ussdGroupUtil;
     }
 
     /*
-        First menu: display a list of groups, with the option to create a new one
-         */
+    Join code menu
+     */
+    protected USSDMenu lookForJoinCode(User user, String trailingDigits) {
+        Optional<Group> searchResult = groupQueryBroker.findGroupFromJoinCode(trailingDigits.trim());
+        if (searchResult.isPresent()) {
+            Group group = searchResult.get();
+            groupBroker.addMemberViaJoinCode(user.getUid(), group.getUid(), trailingDigits);
+            String prompt = (group.hasName()) ?
+                    getMessage(thisSection, startMenu, promptKey + ".group.token.named", group.getGroupName(), user) :
+                    getMessage(thisSection, startMenu, promptKey + ".group.token.unnamed", user);
+            return welcomeMenu(prompt, user);
+        } else {
+            return welcomeMenu(getMessage(thisSection, startMenu, promptKey + ".unknown.request", user), user);
+        }
+    }
+
+    /*
+    Pagination helper
+     */
+    @RequestMapping(value = homePath + "group_page")
+    @ResponseBody
+    public Request groupPaginationHelper(@RequestParam(value = phoneNumber) String inputNumber,
+                                         @RequestParam(value = "prompt") String prompt,
+                                         @RequestParam(value = "page") Integer pageNumber,
+                                         @RequestParam(value = "existingUri") String existingUri,
+                                         @RequestParam(value = "section", required = false) USSDSection section,
+                                         @RequestParam(value = "newUri", required = false) String newUri) throws URISyntaxException {
+        User user = userManager.findByInputNumber(inputNumber);
+        if (SAFETY_GROUP_MANAGER.equals(section)) {
+            return menuBuilder(ussdGroupUtil.showUserCreatedGroupsForSafetyFeature(user, SAFETY_GROUP_MANAGER, existingUri, pageNumber));
+        } else {
+            return menuBuilder(ussdGroupUtil.userGroupMenuPaginated(user, prompt, existingUri, newUri, pageNumber, null, section));
+        }
+    }
+
+
+    /*
+    First menu: display a list of groups, with the option to create a new one
+    */
     @RequestMapping(value = groupPath + startMenu)
     @ResponseBody
     public Request groupList(@RequestParam(value = phoneNumber, required = true) String inputNumber,

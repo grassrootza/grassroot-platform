@@ -111,6 +111,55 @@
   </div>
 </div>
 
+<div th:fragment="date_picker (label, field_name)">
+  <div class="form-group">
+    <label for="datepicker" class="control-label" th:text="${label}">Deadline:</label>
+    <div class="input-group date" id="datepicker">
+      <input th:name="*{field_name}" type="text" class="form-control input-lg" />
+      <span class="input-group-addon"><i class="fa fa-calendar"></i></span>
+    </div>
+  </div>
+</div>
+
+<div th:fragment="member-picker (label, field_name)" class="form-group" th:id="${field_name}">
+  <label class="control-label" th:text="${label}"></label>
+  <div class="radio">
+    <label class="radio-inline radio-inline-lg"><input name="assignmentType" type="radio" value="group" id="wholeGroup" />The whole group</label>
+    <label class="radio-inline radio-inline-lg"><input name="assignmentType" type="radio" value="members" id="pickMembers" />Pick members</label>
+    <h5 id="pickedMemberCount">Number of members picked</h5>
+  </div>
+</div>
+
+<div th:fragment="member-picker-modal (title, list_name, modal_id, prefilled_members)">
+  <div class="modal fade" th:id="${modal_id}" tabindex="-1" role="dialog" aria-labelledby="memberModalLabel">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button id="dismissMemberModal" type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title" id="memberModalLabel" th:text="${title}">Pick members</h4>
+        </div>
+        <div class="modal-body">
+          <div th:unless="${#lists.isEmpty(prefilled_members)}" class="list-group checked-list-box">
+            <li class="list-group-item"
+                th:each="member, iterStat: ${prefilled_members}">
+              <label>
+                <input type="checkbox" th:field="*{prefilled_members[__${iterStat.index}__].selected}" class="list-checkbox"/>
+                <input type="hidden" th:field="*{prefilled_members[__${iterStat.index}__].userUid}" />
+                <span th:text="${member.nameToDisplay}" class="list-checkbox-label">Name</span>
+              </label>
+            </li>
+          </div>
+          <div th:if="${#lists.isEmpty(prefilled_members)}" id="dynamicMemberPicker" class="list-group checked-list-box">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn default-button" id="membersPicked">Done</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- todo : add in aria attributes -->
 <div th:fragment="confirm_cancel_modal (modal_id, header, text, uidFieldName, uidValue, action)">
   <div class="modal fade" th:id="${modal_id}" tabindex="-1" role="dialog">

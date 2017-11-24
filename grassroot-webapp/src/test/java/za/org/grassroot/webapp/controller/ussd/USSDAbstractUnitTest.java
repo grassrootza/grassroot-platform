@@ -21,9 +21,7 @@ import za.org.grassroot.integration.LearningService;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.SafetyEventBroker;
 import za.org.grassroot.services.account.AccountGroupBroker;
-import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.group.GroupBroker;
-import za.org.grassroot.services.group.GroupJoinRequestService;
 import za.org.grassroot.services.group.GroupQueryBroker;
 import za.org.grassroot.services.livewire.DataSubscriberBroker;
 import za.org.grassroot.services.livewire.LiveWireAlertBroker;
@@ -88,12 +86,6 @@ public abstract class USSDAbstractUnitTest {
     protected CacheUtilService cacheUtilManagerMock;
 
     @Mock
-    protected AsyncUserLogger asyncUserLoggerMock;
-
-    @Mock
-    protected GroupJoinRequestService groupJoinRequestService;
-
-    @Mock
     protected SafetyEventBroker safetyEventBrokerMock;
 
     @Mock
@@ -156,7 +148,7 @@ public abstract class USSDAbstractUnitTest {
         return messageSource;
     }
 
-    protected void wireUpMessageSourceAndGroupUtil(USSDController controller) {
+    protected void wireUpMessageSourceAndGroupUtil(USSDBaseController controller) {
         controller.setMessageSource(messageSource());
         ussdMenuUtil.setForTests(); // since inject mocks will not autowire
         ussdGroupUtil.setMessageSource(messageSource());

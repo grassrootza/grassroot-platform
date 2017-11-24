@@ -36,7 +36,6 @@ public class GcmRestControllerTest extends RestAbstractUnitTest {
         mockMvc.perform(post(path + "register/{phoneNumber}/{code}", testUserPhone, testUserCode).param("registration_id", "random")).andExpect(status().isOk());
         verify(userManagementServiceMock).findByInputNumber(testUserPhone);
         verify(gcmRegistrationBrokerMock).registerUser(sessionTestUser,"random");
-        verify(gcmRegistrationBrokerMock).refreshAllGroupTopicSubscriptions(sessionTestUser.getUid(), "random");
         verify(userManagementServiceMock).setMessagingPreference(sessionTestUser.getUid(), UserMessagingPreference.ANDROID_APP);
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(gcmRegistrationBrokerMock);

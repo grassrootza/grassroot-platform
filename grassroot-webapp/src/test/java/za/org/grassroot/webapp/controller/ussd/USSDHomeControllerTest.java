@@ -16,6 +16,7 @@ import za.org.grassroot.core.domain.task.MeetingBuilder;
 import za.org.grassroot.core.domain.task.Vote;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.integration.experiments.ExperimentBroker;
 import za.org.grassroot.services.task.VoteBroker;
 
 import java.time.Instant;
@@ -52,6 +53,9 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
 
     @Mock
     private VoteBroker voteBrokerMock;
+
+    @Mock
+    private ExperimentBroker experimentBrokerMock;
 
     @InjectMocks
     private USSDHomeController ussdHomeController;

@@ -1,5 +1,6 @@
 package za.org.grassroot.core.domain.task;
 
+import za.org.grassroot.core.domain.EntityForUserResponse;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.UidIdentifiable;
 import za.org.grassroot.core.domain.User;
@@ -19,7 +20,7 @@ import java.util.stream.Stream;
  * Common type for Vote, Meeting and To-do.
  * @param <P> parent type
  */
-public interface Task<P extends UidIdentifiable> extends UidIdentifiable {
+public interface Task<P extends UidIdentifiable> extends EntityForUserResponse {
 	TaskType getTaskType();
 
 	void setParent(P parent);

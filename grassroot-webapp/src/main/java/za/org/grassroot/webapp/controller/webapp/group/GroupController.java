@@ -32,7 +32,7 @@ import za.org.grassroot.integration.PdfGeneratingService;
 import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.services.exception.GroupSizeLimitExceededException;
 import za.org.grassroot.services.group.GroupBroker;
-import za.org.grassroot.services.group.GroupExportBroker;
+import za.org.grassroot.services.group.MemberDataExportBroker;
 import za.org.grassroot.services.group.GroupPermissionTemplate;
 import za.org.grassroot.services.group.GroupQueryBroker;
 import za.org.grassroot.services.task.TaskBroker;
@@ -77,20 +77,20 @@ public class GroupController extends BaseController {
     private final GroupBroker groupBroker;
     private final TaskBroker taskBroker;
     private final GroupQueryBroker groupQueryBroker;
-    private final GroupExportBroker groupExportBroker;
+    private final MemberDataExportBroker memberDataExportBroker;
     private final AccountGroupBroker accountGroupBroker;
     private final Validator groupWrapperValidator;
     private NotificationService notificationService;
     private PdfGeneratingService generatingService;
 
     @Autowired
-    public GroupController(GroupBroker groupBroker, TaskBroker taskBroker, GroupQueryBroker groupQueryBroker, GroupExportBroker groupExportBroker,
+    public GroupController(GroupBroker groupBroker, TaskBroker taskBroker, GroupQueryBroker groupQueryBroker, MemberDataExportBroker memberDataExportBroker,
                            AccountGroupBroker accountBroker, @Qualifier("groupWrapperValidator") Validator groupWrapperValidator,
                            NotificationService notificationService, PdfGeneratingService generatingService) {
         this.groupBroker = groupBroker;
         this.taskBroker = taskBroker;
         this.groupQueryBroker = groupQueryBroker;
-        this.groupExportBroker = groupExportBroker;
+        this.memberDataExportBroker = memberDataExportBroker;
         this.accountGroupBroker = accountBroker;
         this.groupWrapperValidator = groupWrapperValidator;
         this.notificationService = notificationService;
@@ -727,7 +727,7 @@ public class GroupController extends BaseController {
         response.setHeader("Pragma", "no-cache");
         response.setDateHeader("Expires", 0);
 
-        XSSFWorkbook xls = groupExportBroker.exportGroup(groupUid);
+        XSSFWorkbook xls = memberDataExportBroker.exportGroup(groupUid);
         xls.write(response.getOutputStream());
         response.flushBuffer();
     }

@@ -9,6 +9,7 @@ import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.Membership;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.*;
@@ -22,7 +23,6 @@ import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.enums.TodoLogType;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.EventSpecifications;
-import za.org.grassroot.core.specifications.TodoSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.ChangedSinceData;
 import za.org.grassroot.services.PermissionBroker;
@@ -30,7 +30,6 @@ import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.task.enums.TaskSortType;
 import za.org.grassroot.services.util.FullTextSearchUtils;
 
-import javax.persistence.EntityManager;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -42,7 +41,6 @@ import java.util.stream.Stream;
 
 import static org.springframework.data.jpa.domain.Specifications.where;
 import static za.org.grassroot.core.specifications.EventLogSpecifications.*;
-import static za.org.grassroot.core.specifications.TodoSpecifications.*;
 
 /**
  * Created by luke on 2016/04/26.
@@ -61,25 +59,26 @@ public class TaskBrokerImpl implements TaskBroker {
     private final UserRepository userRepository;
     private final GroupBroker groupBroker;
     private final EventBroker eventBroker;
+    private final TodoBroker todoBroker;
+
+    private final UidIdentifiableRepository genericRepository;
     private final EventRepository eventRepository;
-    private final TodoRepository todoRepository;
     private final EventLogRepository eventLogRepository;
     private final TodoLogRepository todoLogRepository;
 
     private final VoteBroker voteBroker;
-    private final TodoBroker todoBroker;
     private final PermissionBroker permissionBroker;
 
     @Autowired
-    public TaskBrokerImpl(UserRepository userRepository, GroupBroker groupBroker, EventBroker eventBroker, EventRepository eventRepository, TodoRepository todoRepository, EventLogRepository eventLogRepository, TodoLogRepository todoLogRepository, TodoBroker todoBroker, PermissionBroker permissionBroker, EntityManager entityManager, VoteBroker voteBroker) {
+    public TaskBrokerImpl(UserRepository userRepository, GroupBroker groupBroker, EventBroker eventBroker, UidIdentifiableRepository genericRepository, EventRepository eventRepository, EventLogRepository eventLogRepository, TodoLogRepository todoLogRepository, TodoBroker todoBroker, PermissionBroker permissionBroker, VoteBroker voteBroker) {
         this.userRepository = userRepository;
         this.groupBroker = groupBroker;
         this.eventBroker = eventBroker;
+        this.genericRepository = genericRepository;
+        this.todoBroker = todoBroker;
         this.eventRepository = eventRepository;
-        this.todoRepository = todoRepository;
         this.eventLogRepository = eventLogRepository;
         this.todoLogRepository = todoLogRepository;
-        this.todoBroker = todoBroker;
         this.permissionBroker = permissionBroker;
         this.voteBroker = voteBroker;
     }
@@ -87,11 +86,11 @@ public class TaskBrokerImpl implements TaskBroker {
     @Override
     public TaskDTO load(String userUid, String taskUid) {
         User user = userRepository.findOneByUid(userUid);
-        Event event = eventRepository.findOneByUid(taskUid);
+        Event event = eventBroker.load(taskUid);
         if (event != null) {
             return new TaskDTO(event, user, eventLogRepository);
         } else {
-            Todo todo = todoRepository.findOneByUid(taskUid);
+            Todo todo = todoBroker.load(taskUid);
             if (todo != null) {
                 return new TaskDTO(todo, user);
             } else {
@@ -145,10 +144,9 @@ public class TaskBrokerImpl implements TaskBroker {
 
         Instant todoStart = Instant.now().minus(DAYS_PAST_FOR_TODO_CHECKING, ChronoUnit.DAYS);
         Instant todoEnd = DateTimeUtil.getVeryLongAwayInstant();
-        List<Todo> todos = todoRepository.findAll(Specifications.where(notCancelled())
-                .and(hasGroupAsParent(group))
-                .and(actionByDateBetween(todoStart, todoEnd))
-                .and(completionConfirmsBelow(COMPLETION_PERCENTAGE_BOUNDARY, false)));
+        List<Todo> todos = todoBroker.fetchTodosForGroup(userUid, groupUid, false, true, todoStart, todoEnd, null);
+
+        log.info("number of todos fetched for group = {}", todos.size());
 
         for (Todo todo : todos) {
             taskDtos.add(new TaskDTO(todo, user));
@@ -175,8 +173,7 @@ public class TaskBrokerImpl implements TaskBroker {
         eventBroker.retrieveGroupEvents(group, null, start, end)
                 .forEach(e -> taskDtos.add(new TaskDTO(e, user, eventLogRepository)));
 
-        todoRepository.findAll(Specifications.where(hasGroupAsParent(group))
-                .and(actionByDateBetween(start, end)))
+        todoBroker.fetchTodosForGroup(userUid, groupUid, false, false, start, end, null)
                 .forEach(t -> taskDtos.add(new TaskDTO(t, user)));
 
         List<TaskDTO> tasks = new ArrayList<>(taskDtos);
@@ -206,9 +203,7 @@ public class TaskBrokerImpl implements TaskBroker {
         }
         Set<TaskDTO> taskDtos = resolveEventTaskDtos(events, user, changedSince);
 
-        @SuppressWarnings("unchecked")
-        List<Todo> todos = todoRepository.findAll(Specifications.where(notCancelled())
-                .and(TodoSpecifications.hasGroupAsParent(group)));
+        List<Todo> todos = todoBroker.fetchTodosForGroup(userUid, groupUid, false, false, null, null, null);
         Set<TaskDTO> todoTaskDtos  = resolveTodoTaskDtos(todos, user, changedSince);
         taskDtos.addAll(todoTaskDtos);
 
@@ -242,10 +237,7 @@ public class TaskBrokerImpl implements TaskBroker {
 
         Instant todoStart = Instant.now().minus(DAYS_PAST_FOR_TODO_CHECKING, ChronoUnit.DAYS);
         Instant todoEnd = DateTimeUtil.getVeryLongAwayInstant();
-        List<Todo> todos = todoRepository.findAll(Specifications.where(notCancelled())
-                .and(actionByDateBetween(todoStart, todoEnd))
-                .and(completionConfirmsBelow(COMPLETION_PERCENTAGE_BOUNDARY, false))
-                .and(userPartOfGroup(user)));
+        List<Todo> todos = todoBroker.fetchTodosForUser(userUid, true, true, todoStart, todoEnd, null);
 
         Set<TaskDTO> todoTaskDtos = resolveTodoTaskDtos(todos, user, null);
         taskDtos.addAll(todoTaskDtos);
@@ -291,7 +283,7 @@ public class TaskBrokerImpl implements TaskBroker {
 		List<Event> events = eventRepository.findByParentGroupMembershipsUserAndNameSearchTerm(user.getId(), tsQuery);
 		Set<TaskDTO> taskDTOs = resolveEventTaskDtos(events, user, null);
 
-        List<Todo> todos = todoRepository.findByParentGroupMembershipsUserAndMessageSearchTerm(user.getId(), tsQuery);
+        List<Todo> todos = todoBroker.searchUserTodos(userUid, searchTerm);
 		Set<TaskDTO> todoTaskDTOs = resolveTodoTaskDtos(todos, user, null);
 		taskDTOs.addAll(todoTaskDTOs);
 
@@ -311,7 +303,7 @@ public class TaskBrokerImpl implements TaskBroker {
         User user = userRepository.findOneByUid(userUid);
 
         List<TaskTimeChangedDTO> userEvents = eventRepository.fetchEventsWithTimeChangedForUser(user);
-        List<TaskTimeChangedDTO> userTodos = todoRepository.fetchTodosWithTimeChangedForUser(user);
+        List<TaskTimeChangedDTO> userTodos = todoBroker.fetchUserTodosWithTimeChanged(userUid);
 
         Set<Event> events = loadChangedOrNewEvents(userEvents, knownTasksByTimeChanged);
         Set<Todo> todos = loadChangedOrNewTodos(userTodos, knownTasksByTimeChanged);
@@ -338,7 +330,7 @@ public class TaskBrokerImpl implements TaskBroker {
         List<TaskTimeChangedDTO> groupEvents = eventRepository.fetchGroupEventsWithTimeChanged(group);
         Set<Event> newOrUpdatedEvents = loadChangedOrNewEvents(groupEvents, knownTasksByTimeChanged);
 
-        List<TaskTimeChangedDTO> groupTodos = todoRepository.fetchGroupTodosWithTimeChanged(group);
+        List<TaskTimeChangedDTO> groupTodos = todoBroker.fetchGroupTodosWithTimeChanged(groupUid);
         Set<Todo> newOrUpdatedTodos = loadChangedOrNewTodos(groupTodos, knownTasksByTimeChanged);
 
         Map<String, Instant> uidInstantMap = Stream.concat(groupEvents.stream(), groupTodos.stream())
@@ -359,13 +351,12 @@ public class TaskBrokerImpl implements TaskBroker {
                         EventSpecifications.notCancelled()).and(
                         EventSpecifications.userPartOfGroup(user)))
                 .stream().map(e -> (Task) e).collect(Collectors.toSet());
-        Set<Task> userTodos = todoRepository.findAll(Specifications.where(
-                TodoSpecifications.notCancelled()).and(TodoSpecifications.userPartOfGroup(user)))
+        Set<Task> userTodos = todoBroker.fetchTodosForUser(userUid, false, false, null, null, null)
                 .stream().map(t -> (Task) t).collect(Collectors.toSet());
 
         Map<String, Instant> uidTimeMap = Stream.concat(
                 eventRepository.fetchEventsWithTimeChangedForUser(user).stream(),
-                todoRepository.fetchTodosWithTimeChangedForUser(user).stream()).
+                todoBroker.fetchUserTodosWithTimeChanged(user.getUid()).stream()).
                 collect(taskTimeChangedCollector());
 
         return Stream.concat(userEvents.stream(), userTodos.stream())
@@ -393,12 +384,13 @@ public class TaskBrokerImpl implements TaskBroker {
         }
 
         Set<Event> events = eventRepository.findByUidIn(eventUids);
-        Set<Todo> todos = todoRepository.findByUidIn(todoUids);
+        Set<Todo> todos = genericRepository.findByUidIn(Todo.class, JpaEntityType.TODO, todoUids);
 
         Stream<TaskTimeChangedDTO> taskStream =
                 todoUids.isEmpty() ? eventRepository.fetchEventsWithTimeChanged(eventUids).stream() :
-                eventUids.isEmpty() ? todoRepository.fetchTodosWithTimeChanged(todoUids).stream() :
-                Stream.concat(eventRepository.fetchEventsWithTimeChanged(eventUids).stream(), todoRepository.fetchTodosWithTimeChanged(todoUids).stream());
+                eventUids.isEmpty() ? todoBroker.fetchTodosWithTimeChanged(todoUids).stream() :
+                Stream.concat(eventRepository.fetchEventsWithTimeChanged(eventUids).stream(),
+                        todoBroker.fetchTodosWithTimeChanged(todoUids).stream());
 
         Map<String, Instant> uidTimeMap = taskStream.collect(taskTimeChangedCollector());
 
@@ -407,6 +399,32 @@ public class TaskBrokerImpl implements TaskBroker {
                 .map(transformToDTO(user, uidTimeMap))
                 .sorted(compareByType(taskSortType))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Task> fetchTasksRequiringUserResponse(String userUid, String userResponse) {
+        Objects.requireNonNull(userUid);
+        User user = userRepository.findOneByUid(userUid);
+
+        List<Task> tasks = new ArrayList<>();
+
+        List<Event> outstandingVotes = eventBroker.getOutstandingResponseForUser(user, EventType.VOTE);
+        List<Event> outstandingYesNoVotes = outstandingVotes.stream()
+                .filter(vote -> vote.getTags() == null || vote.getTags().length == 0)
+                .collect(Collectors.toList());
+
+        List<Event> outstandingOptionsVotes = outstandingVotes.stream()
+                .filter(v -> ((Vote) v).hasOption(userResponse.trim()))
+                .collect(Collectors.toList());
+
+        List<Event> outstandingMeetings = eventBroker.getOutstandingResponseForUser(user, EventType.MEETING);
+
+        tasks.addAll(outstandingYesNoVotes);
+        tasks.addAll(outstandingOptionsVotes);
+        tasks.addAll(outstandingMeetings);
+
+        return tasks;
     }
 
     private Function<Task, TaskFullDTO> transformToDTO(User user, Map<String, Instant> uidTimeMap) {
@@ -446,7 +464,7 @@ public class TaskBrokerImpl implements TaskBroker {
     }
 
     private Set<Todo> loadChangedOrNewTodos(List<TaskTimeChangedDTO> todos, Map<String, Long> knownTasksByTimeChanged) {
-        return todoRepository.findByUidIn(todos.stream()
+        return genericRepository.findByUidIn(Todo.class, JpaEntityType.TODO, todos.stream()
                 .filter(newOrUpdatedTask(knownTasksByTimeChanged))
                 .map(TaskTimeChangedDTO::getTaskUid)
                 .collect(Collectors.toSet()));
@@ -475,12 +493,6 @@ public class TaskBrokerImpl implements TaskBroker {
 
     private Collector<TaskTimeChangedDTO, ?, Map<String, Instant>> taskTimeChangedCollector() {
         return Collectors.toMap(TaskTimeChangedDTO::getTaskUid, TaskTimeChangedDTO::getLastTaskChange);
-    }
-
-    private boolean hasUserResponded(Task task, User user) {
-        return task.getTaskType().equals(TaskType.TODO) ? ((Todo) task).hasUserResponded(user) :
-                eventLogRepository.count(Specifications.where(forEvent((Event) task))
-                .and(forUser(user)).and(isResponseToAnEvent())) > 0;
     }
 
     private String getUserResponse(Task task, User user) {

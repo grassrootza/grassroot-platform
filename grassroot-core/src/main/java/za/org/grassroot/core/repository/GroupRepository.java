@@ -17,10 +17,13 @@ import za.org.grassroot.core.domain.User;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 
 public interface GroupRepository extends JpaRepository<Group, Long>, JpaSpecificationExecutor<Group> {
 
     Group findOneByUid(String uid);
+
+    Set<Group> findByUidIn(Set<String> uids);
 
     /*
     Find the last group created by a specific user

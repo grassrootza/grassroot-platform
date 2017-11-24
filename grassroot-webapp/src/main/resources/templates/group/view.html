@@ -166,7 +166,6 @@
                 </h4>
               </div>
 
-              <!-- todo :turn this into a fragment -->
               <div id="collapse1" class="panel-collapse collapse in">
                 <ul class="list-group" >
                   <li class="list-group-item" th:each="task, iterStat : ${groupTasks}">
@@ -205,6 +204,7 @@
                                 <option th:each="option: ${task.tags}" th:value="${option}" th:text="${option}">
                                 </option>
                               </select>
+                            </div>
                           </div>
                         </div>
                       </div>

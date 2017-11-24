@@ -35,23 +35,22 @@ public class EventLogBrokerImpl implements EventLogBroker {
 
     private Logger log = LoggerFactory.getLogger(EventLogBrokerImpl.class);
 
-    @Autowired
-    private EventLogRepository eventLogRepository;
+    private final EventLogRepository eventLogRepository;
+    private final EventRepository eventRepository;
+    private final UserRepository userRepository;
+    private final LogsAndNotificationsBroker logsAndNotificationsBroker;
+    private final MessageAssemblingService messageAssemblingService;
+    private final CacheUtilService cacheUtilService;
 
     @Autowired
-    private EventRepository eventRepository;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private LogsAndNotificationsBroker logsAndNotificationsBroker;
-
-    @Autowired
-    private MessageAssemblingService messageAssemblingService;
-
-    @Autowired
-    private CacheUtilService cacheUtilService;
+    public EventLogBrokerImpl(EventLogRepository eventLogRepository, EventRepository eventRepository, UserRepository userRepository, LogsAndNotificationsBroker logsAndNotificationsBroker, MessageAssemblingService messageAssemblingService, CacheUtilService cacheUtilService) {
+        this.eventLogRepository = eventLogRepository;
+        this.eventRepository = eventRepository;
+        this.userRepository = userRepository;
+        this.logsAndNotificationsBroker = logsAndNotificationsBroker;
+        this.messageAssemblingService = messageAssemblingService;
+        this.cacheUtilService = cacheUtilService;
+    }
 
     @Override
     @Transactional
@@ -120,6 +119,14 @@ public class EventLogBrokerImpl implements EventLogBroker {
                 .and(EventLogSpecifications.isResponseToAnEvent()));
         log.info("Count of responses: {}", count);
         return count > 0;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public EventLog findUserResponseIfExists(String userUid, String eventUid) {
+        User user = userRepository.findOneByUid(userUid);
+        Event event = eventRepository.findOneByUid(eventUid);
+        return eventLogRepository.findByEventAndUserAndEventLogType(event, user, EventLogType.RSVP);
     }
 
     @Override

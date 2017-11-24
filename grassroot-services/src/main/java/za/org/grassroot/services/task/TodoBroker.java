@@ -2,97 +2,70 @@ package za.org.grassroot.services.task;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.JpaEntityType;
+import org.springframework.data.domain.Sort;
 import za.org.grassroot.core.domain.task.Todo;
-import za.org.grassroot.core.enums.TodoCompletionConfirmType;
-import za.org.grassroot.services.task.enums.TodoStatus;
+import za.org.grassroot.core.domain.task.TodoAssignment;
+import za.org.grassroot.core.dto.task.TaskTimeChangedDTO;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 public interface TodoBroker {
 
-	Todo load(String todoUid);
+    Todo load(String todoUid);
 
-	Todo update(Todo todo);
+    List<TaskTimeChangedDTO> fetchTodosWithTimeChanged(Set<String> todoUids);
 
-	/**
-	 *
-	 * @param userUid The uid of the user creating the action
-	 * @param parentType The type of entity that is a parent to the action (usually a group, can be meeting or vote)
-	 * @param parentUid The uid of the parent entity
-	 * @param message The top-level content of the to-do
-	 * @param actionByDate Passing a null value will trigger an immediate to-do, with no reminder active
-	 * @param reminderMinutes The number of minutes in advance of the deadline that a reminder will be sent
-	 * @param replicateToSubgroups Whether to cascade the action to subgroups
-	 * @param assignedMemberUids THe set of members assigned to the action, if any
-     * @return
-     */
-	Todo create(String userUid, JpaEntityType parentType, String parentUid, String message, LocalDateTime actionByDate,
-				int reminderMinutes, boolean replicateToSubgroups, Set<String> assignedMemberUids);
+    // methods for creating and modifying to-dos
+    String create(TodoHelper todoHelper);
 
-	void assignMembers(String userUid, String todoUid, Set<String> assignMemberUids);
+    void cancel(String userUid, String todoUid, String reason);
 
-	void removeAssignedMembers(String userUid, String todoUid, Set<String> memberUids);
+    void extend(String userUid, String todoUid, Instant newDueDateTime);
 
-	void cancel(String userUid, String todoUid);
+    void updateSubject(String userUid, String todoUid, String newDescription);
 
-	Todo update(String userUid, String uid, String message, String description, LocalDateTime actionByDate, Integer reminderMinutes, Set<String> assignnedMemberUids);
+    void recordValidation(String userUid, String todoUid, String notes, Set<String> taskImageUids);
 
-	void updateSubject(String userUid, String todoUid, String newMessage);
+    Todo checkForTodoNeedingResponse(String userUid);
 
-	void updateDescription(String userUid, String todoUid, String description);
+    boolean canUserRespond(String userUid, String todoUid);
 
-	void updateActionByDate(String userUid, String todoUid, LocalDateTime revisedActionByDate);
+    boolean canUserViewResponses(String userUid, String todoUid);
 
-	/**
-	 * Confirms completion by given user which should be a member of specified to-do.
-	 * @param userUid member that is confirming completion
-	 * @param todoUid action to-do ID
-	 * @param confirmType whether the user responded that the to-do was completed, was not completed, or they don't know
-	 * @param completionTime time of completion; can be null only in case when some other member previously set it for given to-do
-	 * @return Whether the completion response pushed the to-do over the completion threshold
-	 */
-	boolean confirmCompletion(String userUid, String todoUid, TodoCompletionConfirmType confirmType, LocalDateTime completionTime);
+    boolean canUserModify(String userUid, String todoUid);
 
-	void sendScheduledReminder(String todoUid);
+    void recordResponse(String userUid, String todoUid, String response, boolean confirmRecorded);
 
-	/**
-	 * Return a page of todos, for a given group or for all groups that a user is part of
-	 * @param userUid The user initiating the query
-	 * @param groupUid The group whose todos to return. If null, returns across all user's groups.
-	 * @param pageRequest The page request (including sort instructions)
-	 * @return
-     */
-	Page<Todo> fetchPageOfTodosForGroup(String userUid, String groupUid, Pageable pageRequest);
+    void updateTodoCompleted(String userUid, String todoUid, boolean completed);
 
-	List<Todo> fetchTodosForGroupByStatus(String groupUid, boolean futureTodosOnly, TodoStatus status);
+    void addAssignments(String addingUserUid, String todoUid, Set<String> addedMemberUids);
 
-	List<Todo> fetchTodosForGroupCreatedDuring(String groupUid, LocalDateTime createdAfter, LocalDateTime createdBefore);
+    void addValidators(String addingUserUid, String todoUid, Set<String> validatingMemberUids);
 
-	/*
-	Check if a user needs to respond to a to-do (note : will not return to-dos where user has marked 'I don't know', to avoid infinite & annoying pinging
-	 */
-	Optional<Todo> fetchTodoForUserResponse(String userUid, boolean assignedTodosOnly);
+    void removeUsers(String removingUserUid, String todoUid, Set<String> memberUidsToRemove);
 
-	boolean userHasTodosForResponse(String userUid, boolean assignedTodosOnly);
+    // methods for retrieving to-dos
+    List<Todo> fetchTodosForUser(String userUid, boolean forceIncludeCreated, boolean limitToNeedingResponse, Instant intervalStart, Instant intervalEnd, Sort sort);
 
-	boolean userHasIncompleteActionsToView(String userUid);
+    Page<Todo> fetchPageOfTodosForUser(String userUid, boolean createdOnly, boolean openOnly, Pageable page);
 
-	Page<Todo> fetchIncompleteActionsToView(String userUid, Pageable pageable);
+    List<Todo> fetchTodosForGroup(String userUid, String groupUid, boolean limitToNeedingResponse, boolean limitToIncomplete,
+                                  Instant start, Instant end, Sort sort);
 
-	boolean userHasOldActionsToView(String userUid);
+    List<Todo> searchUserTodos(String userUid, String searchString);
 
-	/**
-	 * Methods to handle "replicaed" todos (i.e., that cascade down subgroups)
-	 */
+    List<TaskTimeChangedDTO> fetchUserTodosWithTimeChanged(String userUid);
 
-	boolean hasReplicatedEntries(Todo todo);
+    List<TaskTimeChangedDTO> fetchGroupTodosWithTimeChanged(String groupUid);
 
-	List<Group> retrieveGroupsFromTodos(List<Todo> todos);
+    TodoAssignment fetchUserTodoDetails(String userUid, String todoUid);
 
-	List<Todo> getAllReplicatedEntriesFromParent(Todo todo);
+    List<TodoAssignment> fetchAssignedUserResponses(String userUid, String todoUid, boolean respondedOnly,
+                                                    boolean assignedOnly, boolean witnessOnly);
+
+    // Handling reminders
+    void sendScheduledReminder(String todoUid);
+
 }
