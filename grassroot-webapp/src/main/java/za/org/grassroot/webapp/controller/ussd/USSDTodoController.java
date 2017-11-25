@@ -1,5 +1,7 @@
 package za.org.grassroot.webapp.controller.ussd;
 
+import lombok.AccessLevel;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.data.domain.Page;
@@ -40,7 +42,7 @@ import static za.org.grassroot.core.util.DateTimeUtil.*;
 
 @Slf4j @RestController
 @RequestMapping(method = RequestMethod.GET, produces = MediaType.APPLICATION_XML_VALUE)
-public class USSDTodoNewController extends USSDBaseController {
+public class USSDTodoController extends USSDBaseController {
 
     private static final String REL_PATH = "/todo";
     private static final String FULL_PATH = homePath + "todo/";
@@ -51,10 +53,10 @@ public class USSDTodoNewController extends USSDBaseController {
     private final MemberDataExportBroker dataExportBroker;
     private final LearningService learningService;
 
-    private final USSDMessageAssembler messageAssembler;
-    private final USSDGroupUtil groupUtil;
+    @Setter private USSDMessageAssembler messageAssembler;
+    @Setter(AccessLevel.PACKAGE) private USSDGroupUtil groupUtil;
 
-    public USSDTodoNewController(TodoBroker todoBroker, TodoRequestBroker todoRequestBroker, MemberDataExportBroker dataExportBroker, USSDMessageAssembler messageAssembler, USSDGroupUtil groupUtil, LearningService learningService) {
+    public USSDTodoController(TodoBroker todoBroker, TodoRequestBroker todoRequestBroker, MemberDataExportBroker dataExportBroker, USSDMessageAssembler messageAssembler, USSDGroupUtil groupUtil, LearningService learningService) {
         this.todoBroker = todoBroker;
         this.todoRequestBroker = todoRequestBroker;
         this.dataExportBroker = dataExportBroker;

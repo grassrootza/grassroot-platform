@@ -1,5 +1,7 @@
 package za.org.grassroot.webapp.controller.ussd;
 
+import lombok.AccessLevel;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -44,11 +46,12 @@ public class USSDHomeController extends USSDBaseController {
     private final UserResponseBroker userResponseBroker;
 
     // since this controller in effect routes responses, needs access to the other primary ones
+    // setters are for testing (since we need this controller in the tests of the handler)
     private final USSDLiveWireController liveWireController;
     private final USSDGroupController groupController;
-    private final USSDVoteController voteController;
-    private final USSDMeetingController meetingController;
-    private final USSDTodoNewController todoController;
+    @Setter(AccessLevel.PACKAGE) private USSDVoteController voteController;
+    @Setter(AccessLevel.PACKAGE) private USSDMeetingController meetingController;
+    private final USSDTodoController todoController;
     private final USSDSafetyGroupController safetyController;
     private final CampaignBroker campaignBroker;
 
@@ -70,7 +73,7 @@ public class USSDHomeController extends USSDBaseController {
     private String livewireSuffix;
 
     @Autowired
-    public USSDHomeController(UserResponseBroker userResponseBroker, USSDLiveWireController liveWireController, USSDGroupController groupController, USSDVoteController voteController, USSDMeetingController meetingController, USSDTodoNewController todoController, USSDSafetyGroupController safetyController, CampaignBroker campaignBroker) {
+    public USSDHomeController(UserResponseBroker userResponseBroker, USSDLiveWireController liveWireController, USSDGroupController groupController, USSDVoteController voteController, USSDMeetingController meetingController, USSDTodoController todoController, USSDSafetyGroupController safetyController, CampaignBroker campaignBroker) {
         this.userResponseBroker = userResponseBroker;
         this.liveWireController = liveWireController;
         this.groupController = groupController;

@@ -7,7 +7,6 @@ import org.springframework.context.NoSuchMessageException;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.webapp.enums.USSDSection;
-import za.org.grassroot.webapp.util.USSDMenuUtil;
 
 import java.util.Locale;
 
@@ -17,7 +16,12 @@ public class USSDMessageAssembler {
     private MessageSource messageSource;
 
     @Autowired
-    public void setMessageSource(@Qualifier("messageSource") MessageSource messageSource) {
+    public USSDMessageAssembler(@Qualifier("messageSource") MessageSource messageSource) {
+        this.messageSource = messageSource;
+    }
+
+    // for tests, where we have to hand-wire
+    protected void setMessageSource(MessageSource messageSource) {
         this.messageSource = messageSource;
     }
 

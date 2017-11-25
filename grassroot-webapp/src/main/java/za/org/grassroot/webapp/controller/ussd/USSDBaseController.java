@@ -7,7 +7,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.integration.experiments.ExperimentBroker;
 import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.user.UserManagementService;
-import za.org.grassroot.services.util.CacheUtilManager;
+import za.org.grassroot.services.util.CacheUtilService;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
@@ -39,16 +39,19 @@ public class USSDBaseController {
     protected AsyncUserLogger userLogger;
 
     @Autowired
-    protected CacheUtilManager cacheManager;
+    protected CacheUtilService cacheManager;
 
-    @Autowired
     protected USSDMessageAssembler messageAssembler;
-
     protected USSDMenuUtil ussdMenuUtil;
 
     @Autowired
     protected void setUssdMenuUtil(USSDMenuUtil ussdMenuUtil) {
         this.ussdMenuUtil = ussdMenuUtil;
+    }
+
+    @Autowired
+    protected void setMessageAssembler(USSDMessageAssembler messageAssembler) {
+        this.messageAssembler = messageAssembler;
     }
 
     /**

@@ -9,6 +9,10 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.task.Todo;
+import za.org.grassroot.core.domain.task.TodoType;
+import za.org.grassroot.core.domain.task.Vote;
+import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
@@ -40,10 +44,10 @@ public class IncomingSMSController {
 
     private final UserResponseBroker userResponseBroker;
 
-    private final UserLogRepository userLogRepository;
-    private final NotificationService notificationService;
-    private final GroupLogRepository groupLogRepository;
     private final UserManagementService userManager;
+    private final NotificationService notificationService;
+    private final UserLogRepository userLogRepository;
+    private final GroupLogRepository groupLogRepository;
 
     private final MessageAssemblingService messageAssemblingService;
     private final MessagingServiceBroker messagingServiceBroker;
@@ -85,7 +89,7 @@ public class IncomingSMSController {
         final String trimmedMsg = msg.trim();
         EntityForUserResponse likelyEntity = userResponseBroker.checkForEntityForUserResponse(user.getUid(), false);
 
-        if (likelyEntity == null) {
+        if (likelyEntity == null || !checkValidityOfResponse(likelyEntity, trimmedMsg)) {
             log.info("User response is {}, type {} and cannot find an entity waiting for response ... handling unknown message");
             handleUnknownResponse(user, trimmedMsg);
             return;
@@ -96,7 +100,24 @@ public class IncomingSMSController {
                 likelyEntity.getUid(),
                 trimmedMsg);
 
-        // note : send a response confirming?
+        // todo : send a response confirming?
+    }
+
+    // todo: move this into response broker checking, handle with more sophistication
+    private boolean checkValidityOfResponse(EntityForUserResponse entity, String message) {
+        switch (entity.getJpaEntityType()) {
+            case MEETING:
+                return EventRSVPResponse.fromString(message) != EventRSVPResponse.INVALID_RESPONSE;
+            case VOTE:
+                Vote vote = (Vote) entity;
+                return !vote.getVoteOptions().isEmpty() ? vote.hasOption(message) :
+                        EventRSVPResponse.fromString(message) != EventRSVPResponse.INVALID_RESPONSE;
+            case TODO:
+                Todo todo = (Todo) entity;
+                return todo.getType().equals(TodoType.INFORMATION_REQUIRED); // todo : look for eg "yes it is done"
+            default:
+                return false;
+        }
     }
 
     private void handleUnknownResponse(User user, String trimmedMsg) {

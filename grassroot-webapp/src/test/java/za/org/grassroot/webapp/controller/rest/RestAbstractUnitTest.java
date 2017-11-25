@@ -47,7 +47,7 @@ public class RestAbstractUnitTest {
 
     protected final static Meeting meetingEvent = new MeetingBuilder().setName(testEventTitle).setStartDateTime(testInstant).setUser(sessionTestUser).setParent(testGroup).setEventLocation(testEventLocation).setIncludeSubGroups(true).setReminderType(EventReminderType.DISABLED).setCustomReminderMinutes(15).setDescription(testEventDescription).setImportance(null).createMeeting();
 
-    protected final static Todo TEST_TO_DO = new Todo(sessionTestUser, testGroup, "A test log book", testInstant);
+    protected final static Todo TEST_TO_DO = new Todo(sessionTestUser, testGroup, TodoType.ACTION_REQUIRED, "A test to-do", testInstant);
 
     @Mock
     protected PermissionBroker permissionBrokerMock;

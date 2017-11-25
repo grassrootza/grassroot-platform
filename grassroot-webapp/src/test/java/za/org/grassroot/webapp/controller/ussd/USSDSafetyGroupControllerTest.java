@@ -61,6 +61,7 @@ public class USSDSafetyGroupControllerTest extends USSDAbstractUnitTest {
                 .build();
 
         wireUpMessageSourceAndGroupUtil(ussdSafetyGroupController);
+        ussdSafetyGroupController.setGroupUtil(ussdGroupUtil);
 
         testUser = new User(testUserPhone);
         testUser2 = new User(testUser2Phone);

@@ -14,7 +14,9 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.GroupJoinMethod;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Todo;
+import za.org.grassroot.core.domain.task.TodoAssignment;
 import za.org.grassroot.core.domain.task.TodoLog;
+import za.org.grassroot.core.domain.task.TodoType;
 import za.org.grassroot.core.dto.task.TaskTimeChangedDTO;
 import za.org.grassroot.core.enums.TodoCompletionConfirmType;
 import za.org.grassroot.core.enums.TodoLogType;
@@ -50,35 +52,35 @@ public class TodoRepositoryTest {
     private Instant addHoursFromNow(int hours) { return Instant.now().plus(hours, ChronoUnit.HOURS); }
 
     @Test
-    public void shouldSaveAndRetrieveLogBookForGroup()  {
+    public void shouldSaveAndRetrieveTodoForGroup()  {
 
         User user = userRepository.save(new User("001111141"));
         Group group = groupRepository.save(new Group("test action", user));
         Group groupUnrelated = groupRepository.save(new Group("not related action", user));
-        Todo lb1 = todoRepository.save(new Todo(user, group, "just do it", addHoursFromNow(2)));
-        Todo lbUnrelated = todoRepository.save(new Todo(user, groupUnrelated, "just do it too", addHoursFromNow(2)));
+        Todo lb1 = todoRepository.save(new Todo(user, group, TodoType.ACTION_REQUIRED, "just do it", addHoursFromNow(2)));
+        Todo lbUnrelated = todoRepository.save(new Todo(user, groupUnrelated, TodoType.ACTION_REQUIRED, "just do it too", addHoursFromNow(2)));
         List<Todo> list = todoRepository.findAll(TodoSpecifications.hasGroupAsParent(group));
         assertEquals(1,list.size());
         assertEquals(lb1.getId(),list.get(0).getId());
     }
 
     @Test
-    public void shouldSaveAndRetrieveLogBookForGroupAndNotCompleted()  {
-
+    public void shouldSaveAndRetrieveTodoForGroupAndNotCompleted()  {
+        // todo: finalize these and subsequent
         User user = userRepository.save(new User("001111142"));
         Group group = groupRepository.save(new Group("test action", user));
         Group groupUnrelated = groupRepository.save(new Group("not related action", user));
-        Todo lb1 = todoRepository.save(new Todo(user, group, "just do it", addHoursFromNow(2)));
-        Todo lbUnrelated = todoRepository.save(new Todo(user, groupUnrelated, "just do it too", addHoursFromNow(2)));
+        Todo lb1 = todoRepository.save(new Todo(user, group, TodoType.ACTION_REQUIRED, "just do it", addHoursFromNow(2)));
+        Todo lbUnrelated = todoRepository.save(new Todo(user, groupUnrelated, TodoType.ACTION_REQUIRED, "just do it too", addHoursFromNow(2)));
     }
 
     @Test
-    public void shouldSaveAndRetrieveLogBookForGroupAndCompleted()  {
+    public void shouldSaveAndRetrieveTodoForGroupAndCompleted()  {
 
         User user = userRepository.save(new User("001111143"));
         Group group = groupRepository.save(new Group("test action", user));
-        Todo lb1 = todoRepository.save(new Todo(user, group,"just do it", addHoursFromNow(2)));
-        Todo lb2 = todoRepository.save(new Todo(user, group, "just do it too", addHoursFromNow(2)));
+        Todo lb1 = todoRepository.save(new Todo(user, group, TodoType.ACTION_REQUIRED,"just do it", addHoursFromNow(2)));
+        Todo lb2 = todoRepository.save(new Todo(user, group, TodoType.ACTION_REQUIRED, "just do it too", addHoursFromNow(2)));
         lb1 = todoRepository.save(lb1);
     }
 
@@ -89,23 +91,20 @@ public class TodoRepositoryTest {
         group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
         groupRepository.save(group);
 
-        Todo lb1 = new Todo(user, group, "assigned 1", addHoursFromNow(2), 60, true);
-        Todo lb2 = new Todo(user, group, "not assigned", addHoursFromNow(2), 60, true);
-        lb1.assignMembers(Collections.singleton(user.getUid()));
+        Todo lb1 = new Todo(user, group, TodoType.ACTION_REQUIRED, "assigned 1", addHoursFromNow(2));
+        Todo lb2 = new Todo(user, group, TodoType.ACTION_REQUIRED, "not assigned", addHoursFromNow(2));
+        lb1.addAssignments(Collections.singleton(new TodoAssignment(lb1, user, false, true, true)));
 
         todoRepository.save(lb1);
         todoRepository.save(lb2);
 
-        // todo : move these into services, given transition to using specifications
         Sort sort = new Sort(Sort.Direction.DESC, "actionByDate");
-        List<Todo> list = todoRepository.findByAssignedMembersAndActionByDateBetweenAndCompletedTrue(user, Instant.now(),
-                DateTimeUtil.getVeryLongAwayInstant(), sort);
+        List<Todo> list = todoRepository.findAll(TodoSpecifications.todosForUserResponse(user));
         assertEquals(0, list.size());
         lb1.addCompletionConfirmation(user, TodoCompletionConfirmType.COMPLETED, Instant.now());
         todoRepository.save(lb1);
-        list = todoRepository.findByAssignedMembersAndActionByDateBetweenAndCompletedTrue(user, Instant.now(),
-                DateTimeUtil.getVeryLongAwayInstant(), sort);
-        assertEquals(1,list.size());
+        list = todoRepository.findAll(TodoSpecifications.todosForUserResponse(user));
+        assertEquals(0,list.size());
     }
 
     @Test
@@ -115,8 +114,8 @@ public class TodoRepositoryTest {
         group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
         groupRepository.save(group);
 
-        Todo todo1 = todoRepository.save(new Todo(user, group, "firstOne", addHoursFromNow(2), 60, true));
-        Todo todo2 = todoRepository.save(new Todo(user, group, "secondOne", addHoursFromNow(2), 60, true));
+        Todo todo1 = todoRepository.save(new Todo(user, group, TodoType.ACTION_REQUIRED, "firstOne", addHoursFromNow(2)));
+        Todo todo2 = todoRepository.save(new Todo(user, group, TodoType.ACTION_REQUIRED, "secondOne", addHoursFromNow(2)));
 
         TodoLog createdLog = todoLogRepository.save(new TodoLog(TodoLogType.CREATED, user, todo1, "created"));
         TodoLog createdLog1 = todoLogRepository.save(new TodoLog(TodoLogType.CREATED, user, todo2, "created"));

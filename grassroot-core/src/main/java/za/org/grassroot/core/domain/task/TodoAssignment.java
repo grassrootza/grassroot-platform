@@ -15,15 +15,15 @@ public class TodoAssignment {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", nullable = false)
+    @Column(name = "id", updatable = false, nullable = false)
     private Long id;
 
     @ManyToOne(optional = false)
-    @JoinColumn(name = "action_todo_id", nullable = false, foreignKey = @ForeignKey(name = "fk_action_todo_compl_confirm_action_todo"))
+    @JoinColumn(name = "action_todo_id", nullable = false)
     private Todo todo;
 
     @ManyToOne(optional = false)
-    @JoinColumn(name = "user_id", nullable = false, foreignKey = @ForeignKey(name = "fk_action_todo_compl_confirm_member"))
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
     @Column(name = "creation_time", nullable = false, updatable = false) // i.e., when the user was assigned to this
@@ -75,5 +75,7 @@ public class TodoAssignment {
     public boolean canRespond() {
         return shouldRespond && !hasResponded;
     }
+
+    public boolean canConfirm() { return isValidator(); }
 
 }

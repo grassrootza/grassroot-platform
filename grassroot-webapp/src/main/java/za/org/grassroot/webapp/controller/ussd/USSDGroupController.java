@@ -1,5 +1,7 @@
 package za.org.grassroot.webapp.controller.ussd;
 
+import lombok.AccessLevel;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.h2.util.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,7 +57,7 @@ public class USSDGroupController extends USSDBaseController {
     private final GeoLocationBroker geoLocationBroker;
     private final GroupJoinRequestService groupJoinRequestService;
 
-    private final USSDGroupUtil ussdGroupUtil;
+    @Setter(AccessLevel.PACKAGE) private USSDGroupUtil ussdGroupUtil;
 
     private static final String
             existingGroupMenu = "menu",

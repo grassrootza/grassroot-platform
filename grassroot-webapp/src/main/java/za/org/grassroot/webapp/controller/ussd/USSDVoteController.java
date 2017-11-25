@@ -82,7 +82,7 @@ public class USSDVoteController extends USSDBaseController {
     }
 
     @Autowired
-    private void setGroupUtil(USSDGroupUtil groupUtil) {
+    protected void setGroupUtil(USSDGroupUtil groupUtil) {
         this.groupUtil = groupUtil;
     }
 

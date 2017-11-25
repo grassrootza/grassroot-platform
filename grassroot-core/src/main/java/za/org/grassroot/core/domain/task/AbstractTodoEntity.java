@@ -89,15 +89,15 @@ public abstract class AbstractTodoEntity {
 		// for JPA
 	}
 
-	protected AbstractTodoEntity(User createdByUser, TodoContainer parent, String message,
-								 Instant actionByDate,
-								 int reminderMinutes, boolean reminderActive) {
+	protected AbstractTodoEntity(User createdByUser, TodoContainer parent, TodoType type,
+                                 String explanation, Instant actionByDate, int reminderMinutes, boolean reminderActive) {
 
 		this.uid = UIDGenerator.generateId();
 		this.createdByUser = Objects.requireNonNull(createdByUser);
+		this.type = type;
 		setParent(parent);
 
-		this.message = Objects.requireNonNull(message);
+		this.message = Objects.requireNonNull(explanation);
 		this.actionByDate = Objects.requireNonNull(actionByDate);
 		this.createdDateTime = Instant.now();
 

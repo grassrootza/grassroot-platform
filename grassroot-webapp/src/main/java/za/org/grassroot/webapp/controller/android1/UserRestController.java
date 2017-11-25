@@ -296,7 +296,7 @@ public class UserRestController {
             User user = userManagementService.createUserWebProfile(newUser);
 
             // Generate a token for the user
-            String token = jwtService.createJwt(new CreateJwtTokenRequest(JwtType.ANDROID_CLIENT));
+            String token = jwtService.createJwt(new CreateJwtTokenRequest(JwtType.ANDROID_CLIENT, user.getUid()));
 
             // Assemble response entity
             AndroidAuthToken response = new AndroidAuthToken(user, token);

@@ -2,6 +2,7 @@ package za.org.grassroot.core.domain.task;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.JpaEntityType;
@@ -15,16 +16,14 @@ import javax.persistence.*;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Created by aakilomar on 12/3/15.
  */
-@Entity @Getter
+@Entity @Getter @Slf4j
 @Table(name = "action_todo",
         indexes = {
                 @Index(name = "idx_action_todo_group_id", columnList = "parent_group_id"),
@@ -43,15 +42,8 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
     @Column(name="completed")
     @Setter private boolean completed;
 
-    @ManyToMany(cascade = CascadeType.ALL)
-    @JoinTable(name = "action_todo_assigned_members",
-            joinColumns = @JoinColumn(name = "action_todo_id", nullable = false),
-            inverseJoinColumns = @JoinColumn(name = "user_id", nullable = false)
-    )
-    @Setter private Set<User> assignedMembers = new HashSet<>();
-
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "todo", orphanRemoval = true)
-    @Setter private Set<TodoAssignment> assignments;
+    @Setter private Set<TodoAssignment> assignments = new HashSet<>();
 
     @ManyToOne
    	@JoinColumn(name = "ancestor_group_id", nullable = false)
@@ -81,31 +73,13 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
         // for JPA
     }
 
-    public Todo(User createdByUser, TodoContainer parent, String message, Instant actionByDate) {
-        this(createdByUser, parent, message, actionByDate, 60, true);
-    }
+    public Todo(User createdByUser, TodoContainer parent, TodoType todoType, String description, Instant dueByDate) {
+        super(createdByUser, parent, todoType, description, dueByDate, DEFAULT_REMINDER_MINUTES, true);
 
-    public Todo(User createdByUser, TodoContainer parent, TodoType todoType, String description,
-                Instant dueByDate) {
-        super(createdByUser, parent, description, dueByDate, DEFAULT_REMINDER_MINUTES, true);
-
-        this.type = todoType;
         this.ancestorGroup = parent.getThisOrAncestorGroup();
         this.ancestorGroup.addDescendantTodo(this);
         this.cancelled = false;
         this.completed = false;
-
-        calculateScheduledReminderTime();
-    }
-
-    public Todo(User createdByUser, TodoContainer parent, String message, Instant actionByDate,
-                int reminderMinutes, boolean reminderActive) {
-        super(createdByUser, parent, message, actionByDate, reminderMinutes, reminderActive);
-
-        this.ancestorGroup = parent.getThisOrAncestorGroup();
-        this.ancestorGroup.addDescendantTodo(this);
-
-        this.cancelled = false;
 
         calculateScheduledReminderTime();
     }
@@ -156,12 +130,40 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
 
     @Override
     public Set<User> fetchAssignedMembersCollection() {
-        return assignedMembers;
+        return assignments.stream().map(TodoAssignment::getUser).collect(Collectors.toSet());
     }
 
     @Override
     public void putAssignedMembersCollection(Set<User> assignedMembersCollection) {
-        this.assignedMembers = assignedMembersCollection;
+        this.assignments = assignedMembersCollection.stream()
+                .map(u -> new TodoAssignment(this, u, true, false, false)).collect(Collectors.toSet());
+    }
+
+    @Override
+    public Set<User> assignMembers(Set<String> memberUids) {
+        Objects.requireNonNull(memberUids);
+
+        log.info("adding some members: {}", memberUids);
+        Group group = getAncestorGroup();
+        Map<String, User> membersByUid = group.getMembers().stream().collect(Collectors.toMap(User::getUid, member -> member));
+        Set<User> existingMembers = assignments.stream().map(TodoAssignment::getUser).collect(Collectors.toSet());
+
+        Set<User> membersToAssign = memberUids.stream()
+                .flatMap(uid -> {
+                    User member = membersByUid.get(uid);
+                    if (member != null && !existingMembers.contains(member)) {
+                        return Stream.of(member);
+                    } else {
+                        return Stream.empty();
+                    }
+                })
+                .collect(Collectors.toSet());
+
+        assignments.addAll(membersToAssign.stream().map(u -> new TodoAssignment(this, u, true, false, false))
+                .collect(Collectors.toSet()));
+
+        log.info("added member, assignments now of size: {}", assignments.size());
+        return membersToAssign;
     }
 
     // todo : make sure equals and hash code are working properly here
@@ -187,7 +189,6 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
                 .collect(Collectors.toSet());
     }
 
-    // todo : move this to services, alter & handle return
     public boolean addCompletionConfirmation(User member,
                                              TodoCompletionConfirmType confirmType,
                                              Instant completionTime) {

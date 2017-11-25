@@ -32,7 +32,7 @@ public interface TodoRepository extends JpaRepository<Todo, Long>, JpaSpecificat
     List<Todo> findByParentGroupMembershipsUserAndMessageSearchTerm(Long userId, String tsQueryText);
 
     // these are in test only and have been superceded in the main code -- delete once test coverage for services built out
-    List<Todo> findByAssignedMembersAndActionByDateBetweenAndCompletedTrue(User user, Instant start, Instant end, Sort sort);
+    List<Todo> findByAssignmentsUserAndActionByDateBetweenAndCompletedTrue(User user, Instant start, Instant end, Sort sort);
 
     @Query("select new za.org.grassroot.core.dto.task.TaskTimeChangedDTO(" +
             "t.uid, 'TODO', tl.createdDateTime) from " +

@@ -16,6 +16,7 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.MeetingBuilder;
 import za.org.grassroot.core.domain.task.Todo;
+import za.org.grassroot.core.domain.task.TodoType;
 import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.core.enums.GroupLogType;
 
@@ -93,8 +94,8 @@ public class GroupRepositoryTest {
     public void shouldSaveTodoReminder() {
         User userToCreate = userRepository.save(new User("3456"));
         Group groupToCreate = groupRepository.save(new Group("Test Group", userToCreate));
-        Todo newTask = todoRepository.save(new Todo(userToCreate, groupToCreate, "discuss way forward",
-                Instant.now().plus(1, ChronoUnit.DAYS)));
+        Todo newTask = todoRepository.save(new Todo(userToCreate, groupToCreate, TodoType.ACTION_REQUIRED,
+                "discuss way forward", Instant.now().plus(1, ChronoUnit.DAYS)));
 
 
         assertThat(todoRepository.count(), is(1L));

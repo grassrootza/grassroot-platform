@@ -36,19 +36,19 @@ import static za.org.grassroot.core.util.DateTimeUtil.getPreferredRestFormat;
 @Slf4j
 @RestController @Grassroot2RestController
 @Api("/api/task/create/meeting")
-@RequestMapping(value = "/api/task/create/meeting")
-public class MeetingCreateController {
+@RequestMapping(value = "/api/task/create/")
+public class EventCreateController {
 
     private final EventBroker eventBroker;
     private final UserManagementService userService;
 
     @Autowired
-    public MeetingCreateController(UserManagementService userManagementService, EventBroker eventBroker, TaskImageBroker taskImageBroker) {
+    public EventCreateController(UserManagementService userManagementService, EventBroker eventBroker, TaskImageBroker taskImageBroker) {
         this.userService = userManagementService;
         this.eventBroker = eventBroker;
     }
 
-    @RequestMapping(value = "/{userUid}/{parentType}/{parentUid}", method = RequestMethod.POST)
+    @RequestMapping(value = "/meeting/{userUid}/{parentType}/{parentUid}", method = RequestMethod.POST)
     @ApiOperation(value = "Call a meeting", notes = "Creates a meeting, that starts at the specified date and time, passed in " +
             "as epoch millis. The first six params are necessary, the rest are optional")
     public ResponseEntity<TaskFullDTO> createMeeting(@PathVariable String userUid,
@@ -94,7 +94,6 @@ public class MeetingCreateController {
         }
 
         try {
-
             Meeting createdMeeting = eventBroker.createMeeting(helper);
             return ResponseEntity.ok(new TaskFullDTO(createdMeeting, userService.load(userUid),
                     createdMeeting.getCreatedDateTime(), null));

@@ -21,11 +21,14 @@ public class FormatUtil {
     }
 
     public static String removeUnwantedCharacters(String content) {
+        if (content == null) {
+            return null;
+        }
+
         String contentToReturn = "";
 
         try{
             byte[] contentBytes = content.getBytes("UTF-8");
-
             contentToReturn = new String(contentBytes, "UTF-8");
         }catch (UnsupportedEncodingException e){
             e.printStackTrace();

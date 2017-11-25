@@ -11,6 +11,7 @@ import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.services.MessageAssemblingService;
+import za.org.grassroot.services.group.GroupJoinRequestService;
 import za.org.grassroot.services.group.GroupPermissionTemplate;
 
 import java.time.Instant;
@@ -43,8 +44,8 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
     private Set<MembershipInfo> testMembers = new HashSet<>();
     private GroupPermissionTemplate template = GroupPermissionTemplate.DEFAULT_GROUP;
 
-    @Mock
-    private MessageAssemblingService messageAssemblingServiceMock;
+    @Mock private GroupJoinRequestService groupJoinRequestServiceMock;
+    @Mock private MessageAssemblingService messageAssemblingServiceMock;
 
     @InjectMocks
     private USSDGroupController ussdGroupController;
@@ -58,11 +59,35 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
                 .setViewResolvers(viewResolver())
                 .build();
         wireUpMessageSourceAndGroupUtil(ussdGroupController);
+        ussdGroupController.setUssdGroupUtil(ussdGroupUtil);
 
         testUser = new User(testUserPhone);
         testGroup = new Group("test group", testUser);
         testMembers.add(new MembershipInfo(testUserPhone, BaseRoles.ROLE_GROUP_ORGANIZER, null));
         testGroupIdString = testGroup.getUid();
+    }
+
+    @Test
+    public void groupSecondPageShouldWork() throws Exception {
+        resetTestGroup();
+        List<Group> testGroups = Arrays.asList(new Group("gc1", testUser),
+                new Group("gc2", testUser),
+                new Group("gc3", testUser),
+                new Group("gc4", testUser));
+
+        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
+        when(permissionBrokerMock.countActiveGroupsWithPermission(testUser, null)).thenReturn(4);
+        when(permissionBrokerMock.getPageOfGroups(testUser, null, 1, 3)).thenReturn(testGroups);
+
+        mockMvc.perform(get("/ussd/group_page").param(phoneParam, testUserPhone).param("prompt", "Look at pages").
+                param("page", "1").param("existingUri", "/ussd/blank").param("newUri", "/ussd/blank2")).
+                andExpect(status().isOk());
+
+        verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
+        verify(permissionBrokerMock, times(1)).countActiveGroupsWithPermission(testUser, null);
+        verify(permissionBrokerMock, times(1)).getPageOfGroups(testUser, null, 1, 3);
+        verifyNoMoreInteractions(userManagementServiceMock);
+        verifyNoMoreInteractions(permissionBrokerMock);
     }
 
     @Test

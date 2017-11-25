@@ -12,8 +12,9 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.domain.task.MeetingBuilder;
 import za.org.grassroot.core.domain.task.Vote;
+import za.org.grassroot.services.task.MeetingBuilderHelper;
 import za.org.grassroot.webapp.controller.rest.RestAbstractUnitTest;
-import za.org.grassroot.webapp.controller.rest.task.TaskCreateController;
+import za.org.grassroot.webapp.controller.rest.task.EventCreateController;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -21,9 +22,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static za.org.grassroot.core.util.DateTimeUtil.getPreferredRestFormat;
@@ -36,18 +35,18 @@ public class TaskCreateControllerTest extends RestAbstractUnitTest {
 
     private static final List<String> testVoteOptions = new ArrayList<>();
 
-    private static final String testSubject = "The Meetin";
+    private static final String testSubject = "The Meeting";
     private static final long testDateTimeEpochMillis = 000000000000;
 
-    Vote testVote = createVote(null);
+    private Vote testVote = createVote(null);
     private static final Instant oneDayAway = Instant.now().plus(1, ChronoUnit.DAYS);
 
     @InjectMocks
-    private TaskCreateController taskCreateController;
+    private EventCreateController meetingCreateController;
 
     @Before
     public void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(taskCreateController).build();
+        mockMvc = MockMvcBuilders.standaloneSetup(meetingCreateController).build();
         testVoteOptions.add("Option");
     }
 
@@ -55,16 +54,28 @@ public class TaskCreateControllerTest extends RestAbstractUnitTest {
     public void createMeetingShouldWork() throws Exception{
         Group dummyGroup = new Group("Dummy Group3", new User(
                 "234345345"));
+
         Meeting dummyMeeting = new MeetingBuilder().setName("test meeting").setStartDateTime(oneDayAway).setUser(sessionTestUser).setParent(dummyGroup).setEventLocation("some place").createMeeting();
+        MeetingBuilderHelper helper = new MeetingBuilderHelper()
+                .userUid(sessionTestUser.getUid())
+                .parentType(JpaEntityType.GROUP)
+                .parentUid(dummyGroup.getUid())
+                .name(testSubject)
+                .location(testEventLocation)
+                .startDateTimeInstant(Instant.ofEpochMilli(testDateTimeEpochMillis));
 
         when(groupBrokerMock.load(dummyGroup.getUid())).thenReturn(dummyGroup);
-        when(eventBrokerMock.loadMeeting(dummyMeeting.getUid())).thenReturn(dummyMeeting);
-        mockMvc.perform(post(path + "/meeting/{userUid}/{parentType}/{parentUid}",sessionTestUser.getUid(),JpaEntityType.MEETING,dummyGroup.getUid())
-                .param("subject",""+testSubject)
-                .param("location",""+testEventLocation)
-                .param("dateTimeEpochMillis",""+testDateTimeEpochMillis)
+        when(eventBrokerMock.createMeeting(helper)).thenReturn(dummyMeeting);
+        mockMvc.perform(post(path + "/meeting/{userUid}/{parentType}/{parentUid}",
+                sessionTestUser.getUid(),
+                JpaEntityType.GROUP,
+                dummyGroup.getUid())
+                .param("subject", testSubject)
+                .param("location", testEventLocation)
+                .param("dateTimeEpochMillis", "" + testDateTimeEpochMillis)
         ).andExpect(status().is2xxSuccessful());
-        verify(eventBrokerMock,times(1)).loadMeeting(dummyMeeting.getUid());
+
+        verify(eventBrokerMock,times(1)).createMeeting(helper);
     }
 
 

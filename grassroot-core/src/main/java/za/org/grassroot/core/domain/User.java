@@ -7,19 +7,15 @@ import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.enums.AlertPreference;
 import za.org.grassroot.core.enums.UserMessagingPreference;
-import za.org.grassroot.core.util.FormatUtil;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
-import java.io.UnsupportedEncodingException;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static za.org.grassroot.core.util.FormatUtil.removeUnwantedCharacters;
