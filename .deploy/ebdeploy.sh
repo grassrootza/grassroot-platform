@@ -24,7 +24,7 @@ aws s3 cp s3://$S3BUCKET/grassroot-payments.properties.$ENVIRONMENT environment/
 aws s3 cp s3://$S3BUCKET/jwt_keystore.jks.$ENVIRONMENT environment/jwt_keystore.jks --region $S3REGION
 
 # DOWNLOAD PDF TEMPLATES (AT SOME POINT JUST FETCH FROM S3 DIRECTLY IN APP)
-aws s3 cp s3://$S3BUCKET/pdf_templates/ templates/pdf/ --region $S3REGION
+aws s3 cp s3://$S3BUCKET/pdf_templates/ templates/pdf/ --region $S3REGION --recursive
 
 # STORE DEPLOYMENT DETAILS FOR FURTHER DEBUG
 echo $COMMIT_MESSAGE > deploy_status.txt
