@@ -284,14 +284,13 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
         String desiredFlyer;
         String flyerToReturn;
 
-        if(folder.isDirectory())
-        {
+        if(folder.isDirectory()) {
             logger.info("Folder Path = {}",folderPath);
             filesInFolder = folder.listFiles();
-            for(int x = 0;x < filesInFolder.length;x ++){
-                if(filesInFolder[x].getName().startsWith("group")){
-                    logger.info("File Name = {}",filesInFolder[x].getName());
-                    tempFiles.add(filesInFolder[x]);
+            for (File aFilesInFolder : filesInFolder) {
+                if (aFilesInFolder.getName().startsWith("group")) {
+                    logger.info("File Name = {}", aFilesInFolder.getName());
+                    tempFiles.add(aFilesInFolder);
                 }
             }
 
