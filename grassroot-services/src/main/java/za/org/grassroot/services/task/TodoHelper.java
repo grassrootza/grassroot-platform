@@ -40,8 +40,6 @@ public class TodoHelper {
         Objects.requireNonNull(todoType);
         Objects.requireNonNull(subject);
         Objects.requireNonNull(dueDateTime);
-
-        // todo : add checking logic on assignment set, depending on type
     }
 
     boolean isInformationTodo() {

@@ -707,7 +707,6 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
                 bundle.addNotifications(generateNotifications(template, i, group, addedMemberUids, accountLog));
             }
 
-            // todo : work out why this only actually stores if it's async (which should violate usual async issues, but ..)
             logsAndNotificationsBroker.asyncStoreBundle(bundle);
             logger.info("sent {} logs and {} notifications for storage, exiting", bundle.getLogs().size(), bundle.getNotifications().size());
         }

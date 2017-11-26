@@ -1,6 +1,9 @@
 package za.org.grassroot.services.group;
 
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.GroupJoinMethod;
+import za.org.grassroot.core.domain.Permission;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.enums.GroupDefaultImage;
 
@@ -81,7 +84,7 @@ public interface GroupBroker {
 
     void updateDiscoverable(String userUid, String groupUid, boolean discoverable, String authUserPhoneNumber);
 
-    /** METHODS FOR DEALING WITH SUBGROUPS, LINKING GROUPS, AND MERGING **/ // major todo: move to paid group (since will migrate to paid account feature)
+    /** METHODS FOR DEALING WITH SUBGROUPS, LINKING GROUPS, AND MERGING **/
 
     void link(String userUid, String childGroupUid, String parentGroupUid);
 

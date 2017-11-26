@@ -86,8 +86,7 @@ public class SafetyEvent implements EntityForUserResponse {
 
     @Override
     public String getDescription() {
-        // todo: introduce
-        return null;
+        return "";
     }
 
     @Override

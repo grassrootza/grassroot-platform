@@ -101,7 +101,7 @@ public class DataImportBrokerImpl implements DataImportBroker {
     }
 
     private String convertRoleName(final String cellValue) {
-        // todo : use a more sophisticated form of parsing (bring in Selo?)
+        // todo : use a more sophisticated form of parsing (bring in NLU?)
         if (cellValue.toLowerCase().contains("organizer")) {
             return BaseRoles.ROLE_GROUP_ORGANIZER;
         }

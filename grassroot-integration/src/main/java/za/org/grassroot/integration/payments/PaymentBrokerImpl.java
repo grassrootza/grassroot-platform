@@ -282,7 +282,7 @@ public class PaymentBrokerImpl implements PaymentBroker {
         } else {
             logger.info("Error in response! {}", response.toString());
             sendFailureEmail(null, response.toString());
-            return new PaymentResponse(PaymentResultType.FAILED_OTHER, paymentId); // todo : probably need to respond
+            return new PaymentResponse(PaymentResultType.FAILED_OTHER, paymentId);
         }
     }
 

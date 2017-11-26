@@ -461,8 +461,7 @@ public class TodoBrokerImpl implements TodoBroker {
 
         User user = userRepository.findOneByUid(userUid);
         Group group = uidIdentifiableRepository.findOneByUid(Group.class, JpaEntityType.GROUP, groupUid);
-        // todo : validate user permission
-        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
+        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_READ_UPCOMING_EVENTS);
 
         Specifications<Todo> specs;
         if (limitToNeedingResponse) {
@@ -610,7 +609,7 @@ public class TodoBrokerImpl implements TodoBroker {
 
     private Set<Notification> processValidation(TodoAssignment assignment, String response, TodoLog todoLog) {
         Set<Notification> notifications = new HashSet<>();
-        // todo : restrict notifications to only if on paid account (else just do at deadline)
+        // todo : restrict notifications to only if on paid account (else just do at deadline), and put in proper message
         // todo : as below, handle different kinds of response better
         if ("yes".equalsIgnoreCase(response)) {
             notifications.add(new TodoInfoNotification(assignment.getTodo().getCreatedByUser(),
@@ -621,7 +620,7 @@ public class TodoBrokerImpl implements TodoBroker {
 
     private Set<Notification> notifyCreatorOfVolunteer(TodoAssignment assignment, String response, TodoLog todoLog) {
         Set<Notification> notifications = new HashSet<>();
-        // todo : consider notifying if no volunteer (if on paid account ...)
+        // todo : consider notifying if volunteer responds "no" (if on paid account ...)
         // todo : handle non-predictable text entry (use NLU)
         if ("yes".equalsIgnoreCase(response)) {
             // todo : consider sending messages to other organizers

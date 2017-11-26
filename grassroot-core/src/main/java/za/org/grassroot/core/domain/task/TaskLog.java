@@ -7,7 +7,7 @@ import za.org.grassroot.core.domain.task.Task;
 
 /**
  * Created by luke on 2017/03/10.
- * todo : check if we can use this to clean up ImageRecord
+ * note : check if we can use this to clean up ImageRecord
  */
 public interface TaskLog<T extends Task> extends ActionLog {
 

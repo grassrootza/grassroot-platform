@@ -12,7 +12,7 @@ import java.util.List;
 public interface MeetingLocationRepository extends JpaRepository<MeetingLocation, Long> {
 
     // note : subequery makes this difficult to do with specifications, hence this way
-    // todo : reconsider keeping old calculation results if subquery performance starts degrading
+    // note : reconsider keeping old calculation results if subquery performance starts degrading
     @Query("select NEW za.org.grassroot.core.domain.geo.ObjectLocation("
         + " m.uid"
         + ",m.name"

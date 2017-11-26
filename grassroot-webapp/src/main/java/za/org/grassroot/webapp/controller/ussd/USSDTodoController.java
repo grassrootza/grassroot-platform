@@ -63,9 +63,9 @@ public class USSDTodoController extends USSDBaseController {
         this.todoRequestBroker = todoRequestBroker;
         this.dataExportBroker = dataExportBroker;
         this.messageAssembler = messageAssembler;
+        super.setMessageAssembler(messageAssembler); // else get nulls ... need to fix this properly soon
         this.groupUtil = groupUtil;
         this.learningService = learningService;
-        setMessageAssembler(messageAssembler);
     }
 
     public USSDMenu respondToTodo(User user, EntityForUserResponse entity) {
@@ -85,7 +85,7 @@ public class USSDTodoController extends USSDBaseController {
                 USSDMenu menu = new USSDMenu(confirmationPrompt);
                 menu.addMenuOptions(optionsYesNo(user, REL_PATH + "/respond/validate?todoUid=" + todo.getUid()));
                 menu.addMenuOption(REL_PATH + "/respond/validate?todoUid=" + todo.getUid() + " &" + yesOrNoParam + "=unsure",
-                        getMessage("todo.validate.option.unsure", user));
+                        messageAssembler.getMessage("todo.validate.option.unsure", user));
                 return menu;
             default:
                 throw new TodoTypeMismatchException();
@@ -100,8 +100,8 @@ public class USSDTodoController extends USSDBaseController {
         todoBroker.recordResponse(user.getUid(), todoUid, userResponse, false);
         // todo : if user responds yes, allow them to share? in case yes, leaving a little duplication in here
         String promptMessage = "yes".equalsIgnoreCase(userResponse) ?
-                getMessage("todo.volunteer.yes.prompt", user) :
-                getMessage("todo.volunteer.no.prompt", user);
+                messageAssembler.getMessage("todo.volunteer.yes.prompt", user) :
+                messageAssembler.getMessage("todo.volunteer.no.prompt", user);
         return menuBuilder(welcomeMenu(promptMessage, user));
     }
 
@@ -112,10 +112,10 @@ public class USSDTodoController extends USSDBaseController {
                                        @RequestParam(required = false) String priorInput) throws URISyntaxException {
         final String userInput = StringUtils.isEmpty(priorInput) ? userResponse : priorInput;
         User user = userManager.findByInputNumber(msisdn, saveUrl("/respond/info", todoUid, userInput));
-        USSDMenu menu = new USSDMenu(getMessage(USSDSection.TODO2, "info", promptKey + ".confirm", userInput, user));
+        USSDMenu menu = new USSDMenu(messageAssembler.getMessage(USSDSection.TODO, "info", promptKey + ".confirm", userInput, user));
         menu.addMenuOption(REL_PATH + "/respond/info/confirmed?todoUid=" + todoUid + "&response=" + userInput,
-                getMessage("options.yes", user));
-        menu.addMenuOption(REL_PATH + "/respond/info/revise", getMessage("todo.info.response.change", user));
+                messageAssembler.getMessage("options.yes", user));
+        menu.addMenuOption(REL_PATH + "/respond/info/revise", messageAssembler.getMessage("todo.info.response.change", user));
         return menuBuilder(menu);
     }
 
@@ -125,7 +125,7 @@ public class USSDTodoController extends USSDBaseController {
                                       @RequestParam String response) throws URISyntaxException {
         User user = userManager.findByInputNumber(msisdn, null);
         todoBroker.recordResponse(user.getUid(), todoUid, response, false);
-        return menuBuilder(welcomeMenu(getMessage("todo.info.prompt.done", user), user));
+        return menuBuilder(welcomeMenu(messageAssembler.getMessage("todo.info.prompt.done", user), user));
     }
 
     @RequestMapping(value = FULL_PATH + "/respond/info/revise", method = RequestMethod.GET)
@@ -149,7 +149,7 @@ public class USSDTodoController extends USSDBaseController {
         if (!"unsure".equalsIgnoreCase(userResponse)) {
             todoBroker.recordResponse(user.getUid(), todoUid, userResponse, false);
         }
-        return menuBuilder(welcomeMenu(getMessage("todo.validate." + userResponse + ".prompt", user), user));
+        return menuBuilder(welcomeMenu(messageAssembler.getMessage("todo.validate." + userResponse + ".prompt", user), user));
     }
 
     private String saveUrl(String menu, String todoUid, String userInput) {
@@ -182,7 +182,7 @@ public class USSDTodoController extends USSDBaseController {
         final String requestUid = StringUtils.isEmpty(storedUid) ?
                 todoRequestBroker.create(user.getUid(), type).getUid() : storedUid;
         cacheManager.putUssdMenuForUser("/create", requestUid);
-        USSDGroupUtil.GroupMenuBuilder groupMenu = new USSDGroupUtil.GroupMenuBuilder(user, USSDSection.TODO2)
+        USSDGroupUtil.GroupMenuBuilder groupMenu = new USSDGroupUtil.GroupMenuBuilder(user, USSDSection.TODO)
                 .messageKey("group").urlForExistingGroup("/create/subject?storedUid=" + requestUid);
         return menuBuilder(groupUtil.askForGroup(groupMenu));
     }
@@ -471,7 +471,8 @@ public class USSDTodoController extends USSDBaseController {
                 messageAssembler.getMessage(keyRoot + ".duedate", user));
         menu.addMenuOption(REL_PATH + "/modify/cancel?todoUid=" + todoUid,
                 messageAssembler.getMessage(keyRoot + ".cancel", user));
-        menu.addMenuOption(REL_PATH + "/view?todoUid=" + todoUid, getMessage(optionsKey + "back", user));
+        menu.addMenuOption(REL_PATH + "/view?todoUid=" + todoUid,
+                messageAssembler.getMessage(optionsKey + "back", user));
         return menuBuilder(menu);
     }
 
