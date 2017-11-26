@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 import za.org.grassroot.integration.PublicCredentials;
 import za.org.grassroot.integration.keyprovider.KeyPairProvider;
@@ -26,15 +27,18 @@ public class JwtServiceImpl implements JwtService {
 
     private static final Logger logger = LoggerFactory.getLogger(JwtServiceImpl.class);
 
-    private String kuid;
+    private String keyIdentifier;
     @Value("${grassroot.jwt.token-time-to-live.inMilliSeconds:6000000}")
     private Long jwtTimeToLiveInMilliSeconds;
     @Value("${grassroot.jwt.token-expiry-grace-period.inMilliseconds:1209600000}")
     private Long jwtTokenExpiryGracePeriodInMilliseconds;
+
+    private final Environment environment;
     private final KeyPairProvider keyPairProvider;
 
     @Autowired
-    public JwtServiceImpl(KeyPairProvider keyPairProvider) {
+    public JwtServiceImpl(Environment environment, KeyPairProvider keyPairProvider) {
+        this.environment = environment;
         this.keyPairProvider = keyPairProvider;
     }
 
@@ -46,7 +50,7 @@ public class JwtServiceImpl implements JwtService {
 
     @Override
     public PublicCredentials getPublicCredentials() {
-        return createCredentialEntity(kuid, keyPairProvider.getJWTKey().getPublic());
+        return createCredentialEntity(keyIdentifier, keyPairProvider.getJWTKey().getPublic());
     }
 
     @Override
@@ -58,7 +62,7 @@ public class JwtServiceImpl implements JwtService {
                 Math.min(typeExpiryMillis, request.getShortExpiryMillis());
 
         Instant exp = now.plus(passedExpiryMillis, ChronoUnit.MILLIS);
-        request.getHeaderParameters().put("kid", kuid);
+        request.getHeaderParameters().put("kid", keyIdentifier);
 
         return Jwts.builder()
                 .setHeaderParams(request.getHeaderParameters())
@@ -154,9 +158,9 @@ public class JwtServiceImpl implements JwtService {
     }
 
     private PublicCredentials refreshPublicCredentials() {
-        kuid = UUID.randomUUID().toString();
-        logger.debug("created KUID for main platform: {}", kuid);
-        return createCredentialEntity(kuid, keyPairProvider.getJWTKey().getPublic());
+        keyIdentifier = environment.getProperty("grassroot.publickey.identifier", UUID.randomUUID().toString());
+        logger.debug("created KUID for main platform: {}", keyIdentifier);
+        return createCredentialEntity(keyIdentifier, keyPairProvider.getJWTKey().getPublic());
     }
 
     private PublicCredentials createCredentialEntity(String kuid, PublicKey key) {

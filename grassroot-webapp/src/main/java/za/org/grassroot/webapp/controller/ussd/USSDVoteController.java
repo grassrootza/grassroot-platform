@@ -103,7 +103,7 @@ public class USSDVoteController extends USSDBaseController {
         final String voteUri = voteMenus + "record?voteUid=" + vote.getUid() + "&response=";
         final String optionMsgKey = voteKey + "." + optionsKey;
 
-        USSDMenu openingMenu = new USSDMenu(getMessage(thisSection, startMenu, promptKey + "-vote", promptFields, user));
+        USSDMenu openingMenu = new USSDMenu(getMessage(USSDSection.HOME, startMenu, promptKey + "-vote", promptFields, user));
 
         if (vote.getVoteOptions().isEmpty()) {
             openingMenu.addMenuOption(voteUri + "YES", getMessage(optionMsgKey + "yes", user));

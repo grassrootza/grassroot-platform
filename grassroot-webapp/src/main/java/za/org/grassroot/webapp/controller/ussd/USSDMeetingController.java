@@ -138,11 +138,11 @@ public class USSDMeetingController extends USSDBaseController {
                 meeting.getEventDateTimeAtSAST().format(dateTimeFormat)};
 
         // if the composed message is longer than 120 characters, we are going to go over, so return a shortened message
-        String defaultPrompt = getMessage(thisSection, startMenu, promptKey + "-rsvp", meetingDetails, sessionUser);
+        String defaultPrompt = getMessage(USSDSection.HOME, startMenu, promptKey + "-rsvp", meetingDetails, sessionUser);
         if (defaultPrompt.length() > 120)
-            defaultPrompt = getMessage(thisSection, startMenu, promptKey + "-rsvp.short", meetingDetails, sessionUser);
+            defaultPrompt = getMessage(USSDSection.HOME, startMenu, promptKey + "-rsvp.short", meetingDetails, sessionUser);
 
-        String optionUri = "rsvp" + entityUidUrlSuffix + meeting.getUid();
+        String optionUri = meetingMenus + "rsvp" + entityUidUrlSuffix + meeting.getUid();
         USSDMenu openingMenu = new USSDMenu(defaultPrompt);
         openingMenu.setMenuOptions(new LinkedHashMap<>(optionsYesNo(sessionUser, optionUri, optionUri)));
         return openingMenu;
