@@ -4,6 +4,7 @@ import lombok.AccessLevel;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.validator.routines.EmailValidator;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -56,6 +57,7 @@ public class USSDTodoController extends USSDBaseController {
     @Setter private USSDMessageAssembler messageAssembler;
     @Setter(AccessLevel.PACKAGE) private USSDGroupUtil groupUtil;
 
+    @Autowired
     public USSDTodoController(TodoBroker todoBroker, TodoRequestBroker todoRequestBroker, MemberDataExportBroker dataExportBroker, USSDMessageAssembler messageAssembler, USSDGroupUtil groupUtil, LearningService learningService) {
         this.todoBroker = todoBroker;
         this.todoRequestBroker = todoRequestBroker;
@@ -63,6 +65,7 @@ public class USSDTodoController extends USSDBaseController {
         this.messageAssembler = messageAssembler;
         this.groupUtil = groupUtil;
         this.learningService = learningService;
+        setMessageAssembler(messageAssembler);
     }
 
     public USSDMenu respondToTodo(User user, EntityForUserResponse entity) {

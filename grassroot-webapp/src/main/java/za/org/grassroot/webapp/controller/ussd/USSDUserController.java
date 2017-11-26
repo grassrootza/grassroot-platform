@@ -40,11 +40,11 @@ public class USSDUserController extends USSDBaseController {
         User sessionUser = userManager.findByInputNumber(inputNumber);
         String welcomeMessage;
         if ("0".equals(userName) || "".equals(userName.trim())) {
-            welcomeMessage = getMessage(thisSection, startMenu, promptKey, sessionUser);
+            welcomeMessage = getMessage(USSDSection.HOME, startMenu, promptKey, sessionUser);
             userLogger.recordUserLog(sessionUser.getUid(), UserLogType.USER_SKIPPED_NAME, "");
         } else {
             userManager.updateDisplayName(sessionUser.getUid(), userName);
-            welcomeMessage = getMessage(thisSection, startMenu, promptKey + "-rename-do", sessionUser.nameToDisplay(), sessionUser);
+            welcomeMessage = getMessage(USSDSection.HOME, startMenu, promptKey + "-rename-do", sessionUser.nameToDisplay(), sessionUser);
         }
         return menuBuilder(welcomeMenu(welcomeMessage, sessionUser));
     }
