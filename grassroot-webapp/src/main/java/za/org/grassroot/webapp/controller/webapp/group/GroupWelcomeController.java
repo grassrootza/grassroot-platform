@@ -46,6 +46,7 @@ public class GroupWelcomeController extends BaseController {
         model.addAttribute("groupUid", groupUid);
         model.addAttribute("backUrl", String.format("/group/view?groupUid=%s", groupUid));
         model.addAttribute("existingTemplate", accountGroupBroker.loadTemplate(groupUid));
+        model.addAttribute("hasChildren", accountGroupBroker.hasSubgroups(groupUid));
         return "group/welcome_messages";
     }
 
@@ -100,6 +101,24 @@ public class GroupWelcomeController extends BaseController {
         accountGroupBroker.validateUserAccountAdminForGroup(getUserProfile().getUid(), groupUid);
         accountGroupBroker.deactivateGroupWelcomes(getUserProfile().getUid(), groupUid);
         addMessage(attributes, MessageType.INFO, "group.welcome.deactivated", request);
+        attributes.addAttribute("groupUid", groupUid);
+        return "redirect:/group/view";
+    }
+
+    @RequestMapping(value = "cascade/enable", method = RequestMethod.POST)
+    public String cascadeMessages(@RequestParam String groupUid, RedirectAttributes attributes, HttpServletRequest request) {
+        accountGroupBroker.cascadeWelcomeMessages(getUserProfile().getUid(), groupUid);
+        return addMessageAndGroupUid("group.welcome.cascaded", groupUid, attributes, request);
+    }
+
+    @RequestMapping(value = "cascade/disable", method = RequestMethod.POST)
+    public String disableCascade(@RequestParam String groupUid, RedirectAttributes attributes, HttpServletRequest request) {
+        accountGroupBroker.disableCascadingMessages(getUserProfile().getUid(), groupUid);
+        return addMessageAndGroupUid("group.welcome.cascade.disable", groupUid, attributes, request);
+    }
+
+    private String addMessageAndGroupUid(String messageKey, String groupUid, RedirectAttributes attributes, HttpServletRequest request) {
+        addMessage(attributes, MessageType.SUCCESS, messageKey, request);
         attributes.addAttribute("groupUid", groupUid);
         return "redirect:/group/view";
     }

@@ -227,7 +227,7 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
             group.setPaidFor(true);
 
             bundle.addLog(new AccountLog.Builder(account)
-                    .userUid(user.getUid())
+                    .user(user)
                     .accountLogType(AccountLogType.GROUP_ADDED)
                     .group(group)
                     .paidGroupUid(paidGroup.getUid())
@@ -371,7 +371,7 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
             group.setPaidFor(false);
 
             bundle.addLog(new AccountLog.Builder(account)
-                    .userUid(user.getUid())
+                    .user(user)
                     .accountLogType(AccountLogType.GROUP_REMOVED)
                     .group(group)
                     .paidGroupUid(record.getUid())
@@ -409,7 +409,7 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
         String description = group.getMembers().size() + " members @ : " + account.getFreeFormCost(); // so it's recorded at cost of sending
 
         AccountLog accountLog = new AccountLog.Builder(account)
-                .userUid(userUid)
+                .user(user)
                 .accountLogType(AccountLogType.MESSAGE_SENT)
                 .group(group)
                 .paidGroupUid(paidGroup.getUid())
@@ -530,7 +530,7 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
                 .accountLogType(AccountLogType.GROUP_WELCOME_MESSAGES_CREATED)
                 .group(group)
                 .paidGroupUid(paidGroup.getUid())
-                .userUid(userUid)
+                .user(user)
                 .description(String.format("Duration: %s, messages: %s", delayToSend.toString(), messages.toString()))
                 .build());
 
@@ -568,7 +568,7 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
         if (template != null) {
             logger.error("Conflict in group welcome messages ... check logs and debug");
             storeAccountLogPostCommit(new AccountLog.Builder(template.getAccount())
-                    .userUid(user.getUid())
+                    .user(user)
                     .group(group)
                     .accountLogType(AccountLogType.GROUP_WELCOME_CONFLICT)
                     .description("Group welcome messages deactivated due to conflicting creation of new template").build());
@@ -622,7 +622,7 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
                 .accountLogType(AccountLogType.GROUP_WELCOME_MESSAGES_CHANGED)
                 .group(group)
                 .paidGroupUid(paidGroup.getUid())
-                .userUid(userUid)
+                .user(user)
                 .description(logDescription).build());
     }
 
@@ -649,7 +649,7 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
                 .accountLogType(AccountLogType.GROUP_WELCOME_DEACTIVATED)
                 .group(group)
                 .paidGroupUid(paidGroup.getUid())
-                .userUid(userUid).build());
+                .user(user).build());
 
     }
 
@@ -684,14 +684,18 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
 
         Group group = groupRepository.findOneByUid(groupUid);
         PaidGroup latestRecord = paidGroupRepository.findTopByGroupOrderByExpireDateTimeDesc(group);
-        NotificationTemplate template = templateRepository.findTopByGroupAndTriggerTypeAndActiveTrue(group,
-                NotificationTriggerType.ADDED_TO_GROUP);
+        NotificationTemplate template = checkForGroupTemplate(group);
+
+        // note: at some point do this recursively, but for the moment, a one level check is fine
+        if ((template == null || !template.isActive()) && group.getParent() != null) {
+            template = checkForGroupTemplate(group.getParent());
+        }
 
         if (template != null && template.isActive()) {
             LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
             AccountLog accountLog = new AccountLog.Builder(account)
-                    .userUid(addingUserUid)
+                    .user(userRepository.findOneByUid(addingUserUid))
                     .group(group)
                     .paidGroupUid(latestRecord.getUid())
                     .accountLogType(AccountLogType.MESSAGE_SENT)
@@ -703,10 +707,56 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
                 bundle.addNotifications(generateNotifications(template, i, group, addedMemberUids, accountLog));
             }
 
-            // todo : work out why this only actually stores if it's async (which should violate usual async issues, but ..)
             logsAndNotificationsBroker.asyncStoreBundle(bundle);
             logger.info("sent {} logs and {} notifications for storage, exiting", bundle.getLogs().size(), bundle.getNotifications().size());
         }
+    }
+
+    private NotificationTemplate checkForGroupTemplate(Group group) {
+        return templateRepository.findTopByGroupAndTriggerTypeAndActiveTrue(group, NotificationTriggerType.ADDED_TO_GROUP);
+    }
+
+    @Override
+    @Transactional
+    public void cascadeWelcomeMessages(String userUid, String groupUid) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(groupUid);
+
+        validateUserAccountAdminForGroup(userUid, groupUid);
+
+        NotificationTemplate template = loadTemplate(groupUid);
+        template.setCascade(true);
+
+        createAndStoreSingleAccountLog(new AccountLog.Builder(template.getAccount())
+                .user(userRepository.findOneByUid(userUid))
+                .group(template.getGroup())
+                .accountLogType(AccountLogType.GROUP_WELCOME_CASCADE_ON)
+                .build());
+    }
+
+    @Override
+    @Transactional
+    public void disableCascadingMessages(String userUid, String groupUid) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(groupUid);
+
+        validateUserAccountAdminForGroup(userUid, groupUid);
+
+        NotificationTemplate template = loadTemplate(groupUid);
+        template.setCascade(false);
+
+        createAndStoreSingleAccountLog(new AccountLog.Builder(template.getAccount())
+                .user(userRepository.findOneByUid(userUid))
+                .group(template.getGroup())
+                .accountLogType(AccountLogType.GROUP_WELCOME_CASCADE_OFF)
+                .build());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean hasSubgroups(String groupUid) {
+        Group group = groupRepository.findOneByUid(groupUid);
+        return group.getDirectChildren() != null && !group.getDirectChildren().isEmpty();
     }
 
     private Set<Notification> generateNotifications(NotificationTemplate templateEntity, int templateStringIndex,
@@ -773,7 +823,7 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
         bundle.addLog(new AccountLog.Builder(account)
-                .userUid(user.getUid())
+                .user(user)
                 .accountLogType(accountLogType)
                 .group(group)
                 .paidGroupUid(paidGroupUid)

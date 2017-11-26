@@ -144,9 +144,17 @@
                 <li th:each="task, iterStat : ${upcomingTasks}" class="list-group-item">
                   <div class="row">
                     <!-- LHS: Description of task -->
-                    <div class="col-md-8 event-item">
+                    <div th:unless="${task.type == 'TODO'}" class="col-md-8 event-item">
                       <a class="list-header" href="#" th:href="'javascript:fetchTaskDescription(\'' + ${task.taskUid} + '\', \'' + ${task.type} + '\')'">
                         <span th:text="${task.type}">Meeting</span>: <span th:text="${task.title}">Title</span></a>
+                      <p class="list-group-text" th:text="#{web.home.__${task.type}__.description(${task.parentName},
+                      ${#temporals.format(task.getDeadlineDateTime(),'h:mm a, dd MMMM')})}">Description</p>
+                    </div>
+
+                    <div th:if="${task.type == 'TODO'}" class="col-md-8 event-item">
+                      <a class="list-header" href="#" th:href="@{/todo/view(todoUid=${task.taskUid})}">
+                        <span th:text="#{web.todo.type.header.__${task.todoType}__}">TODO (...)</span>:
+                        <span th:text="${task.title}">Title</span></a>
                       <p class="list-group-text" th:text="#{web.home.__${task.type}__.description(${task.parentName},
                       ${#temporals.format(task.getDeadlineDateTime(),'h:mm a, dd MMMM')})}">Description</p>
                     </div>
@@ -178,7 +186,7 @@
                             </div>
                           </div>
                           <div th:case="TODO">
-                            <button type="button" class="btn default-button btn-positive" data-toggle="modal" data-target="#todoCompleteModal"
+                            <button th:if="${task.canAction}" type="button" class="btn default-button btn-positive" data-toggle="modal" data-target="#todoCompleteModal"
                                     data:uid="${task.taskUid}">
                               Mark complete</button>
                           </div>
@@ -200,7 +208,7 @@
                             </div>
                             <div th:case="TODO">
                               <a href="#" th:href="'javascript:fetchTaskDescription(\'' + ${task.taskUid} + '\', \'' + ${task.type} + '\')'">
-                                <span class="badge">You marked it complete</span>
+                                <span class="badge">You responded</span>
                               </a>
                             </div>
                         </div>

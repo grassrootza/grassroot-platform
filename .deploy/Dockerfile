@@ -10,7 +10,7 @@ COPY .deploy/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 ENV GRADLE_USER_HOME=/usr/src/grassroot/.gradle
 
 # SETUP ENVIRONMENT AND LOGS FOLDER THAT WILL BE SHARED WITH THE HOST
-RUN mkdir -p /usr/src/grassroot/environment && mkdir -p /usr/src/grassroot/log
+RUN mkdir -p /usr/src/grassroot/environment && mkdir -p /usr/src/grassroot/log && mkdir -p /usr/src/grassroot/templates/pdf
 
 # COPY ALL SOURCE CODE, ALTERNATIVELY WE COULD BE COPYING JUST THE JAR FILES (TO REVIEW LATER)
 COPY . /usr/src/grassroot

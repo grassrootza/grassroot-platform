@@ -238,7 +238,7 @@ public class UserRepositoryTest {
         User user = new User("099654");
         Role role = new Role("", null);
         Group group = new Group("", user);
-        Membership newMember = new Membership(group, user, role, Instant.now());
+        Membership newMember = new Membership(group, user, role, Instant.now(), GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
         user.addMappedByMembership(newMember);
         assertThat(user.getMemberships().size(), is(1));
         userRepository.save(user);
@@ -255,7 +255,7 @@ public class UserRepositoryTest {
         assertNotNull(userMember.getUid());
         assertTrue(userMember.getMemberships().isEmpty());
 
-        Membership newMember = new Membership(group, userMember, role, Instant.now());
+        Membership newMember = new Membership(group, userMember, role, Instant.now(), GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
         assertThat(newMember.getGroup().getGroupName(), is("Group"));
         assertThat(newMember.getUser().getPhoneNumber(), is("1234"));
         assertThat(userMember.getMemberships().size(),is(0));
@@ -426,7 +426,7 @@ public class UserRepositoryTest {
         User u1 = userRepository.save(new User("0821234560"));
         User u2 = userRepository.save(new User("0821234561"));
         Group group = groupRepository.save(new Group("rsvp yes",u1));
-        group.addMember(u2, BaseRoles.ROLE_ORDINARY_MEMBER);
+        group.addMember(u2, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
         group = groupRepository.save(group);
         Event event = eventRepository.save(new MeetingBuilder().setName("rsvp event").setStartDateTime(Instant.now()).setUser(u1).setParent(group).setEventLocation("someLocation").setIncludeSubGroups(true).createMeeting());
         EventLog eventLog = eventLogRepository.save(new EventLog(u1, event, EventLogType.RSVP, EventRSVPResponse.YES));
@@ -441,7 +441,7 @@ public class UserRepositoryTest {
         User u2 = userRepository.save(new User("0821234571"));
 
         Group group = groupRepository.save(new Group("rsvp yes",u1));
-        group.addMember(u2, BaseRoles.ROLE_ORDINARY_MEMBER);
+        group.addMember(u2, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
         group = groupRepository.save(group);
 
         Event event = eventRepository.save(new MeetingBuilder().setName("rsvp event").setStartDateTime(Instant.now()).setUser(u1).setParent(group).setEventLocation("someLocation").setIncludeSubGroups(true).createMeeting());
@@ -495,8 +495,8 @@ public class UserRepositoryTest {
         User user5 = userRepository.save(new User("0701110002", "no name"));
 
         Group testGroup = groupRepository.save(new Group("test group", user1));
-        testGroup.addMember(user1, BaseRoles.ROLE_ORDINARY_MEMBER);
-        testGroup.addMember(user2, BaseRoles.ROLE_ORDINARY_MEMBER);
+        testGroup.addMember(user1, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+        testGroup.addMember(user2, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
         testGroup = groupRepository.save(testGroup);
 
         List<User> usersByPhone = userRepository.findByPhoneNumberContaining(phoneBase);
@@ -537,9 +537,9 @@ public class UserRepositoryTest {
         User user3 = userRepository.save(new User(phoneBase + "3", "tester2"));
 
         Group testGroup = groupRepository.save(new Group("tg1", testUser));
-        testGroup.addMember(testUser, BaseRoles.ROLE_ORDINARY_MEMBER);
-        testGroup.addMember(user2, BaseRoles.ROLE_ORDINARY_MEMBER);
-        testGroup.addMember(user3, BaseRoles.ROLE_ORDINARY_MEMBER);
+        testGroup.addMember(testUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+        testGroup.addMember(user2, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+        testGroup.addMember(user3, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
         Group testGroupFromDb = groupRepository.save(testGroup);
 
         assertThat(testGroupFromDb.getMemberships().size(), is(3));
@@ -555,42 +555,5 @@ public class UserRepositoryTest {
         assertTrue(nonCreatorMembers.contains(user3));
 
     }
-
-    // major todo : move this test to services, as now uses specifications
-
-    /* @Test
-    public void shouldReturnNamesInGraph() {
-        String phoneBase = "080555000";
-        String nameBase = "tester ";
-
-        List<User> testUsers = new ArrayList<>();
-
-        for (int i = 0; i < 5; i++) {
-            testUsers.add(new User(phoneBase + i, nameBase + i));
-        }
-
-        userRepository.save(testUsers);
-        assertEquals(userRepository.count(), testUsers.size());
-
-        Group testGroup1 = new Group("tg1", testUsers.get(0));
-        testGroup1.addMember(testUsers.get(0));
-        testGroup1.addMember(testUsers.get(1));
-        groupRepository.save(testGroup1);
-
-        assertEquals(groupRepository.count(), 1);
-
-        List<Object[]> graph = userRepository.findDisplayNamesInGraph(testUsers.get(0), "%test%");
-        assertNotNull(graph);
-        assertEquals(2, graph.size());
-
-        List<String> phoneNumbers = graph.stream().map(o -> String.valueOf(o[1])).collect(Collectors.toList());
-        List<String> displayNames = graph.stream().map(o -> String.valueOf(o[0])).collect(Collectors.toList());
-
-        assertTrue(phoneNumbers.contains(testUsers.get(1).getPhoneNumber()));
-        assertTrue(displayNames.contains(testUsers.get(1).getDisplayName()));
-
-        assertFalse(phoneNumbers.contains(testUsers.get(2).getPhoneNumber()));
-        assertFalse(displayNames.contains(testUsers.get(2).getDisplayName()));
-    }*/
 
 }

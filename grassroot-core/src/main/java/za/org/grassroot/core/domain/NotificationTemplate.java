@@ -19,8 +19,7 @@ import java.util.Locale;
  */
 @Entity
 @Table(name = "notification_template")
-@Getter
-@Builder
+@Getter @Builder
 public class NotificationTemplate {
 
     public static final int MAX_MESSAGES = 3;
@@ -78,6 +77,10 @@ public class NotificationTemplate {
     @ManyToOne
     @JoinColumn(name = "group_id")
     @Setter private Group group;
+
+    @Basic
+    @Column(name = "cascade")
+    @Setter @Builder.Default private boolean cascade = false;
 
     @Tolerate
     private NotificationTemplate() {

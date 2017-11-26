@@ -15,5 +15,7 @@ public interface EventLogBroker {
 
     boolean hasUserRespondedToEvent(Event event, User user);
 
+    EventLog findUserResponseIfExists(String userUid, String eventUid);
+
     ResponseTotalsDTO getResponseCountForEvent(Event event);
 }

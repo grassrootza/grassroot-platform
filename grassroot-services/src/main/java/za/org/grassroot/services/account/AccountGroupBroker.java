@@ -69,4 +69,10 @@ public interface AccountGroupBroker {
 
     void generateGroupWelcomeNotifications(String addingUserUid, String groupUid, Set<String> addedMemberUids);
 
+    void cascadeWelcomeMessages(String userUid, String groupUid);
+
+    void disableCascadingMessages(String userUid, String groupUid);
+
+    boolean hasSubgroups(String groupUid);
+
 }

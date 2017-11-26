@@ -3,19 +3,25 @@ package za.org.grassroot.webapp.controller.ussd;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.GroupJoinMethod;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Vote;
 import za.org.grassroot.core.domain.task.VoteRequest;
 import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.services.UserResponseBroker;
+import za.org.grassroot.services.task.VoteBroker;
 import za.org.grassroot.services.task.enums.EventListTimeType;
 import za.org.grassroot.webapp.util.USSDEventUtil;
 
 import java.time.*;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static org.mockito.Mockito.*;
@@ -40,6 +46,12 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
     private static final String path = "/ussd/vote/";
     private User testUser;
 
+    @Mock VoteBroker voteBrokerMock;
+    @Mock UserResponseBroker userResponseBrokerMock;
+
+    @InjectMocks
+    private USSDHomeController ussdHomeController;
+
     @InjectMocks
     private USSDVoteController ussdVoteController;
 
@@ -48,15 +60,52 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
 
     @Before
     public void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(ussdVoteController)
+        mockMvc = MockMvcBuilders.standaloneSetup(ussdHomeController, ussdVoteController)
                 .setHandlerExceptionResolvers(exceptionResolver())
                 .setValidator(validator())
                 .setViewResolvers(viewResolver())
                 .build();
+        wireUpHomeController(ussdHomeController);
         wireUpMessageSourceAndGroupUtil(ussdVoteController);
+        ussdHomeController.setVoteController(ussdVoteController);
         ussdEventUtil.setMessageSource(messageSource());
         ussdVoteController.setEventUtil(ussdEventUtil);
+        ussdVoteController.setGroupUtil(ussdGroupUtil);
         testUser = new User(testUserPhone);
+    }
+
+    @Test
+    public void voteRequestScreenShouldWorkInAllLanguages() throws Exception {
+        testUser = new User(testUserPhone, "test user");
+        Group testGroup = new Group("test group", testUser);
+        testGroup.addMember(testUser, BaseRoles.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+        Vote vote = new Vote("are unit tests working?", Instant.now().plus(1, ChronoUnit.HOURS), testUser, testGroup);
+
+        List<User> votingUsers = new ArrayList<>(languageUsers);
+        votingUsers.add(testUser);
+
+        for (User user : votingUsers) {
+
+            testGroup.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER); // this may be redundant
+            user.setHasInitiatedSession(false);
+
+            when(userManagementServiceMock.loadOrCreateUser(user.getPhoneNumber())).thenReturn(user);
+            when(userManagementServiceMock.findByInputNumber(user.getPhoneNumber())).thenReturn(user);
+            when(userResponseBrokerMock.checkForEntityForUserResponse(user.getUid(), true)).thenReturn(vote);
+
+            mockMvc.perform(get("/ussd/start").param(phoneParam, user.getPhoneNumber())).andExpect(status().isOk());
+            verify(userResponseBrokerMock, times(1)).checkForEntityForUserResponse(user.getUid(), true);
+
+            // note: the fact that message source accessor is not wired up may mean this is not actually testing
+            when(eventBrokerMock.load(vote.getUid())).thenReturn(vote);
+            mockMvc.perform(get("/ussd/start").param(phoneParam, user.getPhoneNumber()));
+            mockMvc.perform(get("/ussd/vote/record")
+                    .param(phoneParam, user.getPhoneNumber())
+                    .param("voteUid", "" + vote.getUid())
+                    .param("response", "yes")).andExpect(status().isOk());
+
+            verify(voteBrokerMock, times(1)).recordUserVote(user.getUid(), vote.getUid(), "yes");
+        }
     }
 
     @Test
@@ -66,7 +115,7 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
                                                new Group("tg2", testUser),
                                                new Group("tg3", testUser));
 
-        testGroups.forEach(tg -> tg.addMember(testUser, BaseRoles.ROLE_ORDINARY_MEMBER));
+        testGroups.forEach(tg -> tg.addMember(testUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER));
 
         when(userManagementServiceMock.findByInputNumber(eq(testUserPhone), anyString())).thenReturn(testUser);
         when(permissionBrokerMock.countActiveGroupsWithPermission(testUser, GROUP_PERMISSION_CREATE_GROUP_VOTE)).thenReturn(3);

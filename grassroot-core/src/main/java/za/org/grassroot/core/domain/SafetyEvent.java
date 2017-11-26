@@ -1,5 +1,7 @@
 package za.org.grassroot.core.domain;
 
+import lombok.Getter;
+import lombok.Setter;
 import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.enums.LocationSource;
 import za.org.grassroot.core.util.UIDGenerator;
@@ -7,13 +9,15 @@ import za.org.grassroot.core.util.UIDGenerator;
 import javax.persistence.*;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Created by paballo on 2016/07/18.
  */
-@Entity
+@Entity @Getter
 @Table(name = "safety_event")
-public class SafetyEvent {
+public class SafetyEvent implements EntityForUserResponse {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
@@ -27,7 +31,7 @@ public class SafetyEvent {
     private Instant createdDateTime;
 
     @Column(name = "scheduled_reminder_time")
-    private Instant scheduledReminderTime;
+    @Setter private Instant scheduledReminderTime;
 
     @ManyToOne()
     @JoinColumn(name = "activated_by_user", nullable = false, updatable = false)
@@ -35,16 +39,16 @@ public class SafetyEvent {
 
     @ManyToOne()
     @JoinColumn(name = "group_id", nullable = false, updatable = false)
-    private Group group;
+    @Setter private Group group;
 
     @Column(name = "active")
-    private boolean active;
+    @Setter private boolean active;
 
     @Column(name = "false_alarm")
-    private boolean falseAlarm;
+    @Setter private boolean falseAlarm;
 
     @Column(name = "responded_to")
-    private boolean respondedTo;
+    @Setter private boolean respondedTo;
 
     @Embedded
     @AttributeOverrides({
@@ -70,80 +74,39 @@ public class SafetyEvent {
         this.scheduledReminderTime = createdDateTime.plus(20, ChronoUnit.MINUTES);
     }
 
-    public Long getId() {
-        return id;
+    @Override
+    public JpaEntityType getJpaEntityType() {
+        return JpaEntityType.SAFETY;
     }
 
-    public String getUid() {
-        return uid;
+    @Override
+    public String getName() {
+        return activatedBy.getName();
     }
 
-    public Instant getCreatedDateTime() {
-        return createdDateTime;
+    @Override
+    public String getDescription() {
+        return "";
     }
 
-    public void setCreatedDateTime(Instant createdDateTime) {
-        this.createdDateTime = createdDateTime;
+    @Override
+    public boolean hasName() {
+        return true;
     }
 
-    public User getActivatedBy() {
-        return activatedBy;
+    @Override
+    public Set<User> getMembers() {
+        return new HashSet<>();
     }
 
-    public void setActivatedBy(User activatedBy) {
-        this.activatedBy = activatedBy;
-    }
-
-    public Group getGroup() {
+    @Override
+    public Group getThisOrAncestorGroup() {
         return group;
     }
-
-    public void setGroup(Group group) {
-        this.group = group;
-    }
-
 
     public void updateScheduledReminderTime() {
         this.scheduledReminderTime = scheduledReminderTime.plus(20, ChronoUnit.MINUTES);
     }
-
-
-    public Instant getScheduledReminderTime() {
-        return scheduledReminderTime;
-    }
-
-    public void setScheduledReminderTime(Instant scheduledReminderTime) {
-        this.scheduledReminderTime = scheduledReminderTime;
-    }
-
-    public boolean isActive() {
-        return active;
-    }
-
-    public void setActive(Boolean active) {
-        this.active = active;
-    }
-
-    public void setActive(boolean active) {
-        this.active = active;
-    }
-
-    public boolean isFalseAlarm() {
-        return falseAlarm;
-    }
-
-    public void setFalseAlarm(boolean falseAlarm) {
-        this.falseAlarm = falseAlarm;
-    }
-
-    public boolean isRespondedTo() {
-        return respondedTo;
-    }
-
-    public void setRespondedTo(boolean respondedTo) {
-        this.respondedTo = respondedTo;
-    }
-
 
     @Override
     public String toString() {

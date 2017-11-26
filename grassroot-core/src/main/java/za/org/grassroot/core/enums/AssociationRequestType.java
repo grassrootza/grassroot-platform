@@ -6,6 +6,8 @@ package za.org.grassroot.core.enums;
 public enum AssociationRequestType {
 
     GROUP_JOIN,
+    GROUP_OBSERVE,
+    USER_MANAGER,
     ACCOUNT_SPONSOR
 
 }

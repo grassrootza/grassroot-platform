@@ -117,6 +117,11 @@ public class LiveWireLog implements ActionLog {
         return uid;
     }
 
+    @Override
+    public User getUser() {
+        return userTakingAction;
+    }
+
     public Instant getCreationTime() {
         return creationTime;
     }

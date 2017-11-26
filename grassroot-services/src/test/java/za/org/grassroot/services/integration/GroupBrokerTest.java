@@ -17,17 +17,18 @@ import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
-import za.org.grassroot.services.group.GroupBroker;
-import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.services.PermissionBroker;
+import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.user.UserManagementService;
 
 import java.util.Set;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
+import static za.org.grassroot.core.domain.GroupJoinMethod.ADDED_BY_OTHER_MEMBER;
 import static za.org.grassroot.services.group.GroupPermissionTemplate.DEFAULT_GROUP;
 
 
@@ -108,7 +109,7 @@ public class GroupBrokerTest extends AbstractTransactionalJUnit4SpringContextTes
                                                       new MembershipInfo("0810001112", ordinaryRole, ""),
                                                       new MembershipInfo("0810001113", ordinaryRole, ""),
                                                       new MembershipInfo("0810001114", ordinaryRole, ""));
-        groupBroker.addMembers(user.getUid(), group.getUid(), members, false);
+        groupBroker.addMembers(user.getUid(), group.getUid(), members, ADDED_BY_OTHER_MEMBER, false);
         log.info("ZOG: Group now looks like ... " + group.toString() + "... with groupMembers ... " + group.getMembers());
         assertNotNull(group.getMembers());
         assertEquals(4, group.getMembers().size());
@@ -149,7 +150,7 @@ public class GroupBrokerTest extends AbstractTransactionalJUnit4SpringContextTes
         Group group1 = groupBroker.create(user1.getUid(), testGroupBase + "1", null, Sets.newHashSet(member1, member2), DEFAULT_GROUP, null, null, false);
         Group group2 = groupBroker.create(user2.getUid(), testGroupBase + "2", null, Sets.newHashSet(member2a, member1a), DEFAULT_GROUP, null, null, false);
 
-        groupBroker.addMembers(user2.getUid(), group2.getUid(), Sets.newHashSet(member1), false);
+        groupBroker.addMembers(user2.getUid(), group2.getUid(), Sets.newHashSet(member1), ADDED_BY_OTHER_MEMBER, false);
         assertTrue(group2.getMembers().contains(user1));
         Set<Group> list1 = permissionBroker.getActiveGroupsWithPermission(user1, null);
         Set<Group> list2 = permissionBroker.getActiveGroupsWithPermission(user1, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);

@@ -33,7 +33,6 @@ import za.org.grassroot.services.livewire.DataSubscriberBroker;
 import za.org.grassroot.services.livewire.LiveWireAlertBroker;
 import za.org.grassroot.services.livewire.LiveWireSendingBroker;
 import za.org.grassroot.webapp.controller.BaseController;
-import za.org.grassroot.webapp.model.LiveWireAlertDTO;
 
 import javax.servlet.http.HttpServletRequest;
 import java.security.InvalidParameterException;
@@ -96,12 +95,6 @@ public class LiveWireAlertReviewController extends BaseController {
         if (canRelease) {
             model.addAttribute("publicLists", dataSubscriberBroker.listPublicSubscribers());
         }
-    }
-
-    @RequestMapping(value = "details", method = RequestMethod.GET)
-    @ResponseBody
-    public LiveWireAlertDTO getAlertDetails(@RequestParam String alertUid) {
-        return new LiveWireAlertDTO(liveWireAlertBroker.load(alertUid));
     }
 
     @RequestMapping(value = "view", method = RequestMethod.GET)

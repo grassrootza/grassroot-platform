@@ -16,8 +16,6 @@ public interface GcmRegistrationBroker {
 
     void changeTopicSubscription(String userUid, String topicId, boolean subscribe) throws IOException;
 
-    void refreshAllGroupTopicSubscriptions(String userUid, String registrationId);
-
     boolean hasGcmKey(User user);
 
 }

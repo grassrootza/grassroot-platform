@@ -32,7 +32,7 @@ import za.org.grassroot.integration.PdfGeneratingService;
 import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.services.exception.GroupSizeLimitExceededException;
 import za.org.grassroot.services.group.GroupBroker;
-import za.org.grassroot.services.group.GroupExportBroker;
+import za.org.grassroot.services.group.MemberDataExportBroker;
 import za.org.grassroot.services.group.GroupPermissionTemplate;
 import za.org.grassroot.services.group.GroupQueryBroker;
 import za.org.grassroot.services.task.TaskBroker;
@@ -77,20 +77,20 @@ public class GroupController extends BaseController {
     private final GroupBroker groupBroker;
     private final TaskBroker taskBroker;
     private final GroupQueryBroker groupQueryBroker;
-    private final GroupExportBroker groupExportBroker;
+    private final MemberDataExportBroker memberDataExportBroker;
     private final AccountGroupBroker accountGroupBroker;
     private final Validator groupWrapperValidator;
     private NotificationService notificationService;
     private PdfGeneratingService generatingService;
 
     @Autowired
-    public GroupController(GroupBroker groupBroker, TaskBroker taskBroker, GroupQueryBroker groupQueryBroker, GroupExportBroker groupExportBroker,
+    public GroupController(GroupBroker groupBroker, TaskBroker taskBroker, GroupQueryBroker groupQueryBroker, MemberDataExportBroker memberDataExportBroker,
                            AccountGroupBroker accountBroker, @Qualifier("groupWrapperValidator") Validator groupWrapperValidator,
                            NotificationService notificationService, PdfGeneratingService generatingService) {
         this.groupBroker = groupBroker;
         this.taskBroker = taskBroker;
         this.groupQueryBroker = groupQueryBroker;
-        this.groupExportBroker = groupExportBroker;
+        this.memberDataExportBroker = memberDataExportBroker;
         this.accountGroupBroker = accountBroker;
         this.groupWrapperValidator = groupWrapperValidator;
         this.notificationService = notificationService;
@@ -216,7 +216,8 @@ public class GroupController extends BaseController {
         if (PhoneNumberUtil.testInputNumber(phoneNumber)) {
             MembershipInfo newMember = new MembershipInfo(phoneNumber, roleName, displayName);
             try {
-                groupBroker.addMembers(getUserProfile().getUid(), groupUid, Sets.newHashSet(newMember), false);
+                groupBroker.addMembers(getUserProfile().getUid(), groupUid, Sets.newHashSet(newMember),
+                        GroupJoinMethod.ADDED_BY_OTHER_MEMBER, false);
                 addMessage(attributes, MessageType.SUCCESS, "group.addmember.success", request);
             } catch (GroupSizeLimitExceededException e) {
                 addMessage(attributes, MessageType.ERROR, "group.addmember.limit", request);
@@ -452,7 +453,8 @@ public class GroupController extends BaseController {
                 membershipInfoSet.add(new MembershipInfo(number, BaseRoles.ROLE_ORDINARY_MEMBER, null));
             // todo : intercept before it gets here (i.e., put a count and do a validation)
             try {
-                groupBroker.addMembers(getUserProfile().getUid(), groupUid, membershipInfoSet, false);
+                groupBroker.addMembers(getUserProfile().getUid(), groupUid, membershipInfoSet,
+                        GroupJoinMethod.BULK_IMPORT, false);
             } catch (GroupSizeLimitExceededException e) {
                 sizeExceeded = true;
             }
@@ -616,7 +618,7 @@ public class GroupController extends BaseController {
     }
 
     @RequestMapping(value = "link", method = RequestMethod.POST)
-    public String linkToParent(Model model, @RequestParam String groupUid, @RequestParam String parentUid,
+    public String linkToParent(@RequestParam String groupUid, @RequestParam String parentUid,
                                RedirectAttributes redirectAttributes, HttpServletRequest request) {
         // call will only succeed if user has requisite permissions (and link is only present on view page if so)
         groupBroker.link(getUserProfile().getUid(), groupUid, parentUid);
@@ -725,7 +727,7 @@ public class GroupController extends BaseController {
         response.setHeader("Pragma", "no-cache");
         response.setDateHeader("Expires", 0);
 
-        XSSFWorkbook xls = groupExportBroker.exportGroup(groupUid);
+        XSSFWorkbook xls = memberDataExportBroker.exportGroup(groupUid);
         xls.write(response.getOutputStream());
         response.flushBuffer();
     }

@@ -7,6 +7,10 @@ import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountLog;
 import za.org.grassroot.core.domain.account.AccountLog_;
 import za.org.grassroot.core.domain.task.*;
+import za.org.grassroot.core.domain.task.EventLog_;
+import za.org.grassroot.core.domain.task.Event_;
+import za.org.grassroot.core.domain.task.TodoLog_;
+import za.org.grassroot.core.domain.task.Todo_;
 import za.org.grassroot.core.enums.AccountLogType;
 import za.org.grassroot.core.enums.UserMessagingPreference;
 

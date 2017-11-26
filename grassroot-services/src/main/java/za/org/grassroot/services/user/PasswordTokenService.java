@@ -18,6 +18,8 @@ public interface PasswordTokenService {
 
     void validateOtp(String username, String otp);
 
+    void validatePassword(String phoneNumber, String password);
+
     boolean isShortLivedOtpValid(String phoneNumber, String code);
 
     boolean isLongLiveAuthValid(String phoneNumber, String code);

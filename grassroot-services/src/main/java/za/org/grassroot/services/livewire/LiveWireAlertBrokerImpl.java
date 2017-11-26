@@ -566,8 +566,8 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
                 log);
     }
 
-    @Override
-    public List<LiveWireAlert> fetchAlertsNearUser(String userUid, GeoLocation location, String createdByMe, Integer radius, GeographicSearchType searchType) {
+    public List<LiveWireAlert> fetchAlertsNearUser(String userUid, GeoLocation location,
+                                                   int radius, GeographicSearchType searchType) {
 
         User user = userRepository.findOneByUid(userUid);
 
@@ -575,8 +575,14 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
             throw new InvalidParameterException("Invalid GeoLocation object.");
         }
 
+        if(radius < 0){
+            throw new InvalidParameterException("Invalid Radius,should be positive");
+        }
+
         String mineFilter = searchType.equals(GeographicSearchType.PUBLIC) ? " AND l.creatingUser <>:user "
                 : searchType.equals(GeographicSearchType.PRIVATE) ? " AND l.creatingUser = :user " : "";
+
+        logger.info("searchType = {}, on whether mine? = {}", searchType, mineFilter);
 
         Instant lastWeekTime = getLastWeekTime();
 
@@ -597,6 +603,7 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
                 "           + SIN(RADIANS(:latpoint)) " +
                 "           * SIN(RADIANS(l.location.latitude))))) ";
 
+        logger.debug("livewire alert location search = {}", query);
 
         TypedQuery<LiveWireAlert> typedQuery = entityManager.createQuery(query,LiveWireAlert.class)
                 .setParameter("radius", (double)radius)
@@ -613,6 +620,6 @@ public class LiveWireAlertBrokerImpl implements LiveWireAlertBroker {
     }
 
     private Instant getLastWeekTime(){
-        return Instant.now().minus(7, ChronoUnit.DAYS);
+        return Instant.now().minus(21, ChronoUnit.DAYS);
     }
 }

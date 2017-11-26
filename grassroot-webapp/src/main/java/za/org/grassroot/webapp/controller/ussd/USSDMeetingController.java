@@ -1,8 +1,7 @@
 package za.org.grassroot.webapp.controller.ussd;
 
 import com.google.common.collect.Sets;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -18,20 +17,21 @@ import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.domain.task.MeetingRequest;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
-import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.integration.exception.SeloParseDateTimeFailure;
 import za.org.grassroot.services.account.AccountGroupBroker;
-import za.org.grassroot.services.task.enums.EventListTimeType;
 import za.org.grassroot.services.exception.AccountLimitExceededException;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.services.geo.GeoLocationBroker;
+import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.group.GroupPermissionTemplate;
+import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.EventLogBroker;
 import za.org.grassroot.services.task.EventRequestBroker;
+import za.org.grassroot.services.task.enums.EventListTimeType;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
@@ -41,38 +41,38 @@ import za.org.grassroot.webapp.util.USSDGroupUtil;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static za.org.grassroot.core.util.DateTimeUtil.*;
+import static za.org.grassroot.webapp.enums.USSDSection.fromString;
 import static za.org.grassroot.webapp.util.USSDUrlUtil.*;
 
 /**
  * @author luke on 2015/08/14.
  */
-@RequestMapping(method = GET, produces = MediaType.APPLICATION_XML_VALUE)
+@Slf4j
 @RestController
-public class USSDMeetingController extends USSDController {
+@RequestMapping(method = GET, produces = MediaType.APPLICATION_XML_VALUE)
+public class USSDMeetingController extends USSDBaseController {
 
     @Value("${grassroot.events.limit.enabled:false}")
     private boolean eventMonthlyLimitActive;
-
     @Value("${grassroot.ussd.location.enabled:false}")
     private boolean locationRequestEnabled;
-
     private static final int EVENT_LIMIT_WARNING_THRESHOLD = 5; // only warn when below this
 
-    private USSDEventUtil eventUtil;
+
+    private final EventBroker eventBroker;
+    private final GroupBroker groupBroker;
     private final EventRequestBroker eventRequestBroker;
     private final EventLogBroker eventLogBroker;
-    private final EventLogRepository eventLogRepository;
     private final AccountGroupBroker accountGroupBroker;
     private final GeoLocationBroker geoLocationBroker;
 
-    private Logger log = LoggerFactory.getLogger(getClass());
+    private USSDEventUtil eventUtil;
+    private USSDGroupUtil groupUtil;
+
     private static final String path = homePath + meetingMenus;
     private static final USSDSection thisSection = USSDSection.MEETINGS;
 
@@ -107,22 +107,92 @@ public class USSDMeetingController extends USSDController {
     }
 
     @Autowired
-    public USSDMeetingController(EventRequestBroker eventRequestBroker, EventLogBroker eventLogBroker, EventLogRepository eventLogRepository, AccountGroupBroker accountGroupBroker, GeoLocationBroker geoLocationBroker) {
+    public USSDMeetingController(EventBroker eventBroker, GroupBroker groupBroker, EventRequestBroker eventRequestBroker, EventLogBroker eventLogBroker, EventLogRepository eventLogRepository, AccountGroupBroker accountGroupBroker, GeoLocationBroker geoLocationBroker) {
+        this.eventBroker = eventBroker;
+        this.groupBroker = groupBroker;
         this.eventRequestBroker = eventRequestBroker;
         this.eventLogBroker = eventLogBroker;
-        this.eventLogRepository = eventLogRepository;
         this.accountGroupBroker = accountGroupBroker;
         this.geoLocationBroker = geoLocationBroker;
     }
 
-    // for stubbing with Mockito ...
     @Autowired
     public void setEventUtil(USSDEventUtil eventUtil) {
         this.eventUtil = eventUtil;
     }
 
+    @Autowired
+    public void setGroupUtil(USSDGroupUtil groupUtil) {
+        this.groupUtil = groupUtil;
+    }
+
     /*
-    Opening menu. Check if the user has created meetings which are upcoming, and, if so, give options to view and
+    RSVP menu
+     */
+    protected USSDMenu assembleRsvpMenu(User sessionUser, EntityForUserResponse entity) {
+        Event meeting = (Event) entity;
+
+        String[] meetingDetails = new String[]{meeting.getAncestorGroup().getName(""),
+                meeting.getAncestorGroup().getMembership(meeting.getCreatedByUser()).getDisplayName(),
+                meeting.getName(),
+                meeting.getEventDateTimeAtSAST().format(dateTimeFormat)};
+
+        // if the composed message is longer than 120 characters, we are going to go over, so return a shortened message
+        String defaultPrompt = getMessage(USSDSection.HOME, startMenu, promptKey + "-rsvp", meetingDetails, sessionUser);
+        if (defaultPrompt.length() > 120)
+            defaultPrompt = getMessage(USSDSection.HOME, startMenu, promptKey + "-rsvp.short", meetingDetails, sessionUser);
+
+        String optionUri = meetingMenus + "rsvp" + entityUidUrlSuffix + meeting.getUid();
+        USSDMenu openingMenu = new USSDMenu(defaultPrompt);
+        openingMenu.setMenuOptions(new LinkedHashMap<>(optionsYesNo(sessionUser, optionUri, optionUri)));
+        return openingMenu;
+    }
+
+    @RequestMapping(value = path + "rsvp")
+    @ResponseBody
+    public Request rsvpAndWelcome(@RequestParam(value = phoneNumber) String inputNumber,
+                                  @RequestParam(value = entityUidParam) String meetingUid,
+                                  @RequestParam(value = yesOrNoParam) String attending) throws URISyntaxException {
+
+        String welcomeKey;
+        User user = userManager.loadOrCreateUser(inputNumber);
+        Meeting meeting = eventBroker.loadMeeting(meetingUid);
+
+        if ("yes".equals(attending)) {
+            eventLogBroker.rsvpForEvent(meeting.getUid(), user.getUid(), EventRSVPResponse.YES);
+            welcomeKey = String.join(".", Arrays.asList(homeKey, startMenu, promptKey, "rsvp-yes"));
+        } else {
+            eventLogBroker.rsvpForEvent(meeting.getUid(), user.getUid(), EventRSVPResponse.NO);
+            welcomeKey = String.join(".", Arrays.asList(homeKey, startMenu, promptKey, "rsvp-no"));
+        }
+
+        recordExperimentResult(user.getUid(), attending);
+        return menuBuilder(new USSDMenu(getMessage(welcomeKey, user), optionsHomeExit(user, false)));
+    }
+
+    /*
+    Helper method for event pagination
+     */
+    @RequestMapping(value = homePath + "event_page")
+    @ResponseBody
+    public Request eventPaginationHelper(@RequestParam(value = phoneNumber) String inputNumber,
+                                         @RequestParam(value = "section") String section,
+                                         @RequestParam(value = "prompt") String prompt,
+                                         @RequestParam(value = "newMenu", required = false) String menuForNew,
+                                         @RequestParam(value = "newOption", required = false) String optionForNew,
+                                         @RequestParam(value = "page") Integer pageNumber,
+                                         @RequestParam(value = "nextUrl") String nextUrl,
+                                         @RequestParam(value = "pastPresentBoth") Integer pastPresentBoth,
+                                         @RequestParam(value = "includeGroupName") boolean includeGroupName) throws URISyntaxException {
+        EventListTimeType timeType = pastPresentBoth == 1 ? EventListTimeType.FUTURE : EventListTimeType.PAST;
+        return menuBuilder(eventUtil.listPaginatedEvents(
+                userManager.findByInputNumber(inputNumber), fromString(section),
+                prompt, nextUrl, (menuForNew != null), menuForNew, optionForNew, includeGroupName, timeType, pageNumber));
+    }
+
+
+    /*
+    Opening menu for creating. Check if the user has created meetings which are upcoming, and, if so, give options to view and
     manage those. If not, initialize an event and ask them to pick a group or create a new one.
      */
     @RequestMapping(value = path + startMenu)
@@ -134,7 +204,7 @@ public class USSDMeetingController extends USSDController {
 
         USSDMenu returnMenu;
         if (newMeeting || !eventBroker.userHasEventsToView(user, EventType.MEETING, EventListTimeType.FUTURE)) {
-            returnMenu = ussdGroupUtil.askForGroup(new USSDGroupUtil.GroupMenuBuilder(user, thisSection)
+            returnMenu = groupUtil.askForGroup(new USSDGroupUtil.GroupMenuBuilder(user, thisSection)
                     .urlForExistingGroup(subjectMenu)
                     .urlForCreateNewGroupPrompt(newGroupMenu)
                     .urlToCreateNewGroup(groupName));
@@ -158,7 +228,7 @@ public class USSDMeetingController extends USSDController {
     @ResponseBody
     public Request newGroup(@RequestParam(value = phoneNumber, required = true) String inputNumber) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber, meetingMenus + newGroupMenu);
-        return menuBuilder(ussdGroupUtil.createGroupPrompt(user, thisSection, groupName));
+        return menuBuilder(groupUtil.createGroupPrompt(user, thisSection, groupName));
     }
 
 
@@ -169,11 +239,11 @@ public class USSDMeetingController extends USSDController {
                          ) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber);
         if (!USSDGroupUtil.isValidGroupName(userResponse) ){
-          return  menuBuilder(ussdGroupUtil.invalidGroupNamePrompt(user, userResponse, thisSection, groupName));
+          return  menuBuilder(groupUtil.invalidGroupNamePrompt(user, userResponse, thisSection, groupName));
         } else {
             Set<MembershipInfo> members = Sets.newHashSet(new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName()));
             Group group = groupBroker.create(user.getUid(), userResponse, null, members, GroupPermissionTemplate.DEFAULT_GROUP, null, null, true);
-            return menuBuilder(ussdGroupUtil.addNumbersToGroupPrompt(user, group, thisSection, groupHandlingMenu));
+            return menuBuilder(groupUtil.addNumbersToGroupPrompt(user, group, thisSection, groupHandlingMenu));
     }
     }
 
@@ -205,8 +275,7 @@ public class USSDMeetingController extends USSDController {
         User user = userManager.findByInputNumber(inputNumber, urlToSave);
 
         if (!userInput.trim().equals("0")) {
-            thisMenu = ussdGroupUtil.addNumbersToExistingGroup(
-                        user, groupUid, USSDSection.MEETINGS, userInput, groupHandlingMenu);
+            thisMenu = groupUtil.addNumbersToExistingGroup(user, groupUid, USSDSection.MEETINGS, userInput, groupHandlingMenu);
         } else {
             thisMenu = new USSDMenu(true);
             if (groupUid == null) {
@@ -719,7 +788,7 @@ public class USSDMeetingController extends USSDController {
      */
     private USSDMenu meetingAttendeeMenu(User user, Event event) {
 
-        final EventLog userResponse = eventLogRepository.findByEventAndUserAndEventLogType(event, user, EventLogType.RSVP);
+        final EventLog userResponse = eventLogBroker.findUserResponseIfExists(user.getUid(), event.getUid());
 
         final String attendeeKey = "attendee";
         final String suffix = entityUidUrlSuffix + event.getUid();

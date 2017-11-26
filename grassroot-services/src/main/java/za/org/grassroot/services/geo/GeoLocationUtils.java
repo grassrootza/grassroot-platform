@@ -12,8 +12,8 @@ import java.util.Objects;
 
 public class GeoLocationUtils {
 
-	protected final static double KM_PER_DEGREE = 111.045;
-	public final static int DEFAULT_RADIUS = 5;
+	protected final static double M_PER_DEGREE = 111045;
+	public final static int DEFAULT_RADIUS = 5000;
 
 	private GeoLocationUtils() {
 		// utility
@@ -71,6 +71,10 @@ public class GeoLocationUtils {
 		return address;
 	}
 
+	/*
+	 * Fast nearest-location finder for SQL (MySQL, PostgreSQL, SQL Server)
+     * Source: http://www.plumislandmedia.net/mysql/haversine-mysql-nearest-loc/
+	 */
 	public static String locationFilterSuffix(String locationEntityLabel) {
 		return String.format("%1$s.latitude " +
 				"    BETWEEN :latpoint  - (:radius / :distance_unit) " +
@@ -86,9 +90,9 @@ public class GeoLocationUtils {
 				"         * SIN(RADIANS(%1$s.latitude)))))", locationEntityLabel);
 	}
 
-	public static void addLocationParamsToQuery(Query query, GeoLocation location, Integer radius) {
-		query.setParameter("radius", radius != null ? (double) radius : (double) DEFAULT_RADIUS);
-		query.setParameter("distance_unit", KM_PER_DEGREE);
+	public static void addLocationParamsToQuery(Query query, GeoLocation location, Integer radiusInMetres) {
+		query.setParameter("radius", radiusInMetres != null ? (double) radiusInMetres : (double) DEFAULT_RADIUS);
+		query.setParameter("distance_unit", M_PER_DEGREE);
 		query.setParameter("latpoint", location.getLatitude());
 		query.setParameter("longpoint", location.getLongitude());
 	}
