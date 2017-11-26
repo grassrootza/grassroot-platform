@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignType;
+import za.org.grassroot.core.enums.MessageVariationAssignment;
 import za.org.grassroot.services.campaign.CampaignBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
@@ -109,7 +110,7 @@ public class CampaignManagerController {
         }
         User user = userManager.load(messageWrapper.getUserUid());
         Campaign campaign = campaignBroker.addCampaignMessage(messageWrapper.getCampaignCode(), messageWrapper.getMessage(),
-                Locale.forLanguageTag(messageWrapper.getLanguage()), null, messageWrapper.getChannel(), user, tagList);
+                new Locale(messageWrapper.getLanguageCode()), MessageVariationAssignment.valueOf(messageWrapper.getAssignmentType()), messageWrapper.getChannelType(), user, tagList);
         if(campaign != null) {
             return RestUtil.okayResponseWithData(RestMessage.CAMPAIGN_MESSAGE_ADDED, CampaignWebUtil.createCampaignWrapper(campaign));
         }

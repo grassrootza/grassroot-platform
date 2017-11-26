@@ -26,7 +26,7 @@ create table campaign (
     variation varchar(35),
     locale varchar(35),
     channel varchar(35),
-    campaign_id varchar(50),
+    campaign_id bigserial,
     parent_action_id varchar(50),
     primary key (id));
 
@@ -78,3 +78,5 @@ create table campaign (
   ALTER SEQUENCE campaign_message_id_seq OWNED BY campaign_message.id;
 
   ALTER SEQUENCE campaign_message_action_id_seq OWNED BY campaign_message_action.id;
+
+  alter table campaign_message ADD CONSTRAINT fk_campaign_message_campaign_id FOREIGN KEY (campaign_id) REFERENCES campaign(id);

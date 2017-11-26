@@ -12,9 +12,9 @@ public class CampaignMessageWrapper implements Serializable{
     private static final long serialVersionUID = -3071489047972056911L;
     private String message;
     private String userUid;
-    private UserInterfaceType channel;
-    private String language;
-    private String assignment;
+    private UserInterfaceType channelType;
+    private String languageCode;
+    private String assignmentType;
     private String campaignCode;
     private Set<String> tags;
 
@@ -37,30 +37,30 @@ public class CampaignMessageWrapper implements Serializable{
     }
 
     @NotBlank(message = "{campaign.message.sequence.required}")
-    public UserInterfaceType getChannel() {
-        return channel;
+    public UserInterfaceType getChannelType() {
+        return channelType;
     }
 
-    public void setChannel(UserInterfaceType channel) {
-        this.channel = channel;
+    public void setChannelType(UserInterfaceType channelType) {
+        this.channelType = channelType;
     }
 
     @NotBlank(message = "{campaign.message.language.required}")
-    public String getLanguage() {
-        return language;
+    public String getLanguageCode() {
+        return languageCode;
     }
 
-    public void setLanguage(String language) {
-        this.language = language;
+    public void setLanguageCode(String languageCode) {
+        this.languageCode = languageCode;
     }
 
     @NotBlank(message = "{campaign.message.assignment.required}")
-    public String getAssignment() {
-        return assignment;
+    public String getAssignmentType() {
+        return assignmentType;
     }
 
-    public void setAssignment(String assignment) {
-        this.assignment = assignment;
+    public void setAssignmentType(String assignmentType) {
+        this.assignmentType = assignmentType;
     }
 
     public Set<String> getTags() {

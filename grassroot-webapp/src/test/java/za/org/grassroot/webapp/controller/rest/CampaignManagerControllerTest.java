@@ -141,8 +141,8 @@ public class CampaignManagerControllerTest extends RestAbstractUnitTest{
     private CampaignMessageWrapper createMessageWrapper(){
         CampaignMessageWrapper messageWrapper = new CampaignMessageWrapper();
         messageWrapper.setCampaignCode("123");
-        messageWrapper.setAssignment("CONTROL");
-        messageWrapper.setChannel(UserInterfaceType.USSD);
+        messageWrapper.setAssignmentType("CONTROL");
+        messageWrapper.setChannelType(UserInterfaceType.USSD);
         return messageWrapper;
     }
 

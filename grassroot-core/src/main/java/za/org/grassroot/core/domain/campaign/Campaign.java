@@ -6,7 +6,6 @@ import za.org.grassroot.core.domain.TagHolder;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.UIDGenerator;
 
-import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
@@ -67,8 +66,8 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
     @JoinColumn(name = "ancestor_group_id", nullable = true)
     private Group masterGroup ;
 
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "campaign", orphanRemoval = true)
-    private Set<CampaignMessage> campaignMessages;
+    @OneToMany(mappedBy = "campaign")
+    private Set<CampaignMessage> campaignMessages = new HashSet<>();
 
     @Column(name = "tags")
     @Type(type = "za.org.grassroot.core.util.StringArrayUserType")
@@ -222,13 +221,6 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
     }
 
 
-    public Set<CampaignMessage> getCampaignMessages() {
-        if(this.campaignMessages == null){
-            this.campaignMessages = new HashSet<>();
-        }
-        return campaignMessages;
-    }
-
     public void setCampaignMessages(Set<CampaignMessage> campaignMessages) {
         this.campaignMessages = campaignMessages;
     }
@@ -271,5 +263,9 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
 
     public void setUrl(String url) {
         this.url = url;
+    }
+
+    public Set<CampaignMessage> getCampaignMessages() {
+        return campaignMessages;
     }
 }

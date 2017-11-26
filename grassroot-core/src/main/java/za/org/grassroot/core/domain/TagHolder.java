@@ -2,6 +2,7 @@ package za.org.grassroot.core.domain;
 
 import za.org.grassroot.core.util.StringArrayUtil;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -12,7 +13,7 @@ public interface TagHolder {
 
     default void addTag(String tag) {
         Objects.requireNonNull(tag);
-        List<String> tags = StringArrayUtil.arrayToList(getTags());
+        List<String> tags = new ArrayList<>(StringArrayUtil.arrayToList(getTags()));
         tags.add(tag);
         setTags(StringArrayUtil.listToArrayRemoveDuplicates(tags));
     }

@@ -26,7 +26,7 @@ public class CampaignWebUtil {
         wrapper.setCreateUser(campaign.getCreatedByUser().getDisplayName());
         wrapper.setUserUid(campaign.getCreatedByUser().getUid());
         wrapper.setTotalUsers((campaign.getMasterGroup() != null && campaign.getMasterGroup().getMembers() != null)? campaign.getMasterGroup().getMembers().size() : 0);
-        ///wrapper.setUserRole(campaign.getCreatedByUser().); check with Luke. Which Role does create use
+
         return wrapper;
 
     }
