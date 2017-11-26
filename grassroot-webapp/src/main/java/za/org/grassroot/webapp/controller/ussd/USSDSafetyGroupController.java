@@ -116,15 +116,16 @@ public class USSDSafetyGroupController extends USSDBaseController {
         USSDMenu menu;
         if (user.hasSafetyGroup()) {
             boolean isBarred = safetyEventBroker.isUserBarred(user.getUid());
-            String message = (!isBarred) ? getMessage(thisSection, "safety.activated", promptKey, user) : getMessage(thisSection, "safety.barred", promptKey, user);
+            String message = (!isBarred) ? getMessage(USSDSection.HOME, "safety.activated", promptKey, user)
+                    : getMessage(USSDSection.HOME, "safety.barred", promptKey, user);
             if (!isBarred) safetyEventBroker.create(user.getUid(), user.getSafetyGroup().getUid());
             menu = new USSDMenu(message);
         } else {
-            menu = new USSDMenu(getMessage(thisSection, "safety.not-activated", promptKey, user));
+            menu = new USSDMenu(getMessage(USSDSection.HOME, "safety.not-activated", promptKey, user));
             if (groupQueryBroker.fetchUserCreatedGroups(user, 0, 1).getTotalElements() != 0) {
-                menu.addMenuOption(safetyMenus + "pick-group", getMessage(thisSection, "safety", optionsKey + "existing", user));
+                menu.addMenuOption(safetyMenus + "pick-group", getMessage(USSDSection.HOME, "safety", optionsKey + "existing", user));
             }
-            menu.addMenuOption(safetyMenus + "new-group", getMessage(thisSection, "safety", optionsKey + "new", user));
+            menu.addMenuOption(safetyMenus + "new-group", getMessage(USSDSection.HOME, "safety", optionsKey + "new", user));
             menu.addMenuOption(startMenu, getMessage(optionsKey + "back.main", user));
         }
         return menu;
@@ -132,7 +133,7 @@ public class USSDSafetyGroupController extends USSDBaseController {
 
     protected USSDMenu assemblePanicButtonActivationResponse(User user, SafetyEvent safetyEvent) {
         String activateByDisplayName = safetyEvent.getActivatedBy().getDisplayName();
-        USSDMenu menu = new USSDMenu(getMessage(thisSection, "safety.responder", promptKey, activateByDisplayName, user));
+        USSDMenu menu = new USSDMenu(getMessage(USSDSection.HOME, "safety.responder", promptKey, activateByDisplayName, user));
         menu.addMenuOptions(optionsYesNo(user, USSDUrlUtil.safetyMenuWithId("record-response", safetyEvent.getUid())));
         return menu;
     }
@@ -141,13 +142,8 @@ public class USSDSafetyGroupController extends USSDBaseController {
     @ResponseBody
     public Request manageSafetyGroup(@RequestParam String msisdn) throws URISyntaxException {
         User user = userManager.findByInputNumber(msisdn);
-
-        USSDMenu menu = user.hasSafetyGroup() ? createOpeningMenuHasGroup(user) :
-                createOpeningMenuNoGroup(user);
-
-        menu.addMenuOption(startMenu + "_force",
-                getMessage(optionsKey + "back.main", user));
-
+        USSDMenu menu = user.hasSafetyGroup() ? createOpeningMenuHasGroup(user) : createOpeningMenuNoGroup(user);
+        menu.addMenuOption(startMenu + "_force", getMessage(optionsKey + "back.main", user));
         return menuBuilder(menu);
     }
 

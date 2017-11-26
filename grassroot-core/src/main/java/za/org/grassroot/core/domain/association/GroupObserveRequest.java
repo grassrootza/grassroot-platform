@@ -29,6 +29,10 @@ public class GroupObserveRequest extends AbstractAssociationRequest<User, Group>
     @Type(type = "za.org.grassroot.core.util.StringArrayUserType")
     private String[] tags;
 
+    private GroupObserveRequest() {
+        // for JPA
+    }
+
     public GroupObserveRequest(User observer, Group group, String message, String[] tags) {
         super(message);
         this.observer= Objects.requireNonNull(observer);

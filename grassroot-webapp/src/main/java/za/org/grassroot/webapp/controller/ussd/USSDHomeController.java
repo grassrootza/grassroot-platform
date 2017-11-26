@@ -150,7 +150,6 @@ public class USSDHomeController extends USSDBaseController {
         cacheManager.clearUssdMenuForUser(inputNumber);
 
         return promptMenu;
-
     }
 
     private boolean userInterrupted(String inputNumber) {
@@ -181,6 +180,7 @@ public class USSDHomeController extends USSDBaseController {
     }
 
     private boolean codeHasTrailingDigits(String enteredUSSD) {
+        log.info("entered USSD = {}, hashPosition = {}", enteredUSSD, hashPosition);
         return (enteredUSSD != null && enteredUSSD.length() > hashPosition + 1);
     }
 
