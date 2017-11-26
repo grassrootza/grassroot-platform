@@ -32,19 +32,16 @@
 
     <div class="row">
       <div class="col-md-4 col-md-offset-4 col-xs-12">
-        <h4 class="text-center group-info">
+        <h4 class="text-center group-infp">
           Created on <span th:text="${#temporals.format(group.getCreatedDateTimeAtSAST(),'d MMM yyyy')}">Some date</span>.
-          <a th:href="@{/group/history(groupUid=${group.uid})}">View history.</a>
-        </h4>
-        <h4 class="text-center group-info" th:if="${canAlter}">
-          <span th:if="${openToken}">Join code: <a href="javascript:void(0)" data-toggle="modal" data-target="#joiningModal">
+          <span th:if="${openToken and canAlter}">Join code: <a href="javascript:void(0)" data-toggle="modal" data-target="#joiningModal">
             *134*1994*<span th:text="${group.groupTokenCode}">1234</span>#</a>
+          </span>
+          <span th:if="${openToken and not canAlter}">
+            Join code: *134*1994*<span th:text="${group.groupTokenCode}">1234</span>#
           </span>
           <span th:unless="${openToken}">No open join code
           <a href="javascript:void(0)" data-toggle="modal" data-target="#joiningModal">(create one)</a></span>
-        </h4>
-        <h4 class="text-center group-infp" th:if="${openToken and not canAlter}">
-          Join code: *134*1994*<span th:text="${group.groupTokenCode}">1234</span>#
         </h4>
         <h4 class="text-center group-info">
           <span th:if="${group.discoverable}">Group is public. </span>
@@ -141,8 +138,8 @@
             <button class="white-button group-button"><i class="fa fa-users" aria-hidden="true"></i>Record action</button></a>
         </div>
         <div class="col-md-2">
-          <a href="" th:href="@{/todo/list(groupUid=${group.uid})}">
-            <button class="white-button group-button"><i class="fa fa-list-ol" aria-hidden="true"></i>View to-dos</button></a>
+          <a th:href="@{/group/history(groupUid=${group.uid})}">
+            <button class="white-button group-button"><i class="fa fa-list-ol" aria-hidden="true"></i>View history</button></a>
         </div>
       </div>
     </div>

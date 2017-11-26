@@ -3,6 +3,7 @@ package za.org.grassroot.services;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.domain.Group;
@@ -37,6 +38,9 @@ public class MessageAssemblingManager implements MessageAssemblingService {
 
     private static final DateTimeFormatter sdf = DateTimeFormatter.ofPattern("EEE d MMM, h:mm a");
 
+    @Value("${grassroot.optimizely.active:false}")
+    private boolean optimizelyActive;
+
     private final MessageSourceAccessor messageSourceAccessor;
     private final ExperimentBroker experimentBroker;
 
@@ -60,11 +64,17 @@ public class MessageAssemblingManager implements MessageAssemblingService {
 
     @Override
     public String createEventInfoMessage(User user, Event event) {
-        VariationAssignment assignment = experimentBroker.assignUser("test_experiment_meetings", user.getUid(), null);
-        String messageKey = event instanceof Vote ? "sms.vote.send.new" :
-                event.isHasImage() ? "sms.mtg.send.image" :
-                event.isHighImportance() || assignment.equals(VariationAssignment.EXPERIMENT) ?
-                        "sms.mtg.send.special" : "sms.mtg.send.new.rsvp";
+        VariationAssignment assignment = !optimizelyActive ? null : experimentBroker.assignUser("test_experiment_meetings", user.getUid(), null);
+        String messageKey;
+        if (event instanceof Vote) {
+            messageKey = "sms.vote.send.new";
+        } else if (event.isHasImage()) {
+            messageKey = "sms.mtg.send.image";
+        } else if (event.isHighImportance() || (assignment != null && assignment.equals(VariationAssignment.EXPERIMENT))) {
+            messageKey = "sms.mtg.send.special";
+        } else {
+            messageKey = "sms.mtg.send.new.rsvp";
+        }
         return messageSourceAccessor.getMessage(messageKey, populateEventFields(event), getUserLocale(user));
     }
 
