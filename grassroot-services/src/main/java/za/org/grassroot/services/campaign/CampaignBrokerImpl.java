@@ -213,7 +213,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
         Objects.requireNonNull(assignment);
         Campaign campaign = campaignRepository.findByCampaignCodeAndEndDateTimeAfter(campaignCode,Instant.now());
         if(campaign != null){
-            CampaignMessage message = new CampaignMessage(campaignMessage, createUser, assignment, messageLocale,interfaceType);
+            CampaignMessage message = new CampaignMessage(campaignMessage, createUser, assignment, messageLocale,interfaceType,campaign);
             if(messageTags != null && !messageTags.isEmpty()) {
                 message.getTagList().addAll(messageTags);
             }

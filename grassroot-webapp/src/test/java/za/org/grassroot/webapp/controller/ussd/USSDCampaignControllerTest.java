@@ -137,17 +137,17 @@ public class USSDCampaignControllerTest extends USSDAbstractUnitTest {
         campaign.setCampaignCode("000");
         campaign.setCampaignDescription("Test Campaign");
         campaign.setMasterGroup(testGroup);
-        CampaignMessage englishMessage = new CampaignMessage("First Test English Message",testUser, MessageVariationAssignment.EXPERIMENT, Locale.ENGLISH, UserInterfaceType.USSD);
+        CampaignMessage englishMessage = new CampaignMessage("First Test English Message",testUser, MessageVariationAssignment.EXPERIMENT, Locale.ENGLISH, UserInterfaceType.USSD, campaign);
 
-        CampaignMessage englishMoreInfoMessage = new CampaignMessage("English More info Message",testUser, MessageVariationAssignment.EXPERIMENT, Locale.ENGLISH, UserInterfaceType.USSD);
-        CampaignMessage englishSignPetitionAfterMoreReadingMoreInfoMessage = new CampaignMessage("English Sign petition Message 2",testUser, MessageVariationAssignment.EXPERIMENT, Locale.ENGLISH, UserInterfaceType.USSD);
+        CampaignMessage englishMoreInfoMessage = new CampaignMessage("English More info Message",testUser, MessageVariationAssignment.EXPERIMENT, Locale.ENGLISH, UserInterfaceType.USSD, campaign);
+        CampaignMessage englishSignPetitionAfterMoreReadingMoreInfoMessage = new CampaignMessage("English Sign petition Message 2",testUser, MessageVariationAssignment.EXPERIMENT, Locale.ENGLISH, UserInterfaceType.USSD, campaign);
         CampaignMessageAction signPetitionActionAfterMoreInfo = new CampaignMessageAction(englishMoreInfoMessage,englishSignPetitionAfterMoreReadingMoreInfoMessage, CampaignActionType.SIGN_PETITION,testUser);
         englishMoreInfoMessage.getCampaignMessageActionSet().add(signPetitionActionAfterMoreInfo);
 
-        CampaignMessage englishSignPetitionMessage = new CampaignMessage("English Sign petition Message",testUser, MessageVariationAssignment.EXPERIMENT, Locale.ENGLISH, UserInterfaceType.USSD);
-        CampaignMessage englishExitMessage = new CampaignMessage("English Exit Message",testUser, MessageVariationAssignment.EXPERIMENT, Locale.ENGLISH, UserInterfaceType.USSD);
-        CampaignMessage englishJoinMasterGroupMessage = new CampaignMessage("English Join Master group Message",testUser, MessageVariationAssignment.EXPERIMENT, Locale.ENGLISH, UserInterfaceType.USSD);
-        CampaignMessage englishTagMeMessage = new CampaignMessage("English Tag me Message",testUser, MessageVariationAssignment.EXPERIMENT, Locale.ENGLISH, UserInterfaceType.USSD);
+        CampaignMessage englishSignPetitionMessage = new CampaignMessage("English Sign petition Message",testUser, MessageVariationAssignment.EXPERIMENT, Locale.ENGLISH, UserInterfaceType.USSD, campaign);
+        CampaignMessage englishExitMessage = new CampaignMessage("English Exit Message",testUser, MessageVariationAssignment.EXPERIMENT, Locale.ENGLISH, UserInterfaceType.USSD, campaign);
+        CampaignMessage englishJoinMasterGroupMessage = new CampaignMessage("English Join Master group Message",testUser, MessageVariationAssignment.EXPERIMENT, Locale.ENGLISH, UserInterfaceType.USSD, campaign);
+        CampaignMessage englishTagMeMessage = new CampaignMessage("English Tag me Message",testUser, MessageVariationAssignment.EXPERIMENT, Locale.ENGLISH, UserInterfaceType.USSD, campaign);
 
         englishMessage.setUid(testMessageUid);//set to test one
         CampaignMessageAction moreInfoAction = new CampaignMessageAction(null,englishMoreInfoMessage, CampaignActionType.MORE_INFO,testUser);
@@ -162,7 +162,7 @@ public class USSDCampaignControllerTest extends USSDAbstractUnitTest {
         campaignMessageActionSet.add(joinGroupAction);
         campaignMessageActionSet.add(tagMeAction);
         englishMessage.setCampaignMessageActionSet(campaignMessageActionSet);
-        CampaignMessage germanMessage = new CampaignMessage("First Test German Message",testUser, MessageVariationAssignment.EXPERIMENT, Locale.GERMAN, UserInterfaceType.USSD);
+        CampaignMessage germanMessage = new CampaignMessage("First Test German Message",testUser, MessageVariationAssignment.EXPERIMENT, Locale.GERMAN, UserInterfaceType.USSD, campaign);
         Set<CampaignMessage> campaignMessageSet = new HashSet<>();
         campaignMessageSet.add(englishMessage);
         campaignMessageSet.add(germanMessage);

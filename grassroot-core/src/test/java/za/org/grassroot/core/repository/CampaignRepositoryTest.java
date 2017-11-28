@@ -55,10 +55,10 @@ public class CampaignRepositoryTest {
     @Test
     public void testCampaignMessages(){
         User user = userRepository.save(new User("3456"));
-        Set<CampaignMessage> messageSet = new HashSet<>();
-        CampaignMessage campaignMessage = new CampaignMessage("Please join Campaign", user, MessageVariationAssignment.CONTROL, Locale.forLanguageTag("en-US"), UserInterfaceType.USSD);
-        messageSet.add(campaignMessage);
         Campaign campaign =  new Campaign("Test","234","Durban campaign",user, Instant.now(), Instant.now(), CampaignType.Aquisition, null);
+        Set<CampaignMessage> messageSet = new HashSet<>();
+        CampaignMessage campaignMessage = new CampaignMessage("Please join Campaign", user, MessageVariationAssignment.CONTROL, Locale.forLanguageTag("en-US"), UserInterfaceType.USSD, campaign);
+        messageSet.add(campaignMessage);
         campaign.setCampaignMessages(messageSet);
         Campaign persistedCampaign = campaignRepository.saveAndFlush(campaign);
         Assert.assertNotNull(persistedCampaign);
@@ -72,10 +72,10 @@ public class CampaignRepositoryTest {
         List<String> tags = new ArrayList<>();
         tags.add("braamfontein");
         User user = userRepository.save(new User("3456"));
-        Set<CampaignMessage> messageSet = new HashSet<>();
-        CampaignMessage campaignMessage = new CampaignMessage("Please join Campaign", user, MessageVariationAssignment.CONTROL,Locale.forLanguageTag("en-US"),UserInterfaceType.USSD);
-        messageSet.add(campaignMessage);
         Campaign campaign =  new Campaign("Test","234","Durban campaign",user, Instant.now(), Instant.MAX, CampaignType.Information, null);
+        Set<CampaignMessage> messageSet = new HashSet<>();
+        CampaignMessage campaignMessage = new CampaignMessage("Please join Campaign", user, MessageVariationAssignment.CONTROL,Locale.forLanguageTag("en-US"),UserInterfaceType.USSD, campaign);
+        messageSet.add(campaignMessage);
         campaign.setCampaignMessages(messageSet);
         campaign.setTags(tags);
         Campaign persistedCampaign = campaignRepository.saveAndFlush(campaign);

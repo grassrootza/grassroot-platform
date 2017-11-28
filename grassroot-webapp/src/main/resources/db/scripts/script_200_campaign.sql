@@ -27,7 +27,6 @@ create table campaign (
     locale varchar(35),
     channel varchar(35),
     campaign_id bigserial,
-    parent_action_id varchar(50),
     primary key (id));
 
   create table campaign_message_action (
@@ -35,8 +34,9 @@ create table campaign (
     version integer,
     uid varchar(50) not null,
     created_date_time timestamp not null,
-    parent_message_id varchar(255),
+    parent_message_id bigserial,
     created_by_user bigint,
+    action_message_id bigserial,
     action varchar(35),
     primary key (id));
 
@@ -80,3 +80,5 @@ create table campaign (
   ALTER SEQUENCE campaign_message_action_id_seq OWNED BY campaign_message_action.id;
 
   alter table campaign_message ADD CONSTRAINT fk_campaign_message_campaign_id FOREIGN KEY (campaign_id) REFERENCES campaign(id);
+  alter table campaign_message_action ADD CONSTRAINT fk_action_message_id FOREIGN KEY (action_message_id) REFERENCES campaign_message(id);
+  alter table campaign_message_action ADD CONSTRAINT fk_parent_message_id FOREIGN KEY (parent_message_id) REFERENCES campaign_message(id);

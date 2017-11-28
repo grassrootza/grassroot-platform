@@ -34,7 +34,8 @@ public class CampaignMessageAction implements Serializable, Comparable<CampaignM
     @Column(name = "uid", nullable = false, unique = true)
     private String uid;
 
-    @OneToOne(mappedBy = "parentAction")
+    @OneToOne()
+    @JoinColumn(name = "action_message_id")
     private CampaignMessage actionMessage;
 
     @Column(name = "created_date_time", insertable = true, updatable = false)

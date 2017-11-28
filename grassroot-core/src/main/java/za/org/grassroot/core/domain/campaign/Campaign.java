@@ -6,6 +6,7 @@ import za.org.grassroot.core.domain.TagHolder;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.UIDGenerator;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
@@ -66,7 +67,7 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
     @JoinColumn(name = "ancestor_group_id", nullable = true)
     private Group masterGroup ;
 
-    @OneToMany(mappedBy = "campaign")
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "campaign", orphanRemoval = true)
     private Set<CampaignMessage> campaignMessages = new HashSet<>();
 
     @Column(name = "tags")
