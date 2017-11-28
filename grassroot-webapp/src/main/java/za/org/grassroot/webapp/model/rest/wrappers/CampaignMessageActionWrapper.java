@@ -1,8 +1,9 @@
 package za.org.grassroot.webapp.model.rest.wrappers;
 
 
-import org.hibernate.validator.constraints.NotBlank;
+import org.hibernate.validator.constraints.NotEmpty;
 
+import javax.validation.constraints.NotNull;
 import java.io.Serializable;
 
 public class CampaignMessageActionWrapper implements Serializable {
@@ -13,7 +14,7 @@ public class CampaignMessageActionWrapper implements Serializable {
     private String userUid;
     private CampaignMessageWrapper actionMessage;
 
-    @NotBlank(message = "{campaign.message.action.message.uid.required}")
+    @NotEmpty(message = "campaign.message.action.message.uid.required")
     public String getMessageUid() {
         return messageUid;
     }
@@ -21,7 +22,8 @@ public class CampaignMessageActionWrapper implements Serializable {
     public void setMessageUid(String messageUid) {
         this.messageUid = messageUid;
     }
-    @NotBlank(message = "{campaign.message.action.required}")
+
+    @NotEmpty(message = "campaign.message.action.required")
     public String getAction() {
         return action;
     }
@@ -29,7 +31,8 @@ public class CampaignMessageActionWrapper implements Serializable {
     public void setAction(String action) {
         this.action = action;
     }
-    @NotBlank(message = "{campaign.message.action.message.required}")
+
+    @NotNull(message = "campaign.message.action.message.required")
     public CampaignMessageWrapper getActionMessage() {
         return actionMessage;
     }
@@ -38,7 +41,7 @@ public class CampaignMessageActionWrapper implements Serializable {
         this.actionMessage = actionMessage;
     }
 
-    @NotBlank(message = "{campaign.message.action.user.uid.required}")
+    @NotEmpty(message = "campaign.message.action.user.uid.required")
     public String getUserUid() {
         return userUid;
     }
@@ -47,7 +50,7 @@ public class CampaignMessageActionWrapper implements Serializable {
         this.userUid = userUid;
     }
 
-    @NotBlank(message = "{campaign.message.campaign.code.required}")
+    @NotEmpty(message = "campaign.message.action.campaign.code.required")
     public String getCampaignCode() {
         return campaignCode;
     }

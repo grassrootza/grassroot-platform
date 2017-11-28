@@ -5,11 +5,15 @@ import io.swagger.annotations.ApiOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,6 +27,7 @@ import za.org.grassroot.core.domain.campaign.CampaignType;
 import za.org.grassroot.services.campaign.CampaignBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
+import za.org.grassroot.webapp.controller.rest.exception.RestValidationMessage;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.wrappers.CampaignMessageActionWrapper;
 import za.org.grassroot.webapp.model.rest.wrappers.CampaignMessageWrapper;
@@ -30,6 +35,7 @@ import za.org.grassroot.webapp.model.rest.wrappers.CampaignWrapper;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
+import javax.validation.Valid;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -48,11 +54,14 @@ public class CampaignManagerController {
     private final CampaignBroker campaignBroker;
     private final UserManagementService userManager;
     private final static String SA_TIME_ZONE = "Africa/Johannesburg";
+    private MessageSource messageSource;
 
     @Autowired
-    public CampaignManagerController(CampaignBroker campaignBroker, UserManagementService userManager) {
+    public CampaignManagerController(CampaignBroker campaignBroker, UserManagementService userManager, @Qualifier("messageSource")
+        MessageSource messageSource) {
         this.campaignBroker = campaignBroker;
         this.userManager = userManager;
+        this.messageSource = messageSource;
     }
 
     @RequestMapping(value = "/list/{userUid}", method = RequestMethod.GET)
@@ -64,7 +73,10 @@ public class CampaignManagerController {
 
     @RequestMapping(value = "/create" , method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "create campaign", notes = "create a campaign using given values")
-    public ResponseEntity<ResponseWrapper> createCampaign(@RequestBody CampaignWrapper campaignWrapper){
+    public ResponseEntity<ResponseWrapper> createCampaign(@Valid @RequestBody CampaignWrapper campaignWrapper, BindingResult bindingResult){
+        if (bindingResult.hasErrors()) {
+            return RestUtil.errorResponseWithData(RestMessage.CAMPAIGN_VALIDATION_ERROR, getFieldValidationErrors(bindingResult.getFieldErrors()));
+        }
         if(campaignBroker.getCampaignDetailsByCode(campaignWrapper.getCode().trim()) != null){
             return RestUtil.errorResponse(RestMessage.CAMPAIGN_WITH_SAME_CODE_EXIST);
         }
@@ -105,10 +117,10 @@ public class CampaignManagerController {
 
     @RequestMapping(value ="/add/message", method = RequestMethod.POST,  consumes = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "add message to campaign", notes = "add message to a campaign")
-    public ResponseEntity<ResponseWrapper> addCampaignMessage(@RequestBody CampaignMessageWrapper messageWrapper,
+    public ResponseEntity<ResponseWrapper> addCampaignMessage(@Valid @RequestBody CampaignMessageWrapper messageWrapper,
                                      BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
-            //handle errors
+            return RestUtil.errorResponseWithData(RestMessage.CAMPAIGN_VALIDATION_ERROR, getFieldValidationErrors(bindingResult.getFieldErrors()));
         }
         List<String> tagList = null;
         if (messageWrapper.getTags() != null && !messageWrapper.getTags().isEmpty()) {
@@ -126,10 +138,10 @@ public class CampaignManagerController {
 
     @RequestMapping(value ="/add/message/action", method = RequestMethod.POST,  consumes = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "add user action on a message", notes = "add user action to a message")
-    public ResponseEntity<ResponseWrapper> addActionOnMessage(@RequestBody CampaignMessageActionWrapper actionWrapper,
+    public ResponseEntity<ResponseWrapper> addActionOnMessage(@Valid @RequestBody CampaignMessageActionWrapper actionWrapper,
                                                               BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
-            //handle errors
+            return RestUtil.errorResponseWithData(RestMessage.CAMPAIGN_VALIDATION_ERROR, getFieldValidationErrors(bindingResult.getFieldErrors()));
         }
         User user = userManager.load(actionWrapper.getUserUid());
         Campaign campaign = campaignBroker.addActionToCampaignMessage(actionWrapper.getCampaignCode(),actionWrapper.getMessageUid(),CampaignActionType.valueOf(actionWrapper.getAction()),actionWrapper.getActionMessage().getMessage()
@@ -141,6 +153,7 @@ public class CampaignManagerController {
     }
 
     @RequestMapping(value="/view", method = RequestMethod.GET)
+    @ApiOperation(value = "view campaign details", notes = "view campaign details")
     public ResponseEntity<ResponseWrapper> viewCampaign(@RequestParam(value = "code",required = false)String code,
                                                         @RequestParam(value = "name",required = false)String name){
         Campaign campaign = null;
@@ -157,6 +170,19 @@ public class CampaignManagerController {
             return RestUtil.okayResponseWithData(RestMessage.CAMPAIGN_FOUND,CampaignWebUtil.createCampaignWrapper(campaign));
         }
         return RestUtil.messageOkayResponse(RestMessage.CAMPAIGN_NOT_FOUND);
+    }
 
+    private List<RestValidationMessage> getFieldValidationErrors(List<FieldError> errors) {
+        List<RestValidationMessage> fieldValidationErrorList = new ArrayList<>();
+        for (FieldError field : errors) {
+            fieldValidationErrorList
+                    .add(new RestValidationMessage(field.getField(),getMessage(field.getDefaultMessage())));
+        }
+        return fieldValidationErrorList;
+    }
+
+    private String getMessage(String msgKey) {
+        Locale locale = LocaleContextHolder.getLocale();
+        return messageSource.getMessage("web." + msgKey, null, locale);
     }
 }

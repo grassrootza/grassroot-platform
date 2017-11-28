@@ -313,6 +313,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
         Objects.requireNonNull(actionMessageLocale);
         Campaign campaign = campaignRepository.findByCampaignCodeAndEndDateTimeAfter(campaignCode,Instant.now());
         if(campaign != null && campaign.getCampaignMessages() != null && !campaign.getCampaignMessages().isEmpty()){
+            boolean messageFound = false;
             for(CampaignMessage parentMessage : campaign.getCampaignMessages()) {
                 if (parentMessage.getUid().trim().equalsIgnoreCase(parentMessageUid.trim())) {
                     CampaignMessage messageForAction = new CampaignMessage(actionMessage, createUser, actionMessageAssignment, actionMessageLocale, interfaceType, campaign);
@@ -321,8 +322,13 @@ public class CampaignBrokerImpl implements CampaignBroker {
                     }
                     CampaignMessageAction action = new CampaignMessageAction(parentMessage, messageForAction, actionType, createUser);
                     parentMessage.getCampaignMessageActionSet().add(action);
+                    messageFound = true;
                     break;
                 }
+            }
+            if(!messageFound){
+                LOG.error("No Campaign message found for uid = {}" + parentMessageUid);
+                throw  new CampaignMessageNotFoundException(CAMPAIGN_MESSAGE_NOT_FOUND_CODE);
             }
             Campaign updatedCampaign = campaignRepository.saveAndFlush(campaign);
             CampaignLog campaignLog = new CampaignLog(createUser.getUid(), CampaignLogType.CAMPAIGN_MESSAGE_ACTION_ADDED, campaign);

@@ -27,7 +27,7 @@ public class CampaignWrapper implements Serializable {
 
     public CampaignWrapper(){}
 
-    @NotBlank(message = "{campaign.user.uid.required}")
+    @NotBlank(message = "campaign.user.uid.required")
     public String getUserUid() {
         return userUid;
     }
@@ -36,7 +36,7 @@ public class CampaignWrapper implements Serializable {
         this.userUid = userUid;
     }
 
-    @NotBlank(message = "{campaign.name.required}")
+    @NotBlank(message = "campaign.name.required")
     public String getName() {
         return name;
     }
@@ -45,7 +45,7 @@ public class CampaignWrapper implements Serializable {
         this.name = name;
     }
 
-    @NotBlank(message = "{campaign.code.required}")
+    @NotBlank(message = "campaign.code.required")
     public String getCode() {
         return code;
     }
@@ -54,7 +54,7 @@ public class CampaignWrapper implements Serializable {
         this.code = code;
     }
 
-    @NotBlank(message = "{campaign.description.required}")
+    @NotBlank(message = "campaign.description.required")
     public String getDescription() {
         return description;
     }
@@ -63,7 +63,7 @@ public class CampaignWrapper implements Serializable {
         this.description = description;
     }
 
-    @NotBlank(message = "{campaign.start.date.required}")
+    @NotBlank(message = "campaign.start.date.required")
     public String getStartDate() {
         return startDate;
     }
@@ -72,7 +72,7 @@ public class CampaignWrapper implements Serializable {
         this.startDate = startDate;
     }
 
-    @NotBlank(message = "{campaign.end.date.required}")
+    @NotBlank(message = "campaign.end.date.required")
     public String getEndDate() {
         return endDate;
     }

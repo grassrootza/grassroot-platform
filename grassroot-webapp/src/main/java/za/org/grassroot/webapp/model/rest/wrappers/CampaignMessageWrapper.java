@@ -1,10 +1,10 @@
 package za.org.grassroot.webapp.model.rest.wrappers;
 
 
-import org.hibernate.validator.constraints.NotBlank;
 import za.org.grassroot.core.enums.MessageVariationAssignment;
 import za.org.grassroot.core.enums.UserInterfaceType;
 
+import javax.validation.constraints.NotNull;
 import java.io.Serializable;
 import java.util.Set;
 
@@ -19,7 +19,7 @@ public class CampaignMessageWrapper implements Serializable{
     private String campaignCode;
     private Set<String> tags;
 
-    @NotBlank(message = "{campaign.message.required}")
+    @NotNull(message = "campaign.message.required")
     public String getMessage() {
         return message;
     }
@@ -28,7 +28,7 @@ public class CampaignMessageWrapper implements Serializable{
         this.message = message;
     }
 
-    @NotBlank(message = "{campaign.message.user.uid.required}")
+    @NotNull(message = "campaign.message.user.uid.required")
     public String getUserUid() {
         return userUid;
     }
@@ -37,7 +37,7 @@ public class CampaignMessageWrapper implements Serializable{
         this.userUid = userUid;
     }
 
-    @NotBlank(message = "{campaign.message.sequence.required}")
+    @NotNull(message = "campaign.message.channel.required")
     public UserInterfaceType getChannelType() {
         return channelType;
     }
@@ -46,7 +46,7 @@ public class CampaignMessageWrapper implements Serializable{
         this.channelType = channelType;
     }
 
-    @NotBlank(message = "{campaign.message.language.required}")
+    @NotNull(message = "campaign.message.language.required")
     public String getLanguageCode() {
         return languageCode;
     }
@@ -55,7 +55,7 @@ public class CampaignMessageWrapper implements Serializable{
         this.languageCode = languageCode;
     }
 
-    @NotBlank(message = "{campaign.message.assignment.required}")
+    @NotNull(message = "campaign.message.assignment.required")
     public MessageVariationAssignment getAssignmentType() {
         return assignmentType;
     }
@@ -71,7 +71,7 @@ public class CampaignMessageWrapper implements Serializable{
     public void setTags(Set<String> tags) {
         this.tags = tags;
     }
-    @NotBlank(message = "{campaign.message.code.required}")
+    @NotNull(message = "campaign.message.campaign.code.required")
     public String getCampaignCode() {
         return campaignCode;
     }

@@ -14,12 +14,14 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.campaign.Campaign;
+import za.org.grassroot.core.domain.campaign.CampaignActionType;
 import za.org.grassroot.core.domain.campaign.CampaignType;
 import za.org.grassroot.core.enums.MessageVariationAssignment;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.services.campaign.CampaignBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.campaign.CampaignManagerController;
+import za.org.grassroot.webapp.model.rest.wrappers.CampaignMessageActionWrapper;
 import za.org.grassroot.webapp.model.rest.wrappers.CampaignMessageWrapper;
 import za.org.grassroot.webapp.model.rest.wrappers.CampaignWrapper;
 
@@ -30,6 +32,7 @@ import java.util.Locale;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyList;
+import static org.mockito.Matchers.anySet;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -52,6 +55,7 @@ public class CampaignManagerControllerTest extends RestAbstractUnitTest{
     private List<Campaign> campaignList;
     private Campaign testCampaign;
     private CampaignMessageWrapper campaignMessageWrapper;
+    private CampaignMessageActionWrapper campaignMessageActionWrapper;
     private User testUser;
 
 
@@ -64,6 +68,7 @@ public class CampaignManagerControllerTest extends RestAbstractUnitTest{
         campaignList.add(testCampaign);
         campaignWrapper = createTestWrapper();
         campaignMessageWrapper = createMessageWrapper();
+        campaignMessageActionWrapper = createCampaignMessageActionWrapper();
         wrapperList = new ArrayList<>();
         wrapperList.add(campaignWrapper);
         mockMvc = MockMvcBuilders.standaloneSetup(campaignManagerController).build();
@@ -116,6 +121,18 @@ public class CampaignManagerControllerTest extends RestAbstractUnitTest{
         Assert.assertNotNull(response);
     }
 
+    @Test
+    public void testAddMessageAction() throws Exception{
+        when(campaignBroker.addActionToCampaignMessage(anyString(),anyString(),any(CampaignActionType.class),anyString(),any(Locale.class),any(MessageVariationAssignment.class),any(UserInterfaceType.class),any(User.class),anySet())).thenReturn(testCampaign);
+        when(userManager.load(anyString())).thenReturn(testUser);
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.configure(SerializationFeature.WRAP_ROOT_VALUE, false);
+        String requestJson = mapper.writeValueAsString(campaignMessageActionWrapper);
+        ResultActions response = mockMvc.perform(post("/api/campaign/manage/add/message/action").contentType(MediaType.APPLICATION_JSON_UTF8).content(requestJson));
+        response.andExpect(status().isOk());
+        Assert.assertNotNull(response);
+    }
+
 
     private CampaignWrapper createTestWrapper(){
         CampaignWrapper wrapper = new CampaignWrapper();
@@ -125,6 +142,7 @@ public class CampaignManagerControllerTest extends RestAbstractUnitTest{
         wrapper.setEndDate("2017-06-01");
         wrapper.setCode("1236");
         wrapper.setDescription("My test campaign");
+        wrapper.setUserUid("1234-5678-76");
         return wrapper;
     }
 
@@ -141,9 +159,22 @@ public class CampaignManagerControllerTest extends RestAbstractUnitTest{
     private CampaignMessageWrapper createMessageWrapper(){
         CampaignMessageWrapper messageWrapper = new CampaignMessageWrapper();
         messageWrapper.setCampaignCode("123");
-        messageWrapper.setAssignmentType("CONTROL");
+        messageWrapper.setAssignmentType(MessageVariationAssignment.CONTROL);
         messageWrapper.setChannelType(UserInterfaceType.USSD);
+        messageWrapper.setUserUid("1234");
+        messageWrapper.setLanguageCode(Locale.ENGLISH.getLanguage());
+        messageWrapper.setMessage("test message");
         return messageWrapper;
+    }
+
+    private CampaignMessageActionWrapper createCampaignMessageActionWrapper(){
+        CampaignMessageActionWrapper wrapper = new CampaignMessageActionWrapper();
+        wrapper.setCampaignCode("123");
+        wrapper.setAction(CampaignActionType.SIGN_PETITION.name());
+        wrapper.setMessageUid("234-567-88");
+        wrapper.setUserUid("23456");
+        wrapper.setActionMessage(createMessageWrapper());
+        return wrapper;
     }
 
 }
