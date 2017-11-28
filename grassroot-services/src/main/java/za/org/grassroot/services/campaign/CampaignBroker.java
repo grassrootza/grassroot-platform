@@ -117,15 +117,6 @@ public interface CampaignBroker {
     /**
      *
      * @param campaignCode
-     * @param messageUid
-     * @param campaignActionTypes
-     * @return
-     */
-    Campaign addActionsToCampaignMessage(String campaignCode, String messageUid, List<CampaignActionType> campaignActionTypes, User user);
-
-    /**
-     *
-     * @param campaignCode
      * @param tags
      * @return
      */
@@ -174,4 +165,19 @@ public interface CampaignBroker {
      * @return
      */
     Campaign addUserToCampaignMasterGroup(String campaignCode,String phoneNumber);
+
+    /**
+     *
+     * @param campaignCode
+     * @param parentMessageUid
+     * @param actionType
+     * @param actionMessage
+     * @param actionMessageLocale
+     * @param actionMessageAssignment
+     * @param interfaceType
+     * @param createUser
+     * @param actionMessageTags
+     * @return
+     */
+    Campaign addActionToCampaignMessage(String campaignCode, String parentMessageUid,CampaignActionType actionType, String actionMessage, Locale actionMessageLocale, MessageVariationAssignment actionMessageAssignment, UserInterfaceType interfaceType, User createUser, Set<String> actionMessageTags);
 }

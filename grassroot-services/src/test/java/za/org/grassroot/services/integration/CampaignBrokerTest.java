@@ -74,7 +74,7 @@ public class CampaignBrokerTest {
         Assert.assertEquals(updatedCampaign.getCampaignMessages().iterator().next().getChannel(), UserInterfaceType.USSD);
         Assert.assertEquals(updatedCampaign.getCampaignMessages().iterator().next().getLocale(), Locale.ENGLISH);
 
-        Campaign reUpdatedCampaign = campaignBroker.addActionsToCampaignMessage("234", updatedCampaign.getCampaignMessages().iterator().next().getUid(), Arrays.asList(CampaignActionType.JOIN_MASTER_GROUP), testUser);
+        Campaign reUpdatedCampaign = campaignBroker.addActionToCampaignMessage("234", updatedCampaign.getCampaignMessages().iterator().next().getUid(), CampaignActionType.JOIN_MASTER_GROUP,"test action message",Locale.ENGLISH,MessageVariationAssignment.CONTROL,UserInterfaceType.USSD, testUser,null);
         Assert.assertNotNull(reUpdatedCampaign);
         Assert.assertNotNull(reUpdatedCampaign.getCampaignMessages().iterator().next().getCampaignMessageActionSet());
         Assert.assertEquals(reUpdatedCampaign.getCampaignMessages().iterator().next().getCampaignMessageActionSet().size(), 1);

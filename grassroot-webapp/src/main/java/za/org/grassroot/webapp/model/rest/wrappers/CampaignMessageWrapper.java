@@ -1,7 +1,8 @@
-package za.org.grassroot.webapp.model.web;
+package za.org.grassroot.webapp.model.rest.wrappers;
 
 
 import org.hibernate.validator.constraints.NotBlank;
+import za.org.grassroot.core.enums.MessageVariationAssignment;
 import za.org.grassroot.core.enums.UserInterfaceType;
 
 import java.io.Serializable;
@@ -14,7 +15,7 @@ public class CampaignMessageWrapper implements Serializable{
     private String userUid;
     private UserInterfaceType channelType;
     private String languageCode;
-    private String assignmentType;
+    private MessageVariationAssignment assignmentType;
     private String campaignCode;
     private Set<String> tags;
 
@@ -55,11 +56,11 @@ public class CampaignMessageWrapper implements Serializable{
     }
 
     @NotBlank(message = "{campaign.message.assignment.required}")
-    public String getAssignmentType() {
+    public MessageVariationAssignment getAssignmentType() {
         return assignmentType;
     }
 
-    public void setAssignmentType(String assignmentType) {
+    public void setAssignmentType(MessageVariationAssignment assignmentType) {
         this.assignmentType = assignmentType;
     }
 

@@ -20,8 +20,8 @@ import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.services.campaign.CampaignBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.campaign.CampaignManagerController;
-import za.org.grassroot.webapp.model.web.CampaignMessageWrapper;
-import za.org.grassroot.webapp.model.web.CampaignWrapper;
+import za.org.grassroot.webapp.model.rest.wrappers.CampaignMessageWrapper;
+import za.org.grassroot.webapp.model.rest.wrappers.CampaignWrapper;
 
 import java.time.Instant;
 import java.util.ArrayList;

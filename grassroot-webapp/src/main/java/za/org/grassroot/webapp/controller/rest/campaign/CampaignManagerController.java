@@ -10,18 +10,24 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.campaign.Campaign;
+import za.org.grassroot.core.domain.campaign.CampaignActionType;
 import za.org.grassroot.core.domain.campaign.CampaignType;
-import za.org.grassroot.core.enums.MessageVariationAssignment;
 import za.org.grassroot.services.campaign.CampaignBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 import za.org.grassroot.webapp.enums.RestMessage;
+import za.org.grassroot.webapp.model.rest.wrappers.CampaignMessageActionWrapper;
+import za.org.grassroot.webapp.model.rest.wrappers.CampaignMessageWrapper;
+import za.org.grassroot.webapp.model.rest.wrappers.CampaignWrapper;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
-import za.org.grassroot.webapp.model.web.CampaignMessageWrapper;
-import za.org.grassroot.webapp.model.web.CampaignWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
 import java.time.Instant;
@@ -110,9 +116,26 @@ public class CampaignManagerController {
         }
         User user = userManager.load(messageWrapper.getUserUid());
         Campaign campaign = campaignBroker.addCampaignMessage(messageWrapper.getCampaignCode(), messageWrapper.getMessage(),
-                new Locale(messageWrapper.getLanguageCode()), MessageVariationAssignment.valueOf(messageWrapper.getAssignmentType()), messageWrapper.getChannelType(), user, tagList);
+                new Locale(messageWrapper.getLanguageCode()), messageWrapper.getAssignmentType(), messageWrapper.getChannelType(), user, tagList);
         if(campaign != null) {
             return RestUtil.okayResponseWithData(RestMessage.CAMPAIGN_MESSAGE_ADDED, CampaignWebUtil.createCampaignWrapper(campaign));
+        }
+        return RestUtil.messageOkayResponse(RestMessage.CAMPAIGN_NOT_FOUND);
+    }
+
+
+    @RequestMapping(value ="/add/message/action", method = RequestMethod.POST,  consumes = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "add user action on a message", notes = "add user action to a message")
+    public ResponseEntity<ResponseWrapper> addActionOnMessage(@RequestBody CampaignMessageActionWrapper actionWrapper,
+                                                              BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            //handle errors
+        }
+        User user = userManager.load(actionWrapper.getUserUid());
+        Campaign campaign = campaignBroker.addActionToCampaignMessage(actionWrapper.getCampaignCode(),actionWrapper.getMessageUid(),CampaignActionType.valueOf(actionWrapper.getAction()),actionWrapper.getActionMessage().getMessage()
+        ,new Locale(actionWrapper.getActionMessage().getLanguageCode()),actionWrapper.getActionMessage().getAssignmentType(), actionWrapper.getActionMessage().getChannelType(),user,actionWrapper.getActionMessage().getTags());
+        if(campaign != null) {
+            return RestUtil.okayResponseWithData(RestMessage.CAMPAIGN_MESSAGE_ACTION_ADDED, CampaignWebUtil.createCampaignWrapper(campaign));
         }
         return RestUtil.messageOkayResponse(RestMessage.CAMPAIGN_NOT_FOUND);
     }

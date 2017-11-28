@@ -279,33 +279,6 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
     @Override
     @Transactional
-    public Campaign addActionsToCampaignMessage(String campaignCode, String messageUid, List<CampaignActionType> campaignActionTypes, User user){
-        Objects.requireNonNull(campaignCode);
-        Objects.requireNonNull(messageUid);
-        Objects.requireNonNull(campaignActionTypes);
-        Campaign campaign = campaignRepository.findByCampaignCodeAndEndDateTimeAfter(campaignCode,Instant.now());
-        if(campaign == null){
-            LOG.error("No Campaign found for code = {}" + campaignCode);
-            throw new CampaignNotFoundException(CAMPAIGN_NOT_FOUND_CODE);
-        }
-        if(campaign.getCampaignMessages() != null && !campaign.getCampaignMessages().isEmpty()){
-            for(CampaignMessage message: campaign.getCampaignMessages()){
-                if(message.getUid().equalsIgnoreCase(messageUid)){
-                    message.getCampaignMessageActionSet().addAll(CampaignUtil.createCampaignMessageActionSet(message,campaignActionTypes, user));
-                    break;
-                }
-            }
-            Campaign updatedCampaign = campaignRepository.saveAndFlush(campaign);
-            CampaignLog campaignLog = new CampaignLog(campaign.getCreatedByUser().getUid(), CampaignLogType.CAMPAIGN_MESSAGE_ACTION_ADDED,campaign);
-            persistCampaignLog(campaignLog);
-            return updatedCampaign;
-        }
-        LOG.error("No Campaign message found for uid = {}" + messageUid);
-        throw new CampaignMessageNotFoundException(CAMPAIGN_MESSAGE_NOT_FOUND_CODE);
-    }
-
-    @Override
-    @Transactional
     public Campaign addUserToCampaignMasterGroup(String campaignCode,String phoneNumber){
         Objects.requireNonNull(campaignCode);
         Objects.requireNonNull(phoneNumber);
@@ -326,6 +299,39 @@ public class CampaignBrokerImpl implements CampaignBroker {
         CampaignLogType campaignLogType = (campaign != null) ? CampaignLogType.CAMPAIGN_FOUND : CampaignLogType.CAMPAIGN_NOT_FOUND;
         persistCampaignLog(new CampaignLog(null, campaignLogType, tag));
         return campaign;
+    }
+
+    @Override
+    @Transactional
+    public Campaign addActionToCampaignMessage(String campaignCode, String parentMessageUid,CampaignActionType actionType, String actionMessage, Locale actionMessageLocale, MessageVariationAssignment actionMessageAssignment, UserInterfaceType interfaceType, User createUser, Set<String> actionMessageTags){
+        Objects.requireNonNull(campaignCode);
+        Objects.requireNonNull(parentMessageUid);
+        Objects.requireNonNull(actionType);
+        Objects.requireNonNull(actionMessage);
+        Objects.requireNonNull(interfaceType);
+        Objects.requireNonNull(createUser);
+        Objects.requireNonNull(actionMessageLocale);
+        Campaign campaign = campaignRepository.findByCampaignCodeAndEndDateTimeAfter(campaignCode,Instant.now());
+        if(campaign != null && campaign.getCampaignMessages() != null && !campaign.getCampaignMessages().isEmpty()){
+            for(CampaignMessage parentMessage : campaign.getCampaignMessages()) {
+                if (parentMessage.getUid().trim().equalsIgnoreCase(parentMessageUid.trim())) {
+                    CampaignMessage messageForAction = new CampaignMessage(actionMessage, createUser, actionMessageAssignment, actionMessageLocale, interfaceType, campaign);
+                    if (actionMessageTags != null) {
+                        messageForAction.setTags(new ArrayList<>(actionMessageTags));
+                    }
+                    CampaignMessageAction action = new CampaignMessageAction(parentMessage, messageForAction, actionType, createUser);
+                    parentMessage.getCampaignMessageActionSet().add(action);
+                    break;
+                }
+            }
+            Campaign updatedCampaign = campaignRepository.saveAndFlush(campaign);
+            CampaignLog campaignLog = new CampaignLog(createUser.getUid(), CampaignLogType.CAMPAIGN_MESSAGE_ACTION_ADDED, campaign);
+            persistCampaignLog(campaignLog);
+            return updatedCampaign;
+        }
+        LOG.error("No Campaign found for code = {}" + campaignCode);
+        throw new CampaignNotFoundException(CAMPAIGN_NOT_FOUND_CODE);
+
     }
 
     private Campaign getCampaignByCampaignCode(String campaignCode){

@@ -2,7 +2,7 @@ package za.org.grassroot.webapp.controller.rest.campaign;
 
 
 import za.org.grassroot.core.domain.campaign.Campaign;
-import za.org.grassroot.webapp.model.web.CampaignWrapper;
+import za.org.grassroot.webapp.model.rest.wrappers.CampaignWrapper;
 
 import java.util.ArrayList;
 import java.util.HashSet;

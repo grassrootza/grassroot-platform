@@ -1,4 +1,4 @@
-package za.org.grassroot.webapp.model.web;
+package za.org.grassroot.webapp.model.rest.wrappers;
 
 import org.hibernate.validator.constraints.NotBlank;
 
