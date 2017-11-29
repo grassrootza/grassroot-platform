@@ -1,0 +1,58 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      data-layout-decorate="~{layout}">
+<head>
+
+    <title>Welcome</title>
+    <meta property="og:title" content="Grassroot"/>
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/images/grassroot-logo.png"/>
+    <meta property="og:description" content="The Grassroot Platform"/>
+
+</head>
+
+<body>
+
+<section layout:fragment="header" class="top-container">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
+                <h2 class="text-center header-content-title"><span class="bold-title">Social </span><span class="light-title">Media</span></h2>
+                <h4 th:text="#{web.home.welcome.new(${currentUser.displayName})}" class="text-center header-content-subtitle">Welcome to Grassroot, Luke</h4>
+            </div>
+        </div>
+    </div>
+</section>
+
+<main layout:fragment="content">
+
+    <section class="no-group-buttons">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
+                    <a th:href="@{/group/create}" class="default-button full-width-button text-center">
+                        <i class="fa fa-external-link" aria-hidden="true"></i>Link to Facebook
+                    </a>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
+                    <button id="#twitterGroup" data-toggle="modal" data-target="#joiningModal" class="default-button full-width-button text-center">
+                        <i class="fa fa-external-link" aria-hidden="true"></i>Link to Twitter</button>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
+                    <button id="#googleGroup" data-toggle="modal" data-target="#joiningModal" class="default-button full-width-button text-center">
+                        <i class="fa fa-external-link" aria-hidden="true"></i>Link to Google</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+</body>
+</html>

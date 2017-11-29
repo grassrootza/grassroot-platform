@@ -127,6 +127,10 @@ public class UserProfileController extends BaseController {
         response.flushBuffer();
     }
 
-
+    @RequestMapping(value = "social-media", method = RequestMethod.GET)
+    public String linkSocialMedia(Model model) {
+        model.addAttribute("name", "NAAM");
+        return "user/social-media";
+    }
 
 }
