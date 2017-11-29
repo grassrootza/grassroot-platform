@@ -102,6 +102,7 @@ public class USSDTodoController extends USSDBaseController {
         String promptMessage = "yes".equalsIgnoreCase(userResponse) ?
                 messageAssembler.getMessage("todo.volunteer.yes.prompt", user) :
                 messageAssembler.getMessage("todo.volunteer.no.prompt", user);
+        log.info("User={},Prompt={},todo uid={},response={}",user,promptMessage,todoUid,userResponse);
         return menuBuilder(welcomeMenu(promptMessage, user));
     }
 
@@ -112,6 +113,7 @@ public class USSDTodoController extends USSDBaseController {
                                        @RequestParam(required = false) String priorInput) throws URISyntaxException {
         final String userInput = StringUtils.isEmpty(priorInput) ? userResponse : priorInput;
         User user = userManager.findByInputNumber(msisdn, saveUrl("/respond/info", todoUid, userInput));
+        log.info("User input={},User={}",userInput,user);
         USSDMenu menu = new USSDMenu(messageAssembler.getMessage(USSDSection.TODO, "info", promptKey + ".confirm", userInput, user));
         menu.addMenuOption(REL_PATH + "/respond/info/confirmed?todoUid=" + todoUid + "&response=" + userInput,
                 messageAssembler.getMessage("options.yes", user));
@@ -137,6 +139,7 @@ public class USSDTodoController extends USSDBaseController {
         User user = userManager.findByInputNumber(msisdn, saveUrl("/respond/info/revise", todoUid, userInput));
         // note: probably want to come back & test whether to re-include original request
         final String prompt = messageAssembler.getMessage("todo.info.revise.prompt", new String[] { userInput },  user);
+        log.info("prompt={},user={},user input={}",prompt,user,userInput);
         return menuBuilder(new USSDMenu(prompt, REL_PATH + "/respond/info?todoUid=" + todoUid));
     }
 
@@ -149,6 +152,7 @@ public class USSDTodoController extends USSDBaseController {
         if (!"unsure".equalsIgnoreCase(userResponse)) {
             todoBroker.recordResponse(user.getUid(), todoUid, userResponse, false);
         }
+        log.info("User={},response={}",user,userResponse);
         return menuBuilder(welcomeMenu(messageAssembler.getMessage("todo.validate." + userResponse + ".prompt", user), user));
     }
 
@@ -198,6 +202,7 @@ public class USSDTodoController extends USSDBaseController {
         }
         TodoRequest todoRequest = todoRequestBroker.load(storedUid);
         final String prompt = messageAssembler.getMessage("todo.msg." + getKeyForSubject(todoRequest.getType()) + ".prompt", user);
+        log.info("todo req={},user={},prompt={}",todoRequest,user,prompt);
         return menuBuilder(new USSDMenu(prompt, revising == null || !revising
                 ? REL_PATH + "/create/deadline?storedUid=" + storedUid
                 : REL_PATH + "/create/confirm?field=subject&storedUid=" + storedUid));

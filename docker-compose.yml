@@ -11,3 +11,4 @@ services:
       - 8080:8080
     volumes:
       - "./:/usr/src/grassroot/"
+      - "/home/march/grassroot/config/:/usr/src/grassroot/environment"

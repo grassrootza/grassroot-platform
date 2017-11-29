@@ -4,7 +4,14 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.task.Todo;
+import za.org.grassroot.core.domain.task.TodoRequest;
+import za.org.grassroot.core.domain.task.TodoType;
+import za.org.grassroot.webapp.util.USSDUrlUtil;
+
+import java.time.Instant;
 
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -22,6 +29,8 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
     private static final String phoneParam = "msisdn";
     private static final String todoUidParam = "todoUid";
     private static final String dummyUserInput = "blah blah blah blah";
+    private static final String testMessage = "Test message";
+    private static final String testUserResponse = "yes";
     private static final String groupMenu = "group",
             subjectMenu = "subject",
             dueDateMenu = "due_date",
@@ -37,6 +46,8 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
     @InjectMocks private USSDTodoController ussdTodoController;
 
     private User testUser;
+    private Todo testTodo;
+    private Group testGroup;
 
     @Before
     public void setUp() {
@@ -48,7 +59,9 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
         wireUpHomeController(ussdHomeController);
         wireUpMessageSourceAndGroupUtil(ussdTodoController);
         ussdTodoController.setGroupUtil(ussdGroupUtil);
-        testUser = new User(testUserPhone);
+        testUser = new User(testUserPhone,"Test User");
+        testGroup = new Group("Test Group",testUser);
+        testTodo = new Todo(testUser,testGroup, TodoType.ACTION_REQUIRED,testMessage, Instant.now());
     }
 
     @Test
@@ -61,6 +74,140 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
 
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
         verifyNoMoreInteractions(userManagementServiceMock);
+    }
+
+    @Test
+    public void volunteerResponseShouldWork()throws Exception{
+        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
+
+        mockMvc.perform(get(path + "/respond/volunteer")
+                .param(phoneParam,testUserPhone)
+                .param(todoUidParam,""+testTodo.getUid())
+                .param("confirmed",""+testUserResponse))
+                .andExpect(status().isOk());
+        verify(userManagementServiceMock,times(1)).findByInputNumber(testUserPhone);
+    }
+
+    @Test
+    public void confirmInfoResponseShouldWork()throws Exception{
+        when(userManagementServiceMock.findByInputNumber(testUserPhone,
+                saveUrl("/respond/info", testTodo.getUid(), testUserResponse))).thenReturn(testUser);
+        mockMvc.perform(get(path + "/respond/info")
+                .param(phoneParam,testUserPhone)
+                .param(todoUidParam,testTodo.getUid())
+                .param("request",testUserResponse))
+                .andExpect(status().isOk());
+        verify(userManagementServiceMock,times(1)).findByInputNumber(testUserPhone,saveUrl("/respond/info", testTodo.getUid(), testUserResponse));
+    }
+
+    private String saveUrl(String menu, String todoUid, String userInput) {
+        return "/todo" + menu + "?todoUid=" + todoUid + "&priorInput=" + USSDUrlUtil.encodeParameter(userInput);
+    }
+
+    @Test
+    public void recordInfoResponseShouldWork()throws Exception{
+        when(userManagementServiceMock.findByInputNumber(testUserPhone,null)).thenReturn(testUser);
+
+        mockMvc.perform(get(path + "/respond/info/confirmed")
+                .param(phoneParam,testUserPhone)
+                .param(todoUidParam,testTodo.getUid())
+                .param("response",testUserResponse))
+                .andExpect(status().isOk());
+        verify(userManagementServiceMock,times(1)).findByInputNumber(testUserPhone,null);
+    }
+
+
+    @Test
+    public void reviseInfoRequestShouldWork()throws Exception{
+        when(userManagementServiceMock.findByInputNumber(testUserPhone,
+                saveUrl("/respond/info/revise", testTodo.getUid(), testUserResponse))).thenReturn(testUser);
+
+        mockMvc.perform(get(path + "/respond/info/revise")
+                .param(phoneParam,testUserPhone)
+                .param(todoUidParam,testTodo.getUid())
+                .param("request",testUserResponse))
+                .andExpect(status().isOk());
+        verify(userManagementServiceMock,times(1)).findByInputNumber(testUserPhone,saveUrl("/respond/info/revise", testTodo.getUid(), testUserResponse));
+    }
+
+    @Test
+    public void validateTodoCompletionShouldWork()throws Exception{
+        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
+
+        mockMvc.perform(get(path + "/respond/validate")
+                .param(phoneParam,testUserPhone)
+                .param(todoUidParam,testTodo.getUid())
+                .param("confirmed",""+testUserResponse))
+                .andExpect(status().isOk());
+        verify(userManagementServiceMock,times(1)).findByInputNumber(testUserPhone);
+    }
+
+    @Test
+    public void createShouldWork()throws Exception{
+        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
+        when(todoRequestBrokerMock.create(testUser.getUid(),
+                TodoType.ACTION_REQUIRED)).thenReturn(new TodoRequest(testUser,TodoType.ACTION_REQUIRED));
+        mockMvc.perform(get(path + "/create")
+                .param(phoneParam,testUserPhone)
+                .param("type", ""+TodoType.ACTION_REQUIRED))
+                .andExpect(status().isOk());
+        verify(userManagementServiceMock,times(1)).findByInputNumber(testUserPhone);
+        verify(todoRequestBrokerMock,times(1)).create(testUser.getUid(),TodoType.ACTION_REQUIRED);
+    }
+
+    @Test
+    public void askForSubjectShouldWork()throws Exception{
+        String testStoreUid = testTodo.getUid();
+        when(userManagementServiceMock.findByInputNumber(testUserPhone,
+                saveRequestUrl("/create/subject", testStoreUid, null))).thenReturn(testUser);
+        TodoRequest testTodoRequest = new TodoRequest(testUser,TodoType.ACTION_REQUIRED);
+        when(todoRequestBrokerMock.load(testStoreUid)).thenReturn(testTodoRequest);
+        mockMvc.perform(get(path + "/create/subject")
+                .param(phoneParam,testUserPhone)
+                .param("storedUid",testStoreUid))
+                .andExpect(status().isOk());
+
+        verify(userManagementServiceMock,times(1))
+                .findByInputNumber(testUserPhone,saveRequestUrl("/create/subject", testStoreUid, null));
+        verify(todoRequestBrokerMock,times(1)).load(testStoreUid);
+    }
+
+    @Test
+    public void askForDeadlineShouldWork()throws Exception{
+        String testStoreUid = testTodo.getUid();
+        TodoRequest testTodoRequest = new TodoRequest(testUser,TodoType.ACTION_REQUIRED);
+        when(userManagementServiceMock.findByInputNumber(testUserPhone,
+                saveRequestUrl("/create/deadline", testStoreUid, null))).thenReturn(testUser);
+
+        when(todoRequestBrokerMock.load(testStoreUid)).thenReturn(testTodoRequest);
+        mockMvc.perform(get(path + "/create/deadline")
+                .param(phoneParam,testUserPhone)
+                .param("storedUid",testStoreUid)
+                .param("request",testUserResponse))
+                .andExpect(status().isOk());
+
+        verify(userManagementServiceMock,times(1))
+                .findByInputNumber(testUserPhone,saveRequestUrl("/create/deadline", testStoreUid, null));
+        verify(todoRequestBrokerMock,times(1)).load(testStoreUid);
+    }
+
+    @Test
+    public void askForResponseTagShouldWork()throws Exception{
+        String testStoreUid = testTodo.getUid();
+        when(userManagementServiceMock.findByInputNumber(testUserPhone,
+                saveRequestUrl("/create/tag", testStoreUid, null))).thenReturn(testUser);
+        mockMvc.perform(get(path + "/create/tag")
+                .param(phoneParam,testUserPhone)
+                .param("storedUid",testStoreUid)
+                .param("request",testUserResponse))
+                .andExpect(status().isOk());
+        verify(userManagementServiceMock,times(1))
+                .findByInputNumber(testUserPhone,saveRequestUrl("/create/tag", testStoreUid, null));
+    }
+
+    private String saveRequestUrl(String menu, String requestUid, String priorInput) {
+        return "/todo" + menu + "?storedUid=" + requestUid + (priorInput == null ? "" :
+                "&priorInput=" + USSDUrlUtil.encodeParameter(priorInput));
     }
 
     // todo : fix the below, refactoring to new design
