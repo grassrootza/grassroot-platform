@@ -24,7 +24,6 @@ import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.campaign.CampaignBroker;
 
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.Locale;
 import java.util.Set;
 

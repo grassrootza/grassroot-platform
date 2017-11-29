@@ -150,7 +150,7 @@ public class USSDCampaignController extends USSDController{
     }
 
     private void updateMembership(User user, Campaign campaign, String messageUid){
-        CampaignMessage message = CampaignUtil.getCampaignMessageFromCampaignByMessageUid(campaign,messageUid);
+        CampaignMessage message = CampaignUtil.findCampaignMessageFromCampaignByMessageUid(campaign,messageUid);
         if(message != null && message.getTagList() != null && message.getTagList().isEmpty()){
             if(user.getMemberships() != null && !user.getMemberships().isEmpty()){
                 for(Membership membership: user.getMemberships()){
