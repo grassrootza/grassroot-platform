@@ -32,7 +32,6 @@ public class Option {
     @XmlAttribute
     final public Boolean display;
 
-    // todo : clean up
     //well i had to, i was get a number of error one of which was  default consructor not found
     //I also had to expose all the fields publicly, will revert in due time
     public Option() {

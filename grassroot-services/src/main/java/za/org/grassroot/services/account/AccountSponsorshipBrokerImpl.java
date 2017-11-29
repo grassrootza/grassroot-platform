@@ -8,8 +8,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.association.AccountSponsorshipRequest;
 import za.org.grassroot.core.domain.association.AssociationRequestEvent;
 import za.org.grassroot.core.enums.AssocRequestEventType;
@@ -91,7 +91,7 @@ public class AccountSponsorshipBrokerImpl implements AccountSponsorshipBroker {
         AccountSponsorshipRequest request;
 
         if (hasUserBeenAskedToSponsor(destinationUserUid, accountUid)) {
-            logger.info("Refreshing an existing sponsorship request ..."); // todo : may want to limit this in future (prevent nagging)
+            logger.info("Refreshing an existing sponsorship request ...");
             priorRequestExists = true;
             request = requestRepository.findOne(where(forAccount(account))
                     .and(toUser(requestedUser))

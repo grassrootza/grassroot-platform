@@ -5,9 +5,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.dto.task.TaskTimeChangedDTO;
 
 import java.time.Instant;
@@ -15,7 +15,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
-// major todo: switch to JPA specifications
 public interface EventRepository extends JpaRepository<Event, Long>, JpaSpecificationExecutor<Event> {
 
 	Event findOneByUid(String uid);
@@ -73,7 +72,7 @@ where e.canceled = FALSE
 			"where el.eventLogType = 'CANCELLED' and m.user = ?1 and el.createdDateTime >= ?2")
 	List<Event> findByMemberAndCanceledSince(User user, Instant since);
 
-	// todo : if assignment filtering gets heavy, integrate it in this query
+	// note : if assignment filtering gets heavy, integrate it in this query
 	@Query("select new za.org.grassroot.core.dto.task.TaskTimeChangedDTO(" +
 			"e.uid, type(e), el.createdDateTime) from " +
 			"EventLog el inner join el.event e " +

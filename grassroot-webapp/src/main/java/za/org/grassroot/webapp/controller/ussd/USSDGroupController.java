@@ -37,6 +37,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
+import static za.org.grassroot.webapp.enums.USSDSection.HOME;
 import static za.org.grassroot.webapp.enums.USSDSection.SAFETY_GROUP_MANAGER;
 import static za.org.grassroot.webapp.util.USSDUrlUtil.*;
 
@@ -105,11 +106,11 @@ public class USSDGroupController extends USSDBaseController {
             Group group = searchResult.get();
             groupBroker.addMemberViaJoinCode(user.getUid(), group.getUid(), trailingDigits);
             String prompt = (group.hasName()) ?
-                    getMessage(thisSection, startMenu, promptKey + ".group.token.named", group.getGroupName(), user) :
-                    getMessage(thisSection, startMenu, promptKey + ".group.token.unnamed", user);
+                    getMessage(HOME, startMenu, promptKey + ".group.token.named", group.getGroupName(), user) :
+                    getMessage(HOME, startMenu, promptKey + ".group.token.unnamed", user);
             return welcomeMenu(prompt, user);
         } else {
-            return welcomeMenu(getMessage(thisSection, startMenu, promptKey + ".unknown.request", user), user);
+            return welcomeMenu(getMessage(HOME, startMenu, promptKey + ".unknown.request", user), user);
         }
     }
 

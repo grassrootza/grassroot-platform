@@ -75,7 +75,7 @@ public class AatSoapLocationBrokerImpl implements UssdLocationServicesBroker {
                     "message from server", grantedThroughInterface);
             userLogRepository.save(successLog);
             return true;
-        } else { // todo: throw exception if tracking impossible (e.g., because of network) is cause of failure
+        } else {
             log.info("response failed! looks like: {}", response.toString());
             return false;
         }

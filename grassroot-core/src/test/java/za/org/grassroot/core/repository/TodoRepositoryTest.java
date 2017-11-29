@@ -30,7 +30,7 @@ import java.util.*;
 
 import static org.junit.Assert.*;
 
-
+// major todo: fix / adapt these for new todo design
 @RunWith(SpringRunner.class)
 @ContextConfiguration(classes = TestContextConfiguration.class)
 @Transactional

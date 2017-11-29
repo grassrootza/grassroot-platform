@@ -39,6 +39,7 @@ import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
+import static za.org.grassroot.core.domain.task.TodoType.*;
 import static za.org.grassroot.core.util.DateTimeUtil.*;
 
 @Slf4j @RestController
@@ -63,9 +64,9 @@ public class USSDTodoController extends USSDBaseController {
         this.todoRequestBroker = todoRequestBroker;
         this.dataExportBroker = dataExportBroker;
         this.messageAssembler = messageAssembler;
+        super.setMessageAssembler(messageAssembler); // else get nulls ... need to fix this properly soon
         this.groupUtil = groupUtil;
         this.learningService = learningService;
-        setMessageAssembler(messageAssembler);
     }
 
     public USSDMenu respondToTodo(User user, EntityForUserResponse entity) {
@@ -85,7 +86,7 @@ public class USSDTodoController extends USSDBaseController {
                 USSDMenu menu = new USSDMenu(confirmationPrompt);
                 menu.addMenuOptions(optionsYesNo(user, REL_PATH + "/respond/validate?todoUid=" + todo.getUid()));
                 menu.addMenuOption(REL_PATH + "/respond/validate?todoUid=" + todo.getUid() + " &" + yesOrNoParam + "=unsure",
-                        getMessage("todo.validate.option.unsure", user));
+                        messageAssembler.getMessage("todo.validate.option.unsure", user));
                 return menu;
             default:
                 throw new TodoTypeMismatchException();
@@ -100,8 +101,8 @@ public class USSDTodoController extends USSDBaseController {
         todoBroker.recordResponse(user.getUid(), todoUid, userResponse, false);
         // todo : if user responds yes, allow them to share? in case yes, leaving a little duplication in here
         String promptMessage = "yes".equalsIgnoreCase(userResponse) ?
-                getMessage("todo.volunteer.yes.prompt", user) :
-                getMessage("todo.volunteer.no.prompt", user);
+                messageAssembler.getMessage("todo.volunteer.yes.prompt", user) :
+                messageAssembler.getMessage("todo.volunteer.no.prompt", user);
         return menuBuilder(welcomeMenu(promptMessage, user));
     }
 
@@ -112,10 +113,10 @@ public class USSDTodoController extends USSDBaseController {
                                        @RequestParam(required = false) String priorInput) throws URISyntaxException {
         final String userInput = StringUtils.isEmpty(priorInput) ? userResponse : priorInput;
         User user = userManager.findByInputNumber(msisdn, saveUrl("/respond/info", todoUid, userInput));
-        USSDMenu menu = new USSDMenu(getMessage(USSDSection.TODO2, "info", promptKey + ".confirm", userInput, user));
+        USSDMenu menu = new USSDMenu(messageAssembler.getMessage(USSDSection.TODO, "info", promptKey + ".confirm", userInput, user));
         menu.addMenuOption(REL_PATH + "/respond/info/confirmed?todoUid=" + todoUid + "&response=" + userInput,
-                getMessage("options.yes", user));
-        menu.addMenuOption(REL_PATH + "/respond/info/revise", getMessage("todo.info.response.change", user));
+                messageAssembler.getMessage("options.yes", user));
+        menu.addMenuOption(REL_PATH + "/respond/info/revise", messageAssembler.getMessage("todo.info.response.change", user));
         return menuBuilder(menu);
     }
 
@@ -125,7 +126,7 @@ public class USSDTodoController extends USSDBaseController {
                                       @RequestParam String response) throws URISyntaxException {
         User user = userManager.findByInputNumber(msisdn, null);
         todoBroker.recordResponse(user.getUid(), todoUid, response, false);
-        return menuBuilder(welcomeMenu(getMessage("todo.info.prompt.done", user), user));
+        return menuBuilder(welcomeMenu(messageAssembler.getMessage("todo.info.prompt.done", user), user));
     }
 
     @RequestMapping(value = FULL_PATH + "/respond/info/revise", method = RequestMethod.GET)
@@ -149,7 +150,7 @@ public class USSDTodoController extends USSDBaseController {
         if (!"unsure".equalsIgnoreCase(userResponse)) {
             todoBroker.recordResponse(user.getUid(), todoUid, userResponse, false);
         }
-        return menuBuilder(welcomeMenu(getMessage("todo.validate." + userResponse + ".prompt", user), user));
+        return menuBuilder(welcomeMenu(messageAssembler.getMessage("todo.validate." + userResponse + ".prompt", user), user));
     }
 
     private String saveUrl(String menu, String todoUid, String userInput) {
@@ -164,11 +165,11 @@ public class USSDTodoController extends USSDBaseController {
     public Request start(@RequestParam(value = phoneNumber) String msisdn) throws URISyntaxException {
         User user = userManager.findByInputNumber(msisdn);
         USSDMenu menu = new USSDMenu(messageAssembler.getMessage("todo.start.prompt", user));
-        menu.addMenuOption(REL_PATH + "/create?type=" + TodoType.ACTION_REQUIRED,
+        menu.addMenuOption(REL_PATH + "/create?type=" + ACTION_REQUIRED,
                 messageAssembler.getMessage("todo.start.options.action", user));
-        menu.addMenuOption(REL_PATH + "/create?type=" + TodoType.VOLUNTEERS_NEEDED,
+        menu.addMenuOption(REL_PATH + "/create?type=" + VOLUNTEERS_NEEDED,
                 messageAssembler.getMessage("todo.start.options.volunteer", user));
-        menu.addMenuOption(REL_PATH + "/create?type=" + TodoType.INFORMATION_REQUIRED,
+        menu.addMenuOption(REL_PATH + "/create?type=" + INFORMATION_REQUIRED,
                 messageAssembler.getMessage("todo.start.options.info", user));
         menu.addMenuOption(REL_PATH + "/existing", messageAssembler.getMessage("todo.start.options.existing", user));
         return menuBuilder(menu);
@@ -182,7 +183,7 @@ public class USSDTodoController extends USSDBaseController {
         final String requestUid = StringUtils.isEmpty(storedUid) ?
                 todoRequestBroker.create(user.getUid(), type).getUid() : storedUid;
         cacheManager.putUssdMenuForUser("/create", requestUid);
-        USSDGroupUtil.GroupMenuBuilder groupMenu = new USSDGroupUtil.GroupMenuBuilder(user, USSDSection.TODO2)
+        USSDGroupUtil.GroupMenuBuilder groupMenu = new USSDGroupUtil.GroupMenuBuilder(user, USSDSection.TODO)
                 .messageKey("group").urlForExistingGroup("/create/subject?storedUid=" + requestUid);
         return menuBuilder(groupUtil.askForGroup(groupMenu));
     }
@@ -216,7 +217,7 @@ public class USSDTodoController extends USSDBaseController {
         }
         TodoRequest todoRequest = todoRequestBroker.load(storedUid);
         final String prompt = messageAssembler.getMessage("todo." + getKeyForSubject(todoRequest.getType()) + ".deadline", user);
-        final String nextUrl = TodoType.INFORMATION_REQUIRED.equals(todoRequest.getType()) && (revising == null || !revising) ?
+        final String nextUrl = INFORMATION_REQUIRED.equals(todoRequest.getType()) && (revising == null || !revising) ?
                 REL_PATH + "/create/tag?storedUid=" + storedUid :
                 REL_PATH + "/create/confirm?storedUid=" + storedUid;
         return menuBuilder(new USSDMenu(prompt, nextUrl));
@@ -258,15 +259,19 @@ public class USSDTodoController extends USSDBaseController {
         }
 
         TodoRequest request = todoRequestBroker.load(storedUid);
+        log.info("todo request reloaded = {}", request);
         String formattedDueDate = dateTimeFormat.format(convertToUserTimeZone(request.getActionByDate(), getSAST()));
 
         if (request.getActionByDate() != null && request.getActionByDate().isBefore(Instant.now())) {
             return menuBuilder(errorMenuTimeInPast(user, request, formattedDueDate));
         } else {
-            String[] promptFields = new String[]{request.getMessage(), request.getParent().getName(), formattedDueDate};
+            String[] promptFields = new String[]{request.getMessage(),
+                    request.getParent().getName(),
+                    formattedDueDate,
+                    INFORMATION_REQUIRED.equals(request.getType()) ? request.getResponseTag() : ""};
             final String promptKey = isWithinAnHour(request) ?
-                    "todo." + getKeyForSubject(request.getType()) + ".confirm" :
-                    "todo." + getKeyForSubject(request.getType()) + ".confirm.instant";
+                    "todo." + getKeyForSubject(request.getType()) + ".confirm.instant" :
+                    "todo." + getKeyForSubject(request.getType()) + ".confirm";
             USSDMenu menu = new USSDMenu(messageAssembler.getMessage(promptKey, promptFields, user));
             menu.addMenuOption(REL_PATH + "/create/complete?storedUid=" + request.getUid(),
                     messageAssembler.getMessage("options.yes", user));
@@ -274,7 +279,7 @@ public class USSDTodoController extends USSDBaseController {
                     messageAssembler.getMessage("todo.confirm.options.subject", user));
             menu.addMenuOption(REL_PATH + "/create/deadline?storedUid=" + request.getUid() + "&revising=true",
                     messageAssembler.getMessage("todo.confirm.options.date", user));
-            if (TodoType.INFORMATION_REQUIRED.equals(request.getType())) {
+            if (INFORMATION_REQUIRED.equals(request.getType())) {
                 menu.addMenuOption(REL_PATH + "/create/tag?storedUid=" + request.getUid() + "&revising=true",
                         messageAssembler.getMessage("todo.confirm.options.tag", user));
             }
@@ -471,7 +476,8 @@ public class USSDTodoController extends USSDBaseController {
                 messageAssembler.getMessage(keyRoot + ".duedate", user));
         menu.addMenuOption(REL_PATH + "/modify/cancel?todoUid=" + todoUid,
                 messageAssembler.getMessage(keyRoot + ".cancel", user));
-        menu.addMenuOption(REL_PATH + "/view?todoUid=" + todoUid, getMessage(optionsKey + "back", user));
+        menu.addMenuOption(REL_PATH + "/view?todoUid=" + todoUid,
+                messageAssembler.getMessage(optionsKey + "back", user));
         return menuBuilder(menu);
     }
 
@@ -606,6 +612,8 @@ public class USSDTodoController extends USSDBaseController {
     }
 
     private boolean isWithinAnHour(TodoRequest request) {
+        log.debug("checking todo request, action date = {}, now = {}, now + 1 hour = {}", request.getActionByDate(),
+                Instant.now(), Instant.now().plus(1, ChronoUnit.HOURS));
         return request.getActionByDate() != null &&
                 request.getActionByDate().isAfter(Instant.now()) &&
                 request.getActionByDate().isBefore(Instant.now().plus(1, ChronoUnit.HOURS));

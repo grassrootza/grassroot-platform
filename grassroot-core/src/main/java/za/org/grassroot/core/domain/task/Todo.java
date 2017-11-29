@@ -31,7 +31,7 @@ import java.util.stream.Stream;
                 @Index(name = "index_action_todo_type ", columnList = "todo_type")})
 public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, VoteContainer, MeetingContainer {
 
-    private static final int DEFAULT_REMINDER_MINUTES = 60; // todo: just use group?
+    private static final int DEFAULT_REMINDER_MINUTES = 60; // send it at deadline
 
     @Column(name = "next_notification_time")
     @Setter private Instant nextNotificationTime;
@@ -74,7 +74,7 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
     }
 
     public Todo(User createdByUser, TodoContainer parent, TodoType todoType, String description, Instant dueByDate) {
-        super(createdByUser, parent, todoType, description, dueByDate, DEFAULT_REMINDER_MINUTES, true);
+        super(createdByUser, parent, todoType, description, dueByDate, parent.getTodoReminderMinutes(), true);
 
         this.ancestorGroup = parent.getThisOrAncestorGroup();
         this.ancestorGroup.addDescendantTodo(this);
@@ -166,7 +166,8 @@ public class Todo extends AbstractTodoEntity implements Task<TodoContainer>, Vot
         return membersToAssign;
     }
 
-    // todo : make sure equals and hash code are working properly here
+    // todo : make sure equals and hash code are working properly here (via tests - e.g., create a list of assignments,
+    // then remove one by a call to list.remove, and see if it is actually removed)
     public void addAssignments(Set<TodoAssignment> todoAssignments) {
         if (this.assignments == null) {
             this.assignments = new HashSet<>();

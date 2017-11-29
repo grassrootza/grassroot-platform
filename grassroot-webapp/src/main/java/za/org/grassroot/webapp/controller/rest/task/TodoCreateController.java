@@ -72,7 +72,7 @@ public class TodoCreateController {
     Used when the thing 'to-do' is for one or more members of the group to perform some action, and for one or more
     other members to confirm they have done it. Paradigmatic case is X will visit school, and Y will say they have done.
     Note 1: allow for case when assigned is empty, which means that someone outside group has promised to the group that
-    something will be done, and group will confirm (via confirmed members, or below). todo : consider another enum?
+    something will be done, and group will confirm (via confirmed members, or below).
     Note 2: similarly, consider empty set to be 'anyone can confirm'
      */
     @RequestMapping(value = "/confirmation/{userUid}/{parentType}/{parentUid}", method = RequestMethod.POST)

@@ -10,7 +10,6 @@ public enum USSDSection {
     MEETINGS ("mtg"),
     VOTES ("vote"),
     TODO("todo"),
-    TODO2("todo2"),
     GROUP_MANAGER ("group"),
     SAFETY_GROUP_MANAGER("safety"),
     USER_PROFILE ("user"),

@@ -31,7 +31,6 @@ import static org.junit.Assert.*;
 
 /**
  * Created by luke on 2015/11/14.
- * major todo : add test coverage for enabling, etc
  */
 @RunWith(SpringRunner.class)
 @ContextConfiguration(classes = TestContextConfiguration.class)

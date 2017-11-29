@@ -2,12 +2,12 @@ package za.org.grassroot.webapp.model.rest;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.google.common.collect.Sets;
-import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.Notification;
-import za.org.grassroot.core.domain.task.Task;
-import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.domain.notification.EventNotification;
 import za.org.grassroot.core.domain.notification.TodoNotification;
+import za.org.grassroot.core.domain.task.Event;
+import za.org.grassroot.core.domain.task.Task;
+import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.NotificationDetailedType;
 import za.org.grassroot.core.enums.TaskType;
@@ -100,7 +100,6 @@ public class NotificationDTO {
         this.message = stripDialSuffix(stripTitleFromMessage(title, notification.getMessage()));
 
         this.entityType = event.getEventType().toString();
-        // todo: something strange with a single notification null event log appeared on staging server (cannot reproduce) ... introducing this until certain fixed
         this.changeType = notification.getEventLog() == null ? EventLogType.CREATED.toString() :
                 notification.getEventLog().getEventLogType().toString();
     }

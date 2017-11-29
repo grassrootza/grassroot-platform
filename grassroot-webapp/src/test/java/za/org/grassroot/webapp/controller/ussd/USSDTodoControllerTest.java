@@ -3,37 +3,12 @@ package za.org.grassroot.webapp.controller.ussd;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import za.org.grassroot.core.domain.BaseRoles;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.GroupJoinMethod;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.domain.task.Todo;
-import za.org.grassroot.core.domain.task.TodoRequest;
-import za.org.grassroot.core.domain.task.TodoType;
-import za.org.grassroot.core.enums.TodoCompletionConfirmType;
-import za.org.grassroot.webapp.util.USSDUrlUtil;
-
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static za.org.grassroot.core.domain.Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY;
-import static za.org.grassroot.core.util.DateTimeUtil.convertDateStringToLocalDateTime;
-import static za.org.grassroot.core.util.DateTimeUtil.reformatDateInput;
-import static za.org.grassroot.webapp.util.USSDUrlUtil.saveToDoMenu;
-import static za.org.grassroot.webapp.util.USSDUrlUtil.todosViewGroupCompleteEntries;
 
 /**
  * Created by luke on 2015/12/18.

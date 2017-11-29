@@ -7,7 +7,6 @@ import za.org.grassroot.webapp.enums.USSDSection;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
-import java.util.Map;
 
 /**
  * Created by luke on 2015/12/04.
@@ -114,20 +113,6 @@ public class USSDUrlUtil {
 
     public static String saveToDoMenu(String menu, String todoUid) {
         return USSDSection.TODO.toPath() + menu + "?todoUid=" + todoUid + setInterruptedFlag;
-    }
-
-    public static String saveToDoMenu(String menu, String todoUid, String priorInput) {
-        return saveToDoMenu(menu, todoUid) + addInterruptedInput + encodeParameter(priorInput) + setInterruptedFlag;
-    }
-
-    // todo: use this above, or figure out a more elegant way around it
-    public static String saveToDoMenu(String menu, String todoUid, String priorInput, boolean encodeInput) {
-        return saveToDoMenu(menu, todoUid) + addInterruptedInput + (encodeInput ? encodeParameter(priorInput) : priorInput);
-    }
-
-    public static String saveToDoMenu(String menu, String todoUid, String previousMenu, String priorInput, boolean encodeInput) {
-        return saveToDoMenu(menu, todoUid, priorInput, encodeInput) + "&prior_menu=" + previousMenu;
-
     }
 
     public static String saveSafetyMenuPrompt(String menu) {

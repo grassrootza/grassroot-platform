@@ -2,7 +2,6 @@ package za.org.grassroot.core.repository;
 
 /**
  * Created by luke on 2015/07/16.
- * todo : flip several of these over to specifications
  */
 
 import org.springframework.data.domain.Page;

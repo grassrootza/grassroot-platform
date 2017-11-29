@@ -42,12 +42,4 @@ public class GcmRestControllerTest extends RestAbstractUnitTest {
 
     }
 
-    // todo : complete this
-    // @Test
-    // public void gcmDeregistrationShouldWork() throws Exception{
-    // when(userManagementServiceMock.loadOrCreateUser(testUserPhone)).thenReturn();
-    //   when(gcmRegistrationBrokerMock.registerUser(sessionTestUser, "random"));
-
-    // }
-
 }

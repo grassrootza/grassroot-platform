@@ -196,7 +196,7 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
 
     private File writeToFile(XSSFWorkbook workbook, String fileName) {
         try {
-            File outputFile = File.createTempFile(fileName, "xls"); // todo: extend to MIME types
+            File outputFile = File.createTempFile(fileName, "xls");
             FileOutputStream fos = new FileOutputStream(outputFile);
             workbook.write(fos);
             fos.flush();

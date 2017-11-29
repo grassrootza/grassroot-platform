@@ -2,7 +2,6 @@ package za.org.grassroot.webapp.controller.rest;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
@@ -10,14 +9,13 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.GroupLocation;
 import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
+import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.group.GroupQueryBroker;
-import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 
 import java.time.LocalDate;
@@ -85,7 +83,6 @@ public class TestEmulatorController extends BaseController {
         Map<User, PreviousPeriodUserLocation> userLocationMap = new HashMap<>();
 
         if (groupUid != null && !groupUid.trim().equals("")) {
-            // todo: need a function, "get users in graph" (for multiple reasons)
             usersToDisplay = new ArrayList<>(groupBroker.load(groupUid).getMembers());
         } else {
             usersToDisplay = geoLocationBroker.fetchUsersWithRecordedAverageLocations(today);

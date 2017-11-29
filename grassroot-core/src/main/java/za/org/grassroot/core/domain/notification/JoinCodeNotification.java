@@ -11,6 +11,10 @@ import javax.persistence.Entity;
 @DiscriminatorValue("JOIN_CODE")
 public class JoinCodeNotification extends UserNotification {
 
+    private JoinCodeNotification() {
+        // for JPA
+    }
+
     public JoinCodeNotification(User destination, String message, UserLog userLog){
         super(destination, message, userLog);
     }

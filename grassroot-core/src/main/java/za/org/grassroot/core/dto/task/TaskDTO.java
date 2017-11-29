@@ -142,7 +142,6 @@ public class TaskDTO implements Comparable<TaskDTO> {
     }
 
     // for the moment, users can change their vote after casting it
-    // todo : remove the cumbersome membership check once integrated in JPA specifications
     private boolean canActionOnEvent(Event event, User user) {
         boolean isOpen = event.getEventStartDateTime().isAfter(Instant.now());
         // slight redundancy here but may introduce alternate logics here in future, hence

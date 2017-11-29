@@ -42,6 +42,10 @@ public class CampaignLog implements ActionLog {
     @Column(name="description", nullable = true)
     private String description;
 
+    private CampaignLog() {
+        // for JPA
+    }
+
     public CampaignLog(User user, CampaignLogType campaignLogType,Campaign campaign) {
         this.uid = UIDGenerator.generateId();
         this.creationTime = Instant.now();

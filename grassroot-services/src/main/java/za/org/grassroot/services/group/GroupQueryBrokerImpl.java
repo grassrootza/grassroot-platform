@@ -44,7 +44,6 @@ import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
 
 /**
  * Created by luke on 2016/09/28.
- * major todo: clean up now that these are in a more manageable dedicated interface
  */
 @Service
 public class GroupQueryBrokerImpl implements GroupQueryBroker {
@@ -253,7 +252,6 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
     @Override
     @Transactional(readOnly = true)
     public List<LocalDate> getMonthsGroupActive(String groupUid) {
-        // todo: make this somewhat more sophisticated, including checking for active/inactive months, paid months etc
         Group group = groupRepository.findOneByUid(groupUid);
         LocalDate groupStartDate = LocalDateTime.ofInstant(group.getCreatedDateTime(), getSAST()).toLocalDate();
         LocalDate today = LocalDate.now();
