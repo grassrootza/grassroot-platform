@@ -16,11 +16,13 @@ import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignActionType;
 import za.org.grassroot.core.domain.campaign.CampaignMessage;
 import za.org.grassroot.core.domain.campaign.CampaignMessageAction;
+import za.org.grassroot.core.domain.campaign.CampaignType;
 import za.org.grassroot.core.enums.MessageVariationAssignment;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.webapp.util.USSDCampaignUtil;
 import za.org.grassroot.webapp.util.USSDUrlUtil;
 
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
@@ -136,7 +138,11 @@ public class USSDCampaignControllerTest extends USSDAbstractUnitTest {
         campaign.setId(1L);
         campaign.setCampaignCode("000");
         campaign.setCampaignDescription("Test Campaign");
+        campaign.setStartDateTime(Instant.now());
+        campaign.setEndDateTime(Instant.now());
+        campaign.setCampaignType(CampaignType.Information);
         campaign.setMasterGroup(testGroup);
+        campaign.setCreatedByUser(testUser);
         CampaignMessage englishMessage = new CampaignMessage("First Test English Message",testUser, MessageVariationAssignment.EXPERIMENT, Locale.ENGLISH, UserInterfaceType.USSD, campaign);
 
         CampaignMessage englishMoreInfoMessage = new CampaignMessage("English More info Message",testUser, MessageVariationAssignment.EXPERIMENT, Locale.ENGLISH, UserInterfaceType.USSD, campaign);

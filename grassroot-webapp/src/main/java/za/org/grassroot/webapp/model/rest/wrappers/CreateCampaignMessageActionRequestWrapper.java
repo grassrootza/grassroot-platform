@@ -2,17 +2,18 @@ package za.org.grassroot.webapp.model.rest.wrappers;
 
 
 import org.hibernate.validator.constraints.NotEmpty;
+import za.org.grassroot.core.domain.campaign.CampaignActionType;
 
 import javax.validation.constraints.NotNull;
 import java.io.Serializable;
 
-public class CampaignMessageActionWrapper implements Serializable {
+public class CreateCampaignMessageActionRequestWrapper implements Serializable {
 
     private String campaignCode;
     private String messageUid;
-    private String action;
+    private CampaignActionType action;
     private String userUid;
-    private CampaignMessageWrapper actionMessage;
+    private CreateCampaignMessageRequestWrapper actionMessage;
 
     @NotEmpty(message = "campaign.message.action.message.uid.required")
     public String getMessageUid() {
@@ -23,21 +24,21 @@ public class CampaignMessageActionWrapper implements Serializable {
         this.messageUid = messageUid;
     }
 
-    @NotEmpty(message = "campaign.message.action.required")
-    public String getAction() {
+    @NotNull(message = "campaign.message.action.required")
+    public CampaignActionType getAction() {
         return action;
     }
 
-    public void setAction(String action) {
+    public void setAction(CampaignActionType action) {
         this.action = action;
     }
 
     @NotNull(message = "campaign.message.action.message.required")
-    public CampaignMessageWrapper getActionMessage() {
+    public CreateCampaignMessageRequestWrapper getActionMessage() {
         return actionMessage;
     }
 
-    public void setActionMessage(CampaignMessageWrapper actionMessage) {
+    public void setActionMessage(CreateCampaignMessageRequestWrapper actionMessage) {
         this.actionMessage = actionMessage;
     }
 
