@@ -16,7 +16,7 @@ import java.util.Objects;
 @DiscriminatorValue("MEETING")
 public class Meeting extends Event<MeetingContainer> implements VoteContainer {
 
-	@Column(name = "location", length = 50)
+	@Column(name = "location")
 	private String eventLocation;
 
 	@Column(name="importance")

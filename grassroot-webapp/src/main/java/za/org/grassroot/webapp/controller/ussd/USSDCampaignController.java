@@ -36,19 +36,12 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
 
 @RequestMapping(method = GET, produces = MediaType.APPLICATION_XML_VALUE)
 @RestController
-public class USSDCampaignController extends USSDController{
+public class USSDCampaignController extends USSDBaseController {
 
     private static final String campaignMenus = "campaign/";
     private static final String campaignUrl = homePath + campaignMenus;
     private final CampaignBroker campaignBroker;
     private final UserManagementService userManagementService;
-
-    @Autowired
-    public USSDCampaignController(CampaignBroker campaignBroker,GroupBroker groupBroker, UserManagementService userManagementService ){
-        this.campaignBroker = campaignBroker;
-        this.groupBroker = groupBroker;
-        this.userManagementService = userManagementService;
-    }
 
     @RequestMapping(value = campaignUrl + USSDCampaignUtil.TAG_ME_URL)
     @ResponseBody
@@ -74,6 +67,12 @@ public class USSDCampaignController extends USSDController{
                                                 @RequestParam (value = USSDCampaignUtil.MESSAGE_UID)String parentMessageUid)  throws URISyntaxException{
         CampaignMessage message = addUserToMasterGroup(campaignCode,inputNumber,CampaignActionType.JOIN_MASTER_GROUP, parentMessageUid, new Locale(languageCode));
         return menuBuilder(buildCampaignUSSDMenu(message,languageCode, campaignCode));
+    }
+
+    @Autowired
+    public USSDCampaignController(CampaignBroker campaignBroker, UserManagementService userManagementService ){
+        this.campaignBroker = campaignBroker;
+        this.userManagementService = userManagementService;
     }
 
     @RequestMapping(value = campaignUrl + USSDCampaignUtil.SET_LANGUAGE_URL)

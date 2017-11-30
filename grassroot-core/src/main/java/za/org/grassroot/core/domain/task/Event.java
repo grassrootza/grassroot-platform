@@ -136,8 +136,7 @@ public abstract class Event<P extends UidIdentifiable> extends AbstractEventEnti
 	}
 
 	public LocalDateTime getScheduledReminderTimeAtSAST() {
-		// todo : handle nulls here (if reminder not set
-		return scheduledReminderTime.atZone(DateTimeUtil.getSAST()).toLocalDateTime();
+		return scheduledReminderTime == null ? null : scheduledReminderTime.atZone(DateTimeUtil.getSAST()).toLocalDateTime();
 	}
 
 	public boolean isScheduledReminderActive() {
@@ -203,7 +202,7 @@ public abstract class Event<P extends UidIdentifiable> extends AbstractEventEnti
 
 	@Override
 	public Integer getTodoReminderMinutes() {
-		return EventReminderType.CUSTOM.equals(reminderType) ? customReminderMinutes : null;
+		return EventReminderType.CUSTOM.equals(reminderType) ? customReminderMinutes : ancestorGroup.getReminderMinutes();
 	}
 
 	@Override

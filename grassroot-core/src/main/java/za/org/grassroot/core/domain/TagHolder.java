@@ -13,6 +13,7 @@ public interface TagHolder {
 
     default void addTag(String tag) {
         Objects.requireNonNull(tag);
+        // next line is messy but necessary for default method else abstract method throws null error
         List<String> tags = new ArrayList<>(StringArrayUtil.arrayToList(getTags()));
         tags.add(tag);
         setTags(StringArrayUtil.listToArrayRemoveDuplicates(tags));
@@ -20,6 +21,7 @@ public interface TagHolder {
 
     default void removeTag(String tag) {
         Objects.requireNonNull(tag);
+        // as prior, next line is messy but seems necessary
         List<String> tags = StringArrayUtil.arrayToList(getTags());
         tags.remove(tag);
         setTags(StringArrayUtil.listToArrayRemoveDuplicates(tags));

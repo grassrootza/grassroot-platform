@@ -1,0 +1,31 @@
+version: '2'
+services:
+  db:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_DB: grassroot
+      POSTGRES_USER: grassroot
+      POSTGRES_PASSWORD: verylongpassword
+    ports:
+      - 5432:5432
+    network_mode: "host"
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8081:8080
+    network_mode: "host"
+  grassroot:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    #image: awsassembly/grassroot:<TAG>
+    restart: always
+    ports:
+      - 8080:8080
+    network_mode: "host"
+    volumes:
+      - "./:/usr/src/grassroot/"
+      # - "./environment:/usr/src/grassroot/environment"
+      # - "./log:/usr/src/grassroot/log"

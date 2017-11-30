@@ -146,7 +146,6 @@ public class LiveWireContactBrokerImpl implements LiveWireContactBroker {
                 .collect(Collectors.toList());
     }
 
-    // todo: move a lot of this into better / stronger queries
     private LiveWireContactDTO generateFromUser(User user) {
         return new LiveWireContactDTO(user.getName(),
                 user.getNationalNumber(),
@@ -209,7 +208,6 @@ public class LiveWireContactBrokerImpl implements LiveWireContactBroker {
             throw new AccessDeniedException("Error! Querying user is not authorized");
         }
 
-        // todo : think about how to sort
         Set<User> users = new HashSet<>();
 
         // note: there may be a way to do this in one using HQL, but can't figure out all mapping, hence just

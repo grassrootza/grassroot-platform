@@ -3,6 +3,7 @@ package za.org.grassroot.webapp.controller.ussd;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageImpl;
@@ -17,7 +18,10 @@ import za.org.grassroot.core.domain.task.MeetingBuilder;
 import za.org.grassroot.core.domain.task.MeetingRequest;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
+import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.integration.experiments.ExperimentBroker;
+import za.org.grassroot.services.UserResponseBroker;
 import za.org.grassroot.services.task.enums.EventListTimeType;
 import za.org.grassroot.webapp.enums.USSDSection;
 import za.org.grassroot.webapp.util.USSDEventUtil;
@@ -36,6 +40,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static za.org.grassroot.core.domain.Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING;
 import static za.org.grassroot.core.util.DateTimeUtil.convertToSystemTime;
 import static za.org.grassroot.core.util.DateTimeUtil.getSAST;
+import static za.org.grassroot.webapp.controller.ussd.USSDAdvancedHomeControllerTest.testGroupName;
 import static za.org.grassroot.webapp.util.USSDUrlUtil.*;
 
 /**
@@ -51,6 +56,12 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
     private static final String path = "/ussd/mtg/";
     private static final USSDSection thisSection = USSDSection.MEETINGS;
 
+    @Mock private UserResponseBroker userResponseBrokerMock;
+    @Mock private ExperimentBroker experimentBrokerMock;
+
+    @InjectMocks
+    private USSDHomeController ussdHomeController;
+
     @InjectMocks
     private USSDMeetingController ussdMeetingController;
 
@@ -60,15 +71,52 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
     @Before
     public void setUp() {
 
-        mockMvc = MockMvcBuilders.standaloneSetup(ussdMeetingController)
+        mockMvc = MockMvcBuilders.standaloneSetup(ussdMeetingController, ussdHomeController)
                 .setHandlerExceptionResolvers(exceptionResolver())
                 .setValidator(validator())
                 .setViewResolvers(viewResolver())
                 .build();
 
+
+        wireUpHomeController(ussdHomeController);
         wireUpMessageSourceAndGroupUtil(ussdMeetingController);
-        ussdEventUtil.setMessageSource(messageSource());
+        ussdHomeController.setMeetingController(ussdMeetingController);
         ussdMeetingController.setEventUtil(ussdEventUtil);
+        ussdMeetingController.setGroupUtil(ussdGroupUtil);
+
+        ussdEventUtil.setMessageSource(messageSource());
+    }
+
+    @Test
+    public void meetingRsvpShouldWorkInAllLanguages() throws Exception {
+        User testUser = new User(testUserPhone);
+        Group testGroup = new Group(testGroupName, testUser);
+        testGroup.addMember(testUser, BaseRoles.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+        Meeting meeting = new MeetingBuilder().setName("Meeting about testing").setStartDateTime(Instant.now()).setUser(testUser).setParent(testGroup).setEventLocation("someLocation").createMeeting();
+
+        List<User> groupMembers = new ArrayList<>(languageUsers);
+        groupMembers.add(testUser);
+
+        for (User user: groupMembers) {
+
+            user.setHasInitiatedSession(false);
+
+            when(userManagementServiceMock.loadOrCreateUser(user.getPhoneNumber())).thenReturn(user);
+            when(userManagementServiceMock.findByInputNumber(user.getPhoneNumber())).thenReturn(user);
+            when(userResponseBrokerMock.checkForEntityForUserResponse(user.getUid(), true)).thenReturn(meeting);
+
+            mockMvc.perform(get("/ussd/start").param(phoneParam, user.getPhoneNumber())).andExpect(status().isOk());
+            verify(userResponseBrokerMock, times(1)).checkForEntityForUserResponse(user.getUid(), true);
+
+            when(eventBrokerMock.loadMeeting(meeting.getUid())).thenReturn(meeting);
+            mockMvc.perform(get("/ussd/mtg/rsvp")
+                    .param(phoneParam, user.getPhoneNumber())
+                    .param("entityUid", "" + meeting.getUid())
+                    .param("confirmed", "yes")).andExpect(status().isOk());
+
+            verify(eventLogBrokerMock, times(1)).rsvpForEvent(meeting.getUid(), user.getUid(), EventRSVPResponse.YES);
+            verify(experimentBrokerMock, times(1)).recordEvent(eq("meeting_response"), eq(user.getUid()), eq(null), any(Map.class));
+        }
     }
 
     @Test

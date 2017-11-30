@@ -17,7 +17,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.services.exception.InvalidTokenException;
-import za.org.grassroot.services.group.GroupExportBroker;
+import za.org.grassroot.services.group.MemberDataExportBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.BaseController;
 
@@ -40,13 +40,13 @@ public class UserProfileController extends BaseController {
     private static final Logger log = LoggerFactory.getLogger(UserProfileController.class);
 
     private final UserManagementService userManagementService;
-    private GroupExportBroker groupExportBroker;
+    private MemberDataExportBroker memberDataExportBroker;
 
 
     @Autowired
-    public UserProfileController(UserManagementService userManagementService, GroupExportBroker groupExportBroker) {
+    public UserProfileController(UserManagementService userManagementService, MemberDataExportBroker memberDataExportBroker) {
         this.userManagementService = userManagementService;
-        this.groupExportBroker = groupExportBroker;
+        this.memberDataExportBroker = memberDataExportBroker;
     }
 
     @ModelAttribute("sessionUser")
@@ -114,7 +114,7 @@ public class UserProfileController extends BaseController {
         List<Group> userGroups = user.getGroups().stream().filter(Group::isActive).sorted(Comparator.comparing(Group::getGroupName)).collect(Collectors.toList());
         List<String> userGroupUids = userGroups.stream().map(Group::getUid).collect(Collectors.toList());
 
-        XSSFWorkbook xls = groupExportBroker.exportMultipleGroupMembers(userGroupUids, Arrays.asList(selectedGroupUids));
+        XSSFWorkbook xls = memberDataExportBroker.exportMultipleGroupMembers(userGroupUids, Arrays.asList(selectedGroupUids));
 
         String fileName = "multiple_group_members.xlsx";
         response.setContentType(MimeTypeUtils.APPLICATION_OCTET_STREAM_VALUE);

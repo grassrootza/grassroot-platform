@@ -4,39 +4,24 @@ import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.geo.GroupLocation;
 import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.JoinTable;
-import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
-import javax.persistence.PrePersist;
-import javax.persistence.PreUpdate;
-import javax.persistence.Table;
-import javax.persistence.Version;
+import javax.persistence.*;
 import java.io.Serializable;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+
+import static za.org.grassroot.core.util.FormatUtil.removeUnwantedCharacters;
 
 @Entity
 @Table(name = "group_profile") // quoting table name in case "group" is a reserved keyword
@@ -71,7 +56,6 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
     @JoinColumn(name = "created_by_user", nullable = false, updatable = false)
     private User createdByUser;
 
-    // todo : maybe add @LazyCollection(LazyCollectionOption.EXTRA) [needs a lot of testing...]
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "group", orphanRemoval = true)
     private Set<Membership> memberships = new HashSet<>();
 
@@ -182,8 +166,8 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
     @Type(type = "za.org.grassroot.core.util.StringArrayUserType")
     private String[] tags;
 
-    @OneToMany(mappedBy = "masterGroup")
-    private List<Campaign> campaign;
+    // @OneToMany(mappedBy = "masterGroup")
+    // private List<Campaign> campaign;
 
     private Group() {
         // for JPA
@@ -194,8 +178,9 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
     }
 
     public Group(String groupName, User createdByUser, Group parent) {
+        Objects.requireNonNull(groupName);
         this.uid = UIDGenerator.generateId();
-        this.groupName = Objects.requireNonNull(groupName);
+        this.groupName = removeUnwantedCharacters(groupName);
         this.createdByUser = Objects.requireNonNull(createdByUser);
         this.createdDateTime = Instant.now();
         this.lastGroupChangeTime = this.createdDateTime;
@@ -248,7 +233,7 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
     }
 
     public void setGroupName(String groupName) {
-        this.groupName = groupName;
+        this.groupName = removeUnwantedCharacters(groupName);
     }
 
     public Long getId() {
@@ -719,12 +704,11 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         }
     }
 
-
-    public List<Campaign> getCampaign() {
+    /* public List<Campaign> getCampaign() {
         return campaign;
-    }
+    }*/
 
-    public void setCampaign(List<Campaign> campaign) {
+    /* public void setCampaign(List<Campaign> campaign) {
         this.campaign = campaign;
-    }
+    }*/
 }

@@ -31,7 +31,7 @@ public interface GroupLocationRepository extends JpaRepository<GroupLocation, Lo
 	List<Group> findAllGroupsWithLocationDataInReferenceSet(Set<Group> groups);
 
 	// note : subequery makes this difficult to do with specifications, hence this way
-	// todo : reconsider keeping old calculation results if subquery performance starts degrading
+	// note : reconsider keeping old calculation results if subquery performance starts degrading
 	@Query("select NEW za.org.grassroot.core.domain.geo.ObjectLocation("
 			+ " g.uid"
 			+ ",g.groupName"

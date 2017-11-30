@@ -5,9 +5,6 @@ apply plugin: 'maven-publish'
 
 description = 'Grassroot Core'
 
-
-
-
 publishing {
     publications {
         MyPublication(MavenPublication) {
@@ -21,8 +18,10 @@ publishing {
 
 
 bintray {
-    user =  hasProperty('bintray_user') ? getProperty('bintray_user') : ''
-    key =   hasProperty('bintray_api_key') ? getProperty('bintray_api_key') : ''
+    // user =  hasProperty('bintray_user') ? getProperty('bintray_user') : ''
+    // key =   hasProperty('bintray_api_key') ? getProperty('bintray_api_key') : ''
+    user = 'luke-grassroot'
+    key = '6b42142429aba9fdfbee62b6fae8180fa237a4ba'
     pkg {
 
         repo = 'grassroot-platform'
@@ -91,6 +90,8 @@ dependencies {
     compile group: 'org.glassfish.web', name: 'javax.el', version: '2.2.6'
 
     compile group: 'org.projectlombok', name: 'lombok', version: '1.16.18'
+
+    compile group: 'org.apache.commons', name: 'commons-text', version: '1.1'
 
     testCompile group: 'org.springframework', name: 'spring-orm', version:libs.springVersion // else tests fail on dependency issues
 }

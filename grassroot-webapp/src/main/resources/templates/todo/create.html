@@ -2,7 +2,7 @@
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       data-layout-decorate="~{layout}">
 <head>
-  <title>Record an action</title>
+  <title>Create new</title>
 
   <meta name="_csrf" th:content="${_csrf.token}"/>
   <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
@@ -10,99 +10,47 @@
 </head>
 <body>
 
-<section layout:fragment="header" class="top-container">
-  <div class="container">
-    <div class="row">
-      <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
-        <h2 class="text-center header-content-title">Record an action</h2>
-        <h4 class="text-center header-content-subtitle">record a decision or todo for the group</h4>
-      </div>
-    </div>
-  </div>
+<section layout:fragment="header" class="top-container"
+         th:replace="~{fragments :: std_header('Todo', 'Record an action todo')}">
 </section>
-
-<div layout:fragment="messages"></div>
 
 <main layout:fragment="content">
   <section class="grassroot-form">
     <div class="container">
       <div class="row">
         <div class="col-md-8 col-md-offset-2 col-sm-6 col-sm-offset-3 col-xs-12">
+          <form th:action="@{/todo/create}" id="createForm" method="post">
 
-          <form th:object="${actionTodo}" th:action="@{/todo/record}" id="createForm" method="post">
+            <div th:unless="${parentSpecified}">
+              <div th:include="~{form_fragments :: list_selector('Group:', ${possibleGroups}, 'parentUid')}"></div>
+            </div>
 
-            <input type="hidden" th:field="*{parentEntityType}" />
-            <div class="form-group">
-              <label for="groupSelect" class="control-label">Group:</label>
-              <div th:unless="${parentSpecified}">
-                <select th:unless="${parentSpecified}" th:field="*{parentUid}" id="groupSelect" class="form-control input-lg">
-                  <option th:each="group: ${possibleGroups}"
-                          th:value="${group.Uid}"
-                          th:text="${group.getName('')}"
-                          th:attr="data-mins=#{web.meeting.reminder.group.__${group.reminderMinutes}__}">Groupname</option>
-                </select>
-                <input type="hidden" th:value="${userUid}" id="userUid" />
-              </div>
-              <div th:if="${parentSpecified}">
+            <div th:if="${parentSpecified}">
+              <div class="form-group">
+                <label for="group" class="control-label">Group:</label>
                 <input class="form-control input-lg" readonly="true" th:placeholder="${parent.name}" id="group" />
-                <input type="hidden" th:field="*{parentUid}" th:value="${parent.uid}" />
-              </div>
-              <p class="grassroot-body" id="remainingText">
-              </p>
-            </div>
-
-            <div class="form-group">
-              <label for="name" class="control-label">Title:</label>
-              <input th:field="*{message}" type="text" class="form-control input-lg" maxlength="35" data-toggle="tooltip"
-                       title="Description may not be longer than 35 characters." id="name"
-                     placeholder="A short summary of the action or decision to record" />
-            </div>
-
-            <div class="form-group">
-              <label for="datepicker" class="control-label">Deadline:</label>
-              <div class="input-group date" id="datepicker">
-                <input th:field="*{actionByDate}" type="text" class="form-control input-lg" />
-                    <span class="input-group-addon"><i class="fa fa-calendar"></i></span>
+                <input type="hidden" name="parentUid" th:value="${parent.uid}" />
               </div>
             </div>
 
-            <div class="form-group">
-              <label class="control-label">Notes? Please enter any further description:</label>
-              <textarea class="form-control input-lg" rows="1" maxlength="250"
-                        placeholder="This will not be sent with the SMS, but will be seen by app and web users"></textarea>
-            </div>
+            <div th:replace="~{form_fragments :: enum_selector('What must members do?', 'type',
+              ${availableTypes}, 'web.todo.create.type')}"></div>
+            <div id="resp_label_holder" th:include="~{form_fragments :: text_input('Label', 'How will you label the responses? E.g., ID', '10', 'response_label')}"></div>
 
-            <div class="form-group">
-              <label class="control-label">Send a reminder:</label>
-              <select th:field="*{reminderType}" class="form-control input-lg" id="reminderType">
-                <option th:if="${parentSpecified}" value="GROUP_CONFIGURED" selected="true">
-                  Group default (<span th:text="#{web.meeting.reminder.group.__${parent.reminderMinutes}__}">X</span> ahead)
-                </option>
-                <option th:unless="${parentSpecified}" value="GROUP_CONFIGURED" id="groupOption">
-                  Group default (<span id="groupReminderTime">X ahead</span>)
-                </option>
-                <option value="CUSTOM">Set custom</option>
-              </select>
-              <div class="radio" id="customReminder">
-                <label class="radio-inline"><input type="radio" th:field="*{reminderMinutes}" value="60"/>On due date</label>
-                <label class="radio-inline"><input type="radio" th:field="*{reminderMinutes}" value="1440"/>One day before</label>
-                <label class="radio-inline"><input type="radio" th:field="*{reminderMinutes}" value="2880"/>Two days before</label>
-                <lable class="radio-inline"><input type="radio" th:field="*{reminderMinutes}" value="10080"/>One week before</lable>
-              </div>
-            </div>
+            <div th:replace="~{form_fragments :: text_input('Explanation', 'Describe the action for members', '40', 'explanation')}"></div>
 
-            <div th:replace="~{fragments :: member-picker(messageKey='web.todo.create.memberpick')}"></div>
+            <div id="assign_member_holder" th:include="~{form_fragments :: member-picker('Assign members', 'assigned_members')}"></div>
+            <div id="validating_member_holder" th:include="~{form_fragments :: member-picker('Choose confirmers', 'confirming_members')}"></div>
 
-            <div class="form-group pull-right">
-              <!-- todo : add a view traffic director to handle the links below for non-group parents -->
-                <a th:if="${parentSpecified}"
-                   th:href="@{/group/view(groupUid=${parent.uid})}" role="button" class="btn default-button btn-neutral">Cancel</a>
-                <a th:if="${not parentSpecified}"
-                   th:href="@{/home}" role="button" class="btn default-button btn-neutral">Cancel</a>
-                <button type="submit" class="btn default-button">Record</button>
-            </div>
+            <div th:replace="~{form_fragments :: date_picker('Deadline', 'deadline')}"></div>
 
-            <div th:replace="~{fragments :: member-picker-modal}"></div>
+            <div th:include="~{form_fragments :: submit_cancel_buttons('Create',
+                ${parentSpecified ? '/group/view?groupUid=' + parent.uid : '/home'})}"></div>
+
+            <div th:replace="~{form_fragments :: member-picker-modal('Who is assigned?', 'assignedMembers',
+                'assigned_members_modal', null)}"></div>
+            <div th:replace="~{form_fragments :: member-picker-modal('Who can witness?', 'confirmingMembers',
+                'validating_members_modal', null)}"></div>
 
           </form>
 
@@ -113,28 +61,6 @@
 
   </section>
 
-  <div class="modal fade" id="limitModal" tabindex="-1" role="dialog" aria-labelledby="limitModalLabel">
-    <div class="modal-dialog" role="document">
-      <div class="modal-content">
-        <div class="modal-header">
-          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">x</span></button>
-          <h4 class="modal-title" id="limitModalLabel">Group has reached its todo limit</h4>
-        </div>
-        <div class="modal-body">
-          <p class="grassroot-body">
-            <!-- todo : alter text if, say, user has an account with space for this group -->
-            Sorry, you have reached the maximum number of todos this group can call per month. To increase the limit,
-            sign up for or upgrade your Grassroot Extra account (or add this group to your account).
-          </p>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-default btn-lg" data-dismiss="modal">Close</button>
-          <a th:href="@{/account/index}" class="btn btn-default btn-lg">Go to account</a>
-        </div>
-      </div>
-    </div>
-  </div>
-
 </main>
 
 <div class="header-container" layout:fragment="script-container">
@@ -144,7 +70,7 @@
 
   <script th:replace="~{fragments :: member-picker-script(parentType='GROUP', selectByDefault=false)}"></script>
 
-  <script th:src="@{/js/create_todo.js}"></script>
+  <script th:src="@{/js/create_todo_new.js}"></script>
 
 </div>
 

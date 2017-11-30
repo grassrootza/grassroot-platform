@@ -1,0 +1,34 @@
+grassroot.payments.host                     =test.oppwa.com
+grassroot.payments.params.auth.user         =authentication.userId
+grassroot.payments.params.auth.password     =authentication.password
+grassroot.payments.params.auth.channelId    =authentication.entityId
+
+grassroot.payments.initial.path             =/v1/payments
+grassroot.payments.recurring.path           =/v1/registrations/%s/payments
+
+grassroot.payments.params.amount            =amount
+grassroot.payments.params.currency          =currency
+grassroot.payments.params.brand             =paymentBrand
+grassroot.payments.params.type              =paymentType
+grassroot.payments.params.cardnumber        =card.number
+grassroot.payments.params.holder            =card.holder
+grassroot.payments.params.expiry.month      =card.expiryMonth
+grassroot.payments.params.expiry.year       =card.expiryYear
+grassroot.payments.params.cvv               =card.cvv
+grassroot.payments.params.recurring         =recurringType
+grassroot.payments.params.regflag           =createRegistration
+grassroot.payments.params.statementId       =merchantTransactionId
+
+grassroot.payments.values.user              =
+grassroot.payments.values.password          =
+grassroot.payments.values.channelId         =
+grassroot.payments.values.channelId3d       =
+grassroot.payments.values.channelId3dProd   =
+grassroot.payments.values.currency          =ZAR
+grassroot.payments.types.debit              =DB
+grassroot.payments.types.preauth            =PA
+
+grassroot.payments.auth.path                =/cardauth/3dsecure/response/change
+grassroot.payments.auth.path.mobile         =/cardauth/incoming/mobile
+
+grassroot.payments.deposit.details          =Bank: FNB<br>Account: Grassroot Nation NPC<br>Account: 62532765966<br>Branch: 251905

@@ -396,8 +396,9 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
                 new Vote("someMeeting", Instant.now(), sessionTestUser, testGroup));
         EventLog dummyLog = new EventLog(sessionTestUser, dummyEvents.get(0), EventLogType.RSVP);
 
-        List<Todo> dummyTodos = Arrays.asList(new Todo(sessionTestUser, testGroup, "Do stuff", LocalDateTime.now().plusDays(2L).toInstant(ZoneOffset.ofHours(0))),
-                new Todo(sessionTestUser, testGroup, "Do more stuff", LocalDateTime.now().plusDays(5L).toInstant(ZoneOffset.ofHours(0))));
+        List<Todo> dummyTodos = Arrays.asList(
+                new Todo(sessionTestUser, testGroup, TodoType.ACTION_REQUIRED, "Do stuff", LocalDateTime.now().plusDays(2L).toInstant(ZoneOffset.ofHours(0))),
+                new Todo(sessionTestUser, testGroup, TodoType.ACTION_REQUIRED, "Do more stuff", LocalDateTime.now().plusDays(5L).toInstant(ZoneOffset.ofHours(0))));
 
         List<TaskDTO> dummyTasks = new ArrayList<>();
         dummyEvents.forEach(e -> dummyTasks.add(new TaskDTO(e, sessionTestUser, dummyLog)));
@@ -451,7 +452,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         List<Event> dummyEvents = Collections.singletonList(new MeetingBuilder().setName("someMeeting").setStartDateTime(Instant.now()).setUser(sessionTestUser).setParent(testGroup).setEventLocation("someLoc").createMeeting());
         EventLog dummyLog = new EventLog(sessionTestUser, dummyEvents.get(0), EventLogType.RSVP);
 
-        List<Todo> dummyTodos = Collections.singletonList(new Todo(sessionTestUser, testGroup, "do stuff", LocalDateTime.now().toInstant(ZoneOffset.ofHours(0))));
+        List<Todo> dummyTodos = Collections.singletonList(new Todo(sessionTestUser, testGroup, TodoType.ACTION_REQUIRED, "do stuff", LocalDateTime.now().toInstant(ZoneOffset.ofHours(0))));
 
         List<TaskDTO> dummyTasks = new ArrayList<>();
         dummyEvents.forEach(e -> dummyTasks.add(new TaskDTO(e, sessionTestUser, dummyLog)));

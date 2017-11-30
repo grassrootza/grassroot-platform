@@ -9,12 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.domain.campaign.Campaign;
-import za.org.grassroot.core.domain.campaign.CampaignActionType;
-import za.org.grassroot.core.domain.campaign.CampaignLog;
-import za.org.grassroot.core.domain.campaign.CampaignMessage;
-import za.org.grassroot.core.domain.campaign.CampaignMessageAction;
-import za.org.grassroot.core.domain.campaign.CampaignType;
+import za.org.grassroot.core.domain.campaign.*;
 import za.org.grassroot.core.enums.CampaignLogType;
 import za.org.grassroot.core.enums.MessageVariationAssignment;
 import za.org.grassroot.core.enums.UserInterfaceType;
@@ -32,11 +27,7 @@ import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 @Service
 public class CampaignBrokerImpl implements CampaignBroker {
@@ -97,19 +88,20 @@ public class CampaignBrokerImpl implements CampaignBroker {
     public CampaignMessage getCampaignMessageByCampaignCodeAndActionType(String campaignCode, MessageVariationAssignment assignment,UserInterfaceType channel, CampaignActionType actionType, String phoneNumber, Locale locale){
         Set<CampaignMessage> messageSet = findMessagesByCampaignCodeAndVariationAndUserInterfaceType(campaignCode,assignment, channel, locale);
         String searchValue = createSearchValue(campaignCode,assignment,null,null);
+        User user = userRepository.findByPhoneNumber(phoneNumber);
         if(messageSet != null && !messageSet.isEmpty()){
             for(CampaignMessage message: messageSet){
                 if(message.getCampaignMessageActionSet() != null && !message.getCampaignMessageActionSet().isEmpty()){
                     for(CampaignMessageAction messageAction: message.getCampaignMessageActionSet()){
                         if(messageAction.getActionType().equals(actionType)){
-                            persistCampaignLog(new CampaignLog(phoneNumber, CampaignLogType.CAMPAIGN_MESSAGE_FOUND , searchValue));
+                            persistCampaignLog(new CampaignLog(user, CampaignLogType.CAMPAIGN_MESSAGE_FOUND , searchValue));
                             return  messageAction.getActionMessage();
                         }
                     }
                 }
             }
         }
-        persistCampaignLog(new CampaignLog(phoneNumber, CampaignLogType.CAMPAIGN_MESSAGE_NOT_FOUND, searchValue));
+        persistCampaignLog(new CampaignLog(user, CampaignLogType.CAMPAIGN_MESSAGE_NOT_FOUND, searchValue));
         return null;
     }
 
@@ -178,7 +170,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
             newCampaign.getTagList().addAll(campaignTags);
         }
         Campaign perstistedCampaign = campaignRepository.saveAndFlush(newCampaign);
-        CampaignLog campaignLog = new CampaignLog(newCampaign.getCreatedByUser().getUid(), CampaignLogType.CREATED_IN_DB, newCampaign);
+        CampaignLog campaignLog = new CampaignLog(newCampaign.getCreatedByUser(), CampaignLogType.CREATED_IN_DB, newCampaign);
         persistCampaignLog(campaignLog);
         return perstistedCampaign;
     }
@@ -195,7 +187,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
                 newCampaign.getTagList().addAll(campaignTags);
             }
             Campaign createdCampaign = campaignRepository.saveAndFlush(newCampaign);
-            CampaignLog campaignLog = new CampaignLog(newCampaign.getCreatedByUser().getUid(), CampaignLogType.CAMPAIGN_MESSAGE_ADDED,newCampaign);
+            CampaignLog campaignLog = new CampaignLog(newCampaign.getCreatedByUser(), CampaignLogType.CAMPAIGN_MESSAGE_ADDED,newCampaign);
             persistCampaignLog(campaignLog);
             return createdCampaign;
         }
@@ -219,7 +211,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
             }
             campaign.getCampaignMessages().add(message);
             Campaign updatedCampaign = campaignRepository.saveAndFlush(campaign);
-            CampaignLog campaignLog = new CampaignLog(campaign.getCreatedByUser().getUid(), CampaignLogType.CAMPAIGN_MESSAGE_ADDED,campaign);
+            CampaignLog campaignLog = new CampaignLog(campaign.getCreatedByUser(), CampaignLogType.CAMPAIGN_MESSAGE_ADDED,campaign);
             persistCampaignLog(campaignLog);
             return updatedCampaign;
         }
@@ -239,7 +231,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
             campaignTags.addAll(tags);
             campaign.setTags(campaignTags.toArray(new String[campaignTags.size()]));
             Campaign updatedCampaign = campaignRepository.saveAndFlush(campaign);
-            CampaignLog campaignLog = new CampaignLog(campaign.getCreatedByUser().getUid(), CampaignLogType.CAMPAIGN_TAG_ADDED,campaign);
+            CampaignLog campaignLog = new CampaignLog(campaign.getCreatedByUser(), CampaignLogType.CAMPAIGN_TAG_ADDED,campaign);
             persistCampaignLog(campaignLog);
             return updatedCampaign;
         }
@@ -258,7 +250,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
         if(group != null && campaign != null){
             campaign.setMasterGroup(group);
             Campaign updatedCampaign = campaignRepository.saveAndFlush(campaign);
-            CampaignLog campaignLog = new CampaignLog(user.getUid(), CampaignLogType.CAMPAIGN_LINKED_GROUP,campaign);
+            CampaignLog campaignLog = new CampaignLog(user, CampaignLogType.CAMPAIGN_LINKED_GROUP,campaign);
             persistCampaignLog(campaignLog);
             return updatedCampaign;
         }
@@ -285,7 +277,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
         User user = userManagementService.loadOrCreateUser(phoneNumber);
         Campaign campaign = getCampaignDetailsByCode(campaignCode);
         groupBroker.addMemberViaCampaign(user.getUid(),campaign.getMasterGroup().getUid(),campaign.getCampaignCode());
-        CampaignLog campaignLog = new CampaignLog(campaign.getCreatedByUser().getUid(), CampaignLogType.CAMPAIGN_USER_ADDED_TO_MASTER_GROUP,campaign);
+        CampaignLog campaignLog = new CampaignLog(campaign.getCreatedByUser(), CampaignLogType.CAMPAIGN_USER_ADDED_TO_MASTER_GROUP,campaign);
         persistCampaignLog(campaignLog);
         return campaign;
     }
@@ -331,7 +323,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
                 throw  new CampaignMessageNotFoundException(CAMPAIGN_MESSAGE_NOT_FOUND_CODE);
             }
             Campaign updatedCampaign = campaignRepository.saveAndFlush(campaign);
-            CampaignLog campaignLog = new CampaignLog(createUser.getUid(), CampaignLogType.CAMPAIGN_MESSAGE_ACTION_ADDED, campaign);
+            CampaignLog campaignLog = new CampaignLog(createUser, CampaignLogType.CAMPAIGN_MESSAGE_ACTION_ADDED, campaign);
             persistCampaignLog(campaignLog);
             return updatedCampaign;
         }

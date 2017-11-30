@@ -1,9 +1,11 @@
 package za.org.grassroot.services;
 
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.SafetyEvent;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.association.GroupJoinRequest;
-import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.domain.geo.Address;
+import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 
@@ -27,9 +29,13 @@ public interface MessageAssemblingService {
 
     String createTodoRecordedNotificationMessage(User target, Todo todo);
 
-    String createTodoUpdateNotificationMessage(User target, Todo todo);
+    String createTodoAssignedMessage(User user, Todo todo);
 
-    String createVoteResultsMessage(User user, Vote event, double yes, double no, double abstain, double noReply);
+    String createTodoConfirmerMessage(User user, Todo todo);
+
+    String createTodoVolunteerReceivedMessage(User target, TodoAssignment todoResponse);
+
+    String createTodoInfoConfirmationMessage(TodoAssignment todoResponse);
 
     String createMultiOptionVoteResultsMessage(User user, Vote vote, Map<String, Long> optionsWithCount);
 
@@ -40,8 +46,6 @@ public interface MessageAssemblingService {
     String createMeetingThankYourMessage(User target, Meeting meeting);
 
     String createWelcomeMessage(String messageId, User user);
-
-    String createMeetingAttendanceConfirmationMessage(User organiser, User member, EventLog eventLog);
 
     String createSafetyEventMessage(User respondent, User requestor, Address address, boolean reminder);
 
@@ -72,4 +76,9 @@ public interface MessageAssemblingService {
     String[] populateEventFields(Event event, double yes, double no, double abstain, double noReply);
 
     String createAndroidLinkSms(User user);
+
+    List<String> getMessagesForGroups(List<Group> groups);
+
+    String createGroupJoinCodeMessage(Group group);
+
 }

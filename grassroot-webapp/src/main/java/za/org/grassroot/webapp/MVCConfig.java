@@ -96,8 +96,8 @@ public class MVCConfig extends WebMvcConfigurerAdapter {
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         CacheControl staticCache = CacheControl.maxAge(60, TimeUnit.DAYS);
 
-        /*registry.addResourceHandler("/css/**").addResourceLocations("classpath:/static/css/")
-                .setCacheControl(staticCache);*/
+        registry.addResourceHandler("/css/**").addResourceLocations("classpath:/static/css/")
+                .setCacheControl(staticCache);
         registry.addResourceHandler("/assets/**").addResourceLocations("classpath:/static/assets/")
                 .setCacheControl(staticCache);
         registry.addResourceHandler("/images/**").addResourceLocations("classpath:/static/images/")

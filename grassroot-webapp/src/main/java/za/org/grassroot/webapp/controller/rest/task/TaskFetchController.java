@@ -14,11 +14,15 @@ import za.org.grassroot.core.dto.task.TaskMinimalDTO;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.services.ChangedSinceData;
 import za.org.grassroot.services.task.TaskBroker;
+import za.org.grassroot.services.task.TaskImageBroker;
 import za.org.grassroot.services.task.enums.TaskSortType;
+import za.org.grassroot.webapp.model.rest.ImageRecordDTO;
 
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @Api("/api/task/fetch")
@@ -28,10 +32,12 @@ public class TaskFetchController {
     private static final Logger logger = LoggerFactory.getLogger(TaskFetchController.class);
 
     private final TaskBroker taskBroker;
+    private final TaskImageBroker taskImageBroker;
 
     @Autowired
-    public TaskFetchController(TaskBroker taskBroker) {
+    public TaskFetchController(TaskBroker taskBroker, TaskImageBroker taskImageBroker) {
         this.taskBroker = taskBroker;
+        this.taskImageBroker = taskImageBroker;
     }
 
     @Timed
@@ -78,6 +84,17 @@ public class TaskFetchController {
                                                                          @RequestParam(required = false) long changedSinceMillis) {
         return ResponseEntity.ok(taskBroker.fetchGroupTasks(userUid, groupUid,
                         changedSinceMillis == 0 ? null : Instant.ofEpochMilli(changedSinceMillis)));
+    }
+
+    @RequestMapping(value = "/posts/{userUid}/{taskType}/{taskUid}", method = RequestMethod.GET)
+    @ApiOperation(value = "Fetch posts for a task", notes = "Fetch posts against a task, sorted by date created", response = ImageRecordDTO.class)
+    public ResponseEntity<List<ImageRecordDTO>> fetchTaskPosts(@PathVariable String userUid,
+                                                               @PathVariable TaskType taskType,
+                                                               @PathVariable String taskUid) {
+        return ResponseEntity.ok(taskImageBroker.fetchTaskPosts(userUid, taskUid, taskType).entrySet().stream()
+                .map(entry -> new ImageRecordDTO(entry.getKey(), entry.getValue()))
+                .sorted(Comparator.comparing(ImageRecordDTO::getCreationTime, Comparator.reverseOrder()))
+                .collect(Collectors.toList()));
     }
 
 }

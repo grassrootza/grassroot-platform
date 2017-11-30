@@ -7,6 +7,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.GroupLog;
+import za.org.grassroot.core.domain.JpaEntityType;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.UserLog;
 import za.org.grassroot.core.domain.notification.EventInfoNotification;
@@ -14,13 +15,14 @@ import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.EventLog;
 import za.org.grassroot.core.domain.task.Vote;
 import za.org.grassroot.core.enums.EventLogType;
-import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.integration.NotificationService;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.MessageAssemblingService;
-import za.org.grassroot.services.task.VoteBroker;
+import za.org.grassroot.services.UserResponseBroker;
+import za.org.grassroot.webapp.controller.rest.incoming.IncomingSMSController;
 
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 
@@ -46,11 +48,10 @@ public class IncomingSMSControllerTest extends RestAbstractUnitTest {
     private NotificationService notificationServiceMock;
 
     @Mock
-    private VoteBroker voteBrokerMock;
+    private UserResponseBroker userResponseBrokerMock;
 
     @InjectMocks
     private IncomingSMSController aatIncomingSMSController;
-
 
     @Before
     public void setUp() {
@@ -74,19 +75,22 @@ public class IncomingSMSControllerTest extends RestAbstractUnitTest {
 
         meeting = meetingEvent;
         meeting.setRsvpRequired(true);
-        List<Event> meetings = Collections.singletonList(meeting);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
-        when(eventBrokerMock.getOutstandingResponseForUser(sessionTestUser, EventType.MEETING)).thenReturn(meetings);
+        when(userResponseBrokerMock.checkForEntityForUserResponse(sessionTestUser.getUid(), false)).thenReturn(meeting);
 
         mockMvc.perform(get(path + "incoming").param("fn", testUserPhone).param("ms", "yes"))
                 .andExpect(status().isOk());
 
-        verify(eventLogBrokerMock, times(1)).rsvpForEvent(meeting.getUid(), sessionTestUser.getUid(), EventRSVPResponse.YES);
-        verifyZeroInteractions(voteBrokerMock);
+        verify(userResponseBrokerMock, times(1)).checkForEntityForUserResponse(sessionTestUser.getUid(), false);
+        verify(userResponseBrokerMock, times(1)).recordUserResponse(sessionTestUser.getUid(), JpaEntityType.MEETING,
+                meeting.getUid(), "yes");
+        verifyZeroInteractions(eventBrokerMock);
         verifyZeroInteractions(userLogRepositoryMock);
         verifyZeroInteractions(groupLogRepositoryMock);
         verifyZeroInteractions(notificationServiceMock);
+        verifyZeroInteractions(messageAssemblingService);
+        verifyZeroInteractions(messagingServiceBroker);
     }
 
 
@@ -104,24 +108,26 @@ public class IncomingSMSControllerTest extends RestAbstractUnitTest {
      */
     @Test
     public void invalidResponseToMeeting() throws Exception {
-
         String msg = "something";
         meeting = meetingEvent;
         meeting.setRsvpRequired(true);
-        List<Event> meetings = Collections.singletonList(meeting);
+        EventLog eventLog = new EventLog(sessionTestUser, meeting, EventLogType.CREATED);
+        EventInfoNotification notification = new EventInfoNotification(sessionTestUser, "meeting called", eventLog);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
-        when(eventBrokerMock.getOutstandingResponseForUser(sessionTestUser, EventType.MEETING)).thenReturn(meetings);
+        when(userResponseBrokerMock.checkForEntityForUserResponse(sessionTestUser.getUid(), false)).thenReturn(meeting);
 
+        when(notificationServiceMock.fetchSentOrBetterSince(eq(sessionTestUser.getUid()), any(Instant.class), eq(null)))
+                .thenReturn(Collections.singletonList(notification));
 
         mockMvc.perform(get(path + "incoming").param("fn", testUserPhone).param("ms", msg))
                 .andExpect(status().isOk());
 
         verify(userLogRepositoryMock, times(1)).save(any(UserLog.class));
+        verify(groupLogRepositoryMock, times(1)).save(any(GroupLog.class));
         verify(notificationServiceMock, times(1)).fetchSentOrBetterSince(anyString(), anyObject(), eq(null));
-        verifyZeroInteractions(voteBrokerMock);
+        verify(messageAssemblingService, times(1)).createReplyFailureMessage(sessionTestUser);
         verifyZeroInteractions(eventLogBrokerMock);
-        verifyZeroInteractions(groupLogRepositoryMock);
     }
 
 
@@ -145,12 +151,13 @@ public class IncomingSMSControllerTest extends RestAbstractUnitTest {
         List<Event> votes = Collections.singletonList(vote);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
-        when(eventBrokerMock.getOutstandingResponseForUser(sessionTestUser, EventType.VOTE)).thenReturn(votes);
+        when(userResponseBrokerMock.checkForEntityForUserResponse(sessionTestUser.getUid(), false)).thenReturn(vote);
 
         mockMvc.perform(get(path + "incoming").param("fn", testUserPhone).param("ms", msg))
                 .andExpect(status().isOk());
 
-        verify(voteBrokerMock, times(1)).recordUserVote(sessionTestUser.getUid(), vote.getUid(), msg);
+        verify(userResponseBrokerMock, times(1)).recordUserResponse(sessionTestUser.getUid(), JpaEntityType.VOTE,
+                vote.getUid(), msg);
         verifyZeroInteractions(eventLogBrokerMock);
         verifyZeroInteractions(userLogRepositoryMock);
         verifyZeroInteractions(groupLogRepositoryMock);
@@ -176,15 +183,16 @@ public class IncomingSMSControllerTest extends RestAbstractUnitTest {
         String msg = "TWO";
         Vote vote = createVote(new String[]{"one", "two", "three"});
         vote.setRsvpRequired(true);
-        List<Event> votes = Collections.singletonList(vote);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
-        when(eventBrokerMock.getOutstandingResponseForUser(sessionTestUser, EventType.VOTE)).thenReturn(votes);
+        when(userResponseBrokerMock.checkForEntityForUserResponse(sessionTestUser.getUid(), false)).thenReturn(vote);
 
         mockMvc.perform(get(path + "incoming").param("fn", testUserPhone).param("ms", msg))
                 .andExpect(status().isOk());
 
-        verify(voteBrokerMock, times(1)).recordUserVote(sessionTestUser.getUid(), vote.getUid(), "two");
+        // todo : make sure case is ignored in user response broker
+        verify(userResponseBrokerMock, times(1)).recordUserResponse(sessionTestUser.getUid(), JpaEntityType.VOTE,
+                vote.getUid(), "TWO");
         verifyZeroInteractions(eventLogBrokerMock);
         verifyZeroInteractions(userLogRepositoryMock);
         verifyZeroInteractions(groupLogRepositoryMock);
@@ -221,7 +229,6 @@ public class IncomingSMSControllerTest extends RestAbstractUnitTest {
         verify(userLogRepositoryMock, times(1)).save(any(UserLog.class));
         verify(notificationServiceMock, times(1)).fetchSentOrBetterSince(anyString(), anyObject(), eq(null));
         verifyZeroInteractions(eventLogBrokerMock);
-        verifyZeroInteractions(voteBrokerMock);
         verifyZeroInteractions(groupLogRepositoryMock);
     }
 
@@ -246,11 +253,11 @@ public class IncomingSMSControllerTest extends RestAbstractUnitTest {
         mockMvc.perform(get(path + "incoming").param("fn", testUserPhone).param("ms", msg))
                 .andExpect(status().isOk());
 
+        verify(userResponseBrokerMock).checkForEntityForUserResponse(sessionTestUser.getUid(), false);
         verify(userLogRepositoryMock).save(any(UserLog.class));
         verify(messagingServiceBroker).sendSMS(anyString(), anyString(), anyBoolean());
         verify(notificationServiceMock).fetchSentOrBetterSince(anyString(), anyObject(), eq(null));
 
-        verifyZeroInteractions(voteBrokerMock);
         verifyZeroInteractions(eventLogBrokerMock);
         verifyZeroInteractions(groupLogRepositoryMock);
 
@@ -288,7 +295,6 @@ public class IncomingSMSControllerTest extends RestAbstractUnitTest {
         verify(notificationServiceMock).fetchSentOrBetterSince(anyString(), anyObject(), eq(null));
         verify(groupLogRepositoryMock).save(any(GroupLog.class));
 
-        verifyZeroInteractions(voteBrokerMock);
         verifyZeroInteractions(eventLogBrokerMock);
 
     }

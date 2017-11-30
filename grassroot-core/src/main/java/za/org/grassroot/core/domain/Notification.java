@@ -52,7 +52,6 @@ public abstract class Notification implements Serializable {
 	@JoinColumn(name = "target_id")
 	private User target;
 
-
 	@Column(name = "sending_status")
     @Enumerated(EnumType.STRING)
     private NotificationStatus status = NotificationStatus.READY_FOR_SENDING;
@@ -79,7 +78,7 @@ public abstract class Notification implements Serializable {
 
 	@ManyToOne
 	@JoinColumn(name = "action_todo_log_id")
-	private TodoLog todoLog;
+	@Setter private TodoLog todoLog;
 
 	@ManyToOne
 	@JoinColumn(name = "group_log_id", foreignKey = @ForeignKey(name = "fk_notification_group_log"))
@@ -191,7 +190,7 @@ public abstract class Notification implements Serializable {
 		else if (this.todoLog != null)
 			return this.todoLog.getTodo().getAncestorGroup();
 
-		else if (this.accountLog.getGroup() != null)
+		else if (this.accountLog != null)
 			return this.accountLog.getGroup();
 
 		else if (this.liveWireLog != null)

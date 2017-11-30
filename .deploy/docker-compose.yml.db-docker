@@ -1,0 +1,27 @@
+version: '2'
+services:
+  db:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_DB: grassroot
+      POSTGRES_USER: grassroot
+      POSTGRES_PASSWORD: verylongpassword
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8081:8080
+  grassroot:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    depends_on:
+      - db
+    restart: always
+    ports:
+      - 8080:8080
+    volumes:
+      - "./:/usr/src/grassroot/"
+      - "<ENVPATH>:/usr/src/grassroot/environment"
+      # - "./log:/usr/src/grassroot/log"

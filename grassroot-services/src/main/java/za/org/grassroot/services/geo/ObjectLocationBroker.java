@@ -12,18 +12,16 @@ import java.util.List;
 
 public interface ObjectLocationBroker {
 
-    List<ObjectLocation> fetchGroupsNearby(String userUid, GeoLocation location, Integer radius, String filterTerm, GeographicSearchType searchType)
+    List<ObjectLocation> fetchGroupsNearby(String userUid, GeoLocation location, Integer radiusInMetres,
+                                           String filterTerm, GeographicSearchType searchType)
         throws InvalidParameterException;
 
-    List<ObjectLocation> fetchPublicGroupsNearbyWithLocation(GeoLocation geoLocation, Integer radius)
-            throws InvalidParameterException;
-
-    List<ObjectLocation> fetchGroupsNearbyWithLocation(GeoLocation geoLocation, Integer radius, Integer publicOrPrivate)
+    List<ObjectLocation> fetchPublicGroupsNearbyWithLocation(GeoLocation geoLocation, Integer radiusInMetres)
             throws InvalidParameterException;
 
     List<ObjectLocation> fetchLocationsWithFilter(GroupLocationFilter filter);
 
-    List<ObjectLocation> fetchMeetingLocationsNearUser(User user, GeoLocation geoLocation, Integer radius, GeographicSearchType searchType, String searchTerm)
+    List<ObjectLocation> fetchMeetingLocationsNearUser(User user, GeoLocation geoLocation, Integer radiusInMetres, GeographicSearchType searchType, String searchTerm)
             throws InvalidParameterException;
 
     GeoLocation fetchBestGuessUserLocation(String userUid);

@@ -86,7 +86,7 @@ public class USSDGroupUtil extends USSDUtil {
         this.groupJoinRequestService = groupJoinRequestService;
     }
 
-    /**
+    /*
      * SECTION 1: menus to ask a user to pick a group, including via pagination
      */
     /**
@@ -113,6 +113,8 @@ public class USSDGroupUtil extends USSDUtil {
         private String urlForCreateNewGroupPrompt;
         private String urlToCreateNewGroup;
         private String urlForNoGroups;
+        private String urlForSendGroupJoidCode;
+        private String urlForSendAllGroupJoidCodes;
         private Integer numberOfGroups; // if known
 
         public GroupMenuBuilder(User user, USSDSection section) {
@@ -149,6 +151,20 @@ public class USSDGroupUtil extends USSDUtil {
             this.numberOfGroups = numberOfGroups;
             return this;
         }
+
+        public GroupMenuBuilder urlForSendGroupJoinCode(String urlForSendGroupJoinCode){
+            this.urlForSendGroupJoidCode = urlForSendGroupJoinCode;
+            return this;
+        }
+
+        public GroupMenuBuilder urlForSendAllGroupJoinCodes(String urlForSendAllGroupJoidCodes){
+            this.urlForSendAllGroupJoidCodes = urlForSendAllGroupJoidCodes;
+            return this;
+        }
+    }
+
+    public String getGroupName(String groupUid) {
+        return groupBroker.load(groupUid).getName();
     }
 
     public USSDMenu askForGroup(GroupMenuBuilder builder) throws URISyntaxException {
@@ -223,8 +239,12 @@ public class USSDGroupUtil extends USSDUtil {
      * @param section              current section  @return
      * @throws URISyntaxException
      */
-    public USSDMenu userGroupMenuPaginated(User user, String prompt, String urlForExistingGroups, String urlForNewGroup,
-                                           int pageNumber, Integer totalResults, USSDSection section) throws URISyntaxException {
+    public USSDMenu userGroupMenuPaginated(User user, String prompt,
+                                           String urlForExistingGroups,
+                                           String urlForNewGroup,
+                                           int pageNumber,
+                                           Integer totalResults,
+                                           USSDSection section) throws URISyntaxException {
 
         USSDMenu menu = new USSDMenu(prompt);
         Permission filter = SECTION_PERMISSION_MAP.get(section); // returning null is what we want if key not present
@@ -243,6 +263,8 @@ public class USSDGroupUtil extends USSDUtil {
             menu.addMenuOption(paginatedGroupUrl(prompt, urlForExistingGroups, urlForNewGroup, section, pageNumber - 1), getMessage("group.back", user));
         if (urlForNewGroup != null)
             menu.addMenuOption(urlForNewGroup, getMessage(groupKeyForMessages, "create", "option", user));
+        if (section != null && section.equals(GROUP_MANAGER) && pageNumber == 0)
+            menu.addMenuOption(GROUP_MANAGER.toPath() + "sendall", getMessage(groupKeyForMessages,"sendall","prompt",user));
 
         if (GROUP_MANAGER.equals(section) && (!groupQueryBroker.fetchGroupsWithOneCharNames(user, 2).isEmpty()))
             menu.addMenuOption(section.toPath() + "clean", getMessage(groupKeyForMessages, "clean", "option", user));

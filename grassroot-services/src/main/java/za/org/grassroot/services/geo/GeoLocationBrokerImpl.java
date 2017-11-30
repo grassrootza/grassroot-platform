@@ -8,7 +8,9 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.JpaEntityType;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.*;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.EventLog;
@@ -138,7 +140,6 @@ public class GeoLocationBrokerImpl implements GeoLocationBroker {
 		}
     }
 
-    // todo: include any/all logs by user that also have this
     @Override
 	@Transactional
 	public void calculatePreviousPeriodUserLocations(LocalDate localDate) {

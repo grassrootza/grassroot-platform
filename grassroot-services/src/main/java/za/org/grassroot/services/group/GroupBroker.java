@@ -84,7 +84,7 @@ public interface GroupBroker {
 
     void updateDiscoverable(String userUid, String groupUid, boolean discoverable, String authUserPhoneNumber);
 
-    /** METHODS FOR DEALING WITH SUBGROUPS, LINKING GROUPS, AND MERGING **/ // major todo: move to paid group (since will migrate to paid account feature)
+    /** METHODS FOR DEALING WITH SUBGROUPS, LINKING GROUPS, AND MERGING **/
 
     void link(String userUid, String childGroupUid, String parentGroupUid);
 
@@ -92,5 +92,9 @@ public interface GroupBroker {
                 boolean leaveActive, boolean orderSpecified, boolean createNew, String newGroupName);
 
     void addMemberViaCampaign(String userUidToAdd, String groupUid,String campaignCode);
+
+    void sendGroupJoinCodeNotification(String userUid, String groupUid);
+
+    void sendAllGroupJoinCodesNotification(String userUid);
 
 }

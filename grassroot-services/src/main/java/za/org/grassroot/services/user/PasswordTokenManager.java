@@ -14,7 +14,7 @@ import za.org.grassroot.core.repository.VerificationTokenCodeRepository;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.exception.InvalidOtpException;
-import za.org.grassroot.services.exception.InvalidPasswordException;
+import za.org.grassroot.services.exception.UsernamePasswordLoginFailedException;
 
 import java.math.BigInteger;
 import java.security.SecureRandom;
@@ -38,11 +38,11 @@ public class PasswordTokenManager implements PasswordTokenService {
     private final VerificationTokenCodeRepository verificationTokenCodeRepository;
 
     private final UserRepository userRepository;
-
     private final PasswordEncoder passwordEncoder;
 
     @Autowired
-    public PasswordTokenManager(VerificationTokenCodeRepository verificationTokenCodeRepository, UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public PasswordTokenManager(VerificationTokenCodeRepository verificationTokenCodeRepository, UserRepository userRepository,
+                                PasswordEncoder passwordEncoder) {
         this.verificationTokenCodeRepository = verificationTokenCodeRepository;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
@@ -148,10 +148,9 @@ public class PasswordTokenManager implements PasswordTokenService {
 
         User user = userRepository.findByPhoneNumber(phoneNumber);
         if (user == null || !passwordEncoder.matches(password, user.getPassword())) {
-            throw new InvalidPasswordException();
+            throw new UsernamePasswordLoginFailedException();
         }
     }
-
 
     @Override
     @Transactional(readOnly = true)

@@ -51,16 +51,21 @@ public class ExperimentBrokerImpl implements ExperimentBroker, CommandLineRunner
 
     @Override
     public void initiateExperiment(String experimentKey) {
+        logger.error("should not be initiating experiment since this is not built ...");
     }
 
     @Override
     public VariationAssignment assignUser(String experimentKey, String userUid, Map<String, String> attributes) {
-        Variation variation = attributes == null ? optimizely.activate(experimentKey, userUid)
-                : optimizely.activate(experimentKey, userUid);
-        logger.info("retrieved user variation, looks like: {}", variation);
-        return variation == null ? VariationAssignment.UNASSIGNED :
-                variation.is("control") ? VariationAssignment.CONTROL :
-                variation.is("treatment") ? VariationAssignment.EXPERIMENT : VariationAssignment.UNASSIGNED;
+        if (optimizely != null) {
+            Variation variation = attributes == null ? optimizely.activate(experimentKey, userUid)
+                    : optimizely.activate(experimentKey, userUid);
+            logger.info("retrieved user variation, looks like: {}", variation);
+            return variation == null ? VariationAssignment.UNASSIGNED :
+                    variation.is("control") ? VariationAssignment.CONTROL :
+                            variation.is("treatment") ? VariationAssignment.EXPERIMENT : VariationAssignment.UNASSIGNED;
+        } else {
+            return null;
+        }
     }
 
     @Async

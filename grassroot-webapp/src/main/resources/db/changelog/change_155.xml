@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.0.xsd">
+    <changeSet id="change_155" author="luke">
+        <comment>Added tags to membership entity</comment>
+        <sqlFile path="db/scripts/script_155_membership_tags.sql" splitStatements="false"/>
+        <rollback>
+            <sqlFile path="db/scripts/script_155_rollback.sql"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

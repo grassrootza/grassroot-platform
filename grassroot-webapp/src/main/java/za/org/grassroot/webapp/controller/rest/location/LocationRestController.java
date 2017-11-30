@@ -20,19 +20,18 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+// todo : delete? think may not be used anymore
 @RestController
 @RequestMapping(value = "/api/location", produces = MediaType.APPLICATION_JSON_VALUE)
 public class LocationRestController extends BaseController {
     private static int LOCATION_RADIUS_DEFAULT = 5;
     private static int LOCATION_RADIUS_MAX = 16;
     private static final Logger logger = LoggerFactory.getLogger(LocationRestController.class);
-    private final GeoLocationBroker geoLocationBroker;
     private final ObjectLocationBroker objectLocationBroker;
 
     @Autowired
     public LocationRestController (ObjectLocationBroker objectLocationBroker, GeoLocationBroker geoLocationBroker) {
         this.objectLocationBroker = objectLocationBroker;
-        this.geoLocationBroker = geoLocationBroker;
     }
 
     @RequestMapping(value = "/list", method = RequestMethod.GET)
@@ -41,8 +40,6 @@ public class LocationRestController extends BaseController {
                                                    @RequestParam(value = "radius", required = false) Integer radius,
                                                    @RequestParam(value = "restriction", required = false) Integer restriction,
                                                    @RequestParam(value = "token", required = true) String token) {
-
-        // TODO: Bounding box search instead of disc
 
         // Validate parameters
         Integer searchRadius = (radius == null ? LOCATION_RADIUS_DEFAULT : radius);
@@ -65,7 +62,6 @@ public class LocationRestController extends BaseController {
         }
 
         // Find objects on the given location around the desired radius
-        // TODO: filter?
         List<ObjectLocation> objectsToReturn;
         ResponseEntity<ResponseWrapper> responseEntity;
 
@@ -109,8 +105,6 @@ public class LocationRestController extends BaseController {
                     @RequestParam(required = false) String token,
                     @RequestBody BoundingBox boundingBox) {
 
-        // TODO: token!
-        // TODO: Initial position from location
         logger.info("Attempting to list events locations from bounding box...");
 
         // Check restriction

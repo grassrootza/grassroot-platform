@@ -26,6 +26,7 @@ import za.org.grassroot.core.enums.AccountPaymentType;
 import za.org.grassroot.core.repository.AccountBillingRecordRepository;
 import za.org.grassroot.core.repository.AccountLogRepository;
 import za.org.grassroot.core.repository.AccountRepository;
+import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.DebugUtil;
@@ -58,7 +59,6 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
     @Value("${grassroot.trial.end.link:http://localhost:8080/account/signup/start}")
     private String accountPaymentLink;
 
-    private static final String SYSTEM_USER = "system_user"; // fake user since user_uid is null and these batch jobs are automated
     private static final int DEFAULT_MONTH_LENGTH = 30;
     private static final Duration PAYMENT_INTERVAL = Duration.ofHours(1L);
 
@@ -67,6 +67,7 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
 
     private final AccountRepository accountRepository;
     private final AccountLogRepository accountLogRepository;
+    private final UserRepository userRepository;
 
     private final AccountBillingRecordRepository billingRepository;
     private final LogsAndNotificationsBroker logsAndNotificationsBroker;
@@ -77,11 +78,12 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
     private EmailSendingBroker emailSendingBroker;
 
     @Autowired
-    public AccountBillingBrokerImpl(AccountRepository accountRepository, AccountLogRepository accountLogRepository, AccountBillingRecordRepository billingRepository,
+    public AccountBillingBrokerImpl(AccountRepository accountRepository, AccountLogRepository accountLogRepository, UserRepository userRepository, AccountBillingRecordRepository billingRepository,
                                     PaymentBroker paymentBroker, ApplicationEventPublisher eventPublisher,
                                     LogsAndNotificationsBroker logsAndNotificationsBroker, AccountEmailService accountEmailService) {
         this.accountRepository = accountRepository;
         this.accountLogRepository = accountLogRepository;
+        this.userRepository = userRepository;
         this.billingRepository = billingRepository;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
         this.accountEmailService = accountEmailService;
@@ -393,7 +395,7 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
             sendDisabledEmails(account);
         } else {
             AccountLog accountLog = new AccountLog.Builder(account)
-                    .userUid(account.getBillingUser().getUid())
+                    .user(account.getBillingUser())
                     .accountLogType(AccountLogType.PAYMENT_FAILED)
                     .description("Payment failed")
                     .build();
@@ -410,7 +412,7 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
         Account account = accountRepository.findOneByUid(accountUid);
         account.setNextBillingDate(nextBillingDate == null ? null : nextBillingDate.toInstant(BILLING_TZ));
         AccountLog accountLog = new AccountLog.Builder(account)
-                .userUid(adminUid)
+                .user(userRepository.findOneByUid(adminUid))
                 .accountLogType(AccountLogType.SYSADMIN_BILLING_DATE)
                 .description(nextBillingDate == null ? "Stopped billing" : nextBillingDate.toString())
                 .build();
@@ -428,7 +430,7 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
                 .forEach(r -> r.setNextPaymentDate(null));
 
         AccountLog accountLog = new AccountLog.Builder(account)
-                .userUid(adminUid)
+                .user(userRepository.findOneByUid(adminUid))
                 .accountLogType(AccountLogType.SYSADMIN_CHANGED_PAYDATE)
                 .description("Halted payments")
                 .build();
@@ -444,7 +446,7 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
 
         AccountLog accountLog = new AccountLog.Builder(record.getAccount())
                 .accountLogType(AccountLogType.SYSADMIN_CHANGED_PAYDATE)
-                .userUid(adminUid)
+                .user(userRepository.findOneByUid(adminUid))
                 .description("Date: " + paymentDate + ", record UID: " + recordUid)
                 .build();
         logsAndNotificationsBroker.storeBundle(new LogsAndNotificationsBundle(Collections.singleton(accountLog), Collections.emptySet()));
@@ -453,7 +455,6 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
     private AccountBillingRecord buildInstantBillForAmount(Account account, long amountToBill, String description,
                                                            boolean addToAccountBalance, LogsAndNotificationsBundle bundle) {
         AccountLog billingLog = new AccountLog.Builder(account)
-                .userUid(SYSTEM_USER)
                 .accountLogType(AccountLogType.BILL_CALCULATED)
                 .billedOrPaid((long) account.getSubscriptionFee())
                 .description(description)
@@ -491,7 +492,6 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
                                                        LogsAndNotificationsBundle bundle, String logDescription) {
 
         AccountLog.Builder billingLogBuilder = new AccountLog.Builder(account)
-                .userUid(SYSTEM_USER)
                 .accountLogType(AccountLogType.BILL_CALCULATED)
                 .billedOrPaid(billForPeriod);
 
@@ -503,7 +503,6 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
         bundle.addLog(billingLog);
 
         AccountLog costLog = new AccountLog.Builder(account)
-                .userUid(SYSTEM_USER)
                 .accountLogType(AccountLogType.COST_CALCULATED)
                 .billedOrPaid(costForPeriod)
                 .build();

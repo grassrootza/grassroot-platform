@@ -3,7 +3,6 @@ package za.org.grassroot.webapp;
 import com.github.mxab.thymeleaf.extras.dataattribute.dialect.DataAttributeDialect;
 import nz.net.ultraq.thymeleaf.LayoutDialect;
 import org.apache.catalina.Context;
-import org.apache.catalina.connector.Connector;
 import org.apache.tomcat.util.descriptor.web.SecurityCollection;
 import org.apache.tomcat.util.descriptor.web.SecurityConstraint;
 import org.slf4j.Logger;
@@ -83,10 +82,10 @@ public class GrassrootWebApplicationConfig implements ApplicationContextAware {
     @Profile({ "staging", "production", "localpg" })
     public EmbeddedServletContainerFactory servletContainer() {
 
-        TomcatEmbeddedServletContainerFactory tomcat = new TomcatEmbeddedServletContainerFactory(){
+       return new TomcatEmbeddedServletContainerFactory(){
             @Override
             protected void postProcessContext(Context context) {
-                if (environment.acceptsProfiles("staging", "production")) {
+                if (environment.acceptsProfiles("~staging", "~production")) {
                     SecurityConstraint securityConstraint = new SecurityConstraint();
                     securityConstraint.setUserConstraint("CONFIDENTIAL");
                     SecurityCollection collection = new SecurityCollection();
@@ -97,23 +96,6 @@ public class GrassrootWebApplicationConfig implements ApplicationContextAware {
             }
         };
 
-        if (environment.acceptsProfiles("staging", "production")) {
-            Integer httpPort = environment.getRequiredProperty("grassroot.http.port", Integer.class);
-            Integer httpsPort = environment.getRequiredProperty("grassroot.https.port", Integer.class);
-            logger.info("starting up tomcat, http port obtained = {}, and https obtained = {}", httpPort, httpsPort);
-            Connector nonSSLConnector = createNonSSLConnectorWithRedirect(httpPort, httpsPort);
-            tomcat.addAdditionalTomcatConnectors(nonSSLConnector);
-        }
-
-        return tomcat;
-    }
-
-    private Connector createNonSSLConnectorWithRedirect(int httpPort, int httpsPort) {
-        logger.info("setting non SSL port inside connector");
-        Connector connector = new Connector("org.apache.coyote.http11.Http11NioProtocol");
-        connector.setPort(httpPort);
-        connector.setRedirectPort(httpsPort);
-        return connector;
     }
 
 }
