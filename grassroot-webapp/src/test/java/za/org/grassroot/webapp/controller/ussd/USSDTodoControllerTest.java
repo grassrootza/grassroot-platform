@@ -395,11 +395,12 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
     @Test
     public void alterDateConfirmShouldWork()throws Exception{
         when(userManagementServiceMock.findByInputNumber(testUserPhone,
-                saveModifyUrl("/date/confirm", testTodo.getUid(), null))).thenReturn(testUser);
+                saveModifyUrl("/date/confirm", testTodo.getUid(), testUserResponse))).thenReturn(testUser);
         mockMvc.perform(get(path + "/modify/date/confirm")
                 .param(phoneParam,testUserPhone)
                 .param("todoUid",testTodo.getUid())
-                .param("request",""+Instant.now().toEpochMilli()))
+                .param("prior_input",""+Instant.now().toEpochMilli())
+                .param("request",testUserResponse))
                 .andExpect(status().isOk());
         verify(userManagementServiceMock,times(1)).findByInputNumber(testUserPhone,
                 saveModifyUrl("/date/confirm", testTodo.getUid(), null));
