@@ -54,18 +54,22 @@ public class USSDTodoController extends USSDBaseController {
     private final MemberDataExportBroker dataExportBroker;
     private final LearningService learningService;
 
-    @Setter private USSDMessageAssembler messageAssembler;
+    private USSDMessageAssembler messageAssembler;
     @Setter(AccessLevel.PACKAGE) private USSDGroupUtil groupUtil;
 
     @Autowired
-    public USSDTodoController(TodoBroker todoBroker, TodoRequestBroker todoRequestBroker, MemberDataExportBroker dataExportBroker, USSDMessageAssembler messageAssembler, USSDGroupUtil groupUtil, LearningService learningService) {
+    public USSDTodoController(TodoBroker todoBroker, TodoRequestBroker todoRequestBroker, MemberDataExportBroker dataExportBroker, USSDGroupUtil groupUtil, LearningService learningService) {
         this.todoBroker = todoBroker;
         this.todoRequestBroker = todoRequestBroker;
         this.dataExportBroker = dataExportBroker;
-        this.messageAssembler = messageAssembler;
-        super.setMessageAssembler(messageAssembler); // else get nulls ... need to fix this properly soon
         this.groupUtil = groupUtil;
         this.learningService = learningService;
+    }
+
+    @Autowired
+    public void setMessageAssembler(USSDMessageAssembler messageAssembler) {
+        this.messageAssembler = messageAssembler;
+        super.setMessageAssembler(messageAssembler); // else get nulls ... need to fix this properly soon
     }
 
     public USSDMenu respondToTodo(User user, EntityForUserResponse entity) {
@@ -250,6 +254,7 @@ public class USSDTodoController extends USSDBaseController {
                                        @RequestParam(required = false) String field) throws URISyntaxException {
         User user = userManager.findByInputNumber(msisdn, saveRequestUrl("/confirm", storedUid, priorInput)
                 + (field == null ? "" : "&field=" + field));
+
         final String value = StringUtils.isEmpty(priorInput) ? userInput : priorInput;
         log.info("confirm menu, field = {}, value = {}", field, value);
         if (StringUtils.isEmpty(field)) {
@@ -263,6 +268,7 @@ public class USSDTodoController extends USSDBaseController {
         }
 
         TodoRequest request = todoRequestBroker.load(storedUid);
+        log.info("User={},todo request={}",user,request);
         String formattedDueDate = dateTimeFormat.format(convertToUserTimeZone(request.getActionByDate(), getSAST()));
 
         if (request.getActionByDate() != null && request.getActionByDate().isBefore(Instant.now())) {
@@ -295,6 +301,7 @@ public class USSDTodoController extends USSDBaseController {
 
         User user = userManager.findByInputNumber(inputNumber, null);
         todoRequestBroker.finish(storedUid);
+        log.info("User={},storeuid={}",user,storedUid);
         return menuBuilder(new USSDMenu(messageAssembler.getMessage("todo.done.prompt", user), optionsHomeExit(user, false)));
     }
 
@@ -343,6 +350,7 @@ public class USSDTodoController extends USSDBaseController {
 
     private USSDMenu listAllUserTodos(User user, PageRequest pageRequest, boolean offerCreatedOnly, String backUrl) {
         Page<Todo> todosForUser = todoBroker.fetchPageOfTodosForUser(user.getUid(), false, false, pageRequest);
+        log.info("User todos={}",todosForUser);
         if (!todosForUser.hasContent()) {
             return pageEmptyWithSwitchOption(pageRequest.getPageNumber(), false, backUrl, user);
         } else {
@@ -431,6 +439,7 @@ public class USSDTodoController extends USSDBaseController {
                                     @RequestParam String todoUid,
                                     @RequestParam(value = userInputParam) String emailAddress) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber, null);
+        log.info("User={}",user);
         boolean isEmailValid = EmailValidator.getInstance().isValid(emailAddress);
         if (isEmailValid || user.hasEmailAddress() && emailAddress.length() == 1) {
             final String emailToPass = emailAddress.length() == 1 ? user.getEmailAddress() : emailAddress;
@@ -526,6 +535,7 @@ public class USSDTodoController extends USSDBaseController {
         final String enteredValue = priorInput == null ? userInput : priorInput;
         User user = userManager.findByInputNumber(msisdn, saveModifyUrl("/date/confirm", todoUid, enteredValue));
         LocalDateTime parsedDateTime = handleUserDateTimeInput(enteredValue);
+        log.info("ParsedDateTime={},User={}",parsedDateTime,user);
         USSDMenu menu = new USSDMenu(messageAssembler.getMessage("changing this", new String[] { dateFormat.format(parsedDateTime) }, user));
         final String confirmUrl = REL_PATH + "/modify/date/complete?todoUid=" + todoUid + "&epochMillis="
                 + DateTimeUtil.convertToSystemTime(parsedDateTime, DateTimeUtil.getSAST());
@@ -557,9 +567,9 @@ public class USSDTodoController extends USSDBaseController {
     public Request cancelTodo(@RequestParam String msisdn, @RequestParam String todoUid) throws URISyntaxException {
         User user = userManager.findByInputNumber(msisdn, saveModifyUrl("/cancel", todoUid, null));
         Todo todo = todoBroker.load(todoUid);
-        USSDMenu menu = new USSDMenu(messageAssembler.getMessage("todo.cancel.prompt", new String[] { todo.getName() }, user),
-                todoBroker.load(todoUid).getName());
+        USSDMenu menu = new USSDMenu(messageAssembler.getMessage("todo.cancel.prompt", new String[] { todo.getName() }, user));
         menu.addMenuOptions(optionsYesNo(user, REL_PATH + "/modify/cancel/confirm?todoUid=" + todoUid));
+        log.info("Options={}",menu.getMenuOptions());
         return menuBuilder(menu);
     }
 
