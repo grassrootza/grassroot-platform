@@ -31,6 +31,8 @@ import za.org.grassroot.webapp.util.USSDCampaignUtil;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static za.org.grassroot.webapp.enums.USSDSection.HOME;
@@ -53,6 +55,8 @@ public class USSDHomeController extends USSDBaseController {
     @Setter(AccessLevel.PACKAGE) private USSDMeetingController meetingController;
     private final USSDTodoController todoController;
     private final USSDSafetyGroupController safetyController;
+    private final USSDGeoApiController geoApiController;
+
     private final CampaignBroker campaignBroker;
 
     private static final USSDSection thisSection = HOME;
@@ -72,8 +76,13 @@ public class USSDHomeController extends USSDBaseController {
     @Value("${grassroot.ussd.livewire.suffix:411}")
     private String livewireSuffix;
 
+    // todo : think about how to do dynamically (and/or decide on this)
+    final Map<String, String> geoApiSuffixes = Collections.unmodifiableMap(Stream.of(
+            new AbstractMap.SimpleEntry<String, String>("11", "IZWE_LAMI")
+    ).collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue)));
+
     @Autowired
-    public USSDHomeController(UserResponseBroker userResponseBroker, USSDLiveWireController liveWireController, USSDGroupController groupController, USSDVoteController voteController, USSDMeetingController meetingController, USSDTodoController todoController, USSDSafetyGroupController safetyController, CampaignBroker campaignBroker) {
+    public USSDHomeController(UserResponseBroker userResponseBroker, USSDLiveWireController liveWireController, USSDGroupController groupController, USSDVoteController voteController, USSDMeetingController meetingController, USSDTodoController todoController, USSDSafetyGroupController safetyController, USSDGeoApiController geoApiController, CampaignBroker campaignBroker) {
         this.userResponseBroker = userResponseBroker;
         this.liveWireController = liveWireController;
         this.groupController = groupController;
@@ -81,6 +90,7 @@ public class USSDHomeController extends USSDBaseController {
         this.meetingController = meetingController;
         this.todoController = todoController;
         this.safetyController = safetyController;
+        this.geoApiController = geoApiController;
         this.campaignBroker = campaignBroker;
     }
 
@@ -170,10 +180,13 @@ public class USSDHomeController extends USSDBaseController {
             returnMenu = liveWireController.assembleLiveWireOpening(user, 0);
         } else if (sendMeLink.equals(trailingDigits)) {
             returnMenu = assembleSendMeAndroidLinkMenu(user);
-        } /* else if(isCampaignTrailingCode(trailingDigits)){
+        } else if (geoApiSuffixes.keySet().contains(trailingDigits)) {
+            returnMenu = geoApiController.openingMenu(user, geoApiSuffixes.get(trailingDigits));
+        /* else if(isCampaignTrailingCode(trailingDigits)){
             Campaign campaign = campaignBroker.getCampaignDetailsByCode(trailingDigits);
             returnMenu = assembleCampaignMessageResponse(campaign,user);
-        } */ else {
+        } */
+        } else {
             returnMenu = groupController.lookForJoinCode(user, trailingDigits);
         }
         return returnMenu;

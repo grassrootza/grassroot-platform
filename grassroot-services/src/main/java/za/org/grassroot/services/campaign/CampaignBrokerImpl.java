@@ -316,7 +316,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
         stringBuilder.append(" search by ");
         stringBuilder.append((value != null)? value:"");
         stringBuilder.append((assignment != null)? AND.concat(assignment.name()):"");
-        stringBuilder.append((locale != null)? AND.concat(locale.getDisplayLanguage()):"");
+        stringBuilder.append((locale !=  null)? AND.concat(locale.getDisplayLanguage()):"");
         stringBuilder.append((tag != null)? AND.concat(tag):"");
         return stringBuilder.toString();
     }

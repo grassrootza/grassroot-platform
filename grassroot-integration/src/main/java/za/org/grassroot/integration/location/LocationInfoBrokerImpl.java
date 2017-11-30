@@ -42,6 +42,16 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
     }
 
     @Override
+    public List<ProvinceSA> getAvailableProvincesForDataSet(String dataSetLabel) {
+        return null;
+    }
+
+    @Override
+    public List<Locale> getAvailableLocalesForDataSet(String dataSetLabel) {
+        return null;
+    }
+
+    @Override
     public List<String> getAvailableInfoForProvince(String dataSetLabel, ProvinceSA province, Locale locale) {
         URI uriToCall = UriComponentsBuilder.newInstance()
                 .scheme("http")

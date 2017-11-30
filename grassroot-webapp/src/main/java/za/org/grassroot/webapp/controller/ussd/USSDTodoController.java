@@ -69,7 +69,7 @@ public class USSDTodoController extends USSDBaseController {
         this.learningService = learningService;
     }
 
-    public USSDMenu respondToTodo(User user, EntityForUserResponse entity) {
+    USSDMenu respondToTodo(User user, EntityForUserResponse entity) {
         Todo todo = (Todo) entity;
         switch (todo.getType()) {
             case INFORMATION_REQUIRED:
