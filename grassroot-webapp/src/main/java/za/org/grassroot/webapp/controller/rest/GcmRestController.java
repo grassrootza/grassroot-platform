@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.UserMessagingPreference;
+import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.services.exception.NoSuchProfileException;
 import za.org.grassroot.services.user.GcmRegistrationBroker;
 import za.org.grassroot.services.user.UserManagementService;
@@ -15,13 +16,15 @@ import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
+import javax.servlet.http.HttpServletRequest;
+
 /**
  * Created by paballo on 2016/04/07.
  */
 
 @RestController
 @RequestMapping(value = "/api/gcm")
-public class GcmRestController {
+public class GcmRestController extends BaseRestController {
 
     private static final Logger logger = LoggerFactory.getLogger(GcmRestController.class);
 
@@ -29,22 +32,22 @@ public class GcmRestController {
     private final GcmRegistrationBroker gcmRegistrationBroker;
 
     @Autowired
-    public GcmRestController(UserManagementService userManagementService, GcmRegistrationBroker gcmRegistrationBroker) {
+    public GcmRestController(UserManagementService userManagementService, GcmRegistrationBroker gcmRegistrationBroker, JwtService jwtService) {
+        super(jwtService, userManagementService);
         this.userManagementService = userManagementService;
         this.gcmRegistrationBroker = gcmRegistrationBroker;
     }
 
 
-    @RequestMapping(value = "/register/{phoneNumber}/{code}", method = RequestMethod.POST)
-    public ResponseEntity<ResponseWrapper> registerForGcm(@PathVariable("phoneNumber") String phoneNumber,
-                                                          @PathVariable("code") String code,
-                                                          @RequestParam("registration_id") String registrationId) {
-
-        logger.info("Inside GCM registration ... for ID: {}", registrationId);
-        User user = userManagementService.findByInputNumber(phoneNumber);
-        gcmRegistrationBroker.registerUser(user, registrationId);
-        userManagementService.setMessagingPreference(user.getUid(), UserMessagingPreference.ANDROID_APP);
-        return RestUtil.messageOkayResponse(RestMessage.REGISTERED_FOR_PUSH);
+    @RequestMapping(value = "/register")
+    public ResponseEntity<Boolean> registerForGcm(@RequestParam String gcmToken, HttpServletRequest request) {
+        User user = getUserFromRequest(request);
+        if (user != null) {
+            gcmRegistrationBroker.registerUser(user, gcmToken);
+            userManagementService.setMessagingPreference(user.getUid(), UserMessagingPreference.ANDROID_APP);
+            return new ResponseEntity<>(Boolean.TRUE, HttpStatus.OK);
+        }
+        return new ResponseEntity<>(Boolean.FALSE, HttpStatus.OK);
     }
 
     @RequestMapping(value = "/deregister/{phoneNumber}/{code}", method = RequestMethod.GET)
