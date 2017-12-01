@@ -1,7 +1,7 @@
 {
   "AWSEBDockerrunVersion": "1",
   "Image": {
-    "Name": "awsassembly/grassroot:<TAG>",
+    "Name": "grassrootdocker/gr-app:<TAG>",
     "Update": "true"
   },
   "Ports": [
