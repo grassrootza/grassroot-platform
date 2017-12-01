@@ -77,8 +77,8 @@ public class USSDHomeController extends USSDBaseController {
     private String livewireSuffix;
 
     // todo : think about how to do dynamically (and/or decide on this)
-    final Map<String, String> geoApiSuffixes = Collections.unmodifiableMap(Stream.of(
-            new AbstractMap.SimpleEntry<String, String>("11", "IZWE_LAMI")
+    private final Map<String, String> geoApiSuffixes = Collections.unmodifiableMap(Stream.of(
+            new AbstractMap.SimpleEntry<>("11", "IZWE_LAMI")
     ).collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue)));
 
     @Autowired

@@ -37,7 +37,7 @@ public class USSDGeoApiController extends USSDBaseController {
     private USSDMenu provinceMenu(final String dataSetLabel,
                                   final String subsequentUrl,
                                   final User user) {
-        USSDMenu menu = new USSDMenu(messageAssembler.getMessage("geoapi.province.prompt." + dataSetLabel, user));
+        USSDMenu menu = new USSDMenu(messageAssembler.getMessage("province.prompt." + dataSetLabel, user));
         List<ProvinceSA> provinces = locationInfoBroker.getAvailableProvincesForDataSet(dataSetLabel);
         provinces.forEach(p -> menu.addMenuOption(subsequentUrl + p.name(),
                 messageAssembler.getMessage("province." + p.name(), user)));
@@ -107,7 +107,7 @@ public class USSDGeoApiController extends USSDBaseController {
         List<String> records = locationInfoBroker.retrieveRecordsForProvince(dataSet, infoTag, province, user.getLocale());
         // todo : particle filter etc to decide on a likely closest record, and then do the rest
         final String prompt = messageAssembler.getMessage("geoapi.sent.prompt", records.get(0));
-        locationInfoBroker.assembleAndSendRecordMessage(dataSet, infoTag, province, user.getLocale(), null);
+        locationInfoBroker.assembleAndSendRecordMessage(dataSet, infoTag, province, user.getUid());
         return new USSDMenu(prompt); // todo : include option to send safety alert if they are on? (and v/versa)
     }
 

@@ -17,7 +17,7 @@ public interface LocationInfoBroker {
     List<String> retrieveRecordsForProvince(String dataSetLabel, String infoSetTag, ProvinceSA province, Locale locale);
 
     // null sponsoring UID will draw it from data set
-    void assembleAndSendRecordMessage(String dataSetLabel, String infoSetTag, ProvinceSA province, Locale locale,
-                                      String sponsoringAccountUid);
+    void assembleAndSendRecordMessage(String dataSetLabel, String infoSetTag, ProvinceSA province,
+                                      String targetUserUid);
 
 }
