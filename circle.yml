@@ -45,7 +45,7 @@ deployment:
 
 
   staging:
-    branch: docker-migration
+    branch: preprod
     commands:
       # define environment
       - echo 'export ENVIRONMENT=staging' >> ~/.circlerc
