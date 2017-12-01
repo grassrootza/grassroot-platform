@@ -17,4 +17,4 @@ chmod +x stopgrassroot.sh
 #docker build --rm=false -t awsassembly/grassroot:$ENVIRONMENT$SHA1 .
 docker build --rm=false -t grassrootdocker/gr-app:$ENVIRONMENT .
 docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
-docker push awsassembly/grassroot:$ENVIRONMENT$SHA1
+docker push grassrootdocker/gr-app:$ENVIRONMENT
