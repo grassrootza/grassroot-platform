@@ -15,6 +15,7 @@ environment/*
 # ignore docker files #
 /docker-compose.yml
 /Dockerfile
+/build-jar.sh
 
 # Java Compiled Files #
 *.class
