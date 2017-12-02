@@ -81,6 +81,9 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
     @Column(name = "url",nullable = true)
     private String url;
 
+    @OneToMany(mappedBy = "campaign")
+    private Set<CampaignLog> campaignLogs = new HashSet<>();
+
     public Campaign(){
         this.uid = UIDGenerator.generateId();
         this.createdDateTime = Instant.now();
@@ -268,5 +271,13 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
 
     public Set<CampaignMessage> getCampaignMessages() {
         return campaignMessages;
+    }
+
+    public Set<CampaignLog> getCampaignLogs() {
+        return campaignLogs;
+    }
+
+    public void setCampaignLogs(Set<CampaignLog> campaignLogs) {
+        this.campaignLogs = campaignLogs;
     }
 }

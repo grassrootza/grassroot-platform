@@ -2,8 +2,10 @@ package za.org.grassroot.webapp.controller.rest.campaign;
 
 
 import za.org.grassroot.core.domain.campaign.Campaign;
+import za.org.grassroot.core.domain.campaign.CampaignLog;
 import za.org.grassroot.core.domain.campaign.CampaignMessage;
 import za.org.grassroot.core.domain.campaign.CampaignMessageAction;
+import za.org.grassroot.core.enums.CampaignLogType;
 import za.org.grassroot.webapp.model.rest.CampaignActionViewDTO;
 import za.org.grassroot.webapp.model.rest.CampaignMessageViewDTO;
 import za.org.grassroot.webapp.model.rest.CampaignViewDTO;
@@ -32,6 +34,7 @@ public class CampaignWebUtil {
         campaignDto.setCampaignMasterGroupName(campaign.getMasterGroup() != null ? campaign.getMasterGroup().getGroupName() : null);
         campaignDto.setCampaignMasterGroupUid(campaign.getMasterGroup() != null ? campaign.getMasterGroup().getUid() : null);
         campaignDto.setTotalUsers((campaign.getMasterGroup() != null && campaign.getMasterGroup().getMembers() != null)? campaign.getMasterGroup().getMembers().size() : 0);
+        campaignDto.setNewUsers(getMemberJoinedViaCampaign(campaign));
         if(campaign.getCampaignMessages() != null && !campaign.getCampaignMessages().isEmpty()){
             List<CampaignMessageViewDTO> messageViewDTOList = new ArrayList<>();
             for(CampaignMessage message: campaign.getCampaignMessages()){
@@ -61,5 +64,18 @@ public class CampaignWebUtil {
             actionViewDTO.setActionMessage(createMessageDTO(action.getActionMessage()));
         }
         return messageViewDTO;
+    }
+
+    private static Integer getMemberJoinedViaCampaign(Campaign campaign){
+        Integer count = 0;
+        if(campaign.getCampaignLogs() == null || campaign.getCampaignLogs().isEmpty()){
+            return count;
+        }
+        for(CampaignLog campaignLog: campaign.getCampaignLogs()){
+            if(campaignLog.getCampaignLogType().equals(CampaignLogType.CAMPAIGN_USER_ADDED_TO_MASTER_GROUP)){
+                count ++;
+            }
+        }
+        return count;
     }
 }
