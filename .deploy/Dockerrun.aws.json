@@ -17,6 +17,10 @@
     {
       "HostDirectory": "/var/app/current/log",
       "ContainerDirectory": "/usr/src/grassroot/log"
+    },
+    {
+      "HostDirectory": "/var/app/current/templates",
+      "ContainerDirectory": "/usr/src/grassroot/templates"
     }
   ],
   "Logging": "/var/log/nginx"
