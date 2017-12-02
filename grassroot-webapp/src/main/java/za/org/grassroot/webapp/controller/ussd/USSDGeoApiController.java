@@ -20,8 +20,8 @@ import java.util.Locale;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 
-@RestController(value=  "/ussd/geo") @Slf4j
-@RequestMapping(method = GET, produces = MediaType.APPLICATION_XML_VALUE)
+@RestController @Slf4j
+@RequestMapping(value = "/ussd/geo", method = GET, produces = MediaType.APPLICATION_XML_VALUE)
 @ConditionalOnProperty(name = "grassroot.geo.apis.enabled", matchIfMissing = false)
 public class USSDGeoApiController extends USSDBaseController {
 
@@ -41,7 +41,7 @@ public class USSDGeoApiController extends USSDBaseController {
                                   final User user) {
         USSDMenu menu = new USSDMenu(messageAssembler.getMessage("province.prompt." + dataSetLabel, user));
         List<ProvinceSA> provinces = locationInfoBroker.getAvailableProvincesForDataSet(dataSetLabel);
-        provinces.forEach(p -> menu.addMenuOption(subsequentUrl + p.name(),
+        provinces.forEach(p -> menu.addMenuOption(REL_PATH + subsequentUrl + p.name(),
                 messageAssembler.getMessage("province." + p.name(), user)));
         return menu;
     }
@@ -51,7 +51,7 @@ public class USSDGeoApiController extends USSDBaseController {
                                   final List<Locale> availableLocales,
                                   final User user) {
         USSDMenu menu = new USSDMenu(messageAssembler.getMessage("language.prompt." + dataSetLabel, user));
-        availableLocales.forEach(l -> menu.addMenuOption(subsequentUrl + l.toString(),
+        availableLocales.forEach(l -> menu.addMenuOption(REL_PATH + subsequentUrl + l.toString(),
                 messageAssembler.getMessage("language." + l.toString(), user)));
         return menu;
     }
@@ -62,9 +62,9 @@ public class USSDGeoApiController extends USSDBaseController {
         List<Locale> availableLocales = locationInfoBroker.getAvailableLocalesForDataSet(dataSetLabel);
         log.info("checking if need language for geo api, user language code = ", user.getLanguageCode());
         if (!StringUtils.isEmpty(user.getLanguageCode()) && !availableLocales.contains(new Locale(user.getLanguageCode()))) {
-            menu = provinceMenu(dataSetLabel, REL_PATH + "/nextUrl?dataSet=" + dataSetLabel + "&province=", user);
+            menu = provinceMenu(dataSetLabel, "/info/select?dataSet=" + dataSetLabel + "&province=", user);
         } else {
-            menu = languageMenu(dataSetLabel, REL_PATH + "/province?dataSet=" + dataSetLabel + "&language=", availableLocales, user);
+            menu = languageMenu(dataSetLabel, "/province?dataSet=" + dataSetLabel + "&language=", availableLocales, user);
         }
         log.info("GeoAPI opening menu took {} msecs", System.currentTimeMillis() - startTime);
         return menu;
@@ -80,7 +80,7 @@ public class USSDGeoApiController extends USSDBaseController {
             userManager.updateUserLanguage(user.getUid(), language);
             user.setLanguageCode(language.getLanguage()); // to avoid a reload (even if H caches)
         }
-        return menuBuilder(provinceMenu(dataSet, "info/select?dataSet=" + dataSet, user));
+        return menuBuilder(provinceMenu(dataSet, "/info/select?dataSet=" + dataSet + "&province=", user));
     }
 
     @RequestMapping(value = "/info/select")
@@ -95,7 +95,7 @@ public class USSDGeoApiController extends USSDBaseController {
             USSDMenu menu = new USSDMenu("What info?");
             final String urlRoot = REL_PATH + "/info/send?dataSet=" + dataSet + "&province=" + province + "&infoTag=";
             availableInfo.forEach(al -> {
-                menu.addMenuOption(urlRoot + al, al); // todo : think through option message
+                menu.addMenuOption(urlRoot + al, al); // todo : think through option message (and info set extraction in general)
             });
             return menuBuilder(menu);
         }
@@ -113,7 +113,8 @@ public class USSDGeoApiController extends USSDBaseController {
     private USSDMenu sendMessageWithInfo(String dataSet, String infoTag, ProvinceSA province, User user) {
         List<String> records = locationInfoBroker.retrieveRecordsForProvince(dataSet, infoTag, province, user.getLocale());
         // todo : particle filter etc to decide on a likely closest record, and then do the rest
-        final String prompt = messageAssembler.getMessage("geoapi.sent.prompt", records.get(0));
+        final String prompt = messageAssembler.getMessage("geoapi.sent.prompt",
+                new String[] { String.valueOf(records.size()) }, user);
         locationInfoBroker.assembleAndSendRecordMessage(dataSet, infoTag, province, user.getUid());
         return new USSDMenu(prompt); // todo : include option to send safety alert if they are on? (and v/versa)
     }

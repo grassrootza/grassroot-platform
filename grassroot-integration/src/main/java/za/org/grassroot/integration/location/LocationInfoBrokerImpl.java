@@ -7,6 +7,7 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.document.*;
 import com.amazonaws.services.dynamodbv2.document.spec.GetItemSpec;
 import com.amazonaws.services.dynamodbv2.document.spec.QuerySpec;
+import com.amazonaws.services.dynamodbv2.document.utils.ValueMap;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -146,28 +147,22 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
         } else {
             DynamoDB dynamoDB = new DynamoDB(dynamoDBClient);
             Table geoApiTable = dynamoDB.getTable("geo_" + dataSetLabel.toLowerCase());
+            log.info("querying from table, name: {}, number of rows: {}",
+                    "geo_" + dataSetLabel.toLowerCase(), geoApiTable.describe().toString());
+            log.info("looking for province, with name: {}, on infoSet: {}", province.name(), infoSetTag);
+
             Index provinceIndex = geoApiTable.getIndex("lowestGeoInfo"); // figure out how to adapt when province != lowest
-
-            Map<String, String> nameMap = new HashMap<>();
-            nameMap.put("#province", "province");
-            nameMap.put("#infoTag", "infoTag");
-
-            Map<String, Object> valueMap = new HashMap<>();
-            valueMap.put(":prv", province.toString());
-            valueMap.put(":info", infoSetTag);
-
             QuerySpec querySpec = new QuerySpec()
-                    .withKeyConditionExpression("#province = :prv and #infoTag = :info")
-                    .withNameMap(nameMap)
-                    .withValueMap(valueMap);
+                    .withKeyConditionExpression("province = :prv and infoTag = :info")
+                    .withValueMap(new ValueMap()
+                            .withString(":prv", province.name())
+                            .withString(":info", infoSetTag));
 
             try {
-                log.info("trying to query data set, with query = ", querySpec);
                 ItemCollection<QueryOutcome> records = provinceIndex.query(querySpec);
-                log.info("got the outcome, looks like: {}", records);
                 List<String> result = new ArrayList<>();
                 records.iterator().forEachRemaining(i -> result.add(i.getString("description")));
-                log.info("iterated through the results, looks like: {}", records);
+                log.info("iterated through the results, number of results: {}", result.size());
                 return result;
             } catch (Exception e) {
                 log.error("Error!", e);
@@ -180,37 +175,54 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
     @Override
     public void assembleAndSendRecordMessage(String dataSetLabel, String infoSetTag, ProvinceSA province,
                                              String targetUid) {
-        final String accountUid = getSponsoringAccountUid(dataSetLabel);
-        if (StringUtils.isEmpty(accountUid)) {
+        final Set<String> accountUids = getSponsoringAccountUids(dataSetLabel);
+        if (accountUids == null || accountUids.isEmpty()) {
             log.info("error, message sending called for dataset {}, without sponsoring account", dataSetLabel);
         } else {
             User user = userRepository.findOneByUid(targetUid);
             List<String> records = retrieveRecordsForProvince(dataSetLabel, infoSetTag, province, user.getLocale());
             String message = dataSetLabel + " " + infoSetTag + String.join(", ", records);
-            Account account = accountRepository.findOneByUid(accountUid);
-            AccountLog accountLog = new AccountLog.Builder(account)
-                    .user(user)
-                    .accountLogType(AccountLogType.GEO_API_MESSAGE_SENT)
-                    .description(message.substring(0, Math.min(255, message.length()))).build();
-            accountLogRepository.saveAndFlush(accountLog);
-            FreeFormMessageNotification notification = new FreeFormMessageNotification(user, message, accountLog);
-            notificationRepository.saveAndFlush(notification);
+            List<Account> accounts = accountRepository.findByUidIn(accountUids);
+            if (accounts != null && !accounts.isEmpty()) {
+                // todo : split among sponsoring accounts
+                AccountLog accountLog = new AccountLog.Builder(accounts.get(0))
+                        .user(user)
+                        .accountLogType(AccountLogType.GEO_API_MESSAGE_SENT)
+                        .description(message.substring(0, Math.min(255, message.length()))).build();
+                accountLogRepository.saveAndFlush(accountLog);
+                FreeFormMessageNotification notification = new FreeFormMessageNotification(user, message, accountLog);
+                notificationRepository.saveAndFlush(notification);
+            }
         }
     }
 
     // consider in time altering this to persist it
-    private String getSponsoringAccountUid(final String dataSet) {
-        URI uriToCall = baseBuilder()
-                .path("/account/{dataset}")
-                .buildAndExpand(dataSet).toUri();
-
-        log.info("retrieving sponsoring account for dataset {}, with URL {}", dataSet, uriToCall);
-
-        try {
-            ResponseEntity<String> accountResponse = restTemplate.getForEntity(uriToCall, String.class);
-            return accountResponse.getBody();
-        } catch (RestClientException e) {
-            return null;
+    private Set<String> getSponsoringAccountUids(final String dataSet) {
+        if (!useDynamoDirect) {
+            URI uriToCall = baseBuilder()
+                    .path("/account/{dataset}")
+                    .buildAndExpand(dataSet).toUri();
+            log.info("retrieving sponsoring account for dataset {}, with URL {}", dataSet, uriToCall);
+            try {
+                ResponseEntity<String[]> accountResponse = restTemplate.getForEntity(uriToCall, String[].class);
+                return new HashSet<String>(Arrays.asList(accountResponse.getBody()));
+            } catch (RestClientException e) {
+                return null;
+            }
+        } else {
+            DynamoDB dynamoDB = new DynamoDB(dynamoDBClient);
+            Table geoApiTable = dynamoDB.getTable("geo_apis");
+            GetItemSpec spec = new GetItemSpec()
+                    .withPrimaryKey("data_set_label", dataSet)
+                    .withProjectionExpression("account_uids");
+            try {
+                Item outcome = geoApiTable.getItem(spec);
+                log.info("got the outcome, looks like: {}", outcome);
+                return outcome != null ? outcome.getStringSet("account_uids") : new HashSet<>();
+            } catch (Exception e) {
+                log.error("Error getting account UIDs: {}", e);
+                return null;
+            }
         }
     }
 
