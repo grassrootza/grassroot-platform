@@ -2,42 +2,64 @@ package za.org.grassroot.webapp.controller.rest.campaign;
 
 
 import za.org.grassroot.core.domain.campaign.Campaign;
-import za.org.grassroot.webapp.model.rest.wrappers.CampaignWrapper;
+import za.org.grassroot.core.domain.campaign.CampaignMessage;
+import za.org.grassroot.core.domain.campaign.CampaignMessageAction;
+import za.org.grassroot.webapp.model.rest.CampaignActionViewDTO;
+import za.org.grassroot.webapp.model.rest.CampaignMessageViewDTO;
+import za.org.grassroot.webapp.model.rest.CampaignViewDTO;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 
 public class CampaignWebUtil {
 
     private CampaignWebUtil(){}
 
-    public static CampaignWrapper createCampaignWrapper(Campaign campaign){
-        CampaignWrapper wrapper = new CampaignWrapper();
-        wrapper.setName(campaign.getCampaignName());
-        wrapper.setCode(campaign.getCampaignCode());
-        wrapper.setDescription(campaign.getCampaignDescription());
-        wrapper.setEndDate(campaign.getEndDateTime().toString()); //format
-        wrapper.setStartDate(campaign.getStartDateTime().toString());//format
-        wrapper.setGroupName((campaign.getMasterGroup() != null)? campaign.getMasterGroup().getGroupName(): null);
-        wrapper.setType(campaign.getCampaignType().name());
-        wrapper.setUrl(campaign.getUrl());
-        wrapper.setTags((campaign.getTagList() != null) ? new HashSet<>(campaign.getTagList()): null);
-        wrapper.setCreateUser(campaign.getCreatedByUser().getDisplayName());
-        wrapper.setUserUid(campaign.getCreatedByUser().getUid());
-        wrapper.setTotalUsers((campaign.getMasterGroup() != null && campaign.getMasterGroup().getMembers() != null)? campaign.getMasterGroup().getMembers().size() : 0);
-
-        return wrapper;
-
-    }
-    public static List<CampaignWrapper> createCampaignWrapperList(List<Campaign> campaigns){
-        List<CampaignWrapper> campaignWrapperList = new ArrayList<>();
+    public static List<CampaignViewDTO> createCampaignViewDtoList(List<Campaign> campaigns){
+        List<CampaignViewDTO> campaignList = new ArrayList<>();
         if(campaigns == null || campaigns.isEmpty()){
-            return campaignWrapperList;
+            return campaignList;
         }
         for(Campaign campaign : campaigns){
-            campaignWrapperList.add(createCampaignWrapper(campaign));
+            campaignList.add(createCampaignViewDTO(campaign));
         }
-        return campaignWrapperList;
+        return campaignList;
+    }
+
+    public static CampaignViewDTO createCampaignViewDTO(Campaign campaign){
+        CampaignViewDTO campaignDto = new CampaignViewDTO(campaign.getCampaignCode(), campaign.getCampaignName(),campaign.getCampaignDescription(),campaign.getCampaignType().name(),campaign.getCreatedByUser().getUid(),
+                campaign.getCreatedByUser().getDisplayName(),campaign.getStartDateTime().toString(),campaign.getEndDateTime().toString(), campaign.getUrl(),campaign.getUid(),campaign.getTagList());
+        campaignDto.setCampaignMasterGroupName(campaign.getMasterGroup() != null ? campaign.getMasterGroup().getGroupName() : null);
+        campaignDto.setCampaignMasterGroupUid(campaign.getMasterGroup() != null ? campaign.getMasterGroup().getUid() : null);
+        campaignDto.setTotalUsers((campaign.getMasterGroup() != null && campaign.getMasterGroup().getMembers() != null)? campaign.getMasterGroup().getMembers().size() : 0);
+        if(campaign.getCampaignMessages() != null && !campaign.getCampaignMessages().isEmpty()){
+            List<CampaignMessageViewDTO> messageViewDTOList = new ArrayList<>();
+            for(CampaignMessage message: campaign.getCampaignMessages()){
+                messageViewDTOList.add(createMessageDTO(message));
+            }
+            campaignDto.setCampaignMessages(messageViewDTOList);
+        }
+        return campaignDto;
+    }
+
+    private static CampaignMessageViewDTO createMessageDTO(CampaignMessage message){
+        CampaignMessageViewDTO messageViewDTO = new CampaignMessageViewDTO();
+        messageViewDTO.setUid(message.getUid());
+        messageViewDTO.setAssignment(message.getVariation().name());
+        messageViewDTO.setTags(message.getTagList());
+        messageViewDTO.setCreatedDateTime(message.getCreatedDateTime().toString());
+        messageViewDTO.setMessage(message.getMessage());
+        messageViewDTO.setCreateUser(message.getCreatedByUser()!=null ? message.getCreatedByUser().getUid() : null);
+        messageViewDTO.setLanguage(message.getLocale() != null ? message.getLocale().getLanguage() : null);
+        if(message.getCampaignMessageActionSet() == null || message.getCampaignMessageActionSet().isEmpty()){
+            return  messageViewDTO;
+        }
+        for(CampaignMessageAction action : message.getCampaignMessageActionSet()){
+            CampaignActionViewDTO actionViewDTO = new CampaignActionViewDTO();
+            actionViewDTO.setUid(action.getUid());
+            actionViewDTO.setActionType(action.getActionType().name());
+            actionViewDTO.setActionMessage(createMessageDTO(action.getActionMessage()));
+        }
+        return messageViewDTO;
     }
 }

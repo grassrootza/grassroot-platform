@@ -8,7 +8,7 @@ import javax.validation.constraints.NotNull;
 import java.io.Serializable;
 import java.util.Set;
 
-public class CampaignMessageWrapper implements Serializable{
+public class CreateCampaignMessageRequestWrapper implements Serializable{
 
     private static final long serialVersionUID = -3071489047972056911L;
     private String message;

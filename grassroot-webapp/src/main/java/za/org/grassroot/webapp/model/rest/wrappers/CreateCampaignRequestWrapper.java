@@ -1,31 +1,30 @@
 package za.org.grassroot.webapp.model.rest.wrappers;
 
 import org.hibernate.validator.constraints.NotBlank;
+import za.org.grassroot.core.domain.campaign.CampaignType;
 
+import javax.validation.constraints.NotNull;
 import java.io.Serializable;
 import java.util.Set;
 
 
-public class CampaignWrapper implements Serializable {
+public class CreateCampaignRequestWrapper implements Serializable {
 
     private static final long serialVersionUID = -3263387305104374730L;
     private String createUser;
     private String userUid;
-    private String userRole;
     private String name;
     private String code;
     private String description;
     private String startDate;
     private String endDate;
-    private String type;
+    private CampaignType type;
     private String url;
     private String groupUid;
     private String groupName;
-    private Integer totalUsers;
-    private Integer newUsers;
     private Set<String> tags;
 
-    public CampaignWrapper(){}
+    public CreateCampaignRequestWrapper(){}
 
     @NotBlank(message = "campaign.user.uid.required")
     public String getUserUid() {
@@ -89,11 +88,12 @@ public class CampaignWrapper implements Serializable {
         this.tags = tags;
     }
 
-    public String getType() {
+    @NotNull(message = "campaign.type.required")
+    public CampaignType getType() {
         return type;
     }
 
-    public void setType(String type) {
+    public void setType(CampaignType type) {
         this.type = type;
     }
 
@@ -119,30 +119,6 @@ public class CampaignWrapper implements Serializable {
 
     public void setGroupName(String groupName) {
         this.groupName = groupName;
-    }
-
-    public String getUserRole() {
-        return userRole;
-    }
-
-    public void setUserRole(String userRole) {
-        this.userRole = userRole;
-    }
-
-    public Integer getTotalUsers() {
-        return totalUsers;
-    }
-
-    public void setTotalUsers(Integer totalUsers) {
-        this.totalUsers = totalUsers;
-    }
-
-    public Integer getNewUsers() {
-        return newUsers;
-    }
-
-    public void setNewUsers(Integer newUsers) {
-        this.newUsers = newUsers;
     }
 
     public String getCreateUser() {
