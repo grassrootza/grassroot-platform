@@ -34,6 +34,7 @@ import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static za.org.grassroot.core.specifications.BillingSpecifications.*;
 import static za.org.grassroot.core.util.DateTimeUtil.formatAtSAST;
@@ -174,9 +175,7 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
             PdfAcroForm pdfAcroForm = PdfAcroForm.getAcroForm(pdfDocument, true);
             Map<String,PdfFormField> pdfFormFieldMap = pdfAcroForm.getFormFields();
 
-            logger.debug("Fields Map = {}",pdfFormFieldMap);
-
-            logger.info("Form Field = {}",pdfFormFieldMap.get("join_code_header").getValueAsString());
+            logger.debug("Fields Map = {}, form field = {}", pdfFormFieldMap, pdfFormFieldMap.get("join_code_header").getValueAsString());
 
             pdfFormFieldMap.get("group_name").setValue("HOW TO JOIN " + grpEntity.getGroupName().toUpperCase() + " ON GRASSROOT");//**
             pdfFormFieldMap.get("join_code_header").setValue(grpEntity.getGroupTokenCode()).setColor(Color.BLACK);
@@ -184,8 +183,8 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
 
 
             pdfFormFieldMap.get("join_code_header");
-            logger.info("Form Field = {}",pdfFormFieldMap.get("join_code_header").getValueAsString());
-            logger.info("Form Field = {}",pdfFormFieldMap.get("join_code_phone").getValueAsString());
+            logger.debug("Form Field = {}",pdfFormFieldMap.get("join_code_header").getValueAsString());
+            logger.debug("Form Field = {}",pdfFormFieldMap.get("join_code_phone").getValueAsString());
 
             pdfAcroForm.flattenFields();
             pdfDocument.close();
@@ -224,48 +223,34 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
     public List<Locale> availableLanguages() {
         List<Locale> languages = new ArrayList<>();
 
-        File[] filesInFolder = null;
-        List<File> tempListOfFiles = new ArrayList<>();
-
         if (StringUtils.isEmpty(folderPath)) {
             logger.error("No path for flyers");
             return languages;
         }
 
         File folder = new File(folderPath);
-
         if(!folder.isDirectory()) {
-            logger.error("Folder path does not point to a folder");
+            logger.error("Folder path {} does not point to a folder", folderPath);
         } else {
-            filesInFolder = folder.listFiles();
+            File[] filesInFolder = folder.listFiles();
 
             if(filesInFolder != null){
-                logger.debug("Files in Folder = {}",filesInFolder.length);
+                logger.info("files found in template folder = {}",filesInFolder.length);
+                List<String> tempListOfFiles = Arrays.stream(filesInFolder)
+                        .map(File::getName).filter(n -> n.startsWith("group"))
+                        .collect(Collectors.toList());
 
-                for(int x = 0;x < filesInFolder.length;x++){
-                    if(filesInFolder[x].getName().startsWith("group")){
-                        tempListOfFiles.add(filesInFolder[x]);
+                logger.info("filtered list of group flyer templates = {}", tempListOfFiles.size());
+
+                for (String name1 : tempListOfFiles) {
+                    String nameOfLanguage = name1.split(SEPARATOR)[LANGUAGE_POSITION]; // Check if is a valid name
+                    logger.info("for file name {}, took language separator {}", name1, nameOfLanguage);
+                    if (Arrays.asList(Locale.getISOLanguages()).contains(nameOfLanguage)) {
+                        Locale lang = new Locale(nameOfLanguage);
+                        languages.add(lang);
                     }
                 }
 
-                logger.debug("Filtered List = {}",tempListOfFiles.size());
-
-                if(!tempListOfFiles.isEmpty()){
-                    String[] names = new String[tempListOfFiles.size()];
-                    for (int x = 0;x < tempListOfFiles.size(); x++) {
-                        names[x] = tempListOfFiles.get(x).getName();
-                    }
-
-                    for (String name1 : names) {
-                        String[] data = name1.split(SEPARATOR);
-                        String name = data[LANGUAGE_POSITION];// Check if is a valid name
-
-                        if (Arrays.asList(Locale.getISOLanguages()).contains(name)) {
-                            Locale lang = new Locale(name);
-                            languages.add(lang);
-                        }
-                    }
-                }
             } else {
                 logger.error("Invalid folder path specified");
             }
