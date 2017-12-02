@@ -41,7 +41,7 @@ public class CampaignRepositoryTest {
     @Test
     public void testCreateCampaign(){
         User user = userRepository.save(new User("3456"));
-        Campaign campaign = campaignRepository.saveAndFlush(new Campaign("Test","234","Durban campaign",user, Instant.now(), Instant.now(), CampaignType.Aquisition,null));
+        Campaign campaign = campaignRepository.saveAndFlush(new Campaign("Test","234","Durban campaign",user, Instant.now(), Instant.now(), CampaignType.Acquisition,null));
         Assert.assertNotNull(campaign);
         Assert.assertNotNull(campaign.getUid());
         Assert.assertNotNull(campaign.getCreatedDateTime());
@@ -49,13 +49,13 @@ public class CampaignRepositoryTest {
         Assert.assertEquals(campaign.getCampaignCode(),"234");
         Assert.assertNotNull(campaign.getCreatedByUser());
         Assert.assertEquals(campaign.getCreatedByUser().getPhoneNumber(),"3456");
-        Assert.assertEquals(campaign.getCampaignType(), CampaignType.Aquisition);
+        Assert.assertEquals(campaign.getCampaignType(), CampaignType.Acquisition);
     }
 
     @Test
     public void testCampaignMessages(){
         User user = userRepository.save(new User("3456"));
-        Campaign campaign =  new Campaign("Test","234","Durban campaign",user, Instant.now(), Instant.now(), CampaignType.Aquisition, null);
+        Campaign campaign =  new Campaign("Test","234","Durban campaign",user, Instant.now(), Instant.now(), CampaignType.Acquisition, null);
         Set<CampaignMessage> messageSet = new HashSet<>();
         CampaignMessage campaignMessage = new CampaignMessage("Please join Campaign", user, MessageVariationAssignment.CONTROL, Locale.forLanguageTag("en-US"), UserInterfaceType.USSD, campaign);
         messageSet.add(campaignMessage);

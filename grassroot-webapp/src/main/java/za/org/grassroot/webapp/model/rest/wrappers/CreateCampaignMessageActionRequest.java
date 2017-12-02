@@ -1,19 +1,27 @@
 package za.org.grassroot.webapp.model.rest.wrappers;
 
 
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
 import org.hibernate.validator.constraints.NotEmpty;
 import za.org.grassroot.core.domain.campaign.CampaignActionType;
 
 import javax.validation.constraints.NotNull;
 import java.io.Serializable;
 
-public class CreateCampaignMessageActionRequestWrapper implements Serializable {
+@ApiModel(value = "CreateCampaignMessageActionRequest")
+public class CreateCampaignMessageActionRequest implements Serializable {
 
+    @ApiModelProperty(value="code of campaign")
     private String campaignCode;
+    @ApiModelProperty(value="message uid an action links to")
     private String messageUid;
+    @ApiModelProperty(value="type of action", allowableValues = "TAG_ME,JOIN_MASTER_GROUP,SIGN_PETITION,MORE_INFO,EXIT")
     private CampaignActionType action;
+    @ApiModelProperty(value="uid of user creating action")
     private String userUid;
-    private CreateCampaignMessageRequestWrapper actionMessage;
+    @ApiModelProperty(value="message to send when action is chosen")
+    private CreateCampaignMessageRequest actionMessage;
 
     @NotEmpty(message = "campaign.message.action.message.uid.required")
     public String getMessageUid() {
@@ -34,11 +42,11 @@ public class CreateCampaignMessageActionRequestWrapper implements Serializable {
     }
 
     @NotNull(message = "campaign.message.action.message.required")
-    public CreateCampaignMessageRequestWrapper getActionMessage() {
+    public CreateCampaignMessageRequest getActionMessage() {
         return actionMessage;
     }
 
-    public void setActionMessage(CreateCampaignMessageRequestWrapper actionMessage) {
+    public void setActionMessage(CreateCampaignMessageRequest actionMessage) {
         this.actionMessage = actionMessage;
     }
 

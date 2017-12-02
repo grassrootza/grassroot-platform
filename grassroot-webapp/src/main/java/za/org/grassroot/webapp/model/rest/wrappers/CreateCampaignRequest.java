@@ -1,5 +1,7 @@
 package za.org.grassroot.webapp.model.rest.wrappers;
 
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
 import org.hibernate.validator.constraints.NotBlank;
 import za.org.grassroot.core.domain.campaign.CampaignType;
 
@@ -8,23 +10,34 @@ import java.io.Serializable;
 import java.util.Set;
 
 
-public class CreateCampaignRequestWrapper implements Serializable {
+@ApiModel(value = "CreateCampaignRequest")
+public class CreateCampaignRequest implements Serializable {
 
     private static final long serialVersionUID = -3263387305104374730L;
-    private String createUser;
+    @ApiModelProperty(value = "campaign creater user uid", required = true)
     private String userUid;
+    @ApiModelProperty(value = "name of the campaign", required = true)
     private String name;
+    @ApiModelProperty(value = "campaign code", required = true)
     private String code;
+    @ApiModelProperty(value = "description of campaign", required = true)
     private String description;
+    @ApiModelProperty(value = "start date of campaign",required = true)
     private String startDate;
+    @ApiModelProperty(value = "end date of campaign", required = true)
     private String endDate;
+    @ApiModelProperty(value = "type of campaign",allowableValues = "Acquisition,Petition,Information", required = true)
     private CampaignType type;
+    @ApiModelProperty(value = "url of campaign", required = true)
     private String url;
+    @ApiModelProperty(value = "uid of campaign master group if group exist", required = true)
     private String groupUid;
+    @ApiModelProperty(value = "name of campaign master group for new group", required = true)
     private String groupName;
+    @ApiModelProperty(value = "tags for campaign", required = false)
     private Set<String> tags;
 
-    public CreateCampaignRequestWrapper(){}
+    public CreateCampaignRequest(){}
 
     @NotBlank(message = "campaign.user.uid.required")
     public String getUserUid() {
@@ -119,13 +132,5 @@ public class CreateCampaignRequestWrapper implements Serializable {
 
     public void setGroupName(String groupName) {
         this.groupName = groupName;
-    }
-
-    public String getCreateUser() {
-        return createUser;
-    }
-
-    public void setCreateUser(String createUser) {
-        this.createUser = createUser;
     }
 }
