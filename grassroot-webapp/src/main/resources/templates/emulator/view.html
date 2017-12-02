@@ -43,5 +43,12 @@
     <button th:action="@{/emulator/ussd/view}" method="get">LiveWire</button>
 </form></div>
 
+<div>
+    <form>
+        <input type="hidden" name="request" value="*134*19940*11#" />
+        <button th:action="@{/emulator/ussd/view}" method="get">Izwe Lami</button>
+    </form>
+</div>
+
 </body>
 </html>

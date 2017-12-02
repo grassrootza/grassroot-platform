@@ -114,8 +114,8 @@ public class USSDTodoController extends USSDBaseController {
         final String userInput = StringUtils.isEmpty(priorInput) ? userResponse : priorInput;
         User user = userManager.findByInputNumber(msisdn, saveUrl("/respond/info", todoUid, userInput));
         USSDMenu menu = new USSDMenu(messageAssembler.getMessage(USSDSection.TODO, "info", promptKey + ".confirm", userInput, user));
-        menu.addMenuOption(REL_PATH + "/respond/info/confirmed?todoUid=" + todoUid + "&response=" + userInput,
-                messageAssembler.getMessage("options.yes", user));
+        menu.addMenuOption(REL_PATH + "/respond/info/confirmed?todoUid=" + todoUid +
+                        "&response=" + USSDUrlUtil.encodeParameter(userInput), messageAssembler.getMessage("options.yes", user));
         menu.addMenuOption(REL_PATH + "/respond/info/revise", messageAssembler.getMessage("todo.info.response.change", user));
         return menuBuilder(menu);
     }

@@ -2,6 +2,7 @@ package za.org.grassroot.webapp.controller.ussd;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,6 +22,7 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
 
 @RestController(value=  "/ussd/geo") @Slf4j
 @RequestMapping(method = GET, produces = MediaType.APPLICATION_XML_VALUE)
+@ConditionalOnProperty(name = "grassroot.geo.apis.enabled", matchIfMissing = false)
 public class USSDGeoApiController extends USSDBaseController {
 
     private static final String REL_PATH = "/geo";
@@ -48,19 +50,24 @@ public class USSDGeoApiController extends USSDBaseController {
                                   final String subsequentUrl,
                                   final List<Locale> availableLocales,
                                   final User user) {
-        USSDMenu menu = new USSDMenu(messageAssembler.getMessage("geoapi.language.prompt." + dataSetLabel, user));
+        USSDMenu menu = new USSDMenu(messageAssembler.getMessage("language.prompt." + dataSetLabel, user));
         availableLocales.forEach(l -> menu.addMenuOption(subsequentUrl + l.toString(),
                 messageAssembler.getMessage("language." + l.toString(), user)));
         return menu;
     }
 
     USSDMenu openingMenu(final User user, final String dataSetLabel) {
+        long startTime = System.currentTimeMillis();
+        USSDMenu menu;
         List<Locale> availableLocales = locationInfoBroker.getAvailableLocalesForDataSet(dataSetLabel);
-        if (!StringUtils.isEmpty(user.getLanguageCode()) || !availableLocales.contains(new Locale(user.getLanguageCode()))) {
-            return languageMenu(dataSetLabel, "province?language=" + dataSetLabel + "&province=", availableLocales, user);
+        log.info("checking if need language for geo api, user language code = ", user.getLanguageCode());
+        if (!StringUtils.isEmpty(user.getLanguageCode()) && !availableLocales.contains(new Locale(user.getLanguageCode()))) {
+            menu = provinceMenu(dataSetLabel, REL_PATH + "/nextUrl?dataSet=" + dataSetLabel + "&province=", user);
         } else {
-            return provinceMenu(dataSetLabel, "nextUrl?dataSet=" + dataSetLabel + " &province=", user);
+            menu = languageMenu(dataSetLabel, REL_PATH + "/province?dataSet=" + dataSetLabel + "&language=", availableLocales, user);
         }
+        log.info("GeoAPI opening menu took {} msecs", System.currentTimeMillis() - startTime);
+        return menu;
     }
 
     @RequestMapping(value = "/province")

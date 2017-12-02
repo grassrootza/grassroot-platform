@@ -1,5 +1,12 @@
 package za.org.grassroot.integration.location;
 
+import com.amazonaws.auth.profile.ProfileCredentialsProvider;
+import com.amazonaws.regions.Regions;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
+import com.amazonaws.services.dynamodbv2.document.*;
+import com.amazonaws.services.dynamodbv2.document.spec.GetItemSpec;
+import com.amazonaws.services.dynamodbv2.document.spec.QuerySpec;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -23,10 +30,7 @@ import za.org.grassroot.core.repository.UserRepository;
 
 import javax.annotation.PostConstruct;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 import java.util.stream.Collectors;
 
 // todo : use JWT? though, these are open datasets (similar q on http vs https, esp if these are in same VPC)
@@ -42,8 +46,10 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
     private final AccountLogRepository accountLogRepository;
     private final NotificationRepository notificationRepository;
 
+    private boolean useDynamoDirect;
     private String geoApiHost;
     private Integer geoApiPort;
+    private AmazonDynamoDB dynamoDBClient;
 
     @Autowired
     public LocationInfoBrokerImpl(Environment environment, RestTemplate restTemplate, UserRepository userRepository, AccountRepository accountRepository, AccountLogRepository accountLogRepository, NotificationRepository notificationRepository) {
@@ -58,8 +64,16 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
     @PostConstruct
     public void init() {
         log.info("GeoAPI integration is active, setting up URLs etc");
+        useDynamoDirect = environment.getProperty("grassroot.geo.dynamodb.direct", Boolean.class, false);
         geoApiHost = environment.getProperty("grassroot.geo.apis.host", "localhost");
         geoApiPort = environment.getProperty("grassroot.geo.apis.port", Integer.class, 80);
+
+        if (useDynamoDirect) {
+            log.info("okay we are using dynamo db directly for geo APIs ...");
+            dynamoDBClient = AmazonDynamoDBClientBuilder.standard()
+                    .withRegion(Regions.EU_WEST_1)
+                    .withCredentials(new ProfileCredentialsProvider("geoApisDynamoDb")).build();
+        }
     }
 
     private UriComponentsBuilder baseBuilder() {
@@ -71,50 +85,95 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
 
     @Override
     public List<ProvinceSA> getAvailableProvincesForDataSet(String dataSetLabel) {
-        URI uriToCall = baseBuilder()
-                .path("/provinces/available/{dataset}")
-                .buildAndExpand(dataSetLabel).toUri();
+        List<ProvinceSA> provinceList;
+        if (!useDynamoDirect) {
+            URI uriToCall = baseBuilder()
+                    .path("/provinces/available/{dataset}")
+                    .buildAndExpand(dataSetLabel).toUri();
 
-        log.info("finding available provinces for: {}", uriToCall);
-
-        return getResult(uriToCall).stream().map(ProvinceSA::valueOf).collect(Collectors.toList());
+            log.info("finding available provinces for: {}", uriToCall);
+            provinceList = getFromUri(uriToCall).stream()
+                    .map(ProvinceSA::valueOf).collect(Collectors.toList());
+        } else {
+            provinceList = getFromDynamo(dataSetLabel, "provinces", true).stream()
+                    .map(ProvinceSA::valueOf).collect(Collectors.toList());
+        }
+        return provinceList;
     }
 
     @Override
     public List<Locale> getAvailableLocalesForDataSet(String dataSetLabel) {
-        URI uriToCall = baseBuilder()
-                .path("/languages/available/{dataset}")
-                .buildAndExpand(dataSetLabel).toUri();
-
-        log.info("finding available languages, using URI: {}", uriToCall);
-
-        return getResult(uriToCall).stream().map(Locale::new).collect(Collectors.toList());
+        if (!useDynamoDirect) {
+            URI uriToCall = baseBuilder()
+                    .path("/languages/available/{dataset}")
+                    .buildAndExpand(dataSetLabel).toUri();
+            log.info("finding available languages, using URI: {}", uriToCall);
+            return getFromUri(uriToCall).stream().map(Locale::new).collect(Collectors.toList());
+        } else {
+            return getFromDynamo(dataSetLabel, "languages", false).stream()
+                    .map(Locale::new).collect(Collectors.toList());
+        }
     }
 
     @Override
     public List<String> getAvailableInfoForProvince(String dataSetLabel, ProvinceSA province, Locale locale) {
-        URI uriToCall = baseBuilder()
-                .path("/sets/available/{dataset}")
-                .queryParam("province", province.toString())
-                .queryParam("locale", locale.toLanguageTag())
-                .buildAndExpand(dataSetLabel).toUri();
-
-        log.info("assembled URI string to get list of data sets = {}", uriToCall.toString());
-
-        return getResult(uriToCall);
+        if (!useDynamoDirect) {
+            URI uriToCall = baseBuilder()
+                    .path("/sets/available/{dataset}")
+                    .queryParam("province", province.toString())
+                    .queryParam("locale", locale.toLanguageTag())
+                    .buildAndExpand(dataSetLabel).toUri();
+            log.info("assembled URI string to get list of data sets = {}", uriToCall.toString());
+            return getFromUri(uriToCall);
+        } else {
+            // todo : think about whether / how to differentiate by province in current design
+            return getFromDynamo(dataSetLabel, "info_sets", false);
+        }
     }
 
     @Override
     public List<String> retrieveRecordsForProvince(String dataSetLabel, String infoSetTag, ProvinceSA province, Locale locale) {
-        URI uriToCall = baseBuilder()
-                .path("/records/{dataset}/{infoSet}")
-                .queryParam("province", province.toString())
-                .queryParam("locale", locale.toLanguageTag())
-                .buildAndExpand(dataSetLabel, infoSetTag).toUri();
+        if (!useDynamoDirect) {
+            URI uriToCall = baseBuilder()
+                    .path("/records/{dataset}/{infoSet}")
+                    .queryParam("province", province.toString())
+                    .queryParam("locale", locale.toLanguageTag())
+                    .buildAndExpand(dataSetLabel, infoSetTag).toUri();
 
-        log.info("assembled URI to get records = {}", uriToCall.toString());
+            log.info("assembled URI to get records = {}", uriToCall.toString());
 
-        return getResult(uriToCall);
+            return getFromUri(uriToCall);
+        } else {
+            DynamoDB dynamoDB = new DynamoDB(dynamoDBClient);
+            Table geoApiTable = dynamoDB.getTable("geo_" + dataSetLabel.toLowerCase());
+            Index provinceIndex = geoApiTable.getIndex("lowestGeoInfo"); // figure out how to adapt when province != lowest
+
+            Map<String, String> nameMap = new HashMap<>();
+            nameMap.put("#province", "province");
+            nameMap.put("#infoTag", "infoTag");
+
+            Map<String, Object> valueMap = new HashMap<>();
+            valueMap.put(":prv", province.toString());
+            valueMap.put(":info", infoSetTag);
+
+            QuerySpec querySpec = new QuerySpec()
+                    .withKeyConditionExpression("#province = :prv and #infoTag = :info")
+                    .withNameMap(nameMap)
+                    .withValueMap(valueMap);
+
+            try {
+                log.info("trying to query data set, with query = ", querySpec);
+                ItemCollection<QueryOutcome> records = provinceIndex.query(querySpec);
+                log.info("got the outcome, looks like: {}", records);
+                List<String> result = new ArrayList<>();
+                records.iterator().forEachRemaining(i -> result.add(i.getString("description")));
+                log.info("iterated through the results, looks like: {}", records);
+                return result;
+            } catch (Exception e) {
+                log.error("Error!", e);
+                throw new IllegalArgumentException("No results for that dataset, province and field");
+            }
+        }
     }
 
     @Async
@@ -155,14 +214,32 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
         }
     }
 
-
-    private List<String> getResult(URI uri) {
+    private List<String> getFromUri(URI uri) {
         try {
             ResponseEntity<String[]> availableInfo = restTemplate.getForEntity(uri, String[].class);
             return Arrays.asList(availableInfo.getBody());
         } catch (RestClientException e) {
             log.error("error calling geo API!", e);
             return new ArrayList<>();
+        }
+    }
+
+    private List<String> getFromDynamo(String dataSetLabel, String field, boolean sort) {
+        DynamoDB dynamoDB = new DynamoDB(dynamoDBClient);
+        Table geoApiTable = dynamoDB.getTable("geo_apis");
+        GetItemSpec spec = new GetItemSpec()
+                .withPrimaryKey("data_set_label", dataSetLabel)
+                .withProjectionExpression(field);
+        try {
+            log.info("trying to read the data set info with key {}, field {}", dataSetLabel, field);
+            Item outcome = geoApiTable.getItem(spec);
+            log.info("got the outcome, looks like: {}", outcome);
+            Set<String> resultSet = outcome.getStringSet(field);
+            return resultSet == null ? new ArrayList<>() :
+                    sort ? resultSet.stream().sorted().collect(Collectors.toList()) : new ArrayList<>(resultSet);
+        } catch (Exception e) {
+            log.error("Error!", e);
+            throw new IllegalArgumentException("No results for that dataset and field");
         }
     }
 }
