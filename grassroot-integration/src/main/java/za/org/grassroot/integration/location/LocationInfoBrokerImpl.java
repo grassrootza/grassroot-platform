@@ -15,10 +15,11 @@ import org.springframework.core.env.Environment;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
+import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountLog;
@@ -173,6 +174,7 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
 
     @Async
     @Override
+    @Transactional
     public void assembleAndSendRecordMessage(String dataSetLabel, String infoSetTag, ProvinceSA province,
                                              String targetUid) {
         final Set<String> accountUids = getSponsoringAccountUids(dataSetLabel);
@@ -190,9 +192,30 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
                         .accountLogType(AccountLogType.GEO_API_MESSAGE_SENT)
                         .description(message.substring(0, Math.min(255, message.length()))).build();
                 accountLogRepository.saveAndFlush(accountLog);
-                FreeFormMessageNotification notification = new FreeFormMessageNotification(user, message, accountLog);
-                notificationRepository.saveAndFlush(notification);
+                Set<Notification> messages = notificationsFromRecords(records, user, accountLog, 160);
+                log.info("generated messages to send out, in total {} messages", messages.size());
+                notificationRepository.save(messages);
             }
+        }
+    }
+
+    private Set<Notification> notificationsFromRecords(List<String> records, User target,
+                                                       AccountLog accountLog, int singleMessageLength) {
+        int countChars = String.join(", ", records).length();
+        if (countChars < singleMessageLength) {
+            return Collections.singleton(new FreeFormMessageNotification(target, String.join(", ", records), accountLog));
+        } else {
+            Set<Notification> notifications = new HashSet<>();
+            StringBuilder currentMsg = new StringBuilder(records.get(0));
+            for (String r : records) {
+                if ((currentMsg.length() + r.length() + 2) < singleMessageLength) {
+                    currentMsg.append("; ").append(r);
+                } else {
+                    notifications.add(new FreeFormMessageNotification(target, currentMsg.toString(), accountLog));
+                    currentMsg = new StringBuilder(r);
+                }
+            }
+            return notifications;
         }
     }
 

@@ -38,8 +38,10 @@ public class USSDGeoApiController extends USSDBaseController {
 
     private USSDMenu provinceMenu(final String dataSetLabel,
                                   final String subsequentUrl,
+                                  boolean skippedLanguage,
                                   final User user) {
-        USSDMenu menu = new USSDMenu(messageAssembler.getMessage("province.prompt." + dataSetLabel, user));
+        USSDMenu menu = new USSDMenu(messageAssembler.getMessage("province.prompt." + dataSetLabel
+                + (skippedLanguage ? ".open" : ""), user));
         List<ProvinceSA> provinces = locationInfoBroker.getAvailableProvincesForDataSet(dataSetLabel);
         provinces.forEach(p -> menu.addMenuOption(REL_PATH + subsequentUrl + p.name(),
                 messageAssembler.getMessage("province." + p.name(), user)));
@@ -62,7 +64,7 @@ public class USSDGeoApiController extends USSDBaseController {
         List<Locale> availableLocales = locationInfoBroker.getAvailableLocalesForDataSet(dataSetLabel);
         log.info("checking if need language for geo api, user language code = ", user.getLanguageCode());
         if (!StringUtils.isEmpty(user.getLanguageCode()) && !availableLocales.contains(new Locale(user.getLanguageCode()))) {
-            menu = provinceMenu(dataSetLabel, "/info/select?dataSet=" + dataSetLabel + "&province=", user);
+            menu = provinceMenu(dataSetLabel, "/info/select?dataSet=" + dataSetLabel + "&province=", true, user);
         } else {
             menu = languageMenu(dataSetLabel, "/province?dataSet=" + dataSetLabel + "&language=", availableLocales, user);
         }
@@ -80,7 +82,7 @@ public class USSDGeoApiController extends USSDBaseController {
             userManager.updateUserLanguage(user.getUid(), language);
             user.setLanguageCode(language.getLanguage()); // to avoid a reload (even if H caches)
         }
-        return menuBuilder(provinceMenu(dataSet, "/info/select?dataSet=" + dataSet + "&province=", user));
+        return menuBuilder(provinceMenu(dataSet, "/info/select?dataSet=" + dataSet + "&province=", false, user));
     }
 
     @RequestMapping(value = "/info/select")
@@ -113,7 +115,7 @@ public class USSDGeoApiController extends USSDBaseController {
     private USSDMenu sendMessageWithInfo(String dataSet, String infoTag, ProvinceSA province, User user) {
         List<String> records = locationInfoBroker.retrieveRecordsForProvince(dataSet, infoTag, province, user.getLocale());
         // todo : particle filter etc to decide on a likely closest record, and then do the rest
-        final String prompt = messageAssembler.getMessage("geoapi.sent.prompt",
+        final String prompt = messageAssembler.getMessage(dataSet + ".sent.prompt",
                 new String[] { String.valueOf(records.size()) }, user);
         locationInfoBroker.assembleAndSendRecordMessage(dataSet, infoTag, province, user.getUid());
         return new USSDMenu(prompt); // todo : include option to send safety alert if they are on? (and v/versa)
