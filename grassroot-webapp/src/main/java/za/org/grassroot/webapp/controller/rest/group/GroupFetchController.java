@@ -5,15 +5,20 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.dto.group.GroupFullDTO;
 import za.org.grassroot.core.dto.group.GroupMinimalDTO;
 import za.org.grassroot.core.dto.group.GroupTimeChangedDTO;
+import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.services.group.GroupFetchBroker;
+import za.org.grassroot.services.user.UserManagementService;
+import za.org.grassroot.webapp.controller.rest.BaseRestController;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 
+import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -21,16 +26,33 @@ import java.util.stream.Collectors;
 @RestController @Grassroot2RestController
 @Api("/api/group/fetch")
 @RequestMapping(value = "/api/group/fetch")
-public class GroupFetchController {
+public class GroupFetchController extends BaseRestController {
 
     private static final Logger logger = LoggerFactory.getLogger(GroupFetchController.class);
 
     private final GroupFetchBroker groupFetchBroker;
 
-    @Autowired
-    public GroupFetchController(GroupFetchBroker groupFetchBroker) {
+
+    public GroupFetchController(GroupFetchBroker groupFetchBroker, JwtService jwtService, UserManagementService userManagementService) {
+        super(jwtService, userManagementService);
         this.groupFetchBroker = groupFetchBroker;
     }
+
+
+    /**
+     * Returns a list of groups for currently logged in user
+     *
+     * @param request
+     * @return
+     */
+    @RequestMapping(value = "/list")
+    public ResponseEntity<List<GroupMinimalDTO>> listUserGroups(HttpServletRequest request) {
+        String userId = getUserIdFromRequest(request);
+        List<GroupMinimalDTO> groups = groupFetchBroker.fetchAllUserGroupsSortByLatestTime(userId);
+        return new ResponseEntity<>(groups, HttpStatus.OK);
+    }
+
+
 
     /**
      * Tells the client which, if any, of the groups have had a structural change since the last time the client knew about

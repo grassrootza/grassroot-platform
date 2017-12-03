@@ -51,6 +51,10 @@ public class Membership implements Serializable, TagHolder {
     @Type(type = "za.org.grassroot.core.util.StringArrayUserType")
     private String[] tags;
 
+    @Setter
+    @Column(name = "pinned")
+    private boolean pinned;
+
     private Membership() {
         // for JPA
     }

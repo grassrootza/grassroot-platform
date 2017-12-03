@@ -636,6 +636,20 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         logActionLogsAfterCommit(actionLogs);
     }
 
+    @Override
+    @Transactional
+    public boolean setGroupPinnedForUser(String userUid, String groupUid, boolean pinned) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(groupUid);
+        Membership membership = membershipRepository.findByGroupUidAndUserUid(groupUid, userUid);
+        if (membership != null) {
+            membership.setPinned(pinned);
+            membershipRepository.save(membership);
+            return true;
+        }
+        return false;
+    }
+
     private Set<ActionLog> changeMembersToRole(User user, Group group, Set<String> memberUids, Role newRole) {
         return group.getMemberships().stream()
                 .filter(m -> memberUids.contains(m.getUser().getUid()))
@@ -1138,6 +1152,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         notifyNewMembersOfUpcomingMeetings(bundle, user, group, groupLog);
         storeBundleAfterCommit(bundle);
     }
+
 
     @Override
     @Transactional

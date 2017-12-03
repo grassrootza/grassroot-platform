@@ -12,14 +12,17 @@ import za.org.grassroot.core.domain.GroupJoinMethod;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
+import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.services.exception.GroupSizeLimitExceededException;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
 import za.org.grassroot.services.exception.SoleOrganizerUnsubscribeException;
+import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -30,6 +33,10 @@ import java.util.stream.Collectors;
 public class GroupModifyController extends GroupBaseController {
 
     private static final Logger logger = LoggerFactory.getLogger(GroupModifyController.class);
+
+    public GroupModifyController(JwtService jwtService, UserManagementService userManagementService) {
+        super(jwtService, userManagementService);
+    }
 
     @RequestMapping(value = "/members/add/{userUid}/{groupUid}", method = RequestMethod.POST)
     @ApiOperation(value = "Add members to a group", notes = "Adds members to the group, takes a set (can be a singleton) " +
@@ -79,6 +86,26 @@ public class GroupModifyController extends GroupBaseController {
         } catch (AccessDeniedException e) {
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
         }
+    }
+
+    @RequestMapping(value = "/pin/{groupUid}")
+    @ApiOperation(value = "Mark group as pinned", notes = "This only affects current user group membership, it is not group property")
+    public ResponseEntity<ResponseWrapper> pinGroup(@PathVariable String groupUid, HttpServletRequest request) {
+
+        String userId = getUserIdFromRequest(request);
+        boolean actionApplyed = groupBroker.setGroupPinnedForUser(userId, groupUid, true);
+        //return boolean indicating if pin action was successful
+        return RestUtil.okayResponseWithData(RestMessage.GROUP_PINNED, actionApplyed);
+    }
+
+    @RequestMapping(value = "/unpin/{groupUid}")
+    @ApiOperation(value = "Mark group as unpinned", notes = "This only affects current user group membership, it is not group property")
+    public ResponseEntity<ResponseWrapper> unpinGroup(@PathVariable String groupUid, HttpServletRequest request) {
+
+        String userId = getUserIdFromRequest(request);
+        boolean actionApplyed = groupBroker.setGroupPinnedForUser(userId, groupUid, false);
+        //return boolean indicating if unpin action was successful
+        return RestUtil.okayResponseWithData(RestMessage.GROUP_UNPINNED, actionApplyed);
     }
 
     private List<String> findInvalidNumbers(Set<MembershipInfo> members) {

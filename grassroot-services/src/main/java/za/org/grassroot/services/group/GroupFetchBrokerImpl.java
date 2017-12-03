@@ -95,8 +95,8 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
         }
         User user = userRepository.findOneByUid(userUid);
         List<GroupMinimalDTO> dtoList = entityManager.createQuery("" +
-                        "select new za.org.grassroot.core.dto.group.GroupMinimalDTO(g, r) " +
-                        "from Group g inner join g.memberships m inner join m.role r " +
+                "select new za.org.grassroot.core.dto.group.GroupMinimalDTO(g, m) " +
+                "from Group g inner join g.memberships m" +
                         "where g.uid in :groupUids and m.user = :user", GroupMinimalDTO.class)
                 .setParameter("groupUids", groupUids)
                 .setParameter("user", user)
@@ -115,8 +115,8 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
         User user = userRepository.findOneByUid(userUid);
         // there is almost certainly a way to do order by the max of the two timestamps in query but it is late and HQL
         List<GroupMinimalDTO> dtos = entityManager.createQuery("" +
-                "select new za.org.grassroot.core.dto.group.GroupMinimalDTO(g, r) " +
-                "from Group g inner join g.memberships m inner join m.role r " +
+                "select new za.org.grassroot.core.dto.group.GroupMinimalDTO(g, m) " +
+                "from Group g inner join g.memberships m " +
                 "where g.active = true and m.user = :user", GroupMinimalDTO.class)
                 .setParameter("user", user)
                 .getResultList();

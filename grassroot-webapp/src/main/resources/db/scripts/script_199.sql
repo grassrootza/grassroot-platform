@@ -33,3 +33,6 @@ alter table user_mgmt_request add constraint uk_user_mgmt_request_uid unique (ui
 alter table user_mgmt_request add constraint fk_user_mgr_requestor foreign key (manager_id) references user_profile;
 alter table user_mgmt_request add constraint fk_user_mgr_managed foreign key (managed_user_id) references user_profile;
 create index user_mgmt_tag on user_mgmt_request using gin(tags);
+
+ALTER TABLE group_user_membership
+  ADD COLUMN pinned BOOLEAN DEFAULT FALSE;

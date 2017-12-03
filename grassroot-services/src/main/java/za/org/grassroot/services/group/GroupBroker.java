@@ -1,5 +1,6 @@
 package za.org.grassroot.services.group;
 
+import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.GroupJoinMethod;
 import za.org.grassroot.core.domain.Permission;
@@ -60,6 +61,9 @@ public interface GroupBroker {
 
     void updateMembershipRole(String userUid, String groupUid, String memberUid, String roleName);
 
+    @Transactional
+    boolean setGroupPinnedForUser(String userUid, String groupUid, boolean pinned);
+
     void updateMembers(String userUid, String groupUid, Set<MembershipInfo> membershipInfos, boolean checkForDeletion);
 
     void updateGroupPermissions(String userUid, String groupUid, Map<String, Set<Permission>> newPermissions);
@@ -96,5 +100,4 @@ public interface GroupBroker {
     void sendGroupJoinCodeNotification(String userUid, String groupUid);
 
     void sendAllGroupJoinCodesNotification(String userUid);
-
 }
