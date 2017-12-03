@@ -21,9 +21,9 @@ import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.services.campaign.CampaignBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.campaign.CampaignManagerController;
-import za.org.grassroot.webapp.model.rest.wrappers.CreateCampaignMessageActionRequestWrapper;
-import za.org.grassroot.webapp.model.rest.wrappers.CreateCampaignMessageRequestWrapper;
-import za.org.grassroot.webapp.model.rest.wrappers.CreateCampaignRequestWrapper;
+import za.org.grassroot.webapp.model.rest.wrappers.CreateCampaignMessageActionRequest;
+import za.org.grassroot.webapp.model.rest.wrappers.CreateCampaignMessageRequest;
+import za.org.grassroot.webapp.model.rest.wrappers.CreateCampaignRequest;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -50,12 +50,12 @@ public class CampaignManagerControllerTest extends RestAbstractUnitTest{
     @Mock
     private UserManagementService userManager;
 
-    private List<CreateCampaignRequestWrapper> wrapperList;
-    private CreateCampaignRequestWrapper createCampaignRequestWrapper;
+    private List<CreateCampaignRequest> wrapperList;
+    private CreateCampaignRequest createCampaignRequest;
     private List<Campaign> campaignList;
     private Campaign testCampaign;
-    private CreateCampaignMessageRequestWrapper createCampaignMessageRequestWrapper;
-    private CreateCampaignMessageActionRequestWrapper createCampaignMessageActionRequestWrapper;
+    private CreateCampaignMessageRequest createCampaignMessageRequest;
+    private CreateCampaignMessageActionRequest createCampaignMessageActionRequest;
     private User testUser;
 
 
@@ -66,11 +66,11 @@ public class CampaignManagerControllerTest extends RestAbstractUnitTest{
         campaignList = new ArrayList<>();
         testCampaign = createTestCampaign();
         campaignList.add(testCampaign);
-        createCampaignRequestWrapper = createTestWrapper();
-        createCampaignMessageRequestWrapper = createMessageWrapper();
-        createCampaignMessageActionRequestWrapper = createCampaignMessageActionWrapper();
+        createCampaignRequest = createTestWrapper();
+        createCampaignMessageRequest = createMessageWrapper();
+        createCampaignMessageActionRequest = createCampaignMessageActionWrapper();
         wrapperList = new ArrayList<>();
-        wrapperList.add(createCampaignRequestWrapper);
+        wrapperList.add(createCampaignRequest);
         mockMvc = MockMvcBuilders.standaloneSetup(campaignManagerController).build();
     }
 
@@ -91,7 +91,7 @@ public class CampaignManagerControllerTest extends RestAbstractUnitTest{
         when(campaignBroker.createMasterGroupForCampaignAndLinkCampaign(anyString(),anyString(),anyString())).thenReturn(testCampaign);
         ObjectMapper mapper = new ObjectMapper();
         mapper.configure(SerializationFeature.WRAP_ROOT_VALUE, false);
-        String requestJson = mapper.writeValueAsString(createCampaignRequestWrapper);
+        String requestJson = mapper.writeValueAsString(createCampaignRequest);
         ResultActions response = mockMvc.perform(post("/api/campaign/manage/create").contentType(MediaType.APPLICATION_JSON_UTF8).content(requestJson));
         response.andExpect(status().isOk());
         Assert.assertNotNull(response);
@@ -115,7 +115,7 @@ public class CampaignManagerControllerTest extends RestAbstractUnitTest{
         when(userManager.load(anyString())).thenReturn(testUser);
         ObjectMapper mapper = new ObjectMapper();
         mapper.configure(SerializationFeature.WRAP_ROOT_VALUE, false);
-        String requestJson = mapper.writeValueAsString(createCampaignMessageRequestWrapper);
+        String requestJson = mapper.writeValueAsString(createCampaignMessageRequest);
         ResultActions response = mockMvc.perform(post("/api/campaign/manage/add/message").contentType(MediaType.APPLICATION_JSON_UTF8).content(requestJson));
         response.andExpect(status().isOk());
         Assert.assertNotNull(response);
@@ -127,15 +127,15 @@ public class CampaignManagerControllerTest extends RestAbstractUnitTest{
         when(userManager.load(anyString())).thenReturn(testUser);
         ObjectMapper mapper = new ObjectMapper();
         mapper.configure(SerializationFeature.WRAP_ROOT_VALUE, false);
-        String requestJson = mapper.writeValueAsString(createCampaignMessageActionRequestWrapper);
+        String requestJson = mapper.writeValueAsString(createCampaignMessageActionRequest);
         ResultActions response = mockMvc.perform(post("/api/campaign/manage/add/message/action").contentType(MediaType.APPLICATION_JSON_UTF8).content(requestJson));
         response.andExpect(status().isOk());
         Assert.assertNotNull(response);
     }
 
 
-    private CreateCampaignRequestWrapper createTestWrapper(){
-        CreateCampaignRequestWrapper wrapper = new CreateCampaignRequestWrapper();
+    private CreateCampaignRequest createTestWrapper(){
+        CreateCampaignRequest wrapper = new CreateCampaignRequest();
         wrapper.setName("Test campaign");
         wrapper.setUrl("www.grassroot.co.za/123");
         wrapper.setStartDate("2017-01-01");
@@ -156,8 +156,8 @@ public class CampaignManagerControllerTest extends RestAbstractUnitTest{
         return campaign;
     }
 
-    private CreateCampaignMessageRequestWrapper createMessageWrapper(){
-        CreateCampaignMessageRequestWrapper messageWrapper = new CreateCampaignMessageRequestWrapper();
+    private CreateCampaignMessageRequest createMessageWrapper(){
+        CreateCampaignMessageRequest messageWrapper = new CreateCampaignMessageRequest();
         messageWrapper.setCampaignCode("123");
         messageWrapper.setAssignmentType(MessageVariationAssignment.CONTROL);
         messageWrapper.setChannelType(UserInterfaceType.USSD);
@@ -167,8 +167,8 @@ public class CampaignManagerControllerTest extends RestAbstractUnitTest{
         return messageWrapper;
     }
 
-    private CreateCampaignMessageActionRequestWrapper createCampaignMessageActionWrapper(){
-        CreateCampaignMessageActionRequestWrapper wrapper = new CreateCampaignMessageActionRequestWrapper();
+    private CreateCampaignMessageActionRequest createCampaignMessageActionWrapper(){
+        CreateCampaignMessageActionRequest wrapper = new CreateCampaignMessageActionRequest();
         wrapper.setCampaignCode("123");
         wrapper.setAction(CampaignActionType.SIGN_PETITION);
         wrapper.setMessageUid("234-567-88");

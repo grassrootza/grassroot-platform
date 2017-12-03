@@ -27,9 +27,9 @@ import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 import za.org.grassroot.webapp.controller.rest.exception.RestValidationMessage;
 import za.org.grassroot.webapp.enums.RestMessage;
-import za.org.grassroot.webapp.model.rest.wrappers.CreateCampaignMessageActionRequestWrapper;
-import za.org.grassroot.webapp.model.rest.wrappers.CreateCampaignMessageRequestWrapper;
-import za.org.grassroot.webapp.model.rest.wrappers.CreateCampaignRequestWrapper;
+import za.org.grassroot.webapp.model.rest.wrappers.CreateCampaignMessageActionRequest;
+import za.org.grassroot.webapp.model.rest.wrappers.CreateCampaignMessageRequest;
+import za.org.grassroot.webapp.model.rest.wrappers.CreateCampaignRequest;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
@@ -71,31 +71,31 @@ public class CampaignManagerController {
 
     @RequestMapping(value = "/create" , method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "create campaign", notes = "create a campaign using given values")
-    public ResponseEntity<ResponseWrapper> createCampaign(@Valid @RequestBody CreateCampaignRequestWrapper createCampaignRequestWrapper, BindingResult bindingResult){
+    public ResponseEntity<ResponseWrapper> createCampaign(@Valid @RequestBody CreateCampaignRequest createCampaignRequest, BindingResult bindingResult){
         if (bindingResult.hasErrors()) {
             return RestUtil.errorResponseWithData(RestMessage.CAMPAIGN_CREATION_INVALID_INPUT, getFieldValidationErrors(bindingResult.getFieldErrors()));
         }
-        if(campaignBroker.getCampaignDetailsByCode(createCampaignRequestWrapper.getCode().trim()) != null){
+        if(campaignBroker.getCampaignDetailsByCode(createCampaignRequest.getCode().trim()) != null){
             return RestUtil.errorResponse(RestMessage.CAMPAIGN_WITH_SAME_CODE_EXIST);
         }
         List<String> tagList = null;
-        if(createCampaignRequestWrapper.getTags() != null && !createCampaignRequestWrapper.getTags().isEmpty()){
-            tagList = Collections.list(Collections.enumeration(createCampaignRequestWrapper.getTags()));
+        if(createCampaignRequest.getTags() != null && !createCampaignRequest.getTags().isEmpty()){
+            tagList = Collections.list(Collections.enumeration(createCampaignRequest.getTags()));
         }
-        LocalDate firstDate = LocalDate.parse(createCampaignRequestWrapper.getStartDate());
+        LocalDate firstDate = LocalDate.parse(createCampaignRequest.getStartDate());
         Instant campaignStartDate = firstDate.atStartOfDay(ZoneId.of(SA_TIME_ZONE)).toInstant();
 
-        LocalDate secondDate = LocalDate.parse(createCampaignRequestWrapper.getEndDate());
+        LocalDate secondDate = LocalDate.parse(createCampaignRequest.getEndDate());
         Instant campaignEndDate = secondDate.atStartOfDay(ZoneId.of(SA_TIME_ZONE)).toInstant();
 
-        Campaign campaign = campaignBroker.createCampaign(createCampaignRequestWrapper.getName(), createCampaignRequestWrapper.getCode(),
-                createCampaignRequestWrapper.getDescription(), createCampaignRequestWrapper.getUserUid(),campaignStartDate, campaignEndDate, tagList,
-                createCampaignRequestWrapper.getType(), createCampaignRequestWrapper.getUrl());
-        if(!StringUtils.isEmpty(createCampaignRequestWrapper.getGroupUid())){
-            campaign = campaignBroker.linkCampaignToMasterGroup(campaign.getCampaignCode(), createCampaignRequestWrapper.getGroupUid(), createCampaignRequestWrapper.getUserUid());
+        Campaign campaign = campaignBroker.createCampaign(createCampaignRequest.getName(), createCampaignRequest.getCode(),
+                createCampaignRequest.getDescription(), createCampaignRequest.getUserUid(),campaignStartDate, campaignEndDate, tagList,
+                createCampaignRequest.getType(), createCampaignRequest.getUrl());
+        if(!StringUtils.isEmpty(createCampaignRequest.getGroupUid())){
+            campaign = campaignBroker.linkCampaignToMasterGroup(campaign.getCampaignCode(), createCampaignRequest.getGroupUid(), createCampaignRequest.getUserUid());
         }
-        else if(!StringUtils.isEmpty(createCampaignRequestWrapper.getGroupName())){
-            campaign = campaignBroker.createMasterGroupForCampaignAndLinkCampaign(campaign.getCampaignCode(), createCampaignRequestWrapper.getGroupName(), createCampaignRequestWrapper.getUserUid());
+        else if(!StringUtils.isEmpty(createCampaignRequest.getGroupName())){
+            campaign = campaignBroker.createMasterGroupForCampaignAndLinkCampaign(campaign.getCampaignCode(), createCampaignRequest.getGroupName(), createCampaignRequest.getUserUid());
         }
         return RestUtil.okayResponseWithData(RestMessage.CAMPAIGN_CREATED,CampaignWebUtil.createCampaignViewDTO(campaign));
     }
@@ -115,18 +115,18 @@ public class CampaignManagerController {
 
     @RequestMapping(value ="/add/message", method = RequestMethod.POST,  consumes = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "add message to campaign", notes = "add message to a campaign")
-    public ResponseEntity<ResponseWrapper> addCampaignMessage(@Valid @RequestBody CreateCampaignMessageRequestWrapper messageWrapper,
+    public ResponseEntity<ResponseWrapper> addCampaignMessage(@Valid @RequestBody CreateCampaignMessageRequest createCampaignMessageRequest,
                                      BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
             return RestUtil.errorResponseWithData(RestMessage.CAMPAIGN_MESSAGE_CREATION_INVALID_INPUT, getFieldValidationErrors(bindingResult.getFieldErrors()));
         }
         List<String> tagList = null;
-        if (messageWrapper.getTags() != null && !messageWrapper.getTags().isEmpty()) {
-            tagList = Collections.list(Collections.enumeration(messageWrapper.getTags()));
+        if (createCampaignMessageRequest.getTags() != null && !createCampaignMessageRequest.getTags().isEmpty()) {
+            tagList = Collections.list(Collections.enumeration(createCampaignMessageRequest.getTags()));
         }
-        User user = userManager.load(messageWrapper.getUserUid());
-        Campaign campaign = campaignBroker.addCampaignMessage(messageWrapper.getCampaignCode(), messageWrapper.getMessage(),
-                new Locale(messageWrapper.getLanguageCode()), messageWrapper.getAssignmentType(), messageWrapper.getChannelType(), user, tagList);
+        User user = userManager.load(createCampaignMessageRequest.getUserUid());
+        Campaign campaign = campaignBroker.addCampaignMessage(createCampaignMessageRequest.getCampaignCode(), createCampaignMessageRequest.getMessage(),
+                new Locale(createCampaignMessageRequest.getLanguageCode()), createCampaignMessageRequest.getAssignmentType(), createCampaignMessageRequest.getChannelType(), user, tagList);
         if(campaign != null) {
             return RestUtil.okayResponseWithData(RestMessage.CAMPAIGN_MESSAGE_ADDED, CampaignWebUtil.createCampaignViewDTO(campaign));
         }
@@ -136,14 +136,14 @@ public class CampaignManagerController {
 
     @RequestMapping(value ="/add/message/action", method = RequestMethod.POST,  consumes = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "add user action on a message", notes = "add user action to a message")
-    public ResponseEntity<ResponseWrapper> addActionOnMessage(@Valid @RequestBody CreateCampaignMessageActionRequestWrapper actionWrapper,
+    public ResponseEntity<ResponseWrapper> addActionOnMessage(@Valid @RequestBody CreateCampaignMessageActionRequest createCampaignMessageActionRequest,
                                                               BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
             return RestUtil.errorResponseWithData(RestMessage.CAMPAIGN_MESSAGE_ACTION_CREATION_INVALID_INPUT, getFieldValidationErrors(bindingResult.getFieldErrors()));
         }
-        User user = userManager.load(actionWrapper.getUserUid());
-        Campaign campaign = campaignBroker.addActionToCampaignMessage(actionWrapper.getCampaignCode(),actionWrapper.getMessageUid(),actionWrapper.getAction(),actionWrapper.getActionMessage().getMessage()
-        ,new Locale(actionWrapper.getActionMessage().getLanguageCode()),actionWrapper.getActionMessage().getAssignmentType(), actionWrapper.getActionMessage().getChannelType(),user,actionWrapper.getActionMessage().getTags());
+        User user = userManager.load(createCampaignMessageActionRequest.getUserUid());
+        Campaign campaign = campaignBroker.addActionToCampaignMessage(createCampaignMessageActionRequest.getCampaignCode(),createCampaignMessageActionRequest.getMessageUid(),createCampaignMessageActionRequest.getAction(),createCampaignMessageActionRequest.getActionMessage().getMessage()
+        ,new Locale(createCampaignMessageActionRequest.getActionMessage().getLanguageCode()),createCampaignMessageActionRequest.getActionMessage().getAssignmentType(), createCampaignMessageActionRequest.getActionMessage().getChannelType(),user,createCampaignMessageActionRequest.getActionMessage().getTags());
         if(campaign != null) {
             return RestUtil.okayResponseWithData(RestMessage.CAMPAIGN_MESSAGE_ACTION_ADDED, CampaignWebUtil.createCampaignViewDTO(campaign));
         }

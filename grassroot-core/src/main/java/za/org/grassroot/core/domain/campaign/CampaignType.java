@@ -3,7 +3,7 @@ package za.org.grassroot.core.domain.campaign;
 
 public enum CampaignType {
 
-    Aquisition("Aquisition"),
+    Acquisition("Acquisition"),
     Petition("Petition"),
     Information("Information");
 

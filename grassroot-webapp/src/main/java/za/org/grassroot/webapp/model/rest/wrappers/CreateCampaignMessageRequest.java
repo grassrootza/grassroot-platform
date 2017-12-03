@@ -1,6 +1,8 @@
 package za.org.grassroot.webapp.model.rest.wrappers;
 
 
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
 import za.org.grassroot.core.enums.MessageVariationAssignment;
 import za.org.grassroot.core.enums.UserInterfaceType;
 
@@ -8,15 +10,23 @@ import javax.validation.constraints.NotNull;
 import java.io.Serializable;
 import java.util.Set;
 
-public class CreateCampaignMessageRequestWrapper implements Serializable{
+@ApiModel(value = "CreateCampaignMessageRequest")
+public class CreateCampaignMessageRequest implements Serializable{
 
     private static final long serialVersionUID = -3071489047972056911L;
+    @ApiModelProperty(value = "message content", required = true)
     private String message;
+    @ApiModelProperty(value = "message creater's user uid", required = true)
     private String userUid;
+    @ApiModelProperty(value = "channel type", required = true, allowableValues = "UNKNOWN,USSD,WEB,ANDROID,SYSTEM,INCOMING_SMS")
     private UserInterfaceType channelType;
+    @ApiModelProperty(value = "language code for message", required = true)
     private String languageCode;
+    @ApiModelProperty(value = "assignment of message", required = true, allowableValues = "DEFAULT,EXPERIMENT,CONTROL,UNASSIGNED")
     private MessageVariationAssignment assignmentType;
+    @ApiModelProperty(value = "campaign code to link message to", required = true)
     private String campaignCode;
+    @ApiModelProperty(value = "tags for message", required = false)
     private Set<String> tags;
 
     @NotNull(message = "campaign.message.required")

@@ -42,7 +42,7 @@ public class CampaignLog implements ActionLog {
     @Column(name="description", nullable = true)
     private String description;
 
-    private CampaignLog() {
+    public CampaignLog() {
         // for JPA
     }
 

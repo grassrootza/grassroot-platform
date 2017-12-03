@@ -44,7 +44,7 @@ create table campaign (
     id bigserial NOT NULL,
     uid varchar(50) NOT NULL,
     creation_time timestamp without time zone not null,
-    user_id varchar(50),
+    user_id bigserial,
     campaign_log_type varchar(50) NOT NULL,
     description character varying(255),
     campaign_id bigserial,
@@ -82,3 +82,4 @@ create table campaign (
   alter table campaign_message ADD CONSTRAINT fk_campaign_message_campaign_id FOREIGN KEY (campaign_id) REFERENCES campaign(id);
   alter table campaign_message_action ADD CONSTRAINT fk_action_message_id FOREIGN KEY (action_message_id) REFERENCES campaign_message(id);
   alter table campaign_message_action ADD CONSTRAINT fk_parent_message_id FOREIGN KEY (parent_message_id) REFERENCES campaign_message(id);
+  alter table campaign_log ADD CONSTRAINT fk_campaign_id FOREIGN KEY (campaign_id) REFERENCES campaign(id);
