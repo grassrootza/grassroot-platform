@@ -1,7 +1,7 @@
 {
   "AWSEBDockerrunVersion": "1",
   "Image": {
-    "Name": "awsassembly/grassroot:<TAG>",
+    "Name": "grassrootdocker/gr-app:<TAG>",
     "Update": "true"
   },
   "Ports": [
@@ -17,6 +17,10 @@
     {
       "HostDirectory": "/var/app/current/log",
       "ContainerDirectory": "/usr/src/grassroot/log"
+    },
+    {
+      "HostDirectory": "/var/app/current/templates",
+      "ContainerDirectory": "/usr/src/grassroot/templates"
     }
   ],
   "Logging": "/var/log/nginx"

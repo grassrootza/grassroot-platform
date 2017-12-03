@@ -119,7 +119,8 @@ public class MessageAssemblingManager implements MessageAssemblingService {
     @Override
     public String createTodoReminderMessage(User user, Todo todo) {
         Locale locale = getUserLocale(user);
-        String[] args = populateTodoFields(todo);
+        String[] args = new String[] { todo.getParent().getName(), todo.getCreatedByUser().getName(),
+                todo.getMessage(), sdf.format(todo.getActionByDateAtSAST())};
         final String msgKey = todoMsgKeyRootMap.getOrDefault(todo.getType(), defaultTodoKey) + ".reminder";
         return messageSourceAccessor.getMessage(msgKey, args, locale);
     }
