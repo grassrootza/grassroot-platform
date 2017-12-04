@@ -228,6 +228,10 @@ public class TodoBrokerImpl implements TodoBroker {
         User user = userRepository.findOneByUid(userUid);
         validateUserCanConfirm(user, todo);
 
+        if(todo.getAncestorGroup().getMembership(user) == null){
+            throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_ALTER_TODO);
+        }
+
         todo.addCompletionConfirmation(user, TodoCompletionConfirmType.COMPLETED, Instant.now());
         createAndStoreTodoLog(user, todo, TodoLogType.RESPONDED, "todo confirmed");
     }
@@ -633,6 +637,12 @@ public class TodoBrokerImpl implements TodoBroker {
         if ("yes".equalsIgnoreCase(response)) {
             // todo : consider sending messages to other organizers
             final String message = messageService.createTodoVolunteerReceivedMessage(assignment.getTodo().getCreatedByUser(), assignment);
+            notifications.add(new TodoInfoNotification(assignment.getTodo().getCreatedByUser(), message, todoLog));
+        }
+
+        if(assignment.getTodo().getAncestorGroup().isPaidFor() && "no".equalsIgnoreCase(response)){
+            final String message = messageService
+                    .createTodoVolunteerReceivedMessage(assignment.getTodo().getCreatedByUser(), assignment);
             notifications.add(new TodoInfoNotification(assignment.getTodo().getCreatedByUser(), message, todoLog));
         }
         return notifications;
