@@ -289,6 +289,9 @@ public class TodoBrokerImpl implements TodoBroker {
         // todo : enforce assignment only within group members when create
 
         User user = userRepository.findOneByUid(userUid);
+        if(todo.getAncestorGroup().getMembership(user) == null){
+            throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_ALTER_TODO);
+        }
         TodoAssignment todoAssignment = validateUserCanRespondToTodo(user, todo);
 
         todoAssignment.setResponseText(response);
@@ -611,9 +614,14 @@ public class TodoBrokerImpl implements TodoBroker {
         Set<Notification> notifications = new HashSet<>();
         // todo : restrict notifications to only if on paid account (else just do at deadline), and put in proper message
         // todo : as below, handle different kinds of response better
-        if ("yes".equalsIgnoreCase(response)) {
-            notifications.add(new TodoInfoNotification(assignment.getTodo().getCreatedByUser(),
-                    "someone validated", todoLog));
+        if(assignment.getTodo().getAncestorGroup().isPaidFor()) {
+            if ("yes".equalsIgnoreCase(response)) {
+                notifications.add(new TodoInfoNotification(assignment.getTodo().getCreatedByUser(),
+                        "someone validated", todoLog));
+            }else if("no".equalsIgnoreCase(response)){
+                notifications.add(new TodoInfoNotification(assignment.getTodo().getCreatedByUser(),
+                        "someone invalidated", todoLog));
+            }
         }
         return notifications;
     }
@@ -658,6 +666,8 @@ public class TodoBrokerImpl implements TodoBroker {
         if (!todo.getCreatedByUser().equals(user)) {
             permissionBroker.validateGroupPermission(user, todo.getAncestorGroup(),
                     Permission.GROUP_PERMISSION_ALTER_TODO);
+        }else{
+            throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_ALTER_TODO);
         }
     }
 
@@ -673,7 +683,7 @@ public class TodoBrokerImpl implements TodoBroker {
         if (todoAssignment == null) {
             throw new ResponseNotAllowedException();
         }
-        if (TodoType.VALIDATION_REQUIRED.equals(todo.getType()) && !todoAssignment.isValidator()) {
+        if (TodoType.VALIDATION_REQUIRED.equals(todo.getType()) && !todoAssignment.isValidator() && todo.getAncestorGroup().getMembership(user) != null) {
             throw new ResponseNotAllowedException();
         }
         return todoAssignment;
