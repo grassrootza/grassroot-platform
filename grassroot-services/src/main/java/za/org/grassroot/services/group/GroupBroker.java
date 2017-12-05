@@ -7,6 +7,7 @@ import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.enums.GroupDefaultImage;
+import za.org.grassroot.core.enums.GroupViewPriority;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -63,6 +64,8 @@ public interface GroupBroker {
 
     @Transactional
     boolean setGroupPinnedForUser(String userUid, String groupUid, boolean pinned);
+
+    boolean updateViewPriority(String userUid, String groupUid, GroupViewPriority priority);
 
     void updateMembers(String userUid, String groupUid, Set<MembershipInfo> membershipInfos, boolean checkForDeletion);
 

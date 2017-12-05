@@ -34,5 +34,8 @@ alter table user_mgmt_request add constraint fk_user_mgr_requestor foreign key (
 alter table user_mgmt_request add constraint fk_user_mgr_managed foreign key (managed_user_id) references user_profile;
 create index user_mgmt_tag on user_mgmt_request using gin(tags);
 
-ALTER TABLE group_user_membership
-  ADD COLUMN pinned BOOLEAN DEFAULT FALSE;
+ALTER TABLE group_user_membership ADD COLUMN view_priority VARCHAR(50);
+
+update group_user_membership set view_priority = 'NORMAL';
+alter table group_user_membership alter column view_priority set not null;
+create index membership_view_priority on group_user_membership (view_priority);

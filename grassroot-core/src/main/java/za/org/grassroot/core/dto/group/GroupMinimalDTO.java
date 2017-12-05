@@ -8,6 +8,7 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Membership;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.task.Event;
+import za.org.grassroot.core.enums.GroupViewPriority;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.InstantToMilliSerializer;
@@ -39,7 +40,7 @@ public class GroupMinimalDTO extends GroupTimeChangedDTO {
         this.userRole = membership.getRole().getName();
         this.lastTaskOrChangeTime = group.getLatestChangeOrTaskTime();
         this.userPermissions = membership.getRole().getPermissions();
-        this.pinned = membership.isPinned();
+        this.pinned = GroupViewPriority.NORMAL.equals(membership.getViewPriority());
 
         List<Event> events = new ArrayList<>(group.getDescendantEvents());
         Collections.sort(events, (o1, o2) -> (int) (o2.getDeadlineTime().toEpochMilli() - o1.getDeadlineTime().toEpochMilli()));

@@ -1,27 +1,31 @@
 package za.org.grassroot.webapp.controller.rest.exception;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import za.org.grassroot.services.exception.CampaignNotFoundException;
+import za.org.grassroot.services.exception.MemberLacksPermissionException;
+import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
+import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
+import za.org.grassroot.webapp.util.RestUtil;
 
 import java.util.Locale;
 
-@ControllerAdvice
-public class RestControllersAdvice {
+@Slf4j
+@ControllerAdvice(annotations = Grassroot2RestController.class)
+public class RestExceptionHandler {
 
-    private static final Logger LOG = LoggerFactory.getLogger(RestControllersAdvice.class);
     private  final MessageSource messageSource;
 
     @Autowired
-    public RestControllersAdvice(MessageSource messageSource){
+    public RestExceptionHandler(MessageSource messageSource){
         this.messageSource = messageSource;
     }
 
@@ -31,8 +35,14 @@ public class RestControllersAdvice {
     public ServiceErrorMessage handleCampaignNotFoundException(CampaignNotFoundException e){
         String message = messageSource.getMessage(e.getErrorCode(), new Object[]{}, Locale.getDefault());
         if(!StringUtils.isEmpty(message)) {
-            LOG.error(message);
+            log.error(message);
         }
         return new ServiceErrorMessage(e.getErrorCode(), message);
     }
+
+    @ExceptionHandler(value = MemberLacksPermissionException.class)
+    public ResponseEntity<ResponseWrapper> permissionDeniedResponse(MemberLacksPermissionException e) {
+        return RestUtil.lackPermissionResponse(e.getPermissionRequired());
+    }
+
 }

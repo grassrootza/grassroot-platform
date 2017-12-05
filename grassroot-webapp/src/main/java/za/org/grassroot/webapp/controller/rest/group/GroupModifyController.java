@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.GroupJoinMethod;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.dto.MembershipInfo;
+import za.org.grassroot.core.enums.GroupViewPriority;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.services.exception.GroupSizeLimitExceededException;
@@ -62,19 +63,6 @@ public class GroupModifyController extends GroupBaseController {
         }
     }
 
-    @RequestMapping(value = "/leave/{userUid}/{groupUid}", method = RequestMethod.GET)
-    @ApiOperation(value = "Unsubscribe user from a group", notes = "Unsubscribe from a group. Note that a user cannot leave a " +
-            "group where they are the only organizer")
-    public ResponseEntity<ResponseWrapper> leaveGroup(@PathVariable String userUid,
-                                                      @PathVariable String groupUid) {
-        try {
-            groupBroker.unsubscribeMember(userUid, groupUid);
-            return RestUtil.messageOkayResponse(RestMessage.MEMBER_UNSUBSCRIBED);
-        } catch (SoleOrganizerUnsubscribeException e) {
-            return RestUtil.errorResponse(RestMessage.SOLE_ORGANIZER);
-        }
-    }
-
     @RequestMapping(value = "/description/modify/{userUid}/{groupUid}", method = RequestMethod.POST)
     @ApiOperation(value = "Change the description of a group", notes = "Only group organizer, with UPDATE_DETAILS permission, can call")
     public ResponseEntity<ResponseWrapper> changeGroupDescription(@PathVariable String userUid,
@@ -91,7 +79,6 @@ public class GroupModifyController extends GroupBaseController {
     @RequestMapping(value = "/pin/{groupUid}")
     @ApiOperation(value = "Mark group as pinned", notes = "This only affects current user group membership, it is not group property")
     public ResponseEntity<ResponseWrapper> pinGroup(@PathVariable String groupUid, HttpServletRequest request) {
-
         String userId = getUserIdFromRequest(request);
         boolean actionApplyed = groupBroker.setGroupPinnedForUser(userId, groupUid, true);
         //return boolean indicating if pin action was successful
@@ -106,6 +93,26 @@ public class GroupModifyController extends GroupBaseController {
         boolean actionApplyed = groupBroker.setGroupPinnedForUser(userId, groupUid, false);
         //return boolean indicating if unpin action was successful
         return RestUtil.okayResponseWithData(RestMessage.GROUP_UNPINNED, actionApplyed);
+    }
+
+    @RequestMapping(value = "/hide/{groupUid}", method = RequestMethod.POST)
+    @ApiOperation(value = "Sets group visibility to hidden", notes = "This only affects current user, not group-wide")
+    public ResponseEntity<Boolean> hideGroupForMember(@PathVariable String groupUid, HttpServletRequest request) {
+        String userUid = getUserIdFromRequest(request);
+        return ResponseEntity.ok(groupBroker.updateViewPriority(userUid, groupUid, GroupViewPriority.HIDDEN));
+    }
+
+    @RequestMapping(value = "/leave/{groupUid}", method = RequestMethod.POST)
+    @ApiOperation(value = "Unsubscribes a user from the group", notes = "User completely leaves the given group" +
+            " (note, user cannot leave if they are only organizer)")
+    public ResponseEntity<ResponseWrapper> leaveGroup(@PathVariable String groupUid, HttpServletRequest request) {
+        String userUid = getUserIdFromRequest(request);
+        try {
+            groupBroker.unsubscribeMember(userUid, groupUid);
+            return RestUtil.messageOkayResponse(RestMessage.MEMBER_UNSUBSCRIBED);
+        } catch (SoleOrganizerUnsubscribeException e) {
+            return RestUtil.errorResponse(RestMessage.SOLE_ORGANIZER);
+        }
     }
 
     private List<String> findInvalidNumbers(Set<MembershipInfo> members) {

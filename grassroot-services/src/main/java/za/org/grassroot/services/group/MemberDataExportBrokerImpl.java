@@ -6,11 +6,14 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Membership;
+import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.domain.task.TodoAssignment;
+import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.integration.email.EmailSendingBroker;
 import za.org.grassroot.integration.email.GrassrootEmail;
+import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.task.TodoBroker;
 
 import java.io.File;
@@ -22,21 +25,30 @@ import java.util.stream.Collectors;
 @Service @Slf4j
 public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
 
+    private final UserRepository userRepository;
+
     private final GroupBroker groupBroker;
     private final TodoBroker todoBroker;
+    private final PermissionBroker permissionBroker;
+
     private final EmailSendingBroker emailBroker;
 
-    public MemberDataExportBrokerImpl(GroupBroker groupBroker, TodoBroker todoBroker, EmailSendingBroker emailBroker) {
+    public MemberDataExportBrokerImpl(UserRepository userRepository, GroupBroker groupBroker, TodoBroker todoBroker, PermissionBroker permissionBroker, EmailSendingBroker emailBroker) {
+        this.userRepository = userRepository;
         this.groupBroker = groupBroker;
         this.todoBroker = todoBroker;
+        this.permissionBroker = permissionBroker;
         this.emailBroker = emailBroker;
     }
 
     @Override
-    public XSSFWorkbook exportGroup(String groupUid) {
+    public XSSFWorkbook exportGroup(String groupUid, String userUid) {
 
         // todo : include tags where consistent
         Group group = groupBroker.load(groupUid);
+        User exporter = userRepository.findOneByUid(userUid);
+
+        permissionBroker.validateGroupPermission(exporter, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
 
         XSSFWorkbook workbook = new XSSFWorkbook();
         XSSFSheet sheet = workbook.createSheet("Group members");
