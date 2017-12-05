@@ -10,9 +10,7 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.MembershipDTO;
-import za.org.grassroot.core.dto.group.GroupFullDTO;
-import za.org.grassroot.core.dto.group.GroupMinimalDTO;
-import za.org.grassroot.core.dto.group.GroupTimeChangedDTO;
+import za.org.grassroot.core.dto.group.*;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.MembershipRepository;
 import za.org.grassroot.core.repository.UserRepository;
@@ -25,6 +23,9 @@ import javax.persistence.TypedQuery;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static za.org.grassroot.core.specifications.GroupSpecifications.hasParent;
+import static za.org.grassroot.core.specifications.GroupSpecifications.isActive;
 
 /**
  * Primary class for new style group feching, watch performance very closely (e.g., on size of memberships)
@@ -72,7 +73,7 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
         uidsToLookUp.addAll(newGroupUids);
 
         TypedQuery<GroupTimeChangedDTO> changedGroupQuery = entityManager.createQuery("" +
-                "select new za.org.grassroot.core.dto.group.GroupTimeChangedDTO(g.uid, g.lastGroupChangeTime) " +
+                "select new za.org.grassroot.core.dto.group.GroupTimeChangedDTO(g.uid, g.groupName, g.lastGroupChangeTime) " +
                 "from Group g where g.uid in :groupUids", GroupTimeChangedDTO.class)
                 .setParameter("groupUids", uidsToLookUp);
 
@@ -164,5 +165,26 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
         return group.getMemberships().stream().map(MembershipDTO::new).collect(Collectors.toSet());
     }
 
+    @Timed
+    @Override
+    @Transactional(readOnly = true)
+    public List<GroupWebDTO> fetchGroupWebInfo(String userUid) {
+
+        User user = userRepository.findOneByUid(userUid);
+
+        List<Group> groups = groupRepository.findByMembershipsUserAndActiveTrue(user);
+        List<GroupWebDTO> dtos = groups.stream().map(gr -> new GroupWebDTO(gr, gr.getMembership(user), getSubgroups(gr))).collect(Collectors.toList());
+        dtos.forEach(gdto -> gdto.setMemberCount(membershipRepository.countByGroupUid(gdto.getGroupUid())));
+        return dtos.stream()
+                .sorted(Comparator.comparing(GroupMinimalDTO::getLastTaskOrChangeTime, Comparator.reverseOrder()))
+                .collect(Collectors.toList());
+    }
+
+
+    private List<GroupRefDTO> getSubgroups(Group group) {
+        return groupRepository.findAll(Specifications.where(hasParent(group)).and(isActive()))
+                .stream().map(gr -> new GroupRefDTO(gr.getUid(), gr.getGroupName()))
+                .collect(Collectors.toList());
+    }
 
 }

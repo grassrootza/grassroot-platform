@@ -116,6 +116,7 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
         return results;
     }
 
+
     @Override
     @Transactional(readOnly = true)
     public List<Group> searchUsersGroups(String userUid, String searchTerm, boolean onlyCreatedGroups) {

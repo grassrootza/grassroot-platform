@@ -9,20 +9,15 @@ import java.time.Instant;
 Light weight class to store and send core group information, including the last time it was changed (_not_ including
 the last time a task was called, etc)
  */
-public class GroupTimeChangedDTO {
+public class GroupTimeChangedDTO extends GroupRefDTO {
 
-    private String groupUid;
 
     @JsonSerialize(using = InstantToMilliSerializer.class)
     private Instant lastGroupChange;
 
-    public GroupTimeChangedDTO(String groupUid, Instant lastGroupChange) {
-        this.groupUid = groupUid;
+    public GroupTimeChangedDTO(String groupUid, String groupName, Instant lastGroupChange) {
+        super(groupUid, groupName);
         this.lastGroupChange = lastGroupChange;
-    }
-
-    public String getGroupUid() {
-        return groupUid;
     }
 
     public Instant getLastGroupChange() {

@@ -22,7 +22,6 @@ import java.util.Set;
 @Getter @Setter
 public class GroupMinimalDTO extends GroupTimeChangedDTO {
 
-    protected final String name;
     protected String description;
     private final String userRole;
     protected Long memberCount;
@@ -35,8 +34,7 @@ public class GroupMinimalDTO extends GroupTimeChangedDTO {
     private Instant lastTaskOrChangeTime;
 
     public GroupMinimalDTO(Group group, Membership membership) {
-        super(group.getUid(), group.getLastGroupChangeTime());
-        this.name = group.getName();
+        super(group.getUid(), group.getGroupName(), group.getLastGroupChangeTime());
         this.description = group.getDescription();
         this.userRole = membership.getRole().getName();
         this.lastTaskOrChangeTime = group.getLatestChangeOrTaskTime();
@@ -51,7 +49,6 @@ public class GroupMinimalDTO extends GroupTimeChangedDTO {
                 this.nextEventType = event.getTaskType();
             }
         }
-
     }
 
     @JsonIgnore

@@ -45,7 +45,7 @@ public class GroupFullDTO extends GroupHeavyDTO {
         if (StringUtils.isEmpty(description)) {
             final String createdDateTime = DateTimeUtil.getPreferredDateFormat().format(
                     DateTimeUtil.convertToUserTimeZone(Instant.ofEpochMilli(groupCreationTimeMillis), DateTimeUtil.getSAST()));
-            this.description = String.format(descriptionTemplate, name, createdDateTime, memberCount, joinCode);
+            this.description = String.format(descriptionTemplate, getName(), createdDateTime, memberCount, joinCode);
         }
         return this;
     }

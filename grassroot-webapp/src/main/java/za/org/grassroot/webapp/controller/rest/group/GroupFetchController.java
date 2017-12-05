@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.dto.group.GroupFullDTO;
 import za.org.grassroot.core.dto.group.GroupMinimalDTO;
 import za.org.grassroot.core.dto.group.GroupTimeChangedDTO;
+import za.org.grassroot.core.dto.group.GroupWebDTO;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.services.group.GroupFetchBroker;
 import za.org.grassroot.services.user.UserManagementService;
@@ -46,9 +47,9 @@ public class GroupFetchController extends BaseRestController {
      * @return
      */
     @RequestMapping(value = "/list")
-    public ResponseEntity<List<GroupMinimalDTO>> listUserGroups(HttpServletRequest request) {
+    public ResponseEntity<List<GroupWebDTO>> listUserGroups(HttpServletRequest request) {
         String userId = getUserIdFromRequest(request);
-        List<GroupMinimalDTO> groups = groupFetchBroker.fetchAllUserGroupsSortByLatestTime(userId);
+        List<GroupWebDTO> groups = groupFetchBroker.fetchGroupWebInfo(userId);
         return new ResponseEntity<>(groups, HttpStatus.OK);
     }
 
