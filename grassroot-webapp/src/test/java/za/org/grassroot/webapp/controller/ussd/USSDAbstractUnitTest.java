@@ -25,6 +25,7 @@ import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.group.GroupQueryBroker;
+import za.org.grassroot.services.group.MemberDataExportBroker;
 import za.org.grassroot.services.livewire.DataSubscriberBroker;
 import za.org.grassroot.services.livewire.LiveWireAlertBroker;
 import za.org.grassroot.services.livewire.LiveWireContactBroker;
@@ -101,6 +102,9 @@ public abstract class USSDAbstractUnitTest {
 
     @Mock
     protected GroupQueryBroker groupQueryBrokerMock;
+
+    @Mock
+    protected MemberDataExportBroker memberDataExportBrokerMock;
 
     @Mock
     protected AccountGroupBroker accountGroupBrokerMock;
