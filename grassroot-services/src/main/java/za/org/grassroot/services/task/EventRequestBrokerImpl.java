@@ -8,7 +8,9 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.Permission;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.repository.EventRequestRepository;
 import za.org.grassroot.core.repository.GroupRepository;
@@ -123,8 +125,14 @@ public class EventRequestBrokerImpl implements EventRequestBroker {
 		Objects.requireNonNull(location);
 
         MeetingRequest request = (MeetingRequest) eventRequestRepository.findOneByUid(meetingRequestUid);
-        log.info("Setting location to " + location + " ... on request ... " + request);
-        request.setEventLocation(location);
+        if ("1".equalsIgnoreCase(location)) {
+        	String mostFreq = eventBroker.getMostFrequentLocation(request.getParent().getUid());
+        	log.info("user entered '1', setting to most freq = {}", mostFreq);
+        	request.setEventLocation(!StringUtils.isEmpty(mostFreq) ? mostFreq : location);
+		} else {
+			log.info("Setting location to " + location + " ... on request ... " + request);
+			request.setEventLocation(location);
+		}
 	}
 
     @Override

@@ -2,6 +2,7 @@ package za.org.grassroot.webapp.controller.ussd;
 
 import com.google.common.collect.Sets;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -362,7 +363,14 @@ public class USSDMeetingController extends USSDBaseController {
         User user = userManager.findByInputNumber(inputNumber, saveMeetingMenu(placeMenu, mtgRequestUid, revising));
         if (!interrupted) eventUtil.updateEventRequest(user.getUid(), mtgRequestUid, priorMenu, userInput);
 
-        String promptMessage = getMessage(thisSection, placeMenu, promptKey, user);
+        MeetingRequest eventRequest = (MeetingRequest) eventRequestBroker.load(mtgRequestUid);
+        log.info("okay looking up most frequent location ...");
+        final String mostFreq = eventBroker.getMostFrequentLocation(eventRequest.getParent().getUid());
+        log.info("and most frequent location is ... {}", mostFreq);
+
+        String promptMessage = StringUtils.isEmpty(mostFreq) ?
+                getMessage(thisSection, placeMenu, promptKey, user) :
+                getMessage(thisSection, placeMenu, promptKey + ".freq", mostFreq, user);
         String nextUrl = (!revising) ? nextUrl(placeMenu, mtgRequestUid) : confirmUrl(placeMenu, mtgRequestUid);
         return menuBuilder(new USSDMenu(promptMessage, nextUrl));
     }

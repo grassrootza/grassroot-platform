@@ -34,6 +34,10 @@ import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import javax.persistence.EntityManager;
+import javax.persistence.Tuple;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Root;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -921,6 +925,22 @@ public class EventBrokerImpl implements EventBroker {
 	public Event getMostRecentEvent(String groupUid) {
 		Group group = groupRepository.findOneByUid(groupUid);
 		return eventRepository.findTopByParentGroupAndEventStartDateTimeNotNullOrderByEventStartDateTimeDesc(group);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public String getMostFrequentLocation(String groupUid) {
+		Group group = groupRepository.findOneByUid(groupUid);
+		CriteriaBuilder cb  = entityManager.getCriteriaBuilder();
+		CriteriaQuery<Tuple> query = cb.createTupleQuery();
+		Root<Meeting> root  = query.from(Meeting.class);
+		query.multiselect(root.get(Meeting_.eventLocation), cb.count(root.get(Meeting_.eventLocation)));
+		query.where(cb.equal(root.get(Meeting_.ancestorGroup), group));
+		query.groupBy(root.get(Meeting_.eventLocation));
+		query.orderBy(cb.desc(cb.count(root.get(Meeting_.eventLocation))));
+		List<Tuple> results = entityManager.createQuery(query).getResultList();
+		logger.info("results of query: {}", results);
+		return results != null && !results.isEmpty() ? (String) results.get(0).get(0) : "";
 	}
 
 	@Override

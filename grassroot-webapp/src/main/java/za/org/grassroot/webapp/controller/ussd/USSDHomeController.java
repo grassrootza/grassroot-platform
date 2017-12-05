@@ -31,6 +31,8 @@ import za.org.grassroot.webapp.util.USSDCampaignUtil;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static za.org.grassroot.webapp.enums.USSDSection.HOME;
@@ -53,6 +55,8 @@ public class USSDHomeController extends USSDBaseController {
     @Setter(AccessLevel.PACKAGE) private USSDMeetingController meetingController;
     private final USSDTodoController todoController;
     private final USSDSafetyGroupController safetyController;
+    private USSDGeoApiController geoApiController;
+
     private final CampaignBroker campaignBroker;
 
     private static final USSDSection thisSection = HOME;
@@ -72,6 +76,15 @@ public class USSDHomeController extends USSDBaseController {
     @Value("${grassroot.ussd.livewire.suffix:411}")
     private String livewireSuffix;
 
+    @Value("${grassroot.geo.apis.enabled:false}")
+    private boolean geoApisEnabled;
+
+
+    // todo : think about how to do dynamically (and/or decide on this)
+    private final Map<String, String> geoApiSuffixes = Collections.unmodifiableMap(Stream.of(
+            new AbstractMap.SimpleEntry<>("11", "IZWE_LAMI")
+    ).collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue)));
+
     @Autowired
     public USSDHomeController(UserResponseBroker userResponseBroker, USSDLiveWireController liveWireController, USSDGroupController groupController, USSDVoteController voteController, USSDMeetingController meetingController, USSDTodoController todoController, USSDSafetyGroupController safetyController, CampaignBroker campaignBroker) {
         this.userResponseBroker = userResponseBroker;
@@ -82,6 +95,11 @@ public class USSDHomeController extends USSDBaseController {
         this.todoController = todoController;
         this.safetyController = safetyController;
         this.campaignBroker = campaignBroker;
+    }
+
+    @Autowired(required = false)
+    public void setGeoApiController(USSDGeoApiController ussdGeoApiController) {
+        this.geoApiController = ussdGeoApiController;
     }
 
     @RequestMapping(value = homePath + startMenu)
@@ -105,7 +123,7 @@ public class USSDHomeController extends USSDBaseController {
         }
 
         USSDMenu openingMenu = trailingDigitsPresent ?
-                handleResponseHasDigits(enteredUSSD, inputNumber, sessionUser) :
+                handleTrailingDigits(enteredUSSD, inputNumber, sessionUser) :
                 checkForResponseOrDefault(sessionUser);
 
         Long endTime = System.currentTimeMillis();
@@ -113,10 +131,10 @@ public class USSDHomeController extends USSDBaseController {
         return menuBuilder(openingMenu, true);
     }
 
-    private USSDMenu handleResponseHasDigits(final String enteredUSSD, final String inputNumber, User user) throws URISyntaxException {
+    private USSDMenu handleTrailingDigits(final String enteredUSSD, final String inputNumber, User user) throws URISyntaxException {
         String trailingDigits = enteredUSSD.substring(hashPosition + 1, enteredUSSD.length() - 1);
         return userInterrupted(inputNumber) && !safetyCode.equals(trailingDigits) ?
-                interruptedPrompt(inputNumber) : processTrailingDigits(trailingDigits, user);
+                interruptedPrompt(inputNumber) : directBasedOnTrailingDigits(trailingDigits, user);
     }
 
     private USSDMenu checkForResponseOrDefault(final User user) throws URISyntaxException {
@@ -161,7 +179,7 @@ public class USSDHomeController extends USSDBaseController {
                 userManager.needsToRenameSelf(user) ? USSDResponseTypes.RENAME_SELF : USSDResponseTypes.NONE;
     }
 
-    private USSDMenu processTrailingDigits(String trailingDigits, User user) throws URISyntaxException {
+    private USSDMenu directBasedOnTrailingDigits(String trailingDigits, User user) throws URISyntaxException {
         USSDMenu returnMenu;
         log.info("Processing trailing digits ..." + trailingDigits);
         if (safetyCode.equals(trailingDigits)) {
@@ -170,10 +188,13 @@ public class USSDHomeController extends USSDBaseController {
             returnMenu = liveWireController.assembleLiveWireOpening(user, 0);
         } else if (sendMeLink.equals(trailingDigits)) {
             returnMenu = assembleSendMeAndroidLinkMenu(user);
-        } /* else if(isCampaignTrailingCode(trailingDigits)){
+        } else if (geoApisEnabled && geoApiSuffixes.keySet().contains(trailingDigits)) {
+            returnMenu = geoApiController.openingMenu(user, geoApiSuffixes.get(trailingDigits));
+        /* else if(isCampaignTrailingCode(trailingDigits)){
             Campaign campaign = campaignBroker.getCampaignDetailsByCode(trailingDigits);
             returnMenu = assembleCampaignMessageResponse(campaign,user);
-        } */ else {
+        } */
+        } else {
             returnMenu = groupController.lookForJoinCode(user, trailingDigits);
         }
         return returnMenu;

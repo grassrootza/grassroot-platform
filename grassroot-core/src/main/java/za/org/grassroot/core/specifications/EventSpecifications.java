@@ -44,14 +44,6 @@ public final class EventSpecifications {
         return (root, query, cb) -> cb.equal(root.get(Event_.isPublic), true);
     }
 
-    public static Specification<Event> uidIn(Collection<String> uids) {
-        return (root, query, cb) -> root.get(Event_.uid).in(uids);
-    }
-
-    public static Specification<Event> uidNotIn(Collection<String> uids) {
-        return (root, query, cb) -> cb.not(root.get(Event_.uid).in(uids));
-    }
-
     public static Specification<Event> userPartOfGroup(User user) {
         return (root, query, cb) -> {
             Join<Event, Group> groups = root.join(AbstractEventEntity_.parentGroup);
