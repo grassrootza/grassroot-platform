@@ -30,6 +30,7 @@ import za.org.grassroot.webapp.util.RestUtil;
 import javax.servlet.http.HttpServletRequest;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.InputStream;
 import java.util.Locale;
 
 
@@ -86,8 +87,14 @@ public class UserController extends BaseRestController {
             MediaFunction mediaFunction = MediaFunction.USER_PROFILE_IMAGE;
 
             MediaFileRecord mediaFileRecord = mediaFileBroker.load(mediaFunction, imageKey);
-            File imageFile = storageBroker.fetchFileFromRecord(mediaFileRecord);
-            byte[] data = IOUtils.toByteArray(new FileInputStream(imageFile));
+            byte[] data;
+            if (mediaFileRecord != null) {
+                File imageFile = storageBroker.fetchFileFromRecord(mediaFileRecord);
+                data = IOUtils.toByteArray(new FileInputStream(imageFile));
+            } else {
+                InputStream in = getClass().getResourceAsStream("/static/images/user.png");
+                data = IOUtils.toByteArray(in);
+            }
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.IMAGE_PNG);
             ResponseEntity<byte[]> response = new ResponseEntity(data, headers, HttpStatus.OK);
