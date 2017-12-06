@@ -643,7 +643,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         Objects.requireNonNull(groupUid);
         Membership membership = membershipRepository.findByGroupUidAndUserUid(groupUid, userUid);
         if (membership != null) {
-            membership.setViewPriority(GroupViewPriority.PINNED);
+            membership.setViewPriority(pinned ? GroupViewPriority.PINNED : GroupViewPriority.NORMAL);
             membershipRepository.save(membership);
             return true;
         }

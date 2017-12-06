@@ -39,7 +39,7 @@ public class GroupMinimalDTO extends GroupTimeChangedDTO {
         this.userRole = membership.getRole().getName();
         this.lastTaskOrChangeTime = group.getLatestChangeOrTaskTime();
         this.userPermissions = membership.getRole().getPermissions();
-        this.pinned = GroupViewPriority.NORMAL.equals(membership.getViewPriority());
+        this.pinned = GroupViewPriority.PINNED.equals(membership.getViewPriority());
 
         List<Event> events = new ArrayList<>(group.getDescendantEvents());
         Collections.sort(events, (o1, o2) -> (int) (o2.getDeadlineTime().toEpochMilli() - o1.getDeadlineTime().toEpochMilli()));

@@ -32,6 +32,7 @@ import za.org.grassroot.webapp.util.RestUtil;
 import javax.servlet.http.HttpServletRequest;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -59,8 +60,10 @@ public class GroupFetchController extends BaseRestController {
     public ResponseEntity<List<GroupWebDTO>> listUserGroups(HttpServletRequest request) {
         String userId = getUserIdFromRequest(request);
 
-        List<GroupWebDTO> groups = groupFetchBroker.fetchGroupWebInfo(userId);
-        return new ResponseEntity<>(groups, HttpStatus.OK);
+        if (userId != null) {
+            List<GroupWebDTO> groups = groupFetchBroker.fetchGroupWebInfo(userId);
+            return new ResponseEntity<>(groups, HttpStatus.OK);
+        } else return new ResponseEntity<>(new ArrayList<>(), HttpStatus.UNAUTHORIZED);
     }
 
     /**
