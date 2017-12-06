@@ -58,6 +58,7 @@ public class GroupFetchController extends BaseRestController {
     @RequestMapping(value = "/list")
     public ResponseEntity<List<GroupWebDTO>> listUserGroups(HttpServletRequest request) {
         String userId = getUserIdFromRequest(request);
+
         List<GroupWebDTO> groups = groupFetchBroker.fetchGroupWebInfo(userId);
         return new ResponseEntity<>(groups, HttpStatus.OK);
     }

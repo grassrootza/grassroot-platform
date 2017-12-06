@@ -24,11 +24,11 @@ import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.account.AccountGroupBroker;
-import za.org.grassroot.services.task.enums.EventListTimeType;
 import za.org.grassroot.services.exception.AccountLimitExceededException;
 import za.org.grassroot.services.exception.EventStartTimeNotInFutureException;
 import za.org.grassroot.services.exception.TaskNameTooLongException;
 import za.org.grassroot.services.geo.GeoLocationBroker;
+import za.org.grassroot.services.task.enums.EventListTimeType;
 import za.org.grassroot.services.util.CacheUtilService;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
@@ -839,7 +839,7 @@ public class EventBrokerImpl implements EventBroker {
 							&& ((eventType == EventType.MEETING && event.getCreatedByUser().getId() != user.getId())
 							|| eventType != EventType.MEETING);
 			// todo: well, fix this (consolidate into one criteria query)
-			groupRepository.findByMembershipsUserAndActiveTrue(user)
+			groupRepository.findByMembershipsUserAndActiveTrueAndParentIsNull(user)
 					.forEach(g -> g.getUpcomingEventsIncludingParents(filter)
 							.stream()
 							.filter(e -> eventType == EventType.MEETING || checkUserJoinedBeforeVote(user, e, g))

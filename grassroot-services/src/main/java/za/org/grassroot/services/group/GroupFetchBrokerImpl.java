@@ -73,7 +73,7 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
         uidsToLookUp.addAll(newGroupUids);
 
         TypedQuery<GroupTimeChangedDTO> changedGroupQuery = entityManager.createQuery("" +
-                "select new za.org.grassroot.core.dto.group.GroupTimeChangedDTO(g.uid, g.groupName, g.lastGroupChangeTime) " +
+                "select new za.org.grassroot.core.dto.group.GroupTimeChangedDTO(g, g.lastGroupChangeTime) " +
                 "from Group g where g.uid in :groupUids", GroupTimeChangedDTO.class)
                 .setParameter("groupUids", uidsToLookUp);
 
@@ -103,10 +103,7 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
                 .setParameter("user", user)
                 .getResultList();
 
-        // as below, a sufficiently ninja subquery count in the constructor above should take care of this, but leaving till later
-        return dtoList.stream()
-                .map(gdto -> gdto.addMemberCount(membershipRepository.countByGroupUid(gdto.getGroupUid())))
-                .collect(Collectors.toSet());
+        return new HashSet<>(dtoList);
     }
 
     @Timed
@@ -121,9 +118,6 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
                 "where g.active = true and m.user = :user", GroupMinimalDTO.class)
                 .setParameter("user", user)
                 .getResultList();
-
-        // if hql wasn't hql, could just do this in a subquery above, but tft
-        dtos.forEach(gdto -> gdto.setMemberCount(membershipRepository.countByGroupUid(gdto.getGroupUid())));
 
         return dtos.stream()
                 .sorted(Comparator.comparing(GroupMinimalDTO::getLastTaskOrChangeTime, Comparator.reverseOrder()))
@@ -172,9 +166,9 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
 
         User user = userRepository.findOneByUid(userUid);
 
-        List<Group> groups = groupRepository.findByMembershipsUserAndActiveTrue(user);
+        List<Group> groups = groupRepository.findByMembershipsUserAndActiveTrueAndParentIsNull(user);
         List<GroupWebDTO> dtos = groups.stream().map(gr -> new GroupWebDTO(gr, gr.getMembership(user), getSubgroups(gr))).collect(Collectors.toList());
-        dtos.forEach(gdto -> gdto.setMemberCount(membershipRepository.countByGroupUid(gdto.getGroupUid())));
+
         return dtos.stream()
                 .sorted(Comparator.comparing(GroupMinimalDTO::getLastTaskOrChangeTime, Comparator.reverseOrder()))
                 .collect(Collectors.toList());
@@ -183,7 +177,7 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
 
     private List<GroupRefDTO> getSubgroups(Group group) {
         return groupRepository.findAll(Specifications.where(hasParent(group)).and(isActive()))
-                .stream().map(gr -> new GroupRefDTO(gr.getUid(), gr.getGroupName()))
+                .stream().map(gr -> new GroupRefDTO(gr.getUid(), gr.getGroupName(), gr.getMemberships().size()))
                 .collect(Collectors.toList());
     }
 

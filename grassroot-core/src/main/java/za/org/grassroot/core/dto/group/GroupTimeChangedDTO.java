@@ -1,6 +1,7 @@
 package za.org.grassroot.core.dto.group;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.util.InstantToMilliSerializer;
 
 import java.time.Instant;
@@ -15,8 +16,8 @@ public class GroupTimeChangedDTO extends GroupRefDTO {
     @JsonSerialize(using = InstantToMilliSerializer.class)
     private Instant lastGroupChange;
 
-    public GroupTimeChangedDTO(String groupUid, String groupName, Instant lastGroupChange) {
-        super(groupUid, groupName);
+    public GroupTimeChangedDTO(Group group, Instant lastGroupChange) {
+        super(group.getUid(), group.getGroupName(), group.getMemberships().size());
         this.lastGroupChange = lastGroupChange;
     }
 

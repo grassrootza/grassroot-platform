@@ -25,7 +25,6 @@ public class GroupMinimalDTO extends GroupTimeChangedDTO {
 
     protected String description;
     private final String userRole;
-    protected Long memberCount;
     protected Instant nextEventTime;
     protected TaskType nextEventType;
     private final Set<Permission> userPermissions;
@@ -35,7 +34,7 @@ public class GroupMinimalDTO extends GroupTimeChangedDTO {
     private Instant lastTaskOrChangeTime;
 
     public GroupMinimalDTO(Group group, Membership membership) {
-        super(group.getUid(), group.getGroupName(), group.getLastGroupChangeTime());
+        super(group, group.getLastGroupChangeTime());
         this.description = group.getDescription();
         this.userRole = membership.getRole().getName();
         this.lastTaskOrChangeTime = group.getLatestChangeOrTaskTime();
@@ -50,6 +49,8 @@ public class GroupMinimalDTO extends GroupTimeChangedDTO {
                 this.nextEventType = event.getTaskType();
             }
         }
+
+        memberCount = group.getMemberships().size();
     }
 
     @JsonIgnore
@@ -57,8 +58,5 @@ public class GroupMinimalDTO extends GroupTimeChangedDTO {
         return DateTimeUtil.convertToUserTimeZone(lastTaskOrChangeTime, DateTimeUtil.getSAST());
     }
 
-    public GroupMinimalDTO addMemberCount(long memberCount) {
-        this.setMemberCount(memberCount);
-        return this;
-    }
+
 }

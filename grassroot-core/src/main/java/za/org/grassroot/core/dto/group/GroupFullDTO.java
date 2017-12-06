@@ -24,7 +24,6 @@ public class GroupFullDTO extends GroupHeavyDTO {
     public GroupFullDTO(Group group, Membership membership) {
         super(group, membership);
         this.joinCode = group.getGroupTokenCode();
-        this.memberCount = (long) group.getMemberships().size();
 
         if (membership.getRole().getPermissions().contains(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS)) {
             this.members = group.getMemberships().stream()
