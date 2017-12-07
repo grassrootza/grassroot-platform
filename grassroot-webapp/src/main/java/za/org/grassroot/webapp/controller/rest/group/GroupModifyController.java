@@ -8,8 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
-import za.org.grassroot.core.domain.GroupJoinMethod;
-import za.org.grassroot.core.domain.Permission;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.enums.GroupViewPriority;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
@@ -17,6 +16,7 @@ import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.services.exception.GroupSizeLimitExceededException;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
 import za.org.grassroot.services.exception.SoleOrganizerUnsubscribeException;
+import za.org.grassroot.services.group.GroupPermissionTemplate;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 import za.org.grassroot.webapp.enums.RestMessage;
@@ -24,6 +24,7 @@ import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -37,6 +38,23 @@ public class GroupModifyController extends GroupBaseController {
 
     public GroupModifyController(JwtService jwtService, UserManagementService userManagementService) {
         super(jwtService, userManagementService);
+    }
+
+    @RequestMapping(value = "/create", method = RequestMethod.POST)
+    @ApiOperation(value = "Creates new group", notes = "Creates new group and returns it's group uid")
+    public ResponseEntity<String> createGroup(@RequestParam String name,
+                                              @RequestParam String description,
+                                              @RequestParam GroupPermissionTemplate permissionTemplate,
+                                              @RequestParam int reminderMinutes,
+                                              HttpServletRequest request) {
+        User user = getUserFromRequest(request);
+        if (user != null) {
+            HashSet<MembershipInfo> membershipInfos = new HashSet<>();
+            membershipInfos.add(new MembershipInfo(user, user.getDisplayName(), BaseRoles.ROLE_GROUP_ORGANIZER));
+            Group group = groupBroker.create(user.getUid(), name, null, membershipInfos, permissionTemplate, description, reminderMinutes, true);
+            return new ResponseEntity<>(group.getUid(), HttpStatus.OK);
+        } else
+            return new ResponseEntity<>("", HttpStatus.UNAUTHORIZED);
     }
 
     @RequestMapping(value = "/members/add/{userUid}/{groupUid}", method = RequestMethod.POST)
