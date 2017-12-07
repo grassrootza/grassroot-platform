@@ -46,12 +46,16 @@ public class GroupModifyController extends GroupBaseController {
                                               @RequestParam String description,
                                               @RequestParam GroupPermissionTemplate permissionTemplate,
                                               @RequestParam int reminderMinutes,
+                                              @RequestParam boolean discoverable,
                                               HttpServletRequest request) {
         User user = getUserFromRequest(request);
         if (user != null) {
             HashSet<MembershipInfo> membershipInfos = new HashSet<>();
             membershipInfos.add(new MembershipInfo(user, user.getDisplayName(), BaseRoles.ROLE_GROUP_ORGANIZER));
             Group group = groupBroker.create(user.getUid(), name, null, membershipInfos, permissionTemplate, description, reminderMinutes, true);
+
+            groupBroker.updateDiscoverable(user.getUid(), group.getUid(), discoverable, null);
+
             return new ResponseEntity<>(group.getUid(), HttpStatus.OK);
         } else
             return new ResponseEntity<>("", HttpStatus.UNAUTHORIZED);
