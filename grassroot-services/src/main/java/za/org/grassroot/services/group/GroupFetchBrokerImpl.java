@@ -10,9 +10,7 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.MembershipDTO;
-import za.org.grassroot.core.dto.group.GroupFullDTO;
-import za.org.grassroot.core.dto.group.GroupMinimalDTO;
-import za.org.grassroot.core.dto.group.GroupTimeChangedDTO;
+import za.org.grassroot.core.dto.group.*;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.MembershipRepository;
 import za.org.grassroot.core.repository.UserRepository;
@@ -25,6 +23,9 @@ import javax.persistence.TypedQuery;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static za.org.grassroot.core.specifications.GroupSpecifications.hasParent;
+import static za.org.grassroot.core.specifications.GroupSpecifications.isActive;
 
 /**
  * Primary class for new style group feching, watch performance very closely (e.g., on size of memberships)
@@ -72,7 +73,7 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
         uidsToLookUp.addAll(newGroupUids);
 
         TypedQuery<GroupTimeChangedDTO> changedGroupQuery = entityManager.createQuery("" +
-                "select new za.org.grassroot.core.dto.group.GroupTimeChangedDTO(g.uid, g.lastGroupChangeTime) " +
+                "select new za.org.grassroot.core.dto.group.GroupTimeChangedDTO(g, g.lastGroupChangeTime) " +
                 "from Group g where g.uid in :groupUids", GroupTimeChangedDTO.class)
                 .setParameter("groupUids", uidsToLookUp);
 
@@ -95,17 +96,14 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
         }
         User user = userRepository.findOneByUid(userUid);
         List<GroupMinimalDTO> dtoList = entityManager.createQuery("" +
-                        "select new za.org.grassroot.core.dto.group.GroupMinimalDTO(g, r) " +
-                        "from Group g inner join g.memberships m inner join m.role r " +
+                "select new za.org.grassroot.core.dto.group.GroupMinimalDTO(g, m) " +
+                "from Group g inner join g.memberships m" +
                         "where g.uid in :groupUids and m.user = :user", GroupMinimalDTO.class)
                 .setParameter("groupUids", groupUids)
                 .setParameter("user", user)
                 .getResultList();
 
-        // as below, a sufficiently ninja subquery count in the constructor above should take care of this, but leaving till later
-        return dtoList.stream()
-                .map(gdto -> gdto.addMemberCount(membershipRepository.countByGroupUid(gdto.getGroupUid())))
-                .collect(Collectors.toSet());
+        return new HashSet<>(dtoList);
     }
 
     @Timed
@@ -115,14 +113,11 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
         User user = userRepository.findOneByUid(userUid);
         // there is almost certainly a way to do order by the max of the two timestamps in query but it is late and HQL
         List<GroupMinimalDTO> dtos = entityManager.createQuery("" +
-                "select new za.org.grassroot.core.dto.group.GroupMinimalDTO(g, r) " +
-                "from Group g inner join g.memberships m inner join m.role r " +
+                "select new za.org.grassroot.core.dto.group.GroupMinimalDTO(g, m) " +
+                "from Group g inner join g.memberships m " +
                 "where g.active = true and m.user = :user", GroupMinimalDTO.class)
                 .setParameter("user", user)
                 .getResultList();
-
-        // if hql wasn't hql, could just do this in a subquery above, but tft
-        dtos.forEach(gdto -> gdto.setMemberCount(membershipRepository.countByGroupUid(gdto.getGroupUid())));
 
         return dtos.stream()
                 .sorted(Comparator.comparing(GroupMinimalDTO::getLastTaskOrChangeTime, Comparator.reverseOrder()))
@@ -164,5 +159,26 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
         return group.getMemberships().stream().map(MembershipDTO::new).collect(Collectors.toSet());
     }
 
+    @Timed
+    @Override
+    @Transactional(readOnly = true)
+    public List<GroupWebDTO> fetchGroupWebInfo(String userUid) {
+
+        User user = userRepository.findOneByUid(userUid);
+
+        List<Group> groups = groupRepository.findByMembershipsUserAndActiveTrueAndParentIsNull(user);
+        List<GroupWebDTO> dtos = groups.stream().map(gr -> new GroupWebDTO(gr, gr.getMembership(user), getSubgroups(gr))).collect(Collectors.toList());
+
+        return dtos.stream()
+                .sorted(Comparator.comparing(GroupMinimalDTO::getLastTaskOrChangeTime, Comparator.reverseOrder()))
+                .collect(Collectors.toList());
+    }
+
+
+    private List<GroupRefDTO> getSubgroups(Group group) {
+        return groupRepository.findAll(Specifications.where(hasParent(group)).and(isActive()))
+                .stream().map(gr -> new GroupRefDTO(gr.getUid(), gr.getGroupName(), gr.getMemberships().size()))
+                .collect(Collectors.toList());
+    }
 
 }

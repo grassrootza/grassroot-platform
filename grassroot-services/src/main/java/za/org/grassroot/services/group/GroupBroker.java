@@ -1,11 +1,13 @@
 package za.org.grassroot.services.group;
 
+import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.GroupJoinMethod;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.enums.GroupDefaultImage;
+import za.org.grassroot.core.enums.GroupViewPriority;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -60,6 +62,11 @@ public interface GroupBroker {
 
     void updateMembershipRole(String userUid, String groupUid, String memberUid, String roleName);
 
+    @Transactional
+    boolean setGroupPinnedForUser(String userUid, String groupUid, boolean pinned);
+
+    boolean updateViewPriority(String userUid, String groupUid, GroupViewPriority priority);
+
     void updateMembers(String userUid, String groupUid, Set<MembershipInfo> membershipInfos, boolean checkForDeletion);
 
     void updateGroupPermissions(String userUid, String groupUid, Map<String, Set<Permission>> newPermissions);
@@ -91,9 +98,9 @@ public interface GroupBroker {
     Group merge(String userUid, String firstGroupUid, String secondGroupUid,
                 boolean leaveActive, boolean orderSpecified, boolean createNew, String newGroupName);
 
+    void addMemberViaCampaign(String userUidToAdd, String groupUid,String campaignCode);
+
     void sendGroupJoinCodeNotification(String userUid, String groupUid);
 
     void sendAllGroupJoinCodesNotification(String userUid);
-
-
 }

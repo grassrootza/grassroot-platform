@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.account.AccountLog;
+import za.org.grassroot.core.domain.campaign.CampaignLog;
 import za.org.grassroot.core.domain.livewire.LiveWireLog;
 import za.org.grassroot.core.domain.task.EventLog;
 import za.org.grassroot.core.domain.task.TaskLog;
@@ -31,10 +32,11 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 	private final TodoLogRepository todoLogRepository;
 	private final AccountLogRepository accountLogRepository;
 	private final LiveWireLogRepository liveWireLogRepository;
+	private final CampaignLogRepository campaignLogRepository;
 
 	@Autowired
 	public LogsAndNotificationsBrokerImpl(NotificationRepository notificationRepository, GroupLogRepository groupLogRepository,
-										  UserLogRepository userLogRepository, EventLogRepository eventLogRepository, TodoLogRepository todoLogRepository, AccountLogRepository accountLogRepository, LiveWireLogRepository liveWireLogRepository) {
+										  UserLogRepository userLogRepository, EventLogRepository eventLogRepository, TodoLogRepository todoLogRepository, AccountLogRepository accountLogRepository, LiveWireLogRepository liveWireLogRepository, CampaignLogRepository campaignLogRepository) {
 		this.notificationRepository = notificationRepository;
 		this.groupLogRepository = groupLogRepository;
 		this.userLogRepository = userLogRepository;
@@ -42,6 +44,7 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 		this.todoLogRepository = todoLogRepository;
 		this.accountLogRepository = accountLogRepository;
 		this.liveWireLogRepository = liveWireLogRepository;
+		this.campaignLogRepository = campaignLogRepository;
 	}
 
 	@Override
@@ -103,7 +106,9 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 			accountLogRepository.save((AccountLog) actionLog);
 		} else if (actionLog instanceof LiveWireLog) {
 			liveWireLogRepository.save((LiveWireLog) actionLog);
-		} else {
+		}else if (actionLog instanceof CampaignLog) {
+			campaignLogRepository.save((CampaignLog) actionLog);
+		}  else {
 			throw new UnsupportedOperationException("Unsupported log: " + actionLog);
 		}
 	}

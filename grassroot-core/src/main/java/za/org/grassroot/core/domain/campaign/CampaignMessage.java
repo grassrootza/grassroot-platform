@@ -76,16 +76,15 @@ public class CampaignMessage implements Serializable, Comparable<CampaignMessage
     @Column(name = "locale")
     private Locale locale;
 
-    @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "parent_action_id")
+    @OneToOne(cascade = CascadeType.ALL, mappedBy = "actionMessage")
     private CampaignMessageAction parentAction;
 
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "parentCampaignMessage", orphanRemoval = true)
-    private Set<CampaignMessageAction> campaignMessageActionSet;
+    private Set<CampaignMessageAction> campaignMessageActionSet = new HashSet<>();
 
     public CampaignMessage(){}
 
-    public CampaignMessage(String message, User createdByUser, MessageVariationAssignment variation, Locale locale, UserInterfaceType channel){
+    public CampaignMessage(String message, User createdByUser, MessageVariationAssignment variation, Locale locale, UserInterfaceType channel, Campaign campaign){
         this.uid = UIDGenerator.generateId();
         this.createdDateTime = Instant.now();
         this.variation = Objects.requireNonNull(variation);
@@ -93,6 +92,7 @@ public class CampaignMessage implements Serializable, Comparable<CampaignMessage
         this.createdByUser = Objects.requireNonNull(createdByUser);
         this.locale = Objects.requireNonNull(locale);
         this.channel = Objects.requireNonNull(channel);
+        this.campaign = Objects.requireNonNull(campaign);
     }
 
 
@@ -115,7 +115,7 @@ public class CampaignMessage implements Serializable, Comparable<CampaignMessage
             return false;
         }
         CampaignMessage message = (CampaignMessage) o;
-        return (getUid() != null) ? getUid().equals(message.getUid()) : message.getUid() == null;
+        return (this.getUid() != null) ? this.getUid().equals(message.getUid()) : false;
 
     }
 

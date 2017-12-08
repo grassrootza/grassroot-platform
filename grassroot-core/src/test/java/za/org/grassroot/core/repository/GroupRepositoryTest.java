@@ -660,7 +660,7 @@ public class GroupRepositoryTest {
         group2 = groupRepository.save(group2);
         group2.setActive(false);
         group2 = groupRepository.save(group2);
-        List<Group> list2 = groupRepository.findByMembershipsUserAndActiveTrue(user);
+        List<Group> list2 = groupRepository.findByMembershipsUserAndActiveTrueAndParentIsNull(user);
         assertThat(list2.size(), is(1));
         assertTrue(list2.contains(group1));
         assertFalse(list2.contains(group2));

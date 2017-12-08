@@ -127,7 +127,7 @@ public class JwtServiceImpl implements JwtService {
                     .parseClaimsJws(token).getBody();
             return claims.get(USER_UID_KEY, String.class);
         } catch (Exception e) {
-            logger.error("Failed to get user id from jwt token", e);
+            logger.error("Failed to get user id from jwt token: {}", e.getMessage());
             return null;
         }
     }

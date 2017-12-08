@@ -727,7 +727,7 @@ public class GroupController extends BaseController {
         response.setHeader("Pragma", "no-cache");
         response.setDateHeader("Expires", 0);
 
-        XSSFWorkbook xls = memberDataExportBroker.exportGroup(groupUid);
+        XSSFWorkbook xls = memberDataExportBroker.exportGroup(groupUid, getUserProfile().getUid());
         xls.write(response.getOutputStream());
         response.flushBuffer();
     }

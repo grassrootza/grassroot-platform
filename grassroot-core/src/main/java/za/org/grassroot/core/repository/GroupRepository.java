@@ -31,7 +31,7 @@ public interface GroupRepository extends JpaRepository<Group, Long>, JpaSpecific
     Group findFirstByCreatedByUserAndGroupNameAndCreatedDateTimeAfterAndActiveTrue(User createdByUser, String groupName, Instant createdSince);
 
     // Find all the groups that a user is part of, with pagination
-    List<Group> findByMembershipsUserAndActiveTrue(User user);
+    List<Group> findByMembershipsUserAndActiveTrueAndParentIsNull(User user);
     List<Group> findByCreatedByUserAndActiveTrueOrderByCreatedDateTimeDesc(User user);
     Page<Group> findByCreatedByUserAndActiveTrueOrderByCreatedDateTimeDesc(User user, Pageable pageable);
 

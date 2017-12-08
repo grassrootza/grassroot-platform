@@ -8,18 +8,23 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
-import za.org.grassroot.core.domain.GroupJoinMethod;
-import za.org.grassroot.core.domain.Permission;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.MembershipInfo;
+import za.org.grassroot.core.enums.GroupViewPriority;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
+import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.services.exception.GroupSizeLimitExceededException;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
 import za.org.grassroot.services.exception.SoleOrganizerUnsubscribeException;
+import za.org.grassroot.services.group.GroupPermissionTemplate;
+import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
+import javax.servlet.http.HttpServletRequest;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -30,6 +35,31 @@ import java.util.stream.Collectors;
 public class GroupModifyController extends GroupBaseController {
 
     private static final Logger logger = LoggerFactory.getLogger(GroupModifyController.class);
+
+    public GroupModifyController(JwtService jwtService, UserManagementService userManagementService) {
+        super(jwtService, userManagementService);
+    }
+
+    @RequestMapping(value = "/create", method = RequestMethod.POST)
+    @ApiOperation(value = "Creates new group", notes = "Creates new group and returns it's group uid")
+    public ResponseEntity<String> createGroup(@RequestParam String name,
+                                              @RequestParam String description,
+                                              @RequestParam GroupPermissionTemplate permissionTemplate,
+                                              @RequestParam int reminderMinutes,
+                                              @RequestParam boolean discoverable,
+                                              HttpServletRequest request) {
+        User user = getUserFromRequest(request);
+        if (user != null) {
+            HashSet<MembershipInfo> membershipInfos = new HashSet<>();
+            membershipInfos.add(new MembershipInfo(user, user.getDisplayName(), BaseRoles.ROLE_GROUP_ORGANIZER));
+            Group group = groupBroker.create(user.getUid(), name, null, membershipInfos, permissionTemplate, description, reminderMinutes, true);
+
+            groupBroker.updateDiscoverable(user.getUid(), group.getUid(), discoverable, null);
+
+            return new ResponseEntity<>(group.getUid(), HttpStatus.OK);
+        } else
+            return new ResponseEntity<>("", HttpStatus.UNAUTHORIZED);
+    }
 
     @RequestMapping(value = "/members/add/{userUid}/{groupUid}", method = RequestMethod.POST)
     @ApiOperation(value = "Add members to a group", notes = "Adds members to the group, takes a set (can be a singleton) " +
@@ -55,19 +85,6 @@ public class GroupModifyController extends GroupBaseController {
         }
     }
 
-    @RequestMapping(value = "/leave/{userUid}/{groupUid}", method = RequestMethod.GET)
-    @ApiOperation(value = "Unsubscribe user from a group", notes = "Unsubscribe from a group. Note that a user cannot leave a " +
-            "group where they are the only organizer")
-    public ResponseEntity<ResponseWrapper> leaveGroup(@PathVariable String userUid,
-                                                      @PathVariable String groupUid) {
-        try {
-            groupBroker.unsubscribeMember(userUid, groupUid);
-            return RestUtil.messageOkayResponse(RestMessage.MEMBER_UNSUBSCRIBED);
-        } catch (SoleOrganizerUnsubscribeException e) {
-            return RestUtil.errorResponse(RestMessage.SOLE_ORGANIZER);
-        }
-    }
-
     @RequestMapping(value = "/description/modify/{userUid}/{groupUid}", method = RequestMethod.POST)
     @ApiOperation(value = "Change the description of a group", notes = "Only group organizer, with UPDATE_DETAILS permission, can call")
     public ResponseEntity<ResponseWrapper> changeGroupDescription(@PathVariable String userUid,
@@ -78,6 +95,45 @@ public class GroupModifyController extends GroupBaseController {
             return RestUtil.errorResponse(RestMessage.GROUP_DESCRIPTION_CHANGED);
         } catch (AccessDeniedException e) {
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+        }
+    }
+
+    @RequestMapping(value = "/pin/{groupUid}")
+    @ApiOperation(value = "Mark group as pinned", notes = "This only affects current user group membership, it is not group property")
+    public ResponseEntity<ResponseWrapper> pinGroup(@PathVariable String groupUid, HttpServletRequest request) {
+        String userId = getUserIdFromRequest(request);
+        boolean actionApplyed = groupBroker.setGroupPinnedForUser(userId, groupUid, true);
+        //return boolean indicating if pin action was successful
+        return RestUtil.okayResponseWithData(RestMessage.GROUP_PINNED, actionApplyed);
+    }
+
+    @RequestMapping(value = "/unpin/{groupUid}")
+    @ApiOperation(value = "Mark group as unpinned", notes = "This only affects current user group membership, it is not group property")
+    public ResponseEntity<ResponseWrapper> unpinGroup(@PathVariable String groupUid, HttpServletRequest request) {
+
+        String userId = getUserIdFromRequest(request);
+        boolean actionApplyed = groupBroker.setGroupPinnedForUser(userId, groupUid, false);
+        //return boolean indicating if unpin action was successful
+        return RestUtil.okayResponseWithData(RestMessage.GROUP_UNPINNED, actionApplyed);
+    }
+
+    @RequestMapping(value = "/hide/{groupUid}", method = RequestMethod.POST)
+    @ApiOperation(value = "Sets group visibility to hidden", notes = "This only affects current user, not group-wide")
+    public ResponseEntity<Boolean> hideGroupForMember(@PathVariable String groupUid, HttpServletRequest request) {
+        String userUid = getUserIdFromRequest(request);
+        return ResponseEntity.ok(groupBroker.updateViewPriority(userUid, groupUid, GroupViewPriority.HIDDEN));
+    }
+
+    @RequestMapping(value = "/leave/{groupUid}", method = RequestMethod.POST)
+    @ApiOperation(value = "Unsubscribes a user from the group", notes = "User completely leaves the given group" +
+            " (note, user cannot leave if they are only organizer)")
+    public ResponseEntity<ResponseWrapper> leaveGroup(@PathVariable String groupUid, HttpServletRequest request) {
+        String userUid = getUserIdFromRequest(request);
+        try {
+            groupBroker.unsubscribeMember(userUid, groupUid);
+            return RestUtil.messageOkayResponse(RestMessage.MEMBER_UNSUBSCRIBED);
+        } catch (SoleOrganizerUnsubscribeException e) {
+            return RestUtil.errorResponse(RestMessage.SOLE_ORGANIZER);
         }
     }
 
