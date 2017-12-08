@@ -311,6 +311,11 @@ public class PaymentBrokerImpl implements PaymentBroker {
     @Transactional
     public boolean triggerRecurringPayment(AccountBillingRecord billingRecord) {
         Account account = billingRecord.getAccount();
+        if (StringUtils.isEmpty(account.getPaymentRef())) {
+            billingRecord.setNextPaymentDate(null);
+            return false;
+        }
+
         final String recurringPaymentPathVar = String.format(recurringPaymentRestPath, account.getPaymentRef());
         final double amountToPay = (double) billingRecord.getTotalAmountToPay() / 100;
         logger.info("Triggering recurring payment for : {}", account.getAccountName());
@@ -389,6 +394,10 @@ public class PaymentBrokerImpl implements PaymentBroker {
         final String errorDescription = errorCode + ": " + description;
         logger.info("Payment Error!: {}", errorDescription);
         record.setPaymentDescription(errorDescription);
+        if (errorDescription.contains("100.150.101")) {
+            Account account = record.getAccount();
+            account.setPaymentRef(null); // todo: fix this (or just go with JS integration)
+        }
         sendFailureEmail(record, errorDescription);
     }
 

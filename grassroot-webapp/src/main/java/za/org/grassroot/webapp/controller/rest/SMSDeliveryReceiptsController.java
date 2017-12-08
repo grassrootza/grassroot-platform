@@ -73,6 +73,7 @@ public class SMSDeliveryReceiptsController {
                 try {
                     DeliveryReceipt dlr = queue.take();
                     handleReceipt(dlr.getMessageKey(), dlr.getStatus());
+                    Thread.sleep(50);
                 } catch (InterruptedException e) {
                     // it' ok if we catch that, it will happen on
                 }

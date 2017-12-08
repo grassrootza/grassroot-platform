@@ -21,11 +21,7 @@ import za.org.grassroot.webapp.controller.BaseController;
 
 import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.*;
 
 @Controller @Slf4j
 @RequestMapping("/todo/")
@@ -47,7 +43,8 @@ public class TodoWebCreateController extends BaseController {
         model.addAttribute("parentSpecified", parentUid != null);
         if (parentUid == null) {
             List<Group> groups = permissionBroker.getActiveGroupsSorted(getUserProfile(), Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY);
-            Map<String, String> groupOptions = groups.stream().collect(Collectors.toMap(Group::getUid, Group::getName));
+            Map<String, String> groupOptions = new LinkedHashMap<>();
+            groups.forEach(g -> groupOptions.put(g.getUid(), g.getName())); // to preserve order
             model.addAttribute("possibleGroups", groupOptions);
             model.addAttribute("parentSpecified", false); // should be redundant but Thymeleaf being very annoying
         } else {
