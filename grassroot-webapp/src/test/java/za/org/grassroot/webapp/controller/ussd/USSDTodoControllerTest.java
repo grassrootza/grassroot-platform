@@ -18,6 +18,7 @@ import za.org.grassroot.core.domain.task.TodoType;
 import za.org.grassroot.webapp.util.USSDUrlUtil;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -394,16 +395,17 @@ public class USSDTodoControllerTest extends USSDAbstractUnitTest {
 
     @Test
     public void alterDateConfirmShouldWork()throws Exception{
+        String testUserInput = "tomorrow at 5pm";
         when(userManagementServiceMock.findByInputNumber(testUserPhone,
-                saveModifyUrl("/date/confirm", testTodo.getUid(), testUserResponse))).thenReturn(testUser);
+                saveModifyUrl("/date/confirm", testTodo.getUid(), testUserInput))).thenReturn(testUser);
+        when(learningServiceMock.parse(testUserInput)).thenReturn(LocalDateTime.now().plusDays(1).plusHours(1));
         mockMvc.perform(get(path + "/modify/date/confirm")
                 .param(phoneParam,testUserPhone)
                 .param("todoUid",testTodo.getUid())
-                .param("prior_input",""+Instant.now().toEpochMilli())
-                .param("request",testUserResponse))
+                .param("request",testUserInput))
                 .andExpect(status().isOk());
         verify(userManagementServiceMock,times(1)).findByInputNumber(testUserPhone,
-                saveModifyUrl("/date/confirm", testTodo.getUid(), null));
+                saveModifyUrl("/date/confirm", testTodo.getUid(), testUserInput));
     }
 
     @Test

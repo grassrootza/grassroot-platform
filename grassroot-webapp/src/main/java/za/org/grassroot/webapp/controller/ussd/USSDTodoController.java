@@ -621,6 +621,7 @@ public class USSDTodoController extends USSDBaseController {
             try {
                 dueDateTime = convertDateStringToLocalDateTime(formattedDateString, 12, 30);
             } catch (IllegalArgumentException e) {
+                log.info("couldn't convert through default format, trying learning service, with string = {}", formattedDateString);
                 try {
                     dueDateTime = learningService.parse(formattedDateString);
                 } catch (SeloParseDateTimeFailure | SeloApiCallFailure t) {

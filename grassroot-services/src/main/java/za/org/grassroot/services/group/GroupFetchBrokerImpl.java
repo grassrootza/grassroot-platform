@@ -97,7 +97,7 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
         User user = userRepository.findOneByUid(userUid);
         List<GroupMinimalDTO> dtoList = entityManager.createQuery("" +
                 "select new za.org.grassroot.core.dto.group.GroupMinimalDTO(g, m) " +
-                "from Group g inner join g.memberships m" +
+                "from Group g inner join g.memberships m " +
                         "where g.uid in :groupUids and m.user = :user", GroupMinimalDTO.class)
                 .setParameter("groupUids", groupUids)
                 .setParameter("user", user)

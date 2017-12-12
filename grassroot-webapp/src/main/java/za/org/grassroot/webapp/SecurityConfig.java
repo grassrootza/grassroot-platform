@@ -77,6 +77,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                     .antMatchers("/grass-root-verification/*").permitAll()
                     .antMatchers("/livewire/public/**").permitAll()
                     .antMatchers("/cardauth/**").permitAll()
+                    .antMatchers("/donate/**").permitAll()
                     .antMatchers("/ussd/**").access(assembleUssdGatewayAccessString())
                     .anyRequest().authenticated()
                     .and()
