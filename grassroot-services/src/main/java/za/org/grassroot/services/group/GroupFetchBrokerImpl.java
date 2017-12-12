@@ -141,6 +141,19 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
                 .getResultList());
     }
 
+    @Timed
+    @Override
+    @Transactional(readOnly = true)
+    public GroupFullDTO fetchGroupFullDetails(String userUid, String groupUid) {
+        return entityManager.createQuery("" +
+                "select new za.org.grassroot.core.dto.group.GroupFullDTO(g, m) " +
+                "from Group g inner join g.memberships m " +
+                "where g.uid = :groupUid and m.user.uid = :userUid", GroupFullDTO.class)
+                .setParameter("groupUid", groupUid)
+                .setParameter("userUid", userUid)
+                .getSingleResult();
+    }
+
     @Override
     @Transactional(readOnly = true)
     public Set<MembershipDTO> fetchGroupMembershipInfo(String userUid, String groupUid) {

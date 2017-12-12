@@ -29,6 +29,7 @@ public class GroupMinimalDTO extends GroupTimeChangedDTO {
     protected TaskType nextEventType;
     private final Set<Permission> userPermissions;
     private boolean pinned;
+    private boolean discoverable;
 
     @JsonSerialize(using = InstantToMilliSerializer.class)
     private Instant lastTaskOrChangeTime;
@@ -40,6 +41,7 @@ public class GroupMinimalDTO extends GroupTimeChangedDTO {
         this.lastTaskOrChangeTime = group.getLatestChangeOrTaskTime();
         this.userPermissions = membership.getRole().getPermissions();
         this.pinned = GroupViewPriority.PINNED.equals(membership.getViewPriority());
+        this.discoverable = group.isDiscoverable();
 
         List<Event> events = new ArrayList<>(group.getDescendantEvents());
         Collections.sort(events, (o1, o2) -> (int) (o2.getDeadlineTime().toEpochMilli() - o1.getDeadlineTime().toEpochMilli()));

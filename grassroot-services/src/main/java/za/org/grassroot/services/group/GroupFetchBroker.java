@@ -21,6 +21,8 @@ public interface GroupFetchBroker {
 
     Set<GroupFullDTO> fetchGroupFullInfo(String userUid, Set<String> groupUids);
 
+    GroupFullDTO fetchGroupFullDetails(String userUid, String groupUid);
+
     Set<MembershipDTO> fetchGroupMembershipInfo(String userUid, String groupUid);
 
     public List<GroupWebDTO> fetchGroupWebInfo(String userUid);
