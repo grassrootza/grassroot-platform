@@ -99,4 +99,6 @@ public interface EventBroker {
 	List<Event> retrieveGroupEvents(Group group, EventType eventType, Instant periodStart, Instant periodEnd);
 
 	Event getMostRecentEvent(String groupUid);
+
+	String getMostFrequentLocation(String groupUid);
 }

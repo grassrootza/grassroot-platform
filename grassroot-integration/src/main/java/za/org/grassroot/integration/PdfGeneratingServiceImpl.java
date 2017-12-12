@@ -34,6 +34,7 @@ import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static za.org.grassroot.core.specifications.BillingSpecifications.*;
 import static za.org.grassroot.core.util.DateTimeUtil.formatAtSAST;
@@ -52,6 +53,7 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
 
     private static final String SEPARATOR = "_";
     private static final int LANGUAGE_POSITION = 4;
+    private static final Locale DEFAULT_LANG = new Locale("en");
 
     private String folderPath;
 
@@ -174,9 +176,7 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
             PdfAcroForm pdfAcroForm = PdfAcroForm.getAcroForm(pdfDocument, true);
             Map<String,PdfFormField> pdfFormFieldMap = pdfAcroForm.getFormFields();
 
-            logger.debug("Fields Map = {}",pdfFormFieldMap);
-
-            logger.info("Form Field = {}",pdfFormFieldMap.get("join_code_header").getValueAsString());
+            logger.debug("Fields Map = {}, form field = {}", pdfFormFieldMap, pdfFormFieldMap.get("join_code_header").getValueAsString());
 
             pdfFormFieldMap.get("group_name").setValue("HOW TO JOIN " + grpEntity.getGroupName().toUpperCase() + " ON GRASSROOT");//**
             pdfFormFieldMap.get("join_code_header").setValue(grpEntity.getGroupTokenCode()).setColor(Color.BLACK);
@@ -184,8 +184,8 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
 
 
             pdfFormFieldMap.get("join_code_header");
-            logger.info("Form Field = {}",pdfFormFieldMap.get("join_code_header").getValueAsString());
-            logger.info("Form Field = {}",pdfFormFieldMap.get("join_code_phone").getValueAsString());
+            logger.debug("Form Field = {}",pdfFormFieldMap.get("join_code_header").getValueAsString());
+            logger.debug("Form Field = {}",pdfFormFieldMap.get("join_code_phone").getValueAsString());
 
             pdfAcroForm.flattenFields();
             pdfDocument.close();
@@ -222,128 +222,60 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
 
     @Override
     public List<Locale> availableLanguages() {
-        List<Locale> languages = new ArrayList<>();
-
-        File[] filesInFolder = null;
-        List<File> tempListOfFiles = new ArrayList<>();
-
         if (StringUtils.isEmpty(folderPath)) {
             logger.error("No path for flyers");
-            return languages;
+            return new ArrayList<>();
         }
 
         File folder = new File(folderPath);
 
         if(!folder.isDirectory()) {
-            logger.error("Folder path does not point to a folder");
-        } else {
-            filesInFolder = folder.listFiles();
-
-            if(filesInFolder != null){
-                logger.debug("Files in Folder = {}",filesInFolder.length);
-
-                for(int x = 0;x < filesInFolder.length;x++){
-                    if(filesInFolder[x].getName().startsWith("group")){
-                        tempListOfFiles.add(filesInFolder[x]);
-                    }
-                }
-
-                logger.debug("Filtered List = {}",tempListOfFiles.size());
-
-                if(!tempListOfFiles.isEmpty()){
-                    String[] names = new String[tempListOfFiles.size()];
-                    for (int x = 0;x < tempListOfFiles.size(); x++) {
-                        names[x] = tempListOfFiles.get(x).getName();
-                    }
-
-                    for (String name1 : names) {
-                        String[] data = name1.split(SEPARATOR);
-                        String name = data[LANGUAGE_POSITION];// Check if is a valid name
-
-                        if (Arrays.asList(Locale.getISOLanguages()).contains(name)) {
-                            Locale lang = new Locale(name);
-                            languages.add(lang);
-                        }
-                    }
-                }
-            } else {
-                logger.error("Invalid folder path specified");
-            }
-
+            logger.error("Folder path {} does not point to a folder", folderPath);
+            return new ArrayList<>();
         }
-        logger.debug("Languages = {}",languages);
-        return languages;
+
+        File[] filesInFolder = folder.listFiles();
+        if (filesInFolder == null) {
+            logger.error("No files in template folder");
+            return new ArrayList<>();
+        }
+
+        logger.info("files found in template folder = {} files", filesInFolder.length);
+        List<String> tempListOfFiles = Arrays.stream(filesInFolder)
+                .map(File::getName).filter(n -> n.startsWith("group"))
+                .collect(Collectors.toList());
+
+        logger.info("filtered list of group flyer templates = {}", tempListOfFiles.size());
+        return tempListOfFiles.stream()
+                .map(name -> {
+                    String languageCode = name.split(SEPARATOR)[LANGUAGE_POSITION]; // Check if is a valid name
+                    logger.info("for file name {}, took language separator {}", name, languageCode);
+                    return languageCode;
+                })
+                .filter(lcode -> Arrays.asList(Locale.getISOLanguages()).contains(lcode))
+                .map(Locale::new).collect(Collectors.toList());
     }
 
     @Override
     public String chooseFlyerToLoad(boolean color, Locale language) {
-        List<Locale> languages = new ArrayList<>();
-        File folder = new File(folderPath);
-        File[] filesInFolder;
-        List<File> tempFiles = new ArrayList<>();
-        String desiredFlyer;
-        String flyerToReturn;
-
-        if(folder.isDirectory()) {
-            logger.info("Folder Path = {}",folderPath);
-            filesInFolder = folder.listFiles();
-            for (File aFilesInFolder : filesInFolder) {
-                if (aFilesInFolder.getName().startsWith("group")) {
-                    logger.info("File Name = {}", aFilesInFolder.getName());
-                    tempFiles.add(aFilesInFolder);
-                }
-            }
-
-            String[] names = new String[tempFiles.size()];
-
-            for(int x = 0;x < tempFiles.size();x++) {
-                names[x] = tempFiles.get(x).getName();
-                logger.info("The Files = {}",tempFiles.get(x).getName());
-            }
-
-            for(int x = 0;x < names.length;x++) {
-                String[] data = names[x].split(SEPARATOR);
-                String name = data[LANGUAGE_POSITION];//Check if is a valid name
-
-                if (Arrays.asList(Locale.getISOLanguages()).contains(name)) {
-                    Locale lang = new Locale(name);
-                    languages.add(lang);
-                    logger.debug("LANGUAGES = {}",languages.get(x));
-                }
-            }
-
-            String strLang = "";
-
-            for(int x = 0;x < languages.size();x++){
-                Locale l = new Locale(languages.get(x).getDisplayName());
-                logger.debug("Language in my List of Languages = {}",languages.get(x).getDisplayName());
-                if(l.getDisplayName().equals(language.getDisplayName())){
-                    strLang = languages.get(x).toString();
-                    logger.debug("-------------Lang = {}",strLang);
-                }
-            }
-
-            logger.debug("ISO3 Language = {}",strLang);
-            desiredFlyer = String.format("group_join_code_template_%s_%s.pdf",strLang,color ? "colour" : "grey");
-            if(checkFileAvailability(tempFiles,desiredFlyer)){
-                flyerToReturn = desiredFlyer;
-            } else {
-                flyerToReturn = getFallbackFileName(color);
-            }
-
-            logger.debug("DESIRED FILE = {}" ,desiredFlyer);
-        }else{
-            throw new SecurityException("Invalid Folder Path");
+        List<Locale> languages = availableLanguages();
+        if (!languages.contains(DEFAULT_LANG)) {
+            throw new UnsupportedOperationException("Should not call generate flyer without valid folder");
         }
 
-        return flyerToReturn;
-    }
+        File[] filesInFolder = (new File(folderPath)).listFiles();
+        if (filesInFolder == null) {
+            throw new UnsupportedOperationException("Folder is empty of files");
+        }
 
-    private String getFallbackFileName(boolean color) {
-        return String.format("group_join_code_template_en_%s.pdf", color ? "colour" : "grey");
-    }
-
-    private boolean checkFileAvailability(List<File> files, String desiredFlyer) {
-        return files.stream().map(File::getName).anyMatch(s -> s.equals(desiredFlyer));
+        final List<String> fileNames = Arrays.stream(filesInFolder).map(File::getName).collect(Collectors.toList());
+        final String FLYER_FILE_NAME = "group_join_code_template_%s_%s.pdf";
+        final String langCode = languages.contains(language) ? language.getLanguage() : DEFAULT_LANG.getLanguage();
+        final String attemptedFile = String.format(FLYER_FILE_NAME, langCode, color ? "colour" : "grey");
+        if (!fileNames.contains(attemptedFile)) {
+            return String.format(FLYER_FILE_NAME, langCode, color ? "grey" : "colour");
+        } else {
+            return attemptedFile;
+        }
     }
 }

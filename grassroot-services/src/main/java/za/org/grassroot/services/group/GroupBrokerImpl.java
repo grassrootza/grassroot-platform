@@ -44,6 +44,7 @@ import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 import za.org.grassroot.services.util.TokenGeneratorService;
 
+import javax.persistence.Query;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
@@ -1191,7 +1192,8 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
     public void sendAllGroupJoinCodesNotification(String userUid) {
         User user = userRepository.findOneByUid(userUid);
 
-        List<Group> groups = groupRepository.findByCreatedByUserAndActiveTrueOrderByCreatedDateTimeDesc(user);
+        //List<Group> groups = groupRepository.findByCreatedByUserAndActiveTrueOrderByCreatedDateTimeDesc(user);
+        List<Group> groups = permissionBroker.getActiveGroupsSorted(user,null);
 
         UserLog userLog = new UserLog(user.getUid(), UserLogType.SENT_GROUP_JOIN_CODE,
                 "All groups join codes sent", UserInterfaceType.UNKNOWN);

@@ -19,6 +19,9 @@ import za.org.grassroot.services.task.TodoBroker;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -148,17 +151,19 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
 
         //we are starting from 1 because row number 0 is header
         int rowIndex = 1;
-
+        DateTimeFormatter formatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT)
+                .withLocale(Locale.ENGLISH).withZone(ZoneId.systemDefault());
         for (TodoAssignment assignment : todoAssignments) {
+
             addRow(sheet, rowIndex, new String[]{
                     assignment.getUser().getName(),
                     assignment.getUser().getPhoneNumber(),
                     String.valueOf(assignment.isHasResponded()),
                     assignment.getResponseText(),
-                    assignment.getResponseTime() == null ? "" : assignment.getResponseTime().toString() }); // todo: format
+                    assignment.getResponseTime() == null ? "" : formatter.format(assignment.getResponseTime()) }); // todo: format
             rowIndex++;
         }
-
+        //assignment.getResponseTime() == null ? "" : assignment.getResponseTime().toString()
         return workbook;
     }
 
@@ -178,8 +183,10 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
             // todo : make body more friendly, and create a special email address (no-reply) for from
             GrassrootEmail email = new GrassrootEmail.EmailBuilder("Grassroot: todo responses")
                     .address(emailAddress)
+                    .from("no-reply@grassroot.org.za")
+                    .subject(todo.getName() + "todo response")
                     .attachment("todo_responses", workbookFile)
-                    .content("Good day,\nThe responses to the todo is attached")
+                    .content("Good day,\nKindly find the attached responses for the above mentioned todo.")
                     .build();
 
             log.info("email assembled, putting it in the queue");

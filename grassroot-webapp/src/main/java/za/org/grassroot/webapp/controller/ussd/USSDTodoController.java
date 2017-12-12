@@ -55,21 +55,27 @@ public class USSDTodoController extends USSDBaseController {
     private final MemberDataExportBroker dataExportBroker;
     private final LearningService learningService;
 
-    @Setter private USSDMessageAssembler messageAssembler;
+    private USSDMessageAssembler messageAssembler;
     @Setter(AccessLevel.PACKAGE) private USSDGroupUtil groupUtil;
 
     @Autowired
-    public USSDTodoController(TodoBroker todoBroker, TodoRequestBroker todoRequestBroker, MemberDataExportBroker dataExportBroker, USSDMessageAssembler messageAssembler, USSDGroupUtil groupUtil, LearningService learningService) {
+    public USSDTodoController(TodoBroker todoBroker, TodoRequestBroker todoRequestBroker, MemberDataExportBroker dataExportBroker, USSDGroupUtil groupUtil, LearningService learningService) {
         this.todoBroker = todoBroker;
         this.todoRequestBroker = todoRequestBroker;
         this.dataExportBroker = dataExportBroker;
-        this.messageAssembler = messageAssembler;
-        super.setMessageAssembler(messageAssembler); // else get nulls ... need to fix this properly soon
         this.groupUtil = groupUtil;
         this.learningService = learningService;
     }
 
+
+    @Autowired
+    public void setMessageAssembler(USSDMessageAssembler messageAssembler) {
+        this.messageAssembler = messageAssembler;
+        super.setMessageAssembler(messageAssembler); // else get nulls ... need to fix this properly soon
+    }
+
     public USSDMenu respondToTodo(User user, EntityForUserResponse entity) {
+
         Todo todo = (Todo) entity;
         switch (todo.getType()) {
             case INFORMATION_REQUIRED:
@@ -103,6 +109,7 @@ public class USSDTodoController extends USSDBaseController {
         String promptMessage = "yes".equalsIgnoreCase(userResponse) ?
                 messageAssembler.getMessage("todo.volunteer.yes.prompt", user) :
                 messageAssembler.getMessage("todo.volunteer.no.prompt", user);
+        log.info("User={},Prompt={},todo uid={},response={}",user,promptMessage,todoUid,userResponse);
         return menuBuilder(welcomeMenu(promptMessage, user));
     }
 
@@ -113,9 +120,10 @@ public class USSDTodoController extends USSDBaseController {
                                        @RequestParam(required = false) String priorInput) throws URISyntaxException {
         final String userInput = StringUtils.isEmpty(priorInput) ? userResponse : priorInput;
         User user = userManager.findByInputNumber(msisdn, saveUrl("/respond/info", todoUid, userInput));
+        log.info("User input={},User={}",userInput,user);
         USSDMenu menu = new USSDMenu(messageAssembler.getMessage(USSDSection.TODO, "info", promptKey + ".confirm", userInput, user));
-        menu.addMenuOption(REL_PATH + "/respond/info/confirmed?todoUid=" + todoUid + "&response=" + userInput,
-                messageAssembler.getMessage("options.yes", user));
+        menu.addMenuOption(REL_PATH + "/respond/info/confirmed?todoUid=" + todoUid +
+                        "&response=" + USSDUrlUtil.encodeParameter(userInput), messageAssembler.getMessage("options.yes", user));
         menu.addMenuOption(REL_PATH + "/respond/info/revise", messageAssembler.getMessage("todo.info.response.change", user));
         return menuBuilder(menu);
     }
@@ -138,6 +146,7 @@ public class USSDTodoController extends USSDBaseController {
         User user = userManager.findByInputNumber(msisdn, saveUrl("/respond/info/revise", todoUid, userInput));
         // note: probably want to come back & test whether to re-include original request
         final String prompt = messageAssembler.getMessage("todo.info.revise.prompt", new String[] { userInput },  user);
+        log.info("prompt={},user={},user input={}",prompt,user,userInput);
         return menuBuilder(new USSDMenu(prompt, REL_PATH + "/respond/info?todoUid=" + todoUid));
     }
 
@@ -150,6 +159,7 @@ public class USSDTodoController extends USSDBaseController {
         if (!"unsure".equalsIgnoreCase(userResponse)) {
             todoBroker.recordResponse(user.getUid(), todoUid, userResponse, false);
         }
+        log.info("User={},response={}",user,userResponse);
         return menuBuilder(welcomeMenu(messageAssembler.getMessage("todo.validate." + userResponse + ".prompt", user), user));
     }
 
@@ -199,6 +209,7 @@ public class USSDTodoController extends USSDBaseController {
         }
         TodoRequest todoRequest = todoRequestBroker.load(storedUid);
         final String prompt = messageAssembler.getMessage("todo.msg." + getKeyForSubject(todoRequest.getType()) + ".prompt", user);
+        log.info("todo req={},user={},prompt={}",todoRequest,user,prompt);
         return menuBuilder(new USSDMenu(prompt, revising == null || !revising
                 ? REL_PATH + "/create/deadline?storedUid=" + storedUid
                 : REL_PATH + "/create/confirm?field=subject&storedUid=" + storedUid));
@@ -246,6 +257,7 @@ public class USSDTodoController extends USSDBaseController {
                                        @RequestParam(required = false) String field) throws URISyntaxException {
         User user = userManager.findByInputNumber(msisdn, saveRequestUrl("/confirm", storedUid, priorInput)
                 + (field == null ? "" : "&field=" + field));
+
         final String value = StringUtils.isEmpty(priorInput) ? userInput : priorInput;
         log.info("confirm menu, field = {}, value = {}", field, value);
         if (StringUtils.isEmpty(field)) {
@@ -259,7 +271,11 @@ public class USSDTodoController extends USSDBaseController {
         }
 
         TodoRequest request = todoRequestBroker.load(storedUid);
+
+        log.info("User={},todo request={}",user,request);
+
         log.info("todo request reloaded = {}", request);
+
         String formattedDueDate = dateTimeFormat.format(convertToUserTimeZone(request.getActionByDate(), getSAST()));
 
         if (request.getActionByDate() != null && request.getActionByDate().isBefore(Instant.now())) {
@@ -295,6 +311,7 @@ public class USSDTodoController extends USSDBaseController {
 
         User user = userManager.findByInputNumber(inputNumber, null);
         todoRequestBroker.finish(storedUid);
+        log.info("User={},storeuid={}",user,storedUid);
         return menuBuilder(new USSDMenu(messageAssembler.getMessage("todo.done.prompt", user), optionsHomeExit(user, false)));
     }
 
@@ -343,6 +360,7 @@ public class USSDTodoController extends USSDBaseController {
 
     private USSDMenu listAllUserTodos(User user, PageRequest pageRequest, boolean offerCreatedOnly, String backUrl) {
         Page<Todo> todosForUser = todoBroker.fetchPageOfTodosForUser(user.getUid(), false, false, pageRequest);
+        log.info("User todos={}",todosForUser);
         if (!todosForUser.hasContent()) {
             return pageEmptyWithSwitchOption(pageRequest.getPageNumber(), false, backUrl, user);
         } else {
@@ -431,6 +449,7 @@ public class USSDTodoController extends USSDBaseController {
                                     @RequestParam String todoUid,
                                     @RequestParam(value = userInputParam) String emailAddress) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber, null);
+        log.info("User={}",user);
         boolean isEmailValid = EmailValidator.getInstance().isValid(emailAddress);
         if (isEmailValid || user.hasEmailAddress() && emailAddress.length() == 1) {
             final String emailToPass = emailAddress.length() == 1 ? user.getEmailAddress() : emailAddress;
@@ -526,6 +545,7 @@ public class USSDTodoController extends USSDBaseController {
         final String enteredValue = priorInput == null ? userInput : priorInput;
         User user = userManager.findByInputNumber(msisdn, saveModifyUrl("/date/confirm", todoUid, enteredValue));
         LocalDateTime parsedDateTime = handleUserDateTimeInput(enteredValue);
+        log.info("ParsedDateTime={},User={}",parsedDateTime,user);
         USSDMenu menu = new USSDMenu(messageAssembler.getMessage("changing this", new String[] { dateFormat.format(parsedDateTime) }, user));
         final String confirmUrl = REL_PATH + "/modify/date/complete?todoUid=" + todoUid + "&epochMillis="
                 + DateTimeUtil.convertToSystemTime(parsedDateTime, DateTimeUtil.getSAST());
@@ -557,9 +577,9 @@ public class USSDTodoController extends USSDBaseController {
     public Request cancelTodo(@RequestParam String msisdn, @RequestParam String todoUid) throws URISyntaxException {
         User user = userManager.findByInputNumber(msisdn, saveModifyUrl("/cancel", todoUid, null));
         Todo todo = todoBroker.load(todoUid);
-        USSDMenu menu = new USSDMenu(messageAssembler.getMessage("todo.cancel.prompt", new String[] { todo.getName() }, user),
-                todoBroker.load(todoUid).getName());
+        USSDMenu menu = new USSDMenu(messageAssembler.getMessage("todo.cancel.prompt", new String[] { todo.getName() }, user));
         menu.addMenuOptions(optionsYesNo(user, REL_PATH + "/modify/cancel/confirm?todoUid=" + todoUid));
+        log.info("Options={}",menu.getMenuOptions());
         return menuBuilder(menu);
     }
 

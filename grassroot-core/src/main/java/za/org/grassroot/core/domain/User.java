@@ -12,10 +12,7 @@ import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
 import java.time.Instant;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static za.org.grassroot.core.util.FormatUtil.removeUnwantedCharacters;
@@ -205,6 +202,10 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
 
     public String getLanguageCode() {
         return languageCode;
+    }
+
+    public Locale getLocale() {
+        return (languageCode == null || languageCode.trim().isEmpty()) ? Locale.US: new Locale(languageCode);
     }
 
     public void setLanguageCode(String languageCode) {
