@@ -40,7 +40,7 @@ public class AddressRepositoryTest {
     @Test
     public void shouldFindByResident() throws Exception{
 
-     User user = userRepository.save(new User("0833203013"));
+     User user = userRepository.save(new User("0833203013", null, null));
         addressRepository.save(new Address(user, testHouseNumber,testStreetName,testTown, true));
         Address address = addressRepository.findTopByResidentAndPrimaryTrueOrderByCreatedDateTimeDesc(user);
         assertNotNull(address);

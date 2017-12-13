@@ -1,5 +1,7 @@
 package za.org.grassroot.core.domain;
 
+import lombok.Getter;
+import org.apache.commons.validator.routines.EmailValidator;
 import org.hibernate.validator.constraints.Email;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -18,7 +20,7 @@ import java.util.stream.Collectors;
 import static za.org.grassroot.core.util.FormatUtil.removeUnwantedCharacters;
 import static za.org.grassroot.core.util.PhoneNumberUtil.invertPhoneNumber;
 
-@Entity
+@Entity @Getter
 @Table(name = "user_profile")  //table name needs to be quoted in SQL because 'user' is a reserved keyword
 public class User implements GrassrootEntity, UserDetails, Comparable<User> {
     private static final int DEFAULT_NOTIFICATION_PRIORITY = 1;
@@ -31,11 +33,11 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
     @Column(name = "uid", nullable = false, unique = true)
     private String uid;
 
-    @Column(name = "phone_number", nullable = false, length = 20, unique = true)
+    @Column(name = "phone_number", nullable = true, length = 20, unique = true)
     private String phoneNumber;
 
     @Email
-    @Column(name = "email_address")
+    @Column(name = "email_address", nullable = true, unique = true) // enforcing one user per email add.
     private String emailAddress;
 
     @Column(name = "first_name")
@@ -121,14 +123,17 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
         // for JPA
     }
 
-    public User(String phoneNumber) {
-        this(phoneNumber, null);
-    }
-
-    public User(String phoneNumber, String displayName) {
+    public User(String phoneNumber, String displayName, String emailAddress) {
+        if (StringUtils.isEmpty(phoneNumber) && StringUtils.isEmpty(emailAddress)) {
+            throw new IllegalArgumentException("Phone number and email address cannot both be null!");
+        }
+        if (!StringUtils.isEmpty(emailAddress) && !EmailValidator.getInstance().isValid(emailAddress)) {
+            throw new IllegalArgumentException("Email address, if provided, must be valid");
+        }
         this.uid = UIDGenerator.generateId();
-        this.phoneNumber = Objects.requireNonNull(phoneNumber);
-        this.username = phoneNumber;
+        this.phoneNumber = phoneNumber;
+        this.emailAddress = emailAddress;
+        this.username = StringUtils.isEmpty(phoneNumber) ? emailAddress : phoneNumber;
         this.displayName = removeUnwantedCharacters(displayName);
         this.languageCode = "en";
         this.messagingPreference = UserMessagingPreference.SMS; // as default
@@ -137,49 +142,26 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
         this.hasUsedFreeTrial = false;
     }
 
+
     /**
      * We use this static constructor because no-arg constructor should be only used by JPA
      *
      * @return user
      */
     public static User makeEmpty() {
-        return makeEmpty(UIDGenerator.generateId());
-    }
-
-    public static User makeEmpty(String uid) {
         User user = new User();
-        user.uid = uid;
+        user.uid = UIDGenerator.generateId();
         return user;
     }
 
-    public Long getId() {
-        return id;
-    }
-
-    public String getUid() {
-        return uid;
-    }
-
     public String getName() { return nameToDisplay(); }
-
-    public String getFirstName() {
-        return firstName;
-    }
 
     public void setFirstName(String firstName) {
         this.firstName = firstName;
     }
 
-    public String getLastName() {
-        return lastName;
-    }
-
     public void setLastName(String lastName) {
         this.lastName = lastName;
-    }
-
-    public String getPhoneNumber() {
-        return phoneNumber;
     }
 
     public void setPhoneNumber(String phoneNumber) {
@@ -196,13 +178,7 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
         this.displayName = removeUnwantedCharacters(displayName);
     }
 
-    public boolean isHasSetOwnName() { return hasSetOwnName; }
-
     public void setHasSetOwnName(boolean hasSetOwnName) { this.hasSetOwnName = hasSetOwnName; }
-
-    public String getLanguageCode() {
-        return languageCode;
-    }
 
     public Locale getLocale() {
         return (languageCode == null || languageCode.trim().isEmpty()) ? Locale.US: new Locale(languageCode);
@@ -212,24 +188,12 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
         this.languageCode = languageCode;
     }
 
-    public String getEmailAddress() {
-        return emailAddress;
-    }
-
     public void setEmailAddress(String emailAddress) {
         this.emailAddress = emailAddress;
     }
 
     public boolean hasEmailAddress() {
         return !StringUtils.isEmpty(emailAddress);
-    }
-
-    public Instant getCreatedDateTime() {
-        return createdDateTime;
-    }
-
-    public Account getPrimaryAccount() {
-        return primaryAccount;
     }
 
     public void setPrimaryAccount(Account primaryAccount) {
@@ -285,44 +249,20 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
         }
     }
 
-    public Group getSafetyGroup() {
-        return safetyGroup;
-    }
-
     public void setSafetyGroup(Group safetyGroup) {
         this.safetyGroup = safetyGroup;
-    }
-
-    public String getUsername() {
-        return username;
     }
 
     public void setUsername(String username) {
         this.username = username;
     }
 
-    public String getPassword() {
-        return password;
-    }
-
     public void setPassword(String password) {
         this.password = password;
     }
 
-    public boolean isHasWebProfile() {
-        return hasWebProfile;
-    }
-
-    public boolean hasAndroidProfile() {
-        return hasAndroidProfile;
-    }
-
     public boolean hasSafetyGroup() {
         return safetyGroup != null;
-    }
-
-    public UserMessagingPreference getMessagingPreference() {
-        return messagingPreference;
     }
 
     public void setHasAndroidProfile(boolean hasAndroidProfile) {
@@ -335,10 +275,6 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
 
     public void setMessagingPreference(UserMessagingPreference messagingPreference) {
         this.messagingPreference = messagingPreference;
-    }
-
-    public AlertPreference getAlertPreference() {
-        return alertPreference;
     }
 
     public void setAlertPreference(AlertPreference alertPreference) {
@@ -367,14 +303,6 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
     public void removeStandardRole(Role role) {
         Objects.requireNonNull(role);
         this.standardRoles.remove(role);
-    }
-
-    /*
-    Whether the user can be contacted by LiveWire subscribers
-     */
-
-    public boolean isLiveWireContact() {
-        return liveWireContact;
     }
 
     public void setLiveWireContact(boolean liveWireContact) {
@@ -418,10 +346,6 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
         return accountsAdministered != null && accountsAdministered.size() > 1;
     }
 
-    public boolean isHasUsedFreeTrial() {
-        return hasUsedFreeTrial;
-    }
-
     public void setHasUsedFreeTrial(boolean hasUsedFreeTrial) {
         this.hasUsedFreeTrial = hasUsedFreeTrial;
     }
@@ -430,10 +354,11 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
     We use this to differentiate between users who have initiated a G/R session on their own, and those who have just
     been added via being part of another group -- to us in our stats, plus for some use cases (e.g., asking for language)
      */
-
     public boolean isHasInitiatedSession() {
         return hasInitiatedSession;
     }
+
+    public boolean hasAndroidProfile() { return hasAndroidProfile; }
 
     public void setHasInitiatedSession(boolean hasInitiatedSession) {
         this.hasInitiatedSession = hasInitiatedSession;
@@ -519,7 +444,6 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
         }
     }
 
-    // can't call this the more natural getName, or any variant, or Spring's getter handling throws a fit
     // refactoring to avoid confusion with property displayName -- point is this returns name, or phone number if no name
     public String nameToDisplay() {
         return getName("");

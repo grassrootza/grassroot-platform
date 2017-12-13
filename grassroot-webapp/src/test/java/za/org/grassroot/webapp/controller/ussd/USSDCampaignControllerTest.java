@@ -61,7 +61,7 @@ public class USSDCampaignControllerTest extends USSDAbstractUnitTest {
                 .build();
         wireUpMessageSourceAndGroupUtil(ussdCampaignController);
 
-        testUser = new User(testUserPhone);
+        testUser = new User(testUserPhone, null, null);
         testGroup = new Group("test group", testUser);
         testCampaign = createTestCampaign();
         params = new LinkedMultiValueMap<>();

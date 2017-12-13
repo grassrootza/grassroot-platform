@@ -62,7 +62,7 @@ public class CampaignManagerControllerTest extends RestAbstractUnitTest{
     @Before
     public void setUp(){
 
-        testUser = new User(testUserPhone);
+        testUser = new User(testUserPhone, null, null);
         campaignList = new ArrayList<>();
         testCampaign = createTestCampaign();
         campaignList.add(testCampaign);

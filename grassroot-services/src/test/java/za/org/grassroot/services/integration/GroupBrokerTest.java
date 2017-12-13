@@ -63,7 +63,7 @@ public class GroupBrokerTest extends AbstractTransactionalJUnit4SpringContextTes
      */
     @Test
     public void shouldDetectLoop() {
-        User user = userRepository.save(new User("0824444441"));
+        User user = userRepository.save(new User("0824444441", null, null));
         Group g1 = groupRepository.save(new Group("g1", user));
         Group g2 = groupRepository.save(new Group("g2", user, g1));
         // todo: add a test that possible parents doesn't include g2 (or however it should be structured
@@ -72,7 +72,7 @@ public class GroupBrokerTest extends AbstractTransactionalJUnit4SpringContextTes
 
     @Test
     public void shouldNotDetectLoop() {
-        User user = userRepository.save(new User("0824444442"));
+        User user = userRepository.save(new User("0824444442", null, null));
         Group g1 = groupRepository.save(new Group("g1", user));
         Group g2 = groupRepository.save(new Group("g2", user, g1));
         Group g3 = groupRepository.save(new Group("g3", user));

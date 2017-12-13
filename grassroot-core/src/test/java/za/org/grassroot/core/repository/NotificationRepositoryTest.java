@@ -60,7 +60,7 @@ public class NotificationRepositoryTest {
     public void shouldSaveAndRetrieveNotifications() throws Exception{
 
         assertThat(notificationRepository.count(), is(0L));
-        User user = userRepository.save(new User("08488754097"));
+        User user = userRepository.save(new User("08488754097", null, null));
         Group group = groupRepository.save(new Group("test eventlog", user));
         Event event = eventRepository.save(new MeetingBuilder().setName("test meeting").setStartDateTime(Instant.now()).setUser(user).setParent(group).setEventLocation("someLoc").createMeeting());
         EventLog eventLog = eventLogRepository.save(new EventLog(user, event, EventLogType.CREATED));

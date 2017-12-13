@@ -34,7 +34,7 @@ public class USSDLiveWireControllerTest extends USSDAbstractUnitTest {
     private static final String phoneInput = "msisdn";
     //private static final String liveWireMenu = "/ussd/livewire/";
     private static final int pageSize = 3;
-    private User testUser = new User(testPhone, userName);
+    private User testUser = new User(testPhone, userName, null);
     Group groups = new Group("", testUser);
 
     @InjectMocks

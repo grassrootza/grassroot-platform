@@ -132,7 +132,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
             userToSave = userToUpdate;
 
         } else {
-            userToSave = new User(phoneNumber, userProfile.getDisplayName());
+            userToSave = new User(phoneNumber, userProfile.getDisplayName(), null);
             userToSave.setUsername(phoneNumber);
             userToSave.setHasWebProfile(true);
             userToSave.setHasSetOwnName(true);
@@ -160,7 +160,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Transactional
     public User createAndroidUserProfile(UserDTO userDTO) throws UserExistsException {
         Objects.requireNonNull(userDTO);
-        User userProfile = new User(userDTO.getPhoneNumber(), userDTO.getDisplayName());
+        User userProfile = new User(userDTO.getPhoneNumber(), userDTO.getDisplayName(), null);
         User userToSave;
         String phoneNumber = PhoneNumberUtil.convertPhoneNumber(userProfile.getPhoneNumber());
         boolean userExists = userExist(phoneNumber);
@@ -307,7 +307,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     public User loadOrCreateUser(String inputNumber) {
         String phoneNumber = PhoneNumberUtil.convertPhoneNumber(inputNumber);
         if (!userExist(phoneNumber)) {
-            User sessionUser = new User(phoneNumber);
+            User sessionUser = new User(phoneNumber, null, null);
             sessionUser.setUsername(phoneNumber);
             User newUser = userRepository.save(sessionUser);
             asyncUserService.recordUserLog(newUser.getUid(), UserLogType.CREATED_IN_DB, "Created via loadOrCreateUser");
@@ -356,7 +356,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
             throw new UserExistsException("Error! User with that phone number exists!");
         }
 
-        User user = new User(msisdn);
+        User user = new User(msisdn, null, null);
         user.setUsername(msisdn);
         user.setDisplayName(displayName);
         user.setEmailAddress(emailAddress);

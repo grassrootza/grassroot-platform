@@ -44,7 +44,6 @@ import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 import za.org.grassroot.services.util.TokenGeneratorService;
 
-import javax.persistence.Query;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
@@ -453,7 +452,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
             User user = existingUserMap.get(phoneNumberWithCCode);
             if (user == null) {
                 logger.debug("Adding a new user, via group creation, with phone number ... " + phoneNumberWithCCode);
-                user = new User(phoneNumberWithCCode, membershipInfo.getDisplayName());
+                user = new User(phoneNumberWithCCode, membershipInfo.getDisplayName(), null);
                 createdUsers.add(user);
             }
             String roleName = membershipInfo.getRoleName();

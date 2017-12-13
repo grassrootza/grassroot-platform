@@ -66,11 +66,11 @@ public class AccountBrokerTest {
         setAccountFields();
 
         String userNumber = "0605550000";
-        testUser = new User(userNumber, "test user");
+        testUser = new User(userNumber, "test user", null);
         userRepository.save(testUser);
 
         String accountAdminNumber = "0605550011";
-        testAdmin = new User(accountAdminNumber);
+        testAdmin = new User(accountAdminNumber, null, null);
         testAdmin.setEmailAddress(billingEmail);
         userRepository.save(testAdmin);
 
@@ -156,7 +156,7 @@ public class AccountBrokerTest {
     @Test
     public void shouldAddAdmin() {
         Account account = createTestAccount();
-        User admin2 = userRepository.save(new User("0605550022"));
+        User admin2 = userRepository.save(new User("0605550022", null, null));
         assertEquals(account.getAdministrators().size(), 1);
         accountBroker.addAdministrator(testUser.getUid(), account.getUid(), admin2.getUid());
         assertEquals(account.getAdministrators().size(), 2);

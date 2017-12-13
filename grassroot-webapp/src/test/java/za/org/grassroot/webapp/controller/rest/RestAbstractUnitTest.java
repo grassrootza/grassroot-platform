@@ -39,7 +39,7 @@ public class RestAbstractUnitTest {
     protected final static String testEventDescription = "A feedback on code reviews.";
     protected final static Instant testInstant = Instant.now().plus(5, ChronoUnit.HOURS);
     protected final static LocalDateTime testDateTime = convertToUserTimeZone(testInstant, getSAST()).toLocalDateTime();
-    protected final static User sessionTestUser = new User(testUserPhone, "testUser");
+    protected final static User sessionTestUser = new User(testUserPhone, "testUser", null);
     protected final static Group testGroup = new Group(testGroupName, sessionTestUser);
 
     protected MockMvc mockMvc;

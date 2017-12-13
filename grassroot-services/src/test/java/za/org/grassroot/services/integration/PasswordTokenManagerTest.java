@@ -40,7 +40,7 @@ public class PasswordTokenManagerTest {
     @Test
     @Repeat(5)
     public void testGenerateVerificationCode() throws Exception {
-        User user = userManagementService.createUserProfile(new User("27721230001"));
+        User user = userManagementService.createUserProfile(new User("27721230001", null, null));
         VerificationTokenCode verificationTokenCode = passwordTokenService.generateShortLivedOTP("27721230001");
         log.info("Generated Code: {}",verificationTokenCode);
     }
@@ -48,7 +48,7 @@ public class PasswordTokenManagerTest {
 
     @Test
     public void testGenerateVerificationCode2() throws Exception {
-        User user = userManagementService.createUserProfile(new User("27721230002"));
+        User user = userManagementService.createUserProfile(new User("27721230002", null, null));
         VerificationTokenCode verificationTokenCode = passwordTokenService.generateLongLivedAuthCode(user.getUid());
         log.info("Generated Code: {}", verificationTokenCode);
 

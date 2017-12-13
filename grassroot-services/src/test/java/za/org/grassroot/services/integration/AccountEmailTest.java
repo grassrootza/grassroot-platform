@@ -54,7 +54,7 @@ public class AccountEmailTest {
     @Before
     public void setUp() {
         String userNumber = "0608880000";
-        testUser = new User(userNumber, "test user");
+        testUser = new User(userNumber, "test user", null);
         testUser = userRepository.save(testUser);
         testUser.setEmailAddress("contact@grassroot.org.za");
         testAccount = new Account(testUser, "Test Account", AccountType.STANDARD,
@@ -62,7 +62,7 @@ public class AccountEmailTest {
         // accountRepository.save(testAccount);
 
         String sponsorNumber = "0605550001";
-        sponsorUser = new User(sponsorNumber, "sponsor user");
+        sponsorUser = new User(sponsorNumber, "sponsor user", null);
         sponsorUser.setEmailAddress("someone@somewhere.com");
     }
 

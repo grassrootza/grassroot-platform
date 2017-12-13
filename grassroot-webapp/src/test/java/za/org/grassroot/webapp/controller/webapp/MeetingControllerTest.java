@@ -55,7 +55,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
     @Test
     public void shouldShowMeetingDetails() throws Exception {
 
-        Group dummyGroup = new Group("Dummy Group3", new User("234345345"));
+        Group dummyGroup = new Group("Dummy Group3", new User("234345345", null, null));
         Meeting dummyMeeting = new MeetingBuilder().setName("test meeting").setStartDateTime(oneDayAway).setUser(sessionTestUser).setParent(dummyGroup).setEventLocation("some place").createMeeting();
 
          logger.info("ZOG: dummyMeetingIs: {} ", dummyMeeting);
@@ -91,7 +91,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
 
     @Test
     public void testCreateMeetingWorks() throws Exception {
-        Group dummyGroup = new Group("Dummy Group3", new User("234345345"));
+        Group dummyGroup = new Group("Dummy Group3", new User("234345345", null, null));
         LocalDateTime tomorrow = LocalDateTime.now().plus(1, ChronoUnit.DAYS);
         MeetingWrapper wrapper = MeetingWrapper.makeEmpty(EventReminderType.GROUP_CONFIGURED, 60);
         wrapper.setTitle("test meeting");
@@ -169,7 +169,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
     @Test
     public void meetingModificationWorks() throws Exception {
 
-        Group testGroup = new Group("Dummy Group3", new User("234345345"));
+        Group testGroup = new Group("Dummy Group3", new User("234345345", null, null));
         Meeting dummyMeeting = new MeetingBuilder().setName("test meeting").setStartDateTime(oneDayAway).setUser(sessionTestUser).setParent(testGroup).setEventLocation("some place").createMeeting();
 
         LocalDateTime dateTime = LocalDateTime.now().plus(1, ChronoUnit.DAYS).truncatedTo(ChronoUnit.MINUTES);
@@ -206,7 +206,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
     @Test
     public void rsvpNoShouldWork() throws Exception {
 
-        Group testGroup = new Group("Dummy Group3", new User("234345345"));
+        Group testGroup = new Group("Dummy Group3", new User("234345345", null, null));
         Meeting dummyMeeting = new MeetingBuilder().setName("test meeting").setStartDateTime(oneDayAway).setUser(sessionTestUser).setParent(testGroup).setEventLocation("some place").createMeeting();
 
         when(eventBrokerMock.loadMeeting(dummyMeeting.getUid())).thenReturn(dummyMeeting);
@@ -227,7 +227,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
     @Test
     public void rsvpYesShouldWork() throws Exception {
 
-        Group testGroup = new Group("Dummy Group3", new User("234345345"));
+        Group testGroup = new Group("Dummy Group3", new User("234345345", null, null));
         Meeting dummyMeeting = new MeetingBuilder().setName("test meeting").setStartDateTime(oneDayAway).setUser(sessionTestUser).setParent(testGroup).setEventLocation("some place").createMeeting();
 
         ResponseTotalsDTO testCount = ResponseTotalsDTO.makeForTest(2, 0, 0, 0, 2);
@@ -257,7 +257,7 @@ public class MeetingControllerTest extends WebAppAbstractUnitTest {
 
     @Test
     public void changeReminderSettingShouldWork() throws Exception {
-        Group testGroup = new Group("Dummy Group3", new User("234345345"));
+        Group testGroup = new Group("Dummy Group3", new User("234345345", null, null));
         Meeting dummyMeeting = new MeetingBuilder().setName("test meeting").setStartDateTime(oneDayAway).setUser(sessionTestUser).setParent(testGroup).setEventLocation("some place").createMeeting();
         dummyMeeting.setReminderType(EventReminderType.CUSTOM);
         dummyMeeting.setCustomReminderMinutes(60 * 24);
