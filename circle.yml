@@ -13,9 +13,9 @@ dependencies:
     #- aws configure set profile.default.s3.signature_version s3v4
     #- aws s3 cp s3://grassroot-circleci/circleci_key circleci_key --region ap-southeast-2
     #- cat circleci_key >> ~/.ssh/authorized_keys@
-    #- mkdir ~/gradle_cache
+    - mkdir ~/.gradle/tmp
   override:
-    - export TERM="dumb"; ./gradlew test -g .gradle/tmp --configure-on-demand --parallel
+    - export TERM="dumb"; ./gradlew test -g ~/.gradle/tmp --configure-on-demand --parallel
   cache_directories:
     - ~/.gradle/tmp
 
