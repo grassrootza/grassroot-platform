@@ -13,16 +13,18 @@ dependencies:
     #- aws configure set profile.default.s3.signature_version s3v4
     #- aws s3 cp s3://grassroot-circleci/circleci_key circleci_key --region ap-southeast-2
     #- cat circleci_key >> ~/.ssh/authorized_keys@
-    - mkdir -p .gradle/tmp
+    - mkdir -p ~/.gradle/tmp
   override:
-    - export TERM="dumb"; ./gradlew test -g .gradle/tmp --configure-on-demand --parallel
+    - export TERM="dumb"; ./gradlew test -g ~/.gradle/tmp --configure-on-demand --parallel
   cache_directories:
-    - .gradle/tmp
+    - ~/.gradle/tmp
 
 test:
   pre:
     #- ./gradlew test -g .gradle/tmp --configure-on-demand --parallel
   post:
+    # RE-USE CACHE FOR DOCKER BUILD
+    - mv ~/.gradle/tmp .gradle/tmp
       #- mkdir -p $CIRCLE_TEST_REPORTS/junit/
       #- find . -type f -regex ".*/build/test-results/.*xml" -exec cp {} $CIRCLE_TEST_REPORTS/junit/ \;
 
