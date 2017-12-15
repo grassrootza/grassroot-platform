@@ -15,13 +15,13 @@ dependencies:
     #- cat circleci_key >> ~/.ssh/authorized_keys@
     #- mkdir ~/gradle_cache
   override:
-    - export TERM="dumb"; ./gradlew testClasses
+    - export TERM="dumb"; ./gradlew test -g .gradle/tmp --configure-on-demand --parallel
   cache_directories:
     - ~/.gradle/tmp
 
 test:
   pre:
-    - ./gradlew test -g .gradle/tmp --configure-on-demand --parallel
+    #- ./gradlew test -g .gradle/tmp --configure-on-demand --parallel
   post:
       #- mkdir -p $CIRCLE_TEST_REPORTS/junit/
       #- find . -type f -regex ".*/build/test-results/.*xml" -exec cp {} $CIRCLE_TEST_REPORTS/junit/ \;
