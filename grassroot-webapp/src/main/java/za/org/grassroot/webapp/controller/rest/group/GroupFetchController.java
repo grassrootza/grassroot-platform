@@ -13,10 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.Permission;
-import za.org.grassroot.core.dto.group.GroupFullDTO;
-import za.org.grassroot.core.dto.group.GroupMinimalDTO;
-import za.org.grassroot.core.dto.group.GroupTimeChangedDTO;
-import za.org.grassroot.core.dto.group.GroupWebDTO;
+import za.org.grassroot.core.dto.group.*;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
 import za.org.grassroot.services.group.GroupFetchBroker;
@@ -32,11 +29,11 @@ import za.org.grassroot.webapp.util.RestUtil;
 import javax.servlet.http.HttpServletRequest;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @RestController @Grassroot2RestController
 @Api("/api/group/fetch")
@@ -96,11 +93,18 @@ public class GroupFetchController extends BaseRestController {
 
     @RequestMapping(value = "/full/{userUid}", method = RequestMethod.GET)
     @ApiOperation(value = "Get full details about a group, including members (if permission to see details) and description")
-    public ResponseEntity<Set<GroupFullDTO>> fetchFullGroupInfo(@PathVariable String userUid,
-                                                                @RequestParam(required = false) Set<String> groupUids) {
-        final String descriptionTemplate = "Group '%1$s', created on %2$s, has %3$d members, with join code %4$s";
-        return ResponseEntity.ok(groupFetchBroker.fetchGroupFullInfo(userUid, groupUids).stream()
-                .map(g -> g.insertDefaultDescriptionIfEmpty(descriptionTemplate)).collect(Collectors.toSet()));
+    public ResponseEntity<GroupFullDTO> fetchFullGroupInfo(@PathVariable String userUid,
+                                                           @RequestParam String groupUid) {
+        return ResponseEntity.ok(groupFetchBroker.fetchGroupFullInfo(userUid, groupUid));
+    }
+
+    @RequestMapping(value = "/members/history/{groupUid}", method = RequestMethod.GET)
+    @ApiOperation(value = "Get the record of member changes up to some period of time in the past")
+    public ResponseEntity<List<MembershipRecordDTO>> fetchMemberChangeRecords(HttpServletRequest request,
+                                                                              @PathVariable String groupUid,
+                                                                              @RequestParam long startDateTimeEpochMillis) {
+        return ResponseEntity.ok(groupFetchBroker.fetchRecentMembershipChanges(getUserIdFromRequest(request),
+                groupUid, Instant.ofEpochMilli(startDateTimeEpochMillis)));
     }
 
     @RequestMapping(value = "/export/{groupUid}", method = RequestMethod.GET)

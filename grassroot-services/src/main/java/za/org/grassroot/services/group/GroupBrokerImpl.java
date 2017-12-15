@@ -166,7 +166,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
         bundle.addLog(new GroupLog(group, user, GroupLogType.GROUP_ADDED, null));
         if (parent != null) {
-            bundle.addLog(new GroupLog(parent, user, GroupLogType.SUBGROUP_ADDED, group.getId(), "Subgroup added"));
+            bundle.addLog(new GroupLog(parent, user, GroupLogType.SUBGROUP_ADDED, null, group, null, "Subgroup added"));
         }
 
         permissionBroker.setRolePermissionsFromTemplate(group, groupPermissionTemplate);
@@ -221,7 +221,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         Set<ActionLog> actionLogs = new HashSet<>();
         actionLogs.add(new GroupLog(group, user, GroupLogType.GROUP_REMOVED, null));
         if (group.getParent() != null) {
-            actionLogs.add(new GroupLog(group.getParent(), user, GroupLogType.SUBGROUP_REMOVED, group.getId()));
+            actionLogs.add(new GroupLog(group.getParent(), user, GroupLogType.SUBGROUP_REMOVED, null, group, null, null));
         }
 
         logActionLogsAfterCommit(actionLogs);
@@ -257,7 +257,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
         group.setGroupName(name);
 
-        GroupLog groupLog = new GroupLog(group, user, GroupLogType.GROUP_RENAMED, group.getId(), "Group renamed to " + group.getGroupName());
+        GroupLog groupLog = new GroupLog(group, user, GroupLogType.GROUP_RENAMED, null, null, null, group.getGroupName());
         logActionLogsAfterCommit(Collections.singleton(groupLog));
     }
 
@@ -274,7 +274,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
 
         group.setDescription(description);
-        GroupLog groupLog = new GroupLog(group, user, GroupLogType.DESCRIPTION_CHANGED, group.getId(),
+        GroupLog groupLog = new GroupLog(group, user, GroupLogType.DESCRIPTION_CHANGED, null, null, null,
                 "Group description changed to " + group.getDescription());
         logActionLogsAfterCommit(Collections.singleton(groupLog));
     }
@@ -331,7 +331,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
         for (User u  : users) {
-            GroupLog groupLog = new GroupLog(group, user, GroupLogType.GROUP_MEMBER_ADDED, u.getId());
+            GroupLog groupLog = new GroupLog(group, user, GroupLogType.GROUP_MEMBER_ADDED, u, null, null, null);
             bundle.addLog(groupLog);
             notifyNewMembersOfUpcomingMeetings(bundle, u, group, groupLog);
         }
@@ -359,8 +359,8 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         }
 
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
-        GroupLog groupLog = new GroupLog(group, user, GroupLogType.GROUP_MEMBER_ADDED_VIA_JOIN_CODE, user.getId(),
-                                    "Member joined via join code: " + tokenPassed);
+        GroupLog groupLog = new GroupLog(group, user, GroupLogType.GROUP_MEMBER_ADDED_VIA_JOIN_CODE,
+                user, null, null, "Member joined via join code: " + tokenPassed);
         bundle.addLog(groupLog);
         bundle.addLog(new UserLog(userUidToAdd, UserLogType.USED_A_JOIN_CODE, groupUid, UNKNOWN));
         notifyNewMembersOfUpcomingMeetings(bundle, user, group, groupLog);
@@ -485,7 +485,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         Set<String> addedUserUids = new HashSet<>();
         for (Membership membership : memberships) {
             User member = membership.getUser();
-            GroupLog groupLog = new GroupLog(group, initiator, logType, member.getId());
+            GroupLog groupLog = new GroupLog(group, initiator, logType, member, null, null, null);
             bundle.addLog(groupLog);
             notifyNewMembersOfUpcomingMeetings(bundle, member, group, groupLog);
             addedUserUids.add(member.getUid());
@@ -552,7 +552,8 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
                     logger.error("Unable to unsubscribe member with uid={} from group topic ={}", membership.getUser(), group);
                 }
             }
-            actionLogs.add(new GroupLog(group, initiator, GroupLogType.GROUP_MEMBER_REMOVED, membership.getUser().getId()));
+            actionLogs.add(new GroupLog(group, initiator, GroupLogType.GROUP_MEMBER_REMOVED,
+                    membership.getUser(), null, null, null));
         }
         return actionLogs;
     }
@@ -667,7 +668,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         return group.getMemberships().stream()
                 .filter(m -> memberUids.contains(m.getUser().getUid()))
                 .peek(m -> m.setRole(newRole))
-                .map(m -> new GroupLog(group, user, GroupLogType.GROUP_MEMBER_ROLE_CHANGED, m.getUser().getId(), newRole.getName()))
+                .map(m -> new GroupLog(group, user, GroupLogType.GROUP_MEMBER_ROLE_CHANGED, m.getUser(), null, null, newRole.getName()))
                 .collect(Collectors.toSet());
     }
 
@@ -809,8 +810,8 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
             role.setPermissions(adjustedRolePermissions);
         }
 
-        logActionLogsAfterCommit(Collections.singleton(new GroupLog(group, user, GroupLogType.PERMISSIONS_CHANGED, 0L,
-                "Changed permissions assigned to group roles")));
+        logActionLogsAfterCommit(Collections.singleton(new GroupLog(group, user,
+                GroupLogType.PERMISSIONS_CHANGED, "Changed permissions assigned to group roles")));
 
     }
 
@@ -837,8 +838,8 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
         roleToUpdate.setPermissions(updatedPermissions);
 
-        logActionLogsAfterCommit(Collections.singleton(new GroupLog(group, user, GroupLogType.PERMISSIONS_CHANGED, 0L,
-                "Changed permissions assigned to " + roleName)));
+        logActionLogsAfterCommit(Collections.singleton(new GroupLog(group, user,
+                GroupLogType.PERMISSIONS_CHANGED, "Changed permissions assigned to " + roleName)));
 
     }
 
@@ -855,7 +856,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         membership.setAlias(alias);
 
         logActionLogsAfterCommit(Collections.singleton(
-                new GroupLog(group, user, GroupLogType.CHANGED_ALIAS, 0L, alias)
+                new GroupLog(group, user, GroupLogType.CHANGED_ALIAS, user, null, null, alias)
         ));
     }
 
@@ -875,30 +876,30 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
         if (!StringUtils.isEmpty(groupName) && !group.getName().equals(groupName.trim())) {
             group.setGroupName(groupName);
-            groupLogs.add(new GroupLog(group, user, GroupLogType.GROUP_RENAMED, 0L, groupName));
+            groupLogs.add(new GroupLog(group, user, GroupLogType.GROUP_RENAMED, groupName));
         }
 
         if (!StringUtils.isEmpty(description) && !group.getDescription().equals(description.trim())) {
             group.setDescription(description);
-            groupLogs.add(new GroupLog(group, user, GroupLogType.GROUP_DESCRIPTION_CHANGED, 0L, description));
+            groupLogs.add(new GroupLog(group, user, GroupLogType.GROUP_DESCRIPTION_CHANGED, description));
         }
 
         if (resetToDefaultImage && defaultImage != null) {
             group.setDefaultImage(defaultImage);
             group.setImage(null);
             group.setImageUrl(null);
-            groupLogs.add(new GroupLog(group, user, GroupLogType.GROUP_AVATAR_REMOVED, 0L, defaultImage.toString()));
+            groupLogs.add(new GroupLog(group, user, GroupLogType.GROUP_AVATAR_REMOVED, defaultImage.toString()));
         }
 
         if (group.isDiscoverable() != discoverable) {
             group.setDiscoverable(discoverable);
-            groupLogs.add(new GroupLog(group, user, GroupLogType.DISCOVERABLE_CHANGED, 0L, "set to " + discoverable));
+            groupLogs.add(new GroupLog(group, user, GroupLogType.DISCOVERABLE_CHANGED, "set to " + discoverable));
         }
 
         if (toCloseJoinCode) {
             group.setGroupTokenCode(null);
             group.setTokenExpiryDateTime(Instant.now());
-            groupLogs.add(new GroupLog(group, user, GroupLogType.TOKEN_CHANGED, 0L, "token closed"));
+            groupLogs.add(new GroupLog(group, user, GroupLogType.TOKEN_CHANGED, "token closed"));
         }
 
         if (membersToRemove != null && !membersToRemove.isEmpty()) {
@@ -935,8 +936,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         // todo: think about whether to change any events currently pending & set to group default
         group.setReminderMinutes(reminderMinutes);
         String logMessage = String.format("Changed reminder default to %d minutes", reminderMinutes);
-        logActionLogsAfterCommit(Collections.singleton(new GroupLog(group, user,
-                                                                     GroupLogType.REMINDER_DEFAULT_CHANGED, 0L, logMessage)));
+        logActionLogsAfterCommit(Collections.singleton(new GroupLog(group, user, GroupLogType.REMINDER_DEFAULT_CHANGED, logMessage)));
     }
 
     @Override
@@ -974,7 +974,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         }
 
         logActionLogsAfterCommit(Collections.singleton(new GroupLog(group, user, GroupLogType.LANGUAGE_CHANGED,
-                                                                     0L, String.format("Set default language to %s", newLocale))));
+                                                                     String.format("Set default language to %s", newLocale))));
 
     }
 
@@ -1044,7 +1044,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
                     String.format("Created join code %s, to remain open until closed by group", token);
         }
 
-        GroupLog groupLog = new GroupLog(group, user, GroupLogType.TOKEN_CHANGED, 0L, logMessage);
+        GroupLog groupLog = new GroupLog(group, user, GroupLogType.TOKEN_CHANGED, logMessage);
 
         return new JoinTokenOpeningResult(token, groupLog);
     }
@@ -1090,7 +1090,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         group.setGroupTokenCode(null);
         group.setTokenExpiryDateTime(Instant.now());
 
-        GroupLog groupLog = new GroupLog(group, user, GroupLogType.TOKEN_CHANGED, 0L, "Group join code closed");
+        GroupLog groupLog = new GroupLog(group, user, GroupLogType.TOKEN_CHANGED, "Group join code closed");
         logActionLogsAfterCommit(Collections.singleton(groupLog));
     }
 
@@ -1119,7 +1119,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
             logEntry = "Set group hidden from public";
         }
 
-        GroupLog groupLog = new GroupLog(group, user, GroupLogType.DISCOVERABLE_CHANGED, 0L, logEntry);
+        GroupLog groupLog = new GroupLog(group, user, GroupLogType.DISCOVERABLE_CHANGED, logEntry);
         logActionLogsAfterCommit(Collections.singleton(groupLog));
     }
 
@@ -1140,8 +1140,8 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         child.setParent(parent);
 
         Set<ActionLog> actionLogs = new HashSet<>();
-        actionLogs.add(new GroupLog(parent, user, GroupLogType.SUBGROUP_ADDED, child.getId(), "Subgroup added"));
-        actionLogs.add(new GroupLog(child, user, GroupLogType.PARENT_CHANGED, parent.getId(), "Parent group added or changed"));
+        actionLogs.add(new GroupLog(parent, user, GroupLogType.SUBGROUP_ADDED, null, child, null, "Subgroup added"));
+        actionLogs.add(new GroupLog(child, user, GroupLogType.PARENT_CHANGED, null, parent, null, "Parent group added or changed"));
         logActionLogsAfterCommit(actionLogs);
     }
 
@@ -1158,8 +1158,8 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
             parentGroup = parentGroup.getParent();
         }
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
-        GroupLog groupLog = new GroupLog(group, user, GroupLogType.GROUP_MEMBER_ADDED_VIA_CAMPAIGN, user.getId(),
-                "Member joined via campaign code: " + campaignCode);
+        GroupLog groupLog = new GroupLog(group, user, GroupLogType.GROUP_MEMBER_ADDED_VIA_CAMPAIGN,
+                user, null, null, "Member joined via campaign code: " + campaignCode);
         bundle.addLog(groupLog);
         bundle.addLog(new UserLog(userUidToAdd, UserLogType.USED_A_CAMPAIGN, groupUid, UNKNOWN));
         notifyNewMembersOfUpcomingMeetings(bundle, user, group, groupLog);

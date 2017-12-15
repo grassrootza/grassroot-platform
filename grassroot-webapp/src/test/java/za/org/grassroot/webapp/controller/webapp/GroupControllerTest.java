@@ -404,8 +404,12 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         dummyEvents.forEach(e -> dummyTasks.add(new TaskDTO(e, sessionTestUser, dummyLog)));
         dummyTodos.forEach(t -> dummyTasks.add(new TaskDTO(t, sessionTestUser)));
 
-        List<GroupLog> dummyGroupLogs = Arrays.asList(new GroupLog(testGroup, sessionTestUser, GroupLogType.GROUP_MEMBER_ADDED, 0L, "guy joined"),
-                                                      new GroupLog(testGroup, sessionTestUser, GroupLogType.GROUP_MEMBER_REMOVED, 0L, "other guy left"));
+        User joiningUser = new User("0109990000", null, null);
+        User leavingUser = new User("0209990000", null, null);
+        List<GroupLog> dummyGroupLogs = Arrays.asList(new GroupLog(testGroup, sessionTestUser, GroupLogType.GROUP_MEMBER_ADDED,
+                        joiningUser, null, null, null),
+                new GroupLog(testGroup, sessionTestUser, GroupLogType.GROUP_MEMBER_REMOVED,
+                        leavingUser, null, null, null));
         List<LocalDate> dummyMonths = Arrays.asList(LocalDate.now(), LocalDate.now().minusMonths(1L));
 
         LocalDate now = LocalDate.now();
@@ -446,7 +450,8 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
     @Test
     public void groupHistoryLastMonthShouldWork() throws Exception {
 
-        Group testGroup = new Group("someGroupname", new User("234345345", null, null));
+        User thisTestUser = new User("234345345", null, null);
+        Group testGroup = new Group("someGroupname", thisTestUser);
         testGroup.addMember(sessionTestUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
 
         List<Event> dummyEvents = Collections.singletonList(new MeetingBuilder().setName("someMeeting").setStartDateTime(Instant.now()).setUser(sessionTestUser).setParent(testGroup).setEventLocation("someLoc").createMeeting());
@@ -458,7 +463,8 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         dummyEvents.forEach(e -> dummyTasks.add(new TaskDTO(e, sessionTestUser, dummyLog)));
         dummyTodos.forEach(t -> dummyTasks.add(new TaskDTO(t, sessionTestUser)));
 
-        List<GroupLog> dummyGroupLogs = Collections.singletonList(new GroupLog(testGroup, sessionTestUser, GroupLogType.GROUP_MEMBER_ADDED, 0L));
+        List<GroupLog> dummyGroupLogs = Collections.singletonList(new GroupLog(testGroup, sessionTestUser,
+                GroupLogType.GROUP_MEMBER_ADDED, thisTestUser, null, null, null));
         List<LocalDate> dummyMonths = Arrays.asList(LocalDate.now(), LocalDate.now().minusMonths(1L));
 
         LocalDate lastMonth = LocalDate.now().minusMonths(1L);

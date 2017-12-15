@@ -296,7 +296,7 @@ public class EventRepositoryTest {
 
     @Test
     public void giveScheduledReminderValueAndRestrictToDayTime() {
-        User users = userRepository.save(new User("", null, null));
+        User users = userRepository.save(new User("456789", null, null));
         Group groups = groupRepository.save(new Group("", users));
         Instant scheduleTime = Instant.now().plus(2, ChronoUnit.DAYS);
         Event newEvent = eventRepository.save(new MeetingBuilder().setName("").setStartDateTime(scheduleTime).setUser(users).setParent(groups).setEventLocation("").createMeeting());
