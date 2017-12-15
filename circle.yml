@@ -13,8 +13,13 @@ dependencies:
     - aws configure set profile.default.s3.signature_version s3v4
     #- aws s3 cp s3://grassroot-circleci/circleci_key circleci_key --region ap-southeast-2
     #- cat circleci_key >> ~/.ssh/authorized_keys@
+    #- mkdir ~/gradle_cache
+  cache_directories:
+    #- ".gradle/tmp"
 
 test:
+  pre:
+    ./gradlew clean build
   post:
     #- mkdir -p $CIRCLE_TEST_REPORTS/junit/
     #- find . -type f -regex ".*/build/test-results/.*xml" -exec cp {} $CIRCLE_TEST_REPORTS/junit/ \;
@@ -45,7 +50,7 @@ deployment:
 
 
   staging:
-    branch: preprod 
+    branch: preprod
     commands:
       # define environment
       - echo 'export ENVIRONMENT=staging' >> ~/.circlerc
