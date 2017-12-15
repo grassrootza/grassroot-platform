@@ -14,15 +14,17 @@ dependencies:
     #- aws s3 cp s3://grassroot-circleci/circleci_key circleci_key --region ap-southeast-2
     #- cat circleci_key >> ~/.ssh/authorized_keys@
     #- mkdir ~/gradle_cache
+  override:
+    - export TERM="dumb"; ./gradlew compileTestJava
   cache_directories:
-    #- ".gradle/tmp"
+    - ~/.gradle
 
 test:
   pre:
     #./gradlew clean test
   post:
-    #- mkdir -p $CIRCLE_TEST_REPORTS/junit/
-    #- find . -type f -regex ".*/build/test-results/.*xml" -exec cp {} $CIRCLE_TEST_REPORTS/junit/ \;
+      #- mkdir -p $CIRCLE_TEST_REPORTS/junit/
+      #- find . -type f -regex ".*/build/test-results/.*xml" -exec cp {} $CIRCLE_TEST_REPORTS/junit/ \;
 
 general:
   artifacts:
