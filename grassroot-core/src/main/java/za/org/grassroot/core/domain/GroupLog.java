@@ -99,6 +99,10 @@ public class GroupLog implements Serializable, ActionLog {
                 targetGroup != null ? targetGroup : targetAccount;
     }
 
+    public String getUserNameSafe() {
+        return targetUser != null ? targetUser.getName() : user.getName();
+    }
+
     @Override
     public String toString() {
         return "GroupLog{" +

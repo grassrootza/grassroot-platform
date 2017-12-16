@@ -20,10 +20,12 @@ public class MembershipRecordDTO {
 
     public MembershipRecordDTO(Membership membership, GroupLog groupLog) {
         this.groupLogId = groupLog.getId(); // since no UID on group log ...
-        this.groupUid = membership.getGroup().getUid();
-        this.userUid = membership.getUser().getUid();
-        this.memberName = membership.getDisplayName();
-        this.roleName = membership.getRole().getName();
+        this.groupUid = groupLog.getGroup().getUid();
+        this.userUid = membership != null ? membership.getUser().getUid() :
+                groupLog.getTarget().getUid();
+        this.memberName = membership != null ? membership.getDisplayName() :
+                groupLog.getUserNameSafe();
+        this.roleName = membership != null ? membership.getRole().getName() : null;
         this.changeDateTimeMillis = groupLog.getCreatedDateTime().toEpochMilli();
         this.changeType = groupLog.getGroupLogType();
         this.changingUserName = groupLog.getUser().getName();
