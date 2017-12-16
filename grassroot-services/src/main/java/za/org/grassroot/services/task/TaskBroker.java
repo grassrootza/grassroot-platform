@@ -1,5 +1,6 @@
 package za.org.grassroot.services.task;
 
+import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.task.Task;
 import za.org.grassroot.core.dto.task.TaskDTO;
 import za.org.grassroot.core.dto.task.TaskFullDTO;
@@ -69,4 +70,6 @@ public interface TaskBroker {
 
     List<Task> fetchTasksRequiringUserResponse(String userUid, String userResponse);
 
+    @Transactional(readOnly = true)
+    List<TaskFullDTO> fetchUpcomingGroupTasks(String userUid, String groupUid);
 }

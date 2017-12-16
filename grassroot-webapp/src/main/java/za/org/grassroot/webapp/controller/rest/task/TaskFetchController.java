@@ -106,14 +106,14 @@ public class TaskFetchController extends BaseRestController {
 
     @RequestMapping(value = "/upcoming/group/{groupUid}", method = RequestMethod.GET)
     @ApiOperation(value = "All tasks for a group", notes = "Fetch tasks for a group", response = ChangedSinceData.class)
-    public ResponseEntity<List<TaskDTO>> fetchUserGroupTasks(@PathVariable String groupUid, HttpServletRequest request) {
+    public ResponseEntity<List<TaskFullDTO>> fetchUserGroupTasks(@PathVariable String groupUid, HttpServletRequest request) {
 
         String userId = getUserIdFromRequest(request);
         if (userId != null) {
-            List<TaskDTO> tasks = taskBroker.fetchUpcomingIncompleteGroupTasks(userId, groupUid);
+            List<TaskFullDTO> tasks = taskBroker.fetchUpcomingGroupTasks(userId, groupUid);
             return ResponseEntity.ok(tasks);
         } else {
-            return new ResponseEntity<>((List<TaskDTO>) null, HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity<>((List<TaskFullDTO>) null, HttpStatus.UNAUTHORIZED);
         }
     }
 
