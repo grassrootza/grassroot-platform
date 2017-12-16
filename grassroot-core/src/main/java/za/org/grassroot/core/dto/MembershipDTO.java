@@ -15,7 +15,7 @@ public class MembershipDTO extends MembershipInfo {
         super(membership.getUser(), membership.getDisplayName(), membership.getRole().getName());
         this.memberUid = membership.getUser().getUid();
         this.userSetName = membership.getUser().isHasSetOwnName();
-        this.groupUid = membership.getGroup().getName();
+        this.groupUid = membership.getGroup().getUid();
         this.compositeUid = this.groupUid + "-" + this.memberUid;
         this.memberEmail = membership.getUser().getEmailAddress();
         this.joinedDateTimeMillis = membership.getJoinTime().toEpochMilli();

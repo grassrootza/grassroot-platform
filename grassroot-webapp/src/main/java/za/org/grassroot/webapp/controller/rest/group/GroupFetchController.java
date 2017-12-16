@@ -53,7 +53,7 @@ public class GroupFetchController extends BaseRestController {
 
 
     @ApiOperation("Returns a list of groups for currently logged in user")
-    @RequestMapping(value = "/list")
+    @RequestMapping(value = "/list", method = RequestMethod.GET)
     public ResponseEntity<List<GroupWebDTO>> listUserGroups(HttpServletRequest request) {
         String userId = getUserIdFromRequest(request);
 
@@ -91,7 +91,7 @@ public class GroupFetchController extends BaseRestController {
         return ResponseEntity.ok(groupFetchBroker.fetchGroupMinimalInfo(userUid, groupUids));
     }
 
-    @RequestMapping(value = "/full/{userUid}", method = RequestMethod.GET)
+    @RequestMapping(value = "/full", method = RequestMethod.GET)
     @ApiOperation(value = "Get full details about a group, including members (if permission to see details) and description")
     public ResponseEntity<GroupFullDTO> fetchFullGroupInfo(@PathVariable String userUid,
                                                            @RequestParam String groupUid) {
