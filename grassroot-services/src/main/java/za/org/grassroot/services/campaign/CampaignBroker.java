@@ -5,6 +5,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignActionType;
 import za.org.grassroot.core.domain.campaign.CampaignMessage;
+import za.org.grassroot.core.domain.campaign.CampaignType;
 import za.org.grassroot.core.enums.MessageVariationAssignment;
 import za.org.grassroot.core.enums.UserInterfaceType;
 
@@ -86,7 +87,7 @@ public interface CampaignBroker {
      * @param endDate
      * @return
      */
-    Campaign createCampaign(String campaignName, String campaignCode, String description, String userUid, Instant startDate, Instant endDate, List<String> campaignTags);
+    Campaign createCampaign(String campaignName, String campaignCode, String description, String userUid, Instant startDate, Instant endDate, List<String> campaignTags, CampaignType campaignType,String url);
 
     /**
      *
@@ -100,7 +101,7 @@ public interface CampaignBroker {
      * @param campaignTags
      * @return
      */
-    Campaign createCampaign(String campaignName, String campaignCode, String description, User createUser, Long groupId, Instant startDate, Instant endDate, List<String> campaignTags);
+    Campaign createCampaign(String campaignName, String campaignCode, String description, User createUser, Long groupId, Instant startDate, Instant endDate, List<String> campaignTags, CampaignType campaignType);
     /**
      *
      * @param campaignCode
@@ -112,15 +113,6 @@ public interface CampaignBroker {
      * @return
      */
     Campaign addCampaignMessage(String campaignCode, String campaignMessage, Locale messageLocale, MessageVariationAssignment assignment, UserInterfaceType interfaceType, User createUser, List<String> messageTags);
-
-    /**
-     *
-     * @param campaignCode
-     * @param messageUid
-     * @param campaignActionTypes
-     * @return
-     */
-    Campaign addActionsToCampaignMessage(String campaignCode, String messageUid, List<CampaignActionType> campaignActionTypes, User user);
 
     /**
      *
@@ -140,10 +132,19 @@ public interface CampaignBroker {
     /**
      *
      * @param campaignCode
-     * @param groupId
+     * @param groupUid
      * @return
      */
-    Campaign linkCampaignToMasterGroup(String campaignCode, Long groupId, String phoneNumber);
+    Campaign linkCampaignToMasterGroup(String campaignCode, String groupUid, String userUid);
+
+    /**
+     *
+     * @param campaignCode
+     * @param groupName
+     * @param userUid
+     * @return
+     */
+    Campaign createMasterGroupForCampaignAndLinkCampaign(String campaignCode, String groupName, String userUid);
 
     /**
      *
@@ -157,5 +158,26 @@ public interface CampaignBroker {
      */
     CampaignMessage getCampaignMessageByCampaignCodeAndActionType(String campaignCode, MessageVariationAssignment assignment,UserInterfaceType channel, CampaignActionType actionType, String inputNumber, Locale locale);
 
+    /**
+     *
+     * @param campaignCode
+     * @param phoneNumber
+     * @return
+     */
+    Campaign addUserToCampaignMasterGroup(String campaignCode,String phoneNumber);
 
+    /**
+     *
+     * @param campaignCode
+     * @param parentMessageUid
+     * @param actionType
+     * @param actionMessage
+     * @param actionMessageLocale
+     * @param actionMessageAssignment
+     * @param interfaceType
+     * @param createUser
+     * @param actionMessageTags
+     * @return
+     */
+    Campaign addActionToCampaignMessage(String campaignCode, String parentMessageUid,CampaignActionType actionType, String actionMessage, Locale actionMessageLocale, MessageVariationAssignment actionMessageAssignment, UserInterfaceType interfaceType, User createUser, Set<String> actionMessageTags);
 }

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      data-layout-decorate="~{layout}">
+<head>
+  <title>Thank you!</title>
+
+</head>
+<body>
+
+<section layout:fragment="header" class="top-container"
+         th:replace="~{fragments :: std_header('Thank you ' + ${fromName} + '!',
+           'Building the tools for a people\'s democracy')}">
+</section>
+
+<main layout:fragment="content">
+
+  <section class="grassroot-form">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-8 col-md-offset-2 col-sm-6 col-sm-offset-3 col-xs-12">
+          <p class="grassroot-body">
+            <b>Your contribution is immensely appreciated.</b>
+            Your donation will enable many more communities to organize themselves, take action,
+            and build an accountable, responsive government.
+          </p>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-8 col-md-offset-2 col-sm-6 col-sm-offset-3 col-xs-12">
+          <form th:action="@{/donate/share}" method="get">
+            <p class="grassroot-body">
+              We would also be deeply grateful if you shared our page with anyone else you think might want to contribute.
+              Sharing with just one other person can make a big difference to our ability to support communities.
+              Just enter their address below and we'll send them an email with a link and describing the work Grassroot does. Thank you!
+            </p>
+            <input type="hidden" name="fromName" th:value="${fromName}" />
+            <div th:replace="~{form_fragments :: text_input('Name', 'The name of the recipient', '100', 'toName')}"></div>
+            <div th:replace="~{form_fragments :: text_input('Email', 'Their email address', '100', 'toAddress')}"></div>
+            <div class="form-group pull-right top-buffer">
+              <button id="submitButton" type="submit" class="btn default-button">Share</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+</body>
+
+</html>

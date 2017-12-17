@@ -8,4 +8,6 @@ public interface MembershipRepository extends JpaRepository<Membership, Long>, J
 
     long countByGroupUid(String groupUid);
 
+    Membership findByGroupUidAndUserUid(String groupId, String userUid);
+
 }

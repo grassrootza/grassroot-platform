@@ -1,8 +1,6 @@
 package za.org.grassroot.core.enums;
 
-/**
- * Created by luke on 2016/02/15.
- */
+
 public enum UserInterfaceType {
     UNKNOWN("unknown"),
     USSD("ussd"),

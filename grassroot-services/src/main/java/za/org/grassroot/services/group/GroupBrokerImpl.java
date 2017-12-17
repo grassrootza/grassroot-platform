@@ -44,6 +44,7 @@ import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 import za.org.grassroot.services.util.TokenGeneratorService;
 
+import javax.persistence.Query;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
@@ -636,6 +637,33 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         logActionLogsAfterCommit(actionLogs);
     }
 
+    @Override
+    @Transactional
+    public boolean setGroupPinnedForUser(String userUid, String groupUid, boolean pinned) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(groupUid);
+        Membership membership = membershipRepository.findByGroupUidAndUserUid(groupUid, userUid);
+        if (membership != null) {
+            membership.setViewPriority(pinned ? GroupViewPriority.PINNED : GroupViewPriority.NORMAL);
+            membershipRepository.save(membership);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    @Transactional
+    public boolean updateViewPriority(String userUid, String groupUid, GroupViewPriority priority) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(groupUid);
+        Membership membership = membershipRepository.findByGroupUidAndUserUid(groupUid, userUid);
+        if (membership != null) {
+            membership.setViewPriority(priority);
+            return true;
+        }
+        return false;
+    }
+
     private Set<ActionLog> changeMembersToRole(User user, Group group, Set<String> memberUids, Role newRole) {
         return group.getMemberships().stream()
                 .filter(m -> memberUids.contains(m.getUser().getUid()))
@@ -1120,6 +1148,28 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
     @Override
     @Transactional
+    public void addMemberViaCampaign(String userUidToAdd, String groupUid,String campaignCode) {
+        User user = userRepository.findOneByUid(userUidToAdd);
+        Group group = groupRepository.findOneByUid(groupUid);
+        logger.info("Adding a member via campaign add request: group={}, user={}, code={}", group, user, campaignCode);
+        group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.SELF_JOINED);
+        Group parentGroup = group.getParent();
+        while (parentGroup != null) {
+            parentGroup.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+            parentGroup = parentGroup.getParent();
+        }
+        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+        GroupLog groupLog = new GroupLog(group, user, GroupLogType.GROUP_MEMBER_ADDED_VIA_CAMPAIGN, user.getId(),
+                "Member joined via campaign code: " + campaignCode);
+        bundle.addLog(groupLog);
+        bundle.addLog(new UserLog(userUidToAdd, UserLogType.USED_A_CAMPAIGN, groupUid, UNKNOWN));
+        notifyNewMembersOfUpcomingMeetings(bundle, user, group, groupLog);
+        storeBundleAfterCommit(bundle);
+    }
+
+
+    @Override
+    @Transactional
     public void sendGroupJoinCodeNotification(String userUid, String groupUid) {
         User user = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
@@ -1142,7 +1192,8 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
     public void sendAllGroupJoinCodesNotification(String userUid) {
         User user = userRepository.findOneByUid(userUid);
 
-        List<Group> groups = groupRepository.findByCreatedByUserAndActiveTrueOrderByCreatedDateTimeDesc(user);
+        //List<Group> groups = groupRepository.findByCreatedByUserAndActiveTrueOrderByCreatedDateTimeDesc(user);
+        List<Group> groups = permissionBroker.getActiveGroupsSorted(user,null);
 
         UserLog userLog = new UserLog(user.getUid(), UserLogType.SENT_GROUP_JOIN_CODE,
                 "All groups join codes sent", UserInterfaceType.UNKNOWN);

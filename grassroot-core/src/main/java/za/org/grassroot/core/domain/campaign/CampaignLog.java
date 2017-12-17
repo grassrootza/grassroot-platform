@@ -42,7 +42,7 @@ public class CampaignLog implements ActionLog {
     @Column(name="description", nullable = true)
     private String description;
 
-    private CampaignLog() {
+    public CampaignLog() {
         // for JPA
     }
 
@@ -59,7 +59,7 @@ public class CampaignLog implements ActionLog {
         this.creationTime = Instant.now();
         this.user = user;
         this.campaignLogType = Objects.requireNonNull(campaignLogType);
-        this.campaign = Objects.requireNonNull(campaign);
+        this.campaign = campaign;
         this.description = Objects.requireNonNull(searchValue);
     }
 

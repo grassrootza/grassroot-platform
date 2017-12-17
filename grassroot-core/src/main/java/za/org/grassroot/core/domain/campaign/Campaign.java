@@ -9,6 +9,8 @@ import za.org.grassroot.core.util.UIDGenerator;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -66,15 +68,28 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
     private Group masterGroup ;
 
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "campaign", orphanRemoval = true)
-    private Set<CampaignMessage> campaignMessages;
+    private Set<CampaignMessage> campaignMessages = new HashSet<>();
 
     @Column(name = "tags")
     @Type(type = "za.org.grassroot.core.util.StringArrayUserType")
     private String[] tags;
 
-    public Campaign(){}
+    @Enumerated(EnumType.STRING)
+    @Column(name = "type",nullable = false)
+    private CampaignType campaignType;
 
-    public Campaign(String campaignName, String campaignCode,String campaignDescription, User createdByUser, Instant startDateTime, Instant endDateTime){
+    @Column(name = "url",nullable = true)
+    private String url;
+
+    @OneToMany(mappedBy = "campaign")
+    private Set<CampaignLog> campaignLogs = new HashSet<>();
+
+    public Campaign(){
+        this.uid = UIDGenerator.generateId();
+        this.createdDateTime = Instant.now();
+    }
+
+    public Campaign(String campaignName, String campaignCode,String campaignDescription, User createdByUser, Instant startDateTime, Instant endDateTime,CampaignType campaignType, String campaignUrl){
         this.uid = UIDGenerator.generateId();
         this.createdDateTime = Instant.now();
         this.campaignName = Objects.requireNonNull(campaignName);
@@ -83,6 +98,8 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
         this.campaignDescription = Objects.requireNonNull(campaignDescription);
         this.startDateTime = Objects.requireNonNull(startDateTime);
         this.endDateTime = Objects.requireNonNull(endDateTime);
+        this.campaignType = Objects.requireNonNull(campaignType);
+        this.url = campaignUrl;
     }
 
     @Override
@@ -131,6 +148,7 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
         sb.append(", createdBy=").append(createdByUser.getId());
         sb.append(", campaignStartDate=").append(startDateTime);
         sb.append(", campaignEndDate=").append(endDateTime);
+        sb.append(", campaignType=").append(campaignType);
         sb.append(", version=").append(version);
         sb.append('}');
         return sb.toString();
@@ -207,13 +225,6 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
     }
 
 
-    public Set<CampaignMessage> getCampaignMessages() {
-        if(this.campaignMessages == null){
-            this.campaignMessages = new HashSet<>();
-        }
-        return campaignMessages;
-    }
-
     public void setCampaignMessages(Set<CampaignMessage> campaignMessages) {
         this.campaignMessages = campaignMessages;
     }
@@ -240,5 +251,33 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
 
     public void setMasterGroup(Group masterGroup) {
         this.masterGroup = masterGroup;
+    }
+
+    public CampaignType getCampaignType() {
+        return campaignType;
+    }
+
+    public void setCampaignType(CampaignType campaignType) {
+        this.campaignType = campaignType;
+    }
+
+    public String getUrl() {
+        return url;
+    }
+
+    public void setUrl(String url) {
+        this.url = url;
+    }
+
+    public Set<CampaignMessage> getCampaignMessages() {
+        return campaignMessages;
+    }
+
+    public Set<CampaignLog> getCampaignLogs() {
+        return campaignLogs;
+    }
+
+    public void setCampaignLogs(Set<CampaignLog> campaignLogs) {
+        this.campaignLogs = campaignLogs;
     }
 }

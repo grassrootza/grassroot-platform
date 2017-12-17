@@ -6,37 +6,52 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Membership;
+import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.domain.task.TodoAssignment;
+import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.integration.email.EmailSendingBroker;
 import za.org.grassroot.integration.email.GrassrootEmail;
+import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.task.TodoBroker;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service @Slf4j
 public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
 
+    private final UserRepository userRepository;
+
     private final GroupBroker groupBroker;
     private final TodoBroker todoBroker;
+    private final PermissionBroker permissionBroker;
+
     private final EmailSendingBroker emailBroker;
 
-    public MemberDataExportBrokerImpl(GroupBroker groupBroker, TodoBroker todoBroker, EmailSendingBroker emailBroker) {
+    public MemberDataExportBrokerImpl(UserRepository userRepository, GroupBroker groupBroker, TodoBroker todoBroker, PermissionBroker permissionBroker, EmailSendingBroker emailBroker) {
+        this.userRepository = userRepository;
         this.groupBroker = groupBroker;
         this.todoBroker = todoBroker;
+        this.permissionBroker = permissionBroker;
         this.emailBroker = emailBroker;
     }
 
     @Override
-    public XSSFWorkbook exportGroup(String groupUid) {
+    public XSSFWorkbook exportGroup(String groupUid, String userUid) {
 
         // todo : include tags where consistent
         Group group = groupBroker.load(groupUid);
+        User exporter = userRepository.findOneByUid(userUid);
+
+        permissionBroker.validateGroupPermission(exporter, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
 
         XSSFWorkbook workbook = new XSSFWorkbook();
         XSSFSheet sheet = workbook.createSheet("Group members");
@@ -136,17 +151,19 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
 
         //we are starting from 1 because row number 0 is header
         int rowIndex = 1;
-
+        DateTimeFormatter formatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT)
+                .withLocale(Locale.ENGLISH).withZone(ZoneId.systemDefault());
         for (TodoAssignment assignment : todoAssignments) {
+
             addRow(sheet, rowIndex, new String[]{
                     assignment.getUser().getName(),
                     assignment.getUser().getPhoneNumber(),
                     String.valueOf(assignment.isHasResponded()),
                     assignment.getResponseText(),
-                    assignment.getResponseTime() == null ? "" : assignment.getResponseTime().toString() }); // todo: format
+                    assignment.getResponseTime() == null ? "" : formatter.format(assignment.getResponseTime()) }); // todo: format
             rowIndex++;
         }
-
+        //assignment.getResponseTime() == null ? "" : assignment.getResponseTime().toString()
         return workbook;
     }
 
@@ -166,8 +183,10 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
             // todo : make body more friendly, and create a special email address (no-reply) for from
             GrassrootEmail email = new GrassrootEmail.EmailBuilder("Grassroot: todo responses")
                     .address(emailAddress)
+                    .from("no-reply@grassroot.org.za")
+                    .subject(todo.getName() + "todo response")
                     .attachment("todo_responses", workbookFile)
-                    .content("Good day,\nThe responses to the todo is attached")
+                    .content("Good day,\nKindly find the attached responses for the above mentioned todo.")
                     .build();
 
             log.info("email assembled, putting it in the queue");

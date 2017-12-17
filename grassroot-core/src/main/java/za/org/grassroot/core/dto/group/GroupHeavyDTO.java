@@ -12,7 +12,7 @@ public class GroupHeavyDTO extends GroupMinimalDTO {
     protected final Long groupCreationTimeMillis;
 
     public GroupHeavyDTO(Group group, Membership membership) {
-        super(group, membership.getRole());
+        super(group, membership);
         this.groupCreatorUid = group.getCreatedByUser().getUid();
         this.groupCreatorName = group.getCreatedByUser().getName();
         this.groupCreationTimeMillis = group.getCreatedDateTime().toEpochMilli();

@@ -1,0 +1,1 @@
+alter table group_user_membership drop column view_priority;

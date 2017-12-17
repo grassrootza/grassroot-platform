@@ -4,6 +4,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.Type;
+import za.org.grassroot.core.enums.GroupViewPriority;
 
 import javax.persistence.*;
 import java.io.Serializable;
@@ -51,6 +52,11 @@ public class Membership implements Serializable, TagHolder {
     @Type(type = "za.org.grassroot.core.util.StringArrayUserType")
     private String[] tags;
 
+    @Setter
+    @Column(name = "view_priority", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private GroupViewPriority viewPriority;
+
     private Membership() {
         // for JPA
     }
@@ -61,12 +67,12 @@ public class Membership implements Serializable, TagHolder {
         this.role = Objects.requireNonNull(role);
         this.joinTime = Objects.requireNonNull(joinTime);
         this.joinMethod = joinMethod;
+        this.viewPriority = GroupViewPriority.NORMAL; // no case where starts off pinned or hidden
     }
 
     public void setRole(Role role) {
         this.role = Objects.requireNonNull(role);
     }
-
 
     public String getDisplayName() {
         return alias == null || alias.trim().isEmpty() ? user.getName() : alias;

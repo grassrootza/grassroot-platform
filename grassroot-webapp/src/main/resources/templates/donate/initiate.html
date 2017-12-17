@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      data-layout-decorate="~{layout}">
+<head>
+  <title>Donate</title>
+
+  <meta property="og:title" content="Grassroot"/>
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="/images/grassroot-logo.png"/>
+  <meta property="og:description" content="The Grassroot Platform"/>
+
+</head>
+<body>
+
+  <section layout:fragment="header" class="top-container"
+           th:replace="~{fragments :: std_header('Donate',
+           'Help build the tools for a people\'s democracy')}">
+  </section>
+
+  <main layout:fragment="content">
+
+    <section class="grassroot-form">
+      <div class="container">
+        <div class="row">
+          <div class="col-md-8 col-md-offset-2 col-sm-6 col-sm-offset-3 col-xs-12">
+            <form th:action="@{/donate/payment}" method="get">
+              <div th:replace="~{form_fragments :: text_input('Name (optional)', 'Your name, so we know who to thank', '100', 'name')}"></div>
+              <div th:replace="~{form_fragments :: text_input('Email (optional)', 'Where we should send a thank you (and tax-exempt receipt)', '100', 'email')}"></div>
+              <div class="form-group">
+                <label for="amount" class="control-label">Amount (in South African Rand)</label>
+                <input name="amount" id="amount" type="number" class="form-control input-lg"
+                       value="100" />
+              </div>
+              <div class="form-group pull-right top-buffer">
+                <button id="submitButton" type="submit" class="btn default-button">Donate</button>
+              </div>
+            </form>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-8 col-md-offset-2 col-sm-6 col-sm-offset-3 col-xs-12">
+            <p class="grassroot-body">
+              <b>In every community there are men and women who have the fire within to create change.</b>
+              We have built a platform to change this. It consists of purpose-built tools that solve real
+              problems for people who wish to organize their communities. It connects leaders to each
+              other, allows them and their communities to speak with one voice, and compel government change.
+            </p>
+            <p class="grassroot-body">
+              Our tools have enabled communities to
+              <a target="_blank" href="https://www.grassroot.org.za/news/2017/9/26/the-community-of-mzondi-takes-a-diy-approach-to-service-delivery">build services for themselves</a>,
+              <a target="_blank" href="https://www.grassroot.org.za/news/2017/11/8/livewiresa-ambassador-diaries-mondli-msani-community-conducts-social-audit">organize for better sanitation</a>,
+              <a target="_blank" href="https://www.grassroot.org.za/news/2017/9/20/livewiresa-citizen-journalist-training-with-health-e">tell the media about their issues</a>,
+              <a target="_blank" href="https://www.grassroot.org.za/news/2017/8/16/tshepisong-in-urgent-need-of-a-police-station">and organize for community safety</a>.
+              In the next year we will be scaling up our field presence and our tools. Join us as we work to create and
+              spread the tools for a people's democracy.
+            </p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+</body>
+
+</html>

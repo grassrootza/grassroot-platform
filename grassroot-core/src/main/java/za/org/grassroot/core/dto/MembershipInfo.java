@@ -56,6 +56,7 @@ public class MembershipInfo implements Comparable<MembershipInfo> {
         this.displayName = displayName;
         this.userSetName = user.isHasSetOwnName();
         this.roleName = roleName;
+        this.userUid = user.getUid();
     }
 
     public static MembershipInfo makeEmpty() {

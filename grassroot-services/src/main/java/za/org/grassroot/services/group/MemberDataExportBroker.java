@@ -6,7 +6,7 @@ import java.util.List;
 
 public interface MemberDataExportBroker {
 
-    XSSFWorkbook exportGroup(String groupUid);
+    XSSFWorkbook exportGroup(String groupUid, String userUid);
 
     XSSFWorkbook exportMultipleGroupMembers(List<String> userGroupUids, List<String> groupUidsToExport);
 

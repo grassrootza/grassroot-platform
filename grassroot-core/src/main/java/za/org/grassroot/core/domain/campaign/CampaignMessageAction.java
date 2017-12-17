@@ -3,6 +3,7 @@ package za.org.grassroot.core.domain.campaign;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.UIDGenerator;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
@@ -34,7 +35,8 @@ public class CampaignMessageAction implements Serializable, Comparable<CampaignM
     @Column(name = "uid", nullable = false, unique = true)
     private String uid;
 
-    @OneToOne(mappedBy = "parentAction")
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "action_message_id")
     private CampaignMessage actionMessage;
 
     @Column(name = "created_date_time", insertable = true, updatable = false)

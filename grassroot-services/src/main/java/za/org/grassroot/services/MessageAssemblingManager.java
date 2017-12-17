@@ -419,9 +419,9 @@ public class MessageAssemblingManager implements MessageAssemblingService {
 
     @Override
     public String createGroupJoinCodeMessage(Group group) {
-        // todo : use messages.properties in services
-        return "Your join code for group:" +
-                group.getGroupName() +
-                "Is:" + group.getGroupTokenCode();
+        String[] fields = new String[]{group.getGroupName(),group.getGroupTokenCode()};
+        return messageSourceAccessor.getMessage("text.group.join.code",
+                fields,getUserLocale(group.getCreatedByUser()));
     }
+
 }

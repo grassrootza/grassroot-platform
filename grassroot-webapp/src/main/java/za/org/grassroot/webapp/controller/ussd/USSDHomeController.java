@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -190,12 +191,13 @@ public class USSDHomeController extends USSDBaseController {
             returnMenu = assembleSendMeAndroidLinkMenu(user);
         } else if (geoApisEnabled && geoApiSuffixes.keySet().contains(trailingDigits)) {
             returnMenu = geoApiController.openingMenu(user, geoApiSuffixes.get(trailingDigits));
-        /* else if(isCampaignTrailingCode(trailingDigits)){
-            Campaign campaign = campaignBroker.getCampaignDetailsByCode(trailingDigits);
-            returnMenu = assembleCampaignMessageResponse(campaign,user);
-        } */
         } else {
             returnMenu = groupController.lookForJoinCode(user, trailingDigits);
+            /*
+        	returnMenu = getActiveCampaignForTrailingCode(trailingDigits, user);
+            if (returnMenu == null) {
+                returnMenu = groupController.lookForJoinCode(user, trailingDigits);
+             */
         }
         return returnMenu;
     }
@@ -205,9 +207,9 @@ public class USSDHomeController extends USSDBaseController {
         return (enteredUSSD != null && enteredUSSD.length() > hashPosition + 1);
     }
 
-    private boolean isCampaignTrailingCode(String digits){
-        //todo fix.
-        return false;
+    private USSDMenu getActiveCampaignForTrailingCode(String trailingDigits, User user){
+        Campaign campaign = campaignBroker.getCampaignDetailsByCode(trailingDigits);
+        return (campaign != null) ? assembleCampaignMessageResponse(campaign,user): null;
     }
 
     private USSDMenu defaultStartMenu(User sessionUser) throws URISyntaxException {
@@ -250,11 +252,9 @@ public class USSDHomeController extends USSDBaseController {
         if(supportedCampaignLanguages.size() == 1){
             return assembleCampaignResponse(campaign,supportedCampaignLanguages.iterator().next());
         }
-        if(user.getLanguageCode() != null && supportedCampaignLanguages.contains(new Locale(user.getLanguageCode()))){
+        if(!StringUtils.isEmpty(user.getLanguageCode()) && supportedCampaignLanguages.contains(new Locale(user.getLanguageCode()))){
             return assembleCampaignResponse(campaign,new Locale(user.getLanguageCode()));
         }
-        //Discuss this with Luke. The user needs to chose a language for campaign but that language may not be their
-        // preferred language
         return assembleCampaignResponseForSupportedLanguage(campaign,user);
     }
 

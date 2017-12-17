@@ -370,19 +370,23 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
     public void settingLocationShouldWork() throws Exception {
 
         User testUser = new User(testUserPhone);
-        String testEventUid = MeetingRequest.makeEmpty().getUid();
-        String urlToSave = saveMeetingMenu("place", testEventUid, false);
+        Group testGroup = new Group("test", testUser);
+        MeetingRequest dummyRequest = MeetingRequest.makeEmpty(testUser, testGroup);
+        String urlToSave = saveMeetingMenu("place", dummyRequest.getUid(), false);
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone, urlToSave)).thenReturn(testUser);
+        when(eventRequestBrokerMock.load(dummyRequest.getUid())).thenReturn(dummyRequest);
 
-        mockMvc.perform(get(path + "place").param(phoneParam, testUserPhone).param("entityUid", testEventUid).
+        mockMvc.perform(get(path + "place").param(phoneParam, testUserPhone).param("entityUid", dummyRequest.getUid()).
                 param("prior_menu", "subject").param("request", "unit test")).andExpect(status().isOk());
         mockMvc.perform(get(base + urlToSave).param(phoneParam, testUserPhone).param("request", "1")).
                 andExpect(status().isOk());
 
         verify(userManagementServiceMock, times(2)).findByInputNumber(anyString(), anyString());
         verifyNoMoreInteractions(userManagementServiceMock);
-        verify(eventRequestBrokerMock, times(1)).updateName(testUser.getUid(), testEventUid, "unit test");
+        verify(eventRequestBrokerMock, times(2)).load(dummyRequest.getUid());
+        verify(eventBrokerMock, times(2)).getMostFrequentLocation(testGroup.getUid());
+        verify(eventRequestBrokerMock, times(1)).updateName(testUser.getUid(), dummyRequest.getUid(), "unit test");
         verifyNoMoreInteractions(eventRequestBrokerMock);
         verifyZeroInteractions(groupBrokerMock);
     }

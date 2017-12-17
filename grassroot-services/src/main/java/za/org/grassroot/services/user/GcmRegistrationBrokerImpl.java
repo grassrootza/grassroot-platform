@@ -80,7 +80,7 @@ public class GcmRegistrationBrokerImpl implements GcmRegistrationBroker {
     @Transactional
     public void unregisterUser(User user) {
         GcmRegistration gcmRegistration = gcmRegistrationRepository.findTopByUserOrderByCreationTimeDesc(user);
-        List<Group> groupsPartOf = groupRepository.findByMembershipsUserAndActiveTrue(user);
+        List<Group> groupsPartOf = groupRepository.findByMembershipsUserAndActiveTrueAndParentIsNull(user);
         for (Group group : groupsPartOf) {
             try {
                 unsubscribeFromTopic(gcmRegistration.getRegistrationId(), group.getUid());

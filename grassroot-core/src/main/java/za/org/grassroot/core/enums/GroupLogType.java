@@ -20,6 +20,7 @@ public enum GroupLogType {
     LANGUAGE_CHANGED("changed group default language"),
     PARENT_CHANGED("added or changed parent group"),
     GROUP_MEMBER_ADDED_VIA_JOIN_CODE("group member joined via join code"),
+    GROUP_MEMBER_ADDED_VIA_CAMPAIGN("group member joined via campaign"),
     GROUP_MEMBER_ADDED_AT_CREATION("Group created"),
     GROUP_AVATAR_UPLOADED("Group avatar loaded"),
     GROUP_AVATAR_REMOVED("Group avatar deleted"),

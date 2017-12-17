@@ -116,6 +116,7 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
         return results;
     }
 
+
     @Override
     @Transactional(readOnly = true)
     public List<Group> searchUsersGroups(String userUid, String searchTerm, boolean onlyCreatedGroups) {
@@ -227,7 +228,7 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
     @Transactional(readOnly = true)
     public ChangedSinceData<Group> getActiveGroups(User user, Instant changedSince) {
         Objects.requireNonNull(user, "User cannot be null");
-        List<Group> activeGroups = groupRepository.findByMembershipsUserAndActiveTrue(user);
+        List<Group> activeGroups = groupRepository.findByMembershipsUserAndActiveTrueAndParentIsNull(user);
         // here we put all those groups that have been satisfying query above, but not anymore since 'changedSince' moment
         Set<String> removedUids = new HashSet<>();
         if (changedSince != null) {
