@@ -324,7 +324,7 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
     }
 
     public Membership removeMember(User member) {
-        Membership membership = getMembership(member);
+        Membership membership = getMembership(member.getUid());
         if (membership == null) {
             return null;
         }
@@ -350,11 +350,18 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         this.memberships.removeAll(memberships);
     }
 
+
     public Membership getMembership(User user) {
         Objects.requireNonNull(user);
 
+        return this.getMembership(user.getUid());
+    }
+
+    public Membership getMembership(String userUid) {
+        Objects.requireNonNull(userUid);
+
         for (Membership membership : memberships) {
-            if (membership.getUser().equals(user)) {
+            if (membership.getUser().getUid().equals(userUid)) {
                 return membership;
             }
         }
@@ -371,7 +378,7 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
 
     public boolean hasMember(User user) {
         Objects.requireNonNull(user);
-        Membership membership = getMembership(user);
+        Membership membership = getMembership(user.getUid());
         return membership != null;
     }
 
