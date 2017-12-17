@@ -35,8 +35,8 @@
               Just enter their address below and we'll send them an email with a link and describing the work Grassroot does. Thank you!
             </p>
             <input type="hidden" name="fromName" th:value="${fromName}" />
-            <div th:replace="~{form_fragments :: text_input('Name', 'The name of the recipient', '100', 'name')}"></div>
-            <div th:replace="~{form_fragments :: text_input('Email', 'Their email address', '100', 'email')}"></div>
+            <div th:replace="~{form_fragments :: text_input('Name', 'The name of the recipient', '100', 'toName')}"></div>
+            <div th:replace="~{form_fragments :: text_input('Email', 'Their email address', '100', 'toAddress')}"></div>
             <div class="form-group pull-right top-buffer">
               <button id="submitButton" type="submit" class="btn default-button">Share</button>
             </div>

@@ -91,7 +91,7 @@ public class DonationController extends BaseController {
         try {
             return URLEncoder.encode(string, "UTF-8");
         } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();;
+            e.printStackTrace();
             return string;
         }
     }
@@ -187,7 +187,7 @@ public class DonationController extends BaseController {
             log.info("processed template ... firing off mail");
             log.debug("email template processed looks like: {}", htmlContent);
             emailBroker.sendMail(new GrassrootEmail.EmailBuilder(subject)
-                    .address(toEmail).htmlContent(htmlContent).content(htmlContent).build());
+                    .from("Grassroot").address(toEmail).htmlContent(htmlContent).content(htmlContent).build());
         } catch (Exception e) {
             e.printStackTrace();
         }
