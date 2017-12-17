@@ -8,6 +8,8 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.FileSystemResource;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -15,6 +17,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.Permission;
+import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.dto.MembershipFullDTO;
 import za.org.grassroot.core.dto.group.GroupFullDTO;
 import za.org.grassroot.core.dto.group.GroupMinimalDTO;
 import za.org.grassroot.core.dto.group.GroupTimeChangedDTO;
@@ -121,6 +125,13 @@ public class GroupFetchController extends BaseRestController {
         final String descriptionTemplate = "Group '%1$s', created on %2$s, has %3$d members, with join code %4$s";
         return ResponseEntity.ok(groupFetchBroker.fetchGroupFullInfo(userUid, groupUids).stream()
                 .map(g -> g.insertDefaultDescriptionIfEmpty(descriptionTemplate)).collect(Collectors.toSet()));
+    }
+
+
+    @RequestMapping(value = "/members", method = RequestMethod.GET)
+    public Page<MembershipFullDTO> fetchGroupMembers(@RequestParam String groupUid, Pageable pageable, HttpServletRequest request) {
+        User user = getUserFromRequest(request);
+        return groupFetchBroker.fetchGroupMembers(user, groupUid, pageable);
     }
 
     @RequestMapping(value = "/export/{groupUid}", method = RequestMethod.GET)

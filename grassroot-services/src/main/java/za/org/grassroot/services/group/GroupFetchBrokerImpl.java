@@ -2,14 +2,18 @@ package za.org.grassroot.services.group;
 
 import com.codahale.metrics.annotation.Timed;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.Membership;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.MembershipDTO;
+import za.org.grassroot.core.dto.MembershipFullDTO;
 import za.org.grassroot.core.dto.group.*;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.MembershipRepository;
@@ -170,6 +174,20 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
         }
 
         return group.getMemberships().stream().map(MembershipDTO::new).collect(Collectors.toSet());
+    }
+
+    @Override
+    public Page<MembershipFullDTO> fetchGroupMembers(User user, String groupUid, Pageable pageable) {
+
+        Objects.requireNonNull(groupUid);
+        Group group = groupRepository.findOneByUid(groupUid);
+        try {
+            permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
+        } catch (AccessDeniedException e) {
+            throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
+        }
+        Page<Membership> members = membershipRepository.findByGroupUid(group.getUid(), pageable);
+        return members.map(MembershipFullDTO::new);
     }
 
     @Timed
