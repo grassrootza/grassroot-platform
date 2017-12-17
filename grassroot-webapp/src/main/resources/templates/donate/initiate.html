@@ -24,6 +24,22 @@
       <div class="container">
         <div class="row">
           <div class="col-md-8 col-md-offset-2 col-sm-6 col-sm-offset-3 col-xs-12">
+            <form th:action="@{/donate/payment}" method="get">
+              <div th:replace="~{form_fragments :: text_input('Name (optional)', 'Your name, so we know who to thank', '100', 'name')}"></div>
+              <div th:replace="~{form_fragments :: text_input('Email (optional)', 'Where we should send a thank you (and tax-exempt receipt)', '100', 'email')}"></div>
+              <div class="form-group">
+                <label for="amount" class="control-label">Amount (in South African Rand)</label>
+                <input name="amount" id="amount" type="number" class="form-control input-lg"
+                       value="100" />
+              </div>
+              <div class="form-group pull-right top-buffer">
+                <button id="submitButton" type="submit" class="btn default-button">Donate</button>
+              </div>
+            </form>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-8 col-md-offset-2 col-sm-6 col-sm-offset-3 col-xs-12">
             <p class="grassroot-body">
               <b>In every community there are men and women who have the fire within to create change.</b>
               We have built a platform to change this. It consists of purpose-built tools that solve real
@@ -41,21 +57,7 @@
             </p>
           </div>
         </div>
-        <div class="row">
-          <div class="col-md-8 col-md-offset-2 col-sm-6 col-sm-offset-3 col-xs-12">
-            <form th:action="@{/donate/payment}" method="get">
-              <input type="hidden" name="currency" value="ZAR" />
-              <div class="form-group">
-                <label for="amount" class="control-label">Amount (in South African Rand)</label>
-                <input name="amount" id="amount" type="number" class="form-control input-lg"
-                       value="100" />
-              </div>
-              <div class="form-group pull-right top-buffer">
-                <button id="submitButton" type="submit" class="btn default-button">Donate</button>
-              </div>
-            </form>
-          </div>
-        </div>
+
       </div>
     </section>
 

@@ -3,9 +3,10 @@ package za.org.grassroot.webapp.model;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 
-@Getter @Setter @NoArgsConstructor
-public class CheckoutInitiateResponse {
+@Getter @Setter @NoArgsConstructor @ToString
+public class PaymentSystemResponse {
 
     private String code;
 
@@ -20,5 +21,9 @@ public class CheckoutInitiateResponse {
     // private ZonedDateTime timestamp;
     private String ndc;
     private String id;
+
+    public String getInternalCode() {
+        return result.code;
+    }
 
 }
