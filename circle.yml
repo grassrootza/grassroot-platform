@@ -6,6 +6,7 @@ machine:
 
 dependencies:
   pre:
+    echo 'export GRADLE_USER_HOME=.gradle' >> ~/.circlerc
     #- pip install awscli
     #- pip install awsebcli
 
