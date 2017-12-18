@@ -8,8 +8,8 @@ dependencies:
   pre:
     #echo 'export GRADLE_USER_HOME=/usr/src/grassroot/.gradle' >> ~/.circlerc
     #ENV GRADLE_USER_HOME=/usr/src/grassroot/.gradle
-    #- pip install awscli
-    #- pip install awsebcli
+    - pip install awscli
+    - pip install awsebcli
 
     # SETUP KEYS TO ACCESS BUILD SERVER IF NEEDED
     #- aws configure set profile.default.s3.signature_version s3v4
@@ -26,7 +26,7 @@ test:
     #- ./gradlew test -g .gradle/tmp --configure-on-demand --parallel
   post:
     # RE-USE CACHE FOR DOCKER BUILD
-    # - mv ~/.gradle/tmp .gradle/tmp
+    - mv ~/.gradle/tmp .gradle/tmp
       #- mkdir -p $CIRCLE_TEST_REPORTS/junit/
       #- find . -type f -regex ".*/build/test-results/.*xml" -exec cp {} $CIRCLE_TEST_REPORTS/junit/ \;
 
