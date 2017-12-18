@@ -6,7 +6,8 @@ machine:
 
 dependencies:
   pre:
-    echo 'export GRADLE_USER_HOME=.gradle' >> ~/.circlerc
+    #echo 'export GRADLE_USER_HOME=/usr/src/grassroot/.gradle' >> ~/.circlerc
+    #ENV GRADLE_USER_HOME=/usr/src/grassroot/.gradle
     #- pip install awscli
     #- pip install awsebcli
 
