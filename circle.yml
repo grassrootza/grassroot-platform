@@ -26,7 +26,7 @@ test:
     #- ./gradlew test -g .gradle/tmp --configure-on-demand --parallel
   post:
     # RE-USE CACHE FOR DOCKER BUILD
-    - mv ~/.gradle/tmp .gradle/tmp
+    # - mv ~/.gradle/tmp .gradle/tmp
       #- mkdir -p $CIRCLE_TEST_REPORTS/junit/
       #- find . -type f -regex ".*/build/test-results/.*xml" -exec cp {} $CIRCLE_TEST_REPORTS/junit/ \;
 
