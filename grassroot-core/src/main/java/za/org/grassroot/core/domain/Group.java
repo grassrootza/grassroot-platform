@@ -184,7 +184,7 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         this.createdByUser = Objects.requireNonNull(createdByUser);
         this.createdDateTime = Instant.now();
         this.lastGroupChangeTime = this.createdDateTime;
-        this.active = false;
+        this.active = true;
         this.discoverable = true; // make groups discoverable by default
         this.joinApprover = createdByUser; // discoverable groups need a join approver, defaulting to creating user
         this.parent = parent;
