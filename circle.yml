@@ -60,7 +60,7 @@ deployment:
 
 
   staging:
-    branch: fix-gradlew
+    branch: preprod
     commands:
       # define environment
       - echo 'export ENVIRONMENT=staging' >> ~/.circlerc
