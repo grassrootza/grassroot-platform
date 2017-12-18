@@ -14,6 +14,14 @@ public class PaymentSystemResponse {
     private class Result {
         private String code;
         private String description;
+
+        @Override
+        public String toString() {
+            return "Result{" +
+                    "code='" + code + '\'' +
+                    ", description='" + description + '\'' +
+                    '}';
+        }
     }
 
     private Result result;

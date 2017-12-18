@@ -2,6 +2,7 @@ package za.org.grassroot.webapp.controller.webapp;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.core.env.Environment;
 import org.springframework.http.*;
 import org.springframework.stereotype.Controller;
@@ -30,6 +31,7 @@ import java.util.regex.Pattern;
 
 @Controller @Slf4j
 @RequestMapping("/donate")
+@PropertySource(value = "${grassroot.payments.properties}", ignoreResourceNotFound = true)
 public class DonationController extends BaseController {
 
     private static final Pattern SUCCESS_MATCHER = Pattern.compile("^(000\\.000\\.|000\\.100\\.1|000\\.[36])");
@@ -58,10 +60,10 @@ public class DonationController extends BaseController {
 
     @PostConstruct
     public void init() {
-        paymentUrl = environment.getProperty("grassroot.payments.url", "https://test.oppwa.com");
+        paymentUrl = environment.getProperty("grassroot.payments.url", "https://test.oppwa.com/v1/checkouts");
         paymentUserId = environment.getProperty("grassroot.payments.values.user", "8a8294174e735d0c014e78cf266b1794");
         paymentPassword = environment.getProperty("grassroot.payments.values.password", "qyyfHCN83e");
-        paymentEntityId = environment.getProperty("grassroot.payments.values.channelId", "8a8294174e735d0c014e78cf26461790");
+        paymentEntityId = environment.getProperty("grassroot.payments.values.channelId3d", "8a8294174e735d0c014e78cf26461790");
         successUrl = environment.getProperty("grassroot.payments.success.url", "https://test.grassroot.org.za/donate/success");
         resultsEmail = environment.getProperty("grassroot.payments.donate.email", "test@grassroot.org.za");
         sharingUrl = environment.getProperty("grassroot.payments.sharing.url", "https://localhost:8080/donate");
@@ -69,6 +71,7 @@ public class DonationController extends BaseController {
 
     @RequestMapping(value = { "", "/" }, method = RequestMethod.GET)
     public String initiateDonation() {
+        log.info("initiating donation, url ={}, entity ID = {}", paymentUrl, paymentEntityId);
         return "donate/initiate";
     }
 
@@ -79,8 +82,8 @@ public class DonationController extends BaseController {
             PaymentSystemResponse response = initiateCheckout(amount);
             log.info("got checkout response in {} msecs, looks like {}", startTime - System.currentTimeMillis(), response);
             model.addAttribute("paymentJsUrl",
-                    "https://test.oppwa.com/v1/paymentWidgets.js?checkoutId=" + response.getId());
-            model.addAttribute("successUrl", successUrl + "?name=" + urlEncode(name) + "&email=" + urlEncode(email) + "&amount=" + amount);
+                    paymentUrl + "/v1/paymentWidgets.js?checkoutId=" + response.getId());
+            model.addAttribute("successUrl", successUrl + "?name=" + urlEncode(urlEncode(name)) + "&email=" + urlEncode(email) + "&amount=" + amount);
         } catch(Exception e) {
             e.printStackTrace();
         }
