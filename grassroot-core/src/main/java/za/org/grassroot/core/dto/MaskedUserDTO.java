@@ -43,7 +43,7 @@ public class MaskedUserDTO {
         this.languageCode = user.getLanguageCode();
         this.createdDateTime = user.getCreatedDateTime();
 
-        this.hasInitiatedSession = user.isHasInitiatedSession();
+        //this.hasInitiatedSession = user.isHasInitiatedSession();
         this.webProfile = user.isHasWebProfile();
         this.enabled = user.isEnabled();
     }
