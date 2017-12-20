@@ -16,8 +16,6 @@ public interface MembershipRepository extends JpaRepository<Membership, Long>, J
 
     List<Membership> findByGroupAndUserIn(Group group, List<User> users);
 
-    Membership findByGroupUidAndUserUid(String groupId, String userUid);
-
     Page<Membership> findByGroupUid(String groupUid, Pageable pageable);
 
 }
