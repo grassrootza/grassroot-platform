@@ -12,11 +12,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.domain.campaign.Campaign;
-import za.org.grassroot.core.domain.campaign.CampaignActionType;
-import za.org.grassroot.core.domain.campaign.CampaignMessage;
-import za.org.grassroot.core.domain.campaign.CampaignMessageAction;
-import za.org.grassroot.core.domain.campaign.CampaignType;
+import za.org.grassroot.core.domain.campaign.*;
 import za.org.grassroot.core.enums.MessageVariationAssignment;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.webapp.util.USSDCampaignUtil;
@@ -31,9 +27,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.xpath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 public class USSDCampaignControllerTest extends USSDAbstractUnitTest {
 
@@ -61,7 +55,7 @@ public class USSDCampaignControllerTest extends USSDAbstractUnitTest {
                 .build();
         wireUpMessageSourceAndGroupUtil(ussdCampaignController);
 
-        testUser = new User(testUserPhone);
+        testUser = new User(testUserPhone, null, null);
         testGroup = new Group("test group", testUser);
         testCampaign = createTestCampaign();
         params = new LinkedMultiValueMap<>();

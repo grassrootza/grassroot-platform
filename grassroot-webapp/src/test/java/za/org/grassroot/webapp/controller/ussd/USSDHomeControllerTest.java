@@ -6,22 +6,16 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.GroupJoinMethod;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.domain.task.MeetingBuilder;
-import za.org.grassroot.core.domain.task.Vote;
-import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.services.UserResponseBroker;
 import za.org.grassroot.services.task.VoteBroker;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -43,7 +37,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
     private static final String openingMenu = "/ussd/start";
     private static final String phoneParameter = "msisdn";
 
-    private User testUser = new User(phoneForTests, testUserName);
+    private User testUser = new User(phoneForTests, testUserName, null);
 
     @Mock private VoteBroker voteBrokerMock;
     @Mock private UserResponseBroker userResponseBrokerMock;
@@ -136,7 +130,7 @@ public class USSDHomeControllerTest extends USSDAbstractUnitTest {
         testUser.setDisplayName("");
         testUser.setHasInitiatedSession(false);
 
-        Group testGroup = new Group(testGroupName, new User("27601110000"));
+        Group testGroup = new Group(testGroupName, new User("27601110000", null, null));
 
         testGroup.setGroupTokenCode("111");
         testGroup.setTokenExpiryDateTime(Instant.now().plus(7, ChronoUnit.DAYS));

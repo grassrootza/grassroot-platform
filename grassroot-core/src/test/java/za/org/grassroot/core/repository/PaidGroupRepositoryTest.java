@@ -57,7 +57,7 @@ public class PaidGroupRepositoryTest {
     @Before
     public void setUp() throws Exception {
 
-        testUser = userRepository.save(new User(testPhoneNumber));
+        testUser = userRepository.save(new User(testPhoneNumber, null, null));
         testGroup = groupRepository.save(new Group(testGroupName, testUser));
         testGroup2 = groupRepository.save(new Group(testGroupName + "2", testUser));
         testAccount = accountRepository.save(new Account(testUser, testAccountName, AccountType.STANDARD, testUser, null, AccountBillingCycle.MONTHLY));

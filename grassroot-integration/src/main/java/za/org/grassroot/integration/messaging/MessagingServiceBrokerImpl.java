@@ -89,21 +89,6 @@ public class MessagingServiceBrokerImpl implements MessagingServiceBroker, Comma
         }
     }
 
-    @Override
-    public void subscribeServerToGroupChatTopic(String groupUid) {
-        URI serviceCallUri = baseUri()
-                .pathSegment("/groupchat/server_subscribe/{groupUid}")
-                .buildAndExpand(groupUid)
-                .toUri();
-        asyncRestTemplate.exchange(
-                serviceCallUri,
-                HttpMethod.POST,
-                new HttpEntity<String>(jwtHeaders()),
-                String.class
-        );
-    }
-
-
     private UriComponentsBuilder baseUri() {
         return UriComponentsBuilder.fromUriString(messagingServiceUrl)
                 .port(messagingServicePort);

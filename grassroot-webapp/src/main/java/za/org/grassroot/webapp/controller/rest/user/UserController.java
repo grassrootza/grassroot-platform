@@ -39,14 +39,9 @@ import java.util.Locale;
 @RequestMapping("/api/user/profile")
 public class UserController extends BaseRestController {
 
-
     private final MediaFileBroker mediaFileBroker;
-
     private final StorageBroker storageBroker;
-
     private final UserManagementService userService;
-
-    private final JwtService jwtService;
 
 
     @Value("${grassroot.media.user-photo.folder:user-profile-images-staging}")
@@ -58,7 +53,6 @@ public class UserController extends BaseRestController {
         this.mediaFileBroker = mediaFileBroker;
         this.storageBroker = storageBroker;
         this.userService = userService;
-        this.jwtService = jwtService;
     }
 
     @ApiOperation(value = "Store a users profile photo, and get the server key back",

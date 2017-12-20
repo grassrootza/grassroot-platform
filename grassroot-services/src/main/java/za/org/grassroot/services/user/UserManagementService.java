@@ -25,6 +25,8 @@ public interface UserManagementService {
 
     User findByInputNumber(String inputNumber) throws NoSuchUserException;
 
+    User findByNumberOrEmail(String inputNumber, String emailAddress);
+
     User findByInputNumber(String inputNumber, String currentUssdMenu) throws NoSuchUserException;
 
     User fetchUserByUsername(String username);

@@ -150,7 +150,8 @@ public class IncomingSMSController {
         for (Map.Entry<Group, String> entry : messagesAndGroups.entrySet()) {
             String description = MessageFormat.format("From user: {0}; likely responding to: {1}",
                     trimmedMsg, entry.getValue());
-            GroupLog groupLog = new GroupLog(entry.getKey(), user, GroupLogType.USER_SENT_UNKNOWN_RESPONSE, user.getId(),
+            GroupLog groupLog = new GroupLog(entry.getKey(), user,
+                    GroupLogType.USER_SENT_UNKNOWN_RESPONSE, user, null, null,
                     description.substring(0, Math.min(255, description.length()))); // since could be very long ...
             groupLogRepository.save(groupLog);
         }

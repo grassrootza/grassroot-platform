@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      data-layout-decorate="~{layout}">
+<head>
+  <title>Thank you!</title>
+
+</head>
+<body>
+
+<section layout:fragment="header" class="top-container"
+         th:replace="~{fragments :: std_header('Thank you!',
+           'Building the tools for a people\'s democracy')}">
+</section>
+
+<main layout:fragment="content">
+
+  <section class="grassroot-form">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-8 col-md-offset-2 col-sm-6 col-sm-offset-3 col-xs-12">
+          <p class="grassroot-body">
+            <b>Your contribution is immensely appreciated.</b>
+            Your donation will enable many more communities to organize themselves, take action,
+            and build an accountable, responsive government.
+          </p>
+        </div>
+      </div>
+      <!-- todo: convert this into a "share" form
+      <div class="row">
+        <div class="col-md-8 col-md-offset-2 col-sm-6 col-sm-offset-3 col-xs-12">
+          <form th:action="@{/donate/payment}" method="get">
+            <input type="hidden" name="currency" value="ZAR" />
+            <div class="form-group">
+              <label for="amount" class="control-label">Amount (in South African Rand)</label>
+              <input name="amount" id="amount" type="number" class="form-control input-lg"
+                     value="100" />
+            </div>
+            <div class="form-group pull-right top-buffer">
+              <button id="submitButton" type="submit" class="btn default-button">Donate</button>
+            </div>
+          </form>
+        </div>
+      </div>-->
+    </div>
+  </section>
+
+</main>
+
+</body>
+
+</html>

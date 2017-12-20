@@ -59,7 +59,7 @@ public class AccountRepositoryTest {
 
     @Before
     public void setUp() throws Exception {
-        testUser = userRepository.save(new User("0601112345"));
+        testUser = userRepository.save(new User("0601112345", null, null));
     }
 
     @Test
@@ -96,7 +96,7 @@ public class AccountRepositoryTest {
     @Test
     public void shouldHandleAccountAdmins() {
         assertThat(accountRepository.count(), is (0L));
-        User testUser2 = userRepository.save(new User("0701112345"));
+        User testUser2 = userRepository.save(new User("0701112345", null, null));
 
         Account account = accountRepository.save(new Account(testUser, accountName, AccountType.STANDARD, testUser, null, AccountBillingCycle.MONTHLY));
         testUser.setPrimaryAccount(account);
@@ -173,7 +173,7 @@ public class AccountRepositoryTest {
     public void shouldFindByBillingUser() {
 
         assertThat(accountRepository.count(), is(0L));
-        User billingUser = userRepository.save(new User("0601110000", "Paying the bill"));
+        User billingUser = userRepository.save(new User("0601110000", "Paying the bill", null));
         billingUser.setEmailAddress(billingEmail);
         Account account = new Account(testUser, accountName, AccountType.STANDARD, billingUser, null, AccountBillingCycle.MONTHLY);
         accountRepository.save(account);
@@ -235,7 +235,7 @@ public class AccountRepositoryTest {
     public void shouldSaveAndFindAdministrator() {
 
         assertThat(accountRepository.count(), is(0L));
-        User testAdmin = new User("0505550000");
+        User testAdmin = new User("0505550000", null, null);
         testAdmin = userRepository.save(testAdmin);
 
         Account account = new Account(testUser, accountName, AccountType.STANDARD, testUser, null, AccountBillingCycle.MONTHLY);
@@ -263,7 +263,7 @@ public class AccountRepositoryTest {
 
         assertThat(accountRepository.count(), is(0L));
 
-        User testUser = new User("0505550000");
+        User testUser = new User("0505550000", null, null);
         testUser = userRepository.save(testUser);
         Group testGroup = new Group("testGroup", testUser);
         testGroup = groupRepository.save(testGroup);

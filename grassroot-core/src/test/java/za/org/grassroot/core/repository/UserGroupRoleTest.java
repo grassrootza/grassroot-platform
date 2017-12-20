@@ -38,7 +38,7 @@ public class UserGroupRoleTest {
     @Test
     @Ignore
     public void testCreateGroupRoles() throws Exception {
-        User user = new User("27729100003");
+        User user = new User("27729100003", null, null);
         user.setFirstName("Java");
         user.setLastName("Pablo");
 

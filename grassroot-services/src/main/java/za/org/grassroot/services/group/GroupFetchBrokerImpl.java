@@ -1,23 +1,23 @@
 package za.org.grassroot.services.group;
 
 import com.codahale.metrics.annotation.Timed;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.Membership;
-import za.org.grassroot.core.domain.Permission;
-import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.dto.MembershipDTO;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.MembershipFullDTO;
 import za.org.grassroot.core.dto.group.*;
+import za.org.grassroot.core.repository.GroupLogRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.MembershipRepository;
 import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.specifications.GroupLogSpecifications;
 import za.org.grassroot.core.specifications.GroupSpecifications;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
@@ -25,7 +25,9 @@ import za.org.grassroot.services.exception.MemberLacksPermissionException;
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static za.org.grassroot.core.specifications.GroupSpecifications.hasParent;
@@ -34,19 +36,21 @@ import static za.org.grassroot.core.specifications.GroupSpecifications.isActive;
 /**
  * Primary class for new style group feching, watch performance very closely (e.g., on size of memberships)
  */
-@Service
+@Service @Slf4j
 public class GroupFetchBrokerImpl implements GroupFetchBroker {
 
     private final UserRepository userRepository;
     private final GroupRepository groupRepository;
+    private final GroupLogRepository groupLogRepository;
     private final MembershipRepository membershipRepository;
     private final PermissionBroker permissionBroker;
     private final EntityManager entityManager;
 
     @Autowired
-    public GroupFetchBrokerImpl(UserRepository userRepository, GroupRepository groupRepository, MembershipRepository membershipRepository, PermissionBroker permissionBroker, EntityManager entityManager) {
+    public GroupFetchBrokerImpl(UserRepository userRepository, GroupRepository groupRepository, GroupLogRepository groupLogRepository, MembershipRepository membershipRepository, PermissionBroker permissionBroker, EntityManager entityManager) {
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
+        this.groupLogRepository = groupLogRepository;
         this.membershipRepository = membershipRepository;
         this.permissionBroker = permissionBroker;
         this.entityManager = entityManager;
@@ -101,8 +105,8 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
         User user = userRepository.findOneByUid(userUid);
         List<GroupMinimalDTO> dtoList = entityManager.createQuery("" +
                 "select new za.org.grassroot.core.dto.group.GroupMinimalDTO(g, m) " +
-                "from Group g inner join g.memberships m" +
-                        "where g.uid in :groupUids and m.user = :user", GroupMinimalDTO.class)
+                "from Group g inner join g.memberships m " +
+                "where g.uid in :groupUids and m.user = :user", GroupMinimalDTO.class)
                 .setParameter("groupUids", groupUids)
                 .setParameter("user", user)
                 .getResultList();
@@ -131,18 +135,32 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
     @Timed
     @Override
     @Transactional(readOnly = true)
-    public Set<GroupFullDTO> fetchGroupFullInfo(String userUid, Set<String> groupUids) {
-        if (groupUids == null || groupUids.isEmpty()) {
-            return new HashSet<>();
-        }
+    public GroupFullDTO fetchGroupFullInfo(String userUid, String groupUid) {
+        long startTime = System.currentTimeMillis();
         User user = userRepository.findOneByUid(userUid);
-        return new HashSet<>(entityManager.createQuery("" +
+        Group group = groupRepository.findOneByUid(groupUid);
+
+        List<GroupFullDTO> dtoResults = entityManager.createQuery("" +
                 "select new za.org.grassroot.core.dto.group.GroupFullDTO(g, m) " +
                 "from Group g inner join g.memberships m " +
-                "where g.uid in :groupUids and m.user = :user", GroupFullDTO.class)
-                .setParameter("groupUids", groupUids)
+                "where g.uid = :groupUid and m.user = :user", GroupFullDTO.class)
+                .setParameter("groupUid", groupUid)
                 .setParameter("user", user)
-                .getResultList());
+                .getResultList();
+
+        if (dtoResults.isEmpty()) {
+            throw new IllegalArgumentException("Error! Non existent group passed to query");
+        }
+
+        GroupFullDTO groupFullDTO = dtoResults.get(0);
+
+        if (permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS)) {
+            groupFullDTO.setMemberHistory(fetchRecentMembershipChanges(user.getUid(), group.getUid(),
+                    Instant.now().minus(180L, ChronoUnit.DAYS)));
+        }
+
+        log.info("heavy group info fetch, took {} msecs", System.currentTimeMillis() - startTime);
+        return groupFullDTO;
     }
 
     @Timed
@@ -165,12 +183,9 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
 
     @Override
     @Transactional(readOnly = true)
-    public Set<MembershipDTO> fetchGroupMembershipInfo(String userUid, String groupUid) {
-        Objects.requireNonNull(userUid);
-        Objects.requireNonNull(groupUid);
-
+    public List<MembershipRecordDTO> fetchRecentMembershipChanges(String userUid, String groupUid, Instant fromDate) {
+        Group group = groupRepository.findOneByUid(groupUid);
         User user = userRepository.findOneByUid(userUid);
-        Group group = groupRepository.findOneByUid(groupUid);
 
         try {
             permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
@@ -178,21 +193,25 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
         }
 
-        return group.getMemberships().stream().map(MembershipDTO::new).collect(Collectors.toSet());
-    }
 
-    @Override
-    public Page<MembershipFullDTO> fetchGroupMembers(User user, String groupUid, Pageable pageable) {
+        List<GroupLog> groupLogs = groupLogRepository.findAll(
+                GroupLogSpecifications.memberChangeRecords(group, fromDate),
+                new Sort(Sort.Direction.DESC, "createdDateTime"));
 
-        Objects.requireNonNull(groupUid);
-        Group group = groupRepository.findOneByUid(groupUid);
-        try {
-            permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
-        } catch (AccessDeniedException e) {
-            throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
-        }
-        Page<Membership> members = membershipRepository.findByGroupUid(group.getUid(), pageable);
-        return members.map(MembershipFullDTO::new);
+        // a little bit circuitous, but doing this to avoid possibly hundreds of separate calls
+        // to group.getMembership (triggering single SQL calls) -- and in any case, keep profiling
+        List<Membership> memberships = membershipRepository.findByGroupAndUserIn(group, groupLogs.stream()
+                .filter(GroupLog::hasTargetUser)
+                .map(GroupLog::getTargetUser)
+                .collect(Collectors.toList()));
+        Map<Long, Membership> membershipMap = memberships.stream()
+                .collect(Collectors.toMap(m -> m.getUser().getId(), Function.identity()));
+
+        return groupLogs.stream()
+                .filter(log -> log.getUser() != null)
+                .map(log -> new MembershipRecordDTO(membershipMap.get(log.getTargetUser().getId()), log))
+                .sorted(Comparator.comparing(MembershipRecordDTO::getChangeDateTimeMillis, Comparator.reverseOrder()))
+                .collect(Collectors.toList());
     }
 
     @Timed
@@ -208,6 +227,20 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
         return dtos.stream()
                 .sorted(Comparator.comparing(GroupMinimalDTO::getLastTaskOrChangeTime, Comparator.reverseOrder()))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public Page<MembershipFullDTO> fetchGroupMembers(User user, String groupUid, Pageable pageable) {
+
+        Objects.requireNonNull(groupUid);
+        Group group = groupRepository.findOneByUid(groupUid);
+        try {
+            permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
+        } catch (AccessDeniedException e) {
+            throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
+        }
+        Page<Membership> members = membershipRepository.findByGroupUid(group.getUid(), pageable);
+        return members.map(MembershipFullDTO::new);
     }
 
 

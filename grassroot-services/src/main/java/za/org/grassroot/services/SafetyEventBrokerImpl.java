@@ -6,7 +6,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.GroupLog;
+import za.org.grassroot.core.domain.SafetyEvent;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.geo.Address;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.repository.GroupLogRepository;
@@ -167,7 +170,7 @@ public class SafetyEventBrokerImpl implements SafetyEventBroker {
         if (deactivateGroup && group.getCreatedByUser().equals(user)
                 && group.getDescendantEvents().isEmpty() && group.getDescendantEvents().isEmpty()) {
             group.setActive(false);
-            groupLogRepository.save(new GroupLog(group, user, GroupLogType.GROUP_REMOVED, 0L, "safety group deactivated"));
+            groupLogRepository.save(new GroupLog(group, user, GroupLogType.GROUP_REMOVED, "safety group deactivated"));
         }
     }
 

@@ -53,7 +53,7 @@ public class TaskCreateControllerTest extends RestAbstractUnitTest {
     @Test
     public void createMeetingShouldWork() throws Exception{
         Group dummyGroup = new Group("Dummy Group3", new User(
-                "234345345"));
+                "234345345", null, null));
 
         Meeting dummyMeeting = new MeetingBuilder().setName("test meeting").setStartDateTime(oneDayAway).setUser(sessionTestUser).setParent(dummyGroup).setEventLocation("some place").createMeeting();
         MeetingBuilderHelper helper = new MeetingBuilderHelper()

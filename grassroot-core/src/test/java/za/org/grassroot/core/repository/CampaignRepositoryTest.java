@@ -11,20 +11,16 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignMessage;
-import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.campaign.CampaignType;
 import za.org.grassroot.core.enums.MessageVariationAssignment;
 import za.org.grassroot.core.enums.UserInterfaceType;
 
 import javax.transaction.Transactional;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
+import java.util.*;
 
 @RunWith(SpringRunner.class)
 @ContextConfiguration(classes = TestContextConfiguration.class)
@@ -40,7 +36,7 @@ public class CampaignRepositoryTest {
 
     @Test
     public void testCreateCampaign(){
-        User user = userRepository.save(new User("3456"));
+        User user = userRepository.save(new User("3456", null, null));
         Campaign campaign = campaignRepository.saveAndFlush(new Campaign("Test","234","Durban campaign",user, Instant.now(), Instant.now(), CampaignType.Acquisition,null));
         Assert.assertNotNull(campaign);
         Assert.assertNotNull(campaign.getUid());
@@ -54,7 +50,7 @@ public class CampaignRepositoryTest {
 
     @Test
     public void testCampaignMessages(){
-        User user = userRepository.save(new User("3456"));
+        User user = userRepository.save(new User("3456", null, null));
         Campaign campaign =  new Campaign("Test","234","Durban campaign",user, Instant.now(), Instant.now(), CampaignType.Acquisition, null);
         Set<CampaignMessage> messageSet = new HashSet<>();
         CampaignMessage campaignMessage = new CampaignMessage("Please join Campaign", user, MessageVariationAssignment.CONTROL, Locale.forLanguageTag("en-US"), UserInterfaceType.USSD, campaign);
@@ -71,7 +67,7 @@ public class CampaignRepositoryTest {
     public void testGetCampaignByTag(){
         List<String> tags = new ArrayList<>();
         tags.add("braamfontein");
-        User user = userRepository.save(new User("3456"));
+        User user = userRepository.save(new User("3456", null, null));
         Campaign campaign =  new Campaign("Test","234","Durban campaign",user, Instant.now(), Instant.MAX, CampaignType.Information, null);
         Set<CampaignMessage> messageSet = new HashSet<>();
         CampaignMessage campaignMessage = new CampaignMessage("Please join Campaign", user, MessageVariationAssignment.CONTROL,Locale.forLanguageTag("en-US"),UserInterfaceType.USSD, campaign);

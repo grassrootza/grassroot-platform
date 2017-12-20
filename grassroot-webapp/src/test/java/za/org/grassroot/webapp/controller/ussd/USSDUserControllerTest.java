@@ -41,7 +41,7 @@ public class USSDUserControllerTest extends USSDAbstractUnitTest {
                 .build();
         wireUpHomeController(ussdHomeController);
         wireUpMessageSourceAndGroupUtil(ussdUserController);
-        testUser = new User(testUserPhone);
+        testUser = new User(testUserPhone, null, null);
     }
 
     /*
@@ -83,7 +83,7 @@ public class USSDUserControllerTest extends USSDAbstractUnitTest {
     @Test
     public void renameSelfPromptShouldWork() throws Exception {
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
-        User namedUser = new User("27801115550", "named");
+        User namedUser = new User("27801115550", "named", null);
         when(userManagementServiceMock.findByInputNumber(namedUser.getPhoneNumber())).thenReturn(namedUser);
         mockMvc.perform(get(path + "name").param(phoneParam, testUserPhone)).andExpect(status().isOk());
         mockMvc.perform(get(path + "name").param(phoneParam, namedUser.getPhoneNumber())).andExpect(status().isOk());
@@ -94,7 +94,7 @@ public class USSDUserControllerTest extends USSDAbstractUnitTest {
 
     @Test
     public void renameSelfDoneScreenShouldWork() throws Exception {
-        User namedUser = new User("278011115550", "named");
+        User namedUser = new User("278011115550", "named", null);
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(userManagementServiceMock.findByInputNumber(namedUser.getPhoneNumber())).thenReturn(namedUser);
         mockMvc.perform(get(path + "name-do").param(phoneParam, testUserPhone).param("request", "naming")).

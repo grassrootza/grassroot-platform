@@ -27,20 +27,20 @@ import java.util.Objects;
 @Service
 public class GroupImageBrokerImpl implements GroupImageBroker {
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
+    private final GroupRepository groupRepository;
+    private final PermissionBroker permissionBroker;
+    private final ApplicationEventPublisher applicationEventPublisher;
+    private final LogsAndNotificationsBroker logsAndNotificationsBroker;
 
     @Autowired
-    private GroupRepository groupRepository;
-
-    @Autowired
-    private PermissionBroker permissionBroker;
-
-    @Autowired
-    private ApplicationEventPublisher applicationEventPublisher;
-
-    @Autowired
-    private LogsAndNotificationsBroker logsAndNotificationsBroker;
+    public GroupImageBrokerImpl(UserRepository userRepository, GroupRepository groupRepository, PermissionBroker permissionBroker, ApplicationEventPublisher applicationEventPublisher, LogsAndNotificationsBroker logsAndNotificationsBroker) {
+        this.userRepository = userRepository;
+        this.groupRepository = groupRepository;
+        this.permissionBroker = permissionBroker;
+        this.applicationEventPublisher = applicationEventPublisher;
+        this.logsAndNotificationsBroker = logsAndNotificationsBroker;
+    }
 
     @Override
     @Transactional
@@ -54,7 +54,7 @@ public class GroupImageBrokerImpl implements GroupImageBroker {
         group.setImage(image);
         group.setImageUrl(imageUrl);
 
-        logAfterCommit(new GroupLog(group, user, GroupLogType.GROUP_AVATAR_UPLOADED, group.getId(), "Group avatar uploaded"));
+        logAfterCommit(new GroupLog(group, user, GroupLogType.GROUP_AVATAR_UPLOADED, null));
     }
 
     @Override
@@ -81,8 +81,7 @@ public class GroupImageBrokerImpl implements GroupImageBroker {
             group.setImageUrl(null);
         }
 
-        logAfterCommit(new GroupLog(group, user, GroupLogType.GROUP_DEFAULT_IMAGE_CHANGED,
-                group.getId(), defaultImage.toString()));
+        logAfterCommit(new GroupLog(group, user, GroupLogType.GROUP_DEFAULT_IMAGE_CHANGED, defaultImage.toString()));
     }
 
     private void logAfterCommit(GroupLog groupLog) {

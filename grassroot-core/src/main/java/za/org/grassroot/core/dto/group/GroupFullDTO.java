@@ -17,12 +17,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@ApiModel
-@Getter
+@ApiModel @Getter
 public class GroupFullDTO extends GroupHeavyDTO {
 
     private final String joinCode;
     private final Set<MembershipDTO> members;
+    @Setter private List<MembershipRecordDTO> memberHistory;
 
     @Setter
     private List<GroupRefDTO> subGroups = new ArrayList<>();

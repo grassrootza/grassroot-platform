@@ -7,9 +7,6 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.test.web.servlet.MvcResult;
@@ -59,7 +56,7 @@ public class USSDAdvancedHomeControllerTest extends USSDAbstractUnitTest{
     private static final double testLong = 12.00;
     private static final Integer testRadius = 5000;
 
-    private static final User testUser = new User(phoneForTests, testUserName);
+    private static final User testUser = new User(phoneForTests, testUserName, null);
     protected final static String testGroupName = "test_group";
 
     protected final static Group testGroup = new Group(testGroupName, testUser);

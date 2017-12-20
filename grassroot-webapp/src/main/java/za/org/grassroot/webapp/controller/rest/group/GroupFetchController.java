@@ -19,10 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.MembershipFullDTO;
-import za.org.grassroot.core.dto.group.GroupFullDTO;
-import za.org.grassroot.core.dto.group.GroupMinimalDTO;
-import za.org.grassroot.core.dto.group.GroupTimeChangedDTO;
-import za.org.grassroot.core.dto.group.GroupWebDTO;
+import za.org.grassroot.core.dto.group.*;
 import za.org.grassroot.integration.PdfGeneratingService;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
@@ -40,8 +37,8 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @RestController
 @Grassroot2RestController
@@ -68,9 +65,9 @@ public class GroupFetchController extends BaseRestController {
 
 
     @ApiOperation("Returns a list of groups for currently logged in user")
-    @RequestMapping(value = "/list")
     public ResponseEntity<List<GroupWebDTO>> listUserGroups(HttpServletRequest request) {
         String userId = getUserIdFromRequest(request);
+
         if (userId != null) {
             List<GroupWebDTO> groups = groupFetchBroker.fetchGroupWebInfo(userId);
             return new ResponseEntity<>(groups, HttpStatus.OK);
@@ -118,15 +115,21 @@ public class GroupFetchController extends BaseRestController {
         return ResponseEntity.ok(groupFetchBroker.fetchGroupMinimalInfo(userUid, groupUids));
     }
 
-    @RequestMapping(value = "/full/{userUid}", method = RequestMethod.GET)
+    @RequestMapping(value = "/full", method = RequestMethod.GET)
     @ApiOperation(value = "Get full details about a group, including members (if permission to see details) and description")
-    public ResponseEntity<Set<GroupFullDTO>> fetchFullGroupInfo(@PathVariable String userUid,
-                                                                @RequestParam(required = false) Set<String> groupUids) {
-        final String descriptionTemplate = "Group '%1$s', created on %2$s, has %3$d members, with join code %4$s";
-        return ResponseEntity.ok(groupFetchBroker.fetchGroupFullInfo(userUid, groupUids).stream()
-                .map(g -> g.insertDefaultDescriptionIfEmpty(descriptionTemplate)).collect(Collectors.toSet()));
+    public ResponseEntity<GroupFullDTO> fetchFullGroupInfo(HttpServletRequest request, @RequestParam String groupUid) {
+        return ResponseEntity.ok(groupFetchBroker.fetchGroupFullInfo(getUserIdFromRequest(request),
+                groupUid));
     }
 
+    @RequestMapping(value = "/members/history/{groupUid}", method = RequestMethod.GET)
+    @ApiOperation(value = "Get the record of member changes up to some period of time in the past")
+    public ResponseEntity<List<MembershipRecordDTO>> fetchMemberChangeRecords(HttpServletRequest request,
+                                                                              @PathVariable String groupUid,
+                                                                              @RequestParam long startDateTimeEpochMillis) {
+        return ResponseEntity.ok(groupFetchBroker.fetchRecentMembershipChanges(getUserIdFromRequest(request),
+                groupUid, Instant.ofEpochMilli(startDateTimeEpochMillis)));
+    }
 
     @RequestMapping(value = "/members", method = RequestMethod.GET)
     public Page<MembershipFullDTO> fetchGroupMembers(@RequestParam String groupUid, Pageable pageable, HttpServletRequest request) {
@@ -163,7 +166,6 @@ public class GroupFetchController extends BaseRestController {
     public ResponseEntity<ResponseWrapper> errorGeneratingFile(FileCreationException e) {
         return RestUtil.errorResponse(RestMessage.FILE_GENERATION_ERROR);
     }
-
 
     @RequestMapping(value = "/flyer", method = RequestMethod.GET, params = "typeOfFile=PDF", produces = MediaType.APPLICATION_PDF_VALUE)
     @ResponseBody //"application/pdf",

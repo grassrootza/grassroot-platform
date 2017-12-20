@@ -56,6 +56,7 @@ public class MembershipInfo implements Comparable<MembershipInfo> {
         this.displayName = displayName;
         this.userSetName = user.isHasSetOwnName();
         this.roleName = roleName;
+        this.userUid = user.getUid();
     }
 
     public static MembershipInfo makeEmpty() {
@@ -70,11 +71,29 @@ public class MembershipInfo implements Comparable<MembershipInfo> {
 
     // need to use PhoneNumberUtil here to make sure return number with country code (or vice versa)
 
-    public String getPhoneNumberWithCCode() { return PhoneNumberUtil.convertPhoneNumber(phoneNumber); }
+    public String getPhoneNumberWithCCode() {
+        try {
+            return PhoneNumberUtil.convertPhoneNumber(phoneNumber);
+        }  catch (InvalidPhoneNumberException e) {
+            return phoneNumber;
+        }
+    }
 
-    public String getPhoneNumberWithoutCCode() { return PhoneNumberUtil.invertPhoneNumber(phoneNumber); }
+    public String getPhoneNumberWithoutCCode() {
+        try {
+            return PhoneNumberUtil.invertPhoneNumber(phoneNumber);
+        } catch (Exception e) {
+            return phoneNumber;
+        }
+    }
 
-    public String getNationalFormattedNumber() { return PhoneNumberUtil.formattedNumber(phoneNumber); }
+    public String getNationalFormattedNumber() {
+        try {
+            return PhoneNumberUtil.formattedNumber(phoneNumber);
+        } catch (Exception e) {
+            return phoneNumber;
+        }
+    }
 
     public boolean hasValidPhoneNumber() {
         try {

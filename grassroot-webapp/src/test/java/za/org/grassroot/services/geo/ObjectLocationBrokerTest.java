@@ -53,7 +53,7 @@ public class ObjectLocationBrokerTest {
         objectLocationBroker = new ObjectLocationBrokerImpl(mockEntityManager, mockGroupLocationRepository,
                 mockMeetingLocationRepository, userLocationLogRepository, avgPeriodRepositoryMock,userRepository);
 
-        testUser = new User("27610001234", "test");
+        testUser = new User("27610001234", "test", null);
 
         given(mockQuery.setParameter(anyString(), any())).willReturn(mockQuery);
         given(mockQuery.getResultList()).willAnswer(i->Arrays.asList());

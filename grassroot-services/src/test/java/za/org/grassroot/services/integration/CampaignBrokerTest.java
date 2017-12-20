@@ -50,7 +50,7 @@ public class CampaignBrokerTest {
     public void setUp(){
         userRepository.deleteAllInBatch();
         String userNumber = "0605550000";
-        testUser = new User(userNumber, "test user");
+        testUser = new User(userNumber, "test user", null);
         userRepository.save(testUser);
         String groupName = "testGroup";
         testGroup = groupRepository.save(new Group(groupName, testUser));

@@ -135,15 +135,15 @@ public class EventBrokerTest {
 
     @Test
     public void shouldNotReturnOutstandingRSVPEventForSecondLevelUserAndParentGroupEvent() {
-        User user = userRepository.save(new User("0825555511"));
+        User user = userRepository.save(new User("0825555511", null, null));
         Group grouplevel1 = groupRepository.save(new Group("rsvp level1",user));
-        User userl1 = userRepository.save(new User("0825555512"));
+        User userl1 = userRepository.save(new User("0825555512", null, null));
         grouplevel1.addMember(userl1, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
         grouplevel1 = groupRepository.save(grouplevel1);
         Group grouplevel2 = groupRepository.save(new Group("rsvp level2",user));
         grouplevel2.setParent(grouplevel1);
         grouplevel2 = groupRepository.save(grouplevel2);
-        User userl2 = userRepository.save(new User("0825555521"));
+        User userl2 = userRepository.save(new User("0825555521", null, null));
         grouplevel2.addMember(userl2, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
         grouplevel2 = groupRepository.save(grouplevel2);
         List<Event> outstanding =  eventBroker.getOutstandingResponseForUser(userl2, EventType.MEETING);

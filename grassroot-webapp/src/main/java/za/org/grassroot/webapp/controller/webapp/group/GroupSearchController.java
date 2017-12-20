@@ -104,10 +104,10 @@ public class GroupSearchController extends BaseController {
 	}
 
 	@RequestMapping(value = "/search")
-	public String searchForGroup(@RequestParam("currentUserContact")String currentUserContact,@RequestParam String term,
+	public String searchForGroup(@RequestParam String term,
 								 @RequestParam(required = false) String groupUid, Model model, RedirectAttributes attributes, HttpServletRequest request,
-								 @RequestParam(value = "locationLat",required = false) double latitude ,
-								 @RequestParam(value = "locationLon",required = false) double longitude) {
+								 @RequestParam(value = "locationLat",required = false) Double latitude,
+								 @RequestParam(value = "locationLon",required = false) Double longitude) {
 		boolean resultFound = false;
 		GeoLocation location;
 
@@ -156,7 +156,7 @@ public class GroupSearchController extends BaseController {
 
 				resultFound = !publicGroups.isEmpty() || !memberGroups.isEmpty() || !memberTasks.isEmpty();
 
-				User user = userManagementService.findByInputNumber(currentUserContact);
+				User user = userManagementService.load(getUserProfile().getUid());
 				List<Meeting> meetings = eventBroker.publicMeetingsUserIsNotPartOf(term,user);
 				if(meetings != null){
 					model.addAttribute("publicMeetingsUserIsNotPartOf",meetings);

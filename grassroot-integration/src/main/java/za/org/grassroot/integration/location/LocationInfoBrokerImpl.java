@@ -25,6 +25,7 @@ import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountLog;
 import za.org.grassroot.core.domain.notification.FreeFormMessageNotification;
 import za.org.grassroot.core.enums.AccountLogType;
+import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.repository.AccountLogRepository;
 import za.org.grassroot.core.repository.AccountRepository;
 import za.org.grassroot.core.repository.NotificationRepository;
@@ -86,8 +87,8 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
     }
 
     @Override
-    public List<ProvinceSA> getAvailableProvincesForDataSet(String dataSetLabel) {
-        List<ProvinceSA> provinceList;
+    public List<Province> getAvailableProvincesForDataSet(String dataSetLabel) {
+        List<Province> provinceList;
         if (!useDynamoDirect) {
             URI uriToCall = baseBuilder()
                     .path("/provinces/available/{dataset}")
@@ -95,10 +96,10 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
 
             log.info("finding available provinces for: {}", uriToCall);
             provinceList = getFromUri(uriToCall).stream()
-                    .map(ProvinceSA::valueOf).collect(Collectors.toList());
+                    .map(Province::valueOf).collect(Collectors.toList());
         } else {
             provinceList = getFromDynamo(dataSetLabel, "provinces", true).stream()
-                    .map(ProvinceSA::valueOf).collect(Collectors.toList());
+                    .map(Province::valueOf).collect(Collectors.toList());
         }
         return provinceList;
     }
@@ -118,7 +119,7 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
     }
 
     @Override
-    public List<String> getAvailableInfoForProvince(String dataSetLabel, ProvinceSA province, Locale locale) {
+    public List<String> getAvailableInfoForProvince(String dataSetLabel, Province province, Locale locale) {
         if (!useDynamoDirect) {
             URI uriToCall = baseBuilder()
                     .path("/sets/available/{dataset}")
@@ -134,7 +135,7 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
     }
 
     @Override
-    public List<String> retrieveRecordsForProvince(String dataSetLabel, String infoSetTag, ProvinceSA province, Locale locale) {
+    public List<String> retrieveRecordsForProvince(String dataSetLabel, String infoSetTag, Province province, Locale locale) {
         if (!useDynamoDirect) {
             URI uriToCall = baseBuilder()
                     .path("/records/{dataset}/{infoSet}")
@@ -175,7 +176,7 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
     @Async
     @Override
     @Transactional
-    public void assembleAndSendRecordMessage(String dataSetLabel, String infoSetTag, ProvinceSA province,
+    public void assembleAndSendRecordMessage(String dataSetLabel, String infoSetTag, Province province,
                                              String targetUid) {
         final Set<String> accountUids = getSponsoringAccountUids(dataSetLabel);
         if (accountUids == null || accountUids.isEmpty()) {

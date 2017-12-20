@@ -233,7 +233,8 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
                     .paidGroupUid(paidGroup.getUid())
                     .description(group.getName()).build());
 
-            bundle.addLog(new GroupLog(group, user, GroupLogType.ADDED_TO_ACCOUNT, account.getId(), addedDescription));
+            bundle.addLog(new GroupLog(group, user, GroupLogType.ADDED_TO_ACCOUNT,
+                    null, null, account, addedDescription));
         }
 
         paidGroupRepository.save(paidGroups);
@@ -380,7 +381,7 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
             bundle.addLog(new GroupLog(group,
                     user,
                     GroupLogType.REMOVED_FROM_ACCOUNT,
-                    user.getId(), removedDescription));
+                    null, null, account, removedDescription));
         }
 
         logsAndNotificationsBroker.asyncStoreBundle(bundle);
@@ -833,7 +834,7 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
         bundle.addLog(new GroupLog(group,
                 user,
                 isAdded ? GroupLogType.ADDED_TO_ACCOUNT : GroupLogType.REMOVED_FROM_ACCOUNT,
-                account.getId(),
+                null, null, account,
                 isAdded ? addedDescription : removedDescription));
         logsAndNotificationsBroker.storeBundle(bundle);
     }

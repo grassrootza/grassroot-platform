@@ -66,7 +66,7 @@ public class AdminManager implements AdminService {
         Group group = groupRepository.findOneByUid(groupUid);
         group.setActive(active);
 
-        groupLogRepository.save(new GroupLog(group, user, GroupLogType.GROUP_REMOVED, null,
+        groupLogRepository.save(new GroupLog(group, user, GroupLogType.GROUP_REMOVED,
                 active ? "Activated by system admin" : "Deactivated by system admin"));
     }
 
