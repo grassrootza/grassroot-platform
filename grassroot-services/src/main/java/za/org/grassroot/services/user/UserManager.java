@@ -101,14 +101,16 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     @Transactional
     public User createUserWebProfile(User userProfile) throws UserExistsException {
-
         Assert.notNull(userProfile, "User is required");
-        Assert.hasText(userProfile.getPhoneNumber(), "User phone number is required");
+        if (StringUtils.isEmpty(userProfile.getPhoneNumber()) && StringUtils.isEmpty(userProfile.getEmailAddress())) {
+            throw new IllegalArgumentException("User phone number or email address is required");
+        }
 
         User userToSave;
-        String phoneNumber = PhoneNumberUtil.convertPhoneNumber(userProfile.getPhoneNumber());
+        String phoneNumber = StringUtils.isEmpty(userProfile.getPhoneNumber()) ? null : PhoneNumberUtil.convertPhoneNumber(userProfile.getPhoneNumber());
+        String emailAddress = userProfile.getEmailAddress();
         long start = System.nanoTime();
-        boolean userExists = userExist(phoneNumber);
+        boolean userExists = userRepository.existsByPhoneNumber(phoneNumber) || userRepository.existsByEmail(emailAddress);
         long time = System.nanoTime() - start;
         log.info("User exists check took {} nanosecs", time);
 
@@ -116,7 +118,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
             log.info("The user exists, and their web profile is set to: " + userProfile.isHasWebProfile());
 
-            User userToUpdate = findByInputNumber(phoneNumber);
+            User userToUpdate = findByNumberOrEmail(phoneNumber, emailAddress);
             if (userToUpdate.isHasWebProfile()) {
                 throw new UserExistsException("User '" + userProfile.getUsername() + "' already has a web profile!");
             }
@@ -126,14 +128,20 @@ public class UserManager implements UserManagementService, UserDetailsService {
                 userToUpdate.setHasSetOwnName(true);
             }
 
-            userToUpdate.setUsername(phoneNumber);
+            if (StringUtils.isEmpty(userToUpdate.getEmailAddress()) && !StringUtils.isEmpty(emailAddress)) {
+                userToUpdate.setEmailAddress(emailAddress);
+            }
+
+            if (StringUtils.isEmpty(userToUpdate.getPhoneNumber()) && !StringUtils.isEmpty(phoneNumber)) {
+                userToUpdate.setPhoneNumber(phoneNumber);
+            }
+
             userToUpdate.setHasWebProfile(true);
             userToUpdate.setHasInitiatedSession(true);
             userToSave = userToUpdate;
 
         } else {
-            userToSave = new User(phoneNumber, userProfile.getDisplayName(), null);
-            userToSave.setUsername(phoneNumber);
+            userToSave = new User(phoneNumber, userProfile.getDisplayName(), userProfile.getEmailAddress());
             userToSave.setHasWebProfile(true);
             userToSave.setHasSetOwnName(true);
         }
@@ -328,6 +336,17 @@ public class UserManager implements UserManagementService, UserDetailsService {
         User sessionUser = userRepository.findByPhoneNumber(PhoneNumberUtil.convertPhoneNumber(inputNumber));
         if (sessionUser == null) throw new NoSuchUserException("Could not find user with phone number: " + inputNumber);
         return sessionUser;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public User findByNumberOrEmail(String inputNumber, String emailAddress) {
+        final String msisdn = PhoneNumberUtil.convertPhoneNumber(inputNumber);
+        User user = StringUtils.isEmpty(inputNumber) || !userExist(msisdn) ?
+                userRepository.findByEmailAddress(emailAddress) :
+                userRepository.findByPhoneNumber(msisdn);
+        if (user == null) throw new NoSuchUserException("No user with number " + inputNumber + " or email address " + emailAddress);
+        return user;
     }
 
     @Override

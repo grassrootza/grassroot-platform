@@ -1,6 +1,7 @@
 package za.org.grassroot.core.domain;
 
 import lombok.Getter;
+import lombok.Setter;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.hibernate.validator.constraints.Email;
 import org.springframework.security.core.GrantedAuthority;
@@ -8,6 +9,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.enums.AlertPreference;
+import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.core.util.UIDGenerator;
@@ -78,6 +80,10 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
     @Column(name = "alert_preference", length = 50)
     private AlertPreference alertPreference;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "province", length = 50)
+    @Setter private Province province;
+
     @Column(name = "enabled")
     private boolean enabled = true;
 
@@ -136,7 +142,7 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
         this.username = StringUtils.isEmpty(phoneNumber) ? emailAddress : phoneNumber;
         this.displayName = removeUnwantedCharacters(displayName);
         this.languageCode = "en";
-        this.messagingPreference = UserMessagingPreference.SMS; // as default
+        this.messagingPreference = !StringUtils.isEmpty(phoneNumber) ? UserMessagingPreference.SMS : UserMessagingPreference.EMAIL; // as default
         this.createdDateTime = Instant.now();
         this.alertPreference = AlertPreference.NOTIFY_NEW_AND_REMINDERS;
         this.hasUsedFreeTrial = false;

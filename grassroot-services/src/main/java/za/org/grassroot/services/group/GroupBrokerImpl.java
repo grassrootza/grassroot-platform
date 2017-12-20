@@ -174,9 +174,6 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
         logger.info("Group created under UID {}", group.getUid());
 
-        messagingServiceBroker.subscribeServerToGroupChatTopic(group.getUid());
-        // addGroupMembersToChatAfterCommit(group, user);
-
         if (openJoinToken) {
             JoinTokenOpeningResult joinTokenOpeningResult = openJoinTokenInternal(user, group, null);
             bundle.addLog(joinTokenOpeningResult.getGroupLog());
@@ -320,15 +317,15 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         logger.info("list size {}, set size {}", users.size(), userSet.size());
         group.addMembers(userSet, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.COPIED_INTO_GROUP);
 
+        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
         // recursively add users to all parent groups
         Group parentGroup = group.getParent();
         while (parentGroup != null) {
             parentGroup.addMembers(userSet, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.COPIED_INTO_GROUP);
+            createSubGroupAddedLogs(parentGroup, group, user, users, bundle);
             parentGroup = parentGroup.getParent();
         }
-
-        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
         for (User u  : users) {
             GroupLog groupLog = new GroupLog(group, user, GroupLogType.GROUP_MEMBER_ADDED, u, null, null, null);
@@ -337,6 +334,11 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         }
 
         logsAndNotificationsBroker.asyncStoreBundle(bundle);
+    }
+
+    private void createSubGroupAddedLogs(Group parent, Group child, User initiator, List<User> users, LogsAndNotificationsBundle bundle) {
+        users.forEach(u -> bundle.addLog(new GroupLog(parent, initiator, GroupLogType.GROUP_MEMBER_ADDED_INTO_SUBGROUP_OTHER,
+                u, child, null, null)));
     }
 
     @Override
@@ -351,14 +353,15 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         logger.info("Adding a member via token code: group={}, user={}, code={}", group, user, tokenPassed);
         group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.SELF_JOINED);
 
+        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
         // recursively add user to all parent groups
         Group parentGroup = group.getParent();
         while (parentGroup != null) {
             parentGroup.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+            bundle.addLog(new GroupLog(parentGroup, user, GroupLogType.GROUP_MEMBER_ADDED_VIA_SUBGROUP_CODE, user, group, null, null));
             parentGroup = parentGroup.getParent();
         }
 
-        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
         GroupLog groupLog = new GroupLog(group, user, GroupLogType.GROUP_MEMBER_ADDED_VIA_JOIN_CODE,
                 user, null, null, "Member joined via join code: " + tokenPassed);
         bundle.addLog(groupLog);
@@ -412,9 +415,9 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
                                     GroupJoinMethod joinMethod, boolean duringGroupCreation, boolean createWelcomeNotifications) {
         User initiator = userRepository.findOneByUid(initiatorUid);
         Group group = groupRepository.findOneByUid(groupId);
-        addMemberships(initiator, group, membershipInfos, joinMethod, duringGroupCreation, createWelcomeNotifications);
+        LogsAndNotificationsBundle bundle = addMemberships(initiator, group, membershipInfos, joinMethod, duringGroupCreation, createWelcomeNotifications);
+        logsAndNotificationsBroker.storeBundle(bundle);
     }
-
 
     private LogsAndNotificationsBundle addMemberships(User initiator, Group group, Set<MembershipInfo> membershipInfos,
                                                       GroupJoinMethod joinMethod, boolean duringGroupCreation, boolean createWelcomeNotifications) {
@@ -477,10 +480,6 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         }
 
         final GroupLogType logType = duringGroupCreation ? GroupLogType.GROUP_MEMBER_ADDED_AT_CREATION : GroupLogType.GROUP_MEMBER_ADDED;
-
-        /*if (!duringGroupCreation) { // todo : just add the new users
-            addGroupMembersToChatAfterCommit(group,initiator);
-        }*/
 
         Set<String> addedUserUids = new HashSet<>();
         for (Membership membership : memberships) {

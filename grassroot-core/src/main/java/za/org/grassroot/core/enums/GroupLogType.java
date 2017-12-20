@@ -25,6 +25,8 @@ public enum GroupLogType {
     GROUP_MEMBER_ADDED_VIA_JOIN_CODE("group member joined via join code"),
     GROUP_MEMBER_ADDED_VIA_CAMPAIGN("group member joined via campaign"),
     GROUP_MEMBER_ADDED_AT_CREATION("Group created"),
+    GROUP_MEMBER_ADDED_VIA_SUBGROUP_CODE("group member used join code of subgroup"),
+    GROUP_MEMBER_ADDED_INTO_SUBGROUP_OTHER("group member added to a subgroup"),
     GROUP_AVATAR_UPLOADED("Group avatar loaded"),
     GROUP_AVATAR_REMOVED("Group avatar deleted"),
     GROUP_DEFAULT_IMAGE_CHANGED("Group default image changed"),

@@ -2,5 +2,5 @@ package za.org.grassroot.core.enums;
 
 public enum MessagingProvider {
 
-    AAT, AWS, GCM
+    AAT, AWS, GCM, EMAIL
 }

@@ -1,3 +1,4 @@
+alter table user_profile add column province varchar(50);
 ALTER TABLE user_profile ALTER COLUMN phone_number DROP NOT NULL;
 
 create temporary table to_delete (email_address varchar not null, min_id bigint not null);
