@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.Province;
 
 
 @Getter
@@ -12,20 +13,14 @@ import za.org.grassroot.core.domain.User;
 public class UserFullDTO {
 
     private String uid;
-
     private String displayName;
-
     private String phoneNumber;
-
     private String email;
-
     private String lastName;
-
     private String firstName;
-
     private boolean enabled;
-
     private String languageCode;
+    private Province province;
 
 
     public UserFullDTO(User user) {
@@ -38,6 +33,7 @@ public class UserFullDTO {
         this.enabled = user.isEnabled();
         this.uid = user.getUid();
         this.email = user.getEmailAddress();
+        this.province = province;
     }
 
 

@@ -10,9 +10,11 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.MembershipInfo;
+import za.org.grassroot.core.dto.group.GroupFullDTO;
 import za.org.grassroot.core.enums.GroupViewPriority;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.integration.messaging.JwtService;
+import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.GroupSizeLimitExceededException;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
 import za.org.grassroot.services.exception.SoleOrganizerUnsubscribeException;
@@ -36,8 +38,11 @@ public class GroupModifyController extends GroupBaseController {
 
     private static final Logger logger = LoggerFactory.getLogger(GroupModifyController.class);
 
-    public GroupModifyController(JwtService jwtService, UserManagementService userManagementService) {
+    private final PermissionBroker permissionBroker;
+
+    public GroupModifyController(JwtService jwtService, UserManagementService userManagementService, PermissionBroker permissionBroker) {
         super(jwtService, userManagementService);
+        this.permissionBroker = permissionBroker;
     }
 
     @RequestMapping(value = "/create", method = RequestMethod.POST)
@@ -83,6 +88,37 @@ public class GroupModifyController extends GroupBaseController {
         } catch (AccessDeniedException e) {
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER);
         }
+    }
+
+    @RequestMapping(value = "/members/remove/{groupUid}", method = RequestMethod.POST)
+    @ApiOperation(value = "Remove member(s) from a group", notes = "Removes members from a group, when passed set of those members' UIDs")
+    public ResponseEntity removeMembersFromGroup(HttpServletRequest request, @PathVariable String groupUid,
+                                                 @RequestParam List<String> memberUids) {
+        groupBroker.removeMembers(getUserIdFromRequest(request), groupUid, new HashSet<>(memberUids));
+        return ResponseEntity.ok().build();
+    }
+
+    @RequestMapping(value = "/members/add/taskteam/{parentUid}", method = RequestMethod.POST)
+    @ApiOperation(value = "Add member(s) to a task team / subgroup (of the 'parent' group)", notes = "Returns the modified task team / subgroup in full")
+    public ResponseEntity<GroupFullDTO> addMembersToSubgroup(HttpServletRequest request, @PathVariable String parentUid,
+                                                             @RequestParam String childGroupUid, @RequestParam Set<String> memberUids) {
+        try {
+            // todo make this atomic by moving permission validation into dedicated add to subgroup method
+            permissionBroker.validateGroupPermission(getUserFromRequest(request), groupBroker.load(parentUid),
+                    Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+            groupBroker.copyMembersIntoGroup(getUserIdFromRequest(request), childGroupUid, memberUids);
+            return ResponseEntity.ok().build();
+        } catch (AccessDeniedException e) {
+            throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+        }
+    }
+
+    @RequestMapping(value = "members/add/topics/{groupUid}", method = RequestMethod.POST)
+    @ApiOperation(value = "Assign topic(s) - special tags - to a member")
+    public ResponseEntity<GroupFullDTO> assignTopicsToMember(HttpServletRequest request, @PathVariable String groupUid,
+                                                             @RequestParam String memberUid, @RequestParam List<String> topics) {
+        groupBroker.assignMembershipTopics(getUserIdFromRequest(request), groupUid, memberUid, new HashSet<>(topics));
+        return ResponseEntity.ok().build();
     }
 
     @RequestMapping(value = "/description/modify/{userUid}/{groupUid}", method = RequestMethod.POST)

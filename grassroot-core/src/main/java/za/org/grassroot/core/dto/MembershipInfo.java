@@ -37,6 +37,8 @@ public class MembershipInfo implements Comparable<MembershipInfo> {
     protected String displayName; // optional
     protected boolean userSetName;
 
+    protected String memberEmail;
+
     public MembershipInfo() {
         // need empty constructor for Spring MVC form submission
     }
@@ -53,6 +55,7 @@ public class MembershipInfo implements Comparable<MembershipInfo> {
     // constructor to create a membership info with an empty role
     public MembershipInfo(User user, String displayName, String roleName) {
         this.phoneNumber = user.getPhoneNumber();
+        this.memberEmail = user.getEmailAddress();
         this.displayName = displayName;
         this.userSetName = user.isHasSetOwnName();
         this.roleName = roleName;

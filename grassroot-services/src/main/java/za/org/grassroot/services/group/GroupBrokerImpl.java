@@ -35,10 +35,7 @@ import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.account.AccountGroupBroker;
-import za.org.grassroot.services.exception.GroupDeactivationNotAvailableException;
-import za.org.grassroot.services.exception.GroupSizeLimitExceededException;
-import za.org.grassroot.services.exception.InvalidTokenException;
-import za.org.grassroot.services.exception.SoleOrganizerUnsubscribeException;
+import za.org.grassroot.services.exception.*;
 import za.org.grassroot.services.user.GcmRegistrationBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
@@ -634,6 +631,36 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
         Set<ActionLog> actionLogs = changeMembersToRole(user, group, Collections.singleton(memberUid), group.getRole(roleName));
         logActionLogsAfterCommit(actionLogs);
+    }
+
+    @Override
+    @Transactional
+    public void assignMembershipTopics(String userUid, String groupUid, String memberUid, Set<String> topics) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(groupUid);
+        Objects.requireNonNull(memberUid);
+        Objects.requireNonNull(topics);
+
+        User user = userRepository.findOneByUid(userUid);
+        Group group = groupRepository.findOneByUid(groupUid);
+        Membership member = group.getMembership(user);
+
+        if (!member.getUser().equals(user)) {
+            try {
+                permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+            } catch (AccessDeniedException e) {
+                throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+            }
+        }
+
+        List<String> groupTopics = group.getTopics();
+        if (topics.stream().anyMatch(s -> !groupTopics.contains(TagHolder.TOPIC_PREFIX + s))) {
+            throw new GroupTopicMismatchException();
+        }
+
+        member.addTags(topics.stream()
+                .map(s -> TagHolder.TOPIC_PREFIX + s)
+                .collect(Collectors.toList()));
     }
 
     @Override

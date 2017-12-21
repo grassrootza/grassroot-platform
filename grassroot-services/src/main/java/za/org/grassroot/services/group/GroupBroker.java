@@ -62,6 +62,9 @@ public interface GroupBroker {
 
     void updateMembershipRole(String userUid, String groupUid, String memberUid, String roleName);
 
+    // note: only accepts topics that are from the group itself
+    void assignMembershipTopics(String userUid, String groupUid, String memberUid, Set<String> topics);
+
     @Transactional
     boolean setGroupPinnedForUser(String userUid, String groupUid, boolean pinned);
 
