@@ -39,15 +39,17 @@ public class GroupImportController extends GroupBaseController {
 
     @RequestMapping(value = "/confirm", method = RequestMethod.POST)
     public ResponseEntity<List<AddMemberInfo>> confirmMembers(@RequestParam String tempPath,
-                                                               @RequestParam Integer phoneColumn,
                                                                @RequestParam Integer nameColumn,
-                                                               @RequestParam Integer roleColumn,
+                                                               @RequestParam(required = false) Integer phoneColumn,
+                                                               @RequestParam(required = false) Integer emailColumn,
+                                                               @RequestParam(required = false) Integer provinceColumn,
+                                                               @RequestParam(required = false) Integer roleColumn,
                                                                @RequestParam Boolean header) {
         File tmpFile = new File(tempPath);
         log.info("phoneCol = {}, nameCol = {}, header = {}, loaded temp file, path = {}", phoneColumn, nameColumn, header, tmpFile.getAbsolutePath());
 
         return ResponseEntity.ok(dataBroker
-                .processMembers(tmpFile, phoneColumn, nameColumn, roleColumn == -1 ? null : roleColumn, header)
+                .processMembers(tmpFile, header, phoneColumn, nameColumn, roleColumn, emailColumn, provinceColumn)
                 .stream().map(AddMemberInfo::new).collect(Collectors.toList()));
     }
 

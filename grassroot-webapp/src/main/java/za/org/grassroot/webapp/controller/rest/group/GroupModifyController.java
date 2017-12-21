@@ -56,7 +56,7 @@ public class GroupModifyController extends GroupBaseController {
         User user = getUserFromRequest(request);
         if (user != null) {
             HashSet<MembershipInfo> membershipInfos = new HashSet<>();
-            membershipInfos.add(new MembershipInfo(user, user.getDisplayName(), BaseRoles.ROLE_GROUP_ORGANIZER));
+            membershipInfos.add(new MembershipInfo(user, user.getDisplayName(), BaseRoles.ROLE_GROUP_ORGANIZER, null));
             Group group = groupBroker.create(user.getUid(), name, null, membershipInfos, permissionTemplate, description, reminderMinutes, true);
 
             groupBroker.updateDiscoverable(user.getUid(), group.getUid(), discoverable, null);
@@ -64,6 +64,15 @@ public class GroupModifyController extends GroupBaseController {
             return new ResponseEntity<>(group.getUid(), HttpStatus.OK);
         } else
             return new ResponseEntity<>("", HttpStatus.UNAUTHORIZED);
+    }
+
+    @RequestMapping(value = "/topics/set/{groupUid}", method = RequestMethod.POST)
+    @ApiOperation(value = "Set topics for a group", notes = "To avoid possible confusion and duplication, always pass " +
+            "the full set of topics that should be on the group (i.e., this is a set method, not an add method)")
+    public ResponseEntity addTopicsToGroup(HttpServletRequest request, @PathVariable String groupUid,
+                                           @RequestParam Set<String> topics) {
+        groupBroker.updateTopics(getUserIdFromRequest(request), groupUid, topics);
+        return ResponseEntity.ok().build();
     }
 
     @RequestMapping(value = "/members/add/{userUid}/{groupUid}", method = RequestMethod.POST)

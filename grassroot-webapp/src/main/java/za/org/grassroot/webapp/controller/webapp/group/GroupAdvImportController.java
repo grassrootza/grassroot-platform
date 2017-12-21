@@ -84,8 +84,8 @@ public class GroupAdvImportController extends BaseController {
         File tmpFile = new File(tempPath);
         logger.info("phoneCol = {}, nameCol = {}, header = {}, loaded temp file, path = {}", phoneColumn, nameColumn, header, tmpFile.getAbsolutePath());
 
-        List<MembershipInfo> members = dataImportBroker.processMembers(tmpFile, phoneColumn, nameColumn,
-                roleColumn == -1 ? null : roleColumn, header);
+        List<MembershipInfo> members = dataImportBroker.processMembers(tmpFile, header, phoneColumn, nameColumn,
+                roleColumn == -1 ? null : roleColumn, null, null);
         model.addAttribute("members", members);
         model.addAttribute("groupUid", groupUid);
 

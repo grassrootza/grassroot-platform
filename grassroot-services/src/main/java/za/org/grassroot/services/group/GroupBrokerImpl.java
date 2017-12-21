@@ -1005,6 +1005,21 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
     }
 
     @Override
+    @Transactional
+    public void updateTopics(String userUid, String groupUid, Set<String> topics) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(groupUid);
+        Objects.requireNonNull(topics);
+
+        User user = userRepository.findOneByUid(userUid);
+        Group group = groupRepository.findOneByUid(groupUid);
+
+        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+
+        group.setTopics(topics);
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public boolean canAddMember(String groupUid) {
         Group group = groupRepository.findOneByUid(groupUid);

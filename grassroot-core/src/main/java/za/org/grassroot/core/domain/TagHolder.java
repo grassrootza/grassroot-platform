@@ -5,6 +5,7 @@ import za.org.grassroot.core.util.StringArrayUtil;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public interface TagHolder {
@@ -29,6 +30,10 @@ public interface TagHolder {
         setTags(tagList);
     }
 
+    default void setTags(List<String> tags) {
+        setTags(StringArrayUtil.listToArrayRemoveDuplicates(tags));
+    }
+
     default void removeTag(String tag) {
         Objects.requireNonNull(tag);
         // as prior, next line is messy but seems necessary
@@ -48,7 +53,10 @@ public interface TagHolder {
                 .collect(Collectors.toList());
     }
 
-    default void setTags(List<String> tags) {
-        setTags(StringArrayUtil.listToArrayRemoveDuplicates(tags));
+    default void setTopics(Set<String> topics) {
+        List<String> tags = getTagList().stream()
+                .filter(s -> !s.startsWith(TOPIC_PREFIX)).collect(Collectors.toList());
+        tags.addAll(topics.stream().map(s -> TOPIC_PREFIX + s).collect(Collectors.toSet()));
+        setTags(tags);
     }
 }

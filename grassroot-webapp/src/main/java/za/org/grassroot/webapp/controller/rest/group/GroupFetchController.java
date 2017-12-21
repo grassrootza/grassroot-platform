@@ -63,7 +63,7 @@ public class GroupFetchController extends BaseRestController {
         this.memberDataExportBroker = memberDataExportBroker;
     }
 
-
+    @RequestMapping(value = "/list")
     @ApiOperation("Returns a list of groups for currently logged in user")
     public ResponseEntity<List<GroupWebDTO>> listUserGroups(HttpServletRequest request) {
         String userId = getUserIdFromRequest(request);
@@ -83,9 +83,7 @@ public class GroupFetchController extends BaseRestController {
             GroupFullDTO dto = groupFetchBroker.fetchGroupFullDetails(userUid, groupUid).insertDefaultDescriptionIfEmpty(descriptionTemplate);
             return ResponseEntity.ok(dto);
         } else return new ResponseEntity<>((GroupFullDTO) null, HttpStatus.UNAUTHORIZED);
-
     }
-
 
     /**
      * Tells the client which, if any, of the groups have had a structural change since the last time the client knew about

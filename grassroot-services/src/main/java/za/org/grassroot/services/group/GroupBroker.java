@@ -37,6 +37,8 @@ public interface GroupBroker {
 
     void updateGroupDefaultLanguage(String userUid, String groupUid, String newLocale, boolean includeSubGroups);
 
+    void updateTopics(String userUid, String groupUid, Set<String> topics);
+
     /** METHODS FOR DEALING WITH MEMBERS AND PERMISSIONS **/
 
     boolean canAddMember(String groupUid);

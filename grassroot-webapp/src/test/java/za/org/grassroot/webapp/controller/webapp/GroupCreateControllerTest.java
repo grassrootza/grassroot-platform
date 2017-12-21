@@ -45,7 +45,7 @@ public class GroupCreateControllerTest extends WebAppAbstractUnitTest {
 
         GroupWrapper dummyGroupCreator = new GroupWrapper();
         dummyGroupCreator.setGroupName("DummyGroup");
-        dummyGroupCreator.addMember(new MembershipInfo(sessionTestUser, BaseRoles.ROLE_GROUP_ORGANIZER, null));
+        dummyGroupCreator.addMember(new MembershipInfo(sessionTestUser, BaseRoles.ROLE_GROUP_ORGANIZER, null, null));
         mockMvc.perform(get("/group/create"))
                 .andExpect(view().name("group/create"))
                 .andExpect(model().attribute("groupCreator", hasProperty("addedMembers", hasSize(dummyGroupCreator.getAddedMembers().size()))));
