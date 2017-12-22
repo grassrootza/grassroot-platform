@@ -6,21 +6,21 @@ import lombok.Setter;
 import lombok.experimental.Tolerate;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.account.Account;
+import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 /**
- * Class to hold a template, with a message, to trigger after a defined event (only allowed for GRExtra accounts)
+ * Class to hold a broadcast, which we are going to use quite a lot
  */
 @Entity
 @Table(name = "notification_template")
 @Getter @Builder
-public class NotificationTemplate {
+public class Broadcast {
 
     public static final int MAX_MESSAGES = 3;
 
@@ -41,7 +41,7 @@ public class NotificationTemplate {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "trigger_type", length = 50, nullable = false)
-    private NotificationTriggerType triggerType;
+    private BroadcastType broadcastType;
 
     @Basic
     @Column(name = "active")
@@ -53,18 +53,47 @@ public class NotificationTemplate {
 
     @Basic
     @Column(name = "msg_template1", nullable = false)
-    @Setter private String messageTemplate;
+    @Setter private String smsTemplate1;
 
     @Basic
     @Column(name = "msg_template2")
-    @Setter private String messageTemplate2;
+    @Setter private String smsTemplate2;
 
     @Basic
     @Column(name = "msg_template3")
-    @Setter private String messageTemplate3;
+    @Setter private String smsTemplate3;
 
-    @Column(name = "language")
-    @Setter private Locale language;
+    @Basic
+    @Column(name = "email_content")
+    @Setter private String emailContent;
+
+    @Basic
+    @Column(name = "facebook_page_id")
+    @Setter private String facebookPageId;
+
+    @Basic
+    @Column(name = "facebook_post")
+    @Setter private String facebookPost;
+
+    @Basic
+    @Column(name = "facebook_link")
+    @Setter private String facebookLink;
+
+    @Basic
+    @Column(name = "facebook_image_key")
+    @Setter private String facebookImageKey;
+
+    @Basic
+    @Column(name = "facebook_image_caption")
+    @Setter private String facebookImageCaption;
+
+    @Basic
+    @Column(name = "twitter_post", length = 240)
+    @Setter private String twitterPost;
+
+    @Basic
+    @Column(name = "twitter_image_key")
+    @Setter private String twitterImageKey;
 
     @Basic
     @Column(name = "send_delay")
@@ -78,12 +107,16 @@ public class NotificationTemplate {
     @JoinColumn(name = "group_id")
     @Setter private Group group;
 
+    @ManyToOne
+    @JoinColumn(name = "campaign_id")
+    @Setter private Campaign campaign;
+
     @Basic
     @Column(name = "cascade")
     @Setter @Builder.Default private boolean cascade = false;
 
     @Tolerate
-    private NotificationTemplate() {
+    private Broadcast() {
         // for JPA
     }
 
@@ -101,12 +134,12 @@ public class NotificationTemplate {
 
     public List<String> getTemplateStrings() {
         List<String> templates = new ArrayList<>();
-        templates.add(messageTemplate);
-        if (!StringUtils.isEmpty(messageTemplate2)) {
-            templates.add(messageTemplate2);
+        templates.add(smsTemplate1);
+        if (!StringUtils.isEmpty(smsTemplate2)) {
+            templates.add(smsTemplate2);
         }
-        if (!StringUtils.isEmpty(messageTemplate3)) {
-            templates.add(messageTemplate3);
+        if (!StringUtils.isEmpty(smsTemplate3)) {
+            templates.add(smsTemplate3);
         }
         return templates;
     }
@@ -116,7 +149,7 @@ public class NotificationTemplate {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        NotificationTemplate template = (NotificationTemplate) o;
+        Broadcast template = (Broadcast) o;
 
         return uid.equals(template.uid);
     }

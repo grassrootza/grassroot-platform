@@ -80,13 +80,13 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
 
     private final AccountRepository accountRepository;
     private final PaidGroupRepository paidGroupRepository;
-    private final NotificationTemplateRepository templateRepository;
+    private final BroadcastRepository templateRepository;
     private LogsAndNotificationsBroker logsAndNotificationsBroker;
 
     @Autowired
     public AccountGroupBrokerImpl(UserRepository userRepository, GroupRepository groupRepository, TodoRepository todoRepository,
                                   EventRepository eventRepository, PermissionBroker permissionBroker, AccountRepository accountRepository,
-                                  PaidGroupRepository paidGroupRepository, NotificationTemplateRepository templateRepository, LogsAndNotificationsBroker logsAndNotificationsBroker) {
+                                  PaidGroupRepository paidGroupRepository, BroadcastRepository templateRepository, LogsAndNotificationsBroker logsAndNotificationsBroker) {
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
         this.todoRepository = todoRepository;
@@ -523,7 +523,7 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
             throw new IllegalArgumentException("Notification templates need at least one message");
         }
 
-        if (messages.size() > NotificationTemplate.MAX_MESSAGES) {
+        if (messages.size() > Broadcast.MAX_MESSAGES) {
             throw new IllegalArgumentException("Notification templates can only store up to 3 messages");
         }
 
@@ -539,33 +539,32 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
         // ability to then allow for finding the other one and disabling it (i.e., to resolve such conflicts)
         checkForAndDisablePriorTemplate(group, user);
 
-        NotificationTemplate template = NotificationTemplate.builder()
+        Broadcast template = Broadcast.builder()
                 .account(account)
                 .group(group)
-                .triggerType(NotificationTriggerType.ADDED_TO_GROUP)
+                .broadcastType(BroadcastType.ADDED_TO_GROUP)
                 .createdByUser(user)
                 .active(true)
                 .creationTime(Instant.now())
                 .delayIntervalMillis(delayToSend.toMillis())
-                .language(language)
-                .messageTemplate(messages.get(0))
+                .smsTemplate1(messages.get(0))
                 .onlyUseFreeChannels(onlyViaFreeChannels)
                 .build();
 
         if (messages.size() > 1) {
-            template.setMessageTemplate2(messages.get(1));
+            template.setSmsTemplate2(messages.get(1));
         }
 
         if (messages.size() > 2) {
-            template.setMessageTemplate3(messages.get(2));
+            template.setSmsTemplate3(messages.get(2));
         }
 
         templateRepository.save(template);
     }
 
     private void checkForAndDisablePriorTemplate(Group group, User user) {
-        NotificationTemplate template = templateRepository.findTopByGroupAndTriggerTypeAndActiveTrue(group,
-                NotificationTriggerType.ADDED_TO_GROUP);
+        Broadcast template = templateRepository.findTopByGroupAndBroadcastTypeAndActiveTrue(group,
+                BroadcastType.ADDED_TO_GROUP);
         if (template != null) {
             logger.error("Conflict in group welcome messages ... check logs and debug");
             storeAccountLogPostCommit(new AccountLog.Builder(template.getAccount())
@@ -593,8 +592,8 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
         validateAdmin(user, account);
 
         // todo : as above, checking for uniqueness, disabling, etc
-        NotificationTemplate template = templateRepository.findTopByGroupAndTriggerTypeAndActiveTrue(group,
-                NotificationTriggerType.ADDED_TO_GROUP);
+        Broadcast template = templateRepository.findTopByGroupAndBroadcastTypeAndActiveTrue(group,
+                BroadcastType.ADDED_TO_GROUP);
 
         boolean changedTime = false;
         if (delayToSend != null && delayToSend != Duration.of(template.getDelayIntervalMillis(), ChronoUnit.MILLIS)) {
@@ -604,16 +603,16 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
 
         boolean changedMessages = !messages.equals(template.getTemplateStrings());
         if (changedMessages) {
-            template.setMessageTemplate(messages.get(0));
+            template.setSmsTemplate1(messages.get(0));
             if (messages.size() > 1) {
-                template.setMessageTemplate2(messages.get(1));
-            } else if (!StringUtils.isEmpty(template.getMessageTemplate2())) {
-                template.setMessageTemplate2(null);
+                template.setSmsTemplate2(messages.get(1));
+            } else if (!StringUtils.isEmpty(template.getSmsTemplate2())) {
+                template.setSmsTemplate2(null);
             }
             if (messages.size() > 2) {
-                template.setMessageTemplate3(messages.get(2));
-            } else if (!StringUtils.isEmpty(template.getMessageTemplate3())) {
-                template.setMessageTemplate3(null);
+                template.setSmsTemplate3(messages.get(2));
+            } else if (!StringUtils.isEmpty(template.getSmsTemplate3())) {
+                template.setSmsTemplate3(null);
             }
         }
 
@@ -641,8 +640,8 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
 
         validateAdmin(user, account);
 
-        NotificationTemplate template = templateRepository.findTopByGroupAndTriggerTypeAndActiveTrue(group,
-                NotificationTriggerType.ADDED_TO_GROUP);
+        Broadcast template = templateRepository.findTopByGroupAndBroadcastTypeAndActiveTrue(group,
+                BroadcastType.ADDED_TO_GROUP);
 
         template.setActive(false);
 
@@ -656,7 +655,7 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
 
     @Override
     @Transactional(readOnly = true)
-    public NotificationTemplate loadTemplate(String groupUid) {
+    public Broadcast loadTemplate(String groupUid) {
         Objects.requireNonNull(groupUid);
 
         Account account = findAccountForGroup(groupUid);
@@ -665,8 +664,8 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
         }
 
         Group group = groupRepository.findOneByUid(groupUid);
-        return templateRepository.findTopByGroupAndTriggerTypeAndActiveTrue(group,
-                NotificationTriggerType.ADDED_TO_GROUP);
+        return templateRepository.findTopByGroupAndBroadcastTypeAndActiveTrue(group,
+                BroadcastType.ADDED_TO_GROUP);
     }
 
     @Override
@@ -685,7 +684,7 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
 
         Group group = groupRepository.findOneByUid(groupUid);
         PaidGroup latestRecord = paidGroupRepository.findTopByGroupOrderByExpireDateTimeDesc(group);
-        NotificationTemplate template = checkForGroupTemplate(group);
+        Broadcast template = checkForGroupTemplate(group);
 
         // note: at some point do this recursively, but for the moment, a one level check is fine
         if ((template == null || !template.isActive()) && group.getParent() != null) {
@@ -713,8 +712,8 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
         }
     }
 
-    private NotificationTemplate checkForGroupTemplate(Group group) {
-        return templateRepository.findTopByGroupAndTriggerTypeAndActiveTrue(group, NotificationTriggerType.ADDED_TO_GROUP);
+    private Broadcast checkForGroupTemplate(Group group) {
+        return templateRepository.findTopByGroupAndBroadcastTypeAndActiveTrue(group, BroadcastType.ADDED_TO_GROUP);
     }
 
     @Override
@@ -725,7 +724,7 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
 
         validateUserAccountAdminForGroup(userUid, groupUid);
 
-        NotificationTemplate template = loadTemplate(groupUid);
+        Broadcast template = loadTemplate(groupUid);
         template.setCascade(true);
 
         createAndStoreSingleAccountLog(new AccountLog.Builder(template.getAccount())
@@ -743,7 +742,7 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
 
         validateUserAccountAdminForGroup(userUid, groupUid);
 
-        NotificationTemplate template = loadTemplate(groupUid);
+        Broadcast template = loadTemplate(groupUid);
         template.setCascade(false);
 
         createAndStoreSingleAccountLog(new AccountLog.Builder(template.getAccount())
@@ -760,7 +759,7 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
         return group.getDirectChildren() != null && !group.getDirectChildren().isEmpty();
     }
 
-    private Set<Notification> generateNotifications(NotificationTemplate templateEntity, int templateStringIndex,
+    private Set<Notification> generateNotifications(Broadcast templateEntity, int templateStringIndex,
                                                     Group group, Set<String> memberUids, AccountLog accountLog) {
         logger.debug("generating notifications for {} member", memberUids.size());
         Instant now = Instant.now().plus(templateStringIndex * WELCOME_MSG_INTERVAL, ChronoUnit.MILLIS);
@@ -771,7 +770,7 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
         return notifications;
     }
 
-    private Notification fromTemplate(NotificationTemplate template, int templateStringIndex,
+    private Notification fromTemplate(Broadcast template, int templateStringIndex,
                                       Membership membership, AccountLog accountLog, Instant referenceTime) {
         // todo : handle truncating better, handle null delays, handle send only via free
         Notification notification = new GroupWelcomeNotification(membership.getUser(),

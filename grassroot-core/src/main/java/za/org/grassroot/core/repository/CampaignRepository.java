@@ -13,7 +13,9 @@ import java.util.Set;
 
 
 public interface CampaignRepository extends JpaRepository<Campaign, Long>, JpaSpecificationExecutor<Campaign> {
-    
+
+    Campaign findOneByUid(String uid);
+
     Campaign findByCampaignCodeAndEndDateTimeAfter(String campaignCode, Instant date);
     Campaign findByNameAndEndDateTimeAfter(String campaignName, Instant date);
 
