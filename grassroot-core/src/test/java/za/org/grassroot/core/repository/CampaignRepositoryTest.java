@@ -41,7 +41,7 @@ public class CampaignRepositoryTest {
         Assert.assertNotNull(campaign);
         Assert.assertNotNull(campaign.getUid());
         Assert.assertNotNull(campaign.getCreatedDateTime());
-        Assert.assertEquals(campaign.getCampaignName(),"Test");
+        Assert.assertEquals(campaign.getName(),"Test");
         Assert.assertEquals(campaign.getCampaignCode(),"234");
         Assert.assertNotNull(campaign.getCreatedByUser());
         Assert.assertEquals(campaign.getCreatedByUser().getPhoneNumber(),"3456");

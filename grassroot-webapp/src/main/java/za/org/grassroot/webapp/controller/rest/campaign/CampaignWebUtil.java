@@ -29,10 +29,17 @@ public class CampaignWebUtil {
     }
 
     public static CampaignViewDTO createCampaignViewDTO(Campaign campaign){
-        CampaignViewDTO campaignDto = new CampaignViewDTO(campaign.getCampaignCode(), campaign.getCampaignName(),campaign.getCampaignDescription(),campaign.getCampaignType().name(),campaign.getCreatedByUser().getUid(),
-                campaign.getCreatedByUser().getDisplayName(),campaign.getStartDateTime().toString(),campaign.getEndDateTime().toString(), campaign.getUrl(),campaign.getUid(),campaign.getTagList());
-        campaignDto.setCampaignMasterGroupName(campaign.getMasterGroup() != null ? campaign.getMasterGroup().getGroupName() : null);
-        campaignDto.setCampaignMasterGroupUid(campaign.getMasterGroup() != null ? campaign.getMasterGroup().getUid() : null);
+        CampaignViewDTO campaignDto = new CampaignViewDTO(campaign.getUid(),
+                campaign.getName(),
+                campaign.getDescription(),
+                campaign.getCampaignType(),
+                campaign.getCreatedByUser().getUid(),
+                campaign.getCreatedByUser().getName(),
+                campaign.getStartDateTime(),
+                campaign.getEndDateTime(),
+                campaign.getUrl(), campaign.getCampaignCode(), campaign.getTagList());
+        campaignDto.setMasterGroupName(campaign.getMasterGroup() != null ? campaign.getMasterGroup().getGroupName() : null);
+        campaignDto.setMasterGroupUid(campaign.getMasterGroup() != null ? campaign.getMasterGroup().getUid() : null);
         campaignDto.setTotalUsers((campaign.getMasterGroup() != null && campaign.getMasterGroup().getMembers() != null)? campaign.getMasterGroup().getMembers().size() : 0);
         campaignDto.setNewUsers(getMemberJoinedViaCampaign(campaign));
         if(campaign.getCampaignMessages() != null && !campaign.getCampaignMessages().isEmpty()){

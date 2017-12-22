@@ -63,11 +63,11 @@ public class CampaignBrokerTest {
         Assert.assertNotNull(campaign);
         Assert.assertNotNull(campaign.getCreatedByUser().getPhoneNumber(), "0605550000");
         Assert.assertNotNull(campaign.getCampaignCode(), "234");
-        Assert.assertNotNull(campaign.getCampaignName(), "national campaign");
+        Assert.assertNotNull(campaign.getName(), "national campaign");
 
         Campaign updatedCampaign = campaignBroker.addCampaignMessage("234","Test message", Locale.ENGLISH, MessageVariationAssignment.CONTROL, UserInterfaceType.USSD, testUser, null);
         Assert.assertNotNull(updatedCampaign);
-        Assert.assertEquals(updatedCampaign.getCampaignName(), "national campaign");
+        Assert.assertEquals(updatedCampaign.getName(), "national campaign");
         Assert.assertEquals(updatedCampaign.getCampaignMessages().size(), 1);
         Assert.assertEquals(updatedCampaign.getCampaignMessages().iterator().next().getMessage(), "Test message");
         Assert.assertEquals(updatedCampaign.getCampaignMessages().iterator().next().getChannel(), UserInterfaceType.USSD);
@@ -81,7 +81,7 @@ public class CampaignBrokerTest {
 
         Campaign campaignByName = campaignBroker.getCampaignDetailsByName("national campaign");
         Assert.assertNotNull(campaignByName);
-        Assert.assertEquals(campaignByName.getCampaignName(), "national campaign");
+        Assert.assertEquals(campaignByName.getName(), "national campaign");
 
         Set<CampaignMessage> campaignMessageSet = campaignBroker.getCampaignMessagesByCampaignName("national campaign",MessageVariationAssignment.CONTROL,UserInterfaceType.USSD, Locale.ENGLISH);
         Assert.assertNotNull(campaignMessageSet);

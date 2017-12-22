@@ -6,7 +6,7 @@ create table campaign (
   start_date_time timestamp not null,
   end_date_time timestamp not null,
   name varchar(50),
-  description varchar(255),
+  description varchar(512),
   code varchar(10),
   created_by_user bigint,
   tags text[] default '{}',
