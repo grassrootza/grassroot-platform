@@ -131,7 +131,7 @@ public class USSDCampaignControllerTest extends USSDAbstractUnitTest {
         campaign.setUid("2345667890000");
         campaign.setId(1L);
         campaign.setCampaignCode("000");
-        campaign.setCampaignDescription("Test Campaign");
+        campaign.setDescription("Test Campaign");
         campaign.setStartDateTime(Instant.now());
         campaign.setEndDateTime(Instant.now());
         campaign.setCampaignType(CampaignType.Information);
