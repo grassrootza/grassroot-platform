@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.0.xsd">
+    <changeSet id="change_159" author="luke">
+        <comment>Major generalization of notification template to broadcast entity, to handle campaign and group multi-posts</comment>
+        <sqlFile path="db/scripts/script_159_broadcast.sql" splitStatements="false"/>
+        <rollback>
+            <sqlFile path="db/scripts/script_159_rollback.sql"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

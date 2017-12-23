@@ -1,6 +1,8 @@
 package za.org.grassroot.services.broadcasts;
 
 import za.org.grassroot.core.domain.Broadcast;
+import za.org.grassroot.integration.socialmedia.FBPostBuilder;
+import za.org.grassroot.integration.socialmedia.TwitterPostBuilder;
 
 import java.util.List;
 

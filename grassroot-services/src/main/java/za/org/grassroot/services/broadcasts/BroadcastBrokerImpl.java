@@ -10,6 +10,9 @@ import za.org.grassroot.core.repository.BroadcastRepository;
 import za.org.grassroot.core.repository.CampaignRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.integration.socialmedia.SocialMediaBroker;
+import za.org.grassroot.integration.socialmedia.FBPostBuilder;
+import za.org.grassroot.integration.socialmedia.TwitterPostBuilder;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 
 import java.util.List;
@@ -22,14 +25,17 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
     private final GroupRepository groupRepository;
     private final CampaignRepository campaignRepository;
 
+    private final SocialMediaBroker socialMediaBroker;
+
     private final LogsAndNotificationsBroker logsAndNotificationsBroker;
 
     @Autowired
-    public BroadcastBrokerImpl(BroadcastRepository broadcastRepository, UserRepository userRepository, GroupRepository groupRepository, CampaignRepository campaignRepository, LogsAndNotificationsBroker logsAndNotificationsBroker) {
+    public BroadcastBrokerImpl(BroadcastRepository broadcastRepository, UserRepository userRepository, GroupRepository groupRepository, CampaignRepository campaignRepository, SocialMediaBroker socialMediaBroker, LogsAndNotificationsBroker logsAndNotificationsBroker) {
         this.broadcastRepository = broadcastRepository;
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
         this.campaignRepository = campaignRepository;
+        this.socialMediaBroker = socialMediaBroker;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
     }
 

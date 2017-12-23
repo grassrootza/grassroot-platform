@@ -40,7 +40,7 @@ public class Broadcast {
     private User createdByUser;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "trigger_type", length = 50, nullable = false)
+    @Column(name = "broadcast_type", length = 50, nullable = false)
     private BroadcastType broadcastType;
 
     @Basic
@@ -88,12 +88,20 @@ public class Broadcast {
     @Setter private String facebookImageCaption;
 
     @Basic
+    @Column(name = "facebook_post_succeeded")
+    @Setter private Boolean fbPostSucceeded;
+
+    @Basic
     @Column(name = "twitter_post", length = 240)
     @Setter private String twitterPost;
 
     @Basic
     @Column(name = "twitter_image_key")
     @Setter private String twitterImageKey;
+
+    @Basic
+    @Column(name = "twitter_post_succeeded")
+    @Setter private Boolean twitterSucceeded;
 
     @Basic
     @Column(name = "send_delay")
