@@ -13,15 +13,39 @@
 </head>
 <body>
 
-  <section layout:fragment="header" class="top-container"
-           th:replace="~{fragments :: std_header('Donate',
-           'Help build the tools for a people\'s democracy')}">
+  <section layout:fragment="header" class="logo-container">
+    <div class="container">
+      <div class="row">
+        <div class="jumbotron col-md-10 col-md-offset-1 col-sm-8 col-sm-offset-2 col-xs-12">
+          <div class="no-padding">
+            <img th:src="@{/images/grassroot_collage.jpg}" class="img-responsive central-logo"/>
+          </div>
+          <h4 class="header-content-subtitle text-center">Donation form - thank you!</h4>
+        </div>
+      </div>
+    </div>
   </section>
 
   <main layout:fragment="content">
 
     <section class="grassroot-form">
       <div class="container">
+        <div class="row">
+          <div class="col-md-8 col-md-offset-2 col-sm-6 col-sm-offset-3 col-xs-12">
+            <form th:action="@{/donate/payment}" method="get">
+              <div th:replace="~{form_fragments :: text_input('Name (optional)', 'Your name, so we know who to thank', '100', 'name')}"></div>
+              <div th:replace="~{form_fragments :: text_input('Email (optional)', 'Where we should send a thank you (and tax-exempt receipt)', '100', 'email')}"></div>
+              <div class="form-group">
+                <label for="amount" class="control-label">Amount in Rand (<a href="http://www.x-rates.com/table/?from=ZAR&amount=1" target="_blank" style="color: inherit; text-decoration: underline">exchange rates</a>)</label>
+                <input name="amount" id="amount" type="number" class="form-control input-lg"
+                       value="100" />
+              </div>
+              <div class="form-group pull-right top-buffer">
+                <button id="submitButton" type="submit" class="btn default-button">Donate</button>
+              </div>
+            </form>
+          </div>
+        </div>
         <div class="row">
           <div class="col-md-8 col-md-offset-2 col-sm-6 col-sm-offset-3 col-xs-12">
             <p class="grassroot-body">
@@ -41,21 +65,7 @@
             </p>
           </div>
         </div>
-        <div class="row">
-          <div class="col-md-8 col-md-offset-2 col-sm-6 col-sm-offset-3 col-xs-12">
-            <form th:action="@{/donate/payment}" method="get">
-              <input type="hidden" name="currency" value="ZAR" />
-              <div class="form-group">
-                <label for="amount" class="control-label">Amount (in South African Rand)</label>
-                <input name="amount" id="amount" type="number" class="form-control input-lg"
-                       value="100" />
-              </div>
-              <div class="form-group pull-right top-buffer">
-                <button id="submitButton" type="submit" class="btn default-button">Donate</button>
-              </div>
-            </form>
-          </div>
-        </div>
+
       </div>
     </section>
 

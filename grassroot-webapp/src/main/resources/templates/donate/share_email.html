@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <style>
+    p {
+      font-family: Helvetica, Arial, sans-serif;
+      font-size: 16px;
+    }
+
+    blockquote {
+      background: #f9f9f9;
+      border-left: 10px solid #ccc;
+      margin: 1.5em 10px;
+      padding: 0.5em 10px;
+      quotes: "\201C""\201D""\2018""\2019";
+    }
+
+    blockquote:before {
+      color: #ccc;
+      content: open-quote;
+      font-size: 4em;
+      line-height: 0.1em;
+      margin-right: 0.25em;
+      vertical-align: -0.4em;
+    }
+
+    blockquote p {
+      display: inline;
+    }
+
+    blockquote a {
+      text-decoration: none;
+      color: black;
+    }
+
+    h3 {
+      color: #207A34;
+      font-size: 1.2em;
+      font-weight: bolder;
+      font-family: sans-serif;
+    }
+  </style>
+</head>
+<body>
+
+<p>
+  Dear <span th:text="${toName}">Person</span>,
+</p>
+<p>
+  <span th:text="${fromName}">From Person</span> has just donated to Grassroot, and wants to share a link to our campaign
+  and the work to do with you.
+</p>
+<p>
+  In every community there are men and women who have the fire within to create change.
+  Grassroot has built a platform to change this. It consists of purpose-built tools that solve real
+  problems for people who wish to organize their communities. It connects leaders to each
+  other, allows them and their communities to speak with one voice, and compel government change.
+</p>
+<table border="0" cellpadding="0" cellspacing="0" style="width: 250px; background-color:#207A34; border:1px solid #68B579; border-radius:5px; margin: 20px 0px">
+  <tr>
+    <td align="center" valign="middle" style="color:#207A34; font-family:Helvetica, Arial, sans-serif; font-size:16px; font-weight:bold; letter-spacing:-.5px; line-height:150%; padding-top:15px; padding-right:30px; padding-bottom:15px; padding-left:30px;">
+      <a th:href="${shareLink}" target="_blank" style="color:#FFFFFF; text-decoration:none;">Contribute to Grassroot</a>
+    </td>
+  </tr>
+</table>
+<p class="grassroot-body">
+  Our tools have enabled communities to
+  <a target="_blank" href="https://www.grassroot.org.za/news/2017/9/26/the-community-of-mzondi-takes-a-diy-approach-to-service-delivery">build services for themselves</a>,
+  <a target="_blank" href="https://www.grassroot.org.za/news/2017/11/8/livewiresa-ambassador-diaries-mondli-msani-community-conducts-social-audit">organize for better sanitation</a>,
+  <a target="_blank" href="https://www.grassroot.org.za/news/2017/9/20/livewiresa-citizen-journalist-training-with-health-e">tell the media about their issues</a>,
+  <a target="_blank" href="https://www.grassroot.org.za/news/2017/8/16/tshepisong-in-urgent-need-of-a-police-station">and organize for community safety</a>.
+  In the next year we will be scaling up our field presence and our tools. Join us as we work to create and
+  spread the tools for a people's democracy.
+</p>
+<p>
+  Note: if the link above does not work, copy this into your browser:
+</p>
+<p>
+  <a th:href="${shareLink}" th:text="${shareLink}"></a>
+</p>
+<p>
+  Grassroot
+</p>
+</body>
+</html>
