@@ -21,7 +21,6 @@ import java.time.*;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import static org.mockito.Mockito.*;
@@ -71,12 +70,12 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
         ussdEventUtil.setMessageSource(messageSource());
         ussdVoteController.setEventUtil(ussdEventUtil);
         ussdVoteController.setGroupUtil(ussdGroupUtil);
-        testUser = new User(testUserPhone);
+        testUser = new User(testUserPhone, null, null);
     }
 
     @Test
     public void voteRequestScreenShouldWorkInAllLanguages() throws Exception {
-        testUser = new User(testUserPhone, "test user");
+        testUser = new User(testUserPhone, "test user", null);
         Group testGroup = new Group("test group", testUser);
         testGroup.addMember(testUser, BaseRoles.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
         Vote vote = new Vote("are unit tests working?", Instant.now().plus(1, ChronoUnit.HOURS), testUser, testGroup);

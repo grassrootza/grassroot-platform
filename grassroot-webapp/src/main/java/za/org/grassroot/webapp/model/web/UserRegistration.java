@@ -24,23 +24,6 @@ public class UserRegistration {
         this.user = user;
     }
 
-    /*@NotBlank(message = "First name is required!")
-    public  String getFirstName()
-    {
-        return user.getFirstName();
-    }
-
-    @NotBlank(message = "Last name is required!")
-    public String getLastName()
-    {
-        return  user.getLastName();
-    }
-
-    public void setLastName(String lastName)
-    {
-        user.setLastName(lastName);
-    }*/
-
     @NotBlank(message = "{user.registration.validation.displayname.required}")
     public String getDisplayName() { return user.getDisplayName(); }
 
@@ -55,7 +38,7 @@ public class UserRegistration {
         user.setPassword(password);
     }
 
-    @NotBlank(message = "{user.registration.validation.username.required}")
+    // @NotBlank(message = "{user.registration.validation.username.required}")
     public String getUsername() {
         return user.getUsername();
     }
@@ -64,7 +47,7 @@ public class UserRegistration {
         user.setUsername(username);
     }
 
-    @NotBlank(message = "Phone Number is required!")
+    // @NotBlank(message = "Phone Number is required!")
     public String getPhoneNumber() {
         return user.getPhoneNumber();
     }
@@ -72,5 +55,11 @@ public class UserRegistration {
     public void setPhoneNumber(String phoneNumber) {
         String parsedPhoneNumber = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
         user.setPhoneNumber(parsedPhoneNumber);
+    }
+
+    public String getEmailAddress() { return user.getEmailAddress(); }
+
+    public void setEmailAddress(String emailAddress) {
+        user.setEmailAddress(emailAddress);
     }
 }

@@ -34,9 +34,15 @@
 
               <div class="form-group" th:class="${#fields.hasErrors('username')} ? 'form-group has-error' : 'form-group'">
                 <label for="mobile-number" class="control-label">Your mobile number:</label>
-                <input type="text" th:field="*{user.username}" class="form-control input-lg" id="mobile-number"
+                <input type="text" class="form-control input-lg" id="mobile-number"
                        placeholder="South African numbers only" />
                 <input type="hidden" id="full-mobile-number" th:field="*{user.phoneNumber}" />
+              </div>
+
+              <div class="form-group">
+                <label for="email-address" class="control-label">Or your email address:</label>
+                <input type="text" th:field="*{user.emailAddress}" class="form-control input-lg" id="email-address" />
+
               </div>
 
               <div class="form-group" th:class="${#fields.hasErrors('password')} ? 'form-group has-error': 'form-group'">

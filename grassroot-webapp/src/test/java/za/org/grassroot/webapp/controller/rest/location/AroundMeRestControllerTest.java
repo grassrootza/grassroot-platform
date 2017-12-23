@@ -79,7 +79,7 @@ public class AroundMeRestControllerTest extends RestAbstractUnitTest {
     public void fetchAllEntitiesNearUserShouldWork() throws Exception{
         GeoLocation testLocation = new GeoLocation(testLat,testLong);
 
-        User testUser = new User(phoneForTests,testUserName);
+        User testUser = new User(phoneForTests,testUserName, null);
         String testSearchTerm = "searchTerm";
 
         Meeting testMeeting = new MeetingBuilder().setName("test meeting")
@@ -130,9 +130,9 @@ public class AroundMeRestControllerTest extends RestAbstractUnitTest {
     public void getPublicGroupsNearUserShouldWork() throws Exception{
         GeoLocation testLocation = new GeoLocation(testLat,testLong);
 
-        User testUser = new User(phoneForTests,testUserName);
+        User testUser = new User(phoneForTests,testUserName, null);
 
-        Group testGroup = new Group("test Group", new User("121212121"));
+        Group testGroup = new Group("test Group", new User("121212121", null, null));
         GroupLocation groupLocation = new GroupLocation(testGroup,LocalDate.now(),testLocation,0,LocationSource.LOGGED_APPROX);
 
         ObjectLocation objectLocation = new ObjectLocation(testGroup,groupLocation);
@@ -171,7 +171,7 @@ public class AroundMeRestControllerTest extends RestAbstractUnitTest {
     public void getAlertsNearUserShouldWork() throws Exception{
         GeoLocation testLocation = new GeoLocation(testLat,testLong);
         String testCreatedByMe = "createdByMe";
-        User testUser = new User(phoneForTests,testUserName);
+        User testUser = new User(phoneForTests,testUserName, null);
         Group testGroup = new Group("test group", testUser);
 
         LiveWireAlert.Builder builder = LiveWireAlert.newBuilder();

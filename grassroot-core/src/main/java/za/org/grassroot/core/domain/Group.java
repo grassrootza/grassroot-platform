@@ -2,8 +2,6 @@ package za.org.grassroot.core.domain;
 
 import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.Type;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import za.org.grassroot.core.domain.geo.GroupLocation;
 import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.enums.GroupDefaultImage;
@@ -14,10 +12,7 @@ import javax.persistence.*;
 import java.io.Serializable;
 import java.time.Instant;
 import java.time.ZonedDateTime;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -27,8 +22,6 @@ import static za.org.grassroot.core.util.FormatUtil.removeUnwantedCharacters;
 @Table(name = "group_profile") // quoting table name in case "group" is a reserved keyword
 @DynamicUpdate
 public class Group implements TodoContainer, VoteContainer, MeetingContainer, Serializable, Comparable<Group>, TagHolder {
-
-    private static final Logger logger = LoggerFactory.getLogger(Group.class);
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -324,7 +317,7 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
     }
 
     public Membership removeMember(User member) {
-        Membership membership = getMembership(member);
+        Membership membership = getMembership(member.getUid());
         if (membership == null) {
             return null;
         }
@@ -350,11 +343,18 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         this.memberships.removeAll(memberships);
     }
 
+
     public Membership getMembership(User user) {
         Objects.requireNonNull(user);
 
+        return this.getMembership(user.getUid());
+    }
+
+    public Membership getMembership(String userUid) {
+        Objects.requireNonNull(userUid);
+
         for (Membership membership : memberships) {
-            if (membership.getUser().equals(user)) {
+            if (membership.getUser().getUid().equals(userUid)) {
                 return membership;
             }
         }
@@ -371,7 +371,7 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
 
     public boolean hasMember(User user) {
         Objects.requireNonNull(user);
-        Membership membership = getMembership(user);
+        Membership membership = getMembership(user.getUid());
         return membership != null;
     }
 
@@ -598,7 +598,6 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
     public GroupDefaultImage getDefaultImage() { return defaultImage; }
 
     public void setDefaultImage(GroupDefaultImage defaultImage) { this.defaultImage = defaultImage; }
-
 
     public Set<Role> getGroupRoles() {
         if (groupRoles == null) {

@@ -52,7 +52,8 @@ public class GroupQueryRestControllerTest extends RestAbstractUnitTest {
 
     @Test
     public void getUserGroupsShouldWork() throws Exception {
-        GroupLog groupLog = new GroupLog(testGroup, sessionTestUser, GroupLogType.GROUP_ADDED, sessionTestUser.getId());
+        GroupLog groupLog = new GroupLog(testGroup, sessionTestUser, GroupLogType.GROUP_ADDED,
+                sessionTestUser, null, null, null);
         testGroup.addMember(sessionTestUser, "ROLE_GROUP_ORGANIZER", GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
         List<Group> groups = Collections.singletonList(testGroup);
 

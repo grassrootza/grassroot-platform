@@ -37,6 +37,8 @@ public interface GroupBroker {
 
     void updateGroupDefaultLanguage(String userUid, String groupUid, String newLocale, boolean includeSubGroups);
 
+    void updateTopics(String userUid, String groupUid, Set<String> topics);
+
     /** METHODS FOR DEALING WITH MEMBERS AND PERMISSIONS **/
 
     boolean canAddMember(String groupUid);
@@ -61,6 +63,9 @@ public interface GroupBroker {
     void unsubscribeMember(String userUid, String groupUid);
 
     void updateMembershipRole(String userUid, String groupUid, String memberUid, String roleName);
+
+    // note: only accepts topics that are from the group itself
+    void assignMembershipTopics(String userUid, String groupUid, String memberUid, Set<String> topics);
 
     @Transactional
     boolean setGroupPinnedForUser(String userUid, String groupUid, boolean pinned);

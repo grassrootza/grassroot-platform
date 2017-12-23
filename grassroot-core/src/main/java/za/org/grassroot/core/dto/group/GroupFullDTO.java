@@ -2,6 +2,7 @@ package za.org.grassroot.core.dto.group;
 
 import io.swagger.annotations.ApiModel;
 import lombok.Getter;
+import lombok.Setter;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Membership;
@@ -10,16 +11,21 @@ import za.org.grassroot.core.dto.MembershipDTO;
 import za.org.grassroot.core.util.DateTimeUtil;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@ApiModel
-@Getter
+@ApiModel @Getter
 public class GroupFullDTO extends GroupHeavyDTO {
 
     private final String joinCode;
     private final Set<MembershipDTO> members;
+    @Setter private List<MembershipRecordDTO> memberHistory;
+
+    @Setter
+    private List<GroupRefDTO> subGroups = new ArrayList<>();
 
     public GroupFullDTO(Group group, Membership membership) {
         super(group, membership);

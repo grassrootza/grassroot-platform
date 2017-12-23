@@ -6,7 +6,7 @@ import za.org.grassroot.core.domain.User;
 
 import java.util.Optional;
 
-public class AndroidAuthToken {
+public class AuthorizedUserDTO {
 
     private String userUid;
     private String msisdn;
@@ -14,10 +14,9 @@ public class AndroidAuthToken {
     private String email;
     private String languageCode;
     private String systemRoleName;
-
     private String token;
 
-    public AndroidAuthToken(User user, String token) {
+    public AuthorizedUserDTO(User user, String token) {
         this.userUid = user.getUid();
         this.msisdn = user.getPhoneNumber();
         this.displayName = user.getDisplayName();

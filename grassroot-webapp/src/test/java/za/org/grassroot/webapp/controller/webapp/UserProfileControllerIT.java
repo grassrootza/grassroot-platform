@@ -28,7 +28,7 @@ public class UserProfileControllerIT {
 
     @Test
     public void testName() throws Exception {
-        User userProfile = new User("1201994", "Grass Root");
+        User userProfile = new User("1201994", "Grass Root", null);
         userProfile = userManagementService.createUserProfile(userProfile);
 
         assertThat(userProfile.getDisplayName(), equalTo("Grass Root"));

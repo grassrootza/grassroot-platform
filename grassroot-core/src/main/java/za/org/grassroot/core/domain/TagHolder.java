@@ -5,8 +5,12 @@ import za.org.grassroot.core.util.StringArrayUtil;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public interface TagHolder {
+
+    String TOPIC_PREFIX = "TOPIC:"; // for tags, to distinguish topics and other things
 
     String[] getTags();
     void setTags(String[] tags);
@@ -16,6 +20,17 @@ public interface TagHolder {
         // next line is messy but necessary for default method else abstract method throws null error
         List<String> tags = new ArrayList<>(StringArrayUtil.arrayToList(getTags()));
         tags.add(tag);
+        setTags(StringArrayUtil.listToArrayRemoveDuplicates(tags));
+    }
+
+    default void addTags(List<String> newTags) {
+        Objects.requireNonNull(newTags);
+        List<String> tagList = getTagList();
+        tagList.addAll(newTags);
+        setTags(tagList);
+    }
+
+    default void setTags(List<String> tags) {
         setTags(StringArrayUtil.listToArrayRemoveDuplicates(tags));
     }
 
@@ -31,7 +46,17 @@ public interface TagHolder {
         return StringArrayUtil.arrayToList(getTags());
     }
 
-    default void setTags(List<String> tags) {
-        setTags(StringArrayUtil.listToArrayRemoveDuplicates(tags));
+    default List<String> getTopics() {
+        return getTagList().stream()
+                .filter(s -> s.startsWith(TOPIC_PREFIX))
+                .map(s -> s.substring(TOPIC_PREFIX.length()))
+                .collect(Collectors.toList());
+    }
+
+    default void setTopics(Set<String> topics) {
+        List<String> tags = getTagList().stream()
+                .filter(s -> !s.startsWith(TOPIC_PREFIX)).collect(Collectors.toList());
+        tags.addAll(topics.stream().map(s -> TOPIC_PREFIX + s).collect(Collectors.toSet()));
+        setTags(tags);
     }
 }

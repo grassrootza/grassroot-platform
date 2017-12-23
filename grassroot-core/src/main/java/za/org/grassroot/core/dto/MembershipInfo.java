@@ -11,18 +11,17 @@ import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.Membership;
 import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Represents all info needed to add new member.
  * Only phone number is required.
  */
-@ApiModel(value = "MembershipInfo", description = "Set of information, principally phone number and name")
+@ApiModel(value = "MembershipInfo", description = "Set of information, principally name, phone number and/or email")
 @Getter @Setter // need to add setters so that Thymeleaf can fill the entities
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class MembershipInfo implements Comparable<MembershipInfo> {
@@ -37,8 +36,13 @@ public class MembershipInfo implements Comparable<MembershipInfo> {
     protected String displayName; // optional
     protected boolean userSetName;
 
+    protected String memberEmail;
+    protected Province province;
+
+    protected List<String> topics;
+
     public MembershipInfo() {
-        // need empty constructor for Spring MVC form submission
+        // need empty constructor for Spring MVC form submission, and for the Excel parsing
     }
 
     @JsonCreator
@@ -51,12 +55,15 @@ public class MembershipInfo implements Comparable<MembershipInfo> {
     }
 
     // constructor to create a membership info with an empty role
-    public MembershipInfo(User user, String displayName, String roleName) {
+    public MembershipInfo(User user, String displayName, String roleName, List<String> assignedTopics) {
         this.phoneNumber = user.getPhoneNumber();
+        this.memberEmail = user.getEmailAddress();
         this.displayName = displayName;
         this.userSetName = user.isHasSetOwnName();
         this.roleName = roleName;
         this.userUid = user.getUid();
+        this.province = user.getProvince();
+        this.topics = assignedTopics == null ? new ArrayList<>() : assignedTopics;
     }
 
     public static MembershipInfo makeEmpty() {
@@ -65,17 +72,36 @@ public class MembershipInfo implements Comparable<MembershipInfo> {
 
     public static Set<MembershipInfo> createFromMembers(Set<Membership> members) {
         Set<MembershipInfo> membershipInfoSet = new HashSet<>();
-        members.forEach(m -> membershipInfoSet.add(new MembershipInfo(m.getUser(), m.getDisplayName(), m.getRole().getName())));
+        members.forEach(m -> membershipInfoSet.add(new MembershipInfo(m.getUser(), m.getDisplayName(), m.getRole().getName(),
+                m.getTopics())));
         return membershipInfoSet;
     }
 
     // need to use PhoneNumberUtil here to make sure return number with country code (or vice versa)
 
-    public String getPhoneNumberWithCCode() { return PhoneNumberUtil.convertPhoneNumber(phoneNumber); }
+    public String getPhoneNumberWithCCode() {
+        try {
+            return PhoneNumberUtil.convertPhoneNumber(phoneNumber);
+        }  catch (InvalidPhoneNumberException e) {
+            return phoneNumber;
+        }
+    }
 
-    public String getPhoneNumberWithoutCCode() { return PhoneNumberUtil.invertPhoneNumber(phoneNumber); }
+    public String getPhoneNumberWithoutCCode() {
+        try {
+            return PhoneNumberUtil.invertPhoneNumber(phoneNumber);
+        } catch (Exception e) {
+            return phoneNumber;
+        }
+    }
 
-    public String getNationalFormattedNumber() { return PhoneNumberUtil.formattedNumber(phoneNumber); }
+    public String getNationalFormattedNumber() {
+        try {
+            return PhoneNumberUtil.formattedNumber(phoneNumber);
+        } catch (Exception e) {
+            return phoneNumber;
+        }
+    }
 
     public boolean hasValidPhoneNumber() {
         try {

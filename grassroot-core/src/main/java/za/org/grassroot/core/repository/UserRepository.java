@@ -21,6 +21,8 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
      */
     User findByPhoneNumber(String phoneNumber);
 
+    User findByEmailAddress(String emailAddress);
+
     User findOneByUid(String uid);
 
     List<User> findByUidIn(Set<String> uids);
@@ -61,6 +63,9 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
      */
     @Query("SELECT CASE WHEN COUNT(u) > 0 THEN 'true' ELSE 'false' END FROM User u WHERE u.phoneNumber = ?1")
     Boolean existsByPhoneNumber(String phoneNumber);
+
+    @Query("SELECT CASE WHEN COUNT(u) > 0 then 'true' ELSE 'false' END FROM User u where lower(u.emailAddress) = lower(?1)")
+    Boolean existsByEmail(String emailAddress);
 
     @Query("select u from User u, EventLog el, Event e where e = ?1 and el.event = e " +
             "and u = el.user and el.eventLogType = za.org.grassroot.core.enums.EventLogType.RSVP and el.response = 'YES'")

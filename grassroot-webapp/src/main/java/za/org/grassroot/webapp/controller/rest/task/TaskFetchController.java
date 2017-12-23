@@ -6,18 +6,23 @@ import io.swagger.annotations.ApiOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.dto.task.TaskDTO;
 import za.org.grassroot.core.dto.task.TaskFullDTO;
 import za.org.grassroot.core.dto.task.TaskMinimalDTO;
 import za.org.grassroot.core.enums.TaskType;
+import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.services.ChangedSinceData;
 import za.org.grassroot.services.task.TaskBroker;
 import za.org.grassroot.services.task.TaskImageBroker;
 import za.org.grassroot.services.task.enums.TaskSortType;
+import za.org.grassroot.services.user.UserManagementService;
+import za.org.grassroot.webapp.controller.rest.BaseRestController;
 import za.org.grassroot.webapp.model.rest.ImageRecordDTO;
 
+import javax.servlet.http.HttpServletRequest;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
@@ -27,7 +32,7 @@ import java.util.stream.Collectors;
 @RestController
 @Api("/api/task/fetch")
 @RequestMapping(value = "/api/task/fetch")
-public class TaskFetchController {
+public class TaskFetchController extends BaseRestController {
 
     private static final Logger logger = LoggerFactory.getLogger(TaskFetchController.class);
 
@@ -35,7 +40,9 @@ public class TaskFetchController {
     private final TaskImageBroker taskImageBroker;
 
     @Autowired
-    public TaskFetchController(TaskBroker taskBroker, TaskImageBroker taskImageBroker) {
+    public TaskFetchController(TaskBroker taskBroker, TaskImageBroker taskImageBroker,
+                               JwtService jwtService, UserManagementService userManagementService) {
+        super(jwtService, userManagementService);
         this.taskBroker = taskBroker;
         this.taskImageBroker = taskImageBroker;
     }
@@ -96,5 +103,19 @@ public class TaskFetchController {
                 .sorted(Comparator.comparing(ImageRecordDTO::getCreationTime, Comparator.reverseOrder()))
                 .collect(Collectors.toList()));
     }
+
+    @RequestMapping(value = "/upcoming/group/{groupUid}", method = RequestMethod.GET)
+    @ApiOperation(value = "All tasks for a group", notes = "Fetch tasks for a group", response = ChangedSinceData.class)
+    public ResponseEntity<List<TaskFullDTO>> fetchUserGroupTasks(@PathVariable String groupUid, HttpServletRequest request) {
+
+        String userId = getUserIdFromRequest(request);
+        if (userId != null) {
+            List<TaskFullDTO> tasks = taskBroker.fetchUpcomingGroupTasks(userId, groupUid);
+            return ResponseEntity.ok(tasks);
+        } else {
+            return new ResponseEntity<>((List<TaskFullDTO>) null, HttpStatus.UNAUTHORIZED);
+        }
+    }
+
 
 }

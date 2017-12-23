@@ -79,7 +79,7 @@ public class IncomingSMSControllerTest extends RestAbstractUnitTest {
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
         when(userResponseBrokerMock.checkForEntityForUserResponse(sessionTestUser.getUid(), false)).thenReturn(meeting);
 
-        mockMvc.perform(get(path + "incoming").param("fn", testUserPhone).param("ms", "yes"))
+        mockMvc.perform(get(path + "reply").param("fn", testUserPhone).param("ms", "yes"))
                 .andExpect(status().isOk());
 
         verify(userResponseBrokerMock, times(1)).checkForEntityForUserResponse(sessionTestUser.getUid(), false);
@@ -120,7 +120,7 @@ public class IncomingSMSControllerTest extends RestAbstractUnitTest {
         when(notificationServiceMock.fetchSentOrBetterSince(eq(sessionTestUser.getUid()), any(Instant.class), eq(null)))
                 .thenReturn(Collections.singletonList(notification));
 
-        mockMvc.perform(get(path + "incoming").param("fn", testUserPhone).param("ms", msg))
+        mockMvc.perform(get(path + "reply").param("fn", testUserPhone).param("ms", msg))
                 .andExpect(status().isOk());
 
         verify(userLogRepositoryMock, times(1)).save(any(UserLog.class));
@@ -153,7 +153,7 @@ public class IncomingSMSControllerTest extends RestAbstractUnitTest {
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
         when(userResponseBrokerMock.checkForEntityForUserResponse(sessionTestUser.getUid(), false)).thenReturn(vote);
 
-        mockMvc.perform(get(path + "incoming").param("fn", testUserPhone).param("ms", msg))
+        mockMvc.perform(get(path + "reply").param("fn", testUserPhone).param("ms", msg))
                 .andExpect(status().isOk());
 
         verify(userResponseBrokerMock, times(1)).recordUserResponse(sessionTestUser.getUid(), JpaEntityType.VOTE,
@@ -187,7 +187,7 @@ public class IncomingSMSControllerTest extends RestAbstractUnitTest {
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
         when(userResponseBrokerMock.checkForEntityForUserResponse(sessionTestUser.getUid(), false)).thenReturn(vote);
 
-        mockMvc.perform(get(path + "incoming").param("fn", testUserPhone).param("ms", msg))
+        mockMvc.perform(get(path + "reply").param("fn", testUserPhone).param("ms", msg))
                 .andExpect(status().isOk());
 
         // todo : make sure case is ignored in user response broker
@@ -223,7 +223,7 @@ public class IncomingSMSControllerTest extends RestAbstractUnitTest {
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
         when(eventBrokerMock.getOutstandingResponseForUser(sessionTestUser, EventType.VOTE)).thenReturn(votes);
 
-        mockMvc.perform(get(path + "incoming").param("fn", testUserPhone).param("ms", msg))
+        mockMvc.perform(get(path + "reply").param("fn", testUserPhone).param("ms", msg))
                 .andExpect(status().isOk());
 
         verify(userLogRepositoryMock, times(1)).save(any(UserLog.class));
@@ -250,7 +250,7 @@ public class IncomingSMSControllerTest extends RestAbstractUnitTest {
 
         String msg = "yes";
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
-        mockMvc.perform(get(path + "incoming").param("fn", testUserPhone).param("ms", msg))
+        mockMvc.perform(get(path + "reply").param("fn", testUserPhone).param("ms", msg))
                 .andExpect(status().isOk());
 
         verify(userResponseBrokerMock).checkForEntityForUserResponse(sessionTestUser.getUid(), false);
@@ -287,7 +287,7 @@ public class IncomingSMSControllerTest extends RestAbstractUnitTest {
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
         when(notificationServiceMock.fetchSentOrBetterSince(anyString(), anyObject(), eq(null))).thenReturn(Collections.singletonList(ntf));
 
-        mockMvc.perform(get(path + "incoming").param("fn", testUserPhone).param("ms", msg))
+        mockMvc.perform(get(path + "reply").param("fn", testUserPhone).param("ms", msg))
                 .andExpect(status().isOk());
 
         verify(userLogRepositoryMock).save(any(UserLog.class));

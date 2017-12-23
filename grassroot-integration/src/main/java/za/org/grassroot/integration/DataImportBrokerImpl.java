@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.dto.MembershipInfo;
+import za.org.grassroot.core.enums.Province;
 
 import javax.annotation.PostConstruct;
 import java.io.File;
@@ -49,18 +50,15 @@ public class DataImportBrokerImpl implements DataImportBroker {
     }
 
     @Override
-    public List<MembershipInfo> processMembers(File file, Integer phoneColumn, Integer nameColumn, Integer roleColumn, boolean headerRow) {
+    public List<MembershipInfo> processMembers(File file, boolean headerRow, Integer phoneColumn, Integer nameColumn, Integer roleColumn, Integer emailCol, Integer provinceCol) {
         List<MembershipInfo> importedMembers = new ArrayList<>();
         try {
             Workbook wb = WorkbookFactory.create(file);
             formulaEvaluator = wb.getCreationHelper().createFormulaEvaluator();
             Sheet sheet = wb.getSheetAt(0);
-            int nameRef = nameColumn == null ? 0 : nameColumn;
-            int phoneRef = phoneColumn == null ? 1 : phoneColumn;
-
             for (int i = headerRow ? 1 : 0; i <  sheet.getPhysicalNumberOfRows(); i++) {
                 Row row = sheet.getRow(i);
-                MembershipInfo member = memberFromRow(row, nameRef, phoneRef, roleColumn);
+                MembershipInfo member = memberFromRow(row, nameColumn, phoneColumn, emailCol, provinceCol, roleColumn);
                 importedMembers.add(member);
                 logger.debug("Read in member: {}", member);
             }
@@ -92,16 +90,46 @@ public class DataImportBrokerImpl implements DataImportBroker {
         return firstColumn;
     }
 
-    private MembershipInfo memberFromRow(Row row, int nameCol, int phoneCol, Integer roleCol) {
-        String roleName = roleCol != null ? convertRoleName(row.getCell(roleCol).getStringCellValue())
-                : BaseRoles.ROLE_ORDINARY_MEMBER;
+    private MembershipInfo memberFromRow(Row row, int nameCol, Integer phoneCol, Integer emailCol, Integer provinceCol,
+                                         Integer roleCol) {
+        if (phoneCol == null && emailCol == null) {
+            throw new IllegalArgumentException("Error! One of email or phone number columns must be present");
+        }
 
-        return new MembershipInfo(dataFormatter.formatCellValue(row.getCell(phoneCol), formulaEvaluator), roleName,
-                dataFormatter.formatCellValue(row.getCell(nameCol), formulaEvaluator));
+        MembershipInfo info = new MembershipInfo();
+        info.setDisplayName(dataFormatter.formatCellValue(row.getCell(nameCol)));
+
+        if (phoneCol != null) {
+            info.setPhoneNumber(dataFormatter.formatCellValue(row.getCell(phoneCol)));
+        }
+
+        if (emailCol != null) {
+            info.setMemberEmail(dataFormatter.formatCellValue(row.getCell(emailCol)));
+        }
+
+        if (provinceCol != null) {
+            info.setProvince(convertProvince(dataFormatter.formatCellValue(row.getCell(provinceCol))));
+        }
+
+        if (roleCol != null) {
+            info.setRoleName(convertRoleName(row.getCell(roleCol).getStringCellValue()));
+        } else {
+            info.setRoleName(BaseRoles.ROLE_ORDINARY_MEMBER);
+        }
+
+        return info;
+    }
+
+    // todo : use a more sophisticated form of parsing for both of these (bring in NLU?)
+    private Province convertProvince(final String cellValue) {
+        try {
+            return Province.valueOf(cellValue);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private String convertRoleName(final String cellValue) {
-        // todo : use a more sophisticated form of parsing (bring in NLU?)
         if (cellValue.toLowerCase().contains("organizer")) {
             return BaseRoles.ROLE_GROUP_ORGANIZER;
         }

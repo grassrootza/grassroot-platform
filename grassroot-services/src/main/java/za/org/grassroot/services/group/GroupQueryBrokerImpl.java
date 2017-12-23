@@ -18,7 +18,6 @@ import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.EventLog;
 import za.org.grassroot.core.dto.MembershipDTO;
-import za.org.grassroot.core.dto.group.GroupTreeDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.GroupSpecifications;
@@ -167,17 +166,6 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
         return new HashSet<>(groupRepository.findAll(Specifications.where(hasParent(group)).and(isActive())));
     }
 
-    @Transactional(readOnly = true)
-    public List<GroupTreeDTO> groupTree(String userUid) {
-        User user = userRepository.findOneByUid(userUid);
-        List<Object[]> listObjArray = groupRepository.getGroupMemberTree(user.getId());
-        List<GroupTreeDTO> list = new ArrayList<>();
-        for (Object[] objArray : listObjArray) {
-            list.add(new GroupTreeDTO(objArray));
-        }
-        return list;
-    }
-
     @Override
     @Transactional(readOnly = true)
     public Set<Group> possibleParents(String userUid, String groupUid) {
@@ -233,7 +221,7 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
         Set<String> removedUids = new HashSet<>();
         if (changedSince != null) {
             List<Group> deactivatedAfter = groupRepository.findMemberGroupsDeactivatedAfter(user, changedSince);
-            List<Group> formerMembersGroups = groupRepository.findMembershipRemovedAfter(user.getId(), changedSince);
+            List<Group> formerMembersGroups = groupRepository.findMembershipRemovedAfter(user, changedSince);
             removedUids = Stream.concat(deactivatedAfter.stream(), formerMembersGroups.stream())
                     .map(Group::getUid)
                     .collect(Collectors.toSet());
@@ -418,8 +406,9 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
     @Override
     public Page<MembershipDTO> getMembershipsInGroups(User groupCreator, Instant groupCreatedAfter, Instant userJoinedAfter, Pageable pageable) {
         Page<Membership> page = membershipRepository.findAll(MembershipSpecifications.membershipsInGroups(groupCreator, groupCreatedAfter, userJoinedAfter), pageable);
-        return page.map(m -> new MembershipDTO(m));
+        return page.map(MembershipDTO::new);
 
     }
+
 
 }

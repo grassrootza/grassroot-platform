@@ -11,27 +11,33 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.TaskType;
+import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.services.exception.TaskFinishedException;
 import za.org.grassroot.services.task.EventLogBroker;
 import za.org.grassroot.services.task.TaskImageBroker;
 import za.org.grassroot.services.task.VoteBroker;
+import za.org.grassroot.services.user.UserManagementService;
+import za.org.grassroot.webapp.controller.rest.BaseRestController;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
+import javax.servlet.http.HttpServletRequest;
+
 @Slf4j
 @RestController @Grassroot2RestController
 @Api("/api/task/respond")
 @RequestMapping(value = "/api/task/respond")
-public class TaskResponseController {
+public class TaskResponseController extends BaseRestController {
 
     private final EventLogBroker eventLogBroker;
     private final VoteBroker voteBroker;
     private final TaskImageBroker taskImageBroker;
 
     @Autowired
-    public TaskResponseController(EventLogBroker eventLogBroker, VoteBroker voteBroker, TaskImageBroker taskImageBroker) {
+    public TaskResponseController(JwtService jwtService, UserManagementService userManager, EventLogBroker eventLogBroker, VoteBroker voteBroker, TaskImageBroker taskImageBroker) {
+        super(jwtService, userManager);
         this.eventLogBroker = eventLogBroker;
         this.voteBroker = voteBroker;
         this.taskImageBroker = taskImageBroker;
@@ -50,14 +56,14 @@ public class TaskResponseController {
         }
     }
 
-    @RequestMapping(value = "/vote/{userUid}/{taskUid}", method = RequestMethod.POST)
+    @RequestMapping(value = "/vote/{taskUid}", method = RequestMethod.POST)
     @ApiOperation(value = "Cast a response to a vote, with the user's response (taken from vote entity) as 'vote'")
-    public ResponseEntity respondToVote(@PathVariable String userUid,
+    public ResponseEntity respondToVote(HttpServletRequest request,
                                         @PathVariable String taskUid,
                                         @RequestParam String vote) {
         try {
-            voteBroker.recordUserVote(userUid, taskUid, vote.trim());
-            return RestUtil.messageOkayResponse(RestMessage.VOTE_RECORDED);
+            voteBroker.recordUserVote(getUserIdFromRequest(request), taskUid, vote.trim());
+            return ResponseEntity.ok(voteBroker.load(taskUid)); // so it goes back with latest results
         } catch (IllegalArgumentException e) {
             return RestUtil.errorResponse(RestMessage.USER_NOT_PART_OF_VOTE);
         } catch (TaskFinishedException e) {

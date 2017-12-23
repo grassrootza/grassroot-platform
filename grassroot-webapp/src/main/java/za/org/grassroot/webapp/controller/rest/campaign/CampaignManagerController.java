@@ -2,8 +2,7 @@ package za.org.grassroot.webapp.controller.rest.campaign;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.MessageSource;
@@ -14,25 +13,24 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.campaign.Campaign;
+import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.services.campaign.CampaignBroker;
 import za.org.grassroot.services.user.UserManagementService;
+import za.org.grassroot.webapp.controller.rest.BaseRestController;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 import za.org.grassroot.webapp.controller.rest.exception.RestValidationMessage;
 import za.org.grassroot.webapp.enums.RestMessage;
+import za.org.grassroot.webapp.model.rest.CampaignViewDTO;
 import za.org.grassroot.webapp.model.rest.wrappers.CreateCampaignMessageActionRequest;
 import za.org.grassroot.webapp.model.rest.wrappers.CreateCampaignMessageRequest;
 import za.org.grassroot.webapp.model.rest.wrappers.CreateCampaignRequest;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -43,11 +41,9 @@ import java.util.List;
 import java.util.Locale;
 
 @RestController @Grassroot2RestController
-@Api("/api/group/modify")
+@Api("/api/campaign/manage") @Slf4j
 @RequestMapping(value = "/api/campaign/manage")
-public class CampaignManagerController {
-
-    private static final Logger logger = LoggerFactory.getLogger(CampaignManagerController.class);
+public class CampaignManagerController extends BaseRestController {
 
     private final CampaignBroker campaignBroker;
     private final UserManagementService userManager;
@@ -55,18 +51,20 @@ public class CampaignManagerController {
     private MessageSource messageSource;
 
     @Autowired
-    public CampaignManagerController(CampaignBroker campaignBroker, UserManagementService userManager, @Qualifier("messageSource")
+    public CampaignManagerController(JwtService jwtService, CampaignBroker campaignBroker, UserManagementService userManager, @Qualifier("messageSource")
         MessageSource messageSource) {
+        super(jwtService, userManager);
         this.campaignBroker = campaignBroker;
         this.userManager = userManager;
         this.messageSource = messageSource;
     }
 
-    @RequestMapping(value = "/list/{userUid}", method = RequestMethod.GET)
+    @RequestMapping(value = "/list", method = RequestMethod.GET)
     @ApiOperation(value = "List user's campaigns", notes = "Lists the campaigns a user has created")
-    public ResponseEntity<ResponseWrapper> fetchCampaignsManagedByUser(@PathVariable String userUid) {
-        return RestUtil.okayResponseWithData(RestMessage.USER_ACTIVITIES,
-                CampaignWebUtil.createCampaignViewDtoList(campaignBroker.getCampaignsCreatedByUser(userUid)));
+    public ResponseEntity<List<CampaignViewDTO>> fetchCampaignsManagedByUser(HttpServletRequest request,
+                                                                       @RequestParam(required = false) String userUid) {
+        return ResponseEntity.ok(CampaignWebUtil.createCampaignViewDtoList(campaignBroker.getCampaignsCreatedByUser(
+                        userUid == null ? getUserIdFromRequest(request) : userUid)));
     }
 
     @RequestMapping(value = "/create" , method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE)
@@ -82,6 +80,7 @@ public class CampaignManagerController {
         if(createCampaignRequest.getTags() != null && !createCampaignRequest.getTags().isEmpty()){
             tagList = Collections.list(Collections.enumeration(createCampaignRequest.getTags()));
         }
+        log.info("finished processing tags, value = ");
         LocalDate firstDate = LocalDate.parse(createCampaignRequest.getStartDate());
         Instant campaignStartDate = firstDate.atStartOfDay(ZoneId.of(SA_TIME_ZONE)).toInstant();
 
@@ -89,7 +88,11 @@ public class CampaignManagerController {
         Instant campaignEndDate = secondDate.atStartOfDay(ZoneId.of(SA_TIME_ZONE)).toInstant();
 
         Campaign campaign = campaignBroker.createCampaign(createCampaignRequest.getName(), createCampaignRequest.getCode(),
-                createCampaignRequest.getDescription(), createCampaignRequest.getUserUid(),campaignStartDate, campaignEndDate, tagList,
+                createCampaignRequest.getDescription(),
+                createCampaignRequest.getUserUid(),
+                campaignStartDate,
+                campaignEndDate,
+                tagList,
                 createCampaignRequest.getType(), createCampaignRequest.getUrl());
         if(!StringUtils.isEmpty(createCampaignRequest.getGroupUid())){
             campaign = campaignBroker.linkCampaignToMasterGroup(campaign.getCampaignCode(), createCampaignRequest.getGroupUid(), createCampaignRequest.getUserUid());

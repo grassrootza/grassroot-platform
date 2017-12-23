@@ -133,10 +133,10 @@ public abstract class USSDAbstractUnitTest {
     protected static final Year testYear = testDay.isAfter(LocalDate.now()) ? Year.now() : Year.now().plusYears(1);
 
     private static final String baseForOthers = "2781000111";
-    protected User testUserZu = new User(baseForOthers + "2");
-    protected User testUserTs = new User(baseForOthers + "3");
-    protected User testUserNso = new User(baseForOthers + "4");
-    protected User testUserSt = new User(baseForOthers + "5");
+    protected User testUserZu = new User(baseForOthers + "2", null, null);
+    protected User testUserTs = new User(baseForOthers + "3", null, null);
+    protected User testUserNso = new User(baseForOthers + "4", null, null);
+    protected User testUserSt = new User(baseForOthers + "5", null, null);
 
     protected List<User> languageUsers;
 

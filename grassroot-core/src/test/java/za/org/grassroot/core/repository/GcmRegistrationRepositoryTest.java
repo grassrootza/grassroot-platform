@@ -35,7 +35,7 @@ public class GcmRegistrationRepositoryTest {
 
     @Test
     public void shouldSaveAndReturnGcmRegistration() throws Exception{
-        User user = userRepository.save(new User("0848875097"));
+        User user = userRepository.save(new User("0848875097", null, null));
         gcmRegistrationRepository.save(new GcmRegistration(user, "xx77f"));
         GcmRegistration gcmRegistration = gcmRegistrationRepository.findByRegistrationId("xx77f");
         assertNotEquals(null, gcmRegistration);
@@ -45,7 +45,7 @@ public class GcmRegistrationRepositoryTest {
 
     @Test
     public void shouldFindByUser() throws Exception{
-        User user = userRepository.save(new User("0848875097"));
+        User user = userRepository.save(new User("0848875097", null, null));
         gcmRegistrationRepository.save(new GcmRegistration(user, "xx77f"));
         GcmRegistration gcmRegistration = gcmRegistrationRepository.findTopByUserOrderByCreationTimeDesc(user);
         assertNotEquals(null, gcmRegistration);
@@ -55,7 +55,7 @@ public class GcmRegistrationRepositoryTest {
 
     @Test
     public void shouldFindByUid() throws Exception{
-        User user = userRepository.save(new User("0848875097"));
+        User user = userRepository.save(new User("0848875097", null, null));
         GcmRegistration gcmRegistration = new GcmRegistration(user, "xx77f");
         String uid = gcmRegistration.getUid();
         gcmRegistrationRepository.save(gcmRegistration);

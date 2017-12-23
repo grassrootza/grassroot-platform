@@ -23,7 +23,7 @@ import za.org.grassroot.integration.storage.StorageBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.BaseRestController;
 import za.org.grassroot.webapp.enums.RestMessage;
-import za.org.grassroot.webapp.model.rest.AndroidAuthToken;
+import za.org.grassroot.webapp.model.rest.AuthorizedUserDTO;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
@@ -39,14 +39,9 @@ import java.util.Locale;
 @RequestMapping("/api/user/profile")
 public class UserController extends BaseRestController {
 
-
     private final MediaFileBroker mediaFileBroker;
-
     private final StorageBroker storageBroker;
-
     private final UserManagementService userService;
-
-    private final JwtService jwtService;
 
 
     @Value("${grassroot.media.user-photo.folder:user-profile-images-staging}")
@@ -58,7 +53,6 @@ public class UserController extends BaseRestController {
         this.mediaFileBroker = mediaFileBroker;
         this.storageBroker = storageBroker;
         this.userService = userService;
-        this.jwtService = jwtService;
     }
 
     @ApiOperation(value = "Store a users profile photo, and get the server key back",
@@ -128,7 +122,7 @@ public class UserController extends BaseRestController {
         user.setLanguageCode(languageCode);
         userService.updateUser(user.getUid(), displayName, email, user.getAlertPreference(), new Locale(user.getLanguageCode()));
 
-        AndroidAuthToken response = new AndroidAuthToken(user, jwtToken);
+        AuthorizedUserDTO response = new AuthorizedUserDTO(user, jwtToken);
         return RestUtil.okayResponseWithData(RestMessage.UPDATED, response);
     }
 

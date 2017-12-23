@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.UserDTO;
@@ -20,11 +21,13 @@ import za.org.grassroot.integration.messaging.JwtType;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.exception.InvalidOtpException;
 import za.org.grassroot.services.exception.InvalidTokenException;
+import za.org.grassroot.services.exception.UserExistsException;
 import za.org.grassroot.services.exception.UsernamePasswordLoginFailedException;
 import za.org.grassroot.services.user.PasswordTokenService;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.enums.RestMessage;
-import za.org.grassroot.webapp.model.rest.AndroidAuthToken;
+import za.org.grassroot.webapp.model.rest.AuthorizationResponseDTO;
+import za.org.grassroot.webapp.model.rest.AuthorizedUserDTO;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
@@ -79,7 +82,7 @@ public class AuthenticationController {
     }
 
     @RequestMapping(value = "/register/verify/{phoneNumber}/{code}", method = RequestMethod.GET)
-    @ApiOperation(value = "Finish new user registration using otp password", notes = "User data and JWT token is returned as AndroidAuthToken object in the 'data' property")
+    @ApiOperation(value = "Finish new user registration using otp password", notes = "User data and JWT token is returned as AuthorizedUserDTO object in the 'data' property")
     public ResponseEntity<ResponseWrapper> verifyRegistration(@PathVariable("phoneNumber") String phoneNumber,
                                                               @PathVariable("code") String otpEntered)
             throws Exception {
@@ -98,7 +101,7 @@ public class AuthenticationController {
             String token = jwtService.createJwt(tokenRequest);
 
             // Assemble response entity
-            AndroidAuthToken response = new AndroidAuthToken(user, token);
+            AuthorizedUserDTO response = new AuthorizedUserDTO(user, token);
 
             // Return the token on the response
             return RestUtil.okayResponseWithData(RestMessage.LOGIN_SUCCESS, response);
@@ -107,6 +110,37 @@ public class AuthenticationController {
             return RestUtil.errorResponse(HttpStatus.UNAUTHORIZED, RestMessage.INVALID_OTP);
         }
     }
+
+    @RequestMapping(value = "web/register", method = RequestMethod.GET)
+    public AuthorizationResponseDTO registerWebUser(@RequestParam String username,
+                                                    @RequestParam String phoneNumber,
+                                                    @RequestParam String password) {
+        try {
+            if (StringUtils.isEmpty(username))
+                return new AuthorizationResponseDTO(RestMessage.INVALID_USERNAME);
+            else if (StringUtils.isEmpty(phoneNumber))
+                new AuthorizationResponseDTO(RestMessage.INVALID_MSISDN);
+            else if (StringUtils.isEmpty(phoneNumber))
+                return new AuthorizationResponseDTO(RestMessage.INVALID_PASSWORD);
+
+            User newUser = User.makeEmpty();
+            newUser.setDisplayName(username);
+            newUser.setPhoneNumber(phoneNumber);
+            newUser.setPassword(password);
+
+            User user = userService.createUserWebProfile(newUser);
+            String token = jwtService.createJwt(new CreateJwtTokenRequest(JwtType.ANDROID_CLIENT, user.getUid()));
+            AuthorizedUserDTO response = new AuthorizedUserDTO(user, token);
+
+            return new AuthorizationResponseDTO(response);
+
+        } catch (UserExistsException userException) {
+            return new AuthorizationResponseDTO(RestMessage.USER_ALREADY_EXISTS);
+        } catch (InvalidPhoneNumberException phoneNumberException) {
+            return new AuthorizationResponseDTO(RestMessage.INVALID_MSISDN);
+        }
+    }
+
 
 
     @RequestMapping(value = "/reset-password-request", method = RequestMethod.GET)
@@ -174,7 +208,7 @@ public class AuthenticationController {
             String token = jwtService.createJwt(tokenRequest);
 
             // Assemble response entity
-            AndroidAuthToken response = new AndroidAuthToken(user, token);
+            AuthorizedUserDTO response = new AuthorizedUserDTO(user, token);
 
             // Return the token on the response
             return RestUtil.okayResponseWithData(RestMessage.LOGIN_SUCCESS, response);
@@ -188,8 +222,8 @@ public class AuthenticationController {
 
     @ApiOperation(value = "Login using password and retrieve a JWT token", notes = "The JWT token is returned as a string in the 'data' property")
     @RequestMapping(value = "/login-password", method = RequestMethod.GET)
-    public ResponseEntity<ResponseWrapper> webLogin(@RequestParam("phoneNumber") String phoneNumber,
-                                                    @RequestParam("password") String password) {
+    public AuthorizationResponseDTO webLogin(@RequestParam("phoneNumber") String phoneNumber,
+                                             @RequestParam("password") String password) {
         try {
             final String msisdn = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
             passwordTokenService.validatePassword(msisdn, password);
@@ -203,13 +237,13 @@ public class AuthenticationController {
             String token = jwtService.createJwt(tokenRequest);
 
             // Assemble response entity
-            AndroidAuthToken response = new AndroidAuthToken(user, token);
+            AuthorizedUserDTO response = new AuthorizedUserDTO(user, token);
 
             // Return the token on the response
-            return RestUtil.okayResponseWithData(RestMessage.LOGIN_SUCCESS, response);
+            return new AuthorizationResponseDTO(response);
         } catch (UsernamePasswordLoginFailedException e) {
             logger.error("Failed to generate authentication token for:  " + phoneNumber);
-            return RestUtil.errorResponse(HttpStatus.UNAUTHORIZED, RestMessage.INVALID_PASSWORD);
+            return new AuthorizationResponseDTO(RestMessage.INVALID_PASSWORD);
         }
 
     }

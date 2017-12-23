@@ -1,54 +1,44 @@
 package za.org.grassroot.core.domain.campaign;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.Type;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.TagHolder;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.UIDGenerator;
 
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
-import javax.persistence.Table;
-import javax.persistence.Version;
+import javax.persistence.*;
 import java.io.Serializable;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
-@Entity
+@Entity @Getter @Setter
 @Table(name = "campaign")
 public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", nullable = false)
+    @Column(name = "id", nullable = false, updatable = false)
     private Long id;
 
     @Version
     @Column(name = "version",nullable = false)
     private Integer version;
 
-    @Column(name = "uid", nullable = false, unique = true)
+    @Column(name = "uid", nullable = false, unique = true, updatable = false)
     private String uid;
 
     @Column(name = "name", nullable = false, length = 50)
-    private String campaignName;
+    private String name;
+
+    @Column(name = "description", length = 512)
+    private String description;
 
     @Column(name = "code", nullable = false, length = 5)
     private String campaignCode;
-
-    @Column(name = "description")
-    private String campaignDescription;
 
     @Column(name = "created_date_time", insertable = true, updatable = false)
     private Instant createdDateTime;
@@ -84,7 +74,7 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
     @OneToMany(mappedBy = "campaign")
     private Set<CampaignLog> campaignLogs = new HashSet<>();
 
-    public Campaign(){
+    public Campaign() {
         this.uid = UIDGenerator.generateId();
         this.createdDateTime = Instant.now();
     }
@@ -92,10 +82,10 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
     public Campaign(String campaignName, String campaignCode,String campaignDescription, User createdByUser, Instant startDateTime, Instant endDateTime,CampaignType campaignType, String campaignUrl){
         this.uid = UIDGenerator.generateId();
         this.createdDateTime = Instant.now();
-        this.campaignName = Objects.requireNonNull(campaignName);
+        this.name = Objects.requireNonNull(campaignName);
         this.campaignCode = Objects.requireNonNull(campaignCode);
         this.createdByUser = Objects.requireNonNull(createdByUser);
-        this.campaignDescription = Objects.requireNonNull(campaignDescription);
+        this.description = Objects.requireNonNull(campaignDescription);
         this.startDateTime = Objects.requireNonNull(startDateTime);
         this.endDateTime = Objects.requireNonNull(endDateTime);
         this.campaignType = Objects.requireNonNull(campaignType);
@@ -103,8 +93,13 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
     }
 
     @Override
-    public String[]getTags(){
+    public String[] getTags(){
         return tags;
+    }
+
+    @Override
+    public void setTags(String[] tags) {
+        this.tags = tags;
     }
 
     @Override
@@ -142,7 +137,7 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
         final StringBuilder sb = new StringBuilder("Campaign{");
         sb.append("id=").append(id);
         sb.append(", uid='").append(uid).append('\'');
-        sb.append(", campaignName='").append(campaignName).append('\'');
+        sb.append(", name='").append(name).append('\'');
         sb.append(", campaignCode='").append(campaignCode).append('\'');
         sb.append(", createdDateTime=").append(createdDateTime);
         sb.append(", createdBy=").append(createdByUser.getId());
@@ -154,130 +149,4 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
         return sb.toString();
     }
 
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getUid() {
-        return uid;
-    }
-
-    public void setUid(String uid) {
-        this.uid = uid;
-    }
-
-    public String getCampaignName() {
-        return campaignName;
-    }
-
-    public void setCampaignName(String campaignName) {
-        this.campaignName = campaignName;
-    }
-
-    public String getCampaignCode() {
-        return campaignCode;
-    }
-
-    public void setCampaignCode(String campaignCode) {
-        this.campaignCode = campaignCode;
-    }
-
-    public Instant getCreatedDateTime() {
-        return createdDateTime;
-    }
-
-    public void setCreatedDateTime(Instant createdDateTime) {
-        this.createdDateTime = createdDateTime;
-    }
-
-    public Instant getStartDateTime() {
-        return startDateTime;
-    }
-
-    public void setStartDateTime(Instant startDateTime) {
-        this.startDateTime = startDateTime;
-    }
-
-    public Instant getEndDateTime() {
-        return endDateTime;
-    }
-
-    public void setEndDateTime(Instant endDateTime) {
-        this.endDateTime = endDateTime;
-    }
-
-    public User getCreatedByUser() {
-        return createdByUser;
-    }
-
-    public void setCreatedByUser(User createdByUser) {
-        this.createdByUser = createdByUser;
-    }
-
-    @Override
-    public void setTags(String[] tags) {
-        this.tags = tags;
-    }
-
-
-    public void setCampaignMessages(Set<CampaignMessage> campaignMessages) {
-        this.campaignMessages = campaignMessages;
-    }
-
-    public Integer getVersion() {
-        return version;
-    }
-
-    public void setVersion(Integer version) {
-        this.version = version;
-    }
-
-    public String getCampaignDescription() {
-        return campaignDescription;
-    }
-
-    public void setCampaignDescription(String campaignDescription) {
-        this.campaignDescription = campaignDescription;
-    }
-
-    public Group getMasterGroup() {
-        return masterGroup;
-    }
-
-    public void setMasterGroup(Group masterGroup) {
-        this.masterGroup = masterGroup;
-    }
-
-    public CampaignType getCampaignType() {
-        return campaignType;
-    }
-
-    public void setCampaignType(CampaignType campaignType) {
-        this.campaignType = campaignType;
-    }
-
-    public String getUrl() {
-        return url;
-    }
-
-    public void setUrl(String url) {
-        this.url = url;
-    }
-
-    public Set<CampaignMessage> getCampaignMessages() {
-        return campaignMessages;
-    }
-
-    public Set<CampaignLog> getCampaignLogs() {
-        return campaignLogs;
-    }
-
-    public void setCampaignLogs(Set<CampaignLog> campaignLogs) {
-        this.campaignLogs = campaignLogs;
-    }
 }

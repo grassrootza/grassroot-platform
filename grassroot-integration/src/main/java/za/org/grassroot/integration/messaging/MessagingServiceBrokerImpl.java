@@ -4,7 +4,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.CommandLineRunner;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -20,7 +19,7 @@ import java.net.URI;
  * Created by luke on 2017/05/23.
  */
 @Service
-public class MessagingServiceBrokerImpl implements MessagingServiceBroker, CommandLineRunner {
+public class MessagingServiceBrokerImpl implements MessagingServiceBroker {
 
     private static final Logger logger = LoggerFactory.getLogger(MessagingServiceBrokerImpl.class);
 
@@ -39,13 +38,6 @@ public class MessagingServiceBrokerImpl implements MessagingServiceBroker, Comma
         this.restTemplate = restTemplate;
         this.asyncRestTemplate = asyncRestTemplate;
         this.jwtService = jwtService;
-    }
-
-    // using this instead of @PostConstruct because that runs too early
-    @Override
-    public void run(String... args) throws Exception {
-        logger.info("HTTP servlet booted, telling messaging server to refresh keys");
-        asyncRestTemplate.getForEntity(baseUri().path("/jwt/public/refresh/trusted").toUriString(), Boolean.class);
     }
 
     @Override
@@ -88,21 +80,6 @@ public class MessagingServiceBrokerImpl implements MessagingServiceBroker, Comma
             throw e;
         }
     }
-
-    @Override
-    public void subscribeServerToGroupChatTopic(String groupUid) {
-        URI serviceCallUri = baseUri()
-                .pathSegment("/groupchat/server_subscribe/{groupUid}")
-                .buildAndExpand(groupUid)
-                .toUri();
-        asyncRestTemplate.exchange(
-                serviceCallUri,
-                HttpMethod.POST,
-                new HttpEntity<String>(jwtHeaders()),
-                String.class
-        );
-    }
-
 
     private UriComponentsBuilder baseUri() {
         return UriComponentsBuilder.fromUriString(messagingServiceUrl)

@@ -57,8 +57,9 @@ public class GroupRestControllerTest extends RestAbstractUnitTest {
     public void createGroupShouldWork() throws Exception {
 
         settingUpDummyData(testGroup, groups, membershipInfo, membersToAdd);
-        GroupLog groupLog = new GroupLog(testGroup, sessionTestUser, GroupLogType.GROUP_MEMBER_ADDED, 0L, "");
         membersToAdd.add(new MembershipInfo("27810001234", BaseRoles.ROLE_ORDINARY_MEMBER, "test user"));
+        GroupLog groupLog = new GroupLog(testGroup, sessionTestUser, GroupLogType.GROUP_MEMBER_ADDED_AT_CREATION,
+                sessionTestUser, null, null, "");
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
         when(groupBrokerMock.create(sessionTestUser.getUid(), testGroupName, null, membersToAdd,

@@ -1,7 +1,5 @@
 package za.org.grassroot.integration.messaging;
 
-import java.util.Set;
-
 /**
  * Created by luke on 2017/05/23.
  */
@@ -13,7 +11,5 @@ public interface MessagingServiceBroker {
     void sendSMS(String message, String destinationNumber, boolean userRequested);
 
     MessageServicePushResponse sendPrioritySMS(String message, String destinationNumber);
-
-    void subscribeServerToGroupChatTopic(String groupUid);
 
 }

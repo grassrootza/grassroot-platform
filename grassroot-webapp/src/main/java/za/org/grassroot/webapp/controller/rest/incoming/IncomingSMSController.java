@@ -22,6 +22,7 @@ import za.org.grassroot.integration.NotificationService;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.UserResponseBroker;
+import za.org.grassroot.services.campaign.CampaignBroker;
 import za.org.grassroot.services.task.EventLogBroker;
 import za.org.grassroot.services.user.UserManagementService;
 
@@ -29,10 +30,7 @@ import java.text.MessageFormat;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by paballo on 2016/02/17.
@@ -43,11 +41,13 @@ import java.util.Map;
 public class IncomingSMSController {
 
     private final UserResponseBroker userResponseBroker;
-
     private final UserManagementService userManager;
+
     private final NotificationService notificationService;
     private final UserLogRepository userLogRepository;
     private final GroupLogRepository groupLogRepository;
+
+    private final CampaignBroker campaignBroker;
 
     private final MessageAssemblingService messageAssemblingService;
     private final MessagingServiceBroker messagingServiceBroker;
@@ -61,7 +61,7 @@ public class IncomingSMSController {
     public IncomingSMSController(UserResponseBroker userResponseBroker, UserManagementService userManager, EventLogBroker eventLogManager,
                                  MessageAssemblingService messageAssemblingService, MessagingServiceBroker messagingServiceBroker,
                                  UserLogRepository userLogRepository, NotificationService notificationService,
-                                 GroupLogRepository groupLogRepository) {
+                                 GroupLogRepository groupLogRepository, CampaignBroker campaignBroker) {
         this.userResponseBroker = userResponseBroker;
 
         this.userManager = userManager;
@@ -70,14 +70,26 @@ public class IncomingSMSController {
         this.userLogRepository = userLogRepository;
         this.notificationService = notificationService;
         this.groupLogRepository = groupLogRepository;
+        this.campaignBroker = campaignBroker;
+    }
+
+    @RequestMapping(value = "initiated", method = RequestMethod.GET)
+    @ApiOperation(value = "Send in an incoming SMS, that is newly initiated", notes = "For when we receive an SMS 'out of the blue'")
+    public void receiveNewlyInitiatedSms(@RequestParam(value = FROM_PARAMETER) String phoneNumber,
+                                         @RequestParam(value = MESSAGE_TEXT_PARAM) String message) {
+        log.info("Inside receiving newly initiated SMS, received {} as message", message);
+        User user = userManager.loadOrCreateUser(phoneNumber); // this may be a user we don't know
+        Set<String> campaignTags = campaignBroker.getCampaignTags();
+        log.info("active campaign tags = {}", campaignTags);
+        // then: filter them
     }
 
 
-    @RequestMapping(value = "incoming", method = RequestMethod.GET)
-    @ApiOperation(value = "Send in an incoming SMS", notes = "For when an end-user SMSs a reply to the platform. " +
+    @RequestMapping(value = "reply", method = RequestMethod.GET)
+    @ApiOperation(value = "Send in an incoming SMS, replying to one of our messages", notes = "For when an end-user SMSs a reply to the platform. " +
             "Parameters are phone number and the message sent")
-    public void receiveSms(@RequestParam(value = FROM_PARAMETER) String phoneNumber,
-                           @RequestParam(value = MESSAGE_TEXT_PARAM) String msg) {
+    public void receiveSmsReply(@RequestParam(value = FROM_PARAMETER) String phoneNumber,
+                                @RequestParam(value = MESSAGE_TEXT_PARAM) String msg) {
 
         log.info("Inside IncomingSMSController -" + " following param values were received + ms ="+msg+ " fn= "+phoneNumber);
         User user = userManager.findByInputNumber(phoneNumber);
@@ -150,7 +162,8 @@ public class IncomingSMSController {
         for (Map.Entry<Group, String> entry : messagesAndGroups.entrySet()) {
             String description = MessageFormat.format("From user: {0}; likely responding to: {1}",
                     trimmedMsg, entry.getValue());
-            GroupLog groupLog = new GroupLog(entry.getKey(), user, GroupLogType.USER_SENT_UNKNOWN_RESPONSE, user.getId(),
+            GroupLog groupLog = new GroupLog(entry.getKey(), user,
+                    GroupLogType.USER_SENT_UNKNOWN_RESPONSE, user, null, null,
                     description.substring(0, Math.min(255, description.length()))); // since could be very long ...
             groupLogRepository.save(groupLog);
         }

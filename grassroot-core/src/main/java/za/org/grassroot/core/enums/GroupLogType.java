@@ -1,5 +1,8 @@
 package za.org.grassroot.core.enums;
 
+import java.util.Arrays;
+import java.util.List;
+
 public enum GroupLogType {
 
     GROUP_ADDED("group added"),
@@ -22,6 +25,8 @@ public enum GroupLogType {
     GROUP_MEMBER_ADDED_VIA_JOIN_CODE("group member joined via join code"),
     GROUP_MEMBER_ADDED_VIA_CAMPAIGN("group member joined via campaign"),
     GROUP_MEMBER_ADDED_AT_CREATION("Group created"),
+    GROUP_MEMBER_ADDED_VIA_SUBGROUP_CODE("group member used join code of subgroup"),
+    GROUP_MEMBER_ADDED_INTO_SUBGROUP_OTHER("group member added to a subgroup"),
     GROUP_AVATAR_UPLOADED("Group avatar loaded"),
     GROUP_AVATAR_REMOVED("Group avatar deleted"),
     GROUP_DEFAULT_IMAGE_CHANGED("Group default image changed"),
@@ -40,5 +45,22 @@ public enum GroupLogType {
     public String toString() {
         return text;
     }
+
+    public static List<GroupLogType> targetUserChangeTypes = Arrays.asList(
+            GroupLogType.GROUP_MEMBER_ADDED,
+            GroupLogType.GROUP_MEMBER_ADDED_AT_CREATION,
+            GroupLogType.GROUP_MEMBER_ADDED_VIA_CAMPAIGN,
+            GroupLogType.GROUP_MEMBER_ADDED_VIA_JOIN_CODE,
+            GroupLogType.GROUP_MEMBER_REMOVED,
+            GroupLogType.GROUP_MEMBER_ROLE_CHANGED
+    );
+
+    public static List<GroupLogType> targetGroupTypes = Arrays.asList(
+            SUBGROUP_ADDED, SUBGROUP_REMOVED
+    );
+
+    public static List<GroupLogType> accountTypes = Arrays.asList(
+            ADDED_TO_ACCOUNT, REMOVED_FROM_ACCOUNT
+    );
 
 }
