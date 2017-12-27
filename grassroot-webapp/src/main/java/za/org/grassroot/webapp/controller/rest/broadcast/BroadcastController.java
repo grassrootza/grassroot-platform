@@ -27,7 +27,7 @@ public class BroadcastController extends BaseRestController {
         this.broadcastBroker = broadcastBroker;
     }
 
-    @RequestMapping(value = "/list/group/{groupUid}", method = RequestMethod.GET)
+    @RequestMapping(value = "/fetch/group/{groupUid}", method = RequestMethod.GET)
     @ApiOperation(value = "Fetch the broadcasts attached to a group", notes = "Can optionally including those from its associated campaigns")
     public ResponseEntity<List<BroadcastDTO>> fetchGroupBroadcasts(@PathVariable String groupUid,
                                                                    @RequestParam boolean includingCampaigns) {
@@ -36,7 +36,7 @@ public class BroadcastController extends BaseRestController {
                         .collect(Collectors.toList()));
     }
 
-    @RequestMapping(value = "/list/campaign/{campaignUid}", method = RequestMethod.GET)
+    @RequestMapping(value = "/fetch/campaign/{campaignUid}", method = RequestMethod.GET)
     @ApiOperation(value = "Fetch the broadcasts from a campaign")
     public ResponseEntity<List<BroadcastDTO>> fetchCampaignBroadcasts(@PathVariable String campaignUid) {
         return ResponseEntity.ok(

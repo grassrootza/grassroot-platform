@@ -5,6 +5,7 @@ import org.apache.poi.ss.usermodel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.enums.Province;
@@ -23,6 +24,8 @@ public class DataImportBrokerImpl implements DataImportBroker {
 
     private static final Logger logger = LoggerFactory.getLogger(DataImportBrokerImpl.class);
 
+    private static final String EMPTY_PLACEHOLDER = "[blank]";
+
     private DataFormatter dataFormatter;
     private FormulaEvaluator formulaEvaluator;
 
@@ -38,15 +41,23 @@ public class DataImportBrokerImpl implements DataImportBroker {
             Workbook wb = WorkbookFactory.create(file);
             formulaEvaluator = wb.getCreationHelper().createFormulaEvaluator();
             Row row = wb.getSheetAt(0).getRow(0);
-            for (Cell cell : row) {
-                firstRow.add(dataFormatter.formatCellValue(cell, formulaEvaluator));
+            int lastColumn = row.getLastCellNum();
+            for (int cn = 0; cn < lastColumn; cn++) {
+                Cell cell = row.getCell(cn, Row.MissingCellPolicy.RETURN_BLANK_AS_NULL);
+                firstRow.add(extractHeader(cell));
             }
         } catch (IOException e) {
             logger.info("Error, file input stream corrupted");
         } catch (InvalidFormatException e) {
             logger.info("Error, invalid file format");
         }
+        logger.info("extracted first row of cells, look like: {}", firstRow);
         return firstRow;
+    }
+
+    private String extractHeader(Cell cell) {
+        final String header = dataFormatter.formatCellValue(cell, formulaEvaluator);
+        return StringUtils.isEmpty(header) ? EMPTY_PLACEHOLDER : header;
     }
 
     @Override
@@ -97,18 +108,18 @@ public class DataImportBrokerImpl implements DataImportBroker {
         }
 
         MembershipInfo info = new MembershipInfo();
-        info.setDisplayName(dataFormatter.formatCellValue(row.getCell(nameCol)));
+        info.setDisplayName(dataFormatter.formatCellValue(row.getCell(nameCol), formulaEvaluator));
 
         if (phoneCol != null) {
-            info.setPhoneNumber(dataFormatter.formatCellValue(row.getCell(phoneCol)));
+            info.setPhoneNumber(dataFormatter.formatCellValue(row.getCell(phoneCol), formulaEvaluator));
         }
 
         if (emailCol != null) {
-            info.setMemberEmail(dataFormatter.formatCellValue(row.getCell(emailCol)));
+            info.setMemberEmail(dataFormatter.formatCellValue(row.getCell(emailCol), formulaEvaluator));
         }
 
         if (provinceCol != null) {
-            info.setProvince(convertProvince(dataFormatter.formatCellValue(row.getCell(provinceCol))));
+            info.setProvince(convertProvince(dataFormatter.formatCellValue(row.getCell(provinceCol), formulaEvaluator)));
         }
 
         if (roleCol != null) {
