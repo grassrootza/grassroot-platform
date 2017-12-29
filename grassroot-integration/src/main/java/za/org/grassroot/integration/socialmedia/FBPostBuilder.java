@@ -4,8 +4,9 @@ import io.swagger.annotations.ApiModel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
-@Getter @Setter @Builder @ApiModel
+@Getter @Setter @Builder @ToString @ApiModel
 public class FBPostBuilder {
 
     private String postingUserUid;

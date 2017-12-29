@@ -46,7 +46,7 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
 
     private UriComponentsBuilder baseUri(String userUid) {
         return UriComponentsBuilder.fromUriString(integrationServiceUrl).port(integrationServicePort)
-                .queryParam(userUid, userUidParam);
+                .queryParam(userUidParam, userUid);
     }
 
     private HttpHeaders jwtHeaders() {
@@ -75,6 +75,7 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
 
     @Override
     public GenericPostResponse postToFacebook(FBPostBuilder post) {
+        log.info("posting to facebook, here is the post: {}", post);
         final URI uri = baseUri(post.getPostingUserUid()).path("/grassroot/post/facebook").build().toUri();
         HttpEntity<GenericPostRequest> entity = new HttpEntity<>(new GenericPostRequest(post, imageBaseUri), jwtHeaders());
         try {

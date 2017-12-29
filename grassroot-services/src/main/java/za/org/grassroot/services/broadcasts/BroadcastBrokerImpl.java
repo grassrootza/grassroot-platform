@@ -1,5 +1,6 @@
 package za.org.grassroot.services.broadcasts;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.stereotype.Service;
@@ -33,7 +34,7 @@ import java.util.stream.Collectors;
 
 import static za.org.grassroot.core.specifications.NotificationSpecifications.*;
 
-@Service
+@Service @Slf4j
 public class BroadcastBrokerImpl implements BroadcastBroker {
 
     private final BroadcastRepository broadcastRepository;
@@ -77,6 +78,12 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
                 .scheduledSendTime(bc.getScheduledSendTime())
                 .build();
 
+        if (bc.isCampaignBroadcast()) {
+            broadcast.setCampaign(campaignRepository.findOneByUid(bc.getCampaignUid()));
+        } else {
+            broadcast.setGroup(groupRepository.findOneByUid(bc.getGroupUid()));
+        }
+
         recordProvincesAndTopics(bc, broadcast);
 
         LogsAndNotificationsBundle bundle = bc.isImmediateBroadcast() ?
@@ -91,14 +98,14 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
     }
 
     private LogsAndNotificationsBundle sendImmediateBroadcast(BroadcastComponents bc, Broadcast broadcast) {
-        if (bc.getEmail() != null) {
-            recordEmailContent(bc.getEmail(), broadcast);
-        }
+        recordShortMessageContent(bc, broadcast);
+        recordEmailContent(bc.getEmail(), broadcast);
 
         if (bc.getFacebookPost() != null) {
+            log.info("sending an FB post, from builder: {}", bc.getFacebookPost());
             recordFbPost(bc.getFacebookPost(), broadcast);
             GenericPostResponse fbResponse = socialMediaBroker.postToFacebook(bc.getFacebookPost());
-            if (fbResponse.isPostSuccessful()) {
+            if (fbResponse != null && fbResponse.isPostSuccessful()) {
                 broadcast.setFbPostSucceeded(true);
             }
         }
@@ -106,20 +113,16 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         if (bc.getTwitterPostBuilder() != null) {
             recordTwitterPost(bc.getTwitterPostBuilder(), broadcast);
             GenericPostResponse twResponse = socialMediaBroker.postToTwitter(bc.getTwitterPostBuilder());
-            if (twResponse.isPostSuccessful()) {
+            if (twResponse != null && twResponse.isPostSuccessful()) {
                 broadcast.setTwitterSucceeded(true);
             }
         }
 
         broadcast.setSentTime(Instant.now());
 
-        LogsAndNotificationsBundle bundle = bc.isCampaignBroadcast() ?
+        return bc.isCampaignBroadcast() ?
                 generateCampaignBroadcastBundle(broadcast) :
                 generateGroupBroadcastBundle(broadcast);
-
-
-
-        return bundle;
     }
 
     private LogsAndNotificationsBundle storeScheduledBroadcast(BroadcastComponents bc, Broadcast broadcast) {
@@ -227,6 +230,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
     }
 
     private LogsAndNotificationsBundle generateGroupBroadcastBundle(Broadcast bc) {
+        log.info("generating notifications for group broadcast ...");
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
 
         Group group = bc.getGroup();
@@ -257,6 +261,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
             // get everyone, since we have no restrictions
             membersToReceive = membershipRepository.findAll(MembershipSpecifications.forGroup(group));
         }
+        log.info("finished fetching members by topic and province, found {} members", membersToReceive.size());
 
         if (bc.hasEmail()) {
             Set<Notification> emailNotifications = new HashSet<>();
@@ -273,9 +278,11 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         long smsCount = 0;
         if (bc.hasShortMessage()) {
             boolean skipUsersWithEmail = bc.isSkipSmsIfEmail() && bc.hasEmail();
+            log.info("sending short message ... skipping emails? {}", skipUsersWithEmail);
             Set<User> shortMessageUsers = skipUsersWithEmail ?
                     membersToReceive.stream().map(Membership::getUser).filter(u -> !u.hasEmailAddress()).collect(Collectors.toSet()) :
                     membersToReceive.stream().map(Membership::getUser).collect(Collectors.toSet());
+            log.info("now generating {} notifications", shortMessageUsers.size());
             Set<Notification> shortMessageNotifications = new HashSet<>();
             shortMessageUsers.forEach(u -> {
                 GroupBroadcastNotification notification = new GroupBroadcastNotification(u,

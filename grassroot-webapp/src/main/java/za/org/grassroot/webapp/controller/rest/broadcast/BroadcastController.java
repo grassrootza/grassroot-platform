@@ -44,11 +44,13 @@ public class BroadcastController extends BaseRestController {
     }
 
     // todo : this should definitely be async, it's a very heavy operation
-    // todo : also : do a subsequent poll to check if the broadcast succeeded
     @RequestMapping(value = "/create/group/{groupUid}", method = RequestMethod.POST)
     @ApiOperation(value = "Create a broadcast on the group", notes = "NB : this will be a heavy operation, so do it async")
-    public ResponseEntity<BroadcastDTO> createGroupBroadcast(HttpServletRequest request, @PathVariable String groupUid,
+    public ResponseEntity<BroadcastDTO> createGroupBroadcast(HttpServletRequest request,
+                                                             @PathVariable String groupUid,
                                                              @RequestBody BroadcastCreateRequest createRequest) {
+        log.info("creating broadcast! request looks like: {}", createRequest);
+
         String userUid = getUserIdFromRequest(request);
 
         BroadcastComponents bc = BroadcastComponents.builder()
@@ -118,11 +120,19 @@ public class BroadcastController extends BaseRestController {
 
     private FBPostBuilder generateFbPost(String userUid, BroadcastCreateRequest request) {
         return FBPostBuilder.builder()
+                .postingUserUid(userUid)
+                .facebookPageId(request.getFacebookPage())
+                .message(request.getFacebookContent())
+                .linkUrl(request.getFacebookLink())
                 .build();
     }
 
     private TwitterPostBuilder generateTweet(String userUid, BroadcastCreateRequest request) {
-        return TwitterPostBuilder.builder().build();
+        return TwitterPostBuilder.builder()
+                .postingUserUid(userUid)
+                .message(request.getTwitterContent())
+                .imageKey(request.getTwitterLink())
+                .build();
     }
 
 

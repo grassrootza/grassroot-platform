@@ -3,13 +3,14 @@ package za.org.grassroot.webapp.controller.rest.broadcast;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 import za.org.grassroot.core.domain.BroadcastSchedule;
 import za.org.grassroot.core.enums.Province;
 
 import java.time.Instant;
 import java.util.List;
 
-@NoArgsConstructor @Getter @Setter
+@NoArgsConstructor @Getter @Setter @ToString
 public class BroadcastCreateRequest {
 
     private String title;
@@ -21,11 +22,13 @@ public class BroadcastCreateRequest {
     private String emailContent;
 
     private boolean postToFacebook;
+    private String facebookPage;
     private String facebookContent;
     private String facebookLink; // will need to think through media
 
     private boolean postToTwitter;
     private String twitterContent; // as above, need to think through media more
+    private String twitterLink;
 
     private BroadcastSchedule sendType;
     private Long sendDateTimeMills;

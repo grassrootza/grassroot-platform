@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
  * Class to hold a broadcast, which we are going to use quite a lot
  */
 @Entity
-@Table(name = "notification_template")
+@Table(name = "broadcast")
 @Getter @Builder
 public class Broadcast implements GrassrootEntity, TagHolder {
 
@@ -60,7 +60,7 @@ public class Broadcast implements GrassrootEntity, TagHolder {
     @Column(name = "scheduled_send_time")
     private Instant scheduledSendTime;
 
-    @Column(name = "time_sent")
+    @Column(name = "sent_time")
     @Setter private Instant sentTime;
 
     @Basic
@@ -79,7 +79,7 @@ public class Broadcast implements GrassrootEntity, TagHolder {
     @Setter private boolean skipSmsIfEmail; // ie if user has both email and sms, only send former (cost saving)
 
     @Basic
-    @Column(name = "msg_template1", nullable = false)
+    @Column(name = "msg_template1")
     @Setter private String smsTemplate1;
 
     @Basic
