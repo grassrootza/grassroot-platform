@@ -643,7 +643,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
         User user = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
-        Membership member = group.getMembership(user);
+        Membership member = group.getMembership(memberUid);
 
         if (!member.getUser().equals(user)) {
             try {
@@ -654,7 +654,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         }
 
         List<String> groupTopics = group.getTopics();
-        if (topics.stream().anyMatch(s -> !groupTopics.contains(TagHolder.TOPIC_PREFIX + s))) {
+        if (topics.stream().anyMatch(s -> !groupTopics.contains(s))) {
             throw new GroupTopicMismatchException();
         }
 
