@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 public class GroupFullDTO extends GroupHeavyDTO {
 
     private final String joinCode;
+    private final boolean paidFor;
     private final Set<MembershipDTO> members;
     @Setter private List<MembershipRecordDTO> memberHistory;
     @Setter private List<GroupRefDTO> subGroups = new ArrayList<>();
@@ -30,6 +31,7 @@ public class GroupFullDTO extends GroupHeavyDTO {
         super(group, membership);
         this.joinCode = group.getGroupTokenCode();
         this.topics.addAll(group.getTopics());
+        this.paidFor = group.isPaidFor();
 
         if (membership.getRole().getPermissions().contains(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS)) {
             this.members = group.getMemberships().stream()
