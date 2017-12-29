@@ -2,6 +2,7 @@ package za.org.grassroot.core.domain;
 
 
 import lombok.Getter;
+import lombok.Setter;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.enums.GroupLogType;
 
@@ -47,6 +48,10 @@ public class GroupLog implements Serializable, ActionLog {
     @ManyToOne
     @JoinColumn(name="target_account_id")
     private Account targetAccount;
+
+    @ManyToOne
+    @JoinColumn(name="broadcast_id")
+    @Setter private Broadcast broadcast;
 
     @Column(name = "description")
     private String description;

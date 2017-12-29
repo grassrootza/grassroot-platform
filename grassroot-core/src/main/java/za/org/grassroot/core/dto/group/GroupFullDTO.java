@@ -23,13 +23,13 @@ public class GroupFullDTO extends GroupHeavyDTO {
     private final String joinCode;
     private final Set<MembershipDTO> members;
     @Setter private List<MembershipRecordDTO> memberHistory;
-
-    @Setter
-    private List<GroupRefDTO> subGroups = new ArrayList<>();
+    @Setter private List<GroupRefDTO> subGroups = new ArrayList<>();
+    @Setter private List<String> topics = new ArrayList<>();
 
     public GroupFullDTO(Group group, Membership membership) {
         super(group, membership);
         this.joinCode = group.getGroupTokenCode();
+        this.topics.addAll(group.getTopics());
 
         if (membership.getRole().getPermissions().contains(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS)) {
             this.members = group.getMemberships().stream()

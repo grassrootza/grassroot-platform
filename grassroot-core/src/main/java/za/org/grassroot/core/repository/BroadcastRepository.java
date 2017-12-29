@@ -2,19 +2,20 @@ package za.org.grassroot.core.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import za.org.grassroot.core.domain.Broadcast;
-import za.org.grassroot.core.domain.BroadcastType;
+import za.org.grassroot.core.domain.BroadcastSchedule;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.campaign.Campaign;
 
 import java.util.List;
-import java.util.Set;
 
 public interface BroadcastRepository extends JpaRepository<Broadcast, Integer> {
 
-    Broadcast findTopByGroupAndBroadcastTypeAndActiveTrue(Group group, BroadcastType broadcastType);
+    Broadcast findOneByUid(String uid);
 
-    List<Broadcast> findByGroupAndActiveTrue(Group group); // note: will also fetch historical
+    Broadcast findTopByGroupAndBroadcastScheduleAndActiveTrue(Group group, BroadcastSchedule broadcastType);
 
-    List<Broadcast> findByCampaignAndActiveTrue(Campaign campaign);
+    List<Broadcast> findByGroup(Group group); // note: will also fetch historical
+
+    List<Broadcast> findByCampaign(Campaign campaign);
 
 }

@@ -7,7 +7,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import za.org.grassroot.core.domain.GcmRegistration;
-import za.org.grassroot.core.enums.UserMessagingPreference;
+import za.org.grassroot.core.enums.DeliveryRoute;
 import za.org.grassroot.integration.messaging.JwtService;
 
 import static org.mockito.Mockito.*;
@@ -45,7 +45,7 @@ public class GcmRestControllerTest extends RestAbstractUnitTest {
         verify(jwtServiceMock).getUserIdFromJwtToken("jwt_token");
         verify(userManagementServiceMock).load(sessionTestUser.getUid());
         verify(gcmRegistrationBrokerMock).registerUser(sessionTestUser,"random");
-        verify(userManagementServiceMock).setMessagingPreference(sessionTestUser.getUid(), UserMessagingPreference.ANDROID_APP);
+        verify(userManagementServiceMock).setMessagingPreference(sessionTestUser.getUid(), DeliveryRoute.ANDROID_APP);
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyNoMoreInteractions(gcmRegistrationBrokerMock);
 

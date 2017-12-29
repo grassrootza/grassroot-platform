@@ -33,7 +33,8 @@ public enum GroupLogType {
     ADDED_TO_ACCOUNT("Group added to account"),
     REMOVED_FROM_ACCOUNT("Group removed from account"),
     CHANGED_ALIAS("User changed their alias in the group"),
-    USER_SENT_UNKNOWN_RESPONSE("User sent notification response that can't be interpreted");
+    USER_SENT_UNKNOWN_RESPONSE("User sent notification response that can't be interpreted"),
+    BROADCAST_SENT("A broadcast was sent to the group");
 
     private final String text;
 

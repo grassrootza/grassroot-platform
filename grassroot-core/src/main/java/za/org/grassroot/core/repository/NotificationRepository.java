@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.NotificationStatus;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.enums.UserMessagingPreference;
+import za.org.grassroot.core.enums.DeliveryRoute;
 
 import java.util.List;
 import java.util.Set;
@@ -21,8 +21,8 @@ public interface NotificationRepository extends JpaRepository<Notification,Long>
 
     List<Notification> findByUidIn(Set<String> uids);
 
-    Page<Notification> findByTargetAndDeliveryChannelOrderByCreatedDateTimeDesc(User target, UserMessagingPreference deliveryChannel, Pageable pageable);
+    Page<Notification> findByTargetAndDeliveryChannelOrderByCreatedDateTimeDesc(User target, DeliveryRoute deliveryChannel, Pageable pageable);
 
-    int countByTargetAndDeliveryChannelAndStatusNot(User target, UserMessagingPreference deliveryChannel, NotificationStatus status);
+    int countByTargetAndDeliveryChannelAndStatusNot(User target, DeliveryRoute deliveryChannel, NotificationStatus status);
 
 }

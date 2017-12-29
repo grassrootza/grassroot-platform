@@ -13,6 +13,7 @@ public enum NotificationType {
 	GROUP,
 	USER,
 	LIVEWIRE,
+	BROADCAST,
 	GENERAL
 
 	//

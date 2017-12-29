@@ -3,7 +3,7 @@ package za.org.grassroot.services.user;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.enums.AlertPreference;
-import za.org.grassroot.core.enums.UserMessagingPreference;
+import za.org.grassroot.core.enums.DeliveryRoute;
 import za.org.grassroot.services.exception.NoSuchUserException;
 import za.org.grassroot.services.exception.UserExistsException;
 
@@ -67,7 +67,7 @@ public interface UserManagementService {
 
     void updateAlertPreferences(String userUid, AlertPreference alertPreference);
 
-    void setMessagingPreference(String userUid, UserMessagingPreference preference);
+    void setMessagingPreference(String userUid, DeliveryRoute preference);
 
     void setHasInitiatedUssdSession(String userUid);
 

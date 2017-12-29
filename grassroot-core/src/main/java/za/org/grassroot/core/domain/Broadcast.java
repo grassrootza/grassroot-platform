@@ -4,15 +4,20 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Tolerate;
+import org.hibernate.annotations.Type;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.campaign.Campaign;
+import za.org.grassroot.core.enums.DeliveryRoute;
+import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Class to hold a broadcast, which we are going to use quite a lot
@@ -20,9 +25,11 @@ import java.util.List;
 @Entity
 @Table(name = "notification_template")
 @Getter @Builder
-public class Broadcast {
+public class Broadcast implements GrassrootEntity, TagHolder {
 
     public static final int MAX_MESSAGES = 3;
+
+    private static final String PROVINCE_PREFIX = "PROVINCE:";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -32,6 +39,10 @@ public class Broadcast {
     @Column(name = "uid", nullable = false, unique = true)
     private String uid;
 
+    @Basic
+    @Column(name = "title")
+    @Setter private String title;
+
     @Column(name = "creation_time", insertable = true, updatable = false)
     private Instant creationTime;
 
@@ -39,17 +50,33 @@ public class Broadcast {
     @JoinColumn(name = "created_by_user_id", nullable = false)
     private User createdByUser;
 
+    /*
+    Section: timing / scheduling of broadcast
+     */
     @Enumerated(EnumType.STRING)
-    @Column(name = "broadcast_type", length = 50, nullable = false)
-    private BroadcastType broadcastType;
+    @Column(name = "broadcast_schedule", length = 50, nullable = false)
+    private BroadcastSchedule broadcastSchedule;
+
+    @Column(name = "scheduled_send_time")
+    private Instant scheduledSendTime;
+
+    @Column(name = "time_sent")
+    @Setter private Instant sentTime;
 
     @Basic
     @Column(name = "active")
     @Setter private boolean active;
 
+    /*
+    Section: the meat of it: contents, and some options
+     */
     @Basic
     @Column(name = "only_use_free")
     @Setter private boolean onlyUseFreeChannels;
+
+    @Basic
+    @Column(name = "skip_sms_if_email")
+    @Setter private boolean skipSmsIfEmail; // ie if user has both email and sms, only send former (cost saving)
 
     @Basic
     @Column(name = "msg_template1", nullable = false)
@@ -68,6 +95,14 @@ public class Broadcast {
     @Setter private String emailContent;
 
     @Basic
+    @Column(name = "email_image_key")
+    @Setter private String emailImageKey;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "email_delivery_route", length = 50)
+    @Setter private DeliveryRoute emailDeliveryRoute;
+
+    @Basic
     @Column(name = "facebook_page_id")
     @Setter private String facebookPageId;
 
@@ -76,8 +111,12 @@ public class Broadcast {
     @Setter private String facebookPost;
 
     @Basic
-    @Column(name = "facebook_link")
-    @Setter private String facebookLink;
+    @Column(name = "facebook_link_url")
+    @Setter private String facebookLinkUrl;
+
+    @Basic
+    @Column(name = "facebook_link_name")
+    @Setter private String facebookLinkName;
 
     @Basic
     @Column(name = "facebook_image_key")
@@ -123,9 +162,20 @@ public class Broadcast {
     @Column(name = "cascade")
     @Setter @Builder.Default private boolean cascade = false;
 
+    // note: we use this for storing both provinces _and_ topics (using PROVINCE: and TOPICS:)
+    @Column(name = "tags")
+    @Type(type = "za.org.grassroot.core.util.StringArrayUserType")
+    @Setter private String[] tags;
+
+
     @Tolerate
     private Broadcast() {
         // for JPA
+    }
+
+    @Override
+    public String getName() {
+        return title;
     }
 
     // using this to preserve builder pattern (note: deviates from prior style of setting these in constructor,
@@ -140,6 +190,38 @@ public class Broadcast {
         }
     }
 
+    public boolean hasShortMessage() {
+        return !StringUtils.isEmpty(smsTemplate1);
+    }
+
+    public boolean hasEmail() {
+        return !StringUtils.isEmpty(emailContent);
+    }
+
+    public boolean hasFbPost() {
+        return !StringUtils.isEmpty(facebookPageId) && !StringUtils.isEmpty(facebookPost);
+    }
+
+    public boolean hasTwitterPost() {
+        return !StringUtils.isEmpty(twitterPost);
+    }
+
+    public List<Province> getProvinces() {
+        return getTagList().stream()
+                .filter(s -> s.startsWith(PROVINCE_PREFIX))
+                .map(s -> s.substring(PROVINCE_PREFIX.length()))
+                .map(Province::valueOf)
+                .collect(Collectors.toList());
+    }
+
+    public void setProvinces(Set<Province> provinces) {
+        List<String> tags = getTagList().stream()
+                .filter(s -> !s.startsWith(PROVINCE_PREFIX)).collect(Collectors.toList());
+        tags.addAll(provinces.stream().map(s -> PROVINCE_PREFIX + s.name()).collect(Collectors.toSet()));
+        setTags(tags);
+    }
+
+    // used in thymeleaf hence preserved here
     public List<String> getTemplateStrings() {
         List<String> templates = new ArrayList<>();
         templates.add(smsTemplate1);
