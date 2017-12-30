@@ -20,7 +20,7 @@ import za.org.grassroot.core.enums.AccountLogType;
 import za.org.grassroot.core.enums.AccountPaymentType;
 import za.org.grassroot.core.enums.AccountType;
 import za.org.grassroot.core.repository.UserRepository;
-import za.org.grassroot.integration.email.GrassrootEmail;
+import za.org.grassroot.integration.messaging.GrassrootEmail;
 import za.org.grassroot.services.account.AccountEmailService;
 
 import java.time.Instant;

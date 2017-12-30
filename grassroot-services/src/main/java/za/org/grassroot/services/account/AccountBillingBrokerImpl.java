@@ -30,13 +30,16 @@ import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.DebugUtil;
-import za.org.grassroot.integration.email.EmailSendingBroker;
-import za.org.grassroot.integration.email.GrassrootEmail;
+import za.org.grassroot.integration.PdfGeneratingService;
+import za.org.grassroot.integration.messaging.GrassrootEmail;
+import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.integration.payments.PaymentBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
+import java.io.File;
 import java.time.*;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -75,12 +78,13 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
     private final ApplicationEventPublisher eventPublisher;
 
     private final PaymentBroker paymentBroker;
-    private EmailSendingBroker emailSendingBroker;
+    private final MessagingServiceBroker messageBroker;
+    private final PdfGeneratingService pdfGeneratingService;
 
     @Autowired
     public AccountBillingBrokerImpl(AccountRepository accountRepository, AccountLogRepository accountLogRepository, UserRepository userRepository, AccountBillingRecordRepository billingRepository,
                                     PaymentBroker paymentBroker, ApplicationEventPublisher eventPublisher,
-                                    LogsAndNotificationsBroker logsAndNotificationsBroker, AccountEmailService accountEmailService) {
+                                    LogsAndNotificationsBroker logsAndNotificationsBroker, AccountEmailService accountEmailService, MessagingServiceBroker messageBroker, PdfGeneratingService pdfGeneratingService) {
         this.accountRepository = accountRepository;
         this.accountLogRepository = accountLogRepository;
         this.userRepository = userRepository;
@@ -89,11 +93,8 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
         this.accountEmailService = accountEmailService;
         this.eventPublisher = eventPublisher;
         this.paymentBroker = paymentBroker;
-    }
-
-    @Autowired(required = false)
-    public void setEmailSendingBroker(EmailSendingBroker emailSendingBroker) {
-        this.emailSendingBroker = emailSendingBroker;
+        this.messageBroker = messageBroker;
+        this.pdfGeneratingService = pdfGeneratingService;
     }
 
     @Override
@@ -195,8 +196,13 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
             List<AccountBillingRecord> records = findRecordsToIncludeInStatement(account,
                     generatingBill.getStatementDateTime().plus(1, ChronoUnit.MINUTES)); // just in case cutting it too fine excludes this one
             GrassrootEmail billingEmail = accountEmailService.createAccountStatementEmail(generatingBill);
-            emailSendingBroker.generateAndSendStatementEmail(billingEmail,
-                    records.stream().map(AccountBillingRecord::getUid).collect(Collectors.toList()));
+            File invoice = pdfGeneratingService.generateInvoice(records.stream()
+                    .map(AccountBillingRecord::getUid).collect(Collectors.toList()));
+            String fileName = "GrassrootInvoice-" + DateTimeFormatter.ISO_LOCAL_DATE.format(LocalDateTime.now()) + ".pdf";
+            billingEmail.setAttachment(invoice);
+            billingEmail.setAttachmentName(fileName);
+            messageBroker.sendEmail(Collections.singletonList(account.getBillingUser().getEmailAddress()),
+                    billingEmail);
         }
     }
 
@@ -604,7 +610,8 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
         account.getAdministrators()
                 .stream()
                 .filter(User::hasEmailAddress)
-                .forEach(u -> emailSendingBroker.sendMail(accountEmailService.createEndOfTrailEmail(account, u, formedPaymentLink)));
+                .forEach(u -> messageBroker.sendEmail(Collections.singletonList(u.getEmailAddress()),
+                        accountEmailService.createEndOfTrailEmail(account, u, formedPaymentLink)));
     }
 
     private void sendDisabledEmails(Account account) {
@@ -614,7 +621,8 @@ public class AccountBillingBrokerImpl implements AccountBillingBroker {
         account.getAdministrators()
                 .stream()
                 .filter(User::hasEmailAddress)
-                .forEach(u -> emailSendingBroker.sendMail(accountEmailService.createDisabledEmail(u, formedPaymentLink)));
+                .forEach(u -> messageBroker.sendEmail(Collections.singletonList(u.getEmailAddress()),
+                        accountEmailService.createDisabledEmail(u, formedPaymentLink)));
     }
 
     private Instant getPeriodStart(Account account, AccountBillingRecord lastBill) {

@@ -11,6 +11,7 @@ import za.org.grassroot.integration.socialmedia.FBPostBuilder;
 import za.org.grassroot.integration.socialmedia.TwitterPostBuilder;
 import za.org.grassroot.services.broadcasts.BroadcastBroker;
 import za.org.grassroot.services.broadcasts.BroadcastComponents;
+import za.org.grassroot.services.broadcasts.BroadcastInfo;
 import za.org.grassroot.services.broadcasts.EmailBroadcast;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.BaseRestController;
@@ -41,6 +42,14 @@ public class BroadcastController extends BaseRestController {
     @ApiOperation(value = "Fetch the broadcasts from a campaign")
     public ResponseEntity<List<BroadcastDTO>> fetchCampaignBroadcasts(@PathVariable String campaignUid) {
         return ResponseEntity.ok(broadcastBroker.fetchCampaignBroadcasts(campaignUid));
+    }
+
+    @RequestMapping(value = "/create/group/info/{groupUid}", method = RequestMethod.GET)
+    @ApiOperation(value = "Fetch some basic information on the group, including social media options")
+    public ResponseEntity<BroadcastInfo> getGroupBroadcastParams(HttpServletRequest request, @PathVariable String groupUid,
+                                                                 @RequestParam(required = false) String userUid) {
+        return ResponseEntity.ok(broadcastBroker.fetchGroupBroadcastParams(
+                userUid == null ? getUserIdFromRequest(request) : userUid, groupUid));
     }
 
     // todo : this should definitely be async, it's a very heavy operation

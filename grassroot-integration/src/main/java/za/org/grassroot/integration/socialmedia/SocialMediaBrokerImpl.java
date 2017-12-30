@@ -33,18 +33,18 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
     private String imageBaseUri;
 
 
-    // note: to replace with single WebClient when up to Spring 5
+    // note: to replace with single WebClient when up to Spring 5 (and in meantime fine tune this rest template given
+    // heavy use!)
     private final RestTemplate restTemplate;
-    private final AsyncRestTemplate asyncRestTemplate;
     private final JwtService jwtService;
 
     public SocialMediaBrokerImpl(RestTemplate restTemplate, AsyncRestTemplate asyncRestTemplate, JwtService jwtService) {
         this.restTemplate = restTemplate;
-        this.asyncRestTemplate = asyncRestTemplate;
         this.jwtService = jwtService;
     }
 
     private UriComponentsBuilder baseUri(String userUid) {
+        // todo : use headers with JWT in production for all calls
         return UriComponentsBuilder.fromUriString(integrationServiceUrl).port(integrationServicePort)
                 .queryParam(userUidParam, userUid);
     }
@@ -57,12 +57,19 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
 
     @Override
     public boolean isFacebookPageConnected(String userUid) {
-        return false;
+        try {
+            final URI uri = baseUri(userUid).path("/connect/status/facebook").build().toUri();
+            ResponseEntity<Boolean> response = restTemplate.getForEntity(uri, Boolean.class);
+            return response.getBody();
+        } catch (RestClientException e) {
+            log.error("rest exception! {}", e);
+            return false;
+        }
     }
 
     @Override
     public ManagedPagesResponse getManagedFacebookPages(String userUid) {
-        final URI uri = baseUri(userUid).path("/grassroot/post/facebook/pages").build().toUri();
+        final URI uri = baseUri(userUid).path("/connect/status/pages/facebook").build().toUri();
         log.info("getting user's facebook pages, URI = {}", uri.toString());
         try {
             ResponseEntity<ManagedPagesResponse> response = restTemplate.exchange(uri, HttpMethod.GET, new HttpEntity<>(jwtHeaders()), ManagedPagesResponse.class);
@@ -88,9 +95,16 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
     }
 
     @Override
-    public boolean isTwitterAccountConnected(String userUid) {
-        // todo : work through Spring Social to decipher
-        return true;
+    public String isTwitterAccountConnected(String userUid) {
+        final URI uri = baseUri(userUid).path("/connect/status/pages/twitter").build().toUri();
+        try {
+            ResponseEntity<ManagedPagesResponse> response = restTemplate.exchange(uri, HttpMethod.GET, new HttpEntity<>(jwtHeaders()), ManagedPagesResponse.class);
+            ManagedPagesResponse body = handleResponse(response, "Twitter");
+            return body == null || body.managedPages.isEmpty() ? null : body.managedPages.entrySet().iterator().next().getValue();
+        } catch (RestClientException e) {
+            log.error("Error trying to check Twitter account", e);
+            return null;
+        }
     }
 
     @Override

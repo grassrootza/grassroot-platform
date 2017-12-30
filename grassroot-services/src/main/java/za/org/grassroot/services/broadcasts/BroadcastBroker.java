@@ -9,6 +9,8 @@ import java.util.List;
 
 public interface BroadcastBroker {
 
+    BroadcastInfo fetchGroupBroadcastParams(String userUid, String groupUid);
+
     String sendGroupBroadcast(BroadcastComponents broadcastComponents);
 
     BroadcastDTO fetchBroadcast(String broadcastUid);

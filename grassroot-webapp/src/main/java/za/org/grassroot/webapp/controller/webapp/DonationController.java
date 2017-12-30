@@ -16,8 +16,8 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.util.UriComponentsBuilder;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
-import za.org.grassroot.integration.email.EmailSendingBroker;
-import za.org.grassroot.integration.email.GrassrootEmail;
+import za.org.grassroot.integration.messaging.GrassrootEmail;
+import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.webapp.controller.BaseController;
 import za.org.grassroot.webapp.model.PaymentSystemResponse;
 
@@ -26,6 +26,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLEncoder;
+import java.util.Collections;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
@@ -47,14 +48,14 @@ public class DonationController extends BaseController {
 
     private final RestTemplate restTemplate;
     private final Environment environment;
-    private final EmailSendingBroker emailBroker;
+    private final MessagingServiceBroker messageBroker;
     private final TemplateEngine templateEngine;
 
     @Autowired
-    public DonationController(RestTemplate restTemplate, Environment environment, EmailSendingBroker emailBroker, TemplateEngine templateEngine) {
+    public DonationController(RestTemplate restTemplate, Environment environment, MessagingServiceBroker messageBroker, TemplateEngine templateEngine) {
         this.restTemplate = restTemplate;
         this.environment = environment;
-        this.emailBroker = emailBroker;
+        this.messageBroker = messageBroker;
         this.templateEngine = templateEngine;
     }
 
@@ -173,8 +174,7 @@ public class DonationController extends BaseController {
     }
 
     private void sendSuccessEmail(String name, String email, int amount) {
-        emailBroker.sendMail(new GrassrootEmail.EmailBuilder("Successful donation")
-                .address(resultsEmail)
+        messageBroker.sendEmail(Collections.singletonList(resultsEmail), new GrassrootEmail.EmailBuilder("Successful donation")
                 .content("Successful donation received from " + name  + " (" + email + "), for R" + amount + ",")
                 .build());
     }
@@ -189,8 +189,8 @@ public class DonationController extends BaseController {
             final String htmlContent = templateEngine.process("donate/share_email", ctx);
             log.info("processed template ... firing off mail");
             log.debug("email template processed looks like: {}", htmlContent);
-            emailBroker.sendMail(new GrassrootEmail.EmailBuilder(subject)
-                    .from("Grassroot").address(toEmail).htmlContent(htmlContent).content(htmlContent).build());
+            messageBroker.sendEmail(Collections.singletonList(toEmail), new GrassrootEmail.EmailBuilder(subject)
+                    .from("Grassroot").htmlContent(htmlContent).content(htmlContent).build());
         } catch (Exception e) {
             e.printStackTrace();
         }

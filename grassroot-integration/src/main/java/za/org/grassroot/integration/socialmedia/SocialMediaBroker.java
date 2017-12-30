@@ -1,7 +1,5 @@
 package za.org.grassroot.integration.socialmedia;
 
-import java.util.Map;
-
 public interface SocialMediaBroker {
 
     boolean isFacebookPageConnected(String userUid);
@@ -10,7 +8,8 @@ public interface SocialMediaBroker {
 
     GenericPostResponse postToFacebook(FBPostBuilder post);
 
-    boolean isTwitterAccountConnected(String userUid);
+    // returns null if no account, else returns its display name
+    String isTwitterAccountConnected(String userUid);
 
     GenericPostResponse postToTwitter(TwitterPostBuilder post);
 

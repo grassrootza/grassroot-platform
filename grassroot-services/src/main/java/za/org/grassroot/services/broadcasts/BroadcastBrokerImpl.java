@@ -3,8 +3,10 @@ package za.org.grassroot.services.broadcasts;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.Specifications;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountLog;
@@ -18,10 +20,7 @@ import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.MembershipSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
-import za.org.grassroot.integration.socialmedia.FBPostBuilder;
-import za.org.grassroot.integration.socialmedia.GenericPostResponse;
-import za.org.grassroot.integration.socialmedia.SocialMediaBroker;
-import za.org.grassroot.integration.socialmedia.TwitterPostBuilder;
+import za.org.grassroot.integration.socialmedia.*;
 import za.org.grassroot.services.exception.NoPaidAccountException;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
@@ -58,6 +57,29 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         this.socialMediaBroker = socialMediaBroker;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
         this.accountLogRepository = accountLogRepository;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public BroadcastInfo fetchGroupBroadcastParams(String userUid, String groupUid) {
+        User user = userRepository.findOneByUid(userUid);
+        Account account = user.getPrimaryAccount();
+        BroadcastInfo.BroadcastInfoBuilder builder = BroadcastInfo.builder();
+        if (account.getFreeFormCost() > 0) {
+            builder.isSmsAllowed(true).smsCostCents(account.getFreeFormCost());
+        } else {
+            builder.isSmsAllowed(false);
+        }
+
+        ManagedPagesResponse fbStatus = socialMediaBroker.getManagedFacebookPages(userUid);
+        builder.isFbConnected(fbStatus.isUserConnectionValid())
+                .facebookPages(fbStatus.getManagedPages());
+
+        String twitterAccount = socialMediaBroker.isTwitterAccountConnected(userUid);
+        builder.isTwitterConnected(!StringUtils.isEmpty(twitterAccount))
+                .twitterAccountName(twitterAccount);
+
+        return builder.build();
     }
 
     @Override

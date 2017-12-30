@@ -11,8 +11,8 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Todo;
 import za.org.grassroot.core.domain.task.TodoAssignment;
 import za.org.grassroot.core.repository.UserRepository;
-import za.org.grassroot.integration.email.EmailSendingBroker;
-import za.org.grassroot.integration.email.GrassrootEmail;
+import za.org.grassroot.integration.messaging.GrassrootEmail;
+import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.task.TodoBroker;
 
@@ -34,14 +34,15 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
     private final TodoBroker todoBroker;
     private final PermissionBroker permissionBroker;
 
-    private final EmailSendingBroker emailBroker;
+    private final MessagingServiceBroker messageBroker;
 
-    public MemberDataExportBrokerImpl(UserRepository userRepository, GroupBroker groupBroker, TodoBroker todoBroker, PermissionBroker permissionBroker, EmailSendingBroker emailBroker) {
+    public MemberDataExportBrokerImpl(UserRepository userRepository, GroupBroker groupBroker, TodoBroker todoBroker,
+                                      PermissionBroker permissionBroker, MessagingServiceBroker messageBroker) {
         this.userRepository = userRepository;
         this.groupBroker = groupBroker;
         this.todoBroker = todoBroker;
         this.permissionBroker = permissionBroker;
-        this.emailBroker = emailBroker;
+        this.messageBroker = messageBroker;
     }
 
     @Override
@@ -182,7 +183,6 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
         } else {
             // todo : make body more friendly, and create a special email address (no-reply) for from
             GrassrootEmail email = new GrassrootEmail.EmailBuilder("Grassroot: todo responses")
-                    .address(emailAddress)
                     .from("no-reply@grassroot.org.za")
                     .subject(todo.getName() + "todo response")
                     .attachment("todo_responses", workbookFile)
@@ -190,7 +190,7 @@ public class MemberDataExportBrokerImpl implements MemberDataExportBroker {
                     .build();
 
             log.info("email assembled, putting it in the queue");
-            emailBroker.sendMail(email);
+            messageBroker.sendEmail(Collections.singletonList(emailAddress), email);
         }
     }
 
