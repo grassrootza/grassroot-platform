@@ -12,7 +12,7 @@ import za.org.grassroot.core.domain.task.Event_;
 import za.org.grassroot.core.domain.task.TodoLog_;
 import za.org.grassroot.core.domain.task.Todo_;
 import za.org.grassroot.core.enums.AccountLogType;
-import za.org.grassroot.core.enums.UserMessagingPreference;
+import za.org.grassroot.core.enums.DeliveryRoute;
 
 import javax.persistence.criteria.Join;
 import javax.persistence.criteria.JoinType;
@@ -72,6 +72,13 @@ public final class NotificationSpecifications {
         };
     }
 
+    public static Specification<Notification> forGroupBroadcast(Broadcast broadcast) {
+        return (root, query, cb) -> {
+          Join<Notification, GroupLog> groupLogJoin = root.join(Notification_.groupLog, JoinType.LEFT);
+          return cb.equal(groupLogJoin.get(GroupLog_.broadcast), broadcast);
+        };
+    }
+
     public static Specification<Notification> getBySendingKey(String sendingKey) {
         return (root, query, cb) -> cb.equal(root.get(Notification_.sendingKey), sendingKey);
     }
@@ -82,7 +89,7 @@ public final class NotificationSpecifications {
                 NotificationStatus.SENDING_FAILED, NotificationStatus.UNDELIVERABLE));
     }
 
-    public static Specification<Notification> forDeliveryChannel(UserMessagingPreference deliveryChannel) {
+    public static Specification<Notification> forDeliveryChannel(DeliveryRoute deliveryChannel) {
         return (root, query, cb) -> cb.equal(root.get(Notification_.deliveryChannel), deliveryChannel);
     }
 

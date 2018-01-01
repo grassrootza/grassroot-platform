@@ -4,13 +4,14 @@ package za.org.grassroot.core.domain;
 import lombok.Getter;
 import lombok.Setter;
 import za.org.grassroot.core.domain.account.AccountLog;
+import za.org.grassroot.core.domain.campaign.CampaignLog;
 import za.org.grassroot.core.domain.livewire.LiveWireLog;
 import za.org.grassroot.core.domain.task.EventLog;
 import za.org.grassroot.core.domain.task.TodoLog;
 import za.org.grassroot.core.enums.MessagingProvider;
 import za.org.grassroot.core.enums.NotificationDetailedType;
 import za.org.grassroot.core.enums.NotificationType;
-import za.org.grassroot.core.enums.UserMessagingPreference;
+import za.org.grassroot.core.enums.DeliveryRoute;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
@@ -70,7 +71,7 @@ public abstract class Notification implements Serializable {
 	@Setter
 	@Column(name = "delivery_channel")
     @Enumerated(EnumType.STRING)
-	public UserMessagingPreference deliveryChannel = UserMessagingPreference.SMS; //defaults to SMS
+	protected DeliveryRoute deliveryChannel = DeliveryRoute.SMS; //defaults to SMS
 
 	@ManyToOne
 	@JoinColumn(name = "event_log_id")
@@ -96,6 +97,9 @@ public abstract class Notification implements Serializable {
 	@JoinColumn(name = "livewire_log_id", foreignKey = @ForeignKey(name = "fk_notification_livewire_log"))
 	private LiveWireLog liveWireLog;
 
+	@ManyToOne
+	@JoinColumn(name = "campaign_log_id", foreignKey = @ForeignKey(name = "fk_notification_campaign_log"))
+	private CampaignLog campaignLog;
 
 	@Column(name = "message")
 	protected String message;
@@ -153,6 +157,8 @@ public abstract class Notification implements Serializable {
 			userLog = (UserLog) actionLog;
 		} else if (actionLog instanceof LiveWireLog) {
 			liveWireLog = (LiveWireLog) actionLog;
+		} else if (actionLog instanceof CampaignLog) {
+			campaignLog = (CampaignLog) actionLog;
 		} else {
 			throw new IllegalArgumentException("Unsupported action log: " + actionLog);
 		}
@@ -209,7 +215,7 @@ public abstract class Notification implements Serializable {
 	}
 
 	public boolean isViewedOnAndroid() {
-		return this.deliveryChannel == UserMessagingPreference.ANDROID_APP && this.status == NotificationStatus.READ;
+		return this.deliveryChannel == DeliveryRoute.ANDROID_APP && this.status == NotificationStatus.READ;
 	}
 
 	public boolean isPrioritySatisfiedByTarget() {

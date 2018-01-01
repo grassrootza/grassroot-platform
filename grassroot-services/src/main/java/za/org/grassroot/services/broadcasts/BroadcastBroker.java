@@ -1,6 +1,7 @@
 package za.org.grassroot.services.broadcasts;
 
 import za.org.grassroot.core.domain.Broadcast;
+import za.org.grassroot.core.dto.BroadcastDTO;
 import za.org.grassroot.integration.socialmedia.FBPostBuilder;
 import za.org.grassroot.integration.socialmedia.TwitterPostBuilder;
 
@@ -8,12 +9,14 @@ import java.util.List;
 
 public interface BroadcastBroker {
 
-    void sendGroupBroadcast(String userUid, String groupUid, String campaignUid,
-                            List<String> smsMessages, EmailBroadcast email, FBPostBuilder facebookPost,
-                            TwitterPostBuilder twitterPostBuilder);
+    BroadcastInfo fetchGroupBroadcastParams(String userUid, String groupUid);
 
-    List<Broadcast> fetchGroupBroadcasts(String groupUid);
+    String sendGroupBroadcast(BroadcastComponents broadcastComponents);
 
-    List<Broadcast> fetchCampaignBroadcasts(String campaignUid);
+    BroadcastDTO fetchBroadcast(String broadcastUid);
+
+    List<BroadcastDTO> fetchGroupBroadcasts(String groupUid);
+
+    List<BroadcastDTO> fetchCampaignBroadcasts(String campaignUid);
 
 }

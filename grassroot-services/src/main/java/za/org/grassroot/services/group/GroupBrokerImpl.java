@@ -641,26 +641,25 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         Objects.requireNonNull(memberUid);
         Objects.requireNonNull(topics);
 
-        User user = userRepository.findOneByUid(userUid);
+        User assigningUser = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
-        Membership member = group.getMembership(user);
+        User alteredUser = userRepository.findOneByUid(memberUid);
+        Membership member = group.getMembership(alteredUser);
 
-        if (!member.getUser().equals(user)) {
+        if (!alteredUser.equals(assigningUser)) {
             try {
-                permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+                permissionBroker.validateGroupPermission(assigningUser, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
             } catch (AccessDeniedException e) {
                 throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
             }
         }
 
         List<String> groupTopics = group.getTopics();
-        if (topics.stream().anyMatch(s -> !groupTopics.contains(TagHolder.TOPIC_PREFIX + s))) {
+        if (topics.stream().anyMatch(s -> !groupTopics.contains(s))) {
             throw new GroupTopicMismatchException();
         }
 
-        member.addTags(topics.stream()
-                .map(s -> TagHolder.TOPIC_PREFIX + s)
-                .collect(Collectors.toList()));
+        member.setTopics(topics);
     }
 
     @Override

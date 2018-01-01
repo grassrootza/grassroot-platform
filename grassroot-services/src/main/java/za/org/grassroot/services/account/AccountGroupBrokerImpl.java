@@ -542,7 +542,7 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
         Broadcast template = Broadcast.builder()
                 .account(account)
                 .group(group)
-                .broadcastType(BroadcastType.ADDED_TO_GROUP)
+                .broadcastSchedule(BroadcastSchedule.ADDED_TO_GROUP)
                 .createdByUser(user)
                 .active(true)
                 .creationTime(Instant.now())
@@ -563,8 +563,8 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
     }
 
     private void checkForAndDisablePriorTemplate(Group group, User user) {
-        Broadcast template = templateRepository.findTopByGroupAndBroadcastTypeAndActiveTrue(group,
-                BroadcastType.ADDED_TO_GROUP);
+        Broadcast template = templateRepository.findTopByGroupAndBroadcastScheduleAndActiveTrue(group,
+                BroadcastSchedule.ADDED_TO_GROUP);
         if (template != null) {
             logger.error("Conflict in group welcome messages ... check logs and debug");
             storeAccountLogPostCommit(new AccountLog.Builder(template.getAccount())
@@ -592,8 +592,8 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
         validateAdmin(user, account);
 
         // todo : as above, checking for uniqueness, disabling, etc
-        Broadcast template = templateRepository.findTopByGroupAndBroadcastTypeAndActiveTrue(group,
-                BroadcastType.ADDED_TO_GROUP);
+        Broadcast template = templateRepository.findTopByGroupAndBroadcastScheduleAndActiveTrue(group,
+                BroadcastSchedule.ADDED_TO_GROUP);
 
         boolean changedTime = false;
         if (delayToSend != null && delayToSend != Duration.of(template.getDelayIntervalMillis(), ChronoUnit.MILLIS)) {
@@ -640,8 +640,8 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
 
         validateAdmin(user, account);
 
-        Broadcast template = templateRepository.findTopByGroupAndBroadcastTypeAndActiveTrue(group,
-                BroadcastType.ADDED_TO_GROUP);
+        Broadcast template = templateRepository.findTopByGroupAndBroadcastScheduleAndActiveTrue(group,
+                BroadcastSchedule.ADDED_TO_GROUP);
 
         template.setActive(false);
 
@@ -664,8 +664,8 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
         }
 
         Group group = groupRepository.findOneByUid(groupUid);
-        return templateRepository.findTopByGroupAndBroadcastTypeAndActiveTrue(group,
-                BroadcastType.ADDED_TO_GROUP);
+        return templateRepository.findTopByGroupAndBroadcastScheduleAndActiveTrue(group,
+                BroadcastSchedule.ADDED_TO_GROUP);
     }
 
     @Override
@@ -713,7 +713,7 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
     }
 
     private Broadcast checkForGroupTemplate(Group group) {
-        return templateRepository.findTopByGroupAndBroadcastTypeAndActiveTrue(group, BroadcastType.ADDED_TO_GROUP);
+        return templateRepository.findTopByGroupAndBroadcastScheduleAndActiveTrue(group, BroadcastSchedule.ADDED_TO_GROUP);
     }
 
     @Override

@@ -1,5 +1,7 @@
-package za.org.grassroot.integration.email;
+package za.org.grassroot.integration.messaging;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.util.StringUtils;
 
 import java.io.File;
@@ -7,6 +9,7 @@ import java.io.File;
 /**
  * Created by luke on 2016/10/24.
  */
+@Getter
 public class GrassrootEmail {
 
     private final String from;
@@ -15,12 +18,14 @@ public class GrassrootEmail {
     private final String content;
     private final String htmlContent;
 
-    private File attachment;
-    private String attachmentName;
+    @Setter private String fromAddress;
+    @Setter private File attachment;
+    @Setter private String attachmentName;
 
     public static class EmailBuilder {
         private String address;
         private String from;
+        private String fromAddress;
         private String subject;
         private String content;
         private String htmlContent;
@@ -40,6 +45,11 @@ public class GrassrootEmail {
 
         public EmailBuilder from(String from) {
             this.from = from;
+            return this;
+        }
+
+        public EmailBuilder fromAddress(String fromAddress) {
+            this.fromAddress = fromAddress;
             return this;
         }
 
@@ -65,7 +75,7 @@ public class GrassrootEmail {
         }
 
         public GrassrootEmail build() {
-            GrassrootEmail email = new GrassrootEmail(this.from, this.address, this.subject, this.content, this.htmlContent);
+            GrassrootEmail email = new GrassrootEmail(this.from, this.fromAddress, this.address, this.subject, this.content, this.htmlContent);
             if (this.attachment != null) {
                 email.attachment = this.attachment;
                 email.attachmentName = this.attachmentName;
@@ -74,45 +84,20 @@ public class GrassrootEmail {
         }
     }
 
-    private GrassrootEmail(String from, String address, String subject, String content, String htmlContent) {
+    private GrassrootEmail(String from, String fromAddress, String address, String subject, String content, String htmlContent) {
         this.from = from;
+        this.fromAddress = fromAddress;
         this.address = address;
         this.subject = subject;
         this.content = content;
         this.htmlContent = htmlContent;
     }
 
-    public String getFrom() {
-        return from;
-    }
-
-    public String getAddress() {
-        return address;
-    }
-
-    public String getSubject() {
-        return subject;
-    }
-
-    public String getContent() {
-        return content;
-    }
-
-    public String getHtmlContent() { return htmlContent; }
-
     public boolean hasHtmlContent() { return !StringUtils.isEmpty(htmlContent); }
-
-    public File getAttachment() { return attachment; }
-
-    public String getAttachmentName() { return attachmentName; }
 
     public boolean hasAttachment() {
         return attachment != null;
     }
-
-    public void setAttachment(File attachment) { this.attachment = attachment; }
-
-    public void setAttachmentName(String attachmentName) { this.attachmentName = attachmentName; }
 
     @Override
     public String toString() {

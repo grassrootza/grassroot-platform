@@ -265,12 +265,12 @@ public class UserRepositoryTest {
     public void shouldSaveMessagePreference() {
         User userPrefer = new User("0908", null, null);
         assertNotNull(userPrefer.getUid());
-        userPrefer.setMessagingPreference(UserMessagingPreference.SMS);
-        assertThat(userPrefer.getMessagingPreference(), is(UserMessagingPreference.SMS));
+        userPrefer.setMessagingPreference(DeliveryRoute.SMS);
+        assertThat(userPrefer.getMessagingPreference(), is(DeliveryRoute.SMS));
         userRepository.save(userPrefer);
         User userDb = userRepository.findOneByUid(userPrefer.getUid());
         assertNotNull(userDb.getUid());
-        assertThat(userDb.getMessagingPreference(), is(UserMessagingPreference.SMS));
+        assertThat(userDb.getMessagingPreference(), is(DeliveryRoute.SMS));
 
     }
 

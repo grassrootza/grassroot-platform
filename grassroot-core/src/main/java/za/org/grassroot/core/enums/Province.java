@@ -2,25 +2,15 @@ package za.org.grassroot.core.enums;
 
 public enum Province {
 
-    ZA_GP("GP"),
-    ZA_NC("NC"),
-    ZA_WC("WC"),
-    ZA_EC("EC"),
-    ZA_KZN("KZN"),
-    ZA_LP("limpopo"),
-    ZA_NW("north_west"),
-    ZA_FS("free_state"),
-    ZA_MP("mpumalanga");
+    ZA_GP,
+    ZA_NC,
+    ZA_WC,
+    ZA_EC,
+    ZA_KZN,
+    ZA_LP,
+    ZA_NW,
+    ZA_FS,
+    ZA_MP;
 
-    private final String key;
-
-    Province(String s) {
-        this.key = s;
-    }
-
-    @Override
-    public String toString() {
-        return key;
-    }
 
 }

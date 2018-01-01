@@ -54,9 +54,16 @@ public interface TagHolder {
     }
 
     default void setTopics(Set<String> topics) {
+        // first get all the non-topic tags
         List<String> tags = getTagList().stream()
                 .filter(s -> !s.startsWith(TOPIC_PREFIX)).collect(Collectors.toList());
+        // then add the topics
         tags.addAll(topics.stream().map(s -> TOPIC_PREFIX + s).collect(Collectors.toSet()));
         setTags(tags);
+    }
+
+    static String[] convertTopicsToTags(List<String> topics) {
+        return StringArrayUtil.listToArrayRemoveDuplicates(
+                topics.stream().map(s -> TOPIC_PREFIX + s).collect(Collectors.toList()));
     }
 }

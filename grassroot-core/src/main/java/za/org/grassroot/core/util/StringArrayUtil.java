@@ -26,7 +26,7 @@ public class StringArrayUtil {
     }
 
     public static List<String> arrayToList(String[] array) {
-        return array != null ? Arrays.asList(array) : new ArrayList<>();
+        return array != null && array.length != 0 ? new ArrayList<>(Arrays.asList(array)) : new ArrayList<>();
     }
 
     public static String joinStringList(List<String> strings, String joinChar, Integer maxLength) {

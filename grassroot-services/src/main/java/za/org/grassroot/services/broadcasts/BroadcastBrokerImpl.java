@@ -1,59 +1,379 @@
 package za.org.grassroot.services.broadcasts;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.domain.Specifications;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import za.org.grassroot.core.domain.Broadcast;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.User;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.account.Account;
+import za.org.grassroot.core.domain.account.AccountLog;
 import za.org.grassroot.core.domain.campaign.Campaign;
-import za.org.grassroot.core.repository.BroadcastRepository;
-import za.org.grassroot.core.repository.CampaignRepository;
-import za.org.grassroot.core.repository.GroupRepository;
-import za.org.grassroot.core.repository.UserRepository;
-import za.org.grassroot.integration.socialmedia.SocialMediaBroker;
-import za.org.grassroot.integration.socialmedia.FBPostBuilder;
-import za.org.grassroot.integration.socialmedia.TwitterPostBuilder;
+import za.org.grassroot.core.domain.notification.GroupBroadcastNotification;
+import za.org.grassroot.core.dto.BroadcastDTO;
+import za.org.grassroot.core.enums.AccountLogType;
+import za.org.grassroot.core.enums.DeliveryRoute;
+import za.org.grassroot.core.enums.GroupLogType;
+import za.org.grassroot.core.enums.Province;
+import za.org.grassroot.core.repository.*;
+import za.org.grassroot.core.specifications.MembershipSpecifications;
+import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.integration.socialmedia.*;
+import za.org.grassroot.services.exception.NoPaidAccountException;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
+import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
+import java.time.Instant;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
-@Service
+import static za.org.grassroot.core.specifications.NotificationSpecifications.*;
+
+@Service @Slf4j
 public class BroadcastBrokerImpl implements BroadcastBroker {
 
     private final BroadcastRepository broadcastRepository;
     private final UserRepository userRepository;
     private final GroupRepository groupRepository;
     private final CampaignRepository campaignRepository;
+    private final MembershipRepository membershipRepository;
 
     private final SocialMediaBroker socialMediaBroker;
 
     private final LogsAndNotificationsBroker logsAndNotificationsBroker;
+    private final AccountLogRepository accountLogRepository;
 
     @Autowired
-    public BroadcastBrokerImpl(BroadcastRepository broadcastRepository, UserRepository userRepository, GroupRepository groupRepository, CampaignRepository campaignRepository, SocialMediaBroker socialMediaBroker, LogsAndNotificationsBroker logsAndNotificationsBroker) {
+    public BroadcastBrokerImpl(BroadcastRepository broadcastRepository, UserRepository userRepository, GroupRepository groupRepository, CampaignRepository campaignRepository, MembershipRepository membershipRepository, SocialMediaBroker socialMediaBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, AccountLogRepository accountLogRepository) {
         this.broadcastRepository = broadcastRepository;
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
         this.campaignRepository = campaignRepository;
+        this.membershipRepository = membershipRepository;
         this.socialMediaBroker = socialMediaBroker;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
+        this.accountLogRepository = accountLogRepository;
     }
 
     @Override
-    public void sendGroupBroadcast(String userUid, String groupUid, String campaignUid, List<String> smsMessages, EmailBroadcast email, FBPostBuilder facebookPost, TwitterPostBuilder twitterPostBuilder) {
-        // todo: complete this ... going to be hairy ...
+    @Transactional(readOnly = true)
+    public BroadcastInfo fetchGroupBroadcastParams(String userUid, String groupUid) {
         User user = userRepository.findOneByUid(userUid);
+        Account account = user.getPrimaryAccount();
+        BroadcastInfo.BroadcastInfoBuilder builder = BroadcastInfo.builder();
+        if (account.getFreeFormCost() > 0) {
+            builder.isSmsAllowed(true).smsCostCents(account.getFreeFormCost());
+        } else {
+            builder.isSmsAllowed(false);
+        }
+
+        ManagedPagesResponse fbStatus = socialMediaBroker.getManagedFacebookPages(userUid);
+        builder.isFbConnected(fbStatus.isUserConnectionValid())
+                .facebookPages(fbStatus.getManagedPages());
+
+        String twitterAccount = socialMediaBroker.isTwitterAccountConnected(userUid);
+        builder.isTwitterConnected(!StringUtils.isEmpty(twitterAccount))
+                .twitterAccountName(twitterAccount);
+
+        return builder.build();
     }
 
     @Override
-    public List<Broadcast> fetchGroupBroadcasts(String groupUid) {
+    @Transactional
+    public String sendGroupBroadcast(BroadcastComponents bc) {
+        User user = userRepository.findOneByUid(bc.getUserUid());
+        Account account = user.getPrimaryAccount();
+
+        if (account == null) {
+            throw new NoPaidAccountException();
+        }
+
+        Broadcast broadcast = Broadcast.builder()
+                .createdByUser(user)
+                .account(account)
+                .title(bc.getTitle())
+                .broadcastSchedule(bc.getBroadcastSchedule())
+                .scheduledSendTime(bc.getScheduledSendTime())
+                .build();
+
+        if (bc.isCampaignBroadcast()) {
+            broadcast.setCampaign(campaignRepository.findOneByUid(bc.getCampaignUid()));
+        } else {
+            broadcast.setGroup(groupRepository.findOneByUid(bc.getGroupUid()));
+        }
+
+        recordProvincesAndTopics(bc, broadcast);
+
+        LogsAndNotificationsBundle bundle = bc.isImmediateBroadcast() ?
+                sendImmediateBroadcast(bc, broadcast) :
+                storeScheduledBroadcast(bc, broadcast);
+
+        broadcastRepository.saveAndFlush(broadcast);
+
+        logsAndNotificationsBroker.storeBundle(bundle);
+
+        return broadcast.getUid();
+    }
+
+    private LogsAndNotificationsBundle sendImmediateBroadcast(BroadcastComponents bc, Broadcast broadcast) {
+        recordShortMessageContent(bc, broadcast);
+        recordEmailContent(bc.getEmail(), broadcast);
+
+        if (bc.getFacebookPost() != null) {
+            log.info("sending an FB post, from builder: {}", bc.getFacebookPost());
+            recordFbPost(bc.getFacebookPost(), broadcast);
+            GenericPostResponse fbResponse = socialMediaBroker.postToFacebook(bc.getFacebookPost());
+            if (fbResponse != null && fbResponse.isPostSuccessful()) {
+                broadcast.setFbPostSucceeded(true);
+            }
+        }
+
+        if (bc.getTwitterPostBuilder() != null) {
+            recordTwitterPost(bc.getTwitterPostBuilder(), broadcast);
+            GenericPostResponse twResponse = socialMediaBroker.postToTwitter(bc.getTwitterPostBuilder());
+            if (twResponse != null && twResponse.isPostSuccessful()) {
+                broadcast.setTwitterSucceeded(true);
+            }
+        }
+
+        broadcast.setSentTime(Instant.now());
+
+        return bc.isCampaignBroadcast() ?
+                generateCampaignBroadcastBundle(broadcast) :
+                generateGroupBroadcastBundle(broadcast);
+    }
+
+    private LogsAndNotificationsBundle storeScheduledBroadcast(BroadcastComponents bc, Broadcast broadcast) {
+        recordShortMessageContent(bc, broadcast);
+        recordEmailContent(bc.getEmail(), broadcast);
+        recordFbPost(bc.getFacebookPost(), broadcast);
+        recordTwitterPost(bc.getTwitterPostBuilder(), broadcast);
+
+        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+        AccountLog accountLog = new AccountLog.Builder(broadcast.getAccount())
+                .user(broadcast.getCreatedByUser())
+                .group(broadcast.getGroup())
+                .broadcast(broadcast)
+                .accountLogType(AccountLogType.BROADCAST_SCHEDULED)
+                .build();
+        bundle.addLog(accountLog);
+        return bundle;
+    }
+
+    private LogsAndNotificationsBundle sendScheduledBroadcast(Broadcast bc) {
+        if (bc.hasFbPost()) {
+            GenericPostResponse fbResponse = socialMediaBroker.postToFacebook(extractFbFromBroadcast(bc));
+            if (fbResponse.isPostSuccessful()) {
+                bc.setFbPostSucceeded(true);
+            }
+        }
+
+        if (bc.hasTwitterPost()) {
+            GenericPostResponse twResponse = socialMediaBroker.postToTwitter(extractTweetFromBroadcast(bc));
+            if (twResponse.isPostSuccessful()) {
+                bc.setTwitterSucceeded(true);
+            }
+        }
+
+        return bc.getCampaign() == null ? generateGroupBroadcastBundle(bc) : generateCampaignBroadcastBundle(bc);
+    }
+
+    private void recordProvincesAndTopics(BroadcastComponents bc, Broadcast broadcast) {
+        if (bc.getTopics() != null && !bc.getTopics().isEmpty()) {
+            broadcast.setTopics(new HashSet<>(bc.getTopics()));
+        }
+        if (bc.getProvinces() != null && !bc.getProvinces().isEmpty()) {
+            broadcast.setProvinces(new HashSet<>(bc.getProvinces()));
+        }
+    }
+
+    private void recordShortMessageContent(BroadcastComponents bc, Broadcast broadcast) {
+        broadcast.setSmsTemplate1(bc.getShortMessage());
+        broadcast.setOnlyUseFreeChannels(bc.isUseOnlyFreeChannels());
+        broadcast.setSkipSmsIfEmail(bc.getEmail() != null && bc.isSkipSmsIfEmail());
+    }
+
+    private void recordEmailContent(EmailBroadcast email, Broadcast broadcast) {
+        if (email != null) {
+            broadcast.setEmailContent(email.getContent());
+            broadcast.setEmailImageKey(email.getImageUid());
+            broadcast.setEmailDeliveryRoute(email.getDeliveryRoute());
+        }
+    }
+
+    private EmailBroadcast extractEmailFromBroadcast(Broadcast broadcast) {
+        return EmailBroadcast.builder()
+                .content(broadcast.getEmailContent())
+                .deliveryRoute(broadcast.getEmailDeliveryRoute())
+                .imageUid(broadcast.getEmailImageKey())
+                .build();
+    }
+
+    private void recordFbPost(FBPostBuilder post, Broadcast broadcast) {
+        if (post != null) {
+            broadcast.setFacebookPageId(post.getFacebookPageId());
+            broadcast.setFacebookPost(post.getMessage());
+            broadcast.setFacebookImageCaption(post.getImageCaption());
+            broadcast.setFacebookImageKey(post.getImageKey());
+            broadcast.setFacebookLinkName(post.getLinkName());
+            broadcast.setFacebookLinkUrl(post.getLinkUrl());
+        }
+    }
+
+    private FBPostBuilder extractFbFromBroadcast(Broadcast broadcast) {
+        return FBPostBuilder.builder()
+                .postingUserUid(broadcast.getCreatedByUser().getUid())
+                .facebookPageId(broadcast.getFacebookPageId())
+                .message(broadcast.getFacebookPost())
+                .linkUrl(broadcast.getFacebookLinkUrl())
+                .linkName(broadcast.getFacebookLinkName())
+                .imageKey(broadcast.getFacebookImageKey())
+                .imageCaption(broadcast.getFacebookImageCaption())
+                .build();
+    }
+
+    private void recordTwitterPost(TwitterPostBuilder post, Broadcast bc) {
+        if (post != null) {
+            bc.setTwitterPost(post.getMessage());
+            bc.setTwitterImageKey(post.getImageKey());
+        }
+    }
+
+    private TwitterPostBuilder extractTweetFromBroadcast(Broadcast broadcast) {
+        return TwitterPostBuilder.builder()
+                .postingUserUid(broadcast.getCreatedByUser().getUid())
+                .message(broadcast.getTwitterPost())
+                .imageKey(broadcast.getTwitterImageKey())
+                .build();
+    }
+
+    private LogsAndNotificationsBundle generateGroupBroadcastBundle(Broadcast bc) {
+        log.info("generating notifications for group broadcast ...");
+        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+
+        Group group = bc.getGroup();
+
+        GroupLog groupLog = new GroupLog(group, bc.getCreatedByUser(), GroupLogType.BROADCAST_SENT,
+                null, null, bc.getAccount(), null);
+        groupLog.setBroadcast(bc);
+        bundle.addLog(groupLog);
+
+        List<String> topicRestrictions = bc.getTopics();
+        List<Province> provinceResrictions = bc.getProvinces();
+
+        // todo : just get the users via a join, the stream & map below will kill us on big groups
+        List<Membership> membersToReceive;
+        if (!topicRestrictions.isEmpty() && !provinceResrictions.isEmpty()) {
+            membersToReceive = membershipRepository.findByGroupProvinceTopicsAndJoinedDate(
+                    group.getId(), provinceResrictions, TagHolder.convertTopicsToTags(topicRestrictions),
+                    DateTimeUtil.getEarliestInstant());
+        } else if (!topicRestrictions.isEmpty()) {
+            // no province restrictions, so just get by topics
+            membersToReceive = membershipRepository.findByGroupTagsAndJoinedDateAfter(group.getId(),
+                    TagHolder.convertTopicsToTags(topicRestrictions), DateTimeUtil.getEarliestInstant());
+        } else if (!provinceResrictions.isEmpty()) {
+            // reverse of the above
+            membersToReceive = membershipRepository.findAll(MembershipSpecifications.groupMembersInProvincesJoinedAfter(
+                    group, provinceResrictions, DateTimeUtil.getEarliestInstant()));
+        } else {
+            // get everyone, since we have no restrictions
+            membersToReceive = membershipRepository.findAll(MembershipSpecifications.forGroup(group));
+        }
+        log.info("finished fetching members by topic and province, found {} members", membersToReceive.size());
+
+        if (bc.hasEmail()) {
+            Set<Notification> emailNotifications = new HashSet<>();
+            Set<User> emailUsers = membersToReceive.stream().map(Membership::getUser)
+                    .filter(User::hasEmailAddress).collect(Collectors.toSet());
+            emailUsers.forEach(u -> {
+                // todo : route it in all sorts of ways
+                emailNotifications.add(new GroupBroadcastNotification(u, bc.getEmailContent(),
+                        DeliveryRoute.EMAIL_GRASSROOT, groupLog));
+            });
+            bundle.addNotifications(emailNotifications);
+        }
+
+        long smsCount = 0;
+        if (bc.hasShortMessage()) {
+            boolean skipUsersWithEmail = bc.isSkipSmsIfEmail() && bc.hasEmail();
+            log.info("sending short message ... skipping emails? {}", skipUsersWithEmail);
+            Set<User> shortMessageUsers = skipUsersWithEmail ?
+                    membersToReceive.stream().map(Membership::getUser).filter(u -> !u.hasEmailAddress()).collect(Collectors.toSet()) :
+                    membersToReceive.stream().map(Membership::getUser).collect(Collectors.toSet());
+            log.info("now generating {} notifications", shortMessageUsers.size());
+            Set<Notification> shortMessageNotifications = new HashSet<>();
+            shortMessageUsers.forEach(u -> {
+                GroupBroadcastNotification notification = new GroupBroadcastNotification(u,
+                        bc.getSmsTemplate1(), u.getMessagingPreference(), groupLog);
+                notification.setUseOnlyFreeChannels(bc.isOnlyUseFreeChannels());
+                shortMessageNotifications.add(notification);
+            });
+            bundle.addNotifications(shortMessageNotifications);
+            smsCount = shortMessageUsers.size();
+        }
+
+        AccountLog accountLog = new AccountLog.Builder(bc.getAccount())
+                .user(bc.getCreatedByUser())
+                .group(bc.getGroup())
+                .broadcast(bc)
+                .accountLogType(AccountLogType.BROADCAST_MESSAGE_SENT)
+                .billedOrPaid(bc.getAccount().getFreeFormCost() * smsCount).build();
+        bundle.addLog(accountLog);
+
+        return bundle;
+    }
+
+    private LogsAndNotificationsBundle generateCampaignBroadcastBundle(Broadcast bc) {
+        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+        return bundle;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public BroadcastDTO fetchBroadcast(String broadcastUid) {
+        return assembleDto(broadcastRepository.findOneByUid(broadcastUid));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<BroadcastDTO> fetchGroupBroadcasts(String groupUid) {
         Group group = groupRepository.findOneByUid(groupUid);
-        return broadcastRepository.findByGroupAndActiveTrue(group);
+        return broadcastRepository.findByGroup(group)
+                .stream().map(this::assembleDto).collect(Collectors.toList());
     }
 
     @Override
-    public List<Broadcast> fetchCampaignBroadcasts(String campaignUid) {
+    @Transactional(readOnly = true)
+    public List<BroadcastDTO> fetchCampaignBroadcasts(String campaignUid) {
         Campaign campaign = campaignRepository.findOneByUid(campaignUid);
-        return broadcastRepository.findByCampaignAndActiveTrue(campaign);
+        return broadcastRepository.findByCampaign(campaign)
+                .stream().map(this::assembleDto).collect(Collectors.toList());
     }
+
+    private BroadcastDTO assembleDto(Broadcast broadcast) {
+        // todo: clean this up and speed it up. currently ~5 queries per broadcast, not good when broadcasts start to multiply
+        Specifications<Notification> smsSpecs = Specifications.where(wasDelivered())
+                .and(forDeliveryChannel(DeliveryRoute.SMS))
+                .and(forGroupBroadcast(broadcast));
+
+        Specifications<Notification> emailSpecs = Specifications.where(wasDelivered())
+                .and(forDeliveryChannel(DeliveryRoute.EMAIL_GRASSROOT))
+                .and(forGroupBroadcast(broadcast));
+
+        long smsCount = logsAndNotificationsBroker.countNotifications(smsSpecs);
+        long emailCount = logsAndNotificationsBroker.countNotifications(emailSpecs);
+
+        long totalCost = accountLogRepository
+                .findByBroadcastAndAccountLogType(broadcast, AccountLogType.BROADCAST_MESSAGE_SENT)
+                .stream().mapToLong(AccountLog::getAmountBilledOrPaid).sum();
+
+        return new BroadcastDTO(broadcast, smsCount, emailCount, (float) totalCost / 100);
+    }
+
+
+
 }

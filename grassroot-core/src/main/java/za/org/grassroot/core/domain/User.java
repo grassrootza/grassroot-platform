@@ -9,8 +9,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.enums.AlertPreference;
+import za.org.grassroot.core.enums.DeliveryRoute;
 import za.org.grassroot.core.enums.Province;
-import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 
@@ -74,7 +74,7 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "message_preference", nullable = false, length = 50)
-    private UserMessagingPreference messagingPreference;
+    private DeliveryRoute messagingPreference;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "alert_preference", length = 50)
@@ -142,7 +142,7 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
         this.username = StringUtils.isEmpty(phoneNumber) ? emailAddress : phoneNumber;
         this.displayName = removeUnwantedCharacters(displayName);
         this.languageCode = "en";
-        this.messagingPreference = !StringUtils.isEmpty(phoneNumber) ? UserMessagingPreference.SMS : UserMessagingPreference.EMAIL; // as default
+        this.messagingPreference = !StringUtils.isEmpty(phoneNumber) ? DeliveryRoute.SMS : DeliveryRoute.EMAIL_GRASSROOT; // as default
         this.createdDateTime = Instant.now();
         this.alertPreference = AlertPreference.NOTIFY_NEW_AND_REMINDERS;
         this.hasUsedFreeTrial = false;
@@ -279,7 +279,7 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
         this.hasWebProfile = hasWebProfile;
     }
 
-    public void setMessagingPreference(UserMessagingPreference messagingPreference) {
+    public void setMessagingPreference(DeliveryRoute messagingPreference) {
         this.messagingPreference = messagingPreference;
     }
 

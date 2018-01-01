@@ -75,10 +75,10 @@ public class GroupModifyController extends GroupBaseController {
         return ResponseEntity.ok().build();
     }
 
-    @RequestMapping(value = "/members/add/{userUid}/{groupUid}", method = RequestMethod.POST)
+    @RequestMapping(value = "/members/add/{groupUid}", method = RequestMethod.POST)
     @ApiOperation(value = "Add members to a group", notes = "Adds members to the group, takes a set (can be a singleton) " +
             "of MembershipInfo, which requires a name, a phone number, and, optionally a role (can be ROLE_ORDINARY_MEMBER)")
-    public ResponseEntity<GroupModifiedResponse> addMembersToGroup(@PathVariable String userUid,
+    public ResponseEntity<GroupModifiedResponse> addMembersToGroup(HttpServletRequest request,
                                                           @PathVariable String groupUid,
                                                           @RequestBody Set<AddMemberInfo> membersToAdd) {
         logger.info("membersReceived = {}", membersToAdd != null ? membersToAdd.toString() : "null");
@@ -91,7 +91,7 @@ public class GroupModifyController extends GroupBaseController {
                 .collect(Collectors.toSet());
         List<String> invalidNumbers = findInvalidNumbers(memberInfos);
         try {
-            groupBroker.addMembers(userUid, groupUid, memberInfos,
+            groupBroker.addMembers(getUserIdFromRequest(request), groupUid, memberInfos,
                     GroupJoinMethod.ADDED_BY_OTHER_MEMBER, false);
             return ResponseEntity.ok(new GroupModifiedResponse(membersToAdd.size() - invalidNumbers.size(), invalidNumbers));
         } catch (AccessDeniedException e) {
@@ -125,8 +125,10 @@ public class GroupModifyController extends GroupBaseController {
     @RequestMapping(value = "members/add/topics/{groupUid}", method = RequestMethod.POST)
     @ApiOperation(value = "Assign topic(s) - special tags - to a member")
     public ResponseEntity<GroupFullDTO> assignTopicsToMember(HttpServletRequest request, @PathVariable String groupUid,
-                                                             @RequestParam String memberUid, @RequestParam List<String> topics) {
-        groupBroker.assignMembershipTopics(getUserIdFromRequest(request), groupUid, memberUid, new HashSet<>(topics));
+                                                             @RequestParam List<String> memberUids, @RequestParam List<String> topics) {
+        for (String memberUid : memberUids) {
+            groupBroker.assignMembershipTopics(getUserIdFromRequest(request), groupUid, memberUid, new HashSet<>(topics));
+        }
         return ResponseEntity.ok().build();
     }
 

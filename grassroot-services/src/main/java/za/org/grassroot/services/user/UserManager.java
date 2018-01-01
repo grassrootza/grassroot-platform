@@ -176,14 +176,14 @@ public class UserManager implements UserManagementService, UserDetailsService {
         if (userExists) {
 
             User userToUpdate = userRepository.findByPhoneNumber(phoneNumber);
-            if (userToUpdate.hasAndroidProfile() && userToUpdate.getMessagingPreference().equals(UserMessagingPreference.ANDROID_APP)) {
+            if (userToUpdate.hasAndroidProfile() && userToUpdate.getMessagingPreference().equals(DeliveryRoute.ANDROID_APP)) {
                 log.warn("User already has android profile");
                 throw new UserExistsException("User '" + userProfile.getUsername() + "' already has a android profile!");
             }
 
             userToUpdate.setUsername(phoneNumber);
             userToUpdate.setHasAndroidProfile(true);
-            userToUpdate.setMessagingPreference(UserMessagingPreference.ANDROID_APP);
+            userToUpdate.setMessagingPreference(DeliveryRoute.ANDROID_APP);
             userToUpdate.setAlertPreference(AlertPreference.NOTIFY_NEW_AND_REMINDERS);
             userToUpdate.setHasInitiatedSession(true);
             userToSave = userToUpdate;
@@ -199,7 +199,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
             userProfile.setDisplayName(userDTO.getDisplayName());
             userProfile.setHasSetOwnName(true);
             userProfile.setHasAndroidProfile(true);
-            userProfile.setMessagingPreference(UserMessagingPreference.ANDROID_APP);
+            userProfile.setMessagingPreference(DeliveryRoute.ANDROID_APP);
             userProfile.setAlertPreference(AlertPreference.NOTIFY_NEW_AND_REMINDERS);
 
             userToSave = userProfile;
@@ -281,7 +281,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     @Override
     @Transactional
-    public void setMessagingPreference(String userUid, UserMessagingPreference preference) {
+    public void setMessagingPreference(String userUid, DeliveryRoute preference) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(preference);
 

@@ -105,7 +105,7 @@ public class MembershipInfo implements Comparable<MembershipInfo> {
 
     public boolean hasValidPhoneNumber() {
         try {
-            getPhoneNumberWithCCode();
+            PhoneNumberUtil.convertPhoneNumber(phoneNumber);
             return true;
         } catch (InvalidPhoneNumberException e) {
             return false;

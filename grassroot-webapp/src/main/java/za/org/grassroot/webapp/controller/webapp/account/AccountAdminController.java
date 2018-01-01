@@ -16,8 +16,8 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.enums.AccountPaymentType;
 import za.org.grassroot.core.enums.AccountType;
-import za.org.grassroot.integration.email.EmailSendingBroker;
-import za.org.grassroot.integration.email.GrassrootEmail;
+import za.org.grassroot.integration.messaging.GrassrootEmail;
+import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.integration.payments.PaymentBroker;
 import za.org.grassroot.services.account.AccountBillingBroker;
 import za.org.grassroot.services.account.AccountBroker;
@@ -27,6 +27,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -45,24 +46,19 @@ public class AccountAdminController extends BaseController {
     private final Environment environment;
 
     private PaymentBroker paymentBroker;
-    private EmailSendingBroker emailSendingBroker;
+    private MessagingServiceBroker messagingBroker;
 
     @Autowired
-    public AccountAdminController(AccountBroker accountBroker, AccountBillingBroker billingBroker, Environment environment) {
+    public AccountAdminController(AccountBroker accountBroker, AccountBillingBroker billingBroker, Environment environment, MessagingServiceBroker messagingBroker) {
         this.accountBroker = accountBroker;
         this.billingBroker = billingBroker;
         this.environment = environment;
-
+        this.messagingBroker = messagingBroker;
     }
 
     @Autowired(required = false)
     public void setPaymentBroker(PaymentBroker paymentBroker) {
         this.paymentBroker = paymentBroker;
-    }
-
-    @Autowired(required = false)
-    public void setEmailSendingBroker(EmailSendingBroker emailSendingBroker) {
-        this.emailSendingBroker = emailSendingBroker;
     }
 
     /**
@@ -137,7 +133,7 @@ public class AccountAdminController extends BaseController {
             GrassrootEmail.EmailBuilder builder = new GrassrootEmail.EmailBuilder("Grassroot Extra Account Enabled")
                     .address(account.getBillingUser().getEmailAddress())
                     .content("Hello!\nYour account is enabled. Great!\nGrassroot");
-            emailSendingBroker.sendMail(builder.build());
+            messagingBroker.sendEmail(Collections.singletonList(account.getBillingUser().getEmailAddress()), builder.build());
         }
         addMessage(attributes, MessageType.INFO, "admin.accounts.enabled", request);
         return "redirect:home";

@@ -48,8 +48,12 @@ public class GroupImportController extends GroupBaseController {
         File tmpFile = new File(tempPath);
         log.info("phoneCol = {}, nameCol = {}, header = {}, loaded temp file, path = {}", phoneColumn, nameColumn, header, tmpFile.getAbsolutePath());
 
+        Integer phoneC = phoneColumn == -1 ? null : phoneColumn;
+        Integer emailC = emailColumn == -1 ? null : emailColumn;
+        Integer provinceC = provinceColumn == -1 ? null : provinceColumn;
+        Integer roleC = roleColumn == -1 ? null : roleColumn;
         return ResponseEntity.ok(dataBroker
-                .processMembers(tmpFile, header, phoneColumn, nameColumn, roleColumn, emailColumn, provinceColumn)
+                .processMembers(tmpFile, header, phoneC, nameColumn, roleC, emailC, provinceC)
                 .stream().map(AddMemberInfo::new).collect(Collectors.toList()));
     }
 

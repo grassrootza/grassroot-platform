@@ -12,8 +12,8 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.VerificationTokenCode;
 import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.enums.AlertPreference;
+import za.org.grassroot.core.enums.DeliveryRoute;
 import za.org.grassroot.core.enums.UserInterfaceType;
-import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.core.enums.VerificationCodeType;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.core.util.PhoneNumberUtil;
@@ -146,7 +146,7 @@ public class UserRestController {
             if (!user.hasAndroidProfile()) {
                 userManagementService.createAndroidUserProfile(new UserDTO(user));
             }
-            userManagementService.setMessagingPreference(user.getUid(), UserMessagingPreference.ANDROID_APP); // todo : maybe move to gcm registration
+            userManagementService.setMessagingPreference(user.getUid(), DeliveryRoute.ANDROID_APP); // todo : maybe move to gcm registration
             passwordTokenService.expireVerificationCode(user.getUid(), VerificationCodeType.SHORT_OTP);
             VerificationTokenCode longLivedToken = passwordTokenService.generateLongLivedAuthCode(user.getUid());
             boolean hasGroups = permissionBroker.countActiveGroupsWithPermission(user, null) != 0;
@@ -213,7 +213,7 @@ public class UserRestController {
     @RequestMapping(value = "/logout/{phoneNumber}/{code}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> logoutUser(@PathVariable String phoneNumber, @PathVariable String code) {
         User user = userManagementService.findByInputNumber(phoneNumber);
-        userManagementService.setMessagingPreference(user.getUid(), UserMessagingPreference.SMS);
+        userManagementService.setMessagingPreference(user.getUid(), DeliveryRoute.SMS);
         passwordTokenService.expireVerificationCode(user.getUid(), VerificationCodeType.LONG_AUTH);
         return RestUtil.messageOkayResponse(RestMessage.USER_LOGGED_OUT);
     }

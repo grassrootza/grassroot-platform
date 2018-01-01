@@ -11,15 +11,15 @@ import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.BaseRoles;
-import za.org.grassroot.core.domain.account.PaidGroup;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.account.Account;
+import za.org.grassroot.core.domain.account.PaidGroup;
 import za.org.grassroot.core.enums.AccountBillingCycle;
 import za.org.grassroot.core.enums.AccountPaymentType;
 import za.org.grassroot.core.enums.AccountType;
-import za.org.grassroot.integration.email.EmailSendingBroker;
-import za.org.grassroot.integration.email.GrassrootEmail;
+import za.org.grassroot.integration.messaging.GrassrootEmail;
+import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.account.AccountBillingBroker;
 import za.org.grassroot.services.account.AccountBroker;
 import za.org.grassroot.services.account.AccountGroupBroker;
@@ -41,22 +41,15 @@ public class AccountSignUpController extends BaseController {
     private static final Logger logger = LoggerFactory.getLogger(AccountSignUpController.class);
 
     private final AccountBroker accountBroker;
-    private final AccountBillingBroker billingBroker;
     private final AccountGroupBroker accountGroupBroker;
-
-    private EmailSendingBroker emailSendingBroker;
+    private final MessagingServiceBroker messageBroker;
 
     @Autowired
     public AccountSignUpController(AccountBroker accountBroker, AccountBillingBroker billingBroker,
-                                   AccountGroupBroker accountGroupBroker) {
+                                   AccountGroupBroker accountGroupBroker, MessagingServiceBroker messageBroker) {
         this.accountBroker = accountBroker;
-        this.billingBroker = billingBroker;
+        this.messageBroker = messageBroker;
         this.accountGroupBroker = accountGroupBroker;
-    }
-
-    @Autowired(required = false)
-    public void setEmailSendingBroker(EmailSendingBroker emailSendingBroker) {
-        this.emailSendingBroker = emailSendingBroker;
     }
 
     @RequestMapping(value = "signup", method = RequestMethod.GET)
@@ -236,9 +229,8 @@ public class AccountSignUpController extends BaseController {
         mailBody.append("\n\n Account details: \n");
         mailBody.append(account == null ? "Null account" : account.toString());
 
-        emailSendingBroker.sendMail(new GrassrootEmail.EmailBuilder("Account 'Contact Us' Query")
-                .address("contact@grassroot.org.za")
-                .content(mailBody.toString()).build());
+        messageBroker.sendEmail(Collections.singletonList("contact@grassroot.org.za"),
+                new GrassrootEmail.EmailBuilder("Account 'Contact Us' Query").content(mailBody.toString()).build());
 
         addMessage(attributes, MessageType.SUCCESS, "account.contact.done", request);
         return "redirect:/account/";

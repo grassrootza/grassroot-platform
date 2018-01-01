@@ -4,16 +4,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.AsyncRestTemplate;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
+import java.util.List;
 
 /**
  * Created by luke on 2017/05/23.
@@ -79,6 +81,53 @@ public class MessagingServiceBrokerImpl implements MessagingServiceBroker {
             logger.error("Error connecting to: {}", serviceCallUri);
             throw e;
         }
+    }
+
+    @Override
+    public void sendEmail(List<String> addresses, GrassrootEmail email) {
+
+        UriComponentsBuilder builder = baseUri()
+                .path("/email/send")
+                .queryParam("addresses", addresses.toArray())
+                .queryParam("subject", email.getSubject());
+
+        if (email.hasAttachment()) {
+            logger.info("we have an attachment, setting it here");
+            builder = builder.queryParam("attachmentName", email.getAttachmentName());
+        }
+
+        if (email.hasHtmlContent()) {
+            builder = builder.queryParam("content", email.getHtmlContent())
+                    .queryParam("textContent", email.getContent());
+        } else {
+            builder = builder.queryParam("content", email.getContent());
+        }
+
+        if (!StringUtils.isEmpty(email.getFrom())) {
+            builder = builder.queryParam("fromName", email.getFrom());
+        }
+
+        if (!StringUtils.isEmpty(email.getFromAddress())) {
+            builder = builder.queryParam("fromAddress", email.getFromAddress());
+        }
+
+        HttpHeaders headers = jwtHeaders();
+        LinkedMultiValueMap<String, Object> params = new LinkedMultiValueMap<>();
+        if (email.hasAttachment()) {
+            params.add("attachment", new FileSystemResource(email.getAttachment()));
+            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        }
+        HttpEntity<LinkedMultiValueMap<String, Object>> requestEntity = new HttpEntity<>(params, headers);
+
+        try {
+            ResponseEntity<String> responseEntity =
+                    restTemplate.exchange(builder.build().toUri(), HttpMethod.POST,
+                            requestEntity, String.class);
+            logger.info("what happened ? {}", responseEntity);
+        } catch (RestClientException e) {
+            logger.error("Error pushing out emails! {}", e);
+        }
+
     }
 
     private UriComponentsBuilder baseUri() {
