@@ -2,6 +2,8 @@ alter table user_profile add column province varchar(50);
 ALTER TABLE user_profile ALTER COLUMN phone_number DROP NOT NULL;
 
 create temporary table to_delete (email_address varchar not null, min_id bigint not null);
+insert into to_delete(email_address, min_id)
+  select email_address, MIN(id) from user_profile where email_address is not null group by email_address having count(*) > 1;
 update user_profile set email_address = null where
   exists (select * from to_delete where to_delete.email_address = user_profile.email_address and to_delete.min_id <> user_profile.id);
 drop table to_delete;
