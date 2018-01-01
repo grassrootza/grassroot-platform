@@ -47,7 +47,7 @@ public abstract class Notification implements Serializable {
 	private Instant createdDateTime;
 
 	@Column(name = "attempt_count", nullable = false)
-	private int sendAttempts = 0;
+	@Setter private int sendAttempts = 0;
 
 	@ManyToOne
 	@JoinColumn(name = "target_id")
@@ -55,7 +55,7 @@ public abstract class Notification implements Serializable {
 
 	@Column(name = "sending_status")
     @Enumerated(EnumType.STRING)
-    private NotificationStatus status = NotificationStatus.READY_FOR_SENDING;
+    @Setter private NotificationStatus status = NotificationStatus.READY_FOR_SENDING;
 
 	@Setter
 	@Column(name = "send_only_after")

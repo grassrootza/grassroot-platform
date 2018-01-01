@@ -7,15 +7,18 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.AsyncRestTemplate;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.servlet.view.RedirectView;
 import org.springframework.web.util.UriComponentsBuilder;
 import za.org.grassroot.integration.messaging.CreateJwtTokenRequest;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.integration.messaging.JwtType;
 
 import java.net.URI;
+import java.util.Map;
 
 @Service @Slf4j
 public class SocialMediaBrokerImpl implements SocialMediaBroker {
@@ -76,6 +79,39 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
             return handleResponse(response, "FB");
         } catch (RestClientException e) {
             log.error("Error calling social media service! Exception looks like: {}", e);
+            return null;
+        }
+    }
+
+    @Override
+    public String initiateFacebookConnection(String userUid) {
+        final URI uri = baseUri(userUid).path("/connect/facebook")
+                .queryParam("scope", "user_friends,user_posts,manage_pages,publish_pages,publish_actions")
+                .build().toUri();
+        log.info("okay trying this out, URI = {}", uri.toString());
+        try {
+            ResponseEntity<RedirectView> view = restTemplate.exchange(uri, HttpMethod.POST, new HttpEntity<>(jwtHeaders()),
+                    RedirectView.class);
+            log.info("and returnd view with headers = {} and url = {}", view.getHeaders(), view.getHeaders().get("Location"));
+            return view.getHeaders().get("Location").get(0);
+        } catch (RestClientException e) {
+            log.error("error calling integration broker", e);
+            return null;
+        }
+    }
+
+    @Override
+    public ManagedPagesResponse completeFbConnect(String userUid, MultiValueMap<String, String> paramsToPass) {
+        final URI uri = baseUri(userUid).path("/connect/facebook")
+                .queryParam(userUidParam, userUid)
+                .queryParams(paramsToPass).build().toUri();
+        try {
+            log.info("calling URI: {}", uri);
+            ResponseEntity<String> response = restTemplate.exchange(uri, HttpMethod.GET, new HttpEntity<>(jwtHeaders()), String.class);
+            log.info("response: {}", response);
+            return getManagedFacebookPages(userUid);
+        } catch(RestClientException e) {
+            log.error("error calling integration broker", e);
             return null;
         }
     }
