@@ -17,3 +17,6 @@ alter table campaign_log drop column broadcast_id;
 
 alter table notification drop column campaign_log_id;
 alter table notification drop column broadcast_id;
+
+update user_profile set message_preference = 'EMAIL' where message_preference = 'EMAIL_GRASSROOT';
+update notification set delivery_channel = 'EMAIL' where delivery_channel = 'EMAIL_GRASSROOT';

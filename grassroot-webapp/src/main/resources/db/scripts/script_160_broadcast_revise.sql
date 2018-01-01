@@ -34,3 +34,6 @@ alter table notification add constraint fk_notification_campaign_log foreign key
 
 alter table notification add column broadcast_id bigint;
 alter table notification add constraint fk_notification_broadcast foreign key (broadcast_id) references broadcast(id);
+
+update user_profile set message_preference = 'EMAIL_GRASSROOT' where message_preference = 'EMAIL';
+update notification set delivery_channel = 'EMAIL_GRASSROOT' where delivery_channel = 'EMAIL';
