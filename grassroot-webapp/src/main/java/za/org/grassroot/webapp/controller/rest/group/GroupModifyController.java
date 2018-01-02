@@ -75,6 +75,40 @@ public class GroupModifyController extends GroupBaseController {
         return ResponseEntity.ok().build();
     }
 
+    @RequestMapping(value = "/joincodes/list/active", method = RequestMethod.GET)
+    @ApiOperation(value = "List all the active join words (to prevent duplicates")
+    public ResponseEntity<Set<String>> listJoinCodes() {
+        return ResponseEntity.ok(groupBroker.getUsedJoinWords());
+    }
+
+    @RequestMapping(value = "/joincodes/add/{groupUid}", method = RequestMethod.POST)
+    @ApiOperation(value = "Add a word that triggers user joining group")
+    public ResponseEntity addJoinWordToGroup(HttpServletRequest request, @PathVariable String groupUid,
+                                             @RequestParam String joinWord,
+                                             @RequestParam(required = false) String userUid) {
+        try {
+            groupBroker.addJoinTag(userUid == null ? getUserIdFromRequest(request) : userUid, groupUid, joinWord);
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            return RestUtil.errorResponse(RestMessage.JOIN_WORD_TAKEN);
+        } catch (AccessDeniedException e) {
+            throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+        }
+    }
+
+    @RequestMapping(value = "/joincodes/remove/{groupUid}", method = RequestMethod.POST)
+    @ApiOperation(value = "Deactivate a word that triggers a user joining group")
+    public ResponseEntity removeJoinWordFromGroup(HttpServletRequest request, @PathVariable String groupUid,
+                                                  @RequestParam String joinWord,
+                                                  @RequestParam(required = false) String userUid) {
+        try {
+            groupBroker.removeJoinTag(userUid == null ? getUserIdFromRequest(request) : userUid, groupUid, joinWord);
+            return ResponseEntity.ok().build();
+        } catch (AccessDeniedException e) {
+            throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+        }
+    }
+
     @RequestMapping(value = "/members/add/{groupUid}", method = RequestMethod.POST)
     @ApiOperation(value = "Add members to a group", notes = "Adds members to the group, takes a set (can be a singleton) " +
             "of MembershipInfo, which requires a name, a phone number, and, optionally a role (can be ROLE_ORDINARY_MEMBER)")

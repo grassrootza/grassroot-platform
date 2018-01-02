@@ -1,5 +1,6 @@
 package za.org.grassroot.core.domain;
 
+import lombok.Getter;
 import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.Type;
 import za.org.grassroot.core.domain.geo.GroupLocation;
@@ -12,7 +13,10 @@ import javax.persistence.*;
 import java.io.Serializable;
 import java.time.Instant;
 import java.time.ZonedDateTime;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -158,6 +162,9 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
     @Column(name = "tags")
     @Type(type = "za.org.grassroot.core.util.StringArrayUserType")
     private String[] tags;
+
+    @OneToMany(mappedBy = "group")
+    @Getter private Set<GroupJoinCode> groupJoinCodes = new HashSet<>();
 
     // @OneToMany(mappedBy = "masterGroup")
     // private List<Campaign> campaign;
