@@ -110,7 +110,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
         String phoneNumber = StringUtils.isEmpty(userProfile.getPhoneNumber()) ? null : PhoneNumberUtil.convertPhoneNumber(userProfile.getPhoneNumber());
         String emailAddress = userProfile.getEmailAddress();
         long start = System.nanoTime();
-        boolean userExists = userRepository.existsByPhoneNumber(phoneNumber) || userRepository.existsByEmail(emailAddress);
+        boolean userExists = userRepository.existsByPhoneNumber(phoneNumber) || (emailAddress != null && userRepository.existsByEmail(emailAddress));
         long time = System.nanoTime() - start;
         log.info("User exists check took {} nanosecs", time);
 
