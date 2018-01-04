@@ -383,6 +383,15 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public UserProfileStatus fetchUserProfileStatus(String userUid) {
+        Objects.requireNonNull(userUid);
+        User user = userRepository.findOneByUid(userUid);
+        return !StringUtils.isEmpty(user.getPassword()) ? UserProfileStatus.HAS_PASSWORD :
+                user.isHasInitiatedSession() ? UserProfileStatus.HAS_USED_USSD : UserProfileStatus.ONLY_EXISTS;
+    }
+
+    @Override
     @Transactional
     public String create(String phoneNumber, String displayName, String emailAddress) {
         Objects.requireNonNull(phoneNumber);

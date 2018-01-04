@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.0.xsd">
+    <changeSet id="change_161" author="luke">
+        <comment>Range of revisions and adjustments to new-ish broadcast</comment>
+        <sqlFile path="db/scripts/script_161_refactored_join_code.sql" splitStatements="false"/>
+        <rollback>
+            <sqlFile path="db/scripts/script_161_rollback.sql"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

@@ -28,6 +28,7 @@ import za.org.grassroot.core.specifications.MembershipSpecifications;
 import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
+import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.account.AccountGroupBroker;
@@ -339,9 +340,54 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         Group group = groupRepository.findOneByUid(groupUid);
 
         validateJoinCode(group, tokenPassed);
+        recordJoinCodeInbound(group, tokenPassed);
 
-        logger.info("Adding a member via token code: group={}, user={}, code={}", group, user, tokenPassed);
-        group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.SELF_JOINED);
+        selfJoinViaCode(user, group, tokenPassed, null);
+    }
+
+    @Override
+    @Transactional
+    public String addMemberViaJoinCode(String groupUid, String code, String userUid, String name, String phone, String email, Province province, List<String> topics) {
+        Objects.requireNonNull(groupUid);
+        Objects.requireNonNull(code);
+        if (userUid == null && phone == null && email == null) {
+            throw new IllegalArgumentException("Error! At least one out of user Id, phone or email must be non-empty");
+        }
+
+        Group group = groupRepository.findOneByUid(groupUid);
+        validateJoinCode(group, code); // don't record use, as already done elsewhere
+
+        User joiningUser = null;
+        if (!StringUtils.isEmpty(userUid)) {
+            joiningUser = userRepository.findOneByUid(userUid);
+        } else {
+            String msisdn = StringUtils.isEmpty(phone) ? null : PhoneNumberUtil.convertPhoneNumber(phone);
+            if (msisdn != null)
+                joiningUser = userRepository.findByPhoneNumberAndPhoneNumberNotNull(msisdn);
+
+            if (joiningUser == null && !StringUtils.isEmpty(email))
+                joiningUser = userRepository.findByEmailAddressAndEmailAddressNotNull(email);
+
+            if (joiningUser == null) {
+                joiningUser = new User(msisdn, name, email);
+                userRepository.saveAndFlush(joiningUser);
+            }
+        }
+
+        if (province != null) {
+            joiningUser.setProvince(province); // todo : log this
+        }
+
+        selfJoinViaCode(joiningUser, group, code, topics);
+        return joiningUser.getUid();
+    }
+
+    private void selfJoinViaCode(User user, Group group, String code, List<String> topics) {
+        logger.info("Adding a member via token code: code={}, group={}, user={}", code, group, user);
+        Membership membership = group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.SELF_JOINED);
+        if (topics != null) {
+            membership.setTopics(new HashSet<>(topics));
+        }
 
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
         // recursively add user to all parent groups
@@ -353,17 +399,26 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         }
 
         GroupLog groupLog = new GroupLog(group, user, GroupLogType.GROUP_MEMBER_ADDED_VIA_JOIN_CODE,
-                user, null, null, "Member joined via join code: " + tokenPassed);
+                user, null, null, "Member joined via join code: " + code);
         bundle.addLog(groupLog);
-        bundle.addLog(new UserLog(userUidToAdd, UserLogType.USED_A_JOIN_CODE, groupUid, UNKNOWN));
+        bundle.addLog(new UserLog(user.getUid(), UserLogType.USED_A_JOIN_CODE, group.getUid(), UNKNOWN));
         notifyNewMembersOfUpcomingMeetings(bundle, user, group, groupLog);
         storeBundleAfterCommit(bundle);
     }
+
 
     private void validateJoinCode(Group group, String joinCode) {
         Set<String> joinWords = groupJoinCodeRepository.selectActiveJoinCodesForGroup(group);
         if (!joinWords.contains(joinCode.toLowerCase()) && !joinCode.equals(group.getGroupTokenCode()) || Instant.now().isAfter(group.getTokenExpiryDateTime()))
             throw new InvalidTokenException("Invalid token: " + joinCode);
+    }
+
+    private void recordJoinCodeInbound(Group group, String code) {
+        DebugUtil.transactionRequired("");
+        GroupJoinCode gjc = groupJoinCodeRepository.findByGroupUidAndCodeAndActiveTrue(group.getUid(), code);
+        if (gjc != null) {
+            gjc.incrementInboundUses();
+        }
     }
 
     // todo : make this actually generate and send notifications
@@ -427,9 +482,6 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
                 .filter(MembershipInfo::hasValidPhoneNumber)
                 .collect(collectingAndThen(toCollection(() -> new TreeSet<>(byPhoneNumber)), HashSet::new));
         logger.debug("number of members: {}", validNumberMembers.size());
-
-//        Map<String, MembershipInfo> membershipMap = validNumberMembers.stream()
-//                .collect(Collectors.toMap(MembershipInfo::getPhoneNumberWithCCode, m -> m));
 
         Set<String> memberPhoneNumbers = validNumberMembers.stream()
                 .map(MembershipInfo::getPhoneNumberWithCCode)
@@ -944,6 +996,16 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         }
     }
 
+    @Override
+    @Transactional
+    public Group loadAndRecordUse(String groupUid, String code) {
+        Group group = load(groupUid);
+        validateJoinCode(group, code);
+        recordJoinCodeInbound(group, code);
+        // in fugure may add some sophistication here, e.g., deciding what to send back, etc
+        return group;
+    }
+
 
     @Override
     @Transactional
@@ -1170,7 +1232,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
         permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
 
-        GroupJoinCode gjc = groupJoinCodeRepository.findByGroupAndCodeAndActiveTrue(group, code);
+        GroupJoinCode gjc = groupJoinCodeRepository.findByGroupUidAndCodeAndActiveTrue(group.getUid(), code);
 
         if (gjc != null) {
             gjc.setActive(false);

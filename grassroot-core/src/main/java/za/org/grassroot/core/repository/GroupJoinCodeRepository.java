@@ -21,7 +21,8 @@ public interface GroupJoinCodeRepository extends JpaRepository<GroupJoinCode, UU
     @Query("select gjc.group from GroupJoinCode  gjc where gjc.active = true and lower(gjc.code) = lower(?1)")
     Group selectGroupWithActiveCode(String code);
 
-    GroupJoinCode findByGroupAndCodeAndActiveTrue(Group group, String code);
+    // need to use the UID property in here else postgres throws casting error
+    GroupJoinCode findByGroupUidAndCodeAndActiveTrue(String groupUid, String code);
 
     List<GroupJoinCode> findByActiveTrue();
 

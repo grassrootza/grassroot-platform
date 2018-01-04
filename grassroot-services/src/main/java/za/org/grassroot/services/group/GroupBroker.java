@@ -8,10 +8,12 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.core.enums.GroupViewPriority;
+import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.enums.UserInterfaceType;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -53,6 +55,9 @@ public interface GroupBroker {
 
     void addMemberViaJoinCode(String userUidToAdd, String groupUid, String tokenPassed, UserInterfaceType interfaceType);
 
+    String addMemberViaJoinCode(String groupUid, String code, String userUid, String name, String phone, String email,
+                                Province province, List<String> topics);
+
     void notifyOrganizersOfJoinCodeUse(Instant periodStart, Instant periodEnd);
 
     void asyncAddMemberships(String initiatorUid, String groupUid, Set<MembershipInfo> membershipInfos,
@@ -90,6 +95,8 @@ public interface GroupBroker {
                        boolean isPublic, boolean toCloseJoinCode, Set<String> membersToRemove, Set<String> organizersToAdd);
 
     /** METHODS FOR DEALING WITH JOIN TOKENS, PUBLIC SETTINGS, AND SEARCHING **/
+
+    Group loadAndRecordUse(String groupUid, String code);
 
     String openJoinToken(String userUid, String groupUid, LocalDateTime expiryDateTime);
 

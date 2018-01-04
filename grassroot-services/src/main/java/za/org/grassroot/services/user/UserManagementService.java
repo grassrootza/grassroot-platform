@@ -38,6 +38,8 @@ public interface UserManagementService {
     // username can be msisdn or pwd
     boolean doesUserHaveStandardRole(String userName, String roleName);
 
+    UserProfileStatus fetchUserProfileStatus(String userUid);
+
     /*
     Methods to create a user, for various interfaces
      */

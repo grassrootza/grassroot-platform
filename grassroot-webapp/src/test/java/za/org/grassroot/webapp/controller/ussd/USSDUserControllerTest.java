@@ -104,7 +104,7 @@ public class USSDUserControllerTest extends USSDAbstractUnitTest {
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
         verify(userManagementServiceMock, times(1)).findByInputNumber(namedUser.getPhoneNumber());
         verify(userManagementServiceMock, times(1)).updateDisplayName(testUser.getUid(), testUser.getUid(), "naming");
-        verify(userManagementServiceMock, times(1)).updateDisplayName(testUser.getUid(), namedUser.getUid(), "new name");
+        verify(userManagementServiceMock, times(1)).updateDisplayName(namedUser.getUid(), namedUser.getUid(), "new name");
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyZeroInteractions(groupBrokerMock);
         verifyZeroInteractions(eventBrokerMock);

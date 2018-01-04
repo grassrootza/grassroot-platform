@@ -38,7 +38,7 @@ public class GroupJoinCode {
     private Group group;
 
     @Basic
-    @Column(name = "code", length = 50)
+    @Column(name = "code", length = 100)
     private String code;
 
     @Enumerated(EnumType.STRING)
@@ -57,6 +57,12 @@ public class GroupJoinCode {
     @JoinColumn(name = "closing_user_uid", referencedColumnName = "uid")
     @Setter private User closingUser;
 
+    // we can count this from logs, _but_ there are some entry points where we don't
+    // have a user yet (e.g., via web), and creating a log would be excessive, until/unless high demand for it
+    @Basic
+    @Column(name = "count_reads")
+    @Setter private long countOfInboundUsers;
+
     @Version
     private Integer version;
 
@@ -71,6 +77,11 @@ public class GroupJoinCode {
         this.code = code;
         this.type = type;
         this.active = true;
+        this.countOfInboundUsers = 0;
+    }
+
+    public void incrementInboundUses() {
+        this.countOfInboundUsers++;
     }
 
     @Override
