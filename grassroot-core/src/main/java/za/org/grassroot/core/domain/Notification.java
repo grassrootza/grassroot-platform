@@ -8,6 +8,7 @@ import za.org.grassroot.core.domain.campaign.CampaignLog;
 import za.org.grassroot.core.domain.livewire.LiveWireLog;
 import za.org.grassroot.core.domain.task.EventLog;
 import za.org.grassroot.core.domain.task.TodoLog;
+import za.org.grassroot.core.enums.DeliveryRoute;
 import za.org.grassroot.core.enums.MessagingProvider;
 import za.org.grassroot.core.enums.NotificationDetailedType;
 import za.org.grassroot.core.enums.NotificationType;
@@ -47,7 +48,7 @@ public abstract class Notification implements Serializable {
 	private Instant createdDateTime;
 
 	@Column(name = "attempt_count", nullable = false)
-	private int sendAttempts = 0;
+	@Setter private int sendAttempts = 0;
 
 	@ManyToOne
 	@JoinColumn(name = "target_id")
@@ -55,7 +56,7 @@ public abstract class Notification implements Serializable {
 
 	@Column(name = "sending_status")
     @Enumerated(EnumType.STRING)
-    private NotificationStatus status = NotificationStatus.READY_FOR_SENDING;
+    @Setter private NotificationStatus status = NotificationStatus.READY_FOR_SENDING;
 
 	@Setter
 	@Column(name = "send_only_after")
@@ -111,6 +112,10 @@ public abstract class Notification implements Serializable {
 
 
 	@Setter
+	@Column(name = "read_receipt_fetches")
+	private int readReceiptFetchAttempts;
+
+	@Setter
 	@Column(name = "use_only_free_channels")
 	private boolean useOnlyFreeChannels = false;
 
@@ -138,6 +143,7 @@ public abstract class Notification implements Serializable {
 		this.createdDateTime = Instant.now();
 		this.lastStatusChange = createdDateTime;
 		this.message = Objects.requireNonNull(message);
+		this.readReceiptFetchAttempts = 0;
 
 		if (this.message.length() > 255)
 			this.message = message.substring(0, 255);
@@ -169,17 +175,25 @@ public abstract class Notification implements Serializable {
 	/**
 	 * @param status                 status to be set
 	 * @param resultOfSendingAttempt if this status update is result of sending attempt should be true, otherwise false
+	 * @param resultOfReceiptFetch if this status update is result of getting a read receipt
 	 */
-	public void updateStatus(NotificationStatus status, boolean resultOfSendingAttempt, String error) {
+	public void updateStatus(NotificationStatus status, boolean resultOfSendingAttempt, boolean resultOfReceiptFetch, String error) {
 		NotificationStatus oldStatus = this.status;
 		this.status = status;
 		this.lastStatusChange = Instant.now();
 		if (resultOfSendingAttempt)
 			this.sendAttempts++;
+		if (resultOfReceiptFetch)
+			this.readReceiptFetchAttempts++;
 		if (error != null) {
 			NotificationSendError sendError = new NotificationSendError(LocalDateTime.now(), error, oldStatus, status);
 			this.sendingErrors.add(sendError);
 		}
+	}
+
+	// used in messaging service
+	public void incrementReceiptFetchCount() {
+		this.readReceiptFetchAttempts++;
 	}
 
 	/**

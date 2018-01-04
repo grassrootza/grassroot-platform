@@ -11,6 +11,8 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountLog;
 import za.org.grassroot.core.domain.campaign.Campaign;
+import za.org.grassroot.core.domain.campaign.CampaignLog;
+import za.org.grassroot.core.domain.notification.CampaignBroadcastNotification;
 import za.org.grassroot.core.domain.notification.GroupBroadcastNotification;
 import za.org.grassroot.core.dto.BroadcastDTO;
 import za.org.grassroot.core.enums.AccountLogType;
@@ -20,6 +22,8 @@ import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.MembershipSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.integration.messaging.GrassrootEmail;
+import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.integration.socialmedia.*;
 import za.org.grassroot.services.exception.NoPaidAccountException;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
@@ -42,18 +46,20 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
     private final CampaignRepository campaignRepository;
     private final MembershipRepository membershipRepository;
 
+    private final MessagingServiceBroker messagingServiceBroker;
     private final SocialMediaBroker socialMediaBroker;
 
     private final LogsAndNotificationsBroker logsAndNotificationsBroker;
     private final AccountLogRepository accountLogRepository;
 
     @Autowired
-    public BroadcastBrokerImpl(BroadcastRepository broadcastRepository, UserRepository userRepository, GroupRepository groupRepository, CampaignRepository campaignRepository, MembershipRepository membershipRepository, SocialMediaBroker socialMediaBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, AccountLogRepository accountLogRepository) {
+    public BroadcastBrokerImpl(BroadcastRepository broadcastRepository, UserRepository userRepository, GroupRepository groupRepository, CampaignRepository campaignRepository, MembershipRepository membershipRepository, MessagingServiceBroker messagingServiceBroker, SocialMediaBroker socialMediaBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, AccountLogRepository accountLogRepository) {
         this.broadcastRepository = broadcastRepository;
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
         this.campaignRepository = campaignRepository;
         this.membershipRepository = membershipRepository;
+        this.messagingServiceBroker = messagingServiceBroker;
         this.socialMediaBroker = socialMediaBroker;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
         this.accountLogRepository = accountLogRepository;
@@ -201,16 +207,53 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         if (email != null) {
             broadcast.setEmailContent(email.getContent());
             broadcast.setEmailImageKey(email.getImageUid());
+            log.info("email delivery route: {}", email.getDeliveryRoute());
             broadcast.setEmailDeliveryRoute(email.getDeliveryRoute());
         }
     }
 
     private EmailBroadcast extractEmailFromBroadcast(Broadcast broadcast) {
         return EmailBroadcast.builder()
+                .subject(broadcast.getTitle())
                 .content(broadcast.getEmailContent())
                 .deliveryRoute(broadcast.getEmailDeliveryRoute())
                 .imageUid(broadcast.getEmailImageKey())
                 .build();
+    }
+
+    private void handleBroadcastEmails(Broadcast broadcast, ActionLog actionLog, Set<User> recipients,
+                                       LogsAndNotificationsBundle bundle) {
+        EmailBroadcast emailBroadcast = extractEmailFromBroadcast(broadcast);
+        Set<Notification> emailNotifications = new HashSet<>();
+
+        recipients.forEach(u -> {
+            if (broadcast.getCampaign() == null) {
+                emailNotifications.add(new GroupBroadcastNotification(u, broadcast.getEmailContent(),
+                        broadcast.getEmailDeliveryRoute(), (GroupLog) actionLog));
+            } else {
+                emailNotifications.add(new CampaignBroadcastNotification(u, broadcast.getEmailContent(),
+                        broadcast.getEmailDeliveryRoute(), (CampaignLog) actionLog));
+            }
+        });
+
+        log.info("handling delivery, route = {}", emailBroadcast.getDeliveryRoute());
+        if (!DeliveryRoute.EMAIL_GRASSROOT.equals(emailBroadcast.getDeliveryRoute())) {
+            emailBroadcast.setFromFieldsIfEmpty(broadcast.getCreatedByUser());
+            GrassrootEmail email = emailBroadcast.toGrassrootEmail();
+            List<String> addresses = recipients.stream().filter(User::hasEmailAddress)
+                    .map(User::getEmailAddress).collect(Collectors.toList());
+            // note: for now we are going to use this method to do a rest call to cut
+            // what will probably be heavy load on persistence layer (and these getting in way of short messages etc)
+            // but re-evaluate in the future). also, storing notifications for counts, status update, etc.
+            // in future we will scan for bounced emails etc to flag some as non-delivered
+            messagingServiceBroker.sendEmail(addresses, email);
+            emailNotifications.forEach(n -> {
+                n.setSendAttempts(1);
+                n.setStatus(NotificationStatus.SENT);
+            });
+        }
+
+        bundle.addNotifications(emailNotifications);
     }
 
     private void recordFbPost(FBPostBuilder post, Broadcast broadcast) {
@@ -286,15 +329,9 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         log.info("finished fetching members by topic and province, found {} members", membersToReceive.size());
 
         if (bc.hasEmail()) {
-            Set<Notification> emailNotifications = new HashSet<>();
             Set<User> emailUsers = membersToReceive.stream().map(Membership::getUser)
                     .filter(User::hasEmailAddress).collect(Collectors.toSet());
-            emailUsers.forEach(u -> {
-                // todo : route it in all sorts of ways
-                emailNotifications.add(new GroupBroadcastNotification(u, bc.getEmailContent(),
-                        DeliveryRoute.EMAIL_GRASSROOT, groupLog));
-            });
-            bundle.addNotifications(emailNotifications);
+            handleBroadcastEmails(bc, groupLog, emailUsers, bundle);
         }
 
         long smsCount = 0;

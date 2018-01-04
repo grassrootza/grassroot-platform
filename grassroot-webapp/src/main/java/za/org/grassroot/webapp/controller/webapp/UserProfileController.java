@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.servlet.view.RedirectView;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.integration.socialmedia.ManagedPagesResponse;
@@ -144,5 +145,12 @@ public class UserProfileController extends BaseController {
         log.info("time for both calls: {} msecs", System.currentTimeMillis() - startTime);
         return "user/social-media";
     }
+
+//    @RequestMapping(value = "facebook-connect", method = RequestMethod.GET)
+//    public RedirectView initiateFbConnect() {
+//        RedirectView view = socialMediaBroker.initiateFacebookConnection(getUserProfile().getUid());
+//        log.info("got back redirect, result: {}, hosts: {}", view);
+//        return view;
+//    }
 
 }

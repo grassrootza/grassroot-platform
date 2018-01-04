@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.dto.BroadcastDTO;
+import za.org.grassroot.core.enums.DeliveryRoute;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.integration.socialmedia.FBPostBuilder;
 import za.org.grassroot.integration.socialmedia.TwitterPostBuilder;
@@ -123,11 +124,14 @@ public class BroadcastController extends BaseRestController {
 
     private EmailBroadcast generateEmail(BroadcastCreateRequest request) {
         return EmailBroadcast.builder()
+                .subject(request.getTitle())
                 .content(request.getEmailContent())
+                .deliveryRoute(DeliveryRoute.EMAIL_USERACCOUNT) // for the moment, default
                 .build();
     }
 
     private FBPostBuilder generateFbPost(String userUid, BroadcastCreateRequest request) {
+        log.info("incoming FB page Id = {}", request.getFacebookPage());
         return FBPostBuilder.builder()
                 .postingUserUid(userUid)
                 .facebookPageId(request.getFacebookPage())

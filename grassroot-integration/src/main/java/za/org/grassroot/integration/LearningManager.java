@@ -110,6 +110,7 @@ public class LearningManager implements LearningService {
 
             log.info("Calling learning service, with URL: {}", url);
 
+            // todo: get this to work
             @SuppressWarnings("unchecked")
             Map<String, Double> returnedTerms = restTemplate.getForObject(url, HashMap.class);
             return returnedTerms;

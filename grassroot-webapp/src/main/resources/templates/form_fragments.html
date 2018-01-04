@@ -170,7 +170,7 @@
           <h4 class="modal-title" th:text="${header}" th:id="${modal_id + 'Label'}">Cancel meeting</h4>
         </div>
         <form th:action="@{${action}}" method="post">
-          <input type="hidden" th:name="${uidFieldName}" th:value="${uidValue}" />
+          <input type="hidden" th:id="${uidFieldName}" th:name="${uidFieldName}" th:value="${uidValue}" />
           <div class="modal-body">
             <div class="form-group">
               <label class="control-label" th:text="${text}">Are you sure? Cancelling a meeting cannot be undone.</label>

@@ -4,10 +4,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.notification.EventNotification;
+import za.org.grassroot.core.domain.task.Event;
 
 import java.util.Collection;
 import java.util.List;
@@ -19,9 +19,9 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
     Since phoneNumbers are unique, replacing the prior method, which returned a list of Users, with this, for efficiency
     Note: can now no longer rely on NoSuchElement exceptions to catch 'no such user', probably should now do ourselves
      */
-    User findByPhoneNumber(String phoneNumber);
+    User findByPhoneNumberAndPhoneNumberNotNull(String phoneNumber);
 
-    User findByEmailAddress(String emailAddress);
+    User findByEmailAddressAndEmailAddressNotNull(String emailAddress);
 
     User findOneByUid(String uid);
 

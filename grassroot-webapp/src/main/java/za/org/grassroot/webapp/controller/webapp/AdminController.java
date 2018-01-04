@@ -30,19 +30,20 @@ import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.MemberNotPartOfGroupException;
 import za.org.grassroot.services.exception.NoSuchUserException;
 import za.org.grassroot.services.group.GroupBroker;
-import za.org.grassroot.services.livewire.DataSubscriberBroker;
 import za.org.grassroot.services.user.PasswordTokenService;
 import za.org.grassroot.services.util.FullTextSearchUtils;
 import za.org.grassroot.webapp.controller.BaseController;
 
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
+import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 /**
  * Created by luke on 2015/10/08.
@@ -56,6 +57,8 @@ public class AdminController extends BaseController {
     @Value("${grassroot.msisdn.length:11}")
     private int phoneNumberLength;
 
+    private static final Random RANDOM = new SecureRandom();
+
     private final GroupRepository groupRepository;
     private final GroupBroker groupBroker;
     private final PermissionBroker permissionBroker;
@@ -65,7 +68,7 @@ public class AdminController extends BaseController {
 
     @Autowired
     public AdminController(GroupRepository groupRepository, GroupBroker groupBroker, PermissionBroker permissionBroker,
-                           PasswordTokenService passwordTokenService, AdminService adminService, AnalyticalService analyticalService, DataSubscriberBroker dataSubscriberBroker) {
+                           PasswordTokenService passwordTokenService, AdminService adminService, AnalyticalService analyticalService) {
         this.groupRepository = groupRepository;
         this.groupBroker = groupBroker;
         this.permissionBroker = permissionBroker;
@@ -314,5 +317,97 @@ public class AdminController extends BaseController {
 		addMessage(attributes, MessageType.INFO, "admin.done", request);
 		return returnRedir;
 	}
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    @RequestMapping(value = "/admin/alpha", method = RequestMethod.GET)
+    public String viewAlphaMembers(Model model) {
+        model.addAttribute("users", adminService.getUsersWithStdRole(getUserProfile().getUid(),
+                BaseRoles.ROLE_ALPHA_TESTER));
+        return "admin/users/new_interface_users";
+    }
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    @RequestMapping(value = "/admin/alpha/user/add", method = RequestMethod.GET)
+    public String assignAlphaToUser(RedirectAttributes attributes, HttpServletRequest request,
+                                    @RequestParam String phoneNumberOrEmail) {
+        try {
+            User user = userManagementService.findByNumberOrEmail(phoneNumberOrEmail, phoneNumberOrEmail);
+            adminService.addSystemRole(getUserProfile().getUid(), user.getUid(), BaseRoles.ROLE_ALPHA_TESTER);
+            addMessage(attributes, MessageType.SUCCESS, "admin.alpha.add.done", request);
+        } catch (NoSuchUserException e) {
+            log.error("error! can't find that user", e);
+            addMessage(attributes, MessageType.ERROR, "admin.alpha.error.nouser", request);
+        }
+        return "redirect:/admin/alpha";
+    }
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    @RequestMapping(value = "/admin/alpha/user/create", method = RequestMethod.POST)
+    public String addAlphaMember(RedirectAttributes attributes, HttpServletRequest request,
+                                 @RequestParam(required = false) String name,
+                                 @RequestParam(required = false) String email,
+                                 @RequestParam(required = false) String phone) {
+        try {
+            log.info("okay, creating a new alpha tester, with name: {}, email: {}, phone: {}",
+                    name, email, phone);
+            adminService.createUserWithSystemRole(getUserProfile().getUid(), name,
+                    phone, email, BaseRoles.ROLE_ALPHA_TESTER);
+            addMessage(attributes, MessageType.SUCCESS, "admin.alpha.add.done", request);
+        } catch (IllegalArgumentException e) {
+            addMessage(attributes, MessageType.ERROR, "admin.alpha.error.fields", request);
+        }
+        return "redirect:/admin/alpha";
+    }
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    @RequestMapping(value = "/admin/alpha/user/remove", method = RequestMethod.POST)
+    public String removeAlphaMember(RedirectAttributes attributes, HttpServletRequest request,
+                                    @RequestParam String removeUserUid) {
+        adminService.removeStdRole(getUserProfile().getUid(), removeUserUid, BaseRoles.ROLE_ALPHA_TESTER);
+        addMessage(attributes, MessageType.SUCCESS, "admin.alpha.remove.done", request);
+        return "redirect:/admin/alpha";
+    }
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    @RequestMapping(value = "/admin/user/edit", method = RequestMethod.GET)
+    public String editAlphaMember(RedirectAttributes attributes, HttpServletRequest request,
+                                  @RequestParam String userUid,
+                                  @RequestParam(required = false) String name,
+                                  @RequestParam(required = false) String email,
+                                  @RequestParam(required = false) String phone) {
+        if (!StringUtils.isEmpty(name)) {
+            userManagementService.updateDisplayName(getUserProfile().getUid(), userUid, name);
+        }
+        if (!StringUtils.isEmpty(email)) {
+            userManagementService.updateEmailAddress(getUserProfile().getUid(), userUid, email);
+        }
+        if (!StringUtils.isEmpty(phone)) {
+            userManagementService.updatePhoneNumber(getUserProfile().getUid(), userUid, phone);
+        }
+        addMessage(attributes, MessageType.SUCCESS, "admin.alpha.edit.done", request);
+        return "redirect:/admin/alpha";
+    }
+
+    @PreAuthorize("hasRole('ROLE_SYSTEM_ADMIN')")
+    @RequestMapping(value = "/admin/user/pwd/reset", method = RequestMethod.POST)
+    public String updateUserPassword(RedirectAttributes attributes, HttpServletRequest request,
+                                     @RequestParam String changeUserUid) {
+        String newPwd = generateRandomPwd();
+        adminService.updateUserPassword(getUserProfile().getUid(), changeUserUid, newPwd);
+        addMessage(attributes, MessageType.SUCCESS, "admin.user.pwd.reset", new String[] { newPwd }, request);
+        return "redirect:/admin/alpha"; // or wherever came from, in future
+    }
+
+    private String generateRandomPwd() {
+        String letters = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789+@";
+        StringBuilder password = new StringBuilder();
+
+        for (int i = 0; i < 8; i++){
+            int index = (int)(RANDOM.nextDouble()*letters.length());
+            password.append(letters.substring(index, index + 1));
+        }
+
+        return password.toString();
+    }
 
 }

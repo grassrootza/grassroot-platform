@@ -35,6 +35,11 @@ public interface UserManagementService {
 
     List<User> searchByGroupAndNameNumber(String groupUid, String nameOrNumber);
 
+    // username can be msisdn or pwd
+    boolean doesUserHaveStandardRole(String userName, String roleName);
+
+    UserProfileStatus fetchUserProfileStatus(String userUid);
+
     /*
     Methods to create a user, for various interfaces
      */
@@ -59,7 +64,7 @@ public interface UserManagementService {
 
     void updateUser(String userUid, String displayName, String emailAddress, AlertPreference alertPreference, Locale locale);
 
-    void updateDisplayName(String userUid, String displayName);
+    void updateDisplayName(String callingUserUid, String userToUpdateUid, String displayName);
 
     void setDisplayNameByOther(String updatingUserUid, String targetUserUid, String displayName);
 
@@ -71,9 +76,11 @@ public interface UserManagementService {
 
     void setHasInitiatedUssdSession(String userUid);
 
-    User resetUserPassword(String phoneNumber, String newPassword, String token);
+    void resetUserPassword(String phoneNumber, String newPassword, String token);
 
-    void updateEmailAddress(String userUid, String emailAddress);
+    void updateEmailAddress(String callingUserUid, String userUid, String emailAddress);
+
+    void updatePhoneNumber(String callingUserUid, String userUid, String phoneNumber);
 
     /*
     Miscellaneous methods to query various properties about a user

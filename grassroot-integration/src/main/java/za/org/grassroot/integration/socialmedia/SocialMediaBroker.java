@@ -1,10 +1,16 @@
 package za.org.grassroot.integration.socialmedia;
 
+import org.springframework.util.MultiValueMap;
+
 public interface SocialMediaBroker {
 
     boolean isFacebookPageConnected(String userUid);
 
     ManagedPagesResponse getManagedFacebookPages(String userUid);
+
+    String initiateFacebookConnection(String userUid);
+
+    ManagedPagesResponse completeFbConnect(String userUid, MultiValueMap<String, String> paramsToPass);
 
     GenericPostResponse postToFacebook(FBPostBuilder post);
 

@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.dto.group.GroupFullDTO;
+import za.org.grassroot.core.dto.group.GroupRefDTO;
 import za.org.grassroot.core.enums.GroupViewPriority;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.integration.messaging.JwtService;
@@ -47,12 +48,12 @@ public class GroupModifyController extends GroupBaseController {
 
     @RequestMapping(value = "/create", method = RequestMethod.POST)
     @ApiOperation(value = "Creates new group", notes = "Creates new group and returns it's group uid")
-    public ResponseEntity<String> createGroup(@RequestParam String name,
-                                              @RequestParam String description,
-                                              @RequestParam GroupPermissionTemplate permissionTemplate,
-                                              @RequestParam int reminderMinutes,
-                                              @RequestParam boolean discoverable,
-                                              HttpServletRequest request) {
+    public ResponseEntity<GroupRefDTO> createGroup(@RequestParam String name,
+                                                   @RequestParam String description,
+                                                   @RequestParam GroupPermissionTemplate permissionTemplate,
+                                                   @RequestParam int reminderMinutes,
+                                                   @RequestParam boolean discoverable,
+                                                   HttpServletRequest request) {
         User user = getUserFromRequest(request);
         if (user != null) {
             HashSet<MembershipInfo> membershipInfos = new HashSet<>();
@@ -61,9 +62,9 @@ public class GroupModifyController extends GroupBaseController {
 
             groupBroker.updateDiscoverable(user.getUid(), group.getUid(), discoverable, null);
 
-            return new ResponseEntity<>(group.getUid(), HttpStatus.OK);
+            return new ResponseEntity<>(new GroupRefDTO(group.getUid(), group.getGroupName(), group.getMemberships().size()), HttpStatus.OK);
         } else
-            return new ResponseEntity<>("", HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity<>((GroupRefDTO) null, HttpStatus.UNAUTHORIZED);
     }
 
     @RequestMapping(value = "/topics/set/{groupUid}", method = RequestMethod.POST)
@@ -73,6 +74,40 @@ public class GroupModifyController extends GroupBaseController {
                                            @RequestParam Set<String> topics) {
         groupBroker.updateTopics(getUserIdFromRequest(request), groupUid, topics);
         return ResponseEntity.ok().build();
+    }
+
+    @RequestMapping(value = "/joincodes/list/active", method = RequestMethod.GET)
+    @ApiOperation(value = "List all the active join words (to prevent duplicates")
+    public ResponseEntity<Set<String>> listJoinCodes() {
+        return ResponseEntity.ok(groupBroker.getUsedJoinWords());
+    }
+
+    @RequestMapping(value = "/joincodes/add/{groupUid}", method = RequestMethod.POST)
+    @ApiOperation(value = "Add a word that triggers user joining group")
+    public ResponseEntity addJoinWordToGroup(HttpServletRequest request, @PathVariable String groupUid,
+                                             @RequestParam String joinWord,
+                                             @RequestParam(required = false) String userUid) {
+        try {
+            groupBroker.addJoinTag(userUid == null ? getUserIdFromRequest(request) : userUid, groupUid, joinWord);
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            return RestUtil.errorResponse(RestMessage.JOIN_WORD_TAKEN);
+        } catch (AccessDeniedException e) {
+            throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+        }
+    }
+
+    @RequestMapping(value = "/joincodes/remove/{groupUid}", method = RequestMethod.POST)
+    @ApiOperation(value = "Deactivate a word that triggers a user joining group")
+    public ResponseEntity removeJoinWordFromGroup(HttpServletRequest request, @PathVariable String groupUid,
+                                                  @RequestParam String joinWord,
+                                                  @RequestParam(required = false) String userUid) {
+        try {
+            groupBroker.removeJoinTag(userUid == null ? getUserIdFromRequest(request) : userUid, groupUid, joinWord);
+            return ResponseEntity.ok().build();
+        } catch (AccessDeniedException e) {
+            throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+        }
     }
 
     @RequestMapping(value = "/members/add/{groupUid}", method = RequestMethod.POST)

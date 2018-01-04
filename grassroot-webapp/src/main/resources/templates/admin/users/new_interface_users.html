@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      data-layout-decorate="~{layout}">
+<head>
+  <title>New interfaces</title>
+
+  <meta property="og:title" content="Grassroot"/>
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="/images/grassroot-logo.png"/>
+  <meta property="og:description" content="The Grassroot Platform"/>
+
+</head>
+<body>
+
+  <section layout:fragment="header" class="top-container"
+           th:replace="~{fragments :: std_header('New interfaces', 'Manage access')}">
+  </section>
+
+  <main layout:fragment="content">
+
+    <section class="grassroot-form">
+      <div class="container">
+        <div class="row">
+          <div class="col-md-8 col-md-offset-2 col-sm-6 col-sm-offset-3 col-xs-12">
+            <form th:action="@{alpha/user/add}" method="get">
+              <div th:replace="~{form_fragments :: text_input('Phone or email', 'Enter one of the two, to add someone to the tester list', '100', 'phoneNumberOrEmail')}"></div>
+            </form>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-8 col-md-offset-2 col-sm-6 col-sm-offset-3 col-xs-12">
+            <form th:action="@{alpha/user/create}" method="post">
+              <div th:replace="~{form_fragments :: text_input('Name (optional)', 'Display name of the user', '100', 'name')}"></div>
+              <div th:replace="~{form_fragments :: text_input('Email (optional)', 'User email address', '100', 'email')}"></div>
+              <div th:replace="~{form_fragments :: text_input('Phone (optional)', 'User phone number', '100', 'phone')}"></div>
+              <div th:include="~{form_fragments :: submit_cancel_buttons('Create', '/admin')}"></div>
+            </form>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-8 col-md-offset-2 col-sm-6 col-sm-offset-3 col-xs-12">
+            <p>Existing users with access to new platforms:</p>
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <td>Phone</td>
+                  <td>Email</td>
+                  <td></td>
+                  <td></td>
+                </tr>
+              </thead>
+              <tbody>
+                <tr th:each="user: ${users}">
+                  <td class="col-md-3">
+                    <a href="#" th:text="${user.name}" data-toggle="modal" data-target="#editModal"
+                       th:attr="data-uid=${user.uid}" data-field="name">Name</a>
+                  </td>
+                  <td class="col-md-2">
+                    <a href="#" th:text="${user.phoneNumber}" data-toggle="modal" data-target="#editModal"
+                       th:attr="data-uid=${user.uid}" data-field="phone">Phone</a>
+                  </td>
+                  <td class="col-md-3">
+                    <a href="#" th:text="${user.emailAddress}" data-toggle="modal" data-target="#editModal"
+                       th:attr="data-uid=${user.uid}" data-field="email">Name</a>
+                  </td>
+                  <td class="col-md-2">
+                    <a href="javascript:void(0)" data-toggle="modal" data-target="#change_pwd_modal" th:attr="data-uid=${user.uid}">
+                      Reset pwd</a>
+                  </td>
+                  <td class="col-md-2">
+                    <a href="#" data-toggle="modal" data-target="#remove_user_modal" th:attr="data-uid=${user.uid}">Remove</a>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <div class="modal fade" id="editModal" tabindex="-1" role="dialog" aria-labelledby="editModalLabel">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title" id="editModalProperty">Edit property</h4>
+          </div>
+          <form th:action="@{/admin/user/edit}" method="get">
+            <input type="hidden" id="userUid" name="userUid" />
+            <div class="modal-body">
+              <div class="form-group">
+                <label for="edit_input" class="control-label">Edit the property below:</label>
+                <input id="edit_input" type="text" class="form-control input-lg"/>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn default-button btn-neutral" data-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn default-button btn-negative">Edit</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div th:replace="~{form_fragments :: confirm_cancel_modal (change_pwd_modal, 'Change password',
+      'Change this users password?', 'changeUserUid', 'tofill', '/admin/user/pwd/reset')}"></div>
+
+    <div th:replace="~{form_fragments :: confirm_cancel_modal (remove_user_modal, 'Remove user',
+      'Remove this user from alpha?', 'removeUserUid', 'tofill', '/admin/alpha/user/remove')}"></div>
+
+  </main>
+
+</body>
+
+<div layout:fragment="script-container">
+
+  <script th:inline="javascript">
+
+    $(document).ready(function() {
+
+      $('#change_pwd_modal').on('show.bs.modal', function (event) {
+        var button = $(event.relatedTarget);
+        var uid = button.data('uid');
+        var modal = $(this);
+        modal.find('#changeUserUid').val(uid);
+      });
+
+      $('#remove_user_modal').on('show.bs.modal', function (event) {
+        var button = $(event.relatedTarget);
+        var uid = button.data('uid');
+        var modal = $(this);
+        modal.find('#removeUserUid').val(uid);
+      });
+
+      $('#editModal').on('show.bs.modal', function (event) {
+        console.log("loading modal");
+        var button = $(event.relatedTarget);
+        var uid = button.data('uid');
+        var field = button.data('field');
+        var modal = $(this);
+        modal.find("#edit_input").attr('name', field);
+        modal.find("#userUid").val(uid);
+      });
+
+    });
+
+  </script>
+
+</div>
+
+</html>
