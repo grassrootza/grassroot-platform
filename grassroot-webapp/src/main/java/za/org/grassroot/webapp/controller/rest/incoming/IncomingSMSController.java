@@ -23,6 +23,7 @@ import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.UserResponseBroker;
 import za.org.grassroot.services.campaign.CampaignBroker;
+import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.task.EventLogBroker;
 import za.org.grassroot.services.user.UserManagementService;
 
@@ -31,6 +32,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created by paballo on 2016/02/17.
@@ -47,6 +49,7 @@ public class IncomingSMSController {
     private final UserLogRepository userLogRepository;
     private final GroupLogRepository groupLogRepository;
 
+    private final GroupBroker groupBroker;
     private final CampaignBroker campaignBroker;
 
     private final MessageAssemblingService messageAssemblingService;
@@ -59,12 +62,13 @@ public class IncomingSMSController {
 
     @Autowired
     public IncomingSMSController(UserResponseBroker userResponseBroker, UserManagementService userManager, EventLogBroker eventLogManager,
-                                 MessageAssemblingService messageAssemblingService, MessagingServiceBroker messagingServiceBroker,
+                                 GroupBroker groupBroker, MessageAssemblingService messageAssemblingService, MessagingServiceBroker messagingServiceBroker,
                                  UserLogRepository userLogRepository, NotificationService notificationService,
                                  GroupLogRepository groupLogRepository, CampaignBroker campaignBroker) {
         this.userResponseBroker = userResponseBroker;
 
         this.userManager = userManager;
+        this.groupBroker = groupBroker;
         this.messageAssemblingService = messageAssemblingService;
         this.messagingServiceBroker = messagingServiceBroker;
         this.userLogRepository = userLogRepository;
@@ -73,8 +77,9 @@ public class IncomingSMSController {
         this.campaignBroker = campaignBroker;
     }
 
-    @RequestMapping(value = "initiated", method = RequestMethod.GET)
-    @ApiOperation(value = "Send in an incoming SMS, that is newly initiated", notes = "For when we receive an SMS 'out of the blue'")
+    @RequestMapping(value = "initiated/campaign", method = RequestMethod.GET)
+    @ApiOperation(value = "Send in an incoming SMS, that is newly initiated, on campaign short code",
+            notes = "For when we receive an SMS 'out of the blue', on the campaign number")
     public void receiveNewlyInitiatedSms(@RequestParam(value = FROM_PARAMETER) String phoneNumber,
                                          @RequestParam(value = MESSAGE_TEXT_PARAM) String message) {
         log.info("Inside receiving newly initiated SMS, received {} as message", message);
@@ -82,6 +87,34 @@ public class IncomingSMSController {
         Set<String> campaignTags = campaignBroker.getCampaignTags();
         log.info("active campaign tags = {}", campaignTags);
         // then: filter them
+    }
+
+    @RequestMapping(value = "initiated/group", method = RequestMethod.GET)
+    @ApiOperation(value = "Incoming SMS, under the 'group' short code",
+            notes = "For when we receive an out of the blue SMS, on the group number")
+    public void receiveGroupSms(@RequestParam(value = FROM_PARAMETER) String phoneNumber,
+                                @RequestParam(value = MESSAGE_TEXT_PARAM) String message) {
+        log.info("Inside receiving a message on group list, received {} as message", message);
+        Map<String, String> groupJoinWords = groupBroker.getJoinWordsWithGroupIds();
+        // todo : iterate hard on this to eg catch parts of words etc
+        Set<String> groupMatches = groupJoinWords.entrySet().stream()
+                .filter(entry -> entry.getValue().toLowerCase().contains(message))
+                .map(Map.Entry::getKey).collect(Collectors.toSet());
+
+        if (groupMatches.size() == 1) {
+            User user = userManager.loadOrCreateUser(phoneNumber);
+            // as above, work through and strip out various words
+            groupBroker.addMemberViaJoinCode(user.getUid(), groupMatches.iterator().next(), message,
+                    UserInterfaceType.INCOMING_SMS);
+        } else if (groupMatches.size() > 1) {
+            // disambiguate somehow
+            User user = userManager.loadOrCreateUser(phoneNumber);
+            // for the moment, just adding the first
+            groupBroker.addMemberViaJoinCode(user.getUid(), groupMatches.iterator().next(), message,
+                    UserInterfaceType.INCOMING_SMS);
+        } else {
+            log.info("received a join word but don't know what to do with it");
+        }
     }
 
 

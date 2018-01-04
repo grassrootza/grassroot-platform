@@ -66,7 +66,7 @@ public class USSDUserControllerTest extends USSDAbstractUnitTest {
 
         verify(userManagementServiceMock, times(1)).loadOrCreateUser(testUserPhone);
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
-        verify(userManagementServiceMock, times(1)).updateDisplayName(testUser.getUid(), "now it is set");
+        verify(userManagementServiceMock, times(1)).updateDisplayName(testUser.getUid(), testUser.getUid(), "now it is set");
 
     }
 
@@ -103,8 +103,8 @@ public class USSDUserControllerTest extends USSDAbstractUnitTest {
                 andExpect(status().isOk());
         verify(userManagementServiceMock, times(1)).findByInputNumber(testUserPhone);
         verify(userManagementServiceMock, times(1)).findByInputNumber(namedUser.getPhoneNumber());
-        verify(userManagementServiceMock, times(1)).updateDisplayName(testUser.getUid(), "naming");
-        verify(userManagementServiceMock, times(1)).updateDisplayName(namedUser.getUid(), "new name");
+        verify(userManagementServiceMock, times(1)).updateDisplayName(testUser.getUid(), testUser.getUid(), "naming");
+        verify(userManagementServiceMock, times(1)).updateDisplayName(namedUser.getUid(), namedUser.getUid(), "new name");
         verifyNoMoreInteractions(userManagementServiceMock);
         verifyZeroInteractions(groupBrokerMock);
         verifyZeroInteractions(eventBrokerMock);

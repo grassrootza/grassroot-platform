@@ -1,1 +1,0 @@
-alter table notification alter column message type text;

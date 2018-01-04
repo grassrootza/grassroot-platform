@@ -8,9 +8,12 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.core.enums.GroupViewPriority;
+import za.org.grassroot.core.enums.Province;
+import za.org.grassroot.core.enums.UserInterfaceType;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -50,7 +53,10 @@ public interface GroupBroker {
 
     void copyMembersIntoGroup(String userUid, String groupUid, Set<String> memberUids);
 
-    void addMemberViaJoinCode(String userUidToAdd, String groupUid, String tokenPassed);
+    void addMemberViaJoinCode(String userUidToAdd, String groupUid, String tokenPassed, UserInterfaceType interfaceType);
+
+    String addMemberViaJoinCode(String groupUid, String code, String userUid, String name, String phone, String email,
+                                Province province, List<String> topics);
 
     void notifyOrganizersOfJoinCodeUse(Instant periodStart, Instant periodEnd);
 
@@ -90,9 +96,19 @@ public interface GroupBroker {
 
     /** METHODS FOR DEALING WITH JOIN TOKENS, PUBLIC SETTINGS, AND SEARCHING **/
 
+    Group loadAndRecordUse(String groupUid, String code);
+
     String openJoinToken(String userUid, String groupUid, LocalDateTime expiryDateTime);
 
     void closeJoinToken(String userUid, String groupUid);
+
+    void addJoinTag(String userUid, String groupUid, String tag);
+
+    void removeJoinTag(String userUid, String groupUid, String tag);
+
+    Set<String> getUsedJoinWords();
+
+    Map<String, String> getJoinWordsWithGroupIds();
 
     void updateDiscoverable(String userUid, String groupUid, boolean discoverable, String authUserPhoneNumber);
 

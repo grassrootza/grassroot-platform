@@ -19,6 +19,7 @@ public enum GroupLogType {
     REMINDER_DEFAULT_CHANGED("reminder default changed"),
     DESCRIPTION_CHANGED("description changed"),
     TOKEN_CHANGED("join code changed"),
+    JOIN_CODE_ADDED("join code or word added"),
     DISCOVERABLE_CHANGED("discoverable setting changed"),
     LANGUAGE_CHANGED("changed group default language"),
     PARENT_CHANGED("added or changed parent group"),

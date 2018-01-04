@@ -10,8 +10,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.UserDTO;
+import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.VerificationCodeType;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.core.util.PhoneNumberUtil;
@@ -25,11 +27,15 @@ import za.org.grassroot.services.exception.UserExistsException;
 import za.org.grassroot.services.exception.UsernamePasswordLoginFailedException;
 import za.org.grassroot.services.user.PasswordTokenService;
 import za.org.grassroot.services.user.UserManagementService;
+import za.org.grassroot.webapp.controller.rest.exception.InterfaceNotOpenException;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.AuthorizationResponseDTO;
 import za.org.grassroot.webapp.model.rest.AuthorizedUserDTO;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
+
+import java.util.Arrays;
+import java.util.List;
 
 @RestController
 @Api("/api/auth")
@@ -37,6 +43,9 @@ import za.org.grassroot.webapp.util.RestUtil;
 public class AuthenticationController {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthenticationController.class);
+
+    private static final List<UserInterfaceType> alphaInterfaces =
+            Arrays.asList(UserInterfaceType.ANGULAR, UserInterfaceType.ANDROID_2);
 
     private final JwtService jwtService;
     private final PasswordTokenService passwordTokenService;
@@ -55,13 +64,26 @@ public class AuthenticationController {
         this.environment = environment;
     }
 
+    private void checkRegistrationOpen(UserInterfaceType interfaceType) {
+        if (!environment.containsProperty("localpg") && alphaInterfaces.contains(interfaceType)) {
+            throw new InterfaceNotOpenException();
+        }
+    }
+
+    private void checkUserHasAccess(String phoneOrEmail, UserInterfaceType interfaceType) {
+        if (!environment.containsProperty("localpg") && alphaInterfaces.contains(interfaceType) &&
+                !userService.doesUserHaveStandardRole(phoneOrEmail, BaseRoles.ROLE_ALPHA_TESTER)) {
+            throw new InterfaceNotOpenException();
+        }
+    }
 
     @RequestMapping(value = "/register", method = RequestMethod.GET)
     @ApiOperation(value = "Start new user registration using username, phone number and password", notes = "Short lived token is returned as a string in the 'data' property")
     public ResponseEntity<ResponseWrapper> register(@RequestParam("phoneNumber") String phoneNumber,
                                                     @RequestParam("displayName") String displayName,
-                                                    @RequestParam("password") String password) {
-
+                                                    @RequestParam("password") String password,
+                                                    @RequestParam(required = false) UserInterfaceType type) {
+        checkRegistrationOpen(type == null ? UserInterfaceType.ANDROID_2 : type);
         try {
             if (!ifExists(phoneNumber)) {
                 phoneNumber = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
@@ -70,7 +92,6 @@ public class AuthenticationController {
                         userService.generateAndroidUserVerifier(phoneNumber, displayName, password),
                         phoneNumber, "Registration confirmation code: ");
 
-                //todo(beegor) this line below is security risk, discuss with luke
                 return RestUtil.okayResponseWithData(RestMessage.VERIFICATION_TOKEN_SENT, tokenCode);
             } else {
                 logger.info("Creating a verifier for user with phoneNumber ={}, user already exists.", phoneNumber);
@@ -84,10 +105,10 @@ public class AuthenticationController {
     @RequestMapping(value = "/register/verify/{phoneNumber}/{code}", method = RequestMethod.GET)
     @ApiOperation(value = "Finish new user registration using otp password", notes = "User data and JWT token is returned as AuthorizedUserDTO object in the 'data' property")
     public ResponseEntity<ResponseWrapper> verifyRegistration(@PathVariable("phoneNumber") String phoneNumber,
-                                                              @PathVariable("code") String otpEntered)
-            throws Exception {
-
+                                                              @PathVariable("code") String otpEntered,
+                                                              @RequestParam(required = false) UserInterfaceType type) throws Exception {
         final String msisdn = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
+        checkRegistrationOpen(type == null ? UserInterfaceType.ANDROID_2 : type);
         if (passwordTokenService.isShortLivedOtpValid(msisdn, otpEntered)) {
             logger.info("user dto and code verified, now creating user with phoneNumber={}", phoneNumber);
 
@@ -115,6 +136,7 @@ public class AuthenticationController {
     public AuthorizationResponseDTO registerWebUser(@RequestParam String username,
                                                     @RequestParam String phoneNumber,
                                                     @RequestParam String password) {
+        checkRegistrationOpen(UserInterfaceType.ANGULAR);
         try {
             if (StringUtils.isEmpty(username))
                 return new AuthorizationResponseDTO(RestMessage.INVALID_USERNAME);
@@ -146,7 +168,6 @@ public class AuthenticationController {
     @RequestMapping(value = "/reset-password-request", method = RequestMethod.GET)
     @ApiOperation(value = "Reset user password request otp", notes = "Short lived token is sent to user in the 'data' property")
     public ResponseEntity<ResponseWrapper> resetPasswordRequest(@RequestParam("phoneNumber") String phoneNumber) {
-
         try {
             if (ifExists(phoneNumber)) {
                 final String msisdn = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
@@ -167,14 +188,11 @@ public class AuthenticationController {
     public ResponseEntity<ResponseWrapper> resetPassword(@RequestParam("phoneNumber") String phoneNumber,
                                                          @RequestParam("password") String newPassword,
                                                          @RequestParam("code") String otpCode) {
-
         try {
             final String msisdn = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
 
             if (userService.userExist(msisdn)) {
-
                 userService.resetUserPassword(msisdn, newPassword, otpCode);
-
                 return RestUtil.okayResponseWithData(RestMessage.PASSWORD_RESET, newPassword);
             } else {
                 logger.info("Password reset requested for non-existing user: {}", phoneNumber);
@@ -192,10 +210,12 @@ public class AuthenticationController {
     @ApiOperation(value = "Login using otp and retrieve a JWT token", notes = "The JWT token is returned as a string in the 'data' property")
     public ResponseEntity<ResponseWrapper> login(@RequestParam("phoneNumber")String phoneNumber,
                                                  @RequestParam("otp") String otp,
-                                                 @RequestParam(value = "durationMillis", required = false) Long durationMillis) {
+                                                 @RequestParam(value = "durationMillis", required = false) Long durationMillis,
+                                                 @RequestParam(required = false) UserInterfaceType interfaceType) {
         try {
             final String msisdn = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
             passwordTokenService.validateOtp(msisdn, otp);
+            checkUserHasAccess(msisdn, interfaceType == null ? UserInterfaceType.ANDROID_2 : interfaceType);
 
             // get the user object
             User user = userService.findByInputNumber(msisdn);
@@ -223,15 +243,17 @@ public class AuthenticationController {
     @ApiOperation(value = "Login using password and retrieve a JWT token", notes = "The JWT token is returned as a string in the 'data' property")
     @RequestMapping(value = "/login-password", method = RequestMethod.GET)
     public AuthorizationResponseDTO webLogin(@RequestParam("phoneNumber") String phoneNumber,
-                                             @RequestParam("password") String password) {
+                                             @RequestParam("password") String password,
+                                             @RequestParam(required = false) UserInterfaceType interfaceType) {
         try {
             final String msisdn = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
             passwordTokenService.validatePassword(msisdn, password);
+            checkUserHasAccess(msisdn, interfaceType == null ? UserInterfaceType.ANGULAR : interfaceType);
 
             // get the user object
             User user = userService.findByInputNumber(msisdn);
 
-            // Generate a token for the user (for the moment assuming it is Android client)
+            // Generate a token for the user (for the moment assuming it is Android client - Angular uses same params)
             CreateJwtTokenRequest tokenRequest = new CreateJwtTokenRequest(JwtType.ANDROID_CLIENT, user.getUid());
 
             String token = jwtService.createJwt(tokenRequest);

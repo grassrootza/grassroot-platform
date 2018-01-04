@@ -18,7 +18,6 @@ import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.integration.messaging.JwtType;
 
 import java.net.URI;
-import java.util.Map;
 
 @Service @Slf4j
 public class SocialMediaBrokerImpl implements SocialMediaBroker {
@@ -103,8 +102,8 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
     @Override
     public ManagedPagesResponse completeFbConnect(String userUid, MultiValueMap<String, String> paramsToPass) {
         final URI uri = baseUri(userUid).path("/connect/facebook")
-                .queryParam(userUidParam, userUid)
-                .queryParams(paramsToPass).build().toUri();
+                .queryParams(paramsToPass)
+                .build().toUri();
         try {
             log.info("calling URI: {}", uri);
             ResponseEntity<String> response = restTemplate.exchange(uri, HttpMethod.GET, new HttpEntity<>(jwtHeaders()), String.class);

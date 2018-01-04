@@ -57,4 +57,12 @@ public final class UserSpecifications {
         return (root, query, cb) -> cb.isTrue(root.get(User_.liveWireContact));
     }
 
+    public static Specification<User> hasStandardRole(String roleName) {
+        return (root, query, cb) -> {
+            Join<User, Role> userRoleJoin = root.join(User_.standardRoles);
+            return cb.and(cb.equal(userRoleJoin.get(Role_.roleType), Role.RoleType.STANDARD),
+                    cb.equal(userRoleJoin.get(Role_.name), roleName));
+        };
+    }
+
 }
