@@ -718,7 +718,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         for (MembershipInfo m : modifiedMembers) {
             if (currentMembershipInfos.contains(m)) {
                 // todo: this seems incredibly inefficient, figure out how to do without all these entity loads
-                User savedUser = userRepository.findByPhoneNumber(m.getPhoneNumber());
+                User savedUser = userRepository.findByPhoneNumberAndPhoneNumberNotNull(m.getPhoneNumber());
                 Membership savedMembership = group.getMembership(savedUser);
                 if (!savedMembership.getRole().getName().equals(m.getRoleName())) {
                     updateMembershipRole(userUid, groupUid, savedUser.getUid(), m.getRoleName());
@@ -1208,7 +1208,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
         String logEntry;
         if (discoverable) {
-            User authorizer = (authUserPhoneNumber == null) ? user : userRepository.findByPhoneNumber(authUserPhoneNumber);
+            User authorizer = (authUserPhoneNumber == null) ? user : userRepository.findByPhoneNumberAndPhoneNumberNotNull(authUserPhoneNumber);
             group.setDiscoverable(true);
             group.setJoinApprover(authorizer);
             logEntry = "Set group publicly discoverable, with join approver " + authorizer.nameToDisplay();

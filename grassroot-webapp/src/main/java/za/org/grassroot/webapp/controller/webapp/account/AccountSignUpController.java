@@ -91,7 +91,7 @@ public class AccountSignUpController extends BaseController {
                 billingCycle == null ? AccountBillingCycle.MONTHLY : billingCycle, isFreeTrial);
 
         if (!StringUtils.isEmpty(emailAddress) && EmailValidator.getInstance(false).isValid(emailAddress)) {
-            userManagementService.updateEmailAddress(getUserProfile().getUid(), emailAddress);
+            userManagementService.updateEmailAddress(getUserProfile().getUid(), getUserProfile().getUid(), emailAddress);
         }
 
         refreshAuthorities();
@@ -218,7 +218,7 @@ public class AccountSignUpController extends BaseController {
         Account account = accountBroker.loadPrimaryAccountForUser(user.getUid(), false);
 
         if (!StringUtils.isEmpty(emailAddress)) {
-            userManagementService.updateEmailAddress(user.getUid(), emailAddress);
+            userManagementService.updateEmailAddress(user.getUid(), user.getUid(), emailAddress);
             user.setEmailAddress(emailAddress); // so it's set when inserted into email body
         }
 

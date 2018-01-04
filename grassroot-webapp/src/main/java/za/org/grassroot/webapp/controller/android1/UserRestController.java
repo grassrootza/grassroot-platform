@@ -229,7 +229,7 @@ public class UserRestController {
     public ResponseEntity<ResponseWrapper> renameUser(@PathVariable String phoneNumber, @PathVariable String code,
                                                       @RequestParam String displayName) {
         User user = userManagementService.findByInputNumber(phoneNumber);
-        userManagementService.updateDisplayName(user.getUid(), displayName);
+        userManagementService.updateDisplayName(user.getUid(), user.getUid(), displayName);
         return RestUtil.messageOkayResponse(RestMessage.PROFILE_SETTINGS_UPDATED);
     }
 

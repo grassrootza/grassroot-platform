@@ -95,7 +95,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
     public CampaignMessage getCampaignMessageByCampaignCodeAndActionType(String campaignCode, MessageVariationAssignment assignment,UserInterfaceType channel, CampaignActionType actionType, String phoneNumber, Locale locale){
         Set<CampaignMessage> messageSet = findMessagesByCampaignCodeAndVariationAndUserInterfaceType(campaignCode,assignment, channel, locale);
         String searchValue = createSearchValue(campaignCode,assignment,null,null);
-        User user = userRepository.findByPhoneNumber(phoneNumber);
+        User user = userRepository.findByPhoneNumberAndPhoneNumberNotNull(phoneNumber);
         if(messageSet != null && !messageSet.isEmpty()){
             for(CampaignMessage message: messageSet){
                 if(message.getCampaignMessageActionSet() != null && !message.getCampaignMessageActionSet().isEmpty()){

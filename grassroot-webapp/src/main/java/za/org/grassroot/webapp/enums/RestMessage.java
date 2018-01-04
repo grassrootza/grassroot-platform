@@ -212,5 +212,6 @@ public enum RestMessage {
     JOIN_WORD_TAKEN,
 
     INVALID_PASSWORD,
-    PASSWORD_RESET
+    PASSWORD_RESET,
+    INTERFACE_NOT_OPEN
 }

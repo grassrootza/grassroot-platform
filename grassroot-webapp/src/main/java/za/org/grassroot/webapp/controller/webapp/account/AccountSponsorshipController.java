@@ -74,7 +74,8 @@ public class AccountSponsorshipController extends BaseController {
                             accountUid, displayName, phoneNumber, emailAddress, messageToSponsor);
                 } else {
                     destinationUid = destination.getUid();
-                    userManagementService.updateEmailAddress(destinationUid, emailAddress);
+                    // todo : find other way to do this
+                    userManagementService.updateEmailAddress(null, destinationUid, emailAddress);
                 }
             } else {
                 destinationUid = userManagementService.create(phoneNumber, displayName, emailAddress);

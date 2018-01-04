@@ -146,7 +146,7 @@ public class PasswordTokenManager implements PasswordTokenService {
         Objects.requireNonNull(phoneNumber);
         Objects.requireNonNull(password);
 
-        User user = userRepository.findByPhoneNumber(phoneNumber);
+        User user = userRepository.findByPhoneNumberAndPhoneNumberNotNull(phoneNumber);
         if (user == null || !passwordEncoder.matches(password, user.getPassword())) {
             throw new UsernamePasswordLoginFailedException();
         }
@@ -172,7 +172,7 @@ public class PasswordTokenManager implements PasswordTokenService {
             return false;
         }
 
-        User user = userRepository.findByPhoneNumber(PhoneNumberUtil.convertPhoneNumber(phoneNumber));
+        User user = userRepository.findByPhoneNumberAndPhoneNumberNotNull(PhoneNumberUtil.convertPhoneNumber(phoneNumber));
         if (user == null) {
             return false;
         }

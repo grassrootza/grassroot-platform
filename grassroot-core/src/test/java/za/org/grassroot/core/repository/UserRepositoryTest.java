@@ -212,7 +212,7 @@ public class UserRepositoryTest {
         assertThat(userNumber.getNationalNumber(), is(PhoneNumberUtil.formattedNumber("07890")));
         userRepository.save(userNumber);
 
-        User userDb = userRepository.findByPhoneNumber("07890");
+        User userDb = userRepository.findByPhoneNumberAndPhoneNumberNotNull("07890");
         assertThat(userDb.getPhoneNumber(), is("07890"));
         assertThat(userDb.getNationalNumber(), is(PhoneNumberUtil.formattedNumber("07890")));
 
@@ -400,13 +400,13 @@ public class UserRepositoryTest {
         assertNotNull(userToCreate.getUid());
         User savedUser = userRepository.save(userToCreate);
         Assert.assertNotEquals(Long.valueOf(0), savedUser.getId());
-        User foundUser = userRepository.findByPhoneNumber("54321");
+        User foundUser = userRepository.findByPhoneNumberAndPhoneNumberNotNull("54321");
         assertEquals(savedUser.getPhoneNumber(), foundUser.getPhoneNumber());
     }
 
     @Test
     public void shouldNotFindPhoneNumber() throws Exception {
-        User dbUser = userRepository.findByPhoneNumber("99999999999");
+        User dbUser = userRepository.findByPhoneNumberAndPhoneNumberNotNull("99999999999");
         assertNull(dbUser);
     }
 
@@ -459,7 +459,7 @@ public class UserRepositoryTest {
         Role role = roleRepository.save(new Role("TEST_ROLE", null));
         user.addStandardRole(role);
         userRepository.save(user);
-        User userFromDb = userRepository.findByPhoneNumber(number);
+        User userFromDb = userRepository.findByPhoneNumberAndPhoneNumberNotNull(number);
         assertNotNull(userFromDb);
         assertEquals(userFromDb.getId(), user.getId());
         assertTrue(userFromDb.getStandardRoles().contains(role));
@@ -475,7 +475,7 @@ public class UserRepositoryTest {
         assertTrue(user.getStandardRoles().contains(role));
         user.removeStandardRole(role);
         userRepository.save(user);
-        User userfromDb = userRepository.findByPhoneNumber(number);
+        User userfromDb = userRepository.findByPhoneNumberAndPhoneNumberNotNull(number);
         assertNotNull(userfromDb);
         assertEquals(userfromDb.getId(), user.getId());
         assertFalse(userfromDb.getStandardRoles().contains(role));

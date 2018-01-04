@@ -15,17 +15,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.domain.UserCreateRequest;
-import za.org.grassroot.core.domain.UserLog;
-import za.org.grassroot.core.domain.VerificationTokenCode;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.notification.WelcomeNotification;
 import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.repository.GroupRepository;
+import za.org.grassroot.core.repository.RoleRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.repository.UserRequestRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.MessageAssemblingService;
@@ -65,6 +64,8 @@ public class UserManager implements UserManagementService, UserDetailsService {
     private UserRepository userRepository;
     @Autowired
     private GroupRepository groupRepository;
+    @Autowired
+    private RoleRepository roleRepository;
     @Autowired
     private PasswordTokenService passwordTokenService;
     @Autowired
@@ -175,7 +176,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
         if (userExists) {
 
-            User userToUpdate = userRepository.findByPhoneNumber(phoneNumber);
+            User userToUpdate = userRepository.findByPhoneNumberAndPhoneNumberNotNull(phoneNumber);
             if (userToUpdate.hasAndroidProfile() && userToUpdate.getMessagingPreference().equals(DeliveryRoute.ANDROID_APP)) {
                 log.warn("User already has android profile");
                 throw new UserExistsException("User '" + userProfile.getUsername() + "' already has a android profile!");
@@ -223,7 +224,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Transactional
     public void updateUser(String userUid, String displayName, String emailAddress, AlertPreference alertPreference, Locale locale)
             throws IllegalArgumentException {
-        Objects.nonNull(userUid);
+        Objects.requireNonNull(userUid);
 
         User user = userRepository.findOneByUid(userUid);
 
@@ -245,7 +246,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     @Override
     public String generateAndroidUserVerifier(String phoneNumber, String displayName, String password) {
-        Objects.nonNull(phoneNumber);
+        Objects.requireNonNull(phoneNumber);
         phoneNumber = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
         if (displayName != null) {
             UserCreateRequest userCreateRequest = userCreateRequestRepository.findByPhoneNumber(phoneNumber);
@@ -264,7 +265,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     @Transactional
     public String regenerateUserVerifier(String phoneNumber, boolean createUserIfNotExists) {
-        User user = userRepository.findByPhoneNumber(phoneNumber);
+        User user = userRepository.findByPhoneNumberAndPhoneNumberNotNull(phoneNumber);
         if (user == null) {
             if (createUserIfNotExists) {
                 UserCreateRequest userCreateRequest = userCreateRequestRepository.findByPhoneNumber(phoneNumber);
@@ -321,7 +322,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
             asyncUserService.recordUserLog(newUser.getUid(), UserLogType.CREATED_IN_DB, "Created via loadOrCreateUser");
             return newUser;
         } else {
-            return userRepository.findByPhoneNumber(phoneNumber);
+            return userRepository.findByPhoneNumberAndPhoneNumberNotNull(phoneNumber);
         }
     }
 
@@ -333,7 +334,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     @Transactional(readOnly = true)
     public User findByInputNumber(String inputNumber) throws NoSuchUserException {
-        User sessionUser = userRepository.findByPhoneNumber(PhoneNumberUtil.convertPhoneNumber(inputNumber));
+        User sessionUser = userRepository.findByPhoneNumberAndPhoneNumberNotNull(PhoneNumberUtil.convertPhoneNumber(inputNumber));
         if (sessionUser == null) throw new NoSuchUserException("Could not find user with phone number: " + inputNumber);
         return sessionUser;
     }
@@ -341,10 +342,15 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     @Transactional(readOnly = true)
     public User findByNumberOrEmail(String inputNumber, String emailAddress) {
-        final String msisdn = PhoneNumberUtil.convertPhoneNumber(inputNumber);
-        User user = StringUtils.isEmpty(inputNumber) || !userExist(msisdn) ?
-                userRepository.findByEmailAddress(emailAddress) :
-                userRepository.findByPhoneNumber(msisdn);
+        String msisdn;
+        try {
+            msisdn = PhoneNumberUtil.convertPhoneNumber(inputNumber);
+        } catch (InvalidPhoneNumberException e) {
+            msisdn = null;
+        }
+        User user = msisdn == null || !userExist(msisdn) ?
+                userRepository.findByEmailAddressAndEmailAddressNotNull(emailAddress) :
+                userRepository.findByPhoneNumberAndPhoneNumberNotNull(msisdn);
         if (user == null) throw new NoSuchUserException("No user with number " + inputNumber + " or email address " + emailAddress);
         return user;
     }
@@ -352,7 +358,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     @Transactional(readOnly = true)
     public User findByInputNumber(String inputNumber, String currentUssdMenu) throws NoSuchUserException {
-        User sessionUser = userRepository.findByPhoneNumber(PhoneNumberUtil.convertPhoneNumber(inputNumber));
+        User sessionUser = userRepository.findByPhoneNumberAndPhoneNumberNotNull(PhoneNumberUtil.convertPhoneNumber(inputNumber));
         cacheUtilService.putUssdMenuForUser(inputNumber, currentUssdMenu);
         return sessionUser;
     }
@@ -362,6 +368,18 @@ public class UserManager implements UserManagementService, UserDetailsService {
     public List<User> searchByGroupAndNameNumber(String groupUid, String nameOrNumber) {
         return userRepository.findByGroupsPartOfAndDisplayNameContainingIgnoreCaseOrPhoneNumberLike(
                 groupRepository.findOneByUid(groupUid), "%" + nameOrNumber + "%", "%" + nameOrNumber + "%");
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean doesUserHaveStandardRole(String userName, String roleName) {
+        User user = findByNumberOrEmail(userName, userName);
+        try {
+            Role role = roleRepository.findByNameAndRoleType(roleName, Role.RoleType.STANDARD).get(0);
+            return user.getStandardRoles().contains(role);
+        } catch (NullPointerException e) {
+            return false;
+        }
     }
 
     @Override
@@ -411,8 +429,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
      */
 
     @Override
-    public User resetUserPassword(String phoneNumber, String newPassword, String token) throws InvalidTokenException {
-
+    public void resetUserPassword(String phoneNumber, String newPassword, String token) throws InvalidTokenException {
         User user = userRepository.findByUsername(PhoneNumberUtil.convertPhoneNumber(phoneNumber));
         log.info("Found this user: " + user);
 
@@ -422,19 +439,43 @@ public class UserManager implements UserManagementService, UserDetailsService {
             user.setPassword(encodedPassword);
             user = userRepository.save(user);
             passwordTokenService.expireVerificationCode(user.getUid(), VerificationCodeType.SHORT_OTP);
-            return user;
         } else {
             throw new InvalidTokenException("Invalid OTP submitted");
         }
     }
 
+    @Override
+    @Transactional
+    public void updateEmailAddress(String callingUserUid, String userUid, String emailAddress) {
+        Objects.requireNonNull(callingUserUid);
+        Objects.requireNonNull(userUid);
 
+        validateUserCanAlter(callingUserUid, userUid);
+
+        User user = userRepository.findOneByUid(userUid);
+        if (StringUtils.isEmpty(emailAddress) && StringUtils.isEmpty(user.getPhoneNumber())) {
+            throw new IllegalArgumentException("Cannot set email to empty if no phone number");
+        }
+
+        // todo : store some logs
+        user.setEmailAddress(emailAddress);
+    }
 
     @Override
     @Transactional
-    public void updateEmailAddress(String userUid, String emailAddress) {
+    public void updatePhoneNumber(String callingUserUid, String userUid, String phoneNumber) {
+        Objects.requireNonNull(callingUserUid);
+        Objects.requireNonNull(userUid);
+
+        validateUserCanAlter(callingUserUid, userUid);
         User user = userRepository.findOneByUid(userUid);
-        user.setEmailAddress(emailAddress);
+
+        if (!StringUtils.isEmpty(phoneNumber)) {
+            String msisdn = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
+            user.setPhoneNumber(msisdn);
+        } else if (!user.hasEmailAddress()) {
+            throw new IllegalArgumentException("Cannot set phone number to empty if no email address");
+        }
     }
 
     @Override
@@ -491,13 +532,18 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     @Override
     @Transactional
-    public void updateDisplayName(String userUid, String displayName) {
-        Objects.requireNonNull(userUid);
+    public void updateDisplayName(String callingUserUid, String userToUpdateUid, String displayName) {
+        Objects.requireNonNull(callingUserUid);
+        Objects.requireNonNull(userToUpdateUid);
         Objects.requireNonNull(displayName);
 
-        User user = userRepository.findOneByUid(userUid);
+        validateUserCanAlter(callingUserUid, userToUpdateUid);
+        User user = userRepository.findOneByUid(userToUpdateUid);
+
         user.setDisplayName(displayName);
-        user.setHasSetOwnName(true);
+        if (callingUserUid.equals(userToUpdateUid)) {
+            user.setHasSetOwnName(true);
+        }
     }
 
     @Override
@@ -542,6 +588,16 @@ public class UserManager implements UserManagementService, UserDetailsService {
         user.setNotificationPriority(alertPreference.getPriority());
     }
 
+    private void validateUserCanAlter(String callingUserUid, String userToUpdateUid) {
+        if (!callingUserUid.equals(userToUpdateUid)) {
+            User callingUser = userRepository.findOneByUid(callingUserUid);
+            Role adminRole = roleRepository.findByName(BaseRoles.ROLE_SYSTEM_ADMIN).get(0);
+            if (!callingUser.getStandardRoles().contains(adminRole)) {
+                throw new AccessDeniedException("Error! Only user or admin can perform this update");
+            }
+        }
+    }
+
     /*
     SECTION: methods to return a masked user entity, for analytics
      */
@@ -551,4 +607,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
         UserCreateRequest userCreateRequest = userCreateRequestRepository.findByPhoneNumber(PhoneNumberUtil.convertPhoneNumber(phoneNumber));
         return (new UserDTO(userCreateRequest));
     }
+
+
 }

@@ -39,8 +39,8 @@ public class NluBrokerImpl implements NluBroker {
 
     @PostConstruct
     public void init() {
-        nluHost = environment.getProperty("grassroot.nlu.host", "localhost");
-        nluPort = environment.getProperty("grassroot.nlu.port", Integer.class, 5000);
+        nluHost = environment.getProperty("grassroot.nlu.host", "learning.grassroot.cloud");
+        nluPort = environment.getProperty("grassroot.nlu.port", Integer.class, 80);
         googleApiKeyPresent = environment.getProperty("GOOGLE_APPLICATION_CREDENTIALS") != null;
     }
 
