@@ -134,7 +134,7 @@ public class BroadcastController extends BaseRestController {
         log.info("incoming FB page Id = {}", request.getFacebookPage());
         return FBPostBuilder.builder()
                 .postingUserUid(userUid)
-                .facebookPageId(null)
+                .facebookPageId(request.getFacebookPage())
                 .message(request.getFacebookContent())
                 .linkUrl(request.getFacebookLink())
                 .build();

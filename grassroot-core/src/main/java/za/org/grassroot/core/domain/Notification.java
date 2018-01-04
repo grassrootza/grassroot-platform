@@ -12,6 +12,7 @@ import za.org.grassroot.core.enums.DeliveryRoute;
 import za.org.grassroot.core.enums.MessagingProvider;
 import za.org.grassroot.core.enums.NotificationDetailedType;
 import za.org.grassroot.core.enums.NotificationType;
+import za.org.grassroot.core.enums.DeliveryRoute;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;

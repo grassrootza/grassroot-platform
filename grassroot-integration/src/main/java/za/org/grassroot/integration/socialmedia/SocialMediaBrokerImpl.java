@@ -8,7 +8,6 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.client.AsyncRestTemplate;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.view.RedirectView;
@@ -40,7 +39,7 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
     private final RestTemplate restTemplate;
     private final JwtService jwtService;
 
-    public SocialMediaBrokerImpl(RestTemplate restTemplate, AsyncRestTemplate asyncRestTemplate, JwtService jwtService) {
+    public SocialMediaBrokerImpl(RestTemplate restTemplate, JwtService jwtService) {
         this.restTemplate = restTemplate;
         this.jwtService = jwtService;
     }
