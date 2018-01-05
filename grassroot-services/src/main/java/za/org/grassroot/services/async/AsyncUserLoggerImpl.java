@@ -15,6 +15,7 @@ import za.org.grassroot.services.util.CacheUtilService;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Objects;
+import java.util.Set;
 
 import static org.springframework.data.jpa.domain.Specifications.where;
 import static za.org.grassroot.core.enums.UserInterfaceType.UNKNOWN;
@@ -43,6 +44,13 @@ public class AsyncUserLoggerImpl implements AsyncUserLogger {
         Objects.requireNonNull(userLogType);
         UserLog userLog = new UserLog(userUid, userLogType, description, UNKNOWN);
         userLogRepository.saveAndFlush(userLog);
+    }
+
+    @Async
+    @Override
+    @Transactional
+    public void storeUserLogs(Set<UserLog> userLogSet) {
+        userLogRepository.save(userLogSet);
     }
 
     @Async

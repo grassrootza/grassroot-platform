@@ -61,7 +61,7 @@ public class BaseController {
 
     @Autowired
     @Qualifier("messageSourceAccessor")
-    private MessageSourceAccessor messageSourceAccessor; // making it protected just briefly, for SMS send
+    private MessageSourceAccessor messageSourceAccessor;
 
     @Autowired
     protected UserManagementService userManagementService;

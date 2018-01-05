@@ -4,6 +4,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.enums.AlertPreference;
 import za.org.grassroot.core.enums.DeliveryRoute;
+import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.services.exception.NoSuchUserException;
 import za.org.grassroot.services.exception.UserExistsException;
 
@@ -62,7 +63,12 @@ public interface UserManagementService {
     Methods to update user properties
      */
 
-    void updateUser(String userUid, String displayName, String emailAddress, AlertPreference alertPreference, Locale locale);
+    // note: returns "false" if an OTP is needed to complete this but is not present,
+    // throws an invalid error if an OTP is provided but is not valid
+    // returns true otherwise
+    boolean updateUser(String userUid, String displayName, String phoneNumber,
+                       String emailAddress, Province province, AlertPreference alertPreference,
+                       Locale locale, String validationOtp);
 
     void updateDisplayName(String callingUserUid, String userToUpdateUid, String displayName);
 

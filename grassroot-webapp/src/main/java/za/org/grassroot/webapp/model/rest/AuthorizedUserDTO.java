@@ -1,11 +1,14 @@
 package za.org.grassroot.webapp.model.rest;
 
+import lombok.Getter;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.domain.Role;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.Province;
 
 import java.util.Optional;
 
+@Getter
 public class AuthorizedUserDTO {
 
     private String userUid;
@@ -14,6 +17,7 @@ public class AuthorizedUserDTO {
     private String email;
     private String languageCode;
     private String systemRoleName;
+    private Province province;
     private String token;
 
     public AuthorizedUserDTO(User user, String token) {
@@ -22,6 +26,7 @@ public class AuthorizedUserDTO {
         this.displayName = user.getDisplayName();
         this.languageCode = user.getLanguageCode();
         this.email = user.getEmailAddress();
+        this.province = user.getProvince();
 
         Optional<Role> highestSystemRole = user.getStandardRoles().stream()
                 .sorted(BaseRoles.sortSystemRole.reversed())
@@ -31,31 +36,4 @@ public class AuthorizedUserDTO {
         this.token = token;
     }
 
-    public String getUserUid() {
-        return userUid;
-    }
-
-    public String getMsisdn() {
-        return msisdn;
-    }
-
-    public String getToken() {
-        return token;
-    }
-
-    public String getDisplayName() {
-        return displayName;
-    }
-
-    public String getLanguageCode() {
-        return languageCode;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public String getSystemRoleName() {
-        return systemRoleName;
-    }
 }

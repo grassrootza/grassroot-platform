@@ -1,6 +1,7 @@
 package za.org.grassroot.services.user;
 
 import za.org.grassroot.core.domain.VerificationTokenCode;
+import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.VerificationCodeType;
 
 /**
@@ -8,7 +9,7 @@ import za.org.grassroot.core.enums.VerificationCodeType;
  */
 public interface PasswordTokenService {
 
-    VerificationTokenCode generateShortLivedOTP(String phoneNumber);
+    VerificationTokenCode generateShortLivedOTP(String username);
 
     VerificationTokenCode generateLongLivedAuthCode(String userUid);
 
@@ -19,6 +20,8 @@ public interface PasswordTokenService {
     void validateOtp(String username, String otp);
 
     void validatePassword(String phoneNumber, String password);
+
+    void changeUserPassword(String userUid, String oldPassword, String newPassword, UserInterfaceType interfaceType);
 
     boolean isShortLivedOtpValid(String phoneNumber, String code);
 

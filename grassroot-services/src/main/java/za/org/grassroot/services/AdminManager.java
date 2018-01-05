@@ -120,7 +120,7 @@ public class AdminManager implements AdminService {
         Role role = roleRepository.findByName(BaseRoles.ROLE_ALPHA_TESTER).get(0);
         user.addStandardRole(role);
         userLogRepository.save(new UserLog(userUid, UserLogType.GRANTED_SYSTEM_ROLE,
-                systemRole + " granted by admin, uid {}" + adminUserUid, UserInterfaceType.WEB));
+                systemRole + " granted by admin. uid::" + adminUserUid, UserInterfaceType.WEB));
     }
 
     @Override
@@ -132,7 +132,7 @@ public class AdminManager implements AdminService {
         logger.info("found a role? : {}, and a user : {}", role, user);
         user.removeStandardRole(role);
         userLogRepository.save(new UserLog(userUid, UserLogType.REVOKED_SYSTEM_ROLE,
-                systemRole + " removed by admin, uid {}" + userUid, UserInterfaceType.WEB));
+                systemRole + " removed by admin. uid::" + userUid, UserInterfaceType.WEB));
     }
 
     @Override

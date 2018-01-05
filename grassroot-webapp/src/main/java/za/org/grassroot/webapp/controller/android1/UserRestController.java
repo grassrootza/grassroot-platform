@@ -90,7 +90,7 @@ public class UserRestController {
     public ResponseEntity<ResponseWrapper> resendOtp(@PathVariable("phoneNumber") String phoneNumber) {
         final String msisdn = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
         try {
-            final String tokenCode = temporaryTokenSend(userManagementService.regenerateUserVerifier(phoneNumber, true), msisdn, true); // will be empty in production
+            final String tokenCode = temporaryTokenSend(userManagementService.regenerateUserVerifier(msisdn, true), msisdn, true); // will be empty in production
             return RestUtil.okayResponseWithData(RestMessage.VERIFICATION_TOKEN_SENT, tokenCode);
         } catch (Exception e) {
             log.info("here is the error : " + e.toString());

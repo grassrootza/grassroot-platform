@@ -198,8 +198,17 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
         this.emailAddress = emailAddress;
     }
 
+    public boolean hasPhoneNumber() {
+        return !StringUtils.isEmpty(phoneNumber);
+    }
+
     public boolean hasEmailAddress() {
         return !StringUtils.isEmpty(emailAddress);
+    }
+
+    public boolean isUsernameEmailAddress() {
+        // since we are guaranteed that no phone number will ever validate as an email
+        return EmailValidator.getInstance().isValid(username);
     }
 
     public void setPrimaryAccount(Account primaryAccount) {

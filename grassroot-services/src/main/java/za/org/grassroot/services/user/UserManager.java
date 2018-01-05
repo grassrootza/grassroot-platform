@@ -39,10 +39,7 @@ import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
-import java.util.TimeZone;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static za.org.grassroot.core.specifications.UserSpecifications.inGroups;
@@ -220,28 +217,91 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     }
 
+    // a lot of potential for things to go wrong in here, hence a lot of checks - in general, this one is hairy
     @Override
     @Transactional
-    public void updateUser(String userUid, String displayName, String emailAddress, AlertPreference alertPreference, Locale locale)
-            throws IllegalArgumentException {
+    public boolean updateUser(String userUid, String displayName, String phoneNumber, String emailAddress,
+                              Province province, AlertPreference alertPreference, Locale locale, String validationOtp) {
         Objects.requireNonNull(userUid);
 
-        User user = userRepository.findOneByUid(userUid);
+        if (StringUtils.isEmpty(phoneNumber) && StringUtils.isEmpty(emailAddress)) {
+            throw new IllegalArgumentException("Error! Cannot set both phone number and email address to null");
+        }
 
-        // retain this since the client-side validation is a bit strange & unpredictable on this field
+        User user = userRepository.findOneByUid(userUid);
+        final String msisdn = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
+
+        boolean phoneChanged = !StringUtils.isEmpty(user.getPhoneNumber()) && !user.getPhoneNumber().equals(msisdn);
+        boolean emailChanged = !StringUtils.isEmpty(user.getEmailAddress()) && !user.getEmailAddress().equals(emailAddress);
+        boolean otherChanged = false;
+
+        if ((phoneChanged || emailChanged) && StringUtils.isEmpty(validationOtp)) {
+            return false;
+        }
+
+        if ((phoneChanged || emailChanged)) {
+            passwordTokenService.validateOtp(user.getUsername(), validationOtp);
+        }
+
+        // if user set their phone number to be blank, they must have an email address, and if so, switch username to it
+        if (phoneChanged && StringUtils.isEmpty(msisdn) && !user.isUsernameEmailAddress()) {
+            // because of earlier check up top, if we reach here then new email address cannot be blank
+            user.setUsername(emailAddress);
+        }
+
+        // as above, with email
+        if (emailChanged && StringUtils.isEmpty(emailAddress) && user.isUsernameEmailAddress()) {
+            user.setUsername(msisdn);
+        }
+
+        // retain this check since the (v1) client-side validation is a bit strange & unpredictable on this field
         if (!StringUtils.isEmpty(displayName)) {
+            otherChanged = otherChanged || !user.getDisplayName().equals(displayName);
             user.setDisplayName(displayName);
             user.setHasSetOwnName(true);
         }
 
-        // note: make sure to confirm with user if deleting address (i.e., second half of if statement)
-        if (!StringUtils.isEmpty(emailAddress) || !StringUtils.isEmpty(user.getEmailAddress())) {
-            user.setEmailAddress(emailAddress);
+        user.setPhoneNumber(msisdn);
+        if (phoneChanged && !user.isUsernameEmailAddress()) {
+            user.setUsername(msisdn);
         }
 
-        user.setLanguageCode(locale.getLanguage());
-        user.setAlertPreference(alertPreference);
-        user.setNotificationPriority(alertPreference.getPriority());
+        user.setEmailAddress(emailAddress);
+        if (emailChanged && user.isUsernameEmailAddress()) {
+            user.setUsername(emailAddress);
+        }
+
+        if (province != null) {
+            otherChanged = otherChanged || !province.equals(user.getProvince());
+            user.setProvince(province);
+        }
+
+        if (locale != null) {
+            otherChanged = otherChanged || !locale.getLanguage().equals(user.getLanguageCode());
+            user.setLanguageCode(locale.getLanguage());
+        }
+
+        if (alertPreference != null) {
+            otherChanged = otherChanged || !alertPreference.equals(user.getAlertPreference());
+            user.setAlertPreference(alertPreference);
+            user.setNotificationPriority(alertPreference.getPriority());
+        }
+
+        log.info("okay, did anything change? {}", otherChanged);
+        Set<UserLog> logs = new HashSet<>();
+        if (emailChanged) {
+            logs.add(new UserLog(userUid, UserLogType.USER_EMAIL_CHANGED, emailAddress, UserInterfaceType.UNKNOWN));
+        }
+        if (phoneChanged) {
+            logs.add(new UserLog(userUid, UserLogType.USER_PHONE_CHANGED, phoneNumber, UserInterfaceType.UNKNOWN));
+        }
+        if (otherChanged) {
+            logs.add(new UserLog(userUid, UserLogType.USER_DETAILS_CHANGED, null, UserInterfaceType.UNKNOWN));
+        }
+
+        log.info("okay, done updating, storing {} logs", logs.size());
+        asyncUserService.storeUserLogs(logs);
+        return true;
     }
 
     @Override

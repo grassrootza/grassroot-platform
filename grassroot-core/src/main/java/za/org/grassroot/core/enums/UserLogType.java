@@ -5,10 +5,24 @@ package za.org.grassroot.core.enums;
  */
 public enum UserLogType {
     CREATED_IN_DB("user entity created"),
+    GRANTED_SYSTEM_ROLE("User was granted system role"),
+    REVOKED_SYSTEM_ROLE("User had system role removed"),
+
     INITIATED_USSD("user initiated first USSD session"),
     CREATED_WEB("user created a web profile"),
     REGISTERED_ANDROID("user registered on Android"),
+
+    ADMIN_CHANGED_PASSWORD("A system admin reset the user's password"),
+    USER_CHANGED_PASSWORD("User change password themself"),
+    USER_EMAIL_CHANGED("User changed their email address"),
+    USER_PHONE_CHANGED("User changed their phone number"),
+    USER_DETAILS_CHANGED("User changed non-sensitive details"),
+
     CHANGED_LANGUAGE("user changed their language"),
+    ADDED_ADDRESS("user added address"),
+    CHANGED_ADDRESS("user changed address"),
+    REMOVED_ADDRESS("user removed addres"),
+
     USER_SESSION("user initiated a session"),
     USSD_MENU_ACCESSED("user accessed a USSD menu"),
     USSD_INTERRUPTED("user was interrupted on a USSD menu"),
@@ -23,9 +37,6 @@ public enum UserLogType {
     JOINED_SAFETY_GROUP("user added to safety group"),
     USED_A_JOIN_CODE("user joined a group via a join code"),
     USED_A_CAMPAIGN("user joined a group via a campaign"),
-    ADDED_ADDRESS("user added address"),
-    CHANGED_ADDRESS("user changed address"),
-    REMOVED_ADDRESS("user removed addres"),
     USED_PROMOTIONAL_CODE("user entered using a promotional code"),
     GAVE_LOCATION_PERMISSION("user gave permission to track location"),
     REVOKED_LOCATION_PERMISSION("user revoked permission to track location"),
@@ -35,10 +46,7 @@ public enum UserLogType {
     LIVEWIRE_CONTACT_GRANTED("granted permission to be a LiveWire contact"),
     LIVEWIRE_CONTACT_REVOKED("revoked livewire permission"),
     SENT_UNEXPECTED_SMS_MESSAGE("sent SMS message that could not be interpreted"),
-    SENT_GROUP_JOIN_CODE("User sent group join code sms"),
-    GRANTED_SYSTEM_ROLE("User was granted system role"),
-    REVOKED_SYSTEM_ROLE("User had system role removed"),
-    ADMIN_CHANGED_PASSWORD("A system admin reset the user's password");
+    SENT_GROUP_JOIN_CODE("User sent group join code sms");
 
     private final String text;
 
