@@ -70,6 +70,7 @@ public class TaskFullDTO {
         this.wholeGroupAssigned = task.isAllGroupMembersAssigned();
         this.thisUserAssigned = wholeGroupAssigned || task.getAssignedMembers().contains(user);
 
+
         this.canEdit = createdByThisUser;
         this.userResponse = userResponse;
         this.hasResponded = !StringUtils.isEmpty(userResponse);

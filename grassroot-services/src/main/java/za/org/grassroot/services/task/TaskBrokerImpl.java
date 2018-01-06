@@ -250,6 +250,48 @@ public class TaskBrokerImpl implements TaskBroker {
     }
 
     @Override
+    public List<TaskFullDTO> fetchUpcomingUserTasksFull(String userUid) {
+        Objects.requireNonNull(userUid);
+
+        User user = userRepository.findOneByUid(userUid);
+        Instant now = Instant.now();
+
+        // todo : switch most of these to using assignment instead of just group
+        List<Event> events = eventRepository.findAll(Specifications
+                .where(EventSpecifications.userPartOfGroup(user))
+                .and(EventSpecifications.notCancelled())
+                .and(EventSpecifications.startDateTimeAfter(now)));
+
+        if (events != null) {
+            events = events.stream()
+                    .filter(event -> event.getEventType().equals(EventType.MEETING) || partOfGroupBeforeVoteCalled(event, user))
+                    .collect(Collectors.toList());
+        }
+
+        Set<TaskFullDTO> taskDtos = new HashSet<>();
+        events.stream().filter(event -> event.getEventType().equals(EventType.MEETING) || partOfGroupBeforeVoteCalled(event, user))
+                .forEach(e -> taskDtos.add(new TaskFullDTO(e, user, e.getCreatedDateTime(), getUserResponse(e, user))));
+
+        Instant todoStart = Instant.now().minus(DAYS_PAST_FOR_TODO_CHECKING, ChronoUnit.DAYS);
+        Instant todoEnd = DateTimeUtil.getVeryLongAwayInstant();
+        List<Todo> todos = todoBroker.fetchTodosForUser(userUid, true, true, todoStart, todoEnd, null);
+
+
+        for (Todo todo : todos) {
+            taskDtos.add(new TaskFullDTO(todo, user, todo.getCreatedDateTime(), todo.getResponseTag()));
+        }
+
+
+        List<TaskFullDTO> tasks = new ArrayList<>(taskDtos);
+        Collections.sort(tasks, (o1, o2) -> ComparisonChain.start()
+                .compare(o1.getDeadlineMillis(), o2.getDeadlineMillis())
+                .compareFalseFirst(o1.isHasResponded(), o2.isHasResponded())
+                .result());
+        log.info("Retrieved all the user's upcoming tasks, took {} msecs", System.currentTimeMillis() - now.toEpochMilli());
+        return tasks;
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public ChangedSinceData<TaskDTO> fetchUpcomingTasksAndCancelled(String userUid, Instant changedSince) {
         Objects.requireNonNull(userUid);

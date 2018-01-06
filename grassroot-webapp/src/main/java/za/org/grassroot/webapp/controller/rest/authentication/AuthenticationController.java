@@ -65,13 +65,13 @@ public class AuthenticationController {
     }
 
     private void checkRegistrationOpen(UserInterfaceType interfaceType) {
-        if (!environment.containsProperty("localpg") && alphaInterfaces.contains(interfaceType)) {
+        if (!environment.acceptsProfiles("localpg") && alphaInterfaces.contains(interfaceType)) {
             throw new InterfaceNotOpenException();
         }
     }
 
     private void checkUserHasAccess(String phoneOrEmail, UserInterfaceType interfaceType) {
-        if (!environment.containsProperty("localpg") && alphaInterfaces.contains(interfaceType) &&
+        if (!environment.acceptsProfiles("localpg") && alphaInterfaces.contains(interfaceType) &&
                 !userService.doesUserHaveStandardRole(phoneOrEmail, BaseRoles.ROLE_ALPHA_TESTER)) {
             throw new InterfaceNotOpenException();
         }

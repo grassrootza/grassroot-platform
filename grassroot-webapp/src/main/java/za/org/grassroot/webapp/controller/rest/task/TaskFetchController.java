@@ -24,6 +24,7 @@ import za.org.grassroot.webapp.model.rest.ImageRecordDTO;
 
 import javax.servlet.http.HttpServletRequest;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -52,8 +53,14 @@ public class TaskFetchController extends BaseRestController {
     @ApiOperation(value = "All updated tasks", notes = "Fetches all the tasks updated since the timestamps in the map " +
             "(sends TaskMinimalDTO class, which is not appearing)")
     public ResponseEntity<List<TaskMinimalDTO>> fetchUpdatedTasks(@PathVariable String userUid,
-                                                                  @RequestBody Map<String, Long> knownTasks) {
-        return ResponseEntity.ok(taskBroker.findNewlyChangedTasks(userUid, knownTasks));
+                                                                  @RequestBody Map<String, Long> knownTasks,
+                                                                  HttpServletRequest request) {
+
+        String loggedInUserUid = getUserIdFromRequest(request);
+        if (userUid.equals(loggedInUserUid))
+            return ResponseEntity.ok(taskBroker.findNewlyChangedTasks(userUid, knownTasks));
+        else
+            return new ResponseEntity<>(Collections.emptyList(), HttpStatus.FORBIDDEN);
     }
 
     @RequestMapping(value = "/updated/group/{userUid}/{groupUid}", method = RequestMethod.POST)
@@ -61,8 +68,13 @@ public class TaskFetchController extends BaseRestController {
             "timestampts in the map")
     public ResponseEntity<List<TaskMinimalDTO>> fetchGroupUpdatedTasks(@PathVariable String userUid,
                                                                        @PathVariable String groupUid,
-                                                                       @RequestBody Map<String, Long> knownTasks) {
-        return ResponseEntity.ok(taskBroker.fetchNewlyChangedTasksForGroup(userUid, groupUid, knownTasks));
+                                                                       @RequestBody Map<String, Long> knownTasks,
+                                                                       HttpServletRequest request) {
+        String loggedInUserUid = getUserIdFromRequest(request);
+        if (userUid.equals(loggedInUserUid))
+            return ResponseEntity.ok(taskBroker.fetchNewlyChangedTasksForGroup(userUid, groupUid, knownTasks));
+        else
+            return new ResponseEntity<>(Collections.emptyList(), HttpStatus.FORBIDDEN);
     }
 
     @Timed
@@ -70,8 +82,13 @@ public class TaskFetchController extends BaseRestController {
     @ApiOperation(value = "Full details on specified task", notes = "Fetches full details on tasks specified in the " +
             "map of tasks and their type")
     public ResponseEntity<List<TaskFullDTO>> fetchSpecificTasks(@PathVariable String userUid,
-                                                                @RequestBody Map<String, TaskType> taskUidsAndTypes) {
-        return ResponseEntity.ok(taskBroker.fetchSpecifiedTasks(userUid, taskUidsAndTypes, TaskSortType.TIME_CREATED));
+                                                                @RequestBody Map<String, TaskType> taskUidsAndTypes,
+                                                                HttpServletRequest request) {
+        String loggedInUserUid = getUserIdFromRequest(request);
+        if (userUid.equals(loggedInUserUid))
+            return ResponseEntity.ok(taskBroker.fetchSpecifiedTasks(userUid, taskUidsAndTypes, TaskSortType.TIME_CREATED));
+        else
+            return new ResponseEntity<>(Collections.emptyList(), HttpStatus.FORBIDDEN);
     }
 
     @Timed
@@ -79,29 +96,62 @@ public class TaskFetchController extends BaseRestController {
     @ApiOperation(value = "All a users' tasks", notes = "Fetches full details on all a users' tasks, with an option parameter" +
             " for sort type (defaults to sorting by last change")
     public ResponseEntity<List<TaskFullDTO>> fetchAllUserTasks(@PathVariable String userUid,
-                                                             @RequestParam(required = false) TaskSortType taskSortType) {
-        List<TaskFullDTO> tasks = taskBroker.fetchAllUserTasksSorted(userUid, taskSortType);
-        return ResponseEntity.ok(tasks);
+                                                               @RequestParam(required = false) TaskSortType taskSortType,
+                                                               HttpServletRequest request) {
+
+        String loggedInUserUid = getUserIdFromRequest(request);
+        if (userUid.equals(loggedInUserUid)) {
+            List<TaskFullDTO> tasks = taskBroker.fetchAllUserTasksSorted(userUid, taskSortType);
+            return ResponseEntity.ok(tasks);
+        } else
+            return new ResponseEntity<>(Collections.emptyList(), HttpStatus.FORBIDDEN);
+    }
+
+
+    @Timed
+    @RequestMapping(value = "/upcoming/user/{userUid}", method = RequestMethod.GET)
+    @ApiOperation(value = "Upcoming user tasks", notes = "Fetches full details on upcoming user's tasks, with an option parameter" +
+            " for sort type (defaults to sorting by last change")
+    public ResponseEntity<List<TaskFullDTO>> fetchUpcomingUserTasks(@PathVariable String userUid,
+                                                                    @RequestParam(required = false) TaskSortType taskSortType,
+                                                                    HttpServletRequest request) {
+        String loggedInUserUid = getUserIdFromRequest(request);
+        if (userUid.equals(loggedInUserUid)) {
+            List<TaskFullDTO> tasks = taskBroker.fetchUpcomingUserTasksFull(userUid);
+            return ResponseEntity.ok(tasks);
+        } else
+            return new ResponseEntity<>(Collections.emptyList(), HttpStatus.FORBIDDEN);
     }
 
     @RequestMapping(value = "/group/{userUid}/{groupUid}", method = RequestMethod.GET)
     @ApiOperation(value = "All tasks for a group", notes = "Fetch tasks for a group", response = ChangedSinceData.class)
     public ResponseEntity<ChangedSinceData<TaskDTO>> fetchUserGroupTasks(@PathVariable String userUid,
                                                                          @PathVariable String groupUid,
-                                                                         @RequestParam(required = false) long changedSinceMillis) {
-        return ResponseEntity.ok(taskBroker.fetchGroupTasks(userUid, groupUid,
-                        changedSinceMillis == 0 ? null : Instant.ofEpochMilli(changedSinceMillis)));
+                                                                         @RequestParam(required = false) long changedSinceMillis,
+                                                                         HttpServletRequest request) {
+        String loggedInUserUid = getUserIdFromRequest(request);
+        if (userUid.equals(loggedInUserUid)) {
+            return ResponseEntity.ok(taskBroker.fetchGroupTasks(userUid, groupUid,
+                    changedSinceMillis == 0 ? null : Instant.ofEpochMilli(changedSinceMillis)));
+        } else
+            return new ResponseEntity<>((ChangedSinceData<TaskDTO>) null, HttpStatus.FORBIDDEN);
     }
 
     @RequestMapping(value = "/posts/{userUid}/{taskType}/{taskUid}", method = RequestMethod.GET)
     @ApiOperation(value = "Fetch posts for a task", notes = "Fetch posts against a task, sorted by date created", response = ImageRecordDTO.class)
     public ResponseEntity<List<ImageRecordDTO>> fetchTaskPosts(@PathVariable String userUid,
                                                                @PathVariable TaskType taskType,
-                                                               @PathVariable String taskUid) {
-        return ResponseEntity.ok(taskImageBroker.fetchTaskPosts(userUid, taskUid, taskType).entrySet().stream()
-                .map(entry -> new ImageRecordDTO(entry.getKey(), entry.getValue()))
-                .sorted(Comparator.comparing(ImageRecordDTO::getCreationTime, Comparator.reverseOrder()))
-                .collect(Collectors.toList()));
+                                                               @PathVariable String taskUid,
+                                                               HttpServletRequest request) {
+
+        String loggedInUserUid = getUserIdFromRequest(request);
+        if (userUid.equals(loggedInUserUid)) {
+            return ResponseEntity.ok(taskImageBroker.fetchTaskPosts(userUid, taskUid, taskType).entrySet().stream()
+                    .map(entry -> new ImageRecordDTO(entry.getKey(), entry.getValue()))
+                    .sorted(Comparator.comparing(ImageRecordDTO::getCreationTime, Comparator.reverseOrder()))
+                    .collect(Collectors.toList()));
+        } else
+            return new ResponseEntity<>(Collections.emptyList(), HttpStatus.FORBIDDEN);
     }
 
     @RequestMapping(value = "/upcoming/group/{groupUid}", method = RequestMethod.GET)

@@ -32,6 +32,15 @@ public interface TaskBroker {
 
     List<TaskDTO> fetchUpcomingUserTasks(String userUid);
 
+    /**
+     * TaskDTO is deprecated in favor of TaskFullDTO, so this is a replacement method for List<TaskDTO> fetchUpcomingUserTasks
+     * might be better to return List<Task> and transform to appropriate DTO in controller
+     *
+     * @param userUid
+     * @return
+     */
+    List<TaskFullDTO> fetchUpcomingUserTasksFull(String userUid);
+
     ChangedSinceData<TaskDTO> fetchUpcomingTasksAndCancelled(String userUid, Instant changedSince);
 
     List<TaskDTO> searchForTasks(String userUid, String searchTerm);
