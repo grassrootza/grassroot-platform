@@ -9,6 +9,7 @@ import javax.persistence.criteria.Join;
 import javax.persistence.criteria.JoinType;
 import java.time.Instant;
 import java.util.Collection;
+import java.util.List;
 
 public class MembershipSpecifications {
 
@@ -25,11 +26,18 @@ public class MembershipSpecifications {
         return (root, query, cb) -> cb.equal(root.get(Membership_.group).get(Group_.createdByUser), groupCreator);
     }
 
+
     public static Specifications<Membership> membershipsInGroups(User groupCreator, Instant groupCreatedAfter, Instant membershipCreatedAfter) {
         Specification<Membership> groupCreatedByUserSpec = MembershipSpecifications.membershipsOfGroupsCreatedBy(groupCreator);
         Specification<Membership> groupCreatedAfterSpec = MembershipSpecifications.membershipsOfGroupsCreatedAfter(groupCreatedAfter);
         Specification<Membership> membershipCreatedAfterSpec = MembershipSpecifications.membershipsCreatedAfter(membershipCreatedAfter);
         return Specifications.where(groupCreatedByUserSpec).and(groupCreatedAfterSpec).and(membershipCreatedAfterSpec);
+    }
+
+    public static Specifications<Membership> recentMembershipsInGroups(List<Group> groups, Instant membershipCreatedAfter) {
+        Specification<Membership> inGroups = MembershipSpecifications.forGroups(groups);
+        Specification<Membership> membershipCreatedAfterSpec = MembershipSpecifications.membershipsCreatedAfter(membershipCreatedAfter);
+        return Specifications.where(inGroups).and(membershipCreatedAfterSpec).and(membershipCreatedAfterSpec);
     }
 
     public static Specifications<Membership> groupMembersInProvincesJoinedAfter(Group group,
@@ -41,6 +49,10 @@ public class MembershipSpecifications {
 
     private static Specification<Membership> hasRole(String roleName) {
         return (root, query, cb) -> cb.equal(root.get(Membership_.role).get(Role_.name), roleName);
+    }
+
+    private static Specification<Membership> forGroups(List<Group> groups) {
+        return (root, query, cb) -> root.get(Membership_.group).in(groups);
     }
 
     public static Specification<Membership> forGroup(Group group) {
@@ -61,4 +73,6 @@ public class MembershipSpecifications {
     private static Specification<Membership> memberJoinedAfter(Instant cutOffDateTime) {
         return (root, query, cb) -> cb.greaterThan(root.get(Membership_.joinTime), cutOffDateTime);
     }
+
+
 }

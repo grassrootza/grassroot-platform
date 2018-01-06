@@ -38,6 +38,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 @RestController
@@ -181,6 +182,22 @@ public class GroupFetchController extends BaseRestController {
                                        @RequestParam Locale language,
                                        @RequestParam String typeOfFile) {
         return generateFlyer(groupUid, color, language, typeOfFile);
+    }
+
+
+    @RequestMapping(value = "/members/new", method = RequestMethod.GET)
+    @ApiOperation(value = "Returns members joined recently to groups where logged in user has permission to see member details")
+    public ResponseEntity<Page<MembershipFullDTO>> getRecentlyJoinedUsers(@RequestParam(required = false) Integer howRecentInDays, HttpServletRequest request, Pageable pageable) {
+
+        howRecentInDays = howRecentInDays != null ? howRecentInDays : 7;
+        User loggedInUser = getUserFromRequest(request);
+        if (loggedInUser != null) {
+            Page<MembershipFullDTO> page = groupFetchBroker
+                    .fetchUserGroupsNewMembers(loggedInUser, Instant.now().minus(howRecentInDays, ChronoUnit.DAYS), pageable)
+                    .map(MembershipFullDTO::new);
+            return ResponseEntity.ok(page);
+        } else
+            return new ResponseEntity<>((Page<MembershipFullDTO>) null, HttpStatus.FORBIDDEN);
     }
 
     private FileSystemResource generateFlyer(String groupUid, boolean color, Locale language, String typeOfFile) {

@@ -3,6 +3,7 @@ package za.org.grassroot.services.group;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import za.org.grassroot.core.domain.Membership;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.MembershipFullDTO;
 import za.org.grassroot.core.dto.group.*;
@@ -29,5 +30,7 @@ public interface GroupFetchBroker {
     List<GroupWebDTO> fetchGroupWebInfo(String userUid);
 
     Page<MembershipFullDTO> fetchGroupMembers(User user, String groupUid, Pageable pageable);
+
+    Page<Membership> fetchUserGroupsNewMembers(User user, Instant from, Pageable pageable);
 
 }

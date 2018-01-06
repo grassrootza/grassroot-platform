@@ -19,6 +19,7 @@ import za.org.grassroot.core.repository.MembershipRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.specifications.GroupLogSpecifications;
 import za.org.grassroot.core.specifications.GroupSpecifications;
+import za.org.grassroot.core.specifications.MembershipSpecifications;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
 
@@ -243,6 +244,12 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
         return members.map(MembershipFullDTO::new);
     }
 
+    @Override
+    public Page<Membership> fetchUserGroupsNewMembers(User user, Instant from, Pageable pageable) {
+        List<Group> groupsWhereUserCanSeeMemberDetails = groupRepository.findAll(GroupSpecifications.userIsMemberAndCanSeeMembers(user));
+        Specifications<Membership> spec = MembershipSpecifications.recentMembershipsInGroups(groupsWhereUserCanSeeMemberDetails, from);
+        return membershipRepository.findAll(spec, pageable);
+    }
 
     private List<GroupRefDTO> getSubgroups(Group group) {
         return groupRepository.findAll(Specifications.where(hasParent(group)).and(isActive()))
