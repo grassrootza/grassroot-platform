@@ -2,6 +2,7 @@ package za.org.grassroot.webapp.controller.webapp;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.core.env.Environment;
 import org.springframework.http.*;
@@ -37,7 +38,9 @@ public class DonationController extends BaseController {
 
     private static final Pattern SUCCESS_MATCHER = Pattern.compile("^(000\\.000\\.|000\\.100\\.1|000\\.[36])");
 
+    @Value("${grassroot.payments.url}")
     private String paymentUrl;
+
     private String paymentUserId;
     private String paymentPassword;
     private String paymentEntityId;
@@ -61,7 +64,7 @@ public class DonationController extends BaseController {
 
     @PostConstruct
     public void init() {
-        paymentUrl = environment.getProperty("grassroot.payments.url", "https://test.oppwa.com/v1/checkouts");
+        // paymentUrl = environment.getProperty("grassroot.payments.url", "https://test.oppwa.com/v1/checkouts");
         paymentUserId = environment.getProperty("grassroot.payments.values.user", "8a8294174e735d0c014e78cf266b1794");
         paymentPassword = environment.getProperty("grassroot.payments.values.password", "qyyfHCN83e");
         paymentEntityId = environment.getProperty("grassroot.payments.values.channelId3d", "8a8294174e735d0c014e78cf26461790");

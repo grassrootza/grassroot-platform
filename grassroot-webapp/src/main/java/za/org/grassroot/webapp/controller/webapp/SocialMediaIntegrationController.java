@@ -21,7 +21,7 @@ public class SocialMediaIntegrationController {
     public RedirectView redirectToSocialMedia(
             @PathVariable("providerId") String providerId,
             @ModelAttribute("currentUser") UserDetails userDetails) {
-        User user = userManagementService.fetchUserByUsername(userDetails.getUsername());
+        User user = userManagementService.fetchUserByUsernameStrict(userDetails.getUsername());
         RedirectView redirectView = new RedirectView();
         String location = "http://localhost:8085/connect/"+providerId+"?authuser_uid="+user.getUid();
         redirectView.setUrl(location);

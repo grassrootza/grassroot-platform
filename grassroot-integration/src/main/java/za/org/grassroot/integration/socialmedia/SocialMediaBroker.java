@@ -4,7 +4,7 @@ import org.springframework.util.MultiValueMap;
 
 public interface SocialMediaBroker {
 
-    boolean isFacebookPageConnected(String userUid);
+    IntegrationListResponse getCurrentIntegrations(String userUid);
 
     ManagedPagesResponse getManagedFacebookPages(String userUid);
 

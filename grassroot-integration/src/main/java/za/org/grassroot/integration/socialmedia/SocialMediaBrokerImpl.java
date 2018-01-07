@@ -57,28 +57,29 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
     }
 
     @Override
-    public boolean isFacebookPageConnected(String userUid) {
+    public IntegrationListResponse getCurrentIntegrations(String userUid) {
+        IntegrationListResponse response = new IntegrationListResponse();
+        response.addIntegration("facebook", getManagedPages(userUid, "facebook"));
+        response.addIntegration("twitter", getManagedPages(userUid, "twitter"));
+        response.addIntegration("google", getManagedPages(userUid, "google"));
+        return response;
+    }
+
+    private ManagedPagesResponse getManagedPages(String userUid, String providerId) {
+        final URI uri = baseUri(userUid).path("/connect/status/pages/" + providerId).build().toUri();
+        log.info("getting user's managed pages, URI = {}", uri.toString());
         try {
-            final URI uri = baseUri(userUid).path("/connect/status/facebook").build().toUri();
-            ResponseEntity<Boolean> response = restTemplate.getForEntity(uri, Boolean.class);
-            return response.getBody();
+            ResponseEntity<ManagedPagesResponse> response = restTemplate.exchange(uri, HttpMethod.GET, new HttpEntity<>(jwtHeaders()), ManagedPagesResponse.class);
+            return handleResponse(response, providerId);
         } catch (RestClientException e) {
-            log.error("rest exception! {}", e);
-            return false;
+            log.error("Error calling social media service! Exception looks like: {}", e);
+            return new ManagedPagesResponse();
         }
     }
 
     @Override
     public ManagedPagesResponse getManagedFacebookPages(String userUid) {
-        final URI uri = baseUri(userUid).path("/connect/status/pages/facebook").build().toUri();
-        log.info("getting user's facebook pages, URI = {}", uri.toString());
-        try {
-            ResponseEntity<ManagedPagesResponse> response = restTemplate.exchange(uri, HttpMethod.GET, new HttpEntity<>(jwtHeaders()), ManagedPagesResponse.class);
-            return handleResponse(response, "FB");
-        } catch (RestClientException e) {
-            log.error("Error calling social media service! Exception looks like: {}", e);
-            return null;
-        }
+        return getManagedPages(userUid, "facebook");
     }
 
     @Override

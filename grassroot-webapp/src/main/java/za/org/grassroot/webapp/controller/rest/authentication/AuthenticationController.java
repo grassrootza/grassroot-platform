@@ -2,6 +2,7 @@ package za.org.grassroot.webapp.controller.rest.authentication;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import org.apache.commons.validator.routines.EmailValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -242,16 +243,22 @@ public class AuthenticationController {
 
     @ApiOperation(value = "Login using password and retrieve a JWT token", notes = "The JWT token is returned as a string in the 'data' property")
     @RequestMapping(value = "/login-password", method = RequestMethod.GET)
-    public AuthorizationResponseDTO webLogin(@RequestParam("phoneNumber") String phoneNumber,
+    public AuthorizationResponseDTO webLogin(@RequestParam("username") String username,
                                              @RequestParam("password") String password,
                                              @RequestParam(required = false) UserInterfaceType interfaceType) {
         try {
-            final String msisdn = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
-            passwordTokenService.validatePassword(msisdn, password);
-            checkUserHasAccess(msisdn, interfaceType == null ? UserInterfaceType.ANGULAR : interfaceType);
+            boolean isPhoneNumber = PhoneNumberUtil.testInputNumber(username);
+            if (!isPhoneNumber && !EmailValidator.getInstance().isValid(username)) {
+                logger.error("got a bad username, : {}", username);
+                return new AuthorizationResponseDTO(RestMessage.INVALID_USERNAME);
+            }
+
+            passwordTokenService.validatePwdPhoneOrEmail(username, password);
+
+            checkUserHasAccess(username, interfaceType == null ? UserInterfaceType.ANGULAR : interfaceType);
 
             // get the user object
-            User user = userService.findByInputNumber(msisdn);
+            User user = userService.findByUsernameLoose(username);
 
             // Generate a token for the user (for the moment assuming it is Android client - Angular uses same params)
             CreateJwtTokenRequest tokenRequest = new CreateJwtTokenRequest(JwtType.ANDROID_CLIENT, user.getUid());
@@ -264,7 +271,7 @@ public class AuthenticationController {
             // Return the token on the response
             return new AuthorizationResponseDTO(response);
         } catch (UsernamePasswordLoginFailedException e) {
-            logger.error("Failed to generate authentication token for:  " + phoneNumber);
+            logger.error("Failed to generate authentication token for:  " + username);
             return new AuthorizationResponseDTO(RestMessage.INVALID_PASSWORD);
         }
 

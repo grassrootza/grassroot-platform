@@ -158,6 +158,20 @@ public class PasswordTokenManager implements PasswordTokenService {
     }
 
     @Override
+    public void validatePwdPhoneOrEmail(String username, String password) {
+        User user = userRepository.findByUsername(username);
+        if (user == null && PhoneNumberUtil.testInputNumber(username)) {
+            user = userRepository.findByPhoneNumberAndPhoneNumberNotNull(username);
+        }
+        if (user == null && EmailValidator.getInstance().isValid(username)) {
+            user = userRepository.findByEmailAddressAndEmailAddressNotNull(username);
+        }
+        if (user == null || !passwordEncoder.matches(password, user.getPassword())) {
+            throw new UsernamePasswordLoginFailedException();
+        }
+    }
+
+    @Override
     @Transactional
     public void changeUserPassword(String userUid, String oldPassword, String newPassword, UserInterfaceType interfaceType) {
         Objects.requireNonNull(userUid);

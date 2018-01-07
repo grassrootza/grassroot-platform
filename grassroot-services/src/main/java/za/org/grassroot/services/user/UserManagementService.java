@@ -30,7 +30,11 @@ public interface UserManagementService {
 
     User findByInputNumber(String inputNumber, String currentUssdMenu) throws NoSuchUserException;
 
-    User fetchUserByUsername(String username);
+    // if can't find by username itself, tries phone number or email
+    User findByUsernameLoose(String userName);
+
+    // only checks the username property alone
+    User fetchUserByUsernameStrict(String username);
 
     boolean userExist(String phoneNumber);
 

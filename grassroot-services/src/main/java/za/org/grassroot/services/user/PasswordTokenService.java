@@ -21,6 +21,8 @@ public interface PasswordTokenService {
 
     void validatePassword(String phoneNumber, String password);
 
+    void validatePwdPhoneOrEmail(String username, String password);
+
     void changeUserPassword(String userUid, String oldPassword, String newPassword, UserInterfaceType interfaceType);
 
     boolean isShortLivedOtpValid(String phoneNumber, String code);

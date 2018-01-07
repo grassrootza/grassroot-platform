@@ -55,7 +55,7 @@ public class UserProfileController extends BaseController {
     @ModelAttribute("sessionUser")
     public User getCurrentUser(Authentication authentication) {
         return (authentication == null) ? null :
-                userManagementService.fetchUserByUsername(((UserDetails) authentication.getPrincipal()).getUsername());
+                userManagementService.fetchUserByUsernameStrict(((UserDetails) authentication.getPrincipal()).getUsername());
     }
 
     @RequestMapping(value = "settings", method = RequestMethod.GET)

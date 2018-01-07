@@ -8,6 +8,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.integration.messaging.JwtService;
+import za.org.grassroot.integration.socialmedia.IntegrationListResponse;
 import za.org.grassroot.integration.socialmedia.ManagedPagesResponse;
 import za.org.grassroot.integration.socialmedia.SocialMediaBroker;
 import za.org.grassroot.services.user.UserManagementService;
@@ -31,6 +32,11 @@ public class IntegrationSettingsController extends BaseRestController {
         this.socialMediaBroker = socialMediaBroker;
     }
 
+    @RequestMapping(value = "/status/all")
+    public IntegrationListResponse getAllCurrentConnections(HttpServletRequest request) {
+        return socialMediaBroker.getCurrentIntegrations(getUserIdFromRequest(request));
+    }
+
     @RequestMapping(value = "/connect/facebook/initiate")
     public ResponseEntity<String> initiateFbConnect(HttpServletRequest request) {
         String location = socialMediaBroker.initiateFacebookConnection(getUserIdFromRequest(request));
@@ -51,4 +57,6 @@ public class IntegrationSettingsController extends BaseRestController {
         log.info("composed map: {}", map);
         return ResponseEntity.ok(socialMediaBroker.completeFbConnect(getUserIdFromRequest(request), map));
     }
+
+
 }

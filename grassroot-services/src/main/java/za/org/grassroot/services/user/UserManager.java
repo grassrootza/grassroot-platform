@@ -1,6 +1,7 @@
 package za.org.grassroot.services.user;
 
 import org.apache.commons.text.RandomStringGenerator;
+import org.apache.commons.validator.routines.EmailValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -425,6 +426,20 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     @Override
     @Transactional(readOnly = true)
+    public User findByUsernameLoose(String userName) {
+        User user = fetchUserByUsernameStrict(userName);
+        if (user == null) {
+            if (PhoneNumberUtil.testInputNumber(userName)) {
+                user = userRepository.findByPhoneNumberAndPhoneNumberNotNull(PhoneNumberUtil.convertPhoneNumber(userName));
+            } else if (EmailValidator.getInstance().isValid(userName)) {
+                user = userRepository.findByEmailAddressAndEmailAddressNotNull(userName);
+            }
+        }
+        return user;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<User> searchByGroupAndNameNumber(String groupUid, String nameOrNumber) {
         return userRepository.findByGroupsPartOfAndDisplayNameContainingIgnoreCaseOrPhoneNumberLike(
                 groupRepository.findOneByUid(groupUid), "%" + nameOrNumber + "%", "%" + nameOrNumber + "%");
@@ -548,7 +563,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     }
 
     @Override
-    public User fetchUserByUsername(String username) {
+    public User fetchUserByUsernameStrict(String username) {
         return userRepository.findByUsername(username);
     }
 
