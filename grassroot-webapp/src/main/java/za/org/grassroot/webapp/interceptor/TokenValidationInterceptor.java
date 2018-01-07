@@ -64,6 +64,12 @@ public class TokenValidationInterceptor extends HandlerInterceptorAdapter {
             return true;
         }
 
+        // some debugging for staging
+        if (environment.acceptsProfiles("staging")) {
+            log.info("headers received: {}", request.getHeaderNames());
+            log.info("jwt header: {}", authorizationHeader.getBearerToken());
+        }
+
         if (authorizationHeader.hasBearerToken()
                 && jwtService.isJwtTokenValid(authorizationHeader.getBearerToken())) {
             return true;
