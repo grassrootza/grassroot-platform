@@ -55,13 +55,14 @@ public interface GroupBroker {
 
     void addMemberViaJoinCode(String userUidToAdd, String groupUid, String tokenPassed, UserInterfaceType interfaceType);
 
-    String addMemberViaJoinCode(String groupUid, String code, String userUid, String name, String phone, String email,
+    String addMemberViaJoinPage(String groupUid, String code, String userUid, String name, String phone, String email,
                                 Province province, List<String> topics);
 
     void notifyOrganizersOfJoinCodeUse(Instant periodStart, Instant periodEnd);
 
     void asyncAddMemberships(String initiatorUid, String groupUid, Set<MembershipInfo> membershipInfos,
-                             GroupJoinMethod joinMethod, boolean duringGroupCreation, boolean createWelcomeNotifications);
+                             GroupJoinMethod joinMethod, String joinMethodDescriptor,
+                             boolean duringGroupCreation, boolean createWelcomeNotifications);
 
 
     void removeMembers(String userUid, String groupUid, Set<String> memberUids);

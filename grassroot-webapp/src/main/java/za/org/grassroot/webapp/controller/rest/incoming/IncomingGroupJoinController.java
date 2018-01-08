@@ -8,17 +8,16 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.services.user.UserProfileStatus;
 import za.org.grassroot.webapp.controller.rest.BaseRestController;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
-import za.org.grassroot.webapp.controller.rest.group.GroupJoinInfo;
+import za.org.grassroot.webapp.controller.rest.group.join.JoinInfoExternal;
+import za.org.grassroot.webapp.controller.rest.group.join.JoinSubmitInfo;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.Arrays;
 
 @RestController @Grassroot2RestController
 @Api("/api/group/outside/join/") @Slf4j
@@ -36,11 +35,11 @@ public class IncomingGroupJoinController extends BaseRestController {
 
     @RequestMapping(value = "/start/{groupUid}", method = RequestMethod.GET)
     @ApiOperation(value = "Initiate use of a join code (word, or URL)")
-    public ResponseEntity<GroupJoinInfo> initiateUseOfJoinWord(HttpServletRequest request,
-                                                               @PathVariable String groupUid,
-                                                               @RequestParam String code) {
+    public ResponseEntity<JoinInfoExternal> initiateUseOfJoinWord(HttpServletRequest request,
+                                                                  @PathVariable String groupUid,
+                                                                  @RequestParam String code) {
         Group group = groupBroker.loadAndRecordUse(groupUid, code);
-        GroupJoinInfo.GroupJoinInfoBuilder builder = GroupJoinInfo.builder()
+        JoinInfoExternal.JoinInfoExternalBuilder builder = JoinInfoExternal.builder()
                 .groupName(group.getName())
                 .groupUid(group.getUid())
                 .groupDescription(group.getDescription())
@@ -65,13 +64,10 @@ public class IncomingGroupJoinController extends BaseRestController {
     public ResponseEntity<UserProfileStatus> completeUseOfJoinWord(HttpServletRequest request,
                                                                    @PathVariable String groupUid,
                                                                    @RequestParam String code,
-                                                                   @RequestParam(required = false) String name,
-                                                                   @RequestParam(required = false) String phone,
-                                                                   @RequestParam(required = false) String email,
-                                                                   @RequestParam(required = false) Province province,
-                                                                   @RequestParam(required = false) String[] topics) {
-        String joinedUserUid = groupBroker.addMemberViaJoinCode(groupUid, code, getUserIdFromRequest(request),
-                name, phone, email, province, Arrays.asList(topics));
+                                                                   @RequestBody JoinSubmitInfo joinSubmitInfo) {
+        String joinedUserUid = groupBroker.addMemberViaJoinPage(groupUid, code, getUserIdFromRequest(request),
+                joinSubmitInfo.getName(), joinSubmitInfo.getPhone(), joinSubmitInfo.getEmail(),
+                joinSubmitInfo.safeProvince(), joinSubmitInfo.getTopics());
         return ResponseEntity.ok(userManager.fetchUserProfileStatus(joinedUserUid));
     }
 

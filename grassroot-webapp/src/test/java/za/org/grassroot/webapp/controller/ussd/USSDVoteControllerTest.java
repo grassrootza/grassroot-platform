@@ -77,7 +77,7 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
     public void voteRequestScreenShouldWorkInAllLanguages() throws Exception {
         testUser = new User(testUserPhone, "test user", null);
         Group testGroup = new Group("test group", testUser);
-        testGroup.addMember(testUser, BaseRoles.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+        testGroup.addMember(testUser, BaseRoles.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         Vote vote = new Vote("are unit tests working?", Instant.now().plus(1, ChronoUnit.HOURS), testUser, testGroup);
 
         List<User> votingUsers = new ArrayList<>(languageUsers);
@@ -85,7 +85,7 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
 
         for (User user : votingUsers) {
 
-            testGroup.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER); // this may be redundant
+            testGroup.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null); // this may be redundant
             user.setHasInitiatedSession(false);
 
             when(userManagementServiceMock.loadOrCreateUser(user.getPhoneNumber())).thenReturn(user);
@@ -114,7 +114,7 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
                                                new Group("tg2", testUser),
                                                new Group("tg3", testUser));
 
-        testGroups.forEach(tg -> tg.addMember(testUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER));
+        testGroups.forEach(tg -> tg.addMember(testUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null));
 
         when(userManagementServiceMock.findByInputNumber(eq(testUserPhone), anyString())).thenReturn(testUser);
         when(permissionBrokerMock.countActiveGroupsWithPermission(testUser, GROUP_PERMISSION_CREATE_GROUP_VOTE)).thenReturn(3);

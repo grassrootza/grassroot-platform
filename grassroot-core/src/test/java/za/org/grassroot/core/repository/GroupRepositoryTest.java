@@ -164,9 +164,9 @@ public class GroupRepositoryTest {
         userRepository.save(userRole2);
 
         Group groupToCreate = new Group("TestGroup", userRole);
-        groupToCreate.addMember(userRole, BaseRoles.ROLE_COMMITTEE_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
-        groupToCreate.addMember(userRole1, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
-        groupToCreate.addMember(userRole2, BaseRoles.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+        groupToCreate.addMember(userRole, BaseRoles.ROLE_COMMITTEE_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        groupToCreate.addMember(userRole1, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        groupToCreate.addMember(userRole2, BaseRoles.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         groupRepository.save(groupToCreate);
 
         assertThat(groupRepository.count(), is(1L));
@@ -202,7 +202,7 @@ public class GroupRepositoryTest {
         List<User> usersToAdd = Arrays.asList(userAdd, userAdd1);
 
         Group groupToAdd = new Group("TestGroup", userAdd);
-        groupToAdd.addMembers(usersToAdd, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+        groupToAdd.addMembers(usersToAdd, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         groupRepository.save(groupToAdd);
 
         assertThat(groupRepository.count(), is(1L));
@@ -231,7 +231,7 @@ public class GroupRepositoryTest {
         List<User> usersToCollect = Arrays.asList(userToRetrieve, userToRetrieve1);
 
         Group groupToCollect = new Group("TestGroup",userToRetrieve);
-        groupToCollect.addMembers(usersToCollect, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+        groupToCollect.addMembers(usersToCollect, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         groupRepository.save(groupToCollect);
 
         assertThat(groupRepository.count(),is(1L));
@@ -262,7 +262,7 @@ public class GroupRepositoryTest {
         List<User> userNumber = Arrays.asList(userToRemove,userToRemove1);
 
         Group groupToCreate = new Group("Test Group",userToRemove);
-        groupToCreate.addMembers(userNumber, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+        groupToCreate.addMembers(userNumber, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         groupRepository.save(groupToCreate);
         assertThat(groupRepository.count(),is(1L));
 
@@ -484,7 +484,7 @@ public class GroupRepositoryTest {
         assertThat(groupRepository.count(), is(0L));
         User userForTest = userRepository.save(new User("0814441111", null, null));
         Group groupToCreate = groupRepository.save(new Group("testGroup", userForTest));
-        groupToCreate.addMember(userForTest, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+        groupToCreate.addMember(userForTest, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         groupToCreate = groupRepository.save(groupToCreate);
         assertThat(groupRepository.count(), is(1L));
         assertNotNull(groupToCreate);
@@ -654,8 +654,8 @@ public class GroupRepositoryTest {
         User user = userRepository.save(new User("3331115555", null, null));
         Group group1 = new Group("gc1", user);
         Group group2 = new Group("gc2", user);
-        group1.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
-        group2.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+        group1.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        group2.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         group1 = groupRepository.save(group1);
         group2 = groupRepository.save(group2);
         group2.setActive(false);
@@ -672,7 +672,7 @@ public class GroupRepositoryTest {
         User user = userRepository.save(new User("3331110000", null, null));
         List<Group> testGroups = Arrays.asList(new Group("gc1", user), new Group("gc2", user), new Group("gc3", user), new Group("gc4", user));
         for (Group group : testGroups)
-            group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+            group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         testGroups = groupRepository.save(testGroups);
         assertThat(groupRepository.count(), is(4L));
         Page<Group> pageTest1 = groupRepository.findByCreatedByUserAndActiveTrueOrderByCreatedDateTimeDesc(user, new PageRequest(0, 3));
@@ -740,8 +740,8 @@ public class GroupRepositoryTest {
         group1.getRole(BaseRoles.ROLE_GROUP_ORGANIZER).addPermission(Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING);
         group2.getRole(BaseRoles.ROLE_ORDINARY_MEMBER).addPermission(Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING);
 
-        group1.addMember(user, BaseRoles.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
-        group2.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+        group1.addMember(user, BaseRoles.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        group2.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
 
         groupRepository.save(group1);
         groupRepository.save(group2);
@@ -794,8 +794,8 @@ public class GroupRepositoryTest {
         User user1 = new User("56789", null, null);
         User user2 = new User("12345", null, null);
         Group group1 = new Group("test", user1);
-        group1.addMember(user1, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
-        group1.addMember(user2, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+        group1.addMember(user1, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        group1.addMember(user2, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         groupRepository.save(group1);
         assertThat(groupRepository.count(), is(1L));
 

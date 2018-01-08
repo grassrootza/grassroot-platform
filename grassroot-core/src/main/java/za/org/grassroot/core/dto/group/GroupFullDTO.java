@@ -19,6 +19,9 @@ import java.util.stream.Collectors;
 @ApiModel @Getter @Slf4j
 public class GroupFullDTO extends GroupHeavyDTO {
 
+    // note: in future we may make this variable / settable
+    private static final int MAX_JOIN_WORDS = 3;
+
     private final String joinCode;
     private final boolean paidFor;
     private final Set<MembershipDTO> members;
@@ -26,6 +29,7 @@ public class GroupFullDTO extends GroupHeavyDTO {
     @Setter private List<GroupRefDTO> subGroups = new ArrayList<>();
     @Setter private List<String> topics = new ArrayList<>();
     @Setter private List<String> joinWords = new ArrayList<>();
+    @Setter private int joinWordsLeft = 0;
 
     public GroupFullDTO(Group group, Membership membership) {
         super(group, membership);
@@ -35,6 +39,8 @@ public class GroupFullDTO extends GroupHeavyDTO {
         this.joinWords.addAll(group.getGroupJoinCodes().stream()
                 .filter(GroupJoinCode::isActive).filter(g -> JoinCodeType.JOIN_WORD.equals(g.getType()))
                 .map(GroupJoinCode::getCode).collect(Collectors.toList()));
+
+        this.joinWordsLeft = MAX_JOIN_WORDS - this.joinWords.size();
 
         if (membership.getRole().getPermissions().contains(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS)) {
             this.members = group.getMemberships().stream()

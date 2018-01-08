@@ -91,7 +91,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
     public void meetingRsvpShouldWorkInAllLanguages() throws Exception {
         User testUser = new User(testUserPhone, null, null);
         Group testGroup = new Group(testGroupName, testUser);
-        testGroup.addMember(testUser, BaseRoles.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+        testGroup.addMember(testUser, BaseRoles.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         Meeting meeting = new MeetingBuilder().setName("Meeting about testing").setStartDateTime(Instant.now()).setUser(testUser).setParent(testGroup).setEventLocation("someLocation").createMeeting();
 
         List<User> groupMembers = new ArrayList<>(languageUsers);
@@ -145,7 +145,7 @@ public class USSDMeetingControllerTest extends USSDAbstractUnitTest {
         List<Group> existingGroupList = Arrays.asList(new Group("gc1", testUser),
                                                       new Group("gc2", testUser),
                                                       new Group("gc3", testUser));
-        existingGroupList.forEach(g -> g.addMember(testUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER));
+        existingGroupList.forEach(g -> g.addMember(testUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null));
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(eventBrokerMock.userHasEventsToView(testUser, EventType.MEETING, EventListTimeType.FUTURE)).thenReturn(false);

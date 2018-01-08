@@ -283,14 +283,14 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         }
     }
 
-    public Set<Membership> addMembers(Collection<User> newMembers, String roleName, GroupJoinMethod joinMethod) {
+    public Set<Membership> addMembers(Collection<User> newMembers, String roleName, GroupJoinMethod joinMethod, String joinMethodDescriptor) {
         Objects.requireNonNull(roleName);
         Objects.requireNonNull(newMembers);
 
         Role role = getRole(roleName);
         Set<Membership> memberships = new HashSet<>();
         for (User newMember : newMembers) {
-            Membership membership = addMemberInternal(newMember, role, joinMethod);
+            Membership membership = addMemberInternal(newMember, role, joinMethod, joinMethodDescriptor);
             if (membership != null) {
                 memberships.add(membership);
             }
@@ -299,14 +299,14 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
     }
 
 
-    public Membership addMember(User newMember, String roleName, GroupJoinMethod joinMethod) {
+    public Membership addMember(User newMember, String roleName, GroupJoinMethod joinMethod, String joinMethodDescriptor) {
         Objects.requireNonNull(roleName);
         Role role = getRole(roleName);
-        return addMemberInternal(newMember, role, joinMethod);
+        return addMemberInternal(newMember, role, joinMethod, joinMethodDescriptor);
     }
 
 
-    private Membership addMemberInternal(User newMember, Role role, GroupJoinMethod joinMethod) {
+    private Membership addMemberInternal(User newMember, Role role, GroupJoinMethod joinMethod, String joinMethodDescriptor) {
 
         Objects.requireNonNull(newMember);
         Objects.requireNonNull(role);
@@ -314,7 +314,8 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         if (!getGroupRoles().contains(role)) {
             throw new IllegalArgumentException("Role " + role + " is not one of roles belonging to group: " + this);
         }
-        Membership membership = new Membership(this, newMember, role, Instant.now(), joinMethod);
+        Membership membership = new Membership(this, newMember, role, Instant.now(), joinMethod,
+                joinMethodDescriptor);
         boolean added = this.memberships.add(membership);
         if (added) {
             newMember.addMappedByMembership(membership);

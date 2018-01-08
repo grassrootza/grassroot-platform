@@ -59,7 +59,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
         Group dummyGroup = new Group("Dummy Group2", new User("234345345", null, null));
         Group dummySubGroup = new Group("Dummy Group3", new User("234345345", null, null));
 
-        dummyGroup.addMember(sessionTestUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+        dummyGroup.addMember(sessionTestUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         Set<Group> subGroups = Collections.singleton(dummySubGroup);
 
         TaskDTO dummyTask = null;
@@ -98,7 +98,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
     @Test
     public void modifyGroupWorks() throws Exception {
         Group dummyGroup = new Group("Dummy Group", new User("234345345", null, null));
-        dummyGroup.addMember(sessionTestUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+        dummyGroup.addMember(sessionTestUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
 
         when(userManagementServiceMock.load(sessionTestUser.getUid())).thenReturn(sessionTestUser);
         when(groupBrokerMock.load(dummyGroup.getUid())).thenReturn(dummyGroup);
@@ -144,7 +144,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
     @Test
     public void newTokenWorks() throws Exception {
         Group testGroup = new Group("Dummy Group", new User("234345345", null, null));
-        testGroup.addMember(sessionTestUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+        testGroup.addMember(sessionTestUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
 
         when(userManagementServiceMock.load(sessionTestUser.getUid())).thenReturn(sessionTestUser);
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
@@ -161,7 +161,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
     @Test
     public void closeTokenWorks() throws Exception {
         Group group = new Group("someGroupname", new User("234345345", null, null));
-        group.addMember(sessionTestUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+        group.addMember(sessionTestUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         group.setGroupTokenCode("12345");
         group.setTokenExpiryDateTime(DateTimeUtil.convertToSystemTime(LocalDateTime.now().plusYears(1L), DateTimeUtil.getSAST()));
 
@@ -275,7 +275,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
 
         Group testGroupSmall = new Group("someGroupnameSmall", new User("234345345", null, null));
         Group testGroupLarge = new Group("someGroupnameLarge", new User("234345345", null, null));
-        testGroupLarge.addMember(sessionTestUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+        testGroupLarge.addMember(sessionTestUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
 
         String[] orderedUids = {testGroupSmall.getUid(), testGroupLarge.getUid()};
         String[] orders = {"small_to_large", "1_into_2", "2_into_1"};
@@ -307,10 +307,10 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
     @Test
     public void groupsConsolidateDoWorks() throws Exception {
         Group testGroupInto = new Group("someGroupname", new User("234345345", null, null));
-        testGroupInto.addMember(new User("100001", null, null), BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+        testGroupInto.addMember(new User("100001", null, null), BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
 
         Group testGroupFrom = new Group("someGroupname2", new User("234345345", null, null));
-        testGroupFrom.addMember(sessionTestUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+        testGroupFrom.addMember(sessionTestUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
 
         when(groupBrokerMock.load(testGroupFrom.getUid())).thenReturn(testGroupFrom);
         when(groupBrokerMock.merge(sessionTestUser.getUid(), testGroupInto.getUid(), testGroupFrom.getUid(), true, true, false, null))
@@ -351,7 +351,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
     public void deleteGroupWorksWithConfirmFieldValueInvalid() throws Exception {
 
         Group group = new Group("someGroupname", sessionTestUser);
-        group.addMember(sessionTestUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+        group.addMember(sessionTestUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
 
         when(groupBrokerMock.load(group.getUid())).thenReturn(group);
         when(groupBrokerMock.isDeactivationAvailable(sessionTestUser, group, true)).thenReturn(true);
@@ -371,7 +371,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
     @Test
     public void unSubgroupWorks() throws Exception {
         Group testGroup = new Group("Dummy Group2", new User("234345345", null, null));
-        testGroup.addMember(sessionTestUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+        testGroup.addMember(sessionTestUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
 
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
 
@@ -389,7 +389,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
     public void groupHistoryThisMonthShouldWork() throws Exception {
 
         Group testGroup = new Group("someGroupname", new User("234345345", null, null));
-        testGroup.addMember(sessionTestUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+        testGroup.addMember(sessionTestUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
 
         List<Event> dummyEvents = Arrays.asList(
                 new MeetingBuilder().setName("someMeeting").setStartDateTime(Instant.now()).setUser(sessionTestUser).setParent(testGroup).setEventLocation("someLoc").createMeeting(),
@@ -452,7 +452,7 @@ public class GroupControllerTest extends WebAppAbstractUnitTest {
 
         User thisTestUser = new User("234345345", null, null);
         Group testGroup = new Group("someGroupname", thisTestUser);
-        testGroup.addMember(sessionTestUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+        testGroup.addMember(sessionTestUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
 
         List<Event> dummyEvents = Collections.singletonList(new MeetingBuilder().setName("someMeeting").setStartDateTime(Instant.now()).setUser(sessionTestUser).setParent(testGroup).setEventLocation("someLoc").createMeeting());
         EventLog dummyLog = new EventLog(sessionTestUser, dummyEvents.get(0), EventLogType.RSVP);

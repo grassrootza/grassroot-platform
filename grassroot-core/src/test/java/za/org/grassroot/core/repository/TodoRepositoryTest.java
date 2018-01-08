@@ -87,7 +87,7 @@ public class TodoRepositoryTest {
     public void shouldSaveAndRetrieveTodoAssignedToUserAndCompleted()  {
         User user = userRepository.save(new User("001111145", null, null));
         Group group = new Group("test action", user);
-        group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+        group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         groupRepository.save(group);
 
         Todo lb1 = new Todo(user, group, TodoType.ACTION_REQUIRED, "assigned 1", addHoursFromNow(2));
@@ -110,7 +110,7 @@ public class TodoRepositoryTest {
     public void shouldRetrieveTodosWithTimeChanged() {
         User user = userRepository.save(new User("0601110000", null, null));
         Group group = new Group("test", user);
-        group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+        group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         groupRepository.save(group);
 
         Todo todo1 = todoRepository.save(new Todo(user, group, TodoType.ACTION_REQUIRED, "firstOne", addHoursFromNow(2)));

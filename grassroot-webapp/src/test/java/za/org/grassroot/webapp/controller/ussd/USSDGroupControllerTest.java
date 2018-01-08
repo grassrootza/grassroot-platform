@@ -93,7 +93,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
     @Test
     public void openingMenuShouldWorkWithNoGroups() throws Exception {
         resetTestGroup();
-        testGroup.addMember(testUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+        testGroup.addMember(testUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(permissionBrokerMock.getActiveGroupsWithPermission(testUser, null)).thenReturn(new HashSet<>());
         mockMvc.perform(get(path + "start").param(phoneParam, testUserPhone)).andExpect(status().isOk());
@@ -574,7 +574,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
      */
     private void resetTestGroup() {
         testGroup.setGroupName("test testGroup");
-        testGroup.addMember(testUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+        testGroup.addMember(testUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
     }
 
 }

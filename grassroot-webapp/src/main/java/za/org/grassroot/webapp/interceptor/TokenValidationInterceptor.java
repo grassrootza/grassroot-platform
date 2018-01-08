@@ -21,7 +21,6 @@ import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapperImpl;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.util.Enumeration;
 import java.util.Map;
 
 /**
@@ -63,16 +62,6 @@ public class TokenValidationInterceptor extends HandlerInterceptorAdapter {
 
         if (environment.acceptsProfiles("localpg")) {
             return true;
-        }
-
-        // some debugging for staging
-        if (environment.acceptsProfiles("staging")) {
-            Enumeration headerNames = request.getHeaderNames();
-            while(headerNames.hasMoreElements()) {
-                String headerName = (String)headerNames.nextElement();
-                log.info("header: " + headerName + ":" + request.getHeader(headerName));
-            }
-            log.info("jwt header: {}", authorizationHeader.getBearerToken());
         }
 
         if (authorizationHeader.hasBearerToken()

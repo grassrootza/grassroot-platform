@@ -1,4 +1,4 @@
-package za.org.grassroot.webapp.controller.rest.group;
+package za.org.grassroot.webapp.controller.rest.group.join;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.annotations.ApiModel;
@@ -11,7 +11,7 @@ import java.util.List;
 @ApiModel
 @Getter @Setter @Builder
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
-public class GroupJoinInfo {
+public class JoinInfoExternal {
 
     @Builder.Default private boolean userLoggedIn = false;
     @Builder.Default private boolean userAlreadyMember = false;

@@ -1,0 +1,1 @@
+alter table account_log alter column user_uid set not null;
