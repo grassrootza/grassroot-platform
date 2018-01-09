@@ -3,10 +3,8 @@ package za.org.grassroot.services.broadcasts;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.Specifications;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountLog;
@@ -81,9 +79,9 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         builder.isFbConnected(fbStatus.isUserConnectionValid())
                 .facebookPages(fbStatus.getManagedPages());
 
-        String twitterAccount = socialMediaBroker.isTwitterAccountConnected(userUid);
-        builder.isTwitterConnected(!StringUtils.isEmpty(twitterAccount))
-                .twitterAccountName(twitterAccount);
+        ManagedPage twitterAccount = socialMediaBroker.isTwitterAccountConnected(userUid);
+        builder.isTwitterConnected(twitterAccount != null)
+                .twitterAccount(twitterAccount);
 
         return builder.build();
     }

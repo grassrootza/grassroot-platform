@@ -4,7 +4,9 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
 import lombok.Getter;
 import za.org.grassroot.core.enums.Province;
+import za.org.grassroot.integration.socialmedia.ManagedPage;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -16,10 +18,10 @@ public class BroadcastInfo {
     int smsCostCents;
 
     boolean isFbConnected;
-    Map<String, String> facebookPages;
+    List<ManagedPage> facebookPages;
 
     boolean isTwitterConnected;
-    String twitterAccountName;
+    ManagedPage twitterAccount;
 
     // we will use these for constructing the various counts (once also have various counting infra set up)
     Map<String, Set<String>> taskTeamMemberUids;

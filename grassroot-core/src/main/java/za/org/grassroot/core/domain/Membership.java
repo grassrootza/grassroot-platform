@@ -71,6 +71,7 @@ public class Membership implements Serializable, TagHolder {
         this.joinTime = Objects.requireNonNull(joinTime);
         this.joinMethod = joinMethod;
         this.viewPriority = GroupViewPriority.NORMAL; // no case where starts off pinned or hidden
+
         if (!StringUtils.isEmpty(joinMethodDescriptor)) {
             this.addTag(JOIN_METHOD_DESCRIPTOR_TAG + joinMethodDescriptor);
         }

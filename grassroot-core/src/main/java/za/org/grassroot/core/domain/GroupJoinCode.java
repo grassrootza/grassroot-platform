@@ -57,6 +57,10 @@ public class GroupJoinCode {
     @JoinColumn(name = "closing_user_uid", referencedColumnName = "uid")
     @Setter private User closingUser;
 
+    @Basic
+    @Column(name = "short_url", length = 30) // leaving it at 30 just in case (slim it in future)
+    @Setter private String shortUrl;
+
     // we can count this from logs, _but_ there are some entry points where we don't
     // have a user yet (e.g., via web), and creating a log would be excessive, until/unless high demand for it
     @Basic

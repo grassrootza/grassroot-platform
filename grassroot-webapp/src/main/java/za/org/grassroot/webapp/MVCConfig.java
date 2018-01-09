@@ -89,6 +89,7 @@ public class MVCConfig extends WebMvcConfigurerAdapter {
                 .addPathPatterns("/api/notification")
                 .excludePathPatterns("/api/group/search")
                 .excludePathPatterns("/api/group/fetch/flyer")
+                .excludePathPatterns("/api/group/outside/join/**")
                 .excludePathPatterns("/api/language/test/**")
                 .excludePathPatterns("/api/jwt/public/credentials");
     }

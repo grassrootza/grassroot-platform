@@ -161,7 +161,7 @@ public class AccountLog implements ActionLog {
         return "AccountLog{" +
                 "id=" + id +
                 ", creationTime =" + creationTime +
-                ", userUid=" + user.getUid() +
+                ", userUid=" + (user == null ? "null" : user.getUid()) +
                 ", groupUid=" + group.getUid() +
                 ", accountLogType=" + accountLogType +
                 ", description='" + description + '\'' +

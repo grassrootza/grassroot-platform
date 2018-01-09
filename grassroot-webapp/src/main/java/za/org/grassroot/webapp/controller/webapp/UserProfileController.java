@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.integration.socialmedia.ManagedPage;
 import za.org.grassroot.integration.socialmedia.ManagedPagesResponse;
 import za.org.grassroot.integration.socialmedia.SocialMediaBroker;
 import za.org.grassroot.services.exception.InvalidTokenException;
@@ -138,9 +139,9 @@ public class UserProfileController extends BaseController {
         model.addAttribute("fbConnected", response.isUserConnectionValid());
         model.addAttribute("fbPages", response.getManagedPages());
         log.info("time for first call: {} msecs", System.currentTimeMillis() - startTime);
-        String twitterAccount = socialMediaBroker.isTwitterAccountConnected(getUserProfile().getUid());
+        ManagedPage twitterAccount = socialMediaBroker.isTwitterAccountConnected(getUserProfile().getUid());
         model.addAttribute("twitterConnected", twitterAccount != null);
-        model.addAttribute("twitterAccountName", twitterAccount);
+        model.addAttribute("twitterAccountName", twitterAccount != null ? twitterAccount.getDisplayName() : "");
         log.info("time for both calls: {} msecs", System.currentTimeMillis() - startTime);
         return "user/social-media";
     }

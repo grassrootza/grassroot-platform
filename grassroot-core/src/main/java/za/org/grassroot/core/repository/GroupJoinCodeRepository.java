@@ -26,4 +26,6 @@ public interface GroupJoinCodeRepository extends JpaRepository<GroupJoinCode, UU
 
     List<GroupJoinCode> findByActiveTrue();
 
+    long countByGroupUidAndActiveTrue(String groupUid);
+
 }
