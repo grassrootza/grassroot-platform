@@ -2,6 +2,7 @@ package za.org.grassroot.services.broadcasts;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +29,7 @@ import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -37,6 +39,9 @@ import static za.org.grassroot.core.specifications.NotificationSpecifications.*;
 
 @Service @Slf4j
 public class BroadcastBrokerImpl implements BroadcastBroker {
+
+    @Value("${grassroot.broadcast.mocksm.enabled:false}")
+    private boolean mockSocialMediaBroadcasts;
 
     private final BroadcastRepository broadcastRepository;
     private final UserRepository userRepository;
@@ -75,13 +80,25 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
             builder.isSmsAllowed(false);
         }
 
-        ManagedPagesResponse fbStatus = socialMediaBroker.getManagedFacebookPages(userUid);
-        builder.isFbConnected(fbStatus.isUserConnectionValid())
-                .facebookPages(fbStatus.getManagedPages());
+        if (mockSocialMediaBroadcasts) {
+            ManagedPage mockPage = new ManagedPage();
+            mockPage.setDisplayName("Testing FB page");
+            mockPage.setProviderUserId("testing");
+            ManagedPage mockAccount = new ManagedPage();
+            mockAccount.setDisplayName("Testing Twitter account");
+            mockAccount.setProviderUserId("testing");
+            builder.isFbConnected(true).facebookPages(Collections.singletonList(mockPage));
+            builder.isTwitterConnected(true).twitterAccount(mockAccount);
+        } else {
+            ManagedPagesResponse fbStatus = socialMediaBroker.getManagedFacebookPages(userUid);
+            builder.isFbConnected(fbStatus.isUserConnectionValid())
+                    .facebookPages(fbStatus.getManagedPages());
 
-        ManagedPage twitterAccount = socialMediaBroker.isTwitterAccountConnected(userUid);
-        builder.isTwitterConnected(twitterAccount != null)
-                .twitterAccount(twitterAccount);
+            ManagedPage twitterAccount = socialMediaBroker.isTwitterAccountConnected(userUid);
+            builder.isTwitterConnected(twitterAccount != null)
+                    .twitterAccount(twitterAccount);
+        }
+
 
         return builder.build();
     }
@@ -131,7 +148,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
             log.info("sending an FB post, from builder: {}", bc.getFacebookPost());
             recordFbPost(bc.getFacebookPost(), broadcast);
             GenericPostResponse fbResponse = socialMediaBroker.postToFacebook(bc.getFacebookPost());
-            if (fbResponse != null && fbResponse.isPostSuccessful()) {
+            if ((fbResponse != null && fbResponse.isPostSuccessful()) || mockSocialMediaBroadcasts) {
                 broadcast.setFbPostSucceeded(true);
             }
         }
@@ -139,7 +156,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         if (bc.getTwitterPostBuilder() != null) {
             recordTwitterPost(bc.getTwitterPostBuilder(), broadcast);
             GenericPostResponse twResponse = socialMediaBroker.postToTwitter(bc.getTwitterPostBuilder());
-            if (twResponse != null && twResponse.isPostSuccessful()) {
+            if ((twResponse != null && twResponse.isPostSuccessful()) || mockSocialMediaBroadcasts) {
                 broadcast.setTwitterSucceeded(true);
             }
         }
