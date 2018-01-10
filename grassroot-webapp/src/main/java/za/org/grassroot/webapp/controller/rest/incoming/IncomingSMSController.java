@@ -208,7 +208,7 @@ public class IncomingSMSController {
 
     private void notifyUnableToProcessReply(User user) {
         String message = messageAssemblingService.createReplyFailureMessage(user);
-        messagingServiceBroker.sendSMS(message, user.getPhoneNumber(), true);
+        messagingServiceBroker.sendSMS(message, user.getUid(), true);
     }
 
 }

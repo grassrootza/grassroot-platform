@@ -43,12 +43,12 @@ public class MessagingServiceBrokerImpl implements MessagingServiceBroker {
     }
 
     @Override
-    public void sendSMS(String message, String destinationNumber, boolean userRequested) {
+    public void sendSMS(String message, String userUid, boolean userRequested) {
         String serviceCallUri = baseUri()
                 .path("/notification/push/system/{destinationNumber}")
                 .queryParam("message", message)
                 .queryParam("userRequested", userRequested)
-                .buildAndExpand(destinationNumber)
+                .buildAndExpand(userUid)
                 .toUriString();
         asyncRestTemplate
                 .exchange(

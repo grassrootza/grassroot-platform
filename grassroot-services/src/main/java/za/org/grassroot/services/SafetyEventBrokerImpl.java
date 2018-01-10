@@ -111,7 +111,7 @@ public class SafetyEventBrokerImpl implements SafetyEventBroker {
             String message = (count++ > 3) ?
                     messageAssemblingService.createBarringMessage(safetyEvent.getActivatedBy()) :
                     messageAssemblingService.createFalseSafetyEventActivationMessage(safetyEvent.getActivatedBy(), count);
-            messagingServiceBroker.sendSMS(requestor.getPhoneNumber(), message, false);
+            messagingServiceBroker.sendSMS(requestor.getUid(), message, false);
         }
 
         Group group = safetyEvent.getGroup();
@@ -124,7 +124,7 @@ public class SafetyEventBrokerImpl implements SafetyEventBroker {
 
     private void sendRespondedNotice(SafetyEvent safetyEvent, User responder, User member) {
         messagingServiceBroker.sendSMS(messageAssemblingService.createSafetyEventReportMessage(
-                member, responder, safetyEvent, true), member.getPhoneNumber(), false);
+                member, responder, safetyEvent, true), member.getUid(), false);
         cacheUtilService.clearSafetyEventResponseForUser(member, safetyEvent);
     }
 
@@ -204,7 +204,7 @@ public class SafetyEventBrokerImpl implements SafetyEventBroker {
         for (User respondent : group.getMembers()) {
             if (!respondent.equals(requestor)) {
                 String message = messageAssemblingService.createSafetyEventMessage(respondent, requestor, address, true);
-                messagingServiceBroker.sendSMS(message, respondent.getPhoneNumber(), false);
+                messagingServiceBroker.sendSMS(message, respondent.getUid(), false);
             }
         }
 

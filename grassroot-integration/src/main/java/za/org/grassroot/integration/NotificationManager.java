@@ -82,22 +82,6 @@ public class NotificationManager implements NotificationService{
     }
 
     @Override
-    @Transactional
-    public void markNotificationAsDelivered(String notificationUid) {
-        Notification notification = notificationRepository.findByUid(notificationUid);
-        if (notification != null) {
-            notification.updateStatus(NotificationStatus.DELIVERED, false, false, null);
-        } else {
-            log.info("No notification under UID {}, possibly from another environment", notificationUid);
-        }
-    }
-
-    @Override
-    public Notification loadBySeningKey(String sendingKey) {
-        return notificationRepository.findOne(NotificationSpecifications.getBySendingKey(sendingKey));
-    }
-
-    @Override
     public List<Notification> loadRecentFailedNotificationsInGroup(LocalDateTime from, LocalDateTime to, Group group) {
         Instant fromInstant = DateTimeUtil.convertToSystemTime(from, ZoneId.systemDefault());
         Instant toInstant = DateTimeUtil.convertToSystemTime(to, ZoneId.systemDefault());
@@ -108,14 +92,4 @@ public class NotificationManager implements NotificationService{
         return notificationRepository.findAll(specs);
     }
 
-    @Override
-    @Transactional
-    public void updateNotificationStatus(String notificationUid, NotificationStatus status, String errorMessage, String messageSendKey) {
-        Notification notification = notificationRepository.findByUid(notificationUid);
-        if (notification != null) {
-            notification.updateStatus(status, false, false, errorMessage);
-            if (messageSendKey != null)
-                notification.setSendingKey(messageSendKey);
-        }
-    }
 }
