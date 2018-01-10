@@ -8,6 +8,8 @@ import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.domain.task.Task;
+import za.org.grassroot.core.domain.task.Todo;
+import za.org.grassroot.core.domain.task.TodoType;
 import za.org.grassroot.core.enums.TaskType;
 
 import java.time.Instant;
@@ -45,6 +47,8 @@ public class TaskFullDTO {
     private final boolean hasResponded;
     private final boolean canEdit;
 
+    private final TodoType todoType;
+
     @Setter private Map<String, Long> voteResults;
 
     public TaskFullDTO(Task task, User user, Instant lastChangedTime, String userResponse) {
@@ -74,6 +78,11 @@ public class TaskFullDTO {
         this.canEdit = createdByThisUser;
         this.userResponse = userResponse;
         this.hasResponded = !StringUtils.isEmpty(userResponse);
+
+        if (task instanceof Todo) {
+            Todo todo = (Todo) task;
+            this.todoType = todo.getType();
+        } else this.todoType = null;
     }
 
 }
