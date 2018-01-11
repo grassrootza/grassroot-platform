@@ -3,6 +3,8 @@ package za.org.grassroot.services.broadcasts;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,10 +31,7 @@ import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import java.time.Instant;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static za.org.grassroot.core.specifications.NotificationSpecifications.*;
@@ -392,10 +391,20 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
 
     @Override
     @Transactional(readOnly = true)
-    public List<BroadcastDTO> fetchGroupBroadcasts(String groupUid) {
+    public Page<BroadcastDTO> fetchSentGroupBroadcasts(String groupUid, Pageable pageable) {
+        Objects.requireNonNull(groupUid);
         Group group = groupRepository.findOneByUid(groupUid);
-        return broadcastRepository.findByGroup(group)
-                .stream().map(this::assembleDto).collect(Collectors.toList());
+        Page<Broadcast> broadcasts = broadcastRepository.findByGroupUidAndSentTimeNotNull(group.getUid(), pageable);
+        return broadcasts.map(this::assembleDto);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<BroadcastDTO> fetchScheduledGroupBroadcasts(String groupUid, Pageable pageable) {
+        Objects.requireNonNull(groupUid);
+        Group group = groupRepository.findOneByUid(groupUid);
+        Page<Broadcast> broadcasts = broadcastRepository.findByGroupUidAndSentTimeIsNullAndBroadcastScheduleNot(group.getUid(), BroadcastSchedule.IMMEDIATE, pageable);
+        return broadcasts.map(this::assembleDto);
     }
 
     @Override
