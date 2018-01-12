@@ -3,8 +3,12 @@ package za.org.grassroot.webapp.controller.rest.broadcast;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import za.org.grassroot.core.domain.BroadcastSchedule;
 import za.org.grassroot.core.dto.BroadcastDTO;
 import za.org.grassroot.core.enums.DeliveryRoute;
 import za.org.grassroot.integration.messaging.JwtService;
@@ -19,7 +23,7 @@ import za.org.grassroot.webapp.controller.rest.BaseRestController;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.xml.ws.Response;
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController @Grassroot2RestController
@@ -36,9 +40,18 @@ public class BroadcastController extends BaseRestController {
 
     @RequestMapping(value = "/fetch/group/{groupUid}", method = RequestMethod.GET)
     @ApiOperation(value = "Fetch the broadcasts attached to a group")
-    public ResponseEntity<List<BroadcastDTO>> fetchGroupBroadcasts(@PathVariable String groupUid) {
-        return ResponseEntity.ok(broadcastBroker.fetchGroupBroadcasts(groupUid));
+    public ResponseEntity<Page<BroadcastDTO>> fetchGroupSentBroadcasts(@PathVariable String groupUid,
+                                                                       @RequestParam BroadcastSchedule broadcastSchedule,
+                                                                       Pageable pageable) {
+        Page<BroadcastDTO> broadcastDTOPage = new PageImpl<>(new ArrayList<>());
+        if(broadcastSchedule.equals(BroadcastSchedule.IMMEDIATE)){
+            broadcastDTOPage = broadcastBroker.fetchSentGroupBroadcasts(groupUid, pageable);
+        }else if(broadcastSchedule.equals(BroadcastSchedule.FUTURE))
+            broadcastDTOPage = broadcastBroker.fetchScheduledGroupBroadcasts(groupUid, pageable);
+
+        return ResponseEntity.ok(broadcastDTOPage);
     }
+
 
     @RequestMapping(value = "/fetch/campaign/{campaignUid}", method = RequestMethod.GET)
     @ApiOperation(value = "Fetch the broadcasts from a campaign")

@@ -1,5 +1,7 @@
 package za.org.grassroot.services.broadcasts;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import za.org.grassroot.core.domain.Broadcast;
 import za.org.grassroot.core.dto.BroadcastDTO;
 import za.org.grassroot.integration.socialmedia.FBPostBuilder;
@@ -15,7 +17,9 @@ public interface BroadcastBroker {
 
     BroadcastDTO fetchBroadcast(String broadcastUid);
 
-    List<BroadcastDTO> fetchGroupBroadcasts(String groupUid);
+    Page<BroadcastDTO> fetchSentGroupBroadcasts(String groupUid, Pageable pageable);
+
+    Page<BroadcastDTO> fetchScheduledGroupBroadcasts(String groupUid, Pageable pageable);
 
     List<BroadcastDTO> fetchCampaignBroadcasts(String campaignUid);
 

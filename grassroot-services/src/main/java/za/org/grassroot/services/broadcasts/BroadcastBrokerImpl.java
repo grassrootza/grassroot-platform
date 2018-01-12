@@ -3,6 +3,8 @@ package za.org.grassroot.services.broadcasts;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -405,10 +407,20 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
 
     @Override
     @Transactional(readOnly = true)
-    public List<BroadcastDTO> fetchGroupBroadcasts(String groupUid) {
+    public Page<BroadcastDTO> fetchSentGroupBroadcasts(String groupUid, Pageable pageable) {
+        Objects.requireNonNull(groupUid);
         Group group = groupRepository.findOneByUid(groupUid);
-        return broadcastRepository.findByGroup(group)
-                .stream().map(this::assembleDto).collect(Collectors.toList());
+        Page<Broadcast> broadcasts = broadcastRepository.findByGroupUidAndSentTimeNotNull(group.getUid(), pageable);
+        return broadcasts.map(this::assembleDto);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<BroadcastDTO> fetchScheduledGroupBroadcasts(String groupUid, Pageable pageable) {
+        Objects.requireNonNull(groupUid);
+        Group group = groupRepository.findOneByUid(groupUid);
+        Page<Broadcast> broadcasts = broadcastRepository.findByGroupUidAndSentTimeIsNullAndBroadcastScheduleNot(group.getUid(), BroadcastSchedule.IMMEDIATE, pageable);
+        return broadcasts.map(this::assembleDto);
     }
 
     @Override

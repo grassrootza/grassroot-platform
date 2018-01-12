@@ -278,7 +278,7 @@ public class TaskBrokerImpl implements TaskBroker {
 
 
         for (Todo todo : todos) {
-            taskDtos.add(new TaskFullDTO(todo, user, todo.getCreatedDateTime(), todo.getResponseTag()));
+            taskDtos.add(new TaskFullDTO(todo, user, todo.getCreatedDateTime(), getUserResponse(todo, user)));
         }
 
 
