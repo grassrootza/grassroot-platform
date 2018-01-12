@@ -23,7 +23,7 @@ import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.integration.messaging.JwtType;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.exception.InvalidOtpException;
-import za.org.grassroot.services.exception.InvalidTokenException;
+import za.org.grassroot.services.exception.NoSuchUserException;
 import za.org.grassroot.services.exception.UserExistsException;
 import za.org.grassroot.services.exception.UsernamePasswordLoginFailedException;
 import za.org.grassroot.services.user.PasswordTokenService;
@@ -76,6 +76,24 @@ public class AuthenticationController {
                 !userService.doesUserHaveStandardRole(phoneOrEmail, BaseRoles.ROLE_ALPHA_TESTER)) {
             throw new InterfaceNotOpenException();
         }
+    }
+
+    private User findExistingUser(String username) {
+        boolean isPhoneNumber = PhoneNumberUtil.testInputNumber(username);
+        if (!isPhoneNumber && !EmailValidator.getInstance().isValid(username)) {
+            logger.error("got a bad username, : {}", username);
+            throw new NoSuchUserException("Invalid format, neither phone nor email: " + username);
+        }
+        User user = userService.findByUsernameLoose(username);
+        if (user == null) {
+            throw new NoSuchUserException("No user with phone or email: " + username);
+        }
+        return user;
+    }
+
+    @ExceptionHandler(NoSuchUserException.class)
+    public ResponseEntity noSuchUserResponse() {
+        return RestUtil.errorResponse(RestMessage.INVALID_MSISDN);
     }
 
     @RequestMapping(value = "/register", method = RequestMethod.GET)
@@ -164,46 +182,39 @@ public class AuthenticationController {
         }
     }
 
-
-
-    @RequestMapping(value = "/reset-password-request", method = RequestMethod.GET)
-    @ApiOperation(value = "Reset user password request otp", notes = "Short lived token is sent to user in the 'data' property")
-    public ResponseEntity<ResponseWrapper> resetPasswordRequest(@RequestParam("phoneNumber") String phoneNumber) {
+    @RequestMapping(value = "/reset-password-request", method = RequestMethod.POST)
+    @ApiOperation(value = "Reset user password request otp", notes = "Username can be either phone or email")
+    public ResponseEntity resetPasswordRequest(@RequestParam("username") String passedUsername) {
         try {
-            if (ifExists(phoneNumber)) {
-                final String msisdn = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
-                String token = userService.regenerateUserVerifier(msisdn, false);
-                temporaryTokenSend(token, msisdn, "Password reset confirmation code: ");
-                return RestUtil.okayResponseWithData(RestMessage.VERIFICATION_TOKEN_SENT, token);
-            } else {
-                logger.info("Password reset requested for non-existing user: {}", phoneNumber);
-                return RestUtil.errorResponse(HttpStatus.GONE, RestMessage.USER_DOES_NOT_EXIST);
-            }
-        } catch (InvalidPhoneNumberException e) {
-            return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.INVALID_MSISDN);
+            User user = findExistingUser(passedUsername);
+            // note: user stored username may be different from that passed in req param (e.g., if user primarily
+            // uses phone but in this case gives us their email
+            String token = userService.regenerateUserVerifier(user.getUsername(), false);
+            temporaryTokenSend(token, user.getUsername(), "Password reset confirmation code: ");
+            return ResponseEntity.ok().build();
+        } catch (InvalidPhoneNumberException|NoSuchUserException e) {
+            logger.info("Invalid user of passed username: ", passedUsername);
+            return ResponseEntity.ok().build();
         }
     }
 
-    @RequestMapping(value = "/reset-password-confirm", method = RequestMethod.GET)
-    @ApiOperation(value = "Reset user password", notes = "New password is returned as a string in the 'data' property")
-    public ResponseEntity<ResponseWrapper> resetPassword(@RequestParam("phoneNumber") String phoneNumber,
-                                                         @RequestParam("password") String newPassword,
-                                                         @RequestParam("code") String otpCode) {
-        try {
-            final String msisdn = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
+    @RequestMapping(value = "/reset-password-validate", method = RequestMethod.POST)
+    @ApiOperation(value = "Validate an OTP generated in password reset")
+    public ResponseEntity validateOtp(@RequestParam("username") String passedUsername, @RequestParam String otp) {
+        User user = findExistingUser(passedUsername);
+        passwordTokenService.validateOtp(user.getUsername(), otp);
+        return ResponseEntity.ok().build();
+    }
 
-            if (userService.userExist(msisdn)) {
-                userService.resetUserPassword(msisdn, newPassword, otpCode);
-                return RestUtil.okayResponseWithData(RestMessage.PASSWORD_RESET, newPassword);
-            } else {
-                logger.info("Password reset requested for non-existing user: {}", phoneNumber);
-                return RestUtil.errorResponse(HttpStatus.NOT_FOUND, RestMessage.USER_DOES_NOT_EXIST);
-            }
-        } catch (InvalidTokenException e) {
-            return RestUtil.errorResponse(HttpStatus.UNAUTHORIZED, RestMessage.INVALID_OTP);
-        } catch (InvalidPhoneNumberException e) {
-            return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.INVALID_MSISDN);
-        }
+    @RequestMapping(value = "/reset-password-complete", method = RequestMethod.POST)
+    @ApiOperation(value = "Reset user password", notes = "New password is returned as a string in the 'data' property")
+    public ResponseEntity resetPassword(@RequestParam("username") String passedUsername,
+                                        @RequestParam("password") String newPassword,
+                                        @RequestParam("otp") String otpCode) {
+        // we return minimal information, for security purposes (i.e., to mask any possible sources of this being invalid)
+        User user = findExistingUser(passedUsername);
+        userService.resetUserPassword(user.getUsername(), newPassword, otpCode);
+        return ResponseEntity.ok().build();
     }
 
 
@@ -247,18 +258,11 @@ public class AuthenticationController {
                                              @RequestParam("password") String password,
                                              @RequestParam(required = false) UserInterfaceType interfaceType) {
         try {
-            boolean isPhoneNumber = PhoneNumberUtil.testInputNumber(username);
-            if (!isPhoneNumber && !EmailValidator.getInstance().isValid(username)) {
-                logger.error("got a bad username, : {}", username);
-                return new AuthorizationResponseDTO(RestMessage.INVALID_USERNAME);
-            }
-
+            // get the user object, with no user throwing exception
+            User user = findExistingUser(username);
             passwordTokenService.validatePwdPhoneOrEmail(username, password);
 
             checkUserHasAccess(username, interfaceType == null ? UserInterfaceType.ANGULAR : interfaceType);
-
-            // get the user object
-            User user = userService.findByUsernameLoose(username);
 
             // Generate a token for the user (for the moment assuming it is Android client - Angular uses same params)
             CreateJwtTokenRequest tokenRequest = new CreateJwtTokenRequest(JwtType.ANDROID_CLIENT, user.getUid());
@@ -304,15 +308,16 @@ public class AuthenticationController {
     }
 
 
-    private String temporaryTokenSend(String token, String destinationNumber, String messagePrefix) {
+    private String temporaryTokenSend(String token, String numberOrEmail, String messagePrefix) {
         if (environment.acceptsProfiles("production")) {
             if (token != null) {
-                messagingServiceBroker.sendPrioritySMS(messagePrefix + token, destinationNumber);
+                messagingServiceBroker.sendPrioritySMS(messagePrefix + token, numberOrEmail);
             } else {
                 logger.warn("Did not send verification message. No system messaging configuration found.");
             }
             return "";
         } else {
+            logger.info("returning token: {}", token);
             return token;
         }
     }

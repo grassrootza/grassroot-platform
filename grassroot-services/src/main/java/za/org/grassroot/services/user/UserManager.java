@@ -511,13 +511,12 @@ public class UserManager implements UserManagementService, UserDetailsService {
     /*
     Method for user to reset password themselves, relies on them being able to access a token
      */
-
     @Override
-    public void resetUserPassword(String phoneNumber, String newPassword, String token) throws InvalidTokenException {
-        User user = userRepository.findByUsername(PhoneNumberUtil.convertPhoneNumber(phoneNumber));
+    public void resetUserPassword(String username, String newPassword, String token) throws InvalidTokenException {
+        User user = userRepository.findByUsername(username);
         log.info("Found this user: " + user);
 
-        if (passwordTokenService.isShortLivedOtpValid(user.getPhoneNumber(), token.trim())) {
+        if (passwordTokenService.isShortLivedOtpValid(user.getUsername(), token.trim())) {
             log.info("came in as true, with this token :" + token);
             String encodedPassword = passwordEncoder.encode(newPassword);
             user.setPassword(encodedPassword);

@@ -90,7 +90,7 @@ public class UserProfileController extends BaseController {
 
         // todo : extra validation
         try {
-            userManagementService.resetUserPassword(getUserProfile().getPhoneNumber(), password, otpField);
+            userManagementService.resetUserPassword(getUserProfile().getUsername(), password, otpField);
             addMessage(attributes, MessageType.SUCCESS, "user.profile.password.done", request);
             return "redirect:/home";
         } catch (InvalidTokenException e) {
