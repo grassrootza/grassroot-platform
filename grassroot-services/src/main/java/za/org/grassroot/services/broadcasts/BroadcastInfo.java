@@ -24,8 +24,22 @@ public class BroadcastInfo {
     ManagedPage twitterAccount;
 
     // we will use these for constructing the various counts (once also have various counting infra set up)
+    long allMemberCount;
+
     Map<String, Set<String>> taskTeamMemberUids;
     Map<Province, Set<String>> provinceMemberUids;
     Map<String, Set<String>> topicMemberUids;
 
+    @Override
+    public String toString() {
+        return "BroadcastInfo{" +
+                "isSmsAllowed=" + isSmsAllowed +
+                ", smsCostCents=" + smsCostCents +
+                ", isFbConnected=" + isFbConnected +
+                ", facebookPages=" + facebookPages +
+                ", isTwitterConnected=" + isTwitterConnected +
+                ", twitterAccount=" + twitterAccount +
+                ", allMemberCount=" + allMemberCount +
+                '}';
+    }
 }

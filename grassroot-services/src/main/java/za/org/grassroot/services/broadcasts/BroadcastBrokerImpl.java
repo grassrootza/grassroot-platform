@@ -29,10 +29,7 @@ import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import java.time.Instant;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static za.org.grassroot.core.specifications.NotificationSpecifications.*;
@@ -73,6 +70,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
     public BroadcastInfo fetchGroupBroadcastParams(String userUid, String groupUid) {
         User user = userRepository.findOneByUid(userUid);
         Account account = user.getPrimaryAccount();
+
         BroadcastInfo.BroadcastInfoBuilder builder = BroadcastInfo.builder();
         if (account.getFreeFormCost() > 0) {
             builder.isSmsAllowed(true).smsCostCents(account.getFreeFormCost());
@@ -81,14 +79,8 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         }
 
         if (mockSocialMediaBroadcasts) {
-            ManagedPage mockPage = new ManagedPage();
-            mockPage.setDisplayName("Testing FB page");
-            mockPage.setProviderUserId("testing");
-            ManagedPage mockAccount = new ManagedPage();
-            mockAccount.setDisplayName("Testing Twitter account");
-            mockAccount.setProviderUserId("testing");
-            builder.isFbConnected(true).facebookPages(Collections.singletonList(mockPage));
-            builder.isTwitterConnected(true).twitterAccount(mockAccount);
+            builder.isFbConnected(true).facebookPages(mockFbPages());
+            builder.isTwitterConnected(true).twitterAccount(mockTwitterAccount());
         } else {
             ManagedPagesResponse fbStatus = socialMediaBroker.getManagedFacebookPages(userUid);
             builder.isFbConnected(fbStatus.isUserConnectionValid())
@@ -99,8 +91,29 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
                     .twitterAccount(twitterAccount);
         }
 
+        // or for campaign, extract somehow
+        Group group = groupRepository.findOneByUid(groupUid);
+        builder.allMemberCount(membershipRepository.count((root, query, cb) -> cb.equal(root.get("group"), (group))));
 
         return builder.build();
+    }
+
+    // using this while we are still in alpha - as else a time drag to boot integration service locally etc - remove when done
+    private List<ManagedPage> mockFbPages() {
+        ManagedPage mockPage = new ManagedPage();
+        mockPage.setDisplayName("User FB page");
+        mockPage.setProviderUserId("user");
+        ManagedPage mockPage2 = new ManagedPage();
+        mockPage2.setDisplayName("Org FB page");
+        mockPage2.setProviderUserId("org");
+        return Arrays.asList(mockPage, mockPage2);
+    }
+
+    private ManagedPage mockTwitterAccount() {
+        ManagedPage mockAccount = new ManagedPage();
+        mockAccount.setDisplayName("@testing");
+        mockAccount.setProviderUserId("testing");
+        return mockAccount;
     }
 
     @Override

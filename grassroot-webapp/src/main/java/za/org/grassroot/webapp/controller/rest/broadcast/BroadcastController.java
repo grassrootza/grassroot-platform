@@ -19,6 +19,7 @@ import za.org.grassroot.webapp.controller.rest.BaseRestController;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.xml.ws.Response;
 import java.util.List;
 
 @RestController @Grassroot2RestController
@@ -47,10 +48,10 @@ public class BroadcastController extends BaseRestController {
 
     @RequestMapping(value = "/create/group/info/{groupUid}", method = RequestMethod.GET)
     @ApiOperation(value = "Fetch some basic information on the group, including social media options")
-    public ResponseEntity<BroadcastInfo> getGroupBroadcastParams(HttpServletRequest request, @PathVariable String groupUid,
-                                                                 @RequestParam(required = false) String userUid) {
-        return ResponseEntity.ok(broadcastBroker.fetchGroupBroadcastParams(
-                userUid == null ? getUserIdFromRequest(request) : userUid, groupUid));
+    public ResponseEntity<BroadcastInfo> getGroupBroadcastParams(HttpServletRequest request, @PathVariable String groupUid) {
+        BroadcastInfo info = broadcastBroker.fetchGroupBroadcastParams(getUserIdFromRequest(request), groupUid);
+        log.info("returning info: {}", info);
+        return ResponseEntity.ok(info);
     }
 
     // todo : this should definitely be async, it's a very heavy operation
