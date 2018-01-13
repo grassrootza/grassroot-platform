@@ -28,8 +28,8 @@ public class GroupFullDTO extends GroupHeavyDTO {
     @Setter private List<MembershipRecordDTO> memberHistory;
     @Setter private List<GroupRefDTO> subGroups = new ArrayList<>();
     @Setter private List<String> topics = new ArrayList<>();
-    @Setter private List<String> joinWords = new ArrayList<>();
-    @Setter private int joinWordsLeft = 0;
+    @Setter private List<JoinWordDTO> joinWords = new ArrayList<>();
+    @Setter private int joinWordsLeft;
 
     public GroupFullDTO(Group group, Membership membership) {
         super(group, membership);
@@ -37,8 +37,10 @@ public class GroupFullDTO extends GroupHeavyDTO {
         this.topics.addAll(group.getTopics());
         this.paidFor = group.isPaidFor();
         this.joinWords.addAll(group.getGroupJoinCodes().stream()
-                .filter(GroupJoinCode::isActive).filter(g -> JoinCodeType.JOIN_WORD.equals(g.getType()))
-                .map(GroupJoinCode::getCode).collect(Collectors.toList()));
+                .filter(GroupJoinCode::isActive)
+                .filter(g -> JoinCodeType.JOIN_WORD.equals(g.getType()))
+                .map(w -> new JoinWordDTO(w.getCode(), w.getShortUrl()))
+                .collect(Collectors.toList()));
 
         this.joinWordsLeft = MAX_JOIN_WORDS - this.joinWords.size();
 

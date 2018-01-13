@@ -2,11 +2,12 @@ package za.org.grassroot.services.broadcasts;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specifications;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountLog;
@@ -30,15 +31,16 @@ import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import java.time.Instant;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static za.org.grassroot.core.specifications.NotificationSpecifications.*;
 
 @Service @Slf4j
 public class BroadcastBrokerImpl implements BroadcastBroker {
+
+    @Value("${grassroot.broadcast.mocksm.enabled:false}")
+    private boolean mockSocialMediaBroadcasts;
 
     private final BroadcastRepository broadcastRepository;
     private final UserRepository userRepository;
@@ -70,6 +72,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
     public BroadcastInfo fetchGroupBroadcastParams(String userUid, String groupUid) {
         User user = userRepository.findOneByUid(userUid);
         Account account = user.getPrimaryAccount();
+
         BroadcastInfo.BroadcastInfoBuilder builder = BroadcastInfo.builder();
         if (account.getFreeFormCost() > 0) {
             builder.isSmsAllowed(true).smsCostCents(account.getFreeFormCost());
@@ -77,15 +80,42 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
             builder.isSmsAllowed(false);
         }
 
-        ManagedPagesResponse fbStatus = socialMediaBroker.getManagedFacebookPages(userUid);
-        builder.isFbConnected(fbStatus.isUserConnectionValid())
-                .facebookPages(fbStatus.getManagedPages());
+        if (mockSocialMediaBroadcasts) {
+            builder.isFbConnected(true).facebookPages(mockFbPages());
+            builder.isTwitterConnected(true).twitterAccount(mockTwitterAccount());
+        } else {
+            ManagedPagesResponse fbStatus = socialMediaBroker.getManagedFacebookPages(userUid);
+            builder.isFbConnected(fbStatus.isUserConnectionValid())
+                    .facebookPages(fbStatus.getManagedPages());
 
-        String twitterAccount = socialMediaBroker.isTwitterAccountConnected(userUid);
-        builder.isTwitterConnected(!StringUtils.isEmpty(twitterAccount))
-                .twitterAccountName(twitterAccount);
+            ManagedPage twitterAccount = socialMediaBroker.isTwitterAccountConnected(userUid);
+            builder.isTwitterConnected(twitterAccount != null)
+                    .twitterAccount(twitterAccount);
+        }
+
+        // or for campaign, extract somehow
+        Group group = groupRepository.findOneByUid(groupUid);
+        builder.allMemberCount(membershipRepository.count((root, query, cb) -> cb.equal(root.get("group"), (group))));
 
         return builder.build();
+    }
+
+    // using this while we are still in alpha - as else a time drag to boot integration service locally etc - remove when done
+    private List<ManagedPage> mockFbPages() {
+        ManagedPage mockPage = new ManagedPage();
+        mockPage.setDisplayName("User FB page");
+        mockPage.setProviderUserId("user");
+        ManagedPage mockPage2 = new ManagedPage();
+        mockPage2.setDisplayName("Org FB page");
+        mockPage2.setProviderUserId("org");
+        return Arrays.asList(mockPage, mockPage2);
+    }
+
+    private ManagedPage mockTwitterAccount() {
+        ManagedPage mockAccount = new ManagedPage();
+        mockAccount.setDisplayName("@testing");
+        mockAccount.setProviderUserId("testing");
+        return mockAccount;
     }
 
     @Override
@@ -133,7 +163,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
             log.info("sending an FB post, from builder: {}", bc.getFacebookPost());
             recordFbPost(bc.getFacebookPost(), broadcast);
             GenericPostResponse fbResponse = socialMediaBroker.postToFacebook(bc.getFacebookPost());
-            if (fbResponse != null && fbResponse.isPostSuccessful()) {
+            if ((fbResponse != null && fbResponse.isPostSuccessful()) || mockSocialMediaBroadcasts) {
                 broadcast.setFbPostSucceeded(true);
             }
         }
@@ -141,7 +171,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         if (bc.getTwitterPostBuilder() != null) {
             recordTwitterPost(bc.getTwitterPostBuilder(), broadcast);
             GenericPostResponse twResponse = socialMediaBroker.postToTwitter(bc.getTwitterPostBuilder());
-            if (twResponse != null && twResponse.isPostSuccessful()) {
+            if ((twResponse != null && twResponse.isPostSuccessful()) || mockSocialMediaBroadcasts) {
                 broadcast.setTwitterSucceeded(true);
             }
         }
@@ -377,10 +407,20 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
 
     @Override
     @Transactional(readOnly = true)
-    public List<BroadcastDTO> fetchGroupBroadcasts(String groupUid) {
+    public Page<BroadcastDTO> fetchSentGroupBroadcasts(String groupUid, Pageable pageable) {
+        Objects.requireNonNull(groupUid);
         Group group = groupRepository.findOneByUid(groupUid);
-        return broadcastRepository.findByGroup(group)
-                .stream().map(this::assembleDto).collect(Collectors.toList());
+        Page<Broadcast> broadcasts = broadcastRepository.findByGroupUidAndSentTimeNotNull(group.getUid(), pageable);
+        return broadcasts.map(this::assembleDto);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<BroadcastDTO> fetchScheduledGroupBroadcasts(String groupUid, Pageable pageable) {
+        Objects.requireNonNull(groupUid);
+        Group group = groupRepository.findOneByUid(groupUid);
+        Page<Broadcast> broadcasts = broadcastRepository.findByGroupUidAndSentTimeIsNullAndBroadcastScheduleNot(group.getUid(), BroadcastSchedule.IMMEDIATE, pageable);
+        return broadcasts.map(this::assembleDto);
     }
 
     @Override

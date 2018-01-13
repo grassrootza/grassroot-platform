@@ -67,7 +67,7 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
 
     private ManagedPagesResponse getManagedPages(String userUid, String providerId) {
         final URI uri = baseUri(userUid).path("/connect/status/pages/" + providerId).build().toUri();
-        log.info("getting user's managed pages, URI = {}", uri.toString());
+        log.debug("getting user's managed pages, URI = {}", uri.toString());
         try {
             ResponseEntity<ManagedPagesResponse> response = restTemplate.exchange(uri, HttpMethod.GET, new HttpEntity<>(jwtHeaders()), ManagedPagesResponse.class);
             return handleResponse(response, providerId);
@@ -88,20 +88,35 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
                 .queryParam("scope", "user_friends,user_posts,manage_pages,publish_pages,publish_actions")
                 .build().toUri();
         log.info("okay trying this out, URI = {}", uri.toString());
+        return getRedirectUrl(uri);
+    }
+
+    @Override
+    public String initiateTwitterConnection(String userUid) {
+        final URI uri = baseUri(userUid).path("/connect/twitter")
+                .build().toUri();
+        log.info("okay trying to connect to twitter, URI = {}", uri.toString());
+        return getRedirectUrl(uri);
+    }
+
+    @Override
+    public IntegrationListResponse removeIntegration(String userUid, String providerId) {
+        final URI uri = baseUri(userUid).path("/connect/" + providerId).build().toUri();
+        log.info("okay, removing account: {}", uri.toString());
         try {
-            ResponseEntity<RedirectView> view = restTemplate.exchange(uri, HttpMethod.POST, new HttpEntity<>(jwtHeaders()),
-                    RedirectView.class);
-            log.info("and returnd view with headers = {} and url = {}", view.getHeaders(), view.getHeaders().get("Location"));
-            return view.getHeaders().get("Location").get(0);
+            restTemplate.exchange(uri, HttpMethod.DELETE, new HttpEntity<>(jwtHeaders()), String.class);
+            log.info("successfully called delete connection, now getting latest set of connections");
+            return getCurrentIntegrations(userUid);
         } catch (RestClientException e) {
             log.error("error calling integration broker", e);
             return null;
         }
     }
 
+
     @Override
-    public ManagedPagesResponse completeFbConnect(String userUid, MultiValueMap<String, String> paramsToPass) {
-        final URI uri = baseUri(userUid).path("/connect/facebook")
+    public ManagedPagesResponse completeIntegrationConnect(String userUid, String providerId, MultiValueMap<String, String> paramsToPass) {
+        final URI uri = baseUri(userUid).path("/connect/" + providerId)
                 .queryParams(paramsToPass)
                 .build().toUri();
         try {
@@ -130,12 +145,12 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
     }
 
     @Override
-    public String isTwitterAccountConnected(String userUid) {
+    public ManagedPage isTwitterAccountConnected(String userUid) {
         final URI uri = baseUri(userUid).path("/connect/status/pages/twitter").build().toUri();
         try {
             ResponseEntity<ManagedPagesResponse> response = restTemplate.exchange(uri, HttpMethod.GET, new HttpEntity<>(jwtHeaders()), ManagedPagesResponse.class);
             ManagedPagesResponse body = handleResponse(response, "Twitter");
-            return body == null || body.managedPages.isEmpty() ? null : body.managedPages.entrySet().iterator().next().getValue();
+            return body == null || body.managedPages.isEmpty() ? null : body.managedPages.get(0);
         } catch (RestClientException e) {
             log.error("Error trying to check Twitter account", e);
             return null;
@@ -151,6 +166,18 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
             return handleResponse(response, "Twitter");
         } catch (RestClientException e) {
             log.error("Error calling Twitter post!", e);
+            return null;
+        }
+    }
+
+    private String getRedirectUrl(URI uri) {
+        try {
+            ResponseEntity<RedirectView> view = restTemplate.exchange(uri, HttpMethod.POST, new HttpEntity<>(jwtHeaders()),
+                    RedirectView.class);
+            log.info("and returnd view with headers = {} and url = {}", view.getHeaders(), view.getHeaders().get("Location"));
+            return view.getHeaders().get("Location").get(0);
+        } catch (RestClientException e) {
+            log.error("error calling integration broker", e);
             return null;
         }
     }

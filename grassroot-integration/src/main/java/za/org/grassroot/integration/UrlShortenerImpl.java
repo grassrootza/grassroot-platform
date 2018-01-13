@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -49,6 +50,26 @@ public class UrlShortenerImpl implements UrlShortener {
             return (String) response.data.get("url");
         } catch (URISyntaxException e) {
             logger.error("Error shortening URL!", e);
+            return null;
+        }
+
+    }
+
+    @Override
+    public String shortenGroupJoinUrls(String joinUrl) {
+        try {
+            long startTime = System.currentTimeMillis();
+            URIBuilder builder = new URIBuilder(shortenerApi)
+                    .addParameter("access_token", shortenerKey)
+                    .addParameter("longUrl", joinUrl);
+            BitlyResponse response = restTemplate.getForObject(builder.build(), BitlyResponse.class);
+            logger.info("URL shortened in {} msecs, response = {}", System.currentTimeMillis() - startTime, response);
+            return (String) response.data.get("url");
+        } catch (URISyntaxException e) {
+            logger.error("Error shortening URL!", e);
+            return null;
+        } catch (HttpMessageNotReadableException e) {
+            logger.error("Error interpreting response", e);
             return null;
         }
 

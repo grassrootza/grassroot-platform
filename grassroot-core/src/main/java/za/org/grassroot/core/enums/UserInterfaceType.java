@@ -8,7 +8,7 @@ public enum UserInterfaceType {
     ANDROID("android"),
     SYSTEM("system"),
     INCOMING_SMS("incoming sms"),
-    ANGULAR("angular_frontent"),
+    WEB_2("rebuilt_frontend"),
     ANDROID_2("second android");
 
     private final String text;

@@ -109,7 +109,8 @@ public class UserManager implements UserManagementService, UserDetailsService {
         String phoneNumber = StringUtils.isEmpty(userProfile.getPhoneNumber()) ? null : PhoneNumberUtil.convertPhoneNumber(userProfile.getPhoneNumber());
         String emailAddress = userProfile.getEmailAddress();
         long start = System.nanoTime();
-        boolean userExists = userRepository.existsByPhoneNumber(phoneNumber) || (emailAddress != null && userRepository.existsByEmail(emailAddress));
+        boolean userExists = userRepository.existsByPhoneNumber(phoneNumber)
+                || (emailAddress != null && userRepository.existsByEmail(emailAddress));
         long time = System.nanoTime() - start;
         log.info("User exists check took {} nanosecs", time);
 
@@ -118,10 +119,12 @@ public class UserManager implements UserManagementService, UserDetailsService {
             log.info("The user exists, and their web profile is set to: " + userProfile.isHasWebProfile());
 
             User userToUpdate = findByNumberOrEmail(phoneNumber, emailAddress);
-            if (userToUpdate.isHasWebProfile()) {
-                throw new UserExistsException("User '" + userProfile.getUsername() + "' already has a web profile!");
+            if (!StringUtils.isEmpty(userToUpdate.getPassword())) {
+                throw new UserExistsException("User '" + userProfile.getUsername() + "' already has a password protected profile!");
             }
 
+            // if we reach here, means user 'exists' via group addition etc., but hasn't registered, so take the details
+            // as theirs, and set a password etc ...
             if (!userToUpdate.hasName()) {
                 userToUpdate.setDisplayName(userProfile.getDisplayName());
                 userToUpdate.setHasSetOwnName(true);
@@ -511,13 +514,12 @@ public class UserManager implements UserManagementService, UserDetailsService {
     /*
     Method for user to reset password themselves, relies on them being able to access a token
      */
-
     @Override
-    public void resetUserPassword(String phoneNumber, String newPassword, String token) throws InvalidTokenException {
-        User user = userRepository.findByUsername(PhoneNumberUtil.convertPhoneNumber(phoneNumber));
+    public void resetUserPassword(String username, String newPassword, String token) throws InvalidTokenException {
+        User user = userRepository.findByUsername(username);
         log.info("Found this user: " + user);
 
-        if (passwordTokenService.isShortLivedOtpValid(user.getPhoneNumber(), token.trim())) {
+        if (passwordTokenService.isShortLivedOtpValid(user.getUsername(), token.trim())) {
             log.info("came in as true, with this token :" + token);
             String encodedPassword = passwordEncoder.encode(newPassword);
             user.setPassword(encodedPassword);

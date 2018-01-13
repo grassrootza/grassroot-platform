@@ -29,6 +29,7 @@ import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.core.util.PhoneNumberUtil;
+import za.org.grassroot.integration.UrlShortener;
 import za.org.grassroot.services.MessageAssemblingService;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.account.AccountGroupBroker;
@@ -61,6 +62,8 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
     private boolean limitGroupSize;
     @Value("${grassroot.groups.size.freemax:300}")
     private int freeGroupSizeLimit;
+    @Value("${grassroot.groups.join.words.max:3}")
+    private int maxJoinWords;
 
     private final Environment environment;
 
@@ -80,6 +83,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
     private GcmRegistrationBroker gcmRegistrationBroker;
     private final AccountGroupBroker accountGroupBroker;
+    private final UrlShortener urlShortener;
 
     @Setter private ApplicationContext applicationContext;
 
@@ -92,7 +96,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
                            MembershipRepository membershipRepository, GroupLogRepository groupLogRepository, GroupJoinCodeRepository groupJoinCodeRepository, PermissionBroker permissionBroker,
                            ApplicationEventPublisher applicationEventPublisher, LogsAndNotificationsBroker logsAndNotificationsBroker,
                            TokenGeneratorService tokenGeneratorService, MessageAssemblingService messageAssemblingService,
-                           AccountGroupBroker accountGroupBroker) {
+                           AccountGroupBroker accountGroupBroker, UrlShortener urlShortener) {
         this.groupRepository = groupRepository;
         this.environment = environment;
         this.userRepository = userRepository;
@@ -105,6 +109,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         this.tokenGeneratorService = tokenGeneratorService;
         this.messageAssemblingService = messageAssemblingService;
         this.accountGroupBroker = accountGroupBroker;
+        this.urlShortener = urlShortener;
     }
 
     @Autowired(required = false)
@@ -342,12 +347,13 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         validateJoinCode(group, tokenPassed);
         recordJoinCodeInbound(group, tokenPassed);
 
-        selfJoinViaCode(user, group, getJoinMethodFromInterface(interfaceType), tokenPassed, null);
+        selfJoinViaCode(user, group, getJoinMethodFromInterface(interfaceType), tokenPassed, null, null);
     }
 
     @Override
     @Transactional
-    public String addMemberViaJoinPage(String groupUid, String code, String userUid, String name, String phone, String email, Province province, List<String> topics) {
+    public String addMemberViaJoinPage(String groupUid, String code, String userUid, String name, String phone,
+                                       String email, Province province, List<String> topics, UserInterfaceType interfaceType) {
         Objects.requireNonNull(groupUid);
         Objects.requireNonNull(code);
         if (userUid == null && phone == null && email == null) {
@@ -358,8 +364,10 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         validateJoinCode(group, code); // don't record use, as already done elsewhere
 
         User joiningUser = null;
+        boolean userExists;
         if (!StringUtils.isEmpty(userUid)) {
             joiningUser = userRepository.findOneByUid(userUid);
+            userExists = true;
         } else {
             String msisdn = StringUtils.isEmpty(phone) ? null : PhoneNumberUtil.convertPhoneNumber(phone);
             if (msisdn != null)
@@ -368,21 +376,37 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
             if (joiningUser == null && !StringUtils.isEmpty(email))
                 joiningUser = userRepository.findByEmailAddressAndEmailAddressNotNull(email);
 
-            if (joiningUser == null) {
+            userExists = joiningUser != null;
+            if (!userExists) {
                 joiningUser = new User(msisdn, name, email);
                 userRepository.saveAndFlush(joiningUser);
             }
         }
 
+        // note: we do _not_ override email or phone otherwise it would create a security vulnerability
+        boolean updatedUserDetails = false;
         if (province != null) {
-            joiningUser.setProvince(province); // todo : log this
+            joiningUser.setProvince(province);
+            updatedUserDetails = userExists;
         }
 
-        selfJoinViaCode(joiningUser, group, GroupJoinMethod.URL_JOIN_WORD, code, topics);
+        if (!StringUtils.isEmpty(name)) {
+            joiningUser.setDisplayName(name);
+            updatedUserDetails = userExists;
+        }
+
+        Set<UserLog> userLogs = new HashSet<>();
+        userLogs.add(new UserLog(joiningUser.getUid(), UserLogType.USED_A_JOIN_CODE, group.getUid(), interfaceType));
+        if (updatedUserDetails) {
+            userLogs.add(new UserLog(joiningUser.getUid(), UserLogType.DETAILS_CHANGED_ON_JOIN,
+                    String.format("name: %s, province: %s", name, province), interfaceType));
+        }
+
+        selfJoinViaCode(joiningUser, group, GroupJoinMethod.URL_JOIN_WORD, code, topics, userLogs);
         return joiningUser.getUid();
     }
 
-    private void selfJoinViaCode(User user, Group group, GroupJoinMethod joinMethod, String code, List<String> topics) {
+    private void selfJoinViaCode(User user, Group group, GroupJoinMethod joinMethod, String code, List<String> topics, Set<UserLog> userLogs) {
         logger.info("Adding a member via token code: code={}, group={}, user={}", code, group, user);
         Membership membership = group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.SELF_JOINED, code);
         if (topics != null) {
@@ -401,7 +425,9 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         GroupLog groupLog = new GroupLog(group, user, GroupLogType.GROUP_MEMBER_ADDED_VIA_JOIN_CODE,
                 user, null, null, "Member joined via join code: " + code);
         bundle.addLog(groupLog);
-        bundle.addLog(new UserLog(user.getUid(), UserLogType.USED_A_JOIN_CODE, group.getUid(), UNKNOWN));
+        if (userLogs != null && !userLogs.isEmpty()) {
+            bundle.addLogs(userLogs.stream().map(u -> (ActionLog) u).collect(Collectors.toSet()));
+        }
         notifyNewMembersOfUpcomingMeetings(bundle, user, group, groupLog);
         storeBundleAfterCommit(bundle);
     }
@@ -420,7 +446,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
                 return GroupJoinMethod.JOIN_CODE_OTHER;
             case INCOMING_SMS:
                 return GroupJoinMethod.SMS_JOIN_WORD;
-            case ANGULAR:
+            case WEB_2:
                 return GroupJoinMethod.URL_JOIN_WORD;
             case ANDROID_2:
                 return GroupJoinMethod.SEARCH_JOIN_WORD;
@@ -1227,7 +1253,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
     @Override
     @Transactional
-    public void addJoinTag(String userUid, String groupUid, String code) {
+    public GroupJoinCode addJoinTag(String userUid, String groupUid, String code, String urlToShorten) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(groupUid);
 
@@ -1236,19 +1262,29 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
         permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
 
+        if (groupJoinCodeRepository.countByGroupUidAndActiveTrue(groupUid) > maxJoinWords) {
+            throw new JoinWordsExceededException();
+        }
+
         Set<String> currentTags = groupJoinCodeRepository.selectActiveJoinWords();
         if (currentTags.contains(code.toLowerCase())) {
             throw new IllegalArgumentException("Error! Passed an already taken join code");
         }
 
         GroupJoinCode gjc  = new GroupJoinCode(user, group, code, JoinCodeType.JOIN_WORD);
-        groupJoinCodeRepository.saveAndFlush(gjc);
+        if (urlToShorten != null) {
+            gjc.setShortUrl(urlShortener.shortenGroupJoinUrls(urlToShorten));
+        }
+
+        gjc = groupJoinCodeRepository.saveAndFlush(gjc);
 
         // note: shouldn't need to add to group, Hibernate should wire up, but keep an eye out
 
         GroupLog groupLog = new GroupLog(group, user, GroupLogType.JOIN_CODE_ADDED, code);
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle(Collections.singleton(groupLog), Collections.EMPTY_SET);
         logsAndNotificationsBroker.storeBundle(bundle);
+
+        return gjc;
     }
 
     @Override
@@ -1262,6 +1298,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
         permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
 
+        logger.info("looking for code: {}", code);
         GroupJoinCode gjc = groupJoinCodeRepository.findByGroupUidAndCodeAndActiveTrue(group.getUid(), code);
 
         if (gjc != null) {
@@ -1283,7 +1320,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
     @Transactional(readOnly = true)
     public Map<String, String> getJoinWordsWithGroupIds() {
         return groupJoinCodeRepository.findByActiveTrue()
-                .stream().collect(Collectors.toMap(gjc -> gjc.getGroup().getUid(), GroupJoinCode::getCode));
+                .stream().collect(Collectors.toMap(GroupJoinCode::getCode, gjc -> gjc.getGroup().getUid()));
     }
 
     @Override

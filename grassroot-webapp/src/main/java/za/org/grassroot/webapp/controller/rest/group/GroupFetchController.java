@@ -21,6 +21,7 @@ import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.MembershipFullDTO;
 import za.org.grassroot.core.dto.group.*;
 import za.org.grassroot.integration.PdfGeneratingService;
+import za.org.grassroot.integration.UrlShortener;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
 import za.org.grassroot.services.group.GroupFetchBroker;
@@ -53,15 +54,17 @@ public class GroupFetchController extends BaseRestController {
     private final GroupFetchBroker groupFetchBroker;
     private final PdfGeneratingService generatingService;
     private final MemberDataExportBroker memberDataExportBroker;
+    private final UrlShortener urlShortener;
 
 
     public GroupFetchController(GroupFetchBroker groupFetchBroker, JwtService jwtService,
                                 UserManagementService userManagementService, PdfGeneratingService generatingService,
-                                MemberDataExportBroker memberDataExportBroker) {
+                                MemberDataExportBroker memberDataExportBroker, UrlShortener urlShortener) {
         super(jwtService, userManagementService);
         this.groupFetchBroker = groupFetchBroker;
         this.generatingService = generatingService;
         this.memberDataExportBroker = memberDataExportBroker;
+        this.urlShortener = urlShortener;
     }
 
     @RequestMapping(value = "/list")

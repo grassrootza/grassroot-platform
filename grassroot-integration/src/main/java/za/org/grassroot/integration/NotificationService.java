@@ -27,12 +27,6 @@ public interface NotificationService {
 
 	int countUnviewedAndroidNotifications(String targetUid);
 
-	void markNotificationAsDelivered(String notificationUid);
-
-    Notification loadBySeningKey(String sendingKey);
-
 	List<Notification> loadRecentFailedNotificationsInGroup(LocalDateTime from, LocalDateTime to, Group group);
-
-	void updateNotificationStatus(String notificationUid, NotificationStatus status, String errorMessage, String messageSendKey);
 
 }

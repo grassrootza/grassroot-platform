@@ -1,4 +1,4 @@
-package za.org.grassroot.webapp.controller.rest.group.join;
+package za.org.grassroot.core.dto.group;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -7,7 +7,6 @@ import lombok.Getter;
 public class JoinWordDTO {
 
     private String word;
-    private String longUrl;
     private String shortUrl;
 
 }

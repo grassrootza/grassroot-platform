@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.Broadcast;
+import za.org.grassroot.core.domain.BroadcastSchedule;
 import za.org.grassroot.core.enums.Province;
 
 import java.time.Instant;
@@ -13,6 +14,7 @@ import java.util.List;
 public class BroadcastDTO {
 
     private String title;
+    private BroadcastSchedule scheduleType;
 
     private boolean shortMessageSent;
     private boolean emailSent;
@@ -38,6 +40,7 @@ public class BroadcastDTO {
     public BroadcastDTO(Broadcast broadcast, long deliveredSmsCount, long deliveredEmailCount, float costEstimate) {
         // set things up
         this.title = broadcast.getTitle();
+        this.scheduleType = broadcast.getBroadcastSchedule();
 
         this.shortMessageSent = !StringUtils.isEmpty(broadcast.getSmsTemplate1());
         this.emailSent = !StringUtils.isEmpty(broadcast.getEmailContent());

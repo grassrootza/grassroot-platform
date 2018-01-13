@@ -1,10 +1,7 @@
 package za.org.grassroot.services.group;
 
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.GroupJoinMethod;
-import za.org.grassroot.core.domain.Permission;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.core.enums.GroupViewPriority;
@@ -56,7 +53,7 @@ public interface GroupBroker {
     void addMemberViaJoinCode(String userUidToAdd, String groupUid, String tokenPassed, UserInterfaceType interfaceType);
 
     String addMemberViaJoinPage(String groupUid, String code, String userUid, String name, String phone, String email,
-                                Province province, List<String> topics);
+                                Province province, List<String> topics, UserInterfaceType interfaceType);
 
     void notifyOrganizersOfJoinCodeUse(Instant periodStart, Instant periodEnd);
 
@@ -103,7 +100,9 @@ public interface GroupBroker {
 
     void closeJoinToken(String userUid, String groupUid);
 
-    void addJoinTag(String userUid, String groupUid, String tag);
+    // url to shorten should be _whole_ url, with path/query params etc set as frontend wants (this is view's job to decide,
+    // since view will be handling the incoming requests)
+    GroupJoinCode addJoinTag(String userUid, String groupUid, String tag, String urlToShorten);
 
     void removeJoinTag(String userUid, String groupUid, String tag);
 

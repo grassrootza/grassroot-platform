@@ -26,14 +26,14 @@ public class UserFullDTO {
     public UserFullDTO(User user) {
 
         this.phoneNumber = user.getPhoneNumber();
-        this.displayName = user.getDisplayName();
+        this.displayName = user.getName();
         this.firstName = user.getFirstName();
         this.lastName = user.getLastName();
         this.languageCode = user.getLanguageCode();
         this.enabled = user.isEnabled();
         this.uid = user.getUid();
         this.email = user.getEmailAddress();
-        this.province = province;
+        this.province = user.getProvince();
     }
 
 

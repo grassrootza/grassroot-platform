@@ -14,6 +14,8 @@ import java.util.Objects;
 @Table(name = "verification_token_code")
 public class VerificationTokenCode {
 
+    private static final int MAX_TOKEN_ACCESS_ATTEMPTS = 5;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column( name = "id")
@@ -38,8 +40,6 @@ public class VerificationTokenCode {
     @Enumerated(EnumType.STRING)
     private VerificationCodeType type;
 
-
-
     private VerificationTokenCode() {
         // for JPA
     }
@@ -60,44 +60,26 @@ public class VerificationTokenCode {
         this.code = code;
         this.username = username;
         this.type = type;
-        updateCreatedDateTime();
+        this.createdDateTime = Instant.now();
     }
 
     public String getUsername() {
         return username;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
     public Instant getCreatedDateTime() {
         return createdDateTime;
-    }
-
-    public void setCreatedDateTime(Instant createdDateTime) {
-        this.createdDateTime = createdDateTime;
     }
 
     public Instant getExpiryDateTime() { return expiryDateTime; }
 
     public void setExpiryDateTime(Instant expiryDateTime) { this.expiryDateTime = expiryDateTime; }
 
-    public int getTokenAccessAttempts() {
-        return tokenAccessAttempts;
-    }
-
-    public void setTokenAccessAttempts(int tokenAccessAttempts) {
-        this.tokenAccessAttempts = tokenAccessAttempts;
-    }
-
-    public void updateCreatedDateTime() {
-        this.createdDateTime = Instant.now();
-    }
-
-    public void incrementTokenAttempts()
-    {
+    public void incrementTokenAttempts() {
        this.tokenAccessAttempts = tokenAccessAttempts + 1;
+       if (this.tokenAccessAttempts > MAX_TOKEN_ACCESS_ATTEMPTS) {
+           this.setExpiryDateTime(Instant.now());
+       }
     }
 
     public VerificationCodeType getType() {

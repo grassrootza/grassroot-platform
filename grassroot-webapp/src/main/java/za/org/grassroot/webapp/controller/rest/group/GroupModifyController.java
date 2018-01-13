@@ -12,11 +12,13 @@ import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.dto.group.GroupFullDTO;
 import za.org.grassroot.core.dto.group.GroupRefDTO;
+import za.org.grassroot.core.dto.group.JoinWordDTO;
 import za.org.grassroot.core.enums.GroupViewPriority;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.GroupSizeLimitExceededException;
+import za.org.grassroot.services.exception.JoinWordsExceededException;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
 import za.org.grassroot.services.exception.SoleOrganizerUnsubscribeException;
 import za.org.grassroot.services.group.GroupPermissionTemplate;
@@ -86,14 +88,16 @@ public class GroupModifyController extends GroupBaseController {
     @ApiOperation(value = "Add a word that triggers user joining group")
     public ResponseEntity addJoinWordToGroup(HttpServletRequest request, @PathVariable String groupUid,
                                              @RequestParam String joinWord,
-                                             @RequestParam(required = false) String userUid) {
+                                             @RequestParam(required = false) String longJoinUrl) {
         try {
-            groupBroker.addJoinTag(userUid == null ? getUserIdFromRequest(request) : userUid, groupUid, joinWord);
-            return ResponseEntity.ok().build();
+            GroupJoinCode gjc = groupBroker.addJoinTag(getUserIdFromRequest(request), groupUid, joinWord, longJoinUrl);
+            return ResponseEntity.ok(new JoinWordDTO(gjc.getCode(), gjc.getShortUrl()));
         } catch (IllegalArgumentException e) {
             return RestUtil.errorResponse(RestMessage.JOIN_WORD_TAKEN);
         } catch (AccessDeniedException e) {
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+        } catch (JoinWordsExceededException e) {
+            return RestUtil.errorResponse(RestMessage.JOIN_WORDS_EXHAUSTED);
         }
     }
 

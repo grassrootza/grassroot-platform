@@ -10,13 +10,17 @@ public interface SocialMediaBroker {
 
     String initiateFacebookConnection(String userUid);
 
-    ManagedPagesResponse completeFbConnect(String userUid, MultiValueMap<String, String> paramsToPass);
+    String initiateTwitterConnection(String userUid);
+
+    ManagedPagesResponse completeIntegrationConnect(String userUid, String providerId, MultiValueMap<String, String> paramsToPass);
 
     GenericPostResponse postToFacebook(FBPostBuilder post);
 
     // returns null if no account, else returns its display name
-    String isTwitterAccountConnected(String userUid);
+    ManagedPage isTwitterAccountConnected(String userUid);
 
     GenericPostResponse postToTwitter(TwitterPostBuilder post);
+
+    IntegrationListResponse removeIntegration(String userUid, String providerId);
 
 }
