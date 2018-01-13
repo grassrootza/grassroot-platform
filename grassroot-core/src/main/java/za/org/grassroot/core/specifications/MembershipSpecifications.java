@@ -74,5 +74,9 @@ public class MembershipSpecifications {
         return (root, query, cb) -> cb.greaterThan(root.get(Membership_.joinTime), cutOffDateTime);
     }
 
+    public static Specification<Membership> membersJoinedBefore(Instant time) {
+        return (root, query, cb) -> cb.lessThan(root.get(Membership_.joinTime), time);
+    }
+
 
 }
