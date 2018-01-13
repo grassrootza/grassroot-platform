@@ -62,7 +62,7 @@ public class UserRepositoryTest {
     @Test
     public void shouldCheckAndroidProfile() {
         assertThat(userRepository.count(), is(0L));
-        User userProfile = new User("12345");
+        User userProfile = new User("12345", null, null);
         assertNull(userProfile.getId());
         assertNotNull(userProfile.getUid());
         userProfile.setHasAndroidProfile(true);
@@ -76,7 +76,7 @@ public class UserRepositoryTest {
 
     @Test
     public void shouldHaveSafetyGroup() {
-        User newUser = new User("0111222");
+        User newUser = new User("0111222", null, null);
         Group newGroup = new Group("test Group", newUser);
         assertNotNull(newUser.getUid());
         newUser.setSafetyGroup(newGroup);
@@ -90,7 +90,7 @@ public class UserRepositoryTest {
 
     @Test
     public void shouldUpdateTimeStamps() {
-        User userStamp = new User("2567");
+        User userStamp = new User("2567", null, null);
         assertNotNull(userStamp.getUid());
         Instant createdTime = Instant.now();
         userStamp.updateTimeStamps();
@@ -99,7 +99,7 @@ public class UserRepositoryTest {
 
     @Test
     public void shouldSetUserName() {
-        User user = new User("9087687");
+        User user = new User("9087687", null, null);
         assertNotNull(user.getUid());
         user.setUsername("john");
         assertThat(user.getUsername(), is("john"));
@@ -111,7 +111,7 @@ public class UserRepositoryTest {
 
     @Test
     public void shouldSavePassword() {
-        User userPass = new User("21345");
+        User userPass = new User("21345", null, null);
         assertNotNull(userPass.getUid());
         userPass.setPassword("password");
         assertThat(userPass.getPassword(), is("password"));
@@ -123,7 +123,7 @@ public class UserRepositoryTest {
 
     @Test
     public void shouldFetchNameToDisplay() {
-        User user = new User("0987");
+        User user = new User("0987", null, null);
         assertNotNull(user.getUid());
         user.setDisplayName("john");
         user.setHasSetOwnName(true);
@@ -138,7 +138,7 @@ public class UserRepositoryTest {
 
     @Test
     public void shouldSetFirstNameAndLastName() {
-        User userName = new User("09876");
+        User userName = new User("09876", null, null);
         assertNotNull(userName.getUid());
         userName.setFirstName("john");
         userName.setLastName("doe");
@@ -154,7 +154,7 @@ public class UserRepositoryTest {
 
     @Test
     public void shouldSetAccounts() {
-        User userAcc = new User("098765");
+        User userAcc = new User("098765", null, null);
         assertNotNull(userAcc.getUid());
         Account account = new Account(userAcc,"", AccountType.FREE,userAcc,
                 AccountPaymentType.FREE_TRIAL,AccountBillingCycle.ANNUAL);
@@ -179,7 +179,7 @@ public class UserRepositoryTest {
 
     @Test
     public void shouldSetLanguageCode() {
-        User userLanguage = new User("12345");
+        User userLanguage = new User("12345", null, null);
         assertNotNull(userLanguage.getUid());
         userLanguage.setLanguageCode("EN");
         assertThat(userLanguage.getLanguageCode(), is("EN"));
@@ -192,7 +192,7 @@ public class UserRepositoryTest {
 
     @Test
     public void shouldGetAlertPreference() {
-        User newUser = new User("13124");
+        User newUser = new User("13124", null, null);
         assertNotNull(newUser.getUid());
         newUser.setAlertPreference(AlertPreference.NOTIFY_NEW_AND_REMINDERS);
         assertThat(newUser.getAlertPreference(),is(AlertPreference.NOTIFY_NEW_AND_REMINDERS));
@@ -205,14 +205,14 @@ public class UserRepositoryTest {
 
     @Test
     public void shouldSavePhoneNumber() {
-        User userNumber = new User("907856");
+        User userNumber = new User("907856", null, null);
         assertNotNull(userNumber.getUid());
         userNumber.setPhoneNumber("07890");
         assertThat(userNumber.getPhoneNumber(), is("07890"));
         assertThat(userNumber.getNationalNumber(), is(PhoneNumberUtil.formattedNumber("07890")));
         userRepository.save(userNumber);
 
-        User userDb = userRepository.findByPhoneNumber("07890");
+        User userDb = userRepository.findByPhoneNumberAndPhoneNumberNotNull("07890");
         assertThat(userDb.getPhoneNumber(), is("07890"));
         assertThat(userDb.getNationalNumber(), is(PhoneNumberUtil.formattedNumber("07890")));
 
@@ -220,7 +220,7 @@ public class UserRepositoryTest {
 
     @Test
     public void shouldSetEmailAddress() {
-        User userEmail = new User("09090");
+        User userEmail = new User("09090", null, null);
         assertNotNull(userEmail.getUid());
         userEmail.setEmailAddress("johnDoe@gmail.com");
         assertTrue(userEmail.hasEmailAddress());
@@ -235,10 +235,10 @@ public class UserRepositoryTest {
     @Test
     public void shouldAddAndRemoveMappedMembership() {
 
-        User user = new User("099654");
+        User user = new User("099654", null, null);
         Role role = new Role("", null);
         Group group = new Group("", user);
-        Membership newMember = new Membership(group, user, role, Instant.now(), GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+        Membership newMember = new Membership(group, user, role, Instant.now(), GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         user.addMappedByMembership(newMember);
         assertThat(user.getMemberships().size(), is(1));
         userRepository.save(user);
@@ -249,13 +249,13 @@ public class UserRepositoryTest {
 
     @Test
     public void shouldFetchMemberships() {
-        User userMember = new User("1234");
+        User userMember = new User("1234", null, null);
         Group group = new Group("Group", userMember);
         Role role = new Role("", null);
         assertNotNull(userMember.getUid());
         assertTrue(userMember.getMemberships().isEmpty());
 
-        Membership newMember = new Membership(group, userMember, role, Instant.now(), GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+        Membership newMember = new Membership(group, userMember, role, Instant.now(), GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         assertThat(newMember.getGroup().getGroupName(), is("Group"));
         assertThat(newMember.getUser().getPhoneNumber(), is("1234"));
         assertThat(userMember.getMemberships().size(),is(0));
@@ -263,20 +263,20 @@ public class UserRepositoryTest {
 
     @Test
     public void shouldSaveMessagePreference() {
-        User userPrefer = new User("0908");
+        User userPrefer = new User("0908", null, null);
         assertNotNull(userPrefer.getUid());
-        userPrefer.setMessagingPreference(UserMessagingPreference.SMS);
-        assertThat(userPrefer.getMessagingPreference(), is(UserMessagingPreference.SMS));
+        userPrefer.setMessagingPreference(DeliveryRoute.SMS);
+        assertThat(userPrefer.getMessagingPreference(), is(DeliveryRoute.SMS));
         userRepository.save(userPrefer);
         User userDb = userRepository.findOneByUid(userPrefer.getUid());
         assertNotNull(userDb.getUid());
-        assertThat(userDb.getMessagingPreference(), is(UserMessagingPreference.SMS));
+        assertThat(userDb.getMessagingPreference(), is(DeliveryRoute.SMS));
 
     }
 
     @Test
     public void shouldSaveNotificationPriority() {
-        User userPriority = new User("56790");
+        User userPriority = new User("56790", null, null);
         assertNotNull(userPriority.getUid());
         userPriority.setNotificationPriority(2);
         assertThat(userPriority.getNotificationPriority(), is(2));
@@ -289,7 +289,7 @@ public class UserRepositoryTest {
     public void checkTrialStatus() throws Exception {
 
         assertThat(userRepository.count(), is(0L));
-        User entity = new User("07515757537");
+        User entity = new User("07515757537", null, null);
         assertNull(entity.getId());
         assertNotNull(entity.getUid());
         userRepository.save(entity);
@@ -306,7 +306,7 @@ public class UserRepositoryTest {
     public void changeTrialStatus() throws Exception {
 
         assertThat(userRepository.count(), is(0L));
-        User ToCreate = new User("07515757537");
+        User ToCreate = new User("07515757537", null, null);
         userRepository.save(ToCreate);
 
         User retrieve = userRepository.findAll().iterator().next();
@@ -320,7 +320,7 @@ public class UserRepositoryTest {
     @Test
     public void shouldSaveAndFetchName() {
 
-        User entity = new User("232331");
+        User entity = new User("232331", null, null);
         assertNotNull(entity.getUid());
         entity.setDisplayName("john");
         assertTrue(entity.hasName());
@@ -334,7 +334,7 @@ public class UserRepositoryTest {
 
     @Test
     public void shouldSetDisplayName() {
-        User entity = new User("2435", "");
+        User entity = new User("2435", "", null);
         assertNotNull(entity.getUid());
         assertFalse(entity.hasName());
         assertThat(entity.getName(""), is("035"));
@@ -350,7 +350,7 @@ public class UserRepositoryTest {
     public void checkOriginalTrialStatus() throws Exception {
         assertThat(userRepository.count(), is(0L));
 
-        User dbz = new User("07515757537");
+        User dbz = new User("07515757537", null, null);
         userRepository.save(dbz);
 
         User check = userRepository.findAll().iterator().next();
@@ -363,7 +363,7 @@ public class UserRepositoryTest {
     public void shouldSaveAndRetrieveUserData() throws Exception {
         assertThat(userRepository.count(), is(0L));
 
-        User userToCreate = new User("12345");
+        User userToCreate = new User("12345", null, null);
         assertNull(userToCreate.getId());
         assertNotNull(userToCreate.getUid());
         userRepository.save(userToCreate);
@@ -379,7 +379,7 @@ public class UserRepositoryTest {
     public void shouldNotSaveDuplicatePhoneNumbersInUserTable() throws Exception {
         assertThat(userRepository.count(), is(0L));
 
-        User firstUserToCreate = new User("12345");
+        User firstUserToCreate = new User("12345", null, null);
         firstUserToCreate = userRepository.save(firstUserToCreate);
 
         User userFromDb = userRepository.findAll().iterator().next();
@@ -387,7 +387,7 @@ public class UserRepositoryTest {
         assertThat(userFromDb.getPhoneNumber(), is("12345"));
 
 
-        User secondUserToCreate = new User("12345");
+        User secondUserToCreate = new User("12345", null, null);
 
         userRepository.save(secondUserToCreate);
         fail("Saving a user with the phone number of an already existing user should throw an exception");
@@ -395,18 +395,18 @@ public class UserRepositoryTest {
 
     @Test
     public void shouldSaveAndFindByPhoneNumber() throws Exception {
-        User userToCreate = new User("54321");
+        User userToCreate = new User("54321", null, null);
         assertNull(userToCreate.getId());
         assertNotNull(userToCreate.getUid());
         User savedUser = userRepository.save(userToCreate);
         Assert.assertNotEquals(Long.valueOf(0), savedUser.getId());
-        User foundUser = userRepository.findByPhoneNumber("54321");
+        User foundUser = userRepository.findByPhoneNumberAndPhoneNumberNotNull("54321");
         assertEquals(savedUser.getPhoneNumber(), foundUser.getPhoneNumber());
     }
 
     @Test
     public void shouldNotFindPhoneNumber() throws Exception {
-        User dbUser = userRepository.findByPhoneNumber("99999999999");
+        User dbUser = userRepository.findByPhoneNumberAndPhoneNumberNotNull("99999999999");
         assertNull(dbUser);
     }
 
@@ -417,16 +417,16 @@ public class UserRepositoryTest {
 
     @Test
     public void shouldExist() {
-        userRepository.save(new User("4444444"));
+        userRepository.save(new User("4444444", null, null));
         assertEquals(true, userRepository.existsByPhoneNumber("4444444"));
     }
 
     @Test
     public void shouldReturnUserThatRSVPYes() {
-        User u1 = userRepository.save(new User("0821234560"));
-        User u2 = userRepository.save(new User("0821234561"));
+        User u1 = userRepository.save(new User("0821234560", null, null));
+        User u2 = userRepository.save(new User("0821234561", null, null));
         Group group = groupRepository.save(new Group("rsvp yes",u1));
-        group.addMember(u2, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+        group.addMember(u2, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         group = groupRepository.save(group);
         Event event = eventRepository.save(new MeetingBuilder().setName("rsvp event").setStartDateTime(Instant.now()).setUser(u1).setParent(group).setEventLocation("someLocation").setIncludeSubGroups(true).createMeeting());
         EventLog eventLog = eventLogRepository.save(new EventLog(u1, event, EventLogType.RSVP, EventRSVPResponse.YES));
@@ -437,11 +437,11 @@ public class UserRepositoryTest {
 
     @Test
     public void shouldReturnUserThatRSVPNo() {
-        User u1 = userRepository.save(new User("0821234570"));
-        User u2 = userRepository.save(new User("0821234571"));
+        User u1 = userRepository.save(new User("0821234570", null, null));
+        User u2 = userRepository.save(new User("0821234571", null, null));
 
         Group group = groupRepository.save(new Group("rsvp yes",u1));
-        group.addMember(u2, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+        group.addMember(u2, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         group = groupRepository.save(group);
 
         Event event = eventRepository.save(new MeetingBuilder().setName("rsvp event").setStartDateTime(Instant.now()).setUser(u1).setParent(group).setEventLocation("someLocation").setIncludeSubGroups(true).createMeeting());
@@ -455,11 +455,11 @@ public class UserRepositoryTest {
     @Test
     @Rollback
     public void shouldSaveAddedRole() {
-        User user = userRepository.save(new User(number));
+        User user = userRepository.save(new User(number, null, null));
         Role role = roleRepository.save(new Role("TEST_ROLE", null));
         user.addStandardRole(role);
         userRepository.save(user);
-        User userFromDb = userRepository.findByPhoneNumber(number);
+        User userFromDb = userRepository.findByPhoneNumberAndPhoneNumberNotNull(number);
         assertNotNull(userFromDb);
         assertEquals(userFromDb.getId(), user.getId());
         assertTrue(userFromDb.getStandardRoles().contains(role));
@@ -468,14 +468,14 @@ public class UserRepositoryTest {
     @Test
     @Rollback
     public void shouldRemoveRole() {
-        User user = userRepository.save(new User(number));
+        User user = userRepository.save(new User(number, null, null));
         Role role = roleRepository.save(new Role("TEST_ROLE", null));
         user.addStandardRole(role);
         user = userRepository.save(user);
         assertTrue(user.getStandardRoles().contains(role));
         user.removeStandardRole(role);
         userRepository.save(user);
-        User userfromDb = userRepository.findByPhoneNumber(number);
+        User userfromDb = userRepository.findByPhoneNumberAndPhoneNumberNotNull(number);
         assertNotNull(userfromDb);
         assertEquals(userfromDb.getId(), user.getId());
         assertFalse(userfromDb.getStandardRoles().contains(role));
@@ -488,15 +488,15 @@ public class UserRepositoryTest {
 
         String phoneBase = "080111000";
 
-        User user1 = userRepository.save(new User(phoneBase + "1", "tester1"));
-        User user2 = userRepository.save(new User(phoneBase + "2", "anonymous"));
-        User user3 = userRepository.save(new User(phoneBase + "3", "tester2"));
-        User user4 = userRepository.save(new User("0701110001", "tester3"));
-        User user5 = userRepository.save(new User("0701110002", "no name"));
+        User user1 = userRepository.save(new User(phoneBase + "1", "tester1", null));
+        User user2 = userRepository.save(new User(phoneBase + "2", "anonymous", null));
+        User user3 = userRepository.save(new User(phoneBase + "3", "tester2", null));
+        User user4 = userRepository.save(new User("0701110001", "tester3", null));
+        User user5 = userRepository.save(new User("0701110002", "no name", null));
 
         Group testGroup = groupRepository.save(new Group("test group", user1));
-        testGroup.addMember(user1, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
-        testGroup.addMember(user2, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+        testGroup.addMember(user1, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        testGroup.addMember(user2, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         testGroup = groupRepository.save(testGroup);
 
         List<User> usersByPhone = userRepository.findByPhoneNumberContaining(phoneBase);
@@ -532,14 +532,14 @@ public class UserRepositoryTest {
     public void shouldFindGroupMembersExcludingCreator() {
         String phoneBase = "080555000";
 
-        User testUser = userRepository.save(new User(phoneBase +" 1", "tester1"));
-        User user2 = userRepository.save(new User(phoneBase + "2", "anonymous"));
-        User user3 = userRepository.save(new User(phoneBase + "3", "tester2"));
+        User testUser = userRepository.save(new User(phoneBase +" 1", "tester1", null));
+        User user2 = userRepository.save(new User(phoneBase + "2", "anonymous", null));
+        User user3 = userRepository.save(new User(phoneBase + "3", "tester2", null));
 
         Group testGroup = groupRepository.save(new Group("tg1", testUser));
-        testGroup.addMember(testUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
-        testGroup.addMember(user2, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
-        testGroup.addMember(user3, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+        testGroup.addMember(testUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        testGroup.addMember(user2, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        testGroup.addMember(user3, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         Group testGroupFromDb = groupRepository.save(testGroup);
 
         assertThat(testGroupFromDb.getMemberships().size(), is(3));

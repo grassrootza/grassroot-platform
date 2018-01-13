@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.integration.location.LocationInfoBroker;
-import za.org.grassroot.integration.location.ProvinceSA;
+import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 
@@ -42,7 +42,7 @@ public class USSDGeoApiController extends USSDBaseController {
                                   final User user) {
         USSDMenu menu = new USSDMenu(messageAssembler.getMessage("province.prompt." + dataSetLabel
                 + (skippedLanguage ? ".open" : ""), user));
-        List<ProvinceSA> provinces = locationInfoBroker.getAvailableProvincesForDataSet(dataSetLabel);
+        List<Province> provinces = locationInfoBroker.getAvailableProvincesForDataSet(dataSetLabel);
         provinces.forEach(p -> menu.addMenuOption(REL_PATH + subsequentUrl + p.name(),
                 messageAssembler.getMessage("province." + p.name(), user)));
         return menu;
@@ -88,7 +88,7 @@ public class USSDGeoApiController extends USSDBaseController {
     @RequestMapping(value = "/info/select")
     public Request chooseInfo(@RequestParam(value = phoneNumber) String inputNumber,
                               @RequestParam String dataSet,
-                              @RequestParam ProvinceSA province) throws URISyntaxException {
+                              @RequestParam Province province) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber, saveUrl("/info/select", dataSet) + "&province=" + province);
         List<String> availableInfo = locationInfoBroker.getAvailableInfoForProvince(dataSet, province, user.getLocale());
         if (availableInfo.size() == 1) {
@@ -107,12 +107,12 @@ public class USSDGeoApiController extends USSDBaseController {
     public Request sendInfo(@RequestParam(value = phoneNumber) String inputNumber,
                             @RequestParam String dataSet,
                             @RequestParam String infoTag,
-                            @RequestParam ProvinceSA province) throws URISyntaxException {
+                            @RequestParam Province province) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber, null);
         return menuBuilder(sendMessageWithInfo(dataSet, infoTag, province, user));
     }
 
-    private USSDMenu sendMessageWithInfo(String dataSet, String infoTag, ProvinceSA province, User user) {
+    private USSDMenu sendMessageWithInfo(String dataSet, String infoTag, Province province, User user) {
         List<String> records = locationInfoBroker.retrieveRecordsForProvince(dataSet, infoTag, province, user.getLocale());
         // todo : particle filter etc to decide on a likely closest record, and then do the rest
         final String prompt = messageAssembler.getMessage(dataSet + ".sent.prompt",

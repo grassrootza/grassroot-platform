@@ -46,7 +46,7 @@ public class UserLogRepositoryTest {
     @Test
     public void shouldSaveAndRetrieveUserLogs() {
         assertThat(userLogRepository.count(), is(0L));
-        User testUser = userRepository.save(new User("0605551111"));
+        User testUser = userRepository.save(new User("0605551111", null, null));
         UserLog createLog = userLogRepository.save(new UserLog(testUser.getUid(), CREATED_IN_DB, null, UNKNOWN));
         testUser.setHasInitiatedSession(true);
         testUser.setHasWebProfile(true);
@@ -72,7 +72,7 @@ public class UserLogRepositoryTest {
         Instant now = Instant.now();
         Sort sort = new Sort(Sort.Direction.ASC, "creationTime");
 
-        User testUser = new User("0605550000");
+        User testUser = new User("0605550000", null, null);
         testUser = userRepository.save(testUser);
         UserLog createdLog = new UserLog(testUser.getUid(), CREATED_IN_DB, "Created the user", UNKNOWN);
         createdLog.setCreationTime(twoMonths);

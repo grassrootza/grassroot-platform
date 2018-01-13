@@ -3,8 +3,13 @@ package za.org.grassroot.core.specifications;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.domain.Specifications;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.enums.Province;
 
+import javax.persistence.criteria.Join;
+import javax.persistence.criteria.JoinType;
 import java.time.Instant;
+import java.util.Collection;
+import java.util.List;
 
 public class MembershipSpecifications {
 
@@ -21,6 +26,7 @@ public class MembershipSpecifications {
         return (root, query, cb) -> cb.equal(root.get(Membership_.group).get(Group_.createdByUser), groupCreator);
     }
 
+
     public static Specifications<Membership> membershipsInGroups(User groupCreator, Instant groupCreatedAfter, Instant membershipCreatedAfter) {
         Specification<Membership> groupCreatedByUserSpec = MembershipSpecifications.membershipsOfGroupsCreatedBy(groupCreator);
         Specification<Membership> groupCreatedAfterSpec = MembershipSpecifications.membershipsOfGroupsCreatedAfter(groupCreatedAfter);
@@ -28,15 +34,45 @@ public class MembershipSpecifications {
         return Specifications.where(groupCreatedByUserSpec).and(groupCreatedAfterSpec).and(membershipCreatedAfterSpec);
     }
 
+    public static Specifications<Membership> recentMembershipsInGroups(List<Group> groups, Instant membershipCreatedAfter) {
+        Specification<Membership> inGroups = MembershipSpecifications.forGroups(groups);
+        Specification<Membership> membershipCreatedAfterSpec = MembershipSpecifications.membershipsCreatedAfter(membershipCreatedAfter);
+        return Specifications.where(inGroups).and(membershipCreatedAfterSpec).and(membershipCreatedAfterSpec);
+    }
+
+    public static Specifications<Membership> groupMembersInProvincesJoinedAfter(Group group,
+                                                                                Collection<Province> provinces,
+                                                                                Instant joinedDate) {
+        return Specifications.where(forGroup(group)).and(memberJoinedAfter(joinedDate))
+                .and(memberInProvinces(provinces));
+    }
+
     private static Specification<Membership> hasRole(String roleName) {
         return (root, query, cb) -> cb.equal(root.get(Membership_.role).get(Role_.name), roleName);
     }
 
-    private static Specification<Membership> forGroup(Group group) {
+    private static Specification<Membership> forGroups(List<Group> groups) {
+        return (root, query, cb) -> root.get(Membership_.group).in(groups);
+    }
+
+    public static Specification<Membership> forGroup(Group group) {
         return (root, query, cb) -> cb.equal(root.get(Membership_.group), group);
     }
 
     public static Specifications<Membership> groupOrganizers(Group group) {
         return Specifications.where(hasRole(BaseRoles.ROLE_GROUP_ORGANIZER)).and(forGroup(group));
     }
+
+    private static Specification<Membership> memberInProvinces(Collection<Province> provinces) {
+        return (root, query, cb) -> {
+            Join<Membership, User> userJoin = root.join(Membership_.user, JoinType.INNER);
+            return userJoin.get(User_.province).in(provinces);
+        };
+    }
+
+    private static Specification<Membership> memberJoinedAfter(Instant cutOffDateTime) {
+        return (root, query, cb) -> cb.greaterThan(root.get(Membership_.joinTime), cutOffDateTime);
+    }
+
+
 }

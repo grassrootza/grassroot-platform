@@ -5,7 +5,6 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.junit4.SpringRunner;
 import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
@@ -40,7 +39,7 @@ public class SafetyEventRepositoryTest {
     @Test
     public void shouldSaveAndReturnSafetyEvent() throws Exception{
 
-       User user = userRepository.save(new User("0848870765"));
+       User user = userRepository.save(new User("0848870765", null, null));
         Group group = groupRepository.save(new Group("group", user));
         SafetyEvent safetyEvent = safetyEventRepository.save(new SafetyEvent(user, group));
         assertNotEquals(null, safetyEvent);
@@ -51,7 +50,7 @@ public class SafetyEventRepositoryTest {
 
     @Test
     public void shouldFindByGroup() throws Exception{
-      User user = userRepository.save(new User("0848875098"));
+      User user = userRepository.save(new User("0848875098", null, null));
         Group group = groupRepository.save(new Group("group", user));
         safetyEventRepository.save(new SafetyEvent(user, group));
         List<SafetyEvent> safetyEvents = safetyEventRepository.findByGroup(group);

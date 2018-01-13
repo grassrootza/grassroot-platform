@@ -7,29 +7,24 @@ import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.VerificationTokenCode;
 import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.enums.AlertPreference;
+import za.org.grassroot.core.enums.DeliveryRoute;
 import za.org.grassroot.core.enums.UserInterfaceType;
-import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.core.enums.VerificationCodeType;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.NotificationService;
-import za.org.grassroot.integration.messaging.CreateJwtTokenRequest;
 import za.org.grassroot.integration.messaging.JwtService;
-import za.org.grassroot.integration.messaging.JwtType;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.PermissionBroker;
-import za.org.grassroot.services.exception.UserExistsException;
 import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.user.PasswordTokenService;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.enums.RestMessage;
-import za.org.grassroot.webapp.model.rest.AndroidAuthToken;
 import za.org.grassroot.webapp.model.rest.wrappers.AuthWrapper;
 import za.org.grassroot.webapp.model.rest.wrappers.ProfileSettingsDTO;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
@@ -95,7 +90,7 @@ public class UserRestController {
     public ResponseEntity<ResponseWrapper> resendOtp(@PathVariable("phoneNumber") String phoneNumber) {
         final String msisdn = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
         try {
-            final String tokenCode = temporaryTokenSend(userManagementService.regenerateUserVerifier(phoneNumber, true), msisdn, true); // will be empty in production
+            final String tokenCode = temporaryTokenSend(userManagementService.regenerateUserVerifier(msisdn, true), msisdn, true); // will be empty in production
             return RestUtil.okayResponseWithData(RestMessage.VERIFICATION_TOKEN_SENT, tokenCode);
         } catch (Exception e) {
             log.info("here is the error : " + e.toString());
@@ -151,7 +146,7 @@ public class UserRestController {
             if (!user.hasAndroidProfile()) {
                 userManagementService.createAndroidUserProfile(new UserDTO(user));
             }
-            userManagementService.setMessagingPreference(user.getUid(), UserMessagingPreference.ANDROID_APP); // todo : maybe move to gcm registration
+            userManagementService.setMessagingPreference(user.getUid(), DeliveryRoute.ANDROID_APP); // todo : maybe move to gcm registration
             passwordTokenService.expireVerificationCode(user.getUid(), VerificationCodeType.SHORT_OTP);
             VerificationTokenCode longLivedToken = passwordTokenService.generateLongLivedAuthCode(user.getUid());
             boolean hasGroups = permissionBroker.countActiveGroupsWithPermission(user, null) != 0;
@@ -218,7 +213,7 @@ public class UserRestController {
     @RequestMapping(value = "/logout/{phoneNumber}/{code}", method = RequestMethod.GET)
     public ResponseEntity<ResponseWrapper> logoutUser(@PathVariable String phoneNumber, @PathVariable String code) {
         User user = userManagementService.findByInputNumber(phoneNumber);
-        userManagementService.setMessagingPreference(user.getUid(), UserMessagingPreference.SMS);
+        userManagementService.setMessagingPreference(user.getUid(), DeliveryRoute.SMS);
         passwordTokenService.expireVerificationCode(user.getUid(), VerificationCodeType.LONG_AUTH);
         return RestUtil.messageOkayResponse(RestMessage.USER_LOGGED_OUT);
     }
@@ -234,7 +229,7 @@ public class UserRestController {
     public ResponseEntity<ResponseWrapper> renameUser(@PathVariable String phoneNumber, @PathVariable String code,
                                                       @RequestParam String displayName) {
         User user = userManagementService.findByInputNumber(phoneNumber);
-        userManagementService.updateDisplayName(user.getUid(), displayName);
+        userManagementService.updateDisplayName(user.getUid(), user.getUid(), displayName);
         return RestUtil.messageOkayResponse(RestMessage.PROFILE_SETTINGS_UPDATED);
     }
 
@@ -275,44 +270,6 @@ public class UserRestController {
         return RestUtil.messageOkayResponse(RestMessage.LOCATION_RECORDED);
     }
 
-    @RequestMapping(value = "web/register", method = RequestMethod.GET)
-    public ResponseEntity<ResponseWrapper> registerWebUser(@RequestParam String username, @RequestParam String phoneNumber,
-                                                           @RequestParam String password) {
-
-        try {
-            if (StringUtils.isEmpty(username))
-                return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.INVALID_USERNAME);
-            else if (StringUtils.isEmpty(phoneNumber))
-                return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.INVALID_MSISDN);
-            else if (StringUtils.isEmpty(phoneNumber))
-                return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.INVALID_PASSWORD);
-
-
-            User newUser = User.makeEmpty();
-            newUser.setDisplayName(username);
-            newUser.setPhoneNumber(phoneNumber);
-            newUser.setPassword(password);
-
-            User user = userManagementService.createUserWebProfile(newUser);
-
-            // Generate a token for the user
-            String token = jwtService.createJwt(new CreateJwtTokenRequest(JwtType.ANDROID_CLIENT, user.getUid()));
-
-            // Assemble response entity
-            AndroidAuthToken response = new AndroidAuthToken(user, token);
-
-            // Return the token on the response
-            return RestUtil.okayResponseWithData(RestMessage.USER_REGISTRATION_SUCCESSFUL, response);
-
-        } catch (UserExistsException userException) {
-            return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.USER_ALREADY_EXISTS);
-        } catch (InvalidPhoneNumberException phoneNumberException) {
-            return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.INVALID_MSISDN);
-        } catch (Exception e) {
-            return RestUtil.errorResponse(HttpStatus.INTERNAL_SERVER_ERROR, RestMessage.USER_REGISTRATION_FAILED);
-        }
-
-    }
 
     private boolean ifExists(String phoneNumber) {
         return userManagementService.userExist(PhoneNumberUtil.convertPhoneNumber(phoneNumber));

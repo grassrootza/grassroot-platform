@@ -1,9 +1,8 @@
 package za.org.grassroot.core.domain;
 
+import lombok.Getter;
 import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.Type;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import za.org.grassroot.core.domain.geo.GroupLocation;
 import za.org.grassroot.core.domain.task.*;
 import za.org.grassroot.core.enums.GroupDefaultImage;
@@ -27,8 +26,6 @@ import static za.org.grassroot.core.util.FormatUtil.removeUnwantedCharacters;
 @Table(name = "group_profile") // quoting table name in case "group" is a reserved keyword
 @DynamicUpdate
 public class Group implements TodoContainer, VoteContainer, MeetingContainer, Serializable, Comparable<Group>, TagHolder {
-
-    private static final Logger logger = LoggerFactory.getLogger(Group.class);
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -166,6 +163,9 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
     @Type(type = "za.org.grassroot.core.util.StringArrayUserType")
     private String[] tags;
 
+    @OneToMany(mappedBy = "group")
+    @Getter private Set<GroupJoinCode> groupJoinCodes = new HashSet<>();
+
     // @OneToMany(mappedBy = "masterGroup")
     // private List<Campaign> campaign;
 
@@ -283,14 +283,14 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         }
     }
 
-    public Set<Membership> addMembers(Collection<User> newMembers, String roleName, GroupJoinMethod joinMethod) {
+    public Set<Membership> addMembers(Collection<User> newMembers, String roleName, GroupJoinMethod joinMethod, String joinMethodDescriptor) {
         Objects.requireNonNull(roleName);
         Objects.requireNonNull(newMembers);
 
         Role role = getRole(roleName);
         Set<Membership> memberships = new HashSet<>();
         for (User newMember : newMembers) {
-            Membership membership = addMemberInternal(newMember, role, joinMethod);
+            Membership membership = addMemberInternal(newMember, role, joinMethod, joinMethodDescriptor);
             if (membership != null) {
                 memberships.add(membership);
             }
@@ -299,14 +299,14 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
     }
 
 
-    public Membership addMember(User newMember, String roleName, GroupJoinMethod joinMethod) {
+    public Membership addMember(User newMember, String roleName, GroupJoinMethod joinMethod, String joinMethodDescriptor) {
         Objects.requireNonNull(roleName);
         Role role = getRole(roleName);
-        return addMemberInternal(newMember, role, joinMethod);
+        return addMemberInternal(newMember, role, joinMethod, joinMethodDescriptor);
     }
 
 
-    private Membership addMemberInternal(User newMember, Role role, GroupJoinMethod joinMethod) {
+    private Membership addMemberInternal(User newMember, Role role, GroupJoinMethod joinMethod, String joinMethodDescriptor) {
 
         Objects.requireNonNull(newMember);
         Objects.requireNonNull(role);
@@ -314,7 +314,8 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         if (!getGroupRoles().contains(role)) {
             throw new IllegalArgumentException("Role " + role + " is not one of roles belonging to group: " + this);
         }
-        Membership membership = new Membership(this, newMember, role, Instant.now(), joinMethod);
+        Membership membership = new Membership(this, newMember, role, Instant.now(), joinMethod,
+                joinMethodDescriptor);
         boolean added = this.memberships.add(membership);
         if (added) {
             newMember.addMappedByMembership(membership);
@@ -324,7 +325,7 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
     }
 
     public Membership removeMember(User member) {
-        Membership membership = getMembership(member);
+        Membership membership = getMembership(member.getUid());
         if (membership == null) {
             return null;
         }
@@ -350,11 +351,18 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         this.memberships.removeAll(memberships);
     }
 
+
     public Membership getMembership(User user) {
         Objects.requireNonNull(user);
 
+        return this.getMembership(user.getUid());
+    }
+
+    public Membership getMembership(String userUid) {
+        Objects.requireNonNull(userUid);
+
         for (Membership membership : memberships) {
-            if (membership.getUser().equals(user)) {
+            if (membership.getUser().getUid().equals(userUid)) {
                 return membership;
             }
         }
@@ -371,7 +379,7 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
 
     public boolean hasMember(User user) {
         Objects.requireNonNull(user);
-        Membership membership = getMembership(user);
+        Membership membership = getMembership(user.getUid());
         return membership != null;
     }
 
@@ -598,7 +606,6 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
     public GroupDefaultImage getDefaultImage() { return defaultImage; }
 
     public void setDefaultImage(GroupDefaultImage defaultImage) { this.defaultImage = defaultImage; }
-
 
     public Set<Role> getGroupRoles() {
         if (groupRoles == null) {

@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.junit4.SpringRunner;
 import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
@@ -115,7 +114,7 @@ public class RoleRepositoryTest {
     public void testSaveWithGroupReference() throws Exception {
         assertThat(roleRepository.count(), is(0L));
         String roleName = "ADD_MEMBER";
-        User user = userRepository.save(new User("0812223456"));
+        User user = userRepository.save(new User("0812223456", null, null));
         Group group = groupRepository.save(new Group("testGroup", user));
         Role role = roleRepository.save(new Role(roleName, group.getUid()));
         Role roleFromDb = roleRepository.findByNameAndGroupUid(roleName, group.getUid());
@@ -129,7 +128,7 @@ public class RoleRepositoryTest {
     @Rollback
     public void testGroupAssignment() throws Exception {
         assertThat(roleRepository.count(), is(0L));
-        User user = userRepository.save(new User("0801110000"));
+        User user = userRepository.save(new User("0801110000", null, null));
         Group group1 = groupRepository.save(new Group("gc1", user));
 
         Set<Role> group1roles = roleRepository.findByGroupUid(group1.getUid());
@@ -142,7 +141,7 @@ public class RoleRepositoryTest {
     public void testGroupAssignmentAfterConstruction() throws Exception {
         assertThat(roleRepository.count(), is(0L));
 
-        User user = userRepository.save(new User("0811110001"));
+        User user = userRepository.save(new User("0811110001", null, null));
         Group group = groupRepository.save(new Group("test Group", user));
 
         assertThat(roleRepository.count(), is(3L)); // check doesn't duplicate

@@ -4,6 +4,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.Type;
+import org.springframework.util.StringUtils;
 import za.org.grassroot.core.enums.GroupViewPriority;
 
 import javax.persistence.*;
@@ -16,6 +17,8 @@ import java.util.Objects;
 @Table(name = "group_user_membership",
         uniqueConstraints = @UniqueConstraint(name = "uk_membership_group_user", columnNames = {"group_id", "user_id"}))
 public class Membership implements Serializable, TagHolder {
+
+    public static final String JOIN_METHOD_DESCRIPTOR_TAG = "JOINDESC:";
 
     @Setter(AccessLevel.PRIVATE)
     @Id
@@ -61,13 +64,17 @@ public class Membership implements Serializable, TagHolder {
         // for JPA
     }
 
-    public Membership(Group group, User user, Role role, Instant joinTime, GroupJoinMethod joinMethod) {
+    public Membership(Group group, User user, Role role, Instant joinTime, GroupJoinMethod joinMethod, String joinMethodDescriptor) {
         this.group = Objects.requireNonNull(group);
         this.user = Objects.requireNonNull(user);
         this.role = Objects.requireNonNull(role);
         this.joinTime = Objects.requireNonNull(joinTime);
         this.joinMethod = joinMethod;
         this.viewPriority = GroupViewPriority.NORMAL; // no case where starts off pinned or hidden
+
+        if (!StringUtils.isEmpty(joinMethodDescriptor)) {
+            this.addTag(JOIN_METHOD_DESCRIPTOR_TAG + joinMethodDescriptor);
+        }
     }
 
     public void setRole(Role role) {

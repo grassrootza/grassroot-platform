@@ -17,6 +17,7 @@ import za.org.grassroot.core.domain.geo.GeoLocation;
 import za.org.grassroot.core.domain.geo.ObjectLocation;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.dto.task.TaskDTO;
+import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.integration.LearningService;
 import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.exception.RequestorAlreadyPartOfGroupException;
@@ -104,10 +105,10 @@ public class GroupSearchController extends BaseController {
 	}
 
 	@RequestMapping(value = "/search")
-	public String searchForGroup(@RequestParam("currentUserContact")String currentUserContact,@RequestParam String term,
+	public String searchForGroup(@RequestParam String term,
 								 @RequestParam(required = false) String groupUid, Model model, RedirectAttributes attributes, HttpServletRequest request,
-								 @RequestParam(value = "locationLat",required = false) double latitude ,
-								 @RequestParam(value = "locationLon",required = false) double longitude) {
+								 @RequestParam(value = "locationLat",required = false) Double latitude,
+								 @RequestParam(value = "locationLon",required = false) Double longitude) {
 		boolean resultFound = false;
 		GeoLocation location;
 
@@ -156,7 +157,7 @@ public class GroupSearchController extends BaseController {
 
 				resultFound = !publicGroups.isEmpty() || !memberGroups.isEmpty() || !memberTasks.isEmpty();
 
-				User user = userManagementService.findByInputNumber(currentUserContact);
+				User user = userManagementService.load(getUserProfile().getUid());
 				List<Meeting> meetings = eventBroker.publicMeetingsUserIsNotPartOf(term,user);
 				if(meetings != null){
 					model.addAttribute("publicMeetingsUserIsNotPartOf",meetings);
@@ -214,7 +215,7 @@ public class GroupSearchController extends BaseController {
 
 	@RequestMapping(value = "join/token", method = RequestMethod.POST)
 	public String joinGroup(RedirectAttributes attributes, @RequestParam String groupUid, @RequestParam String token, HttpServletRequest request) {
-		groupBroker.addMemberViaJoinCode(getUserProfile().getUid(), groupUid, token);
+		groupBroker.addMemberViaJoinCode(getUserProfile().getUid(), groupUid, token, UserInterfaceType.WEB);
 		addMessage(attributes, MessageType.SUCCESS, "group.join.success", request);
 		attributes.addAttribute("groupUid", groupUid);
 		return "redirect:/group/view";

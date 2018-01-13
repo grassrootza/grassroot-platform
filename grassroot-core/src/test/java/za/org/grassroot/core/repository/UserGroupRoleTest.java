@@ -38,7 +38,7 @@ public class UserGroupRoleTest {
     @Test
     @Ignore
     public void testCreateGroupRoles() throws Exception {
-        User user = new User("27729100003");
+        User user = new User("27729100003", null, null);
         user.setFirstName("Java");
         user.setLastName("Pablo");
 
@@ -47,8 +47,8 @@ public class UserGroupRoleTest {
         Group group1 = new Group("Red Devils", user);
         Group group2 = new Group("Code Nation", user);
 
-        group1.addMember(user, BaseRoles.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
-        group2.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+        group1.addMember(user, BaseRoles.ROLE_GROUP_ORGANIZER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
+        group2.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
 
         group1 = groupRepository.save(group1);
         group2 = groupRepository.save(group2);

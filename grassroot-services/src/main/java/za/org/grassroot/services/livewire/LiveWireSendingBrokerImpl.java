@@ -19,7 +19,7 @@ import za.org.grassroot.core.enums.LiveWireAlertType;
 import za.org.grassroot.core.repository.DataSubscriberRepository;
 import za.org.grassroot.core.repository.LiveWireAlertRepository;
 import za.org.grassroot.core.util.PhoneNumberUtil;
-import za.org.grassroot.integration.email.GrassrootEmail;
+import za.org.grassroot.integration.messaging.GrassrootEmail;
 import za.org.grassroot.integration.livewire.LiveWirePushBroker;
 import za.org.grassroot.integration.storage.StorageBroker;
 

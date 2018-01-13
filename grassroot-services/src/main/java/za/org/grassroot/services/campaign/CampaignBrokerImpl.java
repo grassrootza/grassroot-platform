@@ -1,5 +1,6 @@
 package za.org.grassroot.services.campaign;
 
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,7 +30,7 @@ import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 import java.time.Instant;
 import java.util.*;
 
-@Service
+@Service @Slf4j
 public class CampaignBrokerImpl implements CampaignBroker {
 
     private static final Logger LOG = LoggerFactory.getLogger(CampaignBrokerImpl.class);
@@ -84,11 +85,17 @@ public class CampaignBrokerImpl implements CampaignBroker {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public Set<String> getCampaignTags() {
+        return campaignRepository.fetchAllActiveCampaignTags();
+    }
+
+    @Override
     @Transactional
     public CampaignMessage getCampaignMessageByCampaignCodeAndActionType(String campaignCode, MessageVariationAssignment assignment,UserInterfaceType channel, CampaignActionType actionType, String phoneNumber, Locale locale){
         Set<CampaignMessage> messageSet = findMessagesByCampaignCodeAndVariationAndUserInterfaceType(campaignCode,assignment, channel, locale);
         String searchValue = createSearchValue(campaignCode,assignment,null,null);
-        User user = userRepository.findByPhoneNumber(phoneNumber);
+        User user = userRepository.findByPhoneNumberAndPhoneNumberNotNull(phoneNumber);
         if(messageSet != null && !messageSet.isEmpty()){
             for(CampaignMessage message: messageSet){
                 if(message.getCampaignMessageActionSet() != null && !message.getCampaignMessageActionSet().isEmpty()){
@@ -167,7 +174,8 @@ public class CampaignBrokerImpl implements CampaignBroker {
         User user = userRepository.findOneByUid(userUid);
         Campaign newCampaign = new Campaign(campaignName, campaignCode, description,user, startDate, endDate,campaignType, url);
         if(campaignTags != null && !campaignTags.isEmpty()){
-            newCampaign.getTagList().addAll(campaignTags);
+            log.info("setting campaign tags ... {}", campaignTags);
+            newCampaign.setTags(campaignTags);
         }
         Campaign perstistedCampaign = campaignRepository.saveAndFlush(newCampaign);
         CampaignLog campaignLog = new CampaignLog(newCampaign.getCreatedByUser(), CampaignLogType.CREATED_IN_DB, newCampaign);
@@ -339,7 +347,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
     private Campaign getCampaignByCampaignName(String campaignName){
         Objects.requireNonNull(campaignName);
-        return campaignRepository.findByCampaignNameAndEndDateTimeAfter(campaignName, Instant.now());
+        return campaignRepository.findByNameAndEndDateTimeAfter(campaignName, Instant.now());
     }
 
     private Set<CampaignMessage> findMessagesByCampaignCodeAndVariationAndUserInterfaceType(String campaignCode, MessageVariationAssignment assignment, UserInterfaceType channel, Locale locale){

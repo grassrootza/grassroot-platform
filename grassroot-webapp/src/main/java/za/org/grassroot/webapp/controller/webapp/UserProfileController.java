@@ -16,6 +16,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.integration.socialmedia.ManagedPage;
+import za.org.grassroot.integration.socialmedia.ManagedPagesResponse;
+import za.org.grassroot.integration.socialmedia.SocialMediaBroker;
 import za.org.grassroot.services.exception.InvalidTokenException;
 import za.org.grassroot.services.group.MemberDataExportBroker;
 import za.org.grassroot.services.user.UserManagementService;
@@ -41,18 +44,19 @@ public class UserProfileController extends BaseController {
 
     private final UserManagementService userManagementService;
     private MemberDataExportBroker memberDataExportBroker;
-
+    private SocialMediaBroker socialMediaBroker;
 
     @Autowired
-    public UserProfileController(UserManagementService userManagementService, MemberDataExportBroker memberDataExportBroker) {
+    public UserProfileController(UserManagementService userManagementService, MemberDataExportBroker memberDataExportBroker, SocialMediaBroker socialMediaBroker) {
         this.userManagementService = userManagementService;
         this.memberDataExportBroker = memberDataExportBroker;
+        this.socialMediaBroker = socialMediaBroker;
     }
 
     @ModelAttribute("sessionUser")
     public User getCurrentUser(Authentication authentication) {
         return (authentication == null) ? null :
-                userManagementService.fetchUserByUsername(((UserDetails) authentication.getPrincipal()).getUsername());
+                userManagementService.fetchUserByUsernameStrict(((UserDetails) authentication.getPrincipal()).getUsername());
     }
 
     @RequestMapping(value = "settings", method = RequestMethod.GET)
@@ -65,8 +69,8 @@ public class UserProfileController extends BaseController {
         log.info("retrieved this user, displayName={}, alertPref={}, language={}", sessionUser.getDisplayName(),
                 sessionUser.getAlertPreference(), sessionUser.getLanguageCode());
         try {
-            userManagementService.updateUser(getUserProfile().getUid(), sessionUser.getDisplayName(), sessionUser.getEmailAddress(),
-                    sessionUser.getAlertPreference(), new Locale(sessionUser.getLanguageCode()));
+            userManagementService.updateUser(getUserProfile().getUid(), sessionUser.getDisplayName(), null, sessionUser.getEmailAddress(),
+                    null, sessionUser.getAlertPreference(), new Locale(sessionUser.getLanguageCode()), null);
             addMessage(redirectAttributes, MessageType.SUCCESS, "user.profile.change.success", request);
             return "redirect:settings"; // using redirect to avoid reposting
         } catch (IllegalArgumentException e) {
@@ -86,7 +90,7 @@ public class UserProfileController extends BaseController {
 
         // todo : extra validation
         try {
-            userManagementService.resetUserPassword(getUserProfile().getPhoneNumber(), password, otpField);
+            userManagementService.resetUserPassword(getUserProfile().getUsername(), password, otpField);
             addMessage(attributes, MessageType.SUCCESS, "user.profile.password.done", request);
             return "redirect:/home";
         } catch (InvalidTokenException e) {
@@ -127,6 +131,19 @@ public class UserProfileController extends BaseController {
         response.flushBuffer();
     }
 
-
+    @RequestMapping(value = "social-media", method = RequestMethod.GET)
+    public String linkSocialMedia(Model model) {
+        model.addAttribute("name", "NAAM");
+        long startTime = System.currentTimeMillis();
+        ManagedPagesResponse response = socialMediaBroker.getManagedFacebookPages(getUserProfile().getUid());
+        model.addAttribute("fbConnected", response.isUserConnectionValid());
+        model.addAttribute("fbPages", response.getManagedPages());
+        log.info("time for first call: {} msecs", System.currentTimeMillis() - startTime);
+        ManagedPage twitterAccount = socialMediaBroker.isTwitterAccountConnected(getUserProfile().getUid());
+        model.addAttribute("twitterConnected", twitterAccount != null);
+        model.addAttribute("twitterAccountName", twitterAccount != null ? twitterAccount.getDisplayName() : "");
+        log.info("time for both calls: {} msecs", System.currentTimeMillis() - startTime);
+        return "user/social-media";
+    }
 
 }

@@ -72,8 +72,8 @@ public class TokenValidationInterceptor extends HandlerInterceptorAdapter {
             isTokenExpired = true;
         } else if(authorizationHeader.doesNotHaveBearerToken()) {
             Map pathVariables = (Map) request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
-            String phoneNumber = String.valueOf(pathVariables.get("phoneNumber")).trim();
-            String code = String.valueOf(pathVariables.get("code")).trim();
+            String phoneNumber = pathVariables.containsKey("phoneNumber") ? String.valueOf(pathVariables.get("phoneNumber")).trim() : null;
+            String code = pathVariables.containsKey("code") ? String.valueOf(pathVariables.get("code")).trim() : null;
             if (passwordTokenService.isLongLiveAuthValid(phoneNumber, code)) {
                 return true;
             } else {

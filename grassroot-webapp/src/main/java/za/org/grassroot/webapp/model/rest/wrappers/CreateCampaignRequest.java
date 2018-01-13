@@ -32,7 +32,7 @@ public class CreateCampaignRequest implements Serializable {
     private String url;
     @ApiModelProperty(value = "uid of campaign master group if group exist", required = true)
     private String groupUid;
-    @ApiModelProperty(value = "name of campaign master group for new group", required = true)
+    @ApiModelProperty(value = "name of campaign master group for new group", required = false)
     private String groupName;
     @ApiModelProperty(value = "tags for campaign", required = false)
     private Set<String> tags;

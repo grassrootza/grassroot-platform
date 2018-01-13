@@ -21,7 +21,6 @@ import za.org.grassroot.core.dto.task.TaskTimeChangedDTO;
 import za.org.grassroot.core.enums.TodoCompletionConfirmType;
 import za.org.grassroot.core.enums.TodoLogType;
 import za.org.grassroot.core.specifications.TodoSpecifications;
-import za.org.grassroot.core.util.DateTimeUtil;
 
 import javax.transaction.Transactional;
 import java.time.Instant;
@@ -54,7 +53,7 @@ public class TodoRepositoryTest {
     @Test
     public void shouldSaveAndRetrieveTodoForGroup()  {
 
-        User user = userRepository.save(new User("001111141"));
+        User user = userRepository.save(new User("001111141", null, null));
         Group group = groupRepository.save(new Group("test action", user));
         Group groupUnrelated = groupRepository.save(new Group("not related action", user));
         Todo lb1 = todoRepository.save(new Todo(user, group, TodoType.ACTION_REQUIRED, "just do it", addHoursFromNow(2)));
@@ -67,7 +66,7 @@ public class TodoRepositoryTest {
     @Test
     public void shouldSaveAndRetrieveTodoForGroupAndNotCompleted()  {
         // todo: finalize these and subsequent
-        User user = userRepository.save(new User("001111142"));
+        User user = userRepository.save(new User("001111142", null, null));
         Group group = groupRepository.save(new Group("test action", user));
         Group groupUnrelated = groupRepository.save(new Group("not related action", user));
         Todo lb1 = todoRepository.save(new Todo(user, group, TodoType.ACTION_REQUIRED, "just do it", addHoursFromNow(2)));
@@ -77,7 +76,7 @@ public class TodoRepositoryTest {
     @Test
     public void shouldSaveAndRetrieveTodoForGroupAndCompleted()  {
 
-        User user = userRepository.save(new User("001111143"));
+        User user = userRepository.save(new User("001111143", null, null));
         Group group = groupRepository.save(new Group("test action", user));
         Todo lb1 = todoRepository.save(new Todo(user, group, TodoType.ACTION_REQUIRED,"just do it", addHoursFromNow(2)));
         Todo lb2 = todoRepository.save(new Todo(user, group, TodoType.ACTION_REQUIRED, "just do it too", addHoursFromNow(2)));
@@ -86,9 +85,9 @@ public class TodoRepositoryTest {
 
     @Test
     public void shouldSaveAndRetrieveTodoAssignedToUserAndCompleted()  {
-        User user = userRepository.save(new User("001111145"));
+        User user = userRepository.save(new User("001111145", null, null));
         Group group = new Group("test action", user);
-        group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+        group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         groupRepository.save(group);
 
         Todo lb1 = new Todo(user, group, TodoType.ACTION_REQUIRED, "assigned 1", addHoursFromNow(2));
@@ -109,9 +108,9 @@ public class TodoRepositoryTest {
 
     @Test
     public void shouldRetrieveTodosWithTimeChanged() {
-        User user = userRepository.save(new User("0601110000"));
+        User user = userRepository.save(new User("0601110000", null, null));
         Group group = new Group("test", user);
-        group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+        group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         groupRepository.save(group);
 
         Todo todo1 = todoRepository.save(new Todo(user, group, TodoType.ACTION_REQUIRED, "firstOne", addHoursFromNow(2)));

@@ -12,10 +12,10 @@ import za.org.grassroot.core.domain.notification.EventResponseNotification;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.EventLog;
 import za.org.grassroot.core.dto.ResponseTotalsDTO;
+import za.org.grassroot.core.enums.DeliveryRoute;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.EventType;
-import za.org.grassroot.core.enums.UserMessagingPreference;
 import za.org.grassroot.core.repository.EventLogRepository;
 import za.org.grassroot.core.repository.EventRepository;
 import za.org.grassroot.core.repository.UserRepository;
@@ -137,7 +137,7 @@ public class EventLogBrokerImpl implements EventLogBroker {
     }
 
     private void generateMeetingResponseMessage(Event event, EventLog eventLog, EventRSVPResponse rsvpResponse) {
-        if (event.getCreatedByUser().getMessagingPreference().equals(UserMessagingPreference.ANDROID_APP)) {
+        if (event.getCreatedByUser().getMessagingPreference().equals(DeliveryRoute.ANDROID_APP)) {
             String message = messageAssemblingService.createEventResponseMessage(event.getCreatedByUser(), event, rsvpResponse);
             Notification notification = new EventResponseNotification(event.getCreatedByUser(), message, eventLog);
             LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();

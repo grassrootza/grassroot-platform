@@ -12,7 +12,7 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.NotificationStatus;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.enums.UserMessagingPreference;
+import za.org.grassroot.core.enums.DeliveryRoute;
 import za.org.grassroot.core.repository.NotificationRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.specifications.NotificationSpecifications;
@@ -51,11 +51,12 @@ public class NotificationManager implements NotificationService{
     @Override
     @Transactional(readOnly = true)
     public Page<Notification> fetchPagedAndroidNotifications(User target, int pageNumber, int pageSize) {
-        return notificationRepository.findByTargetAndDeliveryChannelOrderByCreatedDateTimeDesc(target, UserMessagingPreference.ANDROID_APP, new PageRequest(pageNumber, pageSize));
+        return notificationRepository.findByTargetAndDeliveryChannelOrderByCreatedDateTimeDesc(target, DeliveryRoute.ANDROID_APP, new PageRequest(pageNumber, pageSize));
     }
 
     @Override
-    public List<Notification> fetchSentOrBetterSince(String userUid, Instant sentSince, UserMessagingPreference deliveryChannel) {
+    @Transactional(readOnly = true)
+    public List<Notification> fetchSentOrBetterSince(String userUid, Instant sentSince, DeliveryRoute deliveryChannel) {
         Objects.requireNonNull(userUid);
         User target = userRepository.findOneByUid(userUid);
         Specifications<Notification> specifications = Specifications.where(NotificationSpecifications.toUser(target))
@@ -70,30 +71,14 @@ public class NotificationManager implements NotificationService{
     @Transactional
     public void updateNotificationsViewedAndRead(Set<String> notificationUids) {
         List<Notification> notifications = notificationRepository.findByUidIn(notificationUids);
-        notifications.forEach(n -> n.updateStatus(NotificationStatus.READ, false, null));
+        notifications.forEach(n -> n.updateStatus(NotificationStatus.READ, false, false, null));
     }
 
     @Override
     @Transactional(readOnly = true)
     public int countUnviewedAndroidNotifications(String targetUid) {
         User user = userRepository.findOneByUid(targetUid);
-        return notificationRepository.countByTargetAndDeliveryChannelAndStatusNot(user, UserMessagingPreference.ANDROID_APP, NotificationStatus.READ);
-    }
-
-    @Override
-    @Transactional
-    public void markNotificationAsDelivered(String notificationUid) {
-        Notification notification = notificationRepository.findByUid(notificationUid);
-        if (notification != null) {
-            notification.updateStatus(NotificationStatus.DELIVERED, false, null);
-        } else {
-            log.info("No notification under UID {}, possibly from another environment", notificationUid);
-        }
-    }
-
-    @Override
-    public Notification loadBySeningKey(String sendingKey) {
-        return notificationRepository.findOne(NotificationSpecifications.getBySendingKey(sendingKey));
+        return notificationRepository.countByTargetAndDeliveryChannelAndStatusNot(user, DeliveryRoute.ANDROID_APP, NotificationStatus.READ);
     }
 
     @Override
@@ -107,14 +92,4 @@ public class NotificationManager implements NotificationService{
         return notificationRepository.findAll(specs);
     }
 
-    @Override
-    @Transactional
-    public void updateNotificationStatus(String notificationUid, NotificationStatus status, String errorMessage, String messageSendKey) {
-        Notification notification = notificationRepository.findByUid(notificationUid);
-        if (notification != null) {
-            notification.updateStatus(status, false, errorMessage);
-            if (messageSendKey != null)
-                notification.setSendingKey(messageSendKey);
-        }
-    }
 }

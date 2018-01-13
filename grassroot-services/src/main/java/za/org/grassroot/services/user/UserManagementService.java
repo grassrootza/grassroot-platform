@@ -3,7 +3,8 @@ package za.org.grassroot.services.user;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.enums.AlertPreference;
-import za.org.grassroot.core.enums.UserMessagingPreference;
+import za.org.grassroot.core.enums.DeliveryRoute;
+import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.services.exception.NoSuchUserException;
 import za.org.grassroot.services.exception.UserExistsException;
 
@@ -25,13 +26,24 @@ public interface UserManagementService {
 
     User findByInputNumber(String inputNumber) throws NoSuchUserException;
 
+    User findByNumberOrEmail(String inputNumber, String emailAddress);
+
     User findByInputNumber(String inputNumber, String currentUssdMenu) throws NoSuchUserException;
 
-    User fetchUserByUsername(String username);
+    // if can't find by username itself, tries phone number or email
+    User findByUsernameLoose(String userName);
+
+    // only checks the username property alone
+    User fetchUserByUsernameStrict(String username);
 
     boolean userExist(String phoneNumber);
 
     List<User> searchByGroupAndNameNumber(String groupUid, String nameOrNumber);
+
+    // username can be msisdn or pwd
+    boolean doesUserHaveStandardRole(String userName, String roleName);
+
+    UserProfileStatus fetchUserProfileStatus(String userUid);
 
     /*
     Methods to create a user, for various interfaces
@@ -55,9 +67,14 @@ public interface UserManagementService {
     Methods to update user properties
      */
 
-    void updateUser(String userUid, String displayName, String emailAddress, AlertPreference alertPreference, Locale locale);
+    // note: returns "false" if an OTP is needed to complete this but is not present,
+    // throws an invalid error if an OTP is provided but is not valid
+    // returns true otherwise
+    boolean updateUser(String userUid, String displayName, String phoneNumber,
+                       String emailAddress, Province province, AlertPreference alertPreference,
+                       Locale locale, String validationOtp);
 
-    void updateDisplayName(String userUid, String displayName);
+    void updateDisplayName(String callingUserUid, String userToUpdateUid, String displayName);
 
     void setDisplayNameByOther(String updatingUserUid, String targetUserUid, String displayName);
 
@@ -65,13 +82,15 @@ public interface UserManagementService {
 
     void updateAlertPreferences(String userUid, AlertPreference alertPreference);
 
-    void setMessagingPreference(String userUid, UserMessagingPreference preference);
+    void setMessagingPreference(String userUid, DeliveryRoute preference);
 
     void setHasInitiatedUssdSession(String userUid);
 
-    User resetUserPassword(String phoneNumber, String newPassword, String token);
+    void resetUserPassword(String username, String newPassword, String token);
 
-    void updateEmailAddress(String userUid, String emailAddress);
+    void updateEmailAddress(String callingUserUid, String userUid, String emailAddress);
+
+    void updatePhoneNumber(String callingUserUid, String userUid, String phoneNumber);
 
     /*
     Miscellaneous methods to query various properties about a user

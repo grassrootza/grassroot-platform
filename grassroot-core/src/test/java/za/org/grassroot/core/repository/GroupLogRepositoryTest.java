@@ -45,13 +45,13 @@ public class GroupLogRepositoryTest {
 
         assertThat(groupLogRepository.count(), is(0L));
 
-        User userToDoTests = new User("0810001111");
+        User userToDoTests = new User("0810001111", null, null);
         userToDoTests = userRepository.save(userToDoTests);
 
         Group groupToCreate = new Group("testGroup", userToDoTests);
         groupToCreate = groupRepository.save(groupToCreate);
 
-        GroupLog groupLog = new GroupLog(groupToCreate, userToDoTests, GroupLogType.GROUP_ADDED, 0L);
+        GroupLog groupLog = new GroupLog(groupToCreate, userToDoTests, GroupLogType.GROUP_ADDED, null);
         assertNull(groupLog.getId());
         groupLogRepository.save(groupLog);
 
@@ -68,14 +68,15 @@ public class GroupLogRepositoryTest {
 
         assertThat(groupLogRepository.count(), is(0L));
 
-        User userToDoTests = userRepository.save(new User("0810002222"));
+        User userToDoTests = userRepository.save(new User("0810002222", null, null));
         Group groupToCreate = groupRepository.save(new Group("testGroup", userToDoTests));
 
-        GroupLog groupLog1 = new GroupLog(groupToCreate, userToDoTests, GroupLogType.GROUP_ADDED, 0L);
+        GroupLog groupLog1 = new GroupLog(groupToCreate, userToDoTests, GroupLogType.GROUP_ADDED, null);
         assertNull(groupLog1.getId());
         groupLogRepository.save(groupLog1);
 
-        GroupLog groupLog2 = new GroupLog(groupToCreate, userToDoTests, GroupLogType.GROUP_MEMBER_ADDED, 0L);
+        GroupLog groupLog2 = new GroupLog(groupToCreate, userToDoTests, GroupLogType.GROUP_MEMBER_ADDED,
+                userToDoTests, null, null, null);
         assertNull(groupLog2.getId());
         groupLogRepository.save(groupLog2);
 

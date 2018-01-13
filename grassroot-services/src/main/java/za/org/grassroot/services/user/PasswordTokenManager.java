@@ -1,5 +1,6 @@
 package za.org.grassroot.services.user;
 
+import org.apache.commons.validator.routines.EmailValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -7,8 +8,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.UserLog;
 import za.org.grassroot.core.domain.VerificationTokenCode;
+import za.org.grassroot.core.enums.UserInterfaceType;
+import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.enums.VerificationCodeType;
+import za.org.grassroot.core.repository.UserLogRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.repository.VerificationTokenCodeRepository;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
@@ -38,47 +43,45 @@ public class PasswordTokenManager implements PasswordTokenService {
     private final VerificationTokenCodeRepository verificationTokenCodeRepository;
 
     private final UserRepository userRepository;
+    private final UserLogRepository userLogRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Autowired
     public PasswordTokenManager(VerificationTokenCodeRepository verificationTokenCodeRepository, UserRepository userRepository,
-                                PasswordEncoder passwordEncoder) {
+                                UserLogRepository userLogRepository, PasswordEncoder passwordEncoder) {
         this.verificationTokenCodeRepository = verificationTokenCodeRepository;
         this.userRepository = userRepository;
+        this.userLogRepository = userLogRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
     @Override
     @Transactional
-    public VerificationTokenCode generateShortLivedOTP(String phoneNumber) {
-        Objects.requireNonNull(phoneNumber);
-        if (!PhoneNumberUtil.testInputNumber(phoneNumber)) {
-            throw new InvalidPhoneNumberException("Error! Phone number must be passed in valid format");
+    public VerificationTokenCode generateShortLivedOTP(String username) {
+        Objects.requireNonNull(username);
+        if (!PhoneNumberUtil.testInputNumber(username) && !EmailValidator.getInstance().isValid(username)) {
+            throw new InvalidPhoneNumberException("Error! Username must be valid msisdn or email");
         }
 
-        final String msisdn = PhoneNumberUtil.convertPhoneNumber(phoneNumber); // should only ever be passed msisdn, but extra robustness relatively cost-less
-
-        VerificationTokenCode token = verificationTokenCodeRepository.findByUsernameAndType(msisdn, VerificationCodeType.SHORT_OTP);
+        VerificationTokenCode token = verificationTokenCodeRepository.findByUsernameAndType(username, VerificationCodeType.SHORT_OTP);
         final String code = String.valueOf(100000 + new SecureRandom().nextInt(999999));
 
         if (token == null) {
             // no OTP exists, so generate a new one and send it
-            token = new VerificationTokenCode(msisdn, code, VerificationCodeType.SHORT_OTP);
+            token = new VerificationTokenCode(username, code, VerificationCodeType.SHORT_OTP);
             token.setExpiryDateTime(Instant.now().plus(TOKEN_LIFE_SPAN_MINUTES, ChronoUnit.MINUTES));
+            return verificationTokenCodeRepository.save(token);
         } else if (Instant.now().isAfter(token.getExpiryDateTime())) {
             // an OTP exists but it is stale
             log.info("found an OTP, but it's stale, time now = {}, expiry time = {}", Instant.now(), token.getExpiryDateTime().toString());
-            token.setCode(code);
-            token.updateCreatedDateTime();
-            token.incrementTokenAttempts();
-            token.setExpiryDateTime(Instant.now().plus(TOKEN_LIFE_SPAN_MINUTES, ChronoUnit.MINUTES));
+            VerificationTokenCode newToken = new VerificationTokenCode(username, code, VerificationCodeType.SHORT_OTP);
+            newToken.setExpiryDateTime(Instant.now().plus(TOKEN_LIFE_SPAN_MINUTES, ChronoUnit.MINUTES));
+            verificationTokenCodeRepository.delete(token);
+            verificationTokenCodeRepository.save(newToken);
+            return newToken;
         } else {
-            // an OTP exists and is not stale, so increment token attemps but leave the rest unchanged
-            token.incrementTokenAttempts();
+            return token;
         }
-
-        verificationTokenCodeRepository.save(token);
-        return token;
     }
 
     @Override
@@ -99,8 +102,6 @@ public class PasswordTokenManager implements PasswordTokenService {
         } else if (Instant.now().isAfter(token.getExpiryDateTime())) {
             token.setCode(code);
             token.setExpiryDateTime(Instant.now().plus(TOKEN_LIFE_SPAN_DAYS, ChronoUnit.DAYS));
-        } else {
-            token.incrementTokenAttempts();
         }
 
         verificationTokenCodeRepository.save(token);
@@ -146,23 +147,69 @@ public class PasswordTokenManager implements PasswordTokenService {
         Objects.requireNonNull(phoneNumber);
         Objects.requireNonNull(password);
 
-        User user = userRepository.findByPhoneNumber(phoneNumber);
+        User user = userRepository.findByPhoneNumberAndPhoneNumberNotNull(phoneNumber);
         if (user == null || !passwordEncoder.matches(password, user.getPassword())) {
             throw new UsernamePasswordLoginFailedException();
         }
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public boolean isShortLivedOtpValid(String phoneNumber, String code) {
-        if (phoneNumber == null || code == null) {
-            return false;
+    public void validatePwdPhoneOrEmail(String username, String password) {
+        User user = userRepository.findByUsername(username);
+        if (user == null && PhoneNumberUtil.testInputNumber(username)) {
+            user = userRepository.findByPhoneNumberAndPhoneNumberNotNull(username);
+        }
+        if (user == null && EmailValidator.getInstance().isValid(username)) {
+            user = userRepository.findByEmailAddressAndEmailAddressNotNull(username);
+        }
+        if (user == null || !passwordEncoder.matches(password, user.getPassword())) {
+            throw new UsernamePasswordLoginFailedException();
+        }
+    }
+
+    @Override
+    @Transactional
+    public void changeUserPassword(String userUid, String oldPassword, String newPassword, UserInterfaceType interfaceType) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(oldPassword);
+        Objects.requireNonNull(newPassword);
+
+        User user = userRepository.findOneByUid(userUid);
+        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+            throw new UsernamePasswordLoginFailedException();
         }
 
-        // need to use directly as phone number, not attempt to get user first, else fails on registration
-        VerificationTokenCode token = verificationTokenCodeRepository.findByUsernameAndType(phoneNumber, VerificationCodeType.SHORT_OTP);
+        String encodedPassword = passwordEncoder.encode(newPassword);
+        user.setPassword(encodedPassword);
+        userRepository.save(user);
 
-        return token != null && code.equals(token.getCode()) && Instant.now().isBefore(token.getExpiryDateTime());
+        userLogRepository.save(new UserLog(user.getUid(), UserLogType.USER_CHANGED_PASSWORD, null,
+                interfaceType));
+    }
+
+    @Override
+    @Transactional
+    public boolean isShortLivedOtpValid(String username, String code) {
+        if (username == null || code == null)
+            return false;
+
+        log.info("checking for token by username: {}", username);
+        // need to use directly as phone number, not attempt to get user first, else fails on registration
+        VerificationTokenCode token = verificationTokenCodeRepository.findByUsernameAndType(username, VerificationCodeType.SHORT_OTP);
+        if (token == null)
+            return false;
+
+        log.info("checking token expiry ...");
+        if (Instant.now().isAfter(token.getExpiryDateTime()))
+            return false;
+
+        log.info("checking codes: {}, {}", code, token.getCode());
+        boolean valid = code.equals(token.getCode());
+        if (!valid)
+            token.incrementTokenAttempts();
+
+        log.info("returning valid");
+        return valid;
     }
 
     @Override
@@ -172,7 +219,7 @@ public class PasswordTokenManager implements PasswordTokenService {
             return false;
         }
 
-        User user = userRepository.findByPhoneNumber(PhoneNumberUtil.convertPhoneNumber(phoneNumber));
+        User user = userRepository.findByPhoneNumberAndPhoneNumberNotNull(PhoneNumberUtil.convertPhoneNumber(phoneNumber));
         if (user == null) {
             return false;
         }

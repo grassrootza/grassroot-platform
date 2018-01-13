@@ -1,5 +1,6 @@
 package za.org.grassroot.services.task;
 
+import com.google.common.collect.ComparisonChain;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -249,6 +250,48 @@ public class TaskBrokerImpl implements TaskBroker {
     }
 
     @Override
+    public List<TaskFullDTO> fetchUpcomingUserTasksFull(String userUid) {
+        Objects.requireNonNull(userUid);
+
+        User user = userRepository.findOneByUid(userUid);
+        Instant now = Instant.now();
+
+        // todo : switch most of these to using assignment instead of just group
+        List<Event> events = eventRepository.findAll(Specifications
+                .where(EventSpecifications.userPartOfGroup(user))
+                .and(EventSpecifications.notCancelled())
+                .and(EventSpecifications.startDateTimeAfter(now)));
+
+        if (events != null) {
+            events = events.stream()
+                    .filter(event -> event.getEventType().equals(EventType.MEETING) || partOfGroupBeforeVoteCalled(event, user))
+                    .collect(Collectors.toList());
+        }
+
+        Set<TaskFullDTO> taskDtos = new HashSet<>();
+        events.stream().filter(event -> event.getEventType().equals(EventType.MEETING) || partOfGroupBeforeVoteCalled(event, user))
+                .forEach(e -> taskDtos.add(new TaskFullDTO(e, user, e.getCreatedDateTime(), getUserResponse(e, user))));
+
+        Instant todoStart = Instant.now().minus(DAYS_PAST_FOR_TODO_CHECKING, ChronoUnit.DAYS);
+        Instant todoEnd = DateTimeUtil.getVeryLongAwayInstant();
+        List<Todo> todos = todoBroker.fetchTodosForUser(userUid, true, true, todoStart, todoEnd, null);
+
+
+        for (Todo todo : todos) {
+            taskDtos.add(new TaskFullDTO(todo, user, todo.getCreatedDateTime(), getUserResponse(todo, user)));
+        }
+
+
+        List<TaskFullDTO> tasks = new ArrayList<>(taskDtos);
+        Collections.sort(tasks, (o1, o2) -> ComparisonChain.start()
+                .compare(o1.getDeadlineMillis(), o2.getDeadlineMillis())
+                .compareFalseFirst(o1.isHasResponded(), o2.isHasResponded())
+                .result());
+        log.info("Retrieved all the user's upcoming tasks, took {} msecs", System.currentTimeMillis() - now.toEpochMilli());
+        return tasks;
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public ChangedSinceData<TaskDTO> fetchUpcomingTasksAndCancelled(String userUid, Instant changedSince) {
         Objects.requireNonNull(userUid);
@@ -424,6 +467,39 @@ public class TaskBrokerImpl implements TaskBroker {
         tasks.addAll(outstandingOptionsVotes);
         tasks.addAll(outstandingMeetings);
 
+        return tasks;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<TaskFullDTO> fetchUpcomingGroupTasks(String userUid, String groupUid) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(groupUid);
+
+        User user = userRepository.findOneByUid(userUid);
+        Group group = groupBroker.load(groupUid);
+
+        Set<TaskFullDTO> taskDtos = new HashSet<>();
+
+        eventBroker.retrieveGroupEvents(group, null, Instant.now(), null).stream()
+                .filter(event -> event.getEventType().equals(EventType.MEETING) || partOfGroupBeforeVoteCalled(event, user))
+                .forEach(e -> taskDtos.add(new TaskFullDTO(e, user, e.getCreatedDateTime(), getUserResponse(e, user))));
+
+        Instant todoStart = Instant.now().minus(DAYS_PAST_FOR_TODO_CHECKING, ChronoUnit.DAYS);
+        Instant todoEnd = DateTimeUtil.getVeryLongAwayInstant();
+        List<Todo> todos = todoBroker.fetchTodosForGroup(userUid, groupUid, false, true, todoStart, todoEnd, null);
+
+        log.info("number of todos fetched for group = {}", todos.size());
+
+        for (Todo todo : todos) {
+            taskDtos.add(new TaskFullDTO(todo, user, todo.getCreatedDateTime(), todo.getResponseTag()));
+        }
+
+        List<TaskFullDTO> tasks = new ArrayList<>(taskDtos);
+        Collections.sort(tasks, (o1, o2) -> ComparisonChain.start()
+                .compare(o1.getDeadlineMillis(), o2.getDeadlineMillis())
+                .compareFalseFirst(o1.isHasResponded(), o2.isHasResponded())
+                .result());
         return tasks;
     }
 

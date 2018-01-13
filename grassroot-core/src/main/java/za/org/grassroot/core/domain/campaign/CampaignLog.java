@@ -2,7 +2,9 @@ package za.org.grassroot.core.domain.campaign;
 
 
 import lombok.Getter;
+import lombok.Setter;
 import za.org.grassroot.core.domain.ActionLog;
+import za.org.grassroot.core.domain.Broadcast;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.CampaignLogType;
 import za.org.grassroot.core.util.UIDGenerator;
@@ -41,6 +43,10 @@ public class CampaignLog implements ActionLog {
 
     @Column(name="description", nullable = true)
     private String description;
+
+    @ManyToOne
+    @JoinColumn(name = "broadcast_id")
+    @Setter private Broadcast broadcast;
 
     public CampaignLog() {
         // for JPA

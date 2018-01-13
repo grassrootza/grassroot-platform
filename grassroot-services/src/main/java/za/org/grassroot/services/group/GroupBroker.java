@@ -1,16 +1,16 @@
 package za.org.grassroot.services.group;
 
 import org.springframework.transaction.annotation.Transactional;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.GroupJoinMethod;
-import za.org.grassroot.core.domain.Permission;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.core.enums.GroupViewPriority;
+import za.org.grassroot.core.enums.Province;
+import za.org.grassroot.core.enums.UserInterfaceType;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -37,6 +37,8 @@ public interface GroupBroker {
 
     void updateGroupDefaultLanguage(String userUid, String groupUid, String newLocale, boolean includeSubGroups);
 
+    void updateTopics(String userUid, String groupUid, Set<String> topics);
+
     /** METHODS FOR DEALING WITH MEMBERS AND PERMISSIONS **/
 
     boolean canAddMember(String groupUid);
@@ -48,12 +50,16 @@ public interface GroupBroker {
 
     void copyMembersIntoGroup(String userUid, String groupUid, Set<String> memberUids);
 
-    void addMemberViaJoinCode(String userUidToAdd, String groupUid, String tokenPassed);
+    void addMemberViaJoinCode(String userUidToAdd, String groupUid, String tokenPassed, UserInterfaceType interfaceType);
+
+    String addMemberViaJoinPage(String groupUid, String code, String userUid, String name, String phone, String email,
+                                Province province, List<String> topics, UserInterfaceType interfaceType);
 
     void notifyOrganizersOfJoinCodeUse(Instant periodStart, Instant periodEnd);
 
     void asyncAddMemberships(String initiatorUid, String groupUid, Set<MembershipInfo> membershipInfos,
-                             GroupJoinMethod joinMethod, boolean duringGroupCreation, boolean createWelcomeNotifications);
+                             GroupJoinMethod joinMethod, String joinMethodDescriptor,
+                             boolean duringGroupCreation, boolean createWelcomeNotifications);
 
 
     void removeMembers(String userUid, String groupUid, Set<String> memberUids);
@@ -61,6 +67,9 @@ public interface GroupBroker {
     void unsubscribeMember(String userUid, String groupUid);
 
     void updateMembershipRole(String userUid, String groupUid, String memberUid, String roleName);
+
+    // note: only accepts topics that are from the group itself
+    void assignMembershipTopics(String userUid, String groupUid, String memberUid, Set<String> topics);
 
     @Transactional
     boolean setGroupPinnedForUser(String userUid, String groupUid, boolean pinned);
@@ -85,9 +94,21 @@ public interface GroupBroker {
 
     /** METHODS FOR DEALING WITH JOIN TOKENS, PUBLIC SETTINGS, AND SEARCHING **/
 
+    Group loadAndRecordUse(String groupUid, String code);
+
     String openJoinToken(String userUid, String groupUid, LocalDateTime expiryDateTime);
 
     void closeJoinToken(String userUid, String groupUid);
+
+    // url to shorten should be _whole_ url, with path/query params etc set as frontend wants (this is view's job to decide,
+    // since view will be handling the incoming requests)
+    GroupJoinCode addJoinTag(String userUid, String groupUid, String tag, String urlToShorten);
+
+    void removeJoinTag(String userUid, String groupUid, String tag);
+
+    Set<String> getUsedJoinWords();
+
+    Map<String, String> getJoinWordsWithGroupIds();
 
     void updateDiscoverable(String userUid, String groupUid, boolean discoverable, String authUserPhoneNumber);
 

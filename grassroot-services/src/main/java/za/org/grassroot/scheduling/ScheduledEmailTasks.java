@@ -8,11 +8,12 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import za.org.grassroot.core.enums.EventType;
-import za.org.grassroot.integration.email.EmailSendingBroker;
-import za.org.grassroot.integration.email.GrassrootEmail;
+import za.org.grassroot.integration.messaging.GrassrootEmail;
+import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.AnalyticalService;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 
 /**
  * Created by luke on 2016/10/25.
@@ -26,12 +27,15 @@ public class ScheduledEmailTasks {
     @Value("${grassroot.daily.admin.email:false}")
     private boolean sendDailyAdminMail;
 
-    private EmailSendingBroker emailSendingBroker;
+    @Value("${grassroot.system.mail:contact@grassroot.org.za}")
+    private String systemEmailAddress;
+
+    private MessagingServiceBroker messagingServiceBroker;
     private AnalyticalService analyticalService;
 
     @Autowired
-    public ScheduledEmailTasks(EmailSendingBroker emailSendingBroker, AnalyticalService analyticalService) {
-        this.emailSendingBroker = emailSendingBroker;
+    public ScheduledEmailTasks(MessagingServiceBroker messagingServiceBroker, AnalyticalService analyticalService) {
+        this.messagingServiceBroker = messagingServiceBroker;
         this.analyticalService = analyticalService;
     }
 
@@ -81,10 +85,9 @@ public class ScheduledEmailTasks {
 
             final String emailBody = "Good morning,\n" + userLine + taskLine + groupLine + safetyLine + "\nGrassroot";
 
-            emailSendingBroker.sendSystemStatusMail(new GrassrootEmail.EmailBuilder("System Email")
-                    .content(emailBody).build());
+            messagingServiceBroker.sendEmail(Arrays.asList(systemEmailAddress.split(",")),
+                    new GrassrootEmail.EmailBuilder("System Email").content(emailBody).build());
         }
     }
-
 
 }

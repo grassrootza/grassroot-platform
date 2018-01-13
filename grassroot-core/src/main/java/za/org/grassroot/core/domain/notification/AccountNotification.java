@@ -6,7 +6,6 @@ import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountLog;
 import za.org.grassroot.core.enums.NotificationDetailedType;
 import za.org.grassroot.core.enums.NotificationType;
-import za.org.grassroot.core.enums.UserMessagingPreference;
 
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
@@ -24,7 +23,7 @@ public abstract class AccountNotification extends Notification {
 
 	public AccountNotification(User destination, String message, AccountLog accountLog) {
         super(destination, message, accountLog);
-        this.deliveryChannel = UserMessagingPreference.SMS;
+//        this.deliveryChannel = DeliveryRoute.SMS;
         this.account = accountLog.getAccount();
 		this.setUseOnlyFreeChannels(true);
 	}

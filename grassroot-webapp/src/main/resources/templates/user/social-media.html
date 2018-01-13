@@ -1,0 +1,72 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      data-layout-decorate="~{layout}">
+<head>
+
+    <title>Welcome</title>
+    <meta property="og:title" content="Grassroot"/>
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/images/grassroot-logo.png"/>
+    <meta property="og:description" content="The Grassroot Platform"/>
+
+</head>
+
+<body>
+
+<section layout:fragment="header" class="top-container">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
+                <h2 class="text-center header-content-title"><span class="bold-title">Social </span><span class="light-title">Media</span></h2>
+                <h4 th:text="#{web.home.welcome.new(${currentUser.displayName})}" class="text-center header-content-subtitle">Welcome to Grassroot, Luke</h4>
+            </div>
+        </div>
+    </div>
+</section>
+
+<main layout:fragment="content">
+
+    <section class="no-group-buttons">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
+                    <a th:href="@{/user/facebook-connect}" class="default-button full-width-button text-center">
+                        <i class="fa fa-external-link" aria-hidden="true"></i>Link to Facebook
+                    </a>
+                    <p>
+                        Note: you are currently <span th:text="${fbConnected ? 'connected' : 'not connected'}">connected</span>
+                    </p>
+                    <p th:if="${fbConnected}">
+                        You currently manage: <span th:text="${fbPages}">page list</span>
+                    </p>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
+                    <a th:href="@{/socialmedia/connect/twitter}" class="default-button full-width-button text-center">
+                        <i class="fa fa-external-link" aria-hidden="true"></i>Link to Twitter
+                    </a>
+                  <p>
+                    Note: you are currently <span th:text="${twitterConnected ? 'connected' : 'not connected'}">connected</span>
+                  </p>
+                  <p th:if="${twitterConnected}">
+                    Account: <span th:text="${twitterAccountName}">@something</span>
+                  </p>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2 col-xs-12">
+                    <a th:href="@{/socialmedia/connect/google}" class="default-button full-width-button text-center">
+                        <i class="fa fa-external-link" aria-hidden="true"></i>Link to Google
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+</body>
+</html>

@@ -12,7 +12,8 @@ public enum CampaignLogType {
     CAMPAIGN_FOUND("campaign found"),
     CAMPAIGN_MESSAGE_FOUND("campaign message found"),
     CAMPAIGN_MESSAGE_NOT_FOUND("campaign message not found"),
-    CAMPAIGN_USER_ADDED_TO_MASTER_GROUP("campaign user added to master group");
+    CAMPAIGN_USER_ADDED_TO_MASTER_GROUP("campaign user added to master group"),
+    CAMPAIGN_BROADCAST_SENT("send a broadcast to campaign");
 
     private final String text;
 

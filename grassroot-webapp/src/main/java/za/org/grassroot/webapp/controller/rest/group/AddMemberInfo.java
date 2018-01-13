@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.BaseRoles;
@@ -12,7 +13,7 @@ import za.org.grassroot.core.dto.MembershipInfo;
 import java.util.List;
 
 @ApiModel
-@Getter @Setter
+@Getter @Setter @NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AddMemberInfo {
 
@@ -33,6 +34,13 @@ public class AddMemberInfo {
     protected MembershipInfo convertToMembershipInfo() {
         return new MembershipInfo(memberMsisdn, StringUtils.isEmpty(roleName) ? BaseRoles.ROLE_ORDINARY_MEMBER : roleName,
                 displayName);
+    }
+
+    public AddMemberInfo(MembershipInfo membershipInfo) {
+        this.memberMsisdn = membershipInfo.getPhoneNumber();
+        this.displayName = membershipInfo.getDisplayName();
+        this.roleName = membershipInfo.getRoleName();
+        this.emailAddress = membershipInfo.getMemberEmail();
     }
 
 }

@@ -1,6 +1,9 @@
 package za.org.grassroot.core.domain;
 
 
+import lombok.Getter;
+import lombok.Setter;
+import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.enums.GroupLogType;
 
 import javax.persistence.*;
@@ -8,7 +11,7 @@ import java.io.Serializable;
 import java.time.Instant;
 import java.util.Objects;
 
-@Entity
+@Entity @Getter
 @Table(name = "group_log",
         indexes = {@Index(name = "idx_group_log_group_id",  columnList="group_id", unique = false),
         @Index(name = "idx_group_log_grouplogtype", columnList = "group_log_type", unique = false)})
@@ -34,9 +37,21 @@ public class GroupLog implements Serializable, ActionLog {
     @Column(name="group_log_type", nullable = false, length = 50)
     private GroupLogType groupLogType;
 
-    // used for whenever the log involves a third type of entity (e.g., an account, a sub-group, a target user)
-    @Column(name = "user_or_sub_group_id")
-    private Long auxiliaryId;
+    @ManyToOne
+    @JoinColumn(name="target_user_id")
+    private User targetUser;
+
+    @ManyToOne
+    @JoinColumn(name="target_group_id")
+    private Group targetGroup;
+
+    @ManyToOne
+    @JoinColumn(name="target_account_id")
+    private Account targetAccount;
+
+    @ManyToOne
+    @JoinColumn(name="broadcast_id")
+    @Setter private Broadcast broadcast;
 
     @Column(name = "description")
     private String description;
@@ -45,52 +60,52 @@ public class GroupLog implements Serializable, ActionLog {
         // for JPA
     }
 
-    public GroupLog(Group group, User user, GroupLogType groupLogType, Long auxiliaryId) {
-        this(group, user, groupLogType, auxiliaryId, null);
+    public GroupLog(Group group, User user, GroupLogType type,
+                    User targetUser, Group targetGroup, Account targetAccount, String description) {
+        this(group, user, type, description);
+        validateLogTypeNullTargets(type, targetUser, targetGroup, targetAccount);
+        this.targetUser = targetUser;
+        this.targetGroup = targetGroup;
+        this.targetAccount = targetAccount;
     }
 
-    public GroupLog(Group group, User user, GroupLogType groupLogType, Long auxiliaryId, String description) {
+    public GroupLog (Group group, User user, GroupLogType type, String description) {
+        validateLogTypeNullTargets(groupLogType, null, null, null);
+        this.createdDateTime = Instant.now();
         this.group = Objects.requireNonNull(group);
         this.user = user;
-        this.groupLogType =  Objects.requireNonNull(groupLogType);
-        this.auxiliaryId = auxiliaryId;
+        this.groupLogType = Objects.requireNonNull(type);
         this.description = description;
-        this.createdDateTime = Instant.now();
     }
 
-    public Long getId() {
-        return id;
+    private void validateLogTypeNullTargets(GroupLogType type, User targetUser, Group targetSubGroup,
+                                            Account targetAccount) {
+        if (GroupLogType.targetUserChangeTypes.contains(type)) {
+            Objects.requireNonNull(targetUser);
+        }
+        if (GroupLogType.targetGroupTypes.contains(type)) {
+            Objects.requireNonNull(targetSubGroup);
+        }
+        if (GroupLogType.accountTypes.contains(type)) {
+            Objects.requireNonNull(targetAccount);
+        }
     }
 
     // nasty bit of legacy here
     public String getUid() { return null; }
 
-    public Instant getCreatedDateTime() {
-        return createdDateTime;
+    // just in case legacy fix up didn't work
+    public boolean hasTargetUser() {
+        return targetUser != null;
     }
 
-    public Group getGroup() {
-        return group;
+    public GrassrootEntity getTarget() {
+        return targetUser != null ? targetUser :
+                targetGroup != null ? targetGroup : targetAccount;
     }
 
-    public User getUser() {
-        return user;
-    }
-
-    public GroupLogType getGroupLogType() {
-        return groupLogType;
-    }
-
-    public Long getAuxiliaryId() {
-        return auxiliaryId;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
+    public String getUserNameSafe() {
+        return targetUser != null ? targetUser.getName() : user.getName();
     }
 
     @Override
@@ -98,7 +113,7 @@ public class GroupLog implements Serializable, ActionLog {
         return "GroupLog{" +
                 "id=" + id +
                 ", groupLogType=" + groupLogType +
-                ", auxiliaryId=" + auxiliaryId +
+                ", targetEntityId=" + (getTarget() != null ? getTarget().getName() : "null") +
                 ", description='" + description + '\'' +
                 ", createdDateTime=" + createdDateTime +
                 '}';

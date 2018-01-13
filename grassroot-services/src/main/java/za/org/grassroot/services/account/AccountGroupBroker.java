@@ -3,7 +3,7 @@ package za.org.grassroot.services.account;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.NotificationTemplate;
+import za.org.grassroot.core.domain.Broadcast;
 import za.org.grassroot.core.domain.account.Account;
 
 import java.time.Duration;
@@ -65,7 +65,7 @@ public interface AccountGroupBroker {
 
     void deactivateGroupWelcomes(String userUid, String groupUid);
 
-    NotificationTemplate loadTemplate(String groupUid);
+    Broadcast loadTemplate(String groupUid);
 
     void generateGroupWelcomeNotifications(String addingUserUid, String groupUid, Set<String> addedMemberUids);
 

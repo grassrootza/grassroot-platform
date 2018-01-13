@@ -13,9 +13,11 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import za.org.grassroot.services.exception.CampaignNotFoundException;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
+import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
+import javax.persistence.Entity;
 import java.util.Locale;
 
 @Slf4j
@@ -43,6 +45,11 @@ public class RestExceptionHandler {
     @ExceptionHandler(value = MemberLacksPermissionException.class)
     public ResponseEntity<ResponseWrapper> permissionDeniedResponse(MemberLacksPermissionException e) {
         return RestUtil.lackPermissionResponse(e.getPermissionRequired());
+    }
+
+    @ExceptionHandler(value = InterfaceNotOpenException.class)
+    public ResponseEntity interfaceNotOpenToUser() {
+        return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.INTERFACE_NOT_OPEN);
     }
 
 }

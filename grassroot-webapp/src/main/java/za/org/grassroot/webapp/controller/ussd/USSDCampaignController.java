@@ -19,7 +19,6 @@ import za.org.grassroot.core.domain.campaign.CampaignMessage;
 import za.org.grassroot.core.domain.campaign.CampaignMessageAction;
 import za.org.grassroot.services.campaign.CampaignBroker;
 import za.org.grassroot.services.campaign.util.CampaignUtil;
-import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
@@ -159,7 +158,7 @@ public class USSDCampaignController extends USSDBaseController {
                 }
             }else {
                 Membership membership = new Membership(campaign.getMasterGroup(), user, new Role(BaseRoles.ROLE_ORDINARY_MEMBER, null),
-                        Instant.now(), GroupJoinMethod.SELF_JOINED);
+                        Instant.now(), GroupJoinMethod.SELF_JOINED, null);
                 addTagsOnMembership(membership, message.getTagList());
                 user.getMemberships().add(membership);
                 userManagementService.createUserProfile(user);

@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.MembershipInfo;
+import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.GroupDeactivationNotAvailableException;
@@ -104,7 +105,7 @@ public class USSDGroupController extends USSDBaseController {
         Optional<Group> searchResult = groupQueryBroker.findGroupFromJoinCode(trailingDigits.trim());
         if (searchResult.isPresent()) {
             Group group = searchResult.get();
-            groupBroker.addMemberViaJoinCode(user.getUid(), group.getUid(), trailingDigits);
+            groupBroker.addMemberViaJoinCode(user.getUid(), group.getUid(), trailingDigits, UserInterfaceType.USSD);
             String prompt = (group.hasName()) ?
                     getMessage(HOME, startMenu, promptKey + ".group.token.named", group.getGroupName(), user) :
                     getMessage(HOME, startMenu, promptKey + ".group.token.unnamed", user);

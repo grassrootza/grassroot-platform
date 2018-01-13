@@ -1,6 +1,7 @@
 package za.org.grassroot.services.user;
 
 import org.apache.commons.text.RandomStringGenerator;
+import org.apache.commons.validator.routines.EmailValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,17 +16,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
-import za.org.grassroot.core.domain.User;
-import za.org.grassroot.core.domain.UserCreateRequest;
-import za.org.grassroot.core.domain.UserLog;
-import za.org.grassroot.core.domain.VerificationTokenCode;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.notification.WelcomeNotification;
 import za.org.grassroot.core.dto.UserDTO;
 import za.org.grassroot.core.enums.*;
 import za.org.grassroot.core.repository.GroupRepository;
+import za.org.grassroot.core.repository.RoleRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.repository.UserRequestRepository;
 import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.services.MessageAssemblingService;
@@ -40,10 +40,7 @@ import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
-import java.util.TimeZone;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static za.org.grassroot.core.specifications.UserSpecifications.inGroups;
@@ -65,6 +62,8 @@ public class UserManager implements UserManagementService, UserDetailsService {
     private UserRepository userRepository;
     @Autowired
     private GroupRepository groupRepository;
+    @Autowired
+    private RoleRepository roleRepository;
     @Autowired
     private PasswordTokenService passwordTokenService;
     @Autowired
@@ -101,14 +100,17 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     @Transactional
     public User createUserWebProfile(User userProfile) throws UserExistsException {
-
         Assert.notNull(userProfile, "User is required");
-        Assert.hasText(userProfile.getPhoneNumber(), "User phone number is required");
+        if (StringUtils.isEmpty(userProfile.getPhoneNumber()) && StringUtils.isEmpty(userProfile.getEmailAddress())) {
+            throw new IllegalArgumentException("User phone number or email address is required");
+        }
 
         User userToSave;
-        String phoneNumber = PhoneNumberUtil.convertPhoneNumber(userProfile.getPhoneNumber());
+        String phoneNumber = StringUtils.isEmpty(userProfile.getPhoneNumber()) ? null : PhoneNumberUtil.convertPhoneNumber(userProfile.getPhoneNumber());
+        String emailAddress = userProfile.getEmailAddress();
         long start = System.nanoTime();
-        boolean userExists = userExist(phoneNumber);
+        boolean userExists = userRepository.existsByPhoneNumber(phoneNumber)
+                || (emailAddress != null && userRepository.existsByEmail(emailAddress));
         long time = System.nanoTime() - start;
         log.info("User exists check took {} nanosecs", time);
 
@@ -116,24 +118,32 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
             log.info("The user exists, and their web profile is set to: " + userProfile.isHasWebProfile());
 
-            User userToUpdate = findByInputNumber(phoneNumber);
-            if (userToUpdate.isHasWebProfile()) {
-                throw new UserExistsException("User '" + userProfile.getUsername() + "' already has a web profile!");
+            User userToUpdate = findByNumberOrEmail(phoneNumber, emailAddress);
+            if (!StringUtils.isEmpty(userToUpdate.getPassword())) {
+                throw new UserExistsException("User '" + userProfile.getUsername() + "' already has a password protected profile!");
             }
 
+            // if we reach here, means user 'exists' via group addition etc., but hasn't registered, so take the details
+            // as theirs, and set a password etc ...
             if (!userToUpdate.hasName()) {
                 userToUpdate.setDisplayName(userProfile.getDisplayName());
                 userToUpdate.setHasSetOwnName(true);
             }
 
-            userToUpdate.setUsername(phoneNumber);
+            if (StringUtils.isEmpty(userToUpdate.getEmailAddress()) && !StringUtils.isEmpty(emailAddress)) {
+                userToUpdate.setEmailAddress(emailAddress);
+            }
+
+            if (StringUtils.isEmpty(userToUpdate.getPhoneNumber()) && !StringUtils.isEmpty(phoneNumber)) {
+                userToUpdate.setPhoneNumber(phoneNumber);
+            }
+
             userToUpdate.setHasWebProfile(true);
             userToUpdate.setHasInitiatedSession(true);
             userToSave = userToUpdate;
 
         } else {
-            userToSave = new User(phoneNumber, userProfile.getDisplayName());
-            userToSave.setUsername(phoneNumber);
+            userToSave = new User(phoneNumber, userProfile.getDisplayName(), userProfile.getEmailAddress());
             userToSave.setHasWebProfile(true);
             userToSave.setHasSetOwnName(true);
         }
@@ -160,22 +170,22 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Transactional
     public User createAndroidUserProfile(UserDTO userDTO) throws UserExistsException {
         Objects.requireNonNull(userDTO);
-        User userProfile = new User(userDTO.getPhoneNumber(), userDTO.getDisplayName());
+        User userProfile = new User(userDTO.getPhoneNumber(), userDTO.getDisplayName(), null);
         User userToSave;
         String phoneNumber = PhoneNumberUtil.convertPhoneNumber(userProfile.getPhoneNumber());
         boolean userExists = userExist(phoneNumber);
 
         if (userExists) {
 
-            User userToUpdate = userRepository.findByPhoneNumber(phoneNumber);
-            if (userToUpdate.hasAndroidProfile() && userToUpdate.getMessagingPreference().equals(UserMessagingPreference.ANDROID_APP)) {
+            User userToUpdate = userRepository.findByPhoneNumberAndPhoneNumberNotNull(phoneNumber);
+            if (userToUpdate.hasAndroidProfile() && userToUpdate.getMessagingPreference().equals(DeliveryRoute.ANDROID_APP)) {
                 log.warn("User already has android profile");
                 throw new UserExistsException("User '" + userProfile.getUsername() + "' already has a android profile!");
             }
 
             userToUpdate.setUsername(phoneNumber);
             userToUpdate.setHasAndroidProfile(true);
-            userToUpdate.setMessagingPreference(UserMessagingPreference.ANDROID_APP);
+            userToUpdate.setMessagingPreference(DeliveryRoute.ANDROID_APP);
             userToUpdate.setAlertPreference(AlertPreference.NOTIFY_NEW_AND_REMINDERS);
             userToUpdate.setHasInitiatedSession(true);
             userToSave = userToUpdate;
@@ -191,7 +201,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
             userProfile.setDisplayName(userDTO.getDisplayName());
             userProfile.setHasSetOwnName(true);
             userProfile.setHasAndroidProfile(true);
-            userProfile.setMessagingPreference(UserMessagingPreference.ANDROID_APP);
+            userProfile.setMessagingPreference(DeliveryRoute.ANDROID_APP);
             userProfile.setAlertPreference(AlertPreference.NOTIFY_NEW_AND_REMINDERS);
 
             userToSave = userProfile;
@@ -211,33 +221,96 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     }
 
+    // a lot of potential for things to go wrong in here, hence a lot of checks - in general, this one is hairy
     @Override
     @Transactional
-    public void updateUser(String userUid, String displayName, String emailAddress, AlertPreference alertPreference, Locale locale)
-            throws IllegalArgumentException {
-        Objects.nonNull(userUid);
+    public boolean updateUser(String userUid, String displayName, String phoneNumber, String emailAddress,
+                              Province province, AlertPreference alertPreference, Locale locale, String validationOtp) {
+        Objects.requireNonNull(userUid);
+
+        if (StringUtils.isEmpty(phoneNumber) && StringUtils.isEmpty(emailAddress)) {
+            throw new IllegalArgumentException("Error! Cannot set both phone number and email address to null");
+        }
 
         User user = userRepository.findOneByUid(userUid);
+        final String msisdn = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
 
-        // retain this since the client-side validation is a bit strange & unpredictable on this field
+        boolean phoneChanged = !StringUtils.isEmpty(user.getPhoneNumber()) && !user.getPhoneNumber().equals(msisdn);
+        boolean emailChanged = !StringUtils.isEmpty(user.getEmailAddress()) && !user.getEmailAddress().equals(emailAddress);
+        boolean otherChanged = false;
+
+        if ((phoneChanged || emailChanged) && StringUtils.isEmpty(validationOtp)) {
+            return false;
+        }
+
+        if ((phoneChanged || emailChanged)) {
+            passwordTokenService.validateOtp(user.getUsername(), validationOtp);
+        }
+
+        // if user set their phone number to be blank, they must have an email address, and if so, switch username to it
+        if (phoneChanged && StringUtils.isEmpty(msisdn) && !user.isUsernameEmailAddress()) {
+            // because of earlier check up top, if we reach here then new email address cannot be blank
+            user.setUsername(emailAddress);
+        }
+
+        // as above, with email
+        if (emailChanged && StringUtils.isEmpty(emailAddress) && user.isUsernameEmailAddress()) {
+            user.setUsername(msisdn);
+        }
+
+        // retain this check since the (v1) client-side validation is a bit strange & unpredictable on this field
         if (!StringUtils.isEmpty(displayName)) {
+            otherChanged = otherChanged || !user.getDisplayName().equals(displayName);
             user.setDisplayName(displayName);
             user.setHasSetOwnName(true);
         }
 
-        // note: make sure to confirm with user if deleting address (i.e., second half of if statement)
-        if (!StringUtils.isEmpty(emailAddress) || !StringUtils.isEmpty(user.getEmailAddress())) {
-            user.setEmailAddress(emailAddress);
+        user.setPhoneNumber(msisdn);
+        if (phoneChanged && !user.isUsernameEmailAddress()) {
+            user.setUsername(msisdn);
         }
 
-        user.setLanguageCode(locale.getLanguage());
-        user.setAlertPreference(alertPreference);
-        user.setNotificationPriority(alertPreference.getPriority());
+        user.setEmailAddress(emailAddress);
+        if (emailChanged && user.isUsernameEmailAddress()) {
+            user.setUsername(emailAddress);
+        }
+
+        if (province != null) {
+            otherChanged = otherChanged || !province.equals(user.getProvince());
+            user.setProvince(province);
+        }
+
+        if (locale != null) {
+            otherChanged = otherChanged || !locale.getLanguage().equals(user.getLanguageCode());
+            user.setLanguageCode(locale.getLanguage());
+        }
+
+        if (alertPreference != null) {
+            otherChanged = otherChanged || !alertPreference.equals(user.getAlertPreference());
+            user.setAlertPreference(alertPreference);
+            user.setNotificationPriority(alertPreference.getPriority());
+        }
+
+        log.info("okay, did anything change? {}", otherChanged);
+        Set<UserLog> logs = new HashSet<>();
+        if (emailChanged) {
+            logs.add(new UserLog(userUid, UserLogType.USER_EMAIL_CHANGED, emailAddress, UserInterfaceType.UNKNOWN));
+        }
+        if (phoneChanged) {
+            logs.add(new UserLog(userUid, UserLogType.USER_PHONE_CHANGED, phoneNumber, UserInterfaceType.UNKNOWN));
+        }
+        if (otherChanged) {
+            logs.add(new UserLog(userUid, UserLogType.USER_DETAILS_CHANGED, null, UserInterfaceType.UNKNOWN));
+        }
+
+        log.info("okay, done updating, storing {} logs", logs.size());
+        asyncUserService.storeUserLogs(logs);
+        return true;
     }
 
     @Override
     public String generateAndroidUserVerifier(String phoneNumber, String displayName, String password) {
-        Objects.nonNull(phoneNumber);
+        Objects.requireNonNull(phoneNumber);
         phoneNumber = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
         if (displayName != null) {
             UserCreateRequest userCreateRequest = userCreateRequestRepository.findByPhoneNumber(phoneNumber);
@@ -256,7 +329,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     @Transactional
     public String regenerateUserVerifier(String phoneNumber, boolean createUserIfNotExists) {
-        User user = userRepository.findByPhoneNumber(phoneNumber);
+        User user = userRepository.findByPhoneNumberAndPhoneNumberNotNull(phoneNumber);
         if (user == null) {
             if (createUserIfNotExists) {
                 UserCreateRequest userCreateRequest = userCreateRequestRepository.findByPhoneNumber(phoneNumber);
@@ -273,7 +346,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     @Override
     @Transactional
-    public void setMessagingPreference(String userUid, UserMessagingPreference preference) {
+    public void setMessagingPreference(String userUid, DeliveryRoute preference) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(preference);
 
@@ -307,13 +380,13 @@ public class UserManager implements UserManagementService, UserDetailsService {
     public User loadOrCreateUser(String inputNumber) {
         String phoneNumber = PhoneNumberUtil.convertPhoneNumber(inputNumber);
         if (!userExist(phoneNumber)) {
-            User sessionUser = new User(phoneNumber);
+            User sessionUser = new User(phoneNumber, null, null);
             sessionUser.setUsername(phoneNumber);
             User newUser = userRepository.save(sessionUser);
             asyncUserService.recordUserLog(newUser.getUid(), UserLogType.CREATED_IN_DB, "Created via loadOrCreateUser");
             return newUser;
         } else {
-            return userRepository.findByPhoneNumber(phoneNumber);
+            return userRepository.findByPhoneNumberAndPhoneNumberNotNull(phoneNumber);
         }
     }
 
@@ -325,17 +398,47 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     @Transactional(readOnly = true)
     public User findByInputNumber(String inputNumber) throws NoSuchUserException {
-        User sessionUser = userRepository.findByPhoneNumber(PhoneNumberUtil.convertPhoneNumber(inputNumber));
+        User sessionUser = userRepository.findByPhoneNumberAndPhoneNumberNotNull(PhoneNumberUtil.convertPhoneNumber(inputNumber));
         if (sessionUser == null) throw new NoSuchUserException("Could not find user with phone number: " + inputNumber);
         return sessionUser;
     }
 
     @Override
     @Transactional(readOnly = true)
+    public User findByNumberOrEmail(String inputNumber, String emailAddress) {
+        String msisdn;
+        try {
+            msisdn = PhoneNumberUtil.convertPhoneNumber(inputNumber);
+        } catch (InvalidPhoneNumberException e) {
+            msisdn = null;
+        }
+        User user = msisdn == null || !userExist(msisdn) ?
+                userRepository.findByEmailAddressAndEmailAddressNotNull(emailAddress) :
+                userRepository.findByPhoneNumberAndPhoneNumberNotNull(msisdn);
+        if (user == null) throw new NoSuchUserException("No user with number " + inputNumber + " or email address " + emailAddress);
+        return user;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public User findByInputNumber(String inputNumber, String currentUssdMenu) throws NoSuchUserException {
-        User sessionUser = userRepository.findByPhoneNumber(PhoneNumberUtil.convertPhoneNumber(inputNumber));
+        User sessionUser = userRepository.findByPhoneNumberAndPhoneNumberNotNull(PhoneNumberUtil.convertPhoneNumber(inputNumber));
         cacheUtilService.putUssdMenuForUser(inputNumber, currentUssdMenu);
         return sessionUser;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public User findByUsernameLoose(String userName) {
+        User user = fetchUserByUsernameStrict(userName);
+        if (user == null) {
+            if (PhoneNumberUtil.testInputNumber(userName)) {
+                user = userRepository.findByPhoneNumberAndPhoneNumberNotNull(PhoneNumberUtil.convertPhoneNumber(userName));
+            } else if (EmailValidator.getInstance().isValid(userName)) {
+                user = userRepository.findByEmailAddressAndEmailAddressNotNull(userName);
+            }
+        }
+        return user;
     }
 
     @Override
@@ -343,6 +446,27 @@ public class UserManager implements UserManagementService, UserDetailsService {
     public List<User> searchByGroupAndNameNumber(String groupUid, String nameOrNumber) {
         return userRepository.findByGroupsPartOfAndDisplayNameContainingIgnoreCaseOrPhoneNumberLike(
                 groupRepository.findOneByUid(groupUid), "%" + nameOrNumber + "%", "%" + nameOrNumber + "%");
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean doesUserHaveStandardRole(String userName, String roleName) {
+        User user = findByNumberOrEmail(userName, userName);
+        try {
+            Role role = roleRepository.findByNameAndRoleType(roleName, Role.RoleType.STANDARD).get(0);
+            return user.getStandardRoles().contains(role);
+        } catch (NullPointerException e) {
+            return false;
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public UserProfileStatus fetchUserProfileStatus(String userUid) {
+        Objects.requireNonNull(userUid);
+        User user = userRepository.findOneByUid(userUid);
+        return !StringUtils.isEmpty(user.getPassword()) ? UserProfileStatus.HAS_PASSWORD :
+                user.isHasInitiatedSession() ? UserProfileStatus.HAS_USED_USSD : UserProfileStatus.ONLY_EXISTS;
     }
 
     @Override
@@ -356,7 +480,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
             throw new UserExistsException("Error! User with that phone number exists!");
         }
 
-        User user = new User(msisdn);
+        User user = new User(msisdn, null, null);
         user.setUsername(msisdn);
         user.setDisplayName(displayName);
         user.setEmailAddress(emailAddress);
@@ -390,36 +514,58 @@ public class UserManager implements UserManagementService, UserDetailsService {
     /*
     Method for user to reset password themselves, relies on them being able to access a token
      */
-
     @Override
-    public User resetUserPassword(String phoneNumber, String newPassword, String token) throws InvalidTokenException {
-
-        User user = userRepository.findByUsername(PhoneNumberUtil.convertPhoneNumber(phoneNumber));
+    public void resetUserPassword(String username, String newPassword, String token) throws InvalidTokenException {
+        User user = userRepository.findByUsername(username);
         log.info("Found this user: " + user);
 
-        if (passwordTokenService.isShortLivedOtpValid(user.getPhoneNumber(), token.trim())) {
+        if (passwordTokenService.isShortLivedOtpValid(user.getUsername(), token.trim())) {
             log.info("came in as true, with this token :" + token);
             String encodedPassword = passwordEncoder.encode(newPassword);
             user.setPassword(encodedPassword);
             user = userRepository.save(user);
             passwordTokenService.expireVerificationCode(user.getUid(), VerificationCodeType.SHORT_OTP);
-            return user;
         } else {
             throw new InvalidTokenException("Invalid OTP submitted");
         }
     }
 
-
-
     @Override
     @Transactional
-    public void updateEmailAddress(String userUid, String emailAddress) {
+    public void updateEmailAddress(String callingUserUid, String userUid, String emailAddress) {
+        Objects.requireNonNull(callingUserUid);
+        Objects.requireNonNull(userUid);
+
+        validateUserCanAlter(callingUserUid, userUid);
+
         User user = userRepository.findOneByUid(userUid);
+        if (StringUtils.isEmpty(emailAddress) && StringUtils.isEmpty(user.getPhoneNumber())) {
+            throw new IllegalArgumentException("Cannot set email to empty if no phone number");
+        }
+
+        // todo : store some logs
         user.setEmailAddress(emailAddress);
     }
 
     @Override
-    public User fetchUserByUsername(String username) {
+    @Transactional
+    public void updatePhoneNumber(String callingUserUid, String userUid, String phoneNumber) {
+        Objects.requireNonNull(callingUserUid);
+        Objects.requireNonNull(userUid);
+
+        validateUserCanAlter(callingUserUid, userUid);
+        User user = userRepository.findOneByUid(userUid);
+
+        if (!StringUtils.isEmpty(phoneNumber)) {
+            String msisdn = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
+            user.setPhoneNumber(msisdn);
+        } else if (!user.hasEmailAddress()) {
+            throw new IllegalArgumentException("Cannot set phone number to empty if no email address");
+        }
+    }
+
+    @Override
+    public User fetchUserByUsernameStrict(String username) {
         return userRepository.findByUsername(username);
     }
 
@@ -472,13 +618,18 @@ public class UserManager implements UserManagementService, UserDetailsService {
 
     @Override
     @Transactional
-    public void updateDisplayName(String userUid, String displayName) {
-        Objects.requireNonNull(userUid);
+    public void updateDisplayName(String callingUserUid, String userToUpdateUid, String displayName) {
+        Objects.requireNonNull(callingUserUid);
+        Objects.requireNonNull(userToUpdateUid);
         Objects.requireNonNull(displayName);
 
-        User user = userRepository.findOneByUid(userUid);
+        validateUserCanAlter(callingUserUid, userToUpdateUid);
+        User user = userRepository.findOneByUid(userToUpdateUid);
+
         user.setDisplayName(displayName);
-        user.setHasSetOwnName(true);
+        if (callingUserUid.equals(userToUpdateUid)) {
+            user.setHasSetOwnName(true);
+        }
     }
 
     @Override
@@ -523,6 +674,16 @@ public class UserManager implements UserManagementService, UserDetailsService {
         user.setNotificationPriority(alertPreference.getPriority());
     }
 
+    private void validateUserCanAlter(String callingUserUid, String userToUpdateUid) {
+        if (!callingUserUid.equals(userToUpdateUid)) {
+            User callingUser = userRepository.findOneByUid(callingUserUid);
+            Role adminRole = roleRepository.findByName(BaseRoles.ROLE_SYSTEM_ADMIN).get(0);
+            if (!callingUser.getStandardRoles().contains(adminRole)) {
+                throw new AccessDeniedException("Error! Only user or admin can perform this update");
+            }
+        }
+    }
+
     /*
     SECTION: methods to return a masked user entity, for analytics
      */
@@ -532,4 +693,6 @@ public class UserManager implements UserManagementService, UserDetailsService {
         UserCreateRequest userCreateRequest = userCreateRequestRepository.findByPhoneNumber(PhoneNumberUtil.convertPhoneNumber(phoneNumber));
         return (new UserDTO(userCreateRequest));
     }
+
+
 }

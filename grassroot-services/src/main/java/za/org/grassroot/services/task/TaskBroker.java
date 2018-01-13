@@ -1,5 +1,6 @@
 package za.org.grassroot.services.task;
 
+import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.task.Task;
 import za.org.grassroot.core.dto.task.TaskDTO;
 import za.org.grassroot.core.dto.task.TaskFullDTO;
@@ -30,6 +31,15 @@ public interface TaskBroker {
     ChangedSinceData<TaskDTO> fetchGroupTasks(String userUid, String groupUid, Instant changedSince);
 
     List<TaskDTO> fetchUpcomingUserTasks(String userUid);
+
+    /**
+     * TaskDTO is deprecated in favor of TaskFullDTO, so this is a replacement method for List<TaskDTO> fetchUpcomingUserTasks
+     * might be better to return List<Task> and transform to appropriate DTO in controller
+     *
+     * @param userUid
+     * @return
+     */
+    List<TaskFullDTO> fetchUpcomingUserTasksFull(String userUid);
 
     ChangedSinceData<TaskDTO> fetchUpcomingTasksAndCancelled(String userUid, Instant changedSince);
 
@@ -69,4 +79,6 @@ public interface TaskBroker {
 
     List<Task> fetchTasksRequiringUserResponse(String userUid, String userResponse);
 
+    @Transactional(readOnly = true)
+    List<TaskFullDTO> fetchUpcomingGroupTasks(String userUid, String groupUid);
 }

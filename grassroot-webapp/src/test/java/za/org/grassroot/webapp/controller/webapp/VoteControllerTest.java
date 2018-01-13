@@ -46,7 +46,7 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
     @Test
     public void createVoteWorksWhenGroupIdSpecified() throws Exception {
 
-        Group testGroup = new Group("Dummy Group3", new User("234345345"));
+        Group testGroup = new Group("Dummy Group3", new User("234345345", null, null));
 
         when(groupBrokerMock.load(testGroup.getUid())).thenReturn(testGroup);
         when(userManagementServiceMock.load(sessionTestUser.getUid())).thenReturn(sessionTestUser);
@@ -68,7 +68,7 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
     @Test
     public void createVoteWorksWhengroupNotSpecified() throws Exception {
 
-        Group testGroup = new Group("Dummy Group3", new User("234345345"));
+        Group testGroup = new Group("Dummy Group3", new User("234345345", null, null));
         List<Group> testPossibleGroups = Collections.singletonList(testGroup);
 
         when(userManagementServiceMock.load(sessionTestUser.getUid())).thenReturn(sessionTestUser);
@@ -89,7 +89,7 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
     @Test
     public void voteCreateDoWorks() throws Exception {
 
-        Group testGroup = new Group("Dummy Group3", new User("234345345"));
+        Group testGroup = new Group("Dummy Group3", new User("234345345", null, null));
         LocalDateTime testTime = LocalDateTime.now().plusMinutes(7L);
         VoteWrapper testVote = VoteWrapper.makeEmpty();
         testVote.setTitle("test vote");
@@ -114,10 +114,10 @@ public class VoteControllerTest extends WebAppAbstractUnitTest {
         Group testGroup = new Group("tg1", sessionTestUser);
         List<User> testUsers = new ArrayList<>();
         for (int i = 0; i < 25; i++) {
-            testUsers.add(new User("050111000" + i));
+            testUsers.add(new User("050111000" + i, null, null));
         }
 
-        testUsers.forEach(usr -> testGroup.addMember(usr, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER));
+        testUsers.forEach(usr -> testGroup.addMember(usr, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null));
 
         Vote testVote = new Vote("test", Instant.now(), sessionTestUser, testGroup);
         Map<String, Long> testVoteResults = new LinkedHashMap<>();

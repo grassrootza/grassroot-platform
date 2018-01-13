@@ -61,7 +61,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
         wireUpMessageSourceAndGroupUtil(ussdGroupController);
         ussdGroupController.setUssdGroupUtil(ussdGroupUtil);
 
-        testUser = new User(testUserPhone);
+        testUser = new User(testUserPhone, null, null);
         testGroup = new Group("test group", testUser);
         testMembers.add(new MembershipInfo(testUserPhone, BaseRoles.ROLE_GROUP_ORGANIZER, null));
         testGroupIdString = testGroup.getUid();
@@ -93,7 +93,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
     @Test
     public void openingMenuShouldWorkWithNoGroups() throws Exception {
         resetTestGroup();
-        testGroup.addMember(testUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+        testGroup.addMember(testUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
         when(permissionBrokerMock.getActiveGroupsWithPermission(testUser, null)).thenReturn(new HashSet<>());
         mockMvc.perform(get(path + "start").param(phoneParam, testUserPhone)).andExpect(status().isOk());
@@ -554,7 +554,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
     @Test
     public void sendCreatedGroupJoinCodeShouldWork() throws Exception{
         resetTestGroup();
-        testUser = new User(testUserPhone,"Test User");
+        testUser = new User(testUserPhone,"Test User", null);
         String testMessage = "Group join code";
         when(messageAssemblingServiceMock.createGroupJoinCodeMessage(testGroup)).thenReturn(testMessage);
 
@@ -574,7 +574,7 @@ public class USSDGroupControllerTest extends USSDAbstractUnitTest {
      */
     private void resetTestGroup() {
         testGroup.setGroupName("test testGroup");
-        testGroup.addMember(testUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+        testGroup.addMember(testUser, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
     }
 
 }

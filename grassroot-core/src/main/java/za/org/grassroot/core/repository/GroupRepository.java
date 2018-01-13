@@ -98,8 +98,8 @@ public interface GroupRepository extends JpaRepository<Group, Long>, JpaSpecific
     @Query("select g from GroupLog gl inner join gl.group g inner join g.memberships m WHERE gl.groupLogType = 'GROUP_REMOVED' and gl.createdDateTime >= ?2 and m.user = ?1")
     List<Group> findMemberGroupsDeactivatedAfter(User member, Instant time);
 
-    @Query("SELECT g from GroupLog gl inner join gl.group g WHERE gl.groupLogType = 'GROUP_MEMBER_REMOVED' and gl.auxiliaryId = ?1 AND gl.createdDateTime >= ?2")
-    List<Group> findMembershipRemovedAfter(Long formerMemberId, Instant time);
+    @Query("SELECT g from GroupLog gl inner join gl.group g WHERE gl.groupLogType = 'GROUP_MEMBER_REMOVED' and gl.targetUser = ?1 AND gl.createdDateTime >= ?2")
+    List<Group> findMembershipRemovedAfter(User formerMember, Instant time);
 
     @Query(value = "select count(*) from Group g " +
             "inner join g.memberships m " +

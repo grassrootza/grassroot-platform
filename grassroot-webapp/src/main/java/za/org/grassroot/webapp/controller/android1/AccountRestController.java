@@ -102,7 +102,7 @@ public class AccountRestController {
                 AccountPaymentType.CARD_PAYMENT, AccountBillingCycle.MONTHLY, false);
 
         if (!StringUtils.isEmpty(billingEmail) && EmailValidator.getInstance(false).isValid(billingEmail)) {
-            userService.updateEmailAddress(user.getUid(), billingEmail);
+            userService.updateEmailAddress(user.getUid(), user.getUid(), billingEmail);
         }
 
         try {

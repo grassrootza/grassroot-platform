@@ -62,7 +62,7 @@ public class LiveWireAlertBrokerTest {
                 groupRepositoryMock,meetingRepositoryMock,entityManagerMock,dataSubscriberRepositoryMock,
                 applicationEventPublisherMock,logsAndNotificationsBrokerMock);
 
-        testUser = new User("1234567899","Testing");
+        testUser = new User("1234567899","Testing", null);
         testLocation = new GeoLocation(testLat,testLong);
         given(mockQuery.setParameter(anyString(),any())).willReturn(mockQuery);
         given(mockQuery.getResultList()).willAnswer(l -> Arrays.asList());

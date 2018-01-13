@@ -16,6 +16,7 @@ public class GroupWebDTO extends GroupMinimalDTO {
 
     private List<GroupRefDTO> subGroups = new ArrayList<>();
     private List<TaskRefDTO> comingUpEvents = new ArrayList<>();
+    private List<String> topics = new ArrayList<>();
 
     public GroupWebDTO(Group group, Membership membership, List<GroupRefDTO> subGroups) {
         super(group, membership);
@@ -36,6 +37,7 @@ public class GroupWebDTO extends GroupMinimalDTO {
                         .collect(Collectors.toList())
         );
 
+        this.topics.addAll(group.getTopics());
 
     }
 }

@@ -81,7 +81,7 @@ public class JwtServiceImpl implements JwtService {
             case ANDROID_CLIENT:
                 return Duration.ofDays(7L).toMillis();
             case GRASSROOT_MICROSERVICE:
-                return Duration.ofSeconds(1).toMillis();
+                return Duration.ofSeconds(2).toMillis(); // occasional glitches mean 2 secs is a better trade off here at present
             default:
                 return 1L;
         }

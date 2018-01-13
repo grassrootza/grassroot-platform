@@ -62,7 +62,7 @@ public class CampaignManagerControllerTest extends RestAbstractUnitTest{
     @Before
     public void setUp(){
 
-        testUser = new User(testUserPhone);
+        testUser = new User(testUserPhone, null, null);
         campaignList = new ArrayList<>();
         testCampaign = createTestCampaign();
         campaignList.add(testCampaign);
@@ -78,7 +78,7 @@ public class CampaignManagerControllerTest extends RestAbstractUnitTest{
     @Test
     public void testFetchCampaignManagedByUser() throws Exception{
         when(campaignBroker.getCampaignsCreatedByUser(anyString())).thenReturn(campaignList);
-        ResultActions response = mockMvc.perform(get("/api/campaign/manage/list/1234"));
+        ResultActions response = mockMvc.perform(get("/api/campaign/manage/list?userUid=1234"));
         Assert.assertNotNull(response);
         response.andExpect(status().isOk());
     }
@@ -151,7 +151,7 @@ public class CampaignManagerControllerTest extends RestAbstractUnitTest{
         campaign.setUid("2345667890000");
         campaign.setId(1L);
         campaign.setCampaignCode("000");
-        campaign.setCampaignDescription("Test Campaign");
+        campaign.setDescription("Test Campaign");
         campaign.setMasterGroup(testGroup);
         return campaign;
     }

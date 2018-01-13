@@ -4,13 +4,15 @@ package za.org.grassroot.core.domain;
 import lombok.Getter;
 import lombok.Setter;
 import za.org.grassroot.core.domain.account.AccountLog;
+import za.org.grassroot.core.domain.campaign.CampaignLog;
 import za.org.grassroot.core.domain.livewire.LiveWireLog;
 import za.org.grassroot.core.domain.task.EventLog;
 import za.org.grassroot.core.domain.task.TodoLog;
+import za.org.grassroot.core.enums.DeliveryRoute;
 import za.org.grassroot.core.enums.MessagingProvider;
 import za.org.grassroot.core.enums.NotificationDetailedType;
 import za.org.grassroot.core.enums.NotificationType;
-import za.org.grassroot.core.enums.UserMessagingPreference;
+import za.org.grassroot.core.enums.DeliveryRoute;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
@@ -46,7 +48,7 @@ public abstract class Notification implements Serializable {
 	private Instant createdDateTime;
 
 	@Column(name = "attempt_count", nullable = false)
-	private int sendAttempts = 0;
+	@Setter private int sendAttempts = 0;
 
 	@ManyToOne
 	@JoinColumn(name = "target_id")
@@ -54,7 +56,7 @@ public abstract class Notification implements Serializable {
 
 	@Column(name = "sending_status")
     @Enumerated(EnumType.STRING)
-    private NotificationStatus status = NotificationStatus.READY_FOR_SENDING;
+    @Setter private NotificationStatus status = NotificationStatus.READY_FOR_SENDING;
 
 	@Setter
 	@Column(name = "send_only_after")
@@ -70,7 +72,7 @@ public abstract class Notification implements Serializable {
 	@Setter
 	@Column(name = "delivery_channel")
     @Enumerated(EnumType.STRING)
-	public UserMessagingPreference deliveryChannel = UserMessagingPreference.SMS; //defaults to SMS
+	protected DeliveryRoute deliveryChannel = DeliveryRoute.SMS; //defaults to SMS
 
 	@ManyToOne
 	@JoinColumn(name = "event_log_id")
@@ -96,6 +98,9 @@ public abstract class Notification implements Serializable {
 	@JoinColumn(name = "livewire_log_id", foreignKey = @ForeignKey(name = "fk_notification_livewire_log"))
 	private LiveWireLog liveWireLog;
 
+	@ManyToOne
+	@JoinColumn(name = "campaign_log_id", foreignKey = @ForeignKey(name = "fk_notification_campaign_log"))
+	private CampaignLog campaignLog;
 
 	@Column(name = "message")
 	protected String message;
@@ -105,6 +110,10 @@ public abstract class Notification implements Serializable {
 	@Enumerated(EnumType.STRING)
 	private MessagingProvider sentViaProvider = null;
 
+
+	@Setter
+	@Column(name = "read_receipt_fetches")
+	private int readReceiptFetchAttempts;
 
 	@Setter
 	@Column(name = "use_only_free_channels")
@@ -134,6 +143,7 @@ public abstract class Notification implements Serializable {
 		this.createdDateTime = Instant.now();
 		this.lastStatusChange = createdDateTime;
 		this.message = Objects.requireNonNull(message);
+		this.readReceiptFetchAttempts = 0;
 
 		if (this.message.length() > 255)
 			this.message = message.substring(0, 255);
@@ -153,6 +163,8 @@ public abstract class Notification implements Serializable {
 			userLog = (UserLog) actionLog;
 		} else if (actionLog instanceof LiveWireLog) {
 			liveWireLog = (LiveWireLog) actionLog;
+		} else if (actionLog instanceof CampaignLog) {
+			campaignLog = (CampaignLog) actionLog;
 		} else {
 			throw new IllegalArgumentException("Unsupported action log: " + actionLog);
 		}
@@ -163,17 +175,25 @@ public abstract class Notification implements Serializable {
 	/**
 	 * @param status                 status to be set
 	 * @param resultOfSendingAttempt if this status update is result of sending attempt should be true, otherwise false
+	 * @param resultOfReceiptFetch if this status update is result of getting a read receipt
 	 */
-	public void updateStatus(NotificationStatus status, boolean resultOfSendingAttempt, String error) {
+	public void updateStatus(NotificationStatus status, boolean resultOfSendingAttempt, boolean resultOfReceiptFetch, String error) {
 		NotificationStatus oldStatus = this.status;
 		this.status = status;
 		this.lastStatusChange = Instant.now();
 		if (resultOfSendingAttempt)
 			this.sendAttempts++;
+		if (resultOfReceiptFetch)
+			this.readReceiptFetchAttempts++;
 		if (error != null) {
 			NotificationSendError sendError = new NotificationSendError(LocalDateTime.now(), error, oldStatus, status);
 			this.sendingErrors.add(sendError);
 		}
+	}
+
+	// used in messaging service
+	public void incrementReceiptFetchCount() {
+		this.readReceiptFetchAttempts++;
 	}
 
 	/**
@@ -209,7 +229,7 @@ public abstract class Notification implements Serializable {
 	}
 
 	public boolean isViewedOnAndroid() {
-		return this.deliveryChannel == UserMessagingPreference.ANDROID_APP && this.status == NotificationStatus.READ;
+		return this.deliveryChannel == DeliveryRoute.ANDROID_APP && this.status == NotificationStatus.READ;
 	}
 
 	public boolean isPrioritySatisfiedByTarget() {

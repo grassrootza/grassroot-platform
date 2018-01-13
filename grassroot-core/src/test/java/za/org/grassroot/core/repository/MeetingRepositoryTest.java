@@ -62,7 +62,7 @@ public class MeetingRepositoryTest {
     public void shouldFindEventsByGroupBetweenTimestamps() {
 
         assertThat(meetingRepository.count(), is(0L));
-        User user = userRepository.save(new User("0813330000"));
+        User user = userRepository.save(new User("0813330000", null, null));
         Group group1 = groupRepository.save(new Group("tg1", user));
         Group group2 = groupRepository.save(new Group("tg2", user));
 
@@ -103,9 +103,9 @@ public class MeetingRepositoryTest {
 
         log.info("Finding meeting responses ...");
 
-        User user = userRepository.save(new User("0710001111"));
+        User user = userRepository.save(new User("0710001111", null, null));
         Group group = groupRepository.save(new Group("tg1", user));
-        group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+        group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         groupRepository.save(group);
 
         Meeting mtg = new MeetingBuilder().setName("count check").setStartDateTime(Instant.now().plus(2, DAYS)).setUser(user).setParent(group).setEventLocation("someLoc").createMeeting();
@@ -139,9 +139,9 @@ public class MeetingRepositoryTest {
 
         assertThat(meetingRepository.count(), is(0L));
 
-        User user = userRepository.save(new User("0710001111"));
+        User user = userRepository.save(new User("0710001111", null, null));
         Group group = groupRepository.save(new Group("tg2", user));
-        group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER);
+        group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_BY_OTHER_MEMBER, null);
         groupRepository.save(group);
 
         LocalDate yesterday = LocalDate.now().minus(1, DAYS);

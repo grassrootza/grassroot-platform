@@ -133,6 +133,9 @@ public class TodoBrokerImpl implements TodoBroker {
             setAllParentMembersAssigned(todo, shouldAssignedUsersRespond(todo.getType()));
         } else {
             setAssignedMembers(todo, todoHelper.getAssignedMemberUids(), shouldAssignedUsersRespond(todo.getType()));
+        }
+
+        if (todoHelper.getConfirmingMemberUids() != null && !todoHelper.getConfirmingMemberUids().isEmpty()) {
             setConfirmingMembers(todo, todoHelper.getConfirmingMemberUids());
         }
 

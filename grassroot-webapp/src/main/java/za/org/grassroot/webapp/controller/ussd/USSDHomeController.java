@@ -192,12 +192,10 @@ public class USSDHomeController extends USSDBaseController {
         } else if (geoApisEnabled && geoApiSuffixes.keySet().contains(trailingDigits)) {
             returnMenu = geoApiController.openingMenu(user, geoApiSuffixes.get(trailingDigits));
         } else {
-            returnMenu = groupController.lookForJoinCode(user, trailingDigits);
-            /*
-        	returnMenu = getActiveCampaignForTrailingCode(trailingDigits, user);
+            returnMenu = getActiveCampaignForTrailingCode(trailingDigits, user);
             if (returnMenu == null) {
                 returnMenu = groupController.lookForJoinCode(user, trailingDigits);
-             */
+            }
         }
         return returnMenu;
     }
