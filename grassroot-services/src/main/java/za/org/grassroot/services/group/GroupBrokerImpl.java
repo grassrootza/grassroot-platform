@@ -347,12 +347,13 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         validateJoinCode(group, tokenPassed);
         recordJoinCodeInbound(group, tokenPassed);
 
-        selfJoinViaCode(user, group, getJoinMethodFromInterface(interfaceType), tokenPassed, null);
+        selfJoinViaCode(user, group, getJoinMethodFromInterface(interfaceType), tokenPassed, null, null);
     }
 
     @Override
     @Transactional
-    public String addMemberViaJoinPage(String groupUid, String code, String userUid, String name, String phone, String email, Province province, List<String> topics) {
+    public String addMemberViaJoinPage(String groupUid, String code, String userUid, String name, String phone,
+                                       String email, Province province, List<String> topics, UserInterfaceType interfaceType) {
         Objects.requireNonNull(groupUid);
         Objects.requireNonNull(code);
         if (userUid == null && phone == null && email == null) {
@@ -362,10 +363,11 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         Group group = groupRepository.findOneByUid(groupUid);
         validateJoinCode(group, code); // don't record use, as already done elsewhere
 
-        // todo: unless user is new, update their details
         User joiningUser = null;
+        boolean userExists;
         if (!StringUtils.isEmpty(userUid)) {
             joiningUser = userRepository.findOneByUid(userUid);
+            userExists = true;
         } else {
             String msisdn = StringUtils.isEmpty(phone) ? null : PhoneNumberUtil.convertPhoneNumber(phone);
             if (msisdn != null)
@@ -374,21 +376,37 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
             if (joiningUser == null && !StringUtils.isEmpty(email))
                 joiningUser = userRepository.findByEmailAddressAndEmailAddressNotNull(email);
 
-            if (joiningUser == null) {
+            userExists = joiningUser != null;
+            if (!userExists) {
                 joiningUser = new User(msisdn, name, email);
                 userRepository.saveAndFlush(joiningUser);
             }
         }
 
+        // note: we do _not_ override email or phone otherwise it would create a security vulnerability
+        boolean updatedUserDetails = false;
         if (province != null) {
-            joiningUser.setProvince(province); // todo : log this
+            joiningUser.setProvince(province);
+            updatedUserDetails = userExists;
         }
 
-        selfJoinViaCode(joiningUser, group, GroupJoinMethod.URL_JOIN_WORD, code, topics);
+        if (!StringUtils.isEmpty(name)) {
+            joiningUser.setDisplayName(name);
+            updatedUserDetails = userExists;
+        }
+
+        Set<UserLog> userLogs = new HashSet<>();
+        userLogs.add(new UserLog(joiningUser.getUid(), UserLogType.USED_A_JOIN_CODE, group.getUid(), interfaceType));
+        if (updatedUserDetails) {
+            userLogs.add(new UserLog(joiningUser.getUid(), UserLogType.DETAILS_CHANGED_ON_JOIN,
+                    String.format("name: %s, province: %s", name, province), interfaceType));
+        }
+
+        selfJoinViaCode(joiningUser, group, GroupJoinMethod.URL_JOIN_WORD, code, topics, userLogs);
         return joiningUser.getUid();
     }
 
-    private void selfJoinViaCode(User user, Group group, GroupJoinMethod joinMethod, String code, List<String> topics) {
+    private void selfJoinViaCode(User user, Group group, GroupJoinMethod joinMethod, String code, List<String> topics, Set<UserLog> userLogs) {
         logger.info("Adding a member via token code: code={}, group={}, user={}", code, group, user);
         Membership membership = group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.SELF_JOINED, code);
         if (topics != null) {
@@ -407,7 +425,9 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         GroupLog groupLog = new GroupLog(group, user, GroupLogType.GROUP_MEMBER_ADDED_VIA_JOIN_CODE,
                 user, null, null, "Member joined via join code: " + code);
         bundle.addLog(groupLog);
-        bundle.addLog(new UserLog(user.getUid(), UserLogType.USED_A_JOIN_CODE, group.getUid(), UNKNOWN));
+        if (userLogs != null && !userLogs.isEmpty()) {
+            bundle.addLogs(userLogs.stream().map(u -> (ActionLog) u).collect(Collectors.toSet()));
+        }
         notifyNewMembersOfUpcomingMeetings(bundle, user, group, groupLog);
         storeBundleAfterCommit(bundle);
     }
@@ -426,7 +446,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
                 return GroupJoinMethod.JOIN_CODE_OTHER;
             case INCOMING_SMS:
                 return GroupJoinMethod.SMS_JOIN_WORD;
-            case ANGULAR:
+            case WEB_2:
                 return GroupJoinMethod.URL_JOIN_WORD;
             case ANDROID_2:
                 return GroupJoinMethod.SEARCH_JOIN_WORD;

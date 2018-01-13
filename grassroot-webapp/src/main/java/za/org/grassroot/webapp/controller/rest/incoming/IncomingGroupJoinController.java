@@ -8,6 +8,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.user.UserManagementService;
@@ -67,7 +68,7 @@ public class IncomingGroupJoinController extends BaseRestController {
                                                                    @RequestBody JoinSubmitInfo joinSubmitInfo) {
         String joinedUserUid = groupBroker.addMemberViaJoinPage(groupUid, code, getUserIdFromRequest(request),
                 joinSubmitInfo.getName(), joinSubmitInfo.getPhone(), joinSubmitInfo.getEmail(),
-                joinSubmitInfo.safeProvince(), joinSubmitInfo.getTopics());
+                joinSubmitInfo.safeProvince(), joinSubmitInfo.getTopics(), UserInterfaceType.WEB_2);
         return ResponseEntity.ok(userManager.fetchUserProfileStatus(joinedUserUid));
     }
 

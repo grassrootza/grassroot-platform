@@ -109,7 +109,8 @@ public class UserManager implements UserManagementService, UserDetailsService {
         String phoneNumber = StringUtils.isEmpty(userProfile.getPhoneNumber()) ? null : PhoneNumberUtil.convertPhoneNumber(userProfile.getPhoneNumber());
         String emailAddress = userProfile.getEmailAddress();
         long start = System.nanoTime();
-        boolean userExists = userRepository.existsByPhoneNumber(phoneNumber) || (emailAddress != null && userRepository.existsByEmail(emailAddress));
+        boolean userExists = userRepository.existsByPhoneNumber(phoneNumber)
+                || (emailAddress != null && userRepository.existsByEmail(emailAddress));
         long time = System.nanoTime() - start;
         log.info("User exists check took {} nanosecs", time);
 
@@ -118,10 +119,12 @@ public class UserManager implements UserManagementService, UserDetailsService {
             log.info("The user exists, and their web profile is set to: " + userProfile.isHasWebProfile());
 
             User userToUpdate = findByNumberOrEmail(phoneNumber, emailAddress);
-            if (userToUpdate.isHasWebProfile()) {
-                throw new UserExistsException("User '" + userProfile.getUsername() + "' already has a web profile!");
+            if (!StringUtils.isEmpty(userToUpdate.getPassword())) {
+                throw new UserExistsException("User '" + userProfile.getUsername() + "' already has a password protected profile!");
             }
 
+            // if we reach here, means user 'exists' via group addition etc., but hasn't registered, so take the details
+            // as theirs, and set a password etc ...
             if (!userToUpdate.hasName()) {
                 userToUpdate.setDisplayName(userProfile.getDisplayName());
                 userToUpdate.setHasSetOwnName(true);

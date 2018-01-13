@@ -78,7 +78,7 @@ public class GroupJoinCode {
         this.creationTime = Instant.now();
         this.createdByUser = createdByUser;
         this.group = group;
-        this.code = code;
+        this.code = code.trim().toLowerCase();
         this.type = type;
         this.active = true;
         this.countOfInboundUsers = 0;
