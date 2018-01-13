@@ -4,6 +4,7 @@ import com.codahale.metrics.annotation.Timed;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specifications;
@@ -247,8 +248,12 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
     @Override
     public Page<Membership> fetchUserGroupsNewMembers(User user, Instant from, Pageable pageable) {
         List<Group> groupsWhereUserCanSeeMemberDetails = groupRepository.findAll(GroupSpecifications.userIsMemberAndCanSeeMembers(user));
-        Specifications<Membership> spec = MembershipSpecifications.recentMembershipsInGroups(groupsWhereUserCanSeeMemberDetails, from);
-        return membershipRepository.findAll(spec, pageable);
+        if (groupsWhereUserCanSeeMemberDetails != null && !groupsWhereUserCanSeeMemberDetails.isEmpty()) {
+            Specifications<Membership> spec = MembershipSpecifications.recentMembershipsInGroups(groupsWhereUserCanSeeMemberDetails, from);
+            return membershipRepository.findAll(spec, pageable);
+        } else {
+            return new PageImpl<>(new ArrayList<>());
+        }
     }
 
     private List<GroupRefDTO> getSubgroups(Group group) {

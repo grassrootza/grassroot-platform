@@ -46,7 +46,7 @@ public class AuthenticationController {
     private static final Logger logger = LoggerFactory.getLogger(AuthenticationController.class);
 
     private static final List<UserInterfaceType> alphaInterfaces =
-            Arrays.asList(UserInterfaceType.ANGULAR, UserInterfaceType.ANDROID_2);
+            Arrays.asList(UserInterfaceType.WEB_2, UserInterfaceType.ANDROID_2);
 
     private final JwtService jwtService;
     private final PasswordTokenService passwordTokenService;
@@ -125,7 +125,7 @@ public class AuthenticationController {
     @ApiOperation(value = "Finish new user registration using otp password", notes = "User data and JWT token is returned as AuthorizedUserDTO object in the 'data' property")
     public ResponseEntity<ResponseWrapper> verifyRegistration(@PathVariable("phoneNumber") String phoneNumber,
                                                               @PathVariable("code") String otpEntered,
-                                                              @RequestParam(required = false) UserInterfaceType type) throws Exception {
+                                                              @RequestParam(required = false) UserInterfaceType type) {
         final String msisdn = PhoneNumberUtil.convertPhoneNumber(phoneNumber);
         checkRegistrationOpen(type == null ? UserInterfaceType.ANDROID_2 : type);
         if (passwordTokenService.isShortLivedOtpValid(msisdn, otpEntered)) {
@@ -152,21 +152,31 @@ public class AuthenticationController {
     }
 
     @RequestMapping(value = "web/register", method = RequestMethod.GET)
-    public AuthorizationResponseDTO registerWebUser(@RequestParam String username,
-                                                    @RequestParam String phoneNumber,
+    public AuthorizationResponseDTO registerWebUser(@RequestParam String name,
+                                                    @RequestParam(required = false) String phone,
+                                                    @RequestParam(required = false) String email,
                                                     @RequestParam String password) {
-        checkRegistrationOpen(UserInterfaceType.ANGULAR);
+        checkRegistrationOpen(UserInterfaceType.WEB_2);
         try {
-            if (StringUtils.isEmpty(username))
-                return new AuthorizationResponseDTO(RestMessage.INVALID_USERNAME);
-            else if (StringUtils.isEmpty(phoneNumber))
+            if (StringUtils.isEmpty(name))
+                return new AuthorizationResponseDTO(RestMessage.INVALID_DISPLAYNAME);
+            else if (StringUtils.isEmpty(email) && StringUtils.isEmpty(email))
                 new AuthorizationResponseDTO(RestMessage.INVALID_MSISDN);
-            else if (StringUtils.isEmpty(phoneNumber))
+            else if (StringUtils.isEmpty(password))
                 return new AuthorizationResponseDTO(RestMessage.INVALID_PASSWORD);
 
+            // once kill old web app, convert this (needed only because of Spring Security user profile needs on reg, it seems)
             User newUser = User.makeEmpty();
-            newUser.setDisplayName(username);
-            newUser.setPhoneNumber(phoneNumber);
+            newUser.setDisplayName(name);
+
+            if (!StringUtils.isEmpty(phone)) {
+                newUser.setPhoneNumber(PhoneNumberUtil.convertPhoneNumber(phone));
+            }
+
+            if (!StringUtils.isEmpty(email)) {
+                newUser.setEmailAddress(email);
+            }
+
             newUser.setPassword(password);
 
             User user = userService.createUserWebProfile(newUser);
@@ -262,7 +272,7 @@ public class AuthenticationController {
             User user = findExistingUser(username);
             passwordTokenService.validatePwdPhoneOrEmail(username, password);
 
-            checkUserHasAccess(username, interfaceType == null ? UserInterfaceType.ANGULAR : interfaceType);
+            checkUserHasAccess(username, interfaceType == null ? UserInterfaceType.WEB_2 : interfaceType);
 
             // Generate a token for the user (for the moment assuming it is Android client - Angular uses same params)
             CreateJwtTokenRequest tokenRequest = new CreateJwtTokenRequest(JwtType.ANDROID_CLIENT, user.getUid());

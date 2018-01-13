@@ -53,7 +53,7 @@ public interface GroupBroker {
     void addMemberViaJoinCode(String userUidToAdd, String groupUid, String tokenPassed, UserInterfaceType interfaceType);
 
     String addMemberViaJoinPage(String groupUid, String code, String userUid, String name, String phone, String email,
-                                Province province, List<String> topics);
+                                Province province, List<String> topics, UserInterfaceType interfaceType);
 
     void notifyOrganizersOfJoinCodeUse(Instant periodStart, Instant periodEnd);
 
