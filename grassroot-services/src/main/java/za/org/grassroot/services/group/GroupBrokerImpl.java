@@ -995,7 +995,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
     @Override
     @Transactional
     public void combinedEdits(String userUid, String groupUid, String groupName, String description, boolean resetToDefaultImage, GroupDefaultImage defaultImage,
-                              boolean discoverable, boolean toCloseJoinCode, Set<String> membersToRemove, Set<String> organizersToAdd) {
+                              boolean discoverable, boolean toCloseJoinCode, Set<String> membersToRemove, Set<String> organizersToAdd, int reminderMinutes) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(groupUid);
 
@@ -1044,6 +1044,11 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
         if (organizersToAdd != null && !organizersToAdd.isEmpty()) {
             groupLogs.addAll(changeMembersToRole(user, group, organizersToAdd, group.getRole(BaseRoles.ROLE_GROUP_ORGANIZER)));
+        }
+
+        if(group.getReminderMinutes() != reminderMinutes){
+            group.setReminderMinutes(reminderMinutes);
+            groupLogs.add(new GroupLog(group, user, GroupLogType.REMINDER_DEFAULT_CHANGED, "group reminder changed to " + reminderMinutes));
         }
 
         if (!groupLogs.isEmpty()) {
