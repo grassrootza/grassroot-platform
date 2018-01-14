@@ -240,16 +240,16 @@ public class PdfGeneratingServiceImpl implements PdfGeneratingService {
             return new ArrayList<>();
         }
 
-        logger.info("files found in template folder = {} files", filesInFolder.length);
+        logger.debug("files found in template folder = {} files", filesInFolder.length);
         List<String> tempListOfFiles = Arrays.stream(filesInFolder)
                 .map(File::getName).filter(n -> n.startsWith("group"))
                 .collect(Collectors.toList());
 
-        logger.info("filtered list of group flyer templates = {}", tempListOfFiles.size());
+        logger.debug("filtered list of group flyer templates = {}", tempListOfFiles.size());
         return tempListOfFiles.stream()
                 .map(name -> {
                     String languageCode = name.split(SEPARATOR)[LANGUAGE_POSITION]; // Check if is a valid name
-                    logger.info("for file name {}, took language separator {}", name, languageCode);
+                    logger.debug("for file name {}, took language separator {}", name, languageCode);
                     return languageCode;
                 })
                 .filter(lcode -> Arrays.asList(Locale.getISOLanguages()).contains(lcode))
