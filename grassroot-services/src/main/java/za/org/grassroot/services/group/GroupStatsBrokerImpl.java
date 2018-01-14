@@ -1,5 +1,8 @@
 package za.org.grassroot.services.group;
 
+import net.sf.ehcache.Cache;
+import net.sf.ehcache.CacheManager;
+import net.sf.ehcache.Element;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.stereotype.Service;
 import za.org.grassroot.core.domain.Group;
@@ -30,16 +33,33 @@ public class GroupStatsBrokerImpl implements GroupStatsBroker {
     private final GroupLogRepository groupLogRepository;
     private final GroupRepository groupRepository;
     private final MembershipRepository membershipRepository;
+    private final CacheManager cacheManager;
 
-    public GroupStatsBrokerImpl(GroupLogRepository groupLogRepository, GroupRepository groupRepository, MembershipRepository membershipRepository) {
+
+    public GroupStatsBrokerImpl(
+            GroupLogRepository groupLogRepository,
+            GroupRepository groupRepository,
+            MembershipRepository membershipRepository,
+            CacheManager cacheManager) {
+
         this.groupLogRepository = groupLogRepository;
         this.groupRepository = groupRepository;
-
         this.membershipRepository = membershipRepository;
+        this.cacheManager = cacheManager;
     }
 
     @Override
     public Map<String, Integer> getMembershipGrowthStats(String groupUid, @Nullable Integer year, @Nullable Integer month) {
+
+        Cache cache = cacheManager.getCache("group_member_count_stats");
+        String cacheKey = groupUid + "-" + year + "-" + month;
+        Element element = cache.get(cacheKey);
+        Map<String, Integer> resultFromCache = element != null ? (Map<String, Integer>) element.getObjectValue() : null;
+
+        if (resultFromCache != null)
+            return resultFromCache;
+
+        // if there is no cached stats, calculate them, put in cache and return
 
         DateTimeFormatter dayFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         DateTimeFormatter monthFormatter = DateTimeFormatter.ofPattern("yyyy-MM");
@@ -51,7 +71,6 @@ public class GroupStatsBrokerImpl implements GroupStatsBroker {
 
         Instant startTimeInstant = startTime.atStartOfDay(Clock.systemDefaultZone().getZone()).toInstant();
         Instant endTimeInstant = endTime.atStartOfDay(Clock.systemDefaultZone().getZone()).toInstant();
-        ;
 
         Specifications<GroupLog> groupLogSpec = GroupLogSpecifications.memberCountChanges(groupUid, startTimeInstant, endTimeInstant);
         List<GroupLog> memberCountChanges = groupLogRepository.findAll(groupLogSpec);
@@ -85,6 +104,7 @@ public class GroupStatsBrokerImpl implements GroupStatsBroker {
                 currDay = currDay.plusDays(1);
             }
 
+            cache.put(new Element(cacheKey, membersCountByDay));
             return membersCountByDay;
         } else {
 
@@ -107,6 +127,7 @@ public class GroupStatsBrokerImpl implements GroupStatsBroker {
                 currMonth = currMonth.plusMonths(1);
             }
 
+            cache.put(new Element(cacheKey, membersCountByMonth));
             return membersCountByMonth;
 
         }

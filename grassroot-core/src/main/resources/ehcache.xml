@@ -42,4 +42,11 @@
            transactionalMode="off">
     </cache>
 
+    <cache name="group_member_count_stats"
+           maxEntriesLocalHeap="2000"
+           eternal="false"
+           timeToIdleSeconds="900">
+    </cache>
+
+
 </ehcache>
