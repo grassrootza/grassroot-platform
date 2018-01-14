@@ -59,6 +59,10 @@ public class MembershipSpecifications {
         return (root, query, cb) -> cb.equal(root.get(Membership_.group), group);
     }
 
+    public static Specification<Membership> forGroup(String groupUid) {
+        return (root, query, cb) -> cb.equal(root.get(Membership_.group).get(Group_.uid), groupUid);
+    }
+
     public static Specifications<Membership> groupOrganizers(Group group) {
         return Specifications.where(hasRole(BaseRoles.ROLE_GROUP_ORGANIZER)).and(forGroup(group));
     }

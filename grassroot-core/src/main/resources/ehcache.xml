@@ -42,7 +42,26 @@
            transactionalMode="off">
     </cache>
 
-    <cache name="group_member_count_stats"
+    <cache name="group_stats_member_count"
+           maxEntriesLocalHeap="2000"
+           eternal="false"
+           timeToIdleSeconds="900">
+    </cache>
+
+
+    <cache name="group_stats_provinces"
+           maxEntriesLocalHeap="2000"
+           eternal="false"
+           timeToIdleSeconds="900">
+    </cache>
+
+    <cache name="group_stats_sources"
+           maxEntriesLocalHeap="2000"
+           eternal="false"
+           timeToIdleSeconds="900">
+    </cache>
+
+    <cache name="group_stats_organisations"
            maxEntriesLocalHeap="2000"
            eternal="false"
            timeToIdleSeconds="900">

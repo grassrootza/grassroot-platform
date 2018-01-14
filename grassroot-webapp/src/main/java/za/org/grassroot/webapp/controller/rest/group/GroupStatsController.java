@@ -36,4 +36,23 @@ public class GroupStatsController extends BaseRestController {
         return groupStatsBroker.getMembershipGrowthStats(groupUid, year, month);
     }
 
+
+    @RequestMapping(value = "/provinces")
+    @ApiOperation("Returns a map of member count by province")
+    public Map<String, Long> getProvincesStats(String groupUid) {
+        return groupStatsBroker.getProvincesStats(groupUid);
+    }
+
+    @RequestMapping(value = "/sources")
+    @ApiOperation("Returns a map of member count by source (join method)")
+    public Map<String, Long> getSourcesStats(String groupUid) {
+        return groupStatsBroker.getSourcesStats(groupUid);
+    }
+
+
+    @RequestMapping(value = "/organisations")
+    @ApiOperation("Returns a map of member count by organisation")
+    public Map<String, Long> getOrganisationsStats(String groupUid) {
+        return groupStatsBroker.getOrganisationsStats(groupUid);
+    }
 }

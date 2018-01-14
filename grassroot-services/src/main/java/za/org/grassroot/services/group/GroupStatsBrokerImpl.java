@@ -21,6 +21,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,7 +52,7 @@ public class GroupStatsBrokerImpl implements GroupStatsBroker {
     @Override
     public Map<String, Integer> getMembershipGrowthStats(String groupUid, @Nullable Integer year, @Nullable Integer month) {
 
-        Cache cache = cacheManager.getCache("group_member_count_stats");
+        Cache cache = cacheManager.getCache("group_stats_member_count");
         String cacheKey = groupUid + "-" + year + "-" + month;
         Element element = cache.get(cacheKey);
         Map<String, Integer> resultFromCache = element != null ? (Map<String, Integer>) element.getObjectValue() : null;
@@ -168,4 +169,91 @@ public class GroupStatsBrokerImpl implements GroupStatsBroker {
             return group.getCreatedDateTime().atZone(Clock.systemDefaultZone().getZone()).toLocalDate();
 
     }
+
+    @Override
+    public Map<String, Long> getProvincesStats(String groupUid) {
+
+        Cache cache = cacheManager.getCache("group_stats_provinces");
+        String cacheKey = groupUid;
+        Element element = cache.get(cacheKey);
+        Map<String, Long> resultFromCache = element != null ? (Map<String, Long>) element.getObjectValue() : null;
+
+        if (resultFromCache != null)
+            return resultFromCache;
+
+        List<Membership> memberships = membershipRepository.findAll(MembershipSpecifications.forGroup(groupUid));
+
+        Map<String, Long> data = memberships.stream()
+                .filter(m -> m.getUser().getProvince() != null)
+                .collect(
+                        Collectors.groupingBy(
+                                m -> m.getUser().getProvince().name(),
+                                Collectors.counting()
+                        )
+                );
+
+        long unknownProvinceCount = memberships.stream().filter(m -> m.getUser().getProvince() == null).count();
+        if (unknownProvinceCount > 0)
+            data.put("UNKNOWN", unknownProvinceCount);
+
+        cache.put(new Element(cacheKey, data));
+
+        return data;
+    }
+
+    @Override
+    public Map<String, Long> getSourcesStats(String groupUid) {
+
+
+        Cache cache = cacheManager.getCache("group_stats_sources");
+        String cacheKey = groupUid;
+        Element element = cache.get(cacheKey);
+        Map<String, Long> resultFromCache = element != null ? (Map<String, Long>) element.getObjectValue() : null;
+
+        if (resultFromCache != null)
+            return resultFromCache;
+
+
+        List<Membership> memberships = membershipRepository.findAll(MembershipSpecifications.forGroup(groupUid));
+
+        Map<String, Long> data = memberships.stream()
+                .filter(m -> m.getJoinMethod() != null)
+                .collect(
+                        Collectors.groupingBy(
+                                m -> m.getJoinMethod().name(),
+                                Collectors.counting()
+                        )
+                );
+
+        long unknownSourceCount = memberships.stream().filter(m -> m.getJoinMethod() == null).count();
+        if (unknownSourceCount > 0)
+            data.put("UNKNOWN", unknownSourceCount);
+
+        cache.put(new Element(cacheKey, data));
+
+        return data;
+    }
+
+
+    @Override
+    public Map<String, Long> getOrganisationsStats(String groupUid) {
+
+        Cache cache = cacheManager.getCache("group_stats_organisations");
+        String cacheKey = groupUid;
+        Element element = cache.get(cacheKey);
+        Map<String, Long> resultFromCache = element != null ? (Map<String, Long>) element.getObjectValue() : null;
+
+        if (resultFromCache != null)
+            return resultFromCache;
+
+        List<Membership> memberships = membershipRepository.findAll(MembershipSpecifications.forGroup(groupUid));
+        //todo implement logic here
+        Map<String, Long> data = new HashMap<>();
+        data.put("Other", (long) memberships.size());
+
+        cache.put(new Element(cacheKey, data));
+
+        return data;
+    }
 }
+
