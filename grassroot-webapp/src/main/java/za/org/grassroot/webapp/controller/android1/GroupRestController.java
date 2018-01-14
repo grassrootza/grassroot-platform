@@ -198,7 +198,7 @@ public class GroupRestController extends GroupAbstractRestController {
         User user = userManagementService.findByInputNumber(phoneNumber);
         try {
             groupBroker.combinedEdits(user.getUid(), groupUid, name, description, resetToDefaultImage, defaultImage, isPublic,
-                    closeJoinCode, membersToRemove, organizersToAdd);
+                    closeJoinCode, membersToRemove, organizersToAdd, 0);
             Group updatedGroup = groupBroker.load(groupUid);
             return RestUtil.okayResponseWithData(RestMessage.UPDATED, Collections.singletonList(createGroupWrapper(updatedGroup, user)));
         } catch (AccessDeniedException e) {

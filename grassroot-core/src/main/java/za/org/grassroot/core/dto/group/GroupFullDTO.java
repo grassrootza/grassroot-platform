@@ -30,12 +30,14 @@ public class GroupFullDTO extends GroupHeavyDTO {
     @Setter private List<String> topics = new ArrayList<>();
     @Setter private List<JoinWordDTO> joinWords = new ArrayList<>();
     @Setter private int joinWordsLeft;
+    private final Integer reminderMinutes;
 
     public GroupFullDTO(Group group, Membership membership) {
         super(group, membership);
         this.joinCode = group.getGroupTokenCode();
         this.topics.addAll(group.getTopics());
         this.paidFor = group.isPaidFor();
+        this.reminderMinutes = group.getReminderMinutes();
         this.joinWords.addAll(group.getGroupJoinCodes().stream()
                 .filter(GroupJoinCode::isActive)
                 .filter(g -> JoinCodeType.JOIN_WORD.equals(g.getType()))
