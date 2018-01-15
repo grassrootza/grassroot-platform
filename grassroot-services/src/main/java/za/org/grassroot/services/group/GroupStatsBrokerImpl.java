@@ -14,6 +14,8 @@ import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.MembershipRepository;
 import za.org.grassroot.core.specifications.GroupLogSpecifications;
 import za.org.grassroot.core.specifications.MembershipSpecifications;
+import za.org.grassroot.integration.socialmedia.ManagedPagesResponse;
+import za.org.grassroot.integration.socialmedia.SocialMediaBroker;
 
 import javax.annotation.Nullable;
 import java.time.Clock;
@@ -21,10 +23,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -35,18 +34,23 @@ public class GroupStatsBrokerImpl implements GroupStatsBroker {
     private final GroupRepository groupRepository;
     private final MembershipRepository membershipRepository;
     private final CacheManager cacheManager;
+    private final SocialMediaBroker socialMediaBroker;
+
+    private final String ORGANISATION_TAG_PREFIX = "AFFILIATION";
 
 
     public GroupStatsBrokerImpl(
             GroupLogRepository groupLogRepository,
             GroupRepository groupRepository,
             MembershipRepository membershipRepository,
-            CacheManager cacheManager) {
+            CacheManager cacheManager,
+            SocialMediaBroker socialMediaBroker) {
 
         this.groupLogRepository = groupLogRepository;
         this.groupRepository = groupRepository;
         this.membershipRepository = membershipRepository;
         this.cacheManager = cacheManager;
+        this.socialMediaBroker = socialMediaBroker;
     }
 
     @Override
@@ -254,6 +258,55 @@ public class GroupStatsBrokerImpl implements GroupStatsBroker {
         cache.put(new Element(cacheKey, data));
 
         return data;
+    }
+
+
+    @Override
+    public Map<String, Integer> getMemberDetailsStats(String groupUid) {
+
+
+        Cache cache = cacheManager.getCache("group_stats_member-details");
+        String cacheKey = groupUid;
+        Element element = cache.get(cacheKey);
+        Map<String, Integer> resultFromCache = element != null ? (Map<String, Integer>) element.getObjectValue() : null;
+
+        if (resultFromCache != null)
+            return resultFromCache;
+
+
+        List<Membership> memberships = membershipRepository.findAll(MembershipSpecifications.forGroup(groupUid));
+
+        double hasEmail = 0;
+        double hasPhoneNumber = 0;
+        double hasProvince = 0;
+        double hasOrganisation = 0;
+        double hasFacebook = 0;
+        double hasTwitter = 0;
+
+        for (Membership membership : memberships) {
+
+            hasEmail += membership.getUser().hasEmailAddress() ? 1 : 0;
+            hasPhoneNumber += membership.getUser().hasPhoneNumber() ? 1 : 0;
+            hasProvince += membership.getUser().getProvince() != null ? 1 : 0;
+            hasOrganisation += Arrays.stream(membership.getTags()).anyMatch(tag -> tag.startsWith(ORGANISATION_TAG_PREFIX)) ? 1 : 0;
+            Map<String, ManagedPagesResponse> currentIntegrations = socialMediaBroker.getCurrentIntegrations(membership.getUser().getUid()).getCurrentIntegrations();
+            hasFacebook += currentIntegrations.containsKey("facebook") ? 1 : 0;
+            hasTwitter += currentIntegrations.containsKey("twitter") ? 1 : 0;
+        }
+
+        Map<String, Integer> results = new HashMap<>();
+
+        results.put("EMAIL", memberships.size() > 0 ? (int) ((hasEmail / memberships.size()) * 100) : 0);
+        results.put("PHONE", memberships.size() > 0 ? (int) ((hasPhoneNumber / memberships.size()) * 100) : 0);
+        results.put("PROVINCE", memberships.size() > 0 ? (int) ((hasProvince / memberships.size()) * 100) : 0);
+        results.put("ORGANISATION", memberships.size() > 0 ? (int) ((hasOrganisation / memberships.size()) * 100) : 0);
+        results.put("FACEBOOK", memberships.size() > 0 ? (int) ((hasFacebook / memberships.size()) * 100) : 0);
+        results.put("TWITTER", memberships.size() > 0 ? (int) ((hasTwitter / memberships.size()) * 100) : 0);
+
+        cache.put(new Element(cacheKey, results));
+
+        return results;
+
     }
 }
 

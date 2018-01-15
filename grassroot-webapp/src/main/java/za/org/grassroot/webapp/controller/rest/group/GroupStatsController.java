@@ -55,4 +55,10 @@ public class GroupStatsController extends BaseRestController {
     public Map<String, Long> getOrganisationsStats(String groupUid) {
         return groupStatsBroker.getOrganisationsStats(groupUid);
     }
+
+    @RequestMapping(value = "/member-details")
+    @ApiOperation("Returns a map of percent of users who has specific info set")
+    public Map<String, Integer> getMemberDetailsStats(String groupUid) {
+        return groupStatsBroker.getMemberDetailsStats(groupUid);
+    }
 }
