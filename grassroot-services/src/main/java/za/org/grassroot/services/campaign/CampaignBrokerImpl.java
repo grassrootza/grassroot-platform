@@ -67,20 +67,28 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
     @Override
     @Transactional
-    public Campaign getCampaignDetailsByCode(String campaignCode){
+    public Campaign getCampaignDetailsByCode(String campaignCode, String userUid, boolean storeLog){
         Objects.requireNonNull(campaignCode);
         Campaign campaign = getCampaignByCampaignCode(campaignCode);
-        CampaignLogType campaignLogType = (campaign != null) ? CampaignLogType.CAMPAIGN_FOUND : CampaignLogType.CAMPAIGN_NOT_FOUND;
-        persistCampaignLog(new CampaignLog(null, campaignLogType,campaign, campaignCode));
+        if (storeLog) {
+            Objects.requireNonNull(userUid);
+            User user = userRepository.findOneByUid(userUid);
+            CampaignLogType campaignLogType = (campaign != null) ? CampaignLogType.CAMPAIGN_FOUND : CampaignLogType.CAMPAIGN_NOT_FOUND;
+            persistCampaignLog(new CampaignLog(user, campaignLogType,campaign, campaignCode));
+        }
         return campaign;
     }
 
     @Override
     @Transactional
-    public Campaign getCampaignDetailsByName(String campaignName){
+    public Campaign getCampaignDetailsByName(String campaignName, String userUid, boolean storeLog){
         Campaign campaign = getCampaignByCampaignName(campaignName);
-        CampaignLogType campaignLogType = (campaign != null) ? CampaignLogType.CAMPAIGN_FOUND : CampaignLogType.CAMPAIGN_NOT_FOUND;
-        persistCampaignLog(new CampaignLog(null, campaignLogType, campaign,campaignName));
+        if (storeLog) {
+            Objects.requireNonNull(userUid);
+            User user = userRepository.findOneByUid(userUid);
+            CampaignLogType campaignLogType = (campaign != null) ? CampaignLogType.CAMPAIGN_FOUND : CampaignLogType.CAMPAIGN_NOT_FOUND;
+            persistCampaignLog(new CampaignLog(null, campaignLogType, campaign, campaignName));
+        }
         return campaign;
     }
 
@@ -283,7 +291,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
         Objects.requireNonNull(campaignCode);
         Objects.requireNonNull(phoneNumber);
         User user = userManagementService.loadOrCreateUser(phoneNumber);
-        Campaign campaign = getCampaignDetailsByCode(campaignCode);
+        Campaign campaign = getCampaignDetailsByCode(campaignCode, user.getUid(), false);
         groupBroker.addMemberViaCampaign(user.getUid(),campaign.getMasterGroup().getUid(),campaign.getCampaignCode());
         CampaignLog campaignLog = new CampaignLog(campaign.getCreatedByUser(), CampaignLogType.CAMPAIGN_USER_ADDED_TO_MASTER_GROUP,campaign);
         persistCampaignLog(campaignLog);

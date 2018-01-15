@@ -80,7 +80,6 @@ public class USSDHomeController extends USSDBaseController {
     @Value("${grassroot.geo.apis.enabled:false}")
     private boolean geoApisEnabled;
 
-
     // todo : think about how to do dynamically (and/or decide on this)
     private final Map<String, String> geoApiSuffixes = Collections.unmodifiableMap(Stream.of(
             new AbstractMap.SimpleEntry<>("11", "IZWE_LAMI")
@@ -192,9 +191,9 @@ public class USSDHomeController extends USSDBaseController {
         } else if (geoApisEnabled && geoApiSuffixes.keySet().contains(trailingDigits)) {
             returnMenu = geoApiController.openingMenu(user, geoApiSuffixes.get(trailingDigits));
         } else {
-            returnMenu = getActiveCampaignForTrailingCode(trailingDigits, user);
+            returnMenu = groupController.lookForJoinCode(user, trailingDigits);
             if (returnMenu == null) {
-                returnMenu = groupController.lookForJoinCode(user, trailingDigits);
+                returnMenu = getActiveCampaignForTrailingCode(trailingDigits, user);
             }
         }
         return returnMenu;
@@ -206,7 +205,7 @@ public class USSDHomeController extends USSDBaseController {
     }
 
     private USSDMenu getActiveCampaignForTrailingCode(String trailingDigits, User user){
-        Campaign campaign = campaignBroker.getCampaignDetailsByCode(trailingDigits);
+        Campaign campaign = campaignBroker.getCampaignDetailsByCode(trailingDigits, user.getUid(), true);
         return (campaign != null) ? assembleCampaignMessageResponse(campaign,user): null;
     }
 

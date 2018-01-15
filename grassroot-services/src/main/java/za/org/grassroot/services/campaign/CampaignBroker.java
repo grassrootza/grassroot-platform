@@ -18,9 +18,8 @@ public interface CampaignBroker {
 
     List<Campaign> getCampaignsCreatedByUser(String userUid);
 
-
-    Campaign getCampaignDetailsByCode(String campaignCode);
-    Campaign getCampaignDetailsByName(String campaignName);
+    Campaign getCampaignDetailsByCode(String campaignCode, String userUid, boolean storeLog);
+    Campaign getCampaignDetailsByName(String campaignName, String userUid, boolean storeLog);
 
     Set<String> getCampaignTags();
 

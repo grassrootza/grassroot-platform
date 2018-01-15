@@ -79,7 +79,7 @@ public class CampaignBrokerTest {
         Assert.assertEquals(reUpdatedCampaign.getCampaignMessages().iterator().next().getCampaignMessageActionSet().size(), 1);
         Assert.assertEquals(reUpdatedCampaign.getCampaignMessages().iterator().next().getCampaignMessageActionSet().iterator().next().getActionType(), CampaignActionType.JOIN_MASTER_GROUP);
 
-        Campaign campaignByName = campaignBroker.getCampaignDetailsByName("national campaign");
+        Campaign campaignByName = campaignBroker.getCampaignDetailsByName("national campaign", null, false);
         Assert.assertNotNull(campaignByName);
         Assert.assertEquals(campaignByName.getName(), "national campaign");
 

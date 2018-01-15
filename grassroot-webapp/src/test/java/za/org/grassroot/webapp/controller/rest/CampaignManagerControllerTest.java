@@ -30,10 +30,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyList;
-import static org.mockito.Matchers.anySet;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.*;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -85,7 +82,7 @@ public class CampaignManagerControllerTest extends RestAbstractUnitTest{
 
     @Test
     public void testCreateCampaign() throws Exception{
-        when(campaignBroker.getCampaignDetailsByCode(anyString())).thenReturn(null);
+        when(campaignBroker.getCampaignDetailsByCode(anyString(), eq(null), eq(false))).thenReturn(null);
         when(campaignBroker.createCampaign(anyString(),anyString(),anyString(),anyString(),any(Instant.class),any(Instant.class), anyList(),any(CampaignType.class),anyString())).thenReturn(testCampaign);
         when(campaignBroker.linkCampaignToMasterGroup(anyString(),anyString(),anyString())).thenReturn(testCampaign);
         when(campaignBroker.createMasterGroupForCampaignAndLinkCampaign(anyString(),anyString(),anyString())).thenReturn(testCampaign);
