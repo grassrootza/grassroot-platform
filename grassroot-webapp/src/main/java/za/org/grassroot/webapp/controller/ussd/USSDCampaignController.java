@@ -51,7 +51,7 @@ public class USSDCampaignController extends USSDBaseController {
                                       )  throws URISyntaxException{
 
         User user = userManagementService.loadOrCreateUser(inputNumber);
-        Campaign campaign = campaignBroker.getCampaignDetailsByCode(campaignCode);
+        Campaign campaign = campaignBroker.getCampaignDetailsByCode(campaignCode, user.getUid(), true);
         updateMembership(user,campaign,parentMessageUid);
         CampaignMessage message =  CampaignUtil.getNextCampaignMessageByActionTypeAndLocale(campaign,CampaignActionType.TAG_ME,parentMessageUid, new Locale(languageCode));
         return menuBuilder(buildCampaignUSSDMenu(message,languageCode, campaignCode));
@@ -84,7 +84,7 @@ public class USSDCampaignController extends USSDBaseController {
         if(StringUtils.isEmpty(user.getLanguageCode())) {
             userManager.updateUserLanguage(user.getUid(), new Locale(languageCode));
         }
-        Campaign campaign =  campaignBroker.getCampaignDetailsByCode(campaignCode);
+        Campaign campaign =  campaignBroker.getCampaignDetailsByCode(campaignCode, user.getUid(), true);
         CampaignMessage campaignMessage = CampaignUtil.getFirstCampaignMessageByLocale(campaign,languageCode);
         return  menuBuilder(buildCampaignUSSDMenu(campaignMessage, languageCode,campaignCode));
     }
@@ -94,7 +94,7 @@ public class USSDCampaignController extends USSDBaseController {
     public Request processSignPetitionRequest(@RequestParam (value = USSDCampaignUtil.CODE_PARAMETER) String campaignCode,
                                              @RequestParam (value = USSDCampaignUtil.LANGUAGE_PARAMETER) String languageCode,
                                              @RequestParam (value = USSDCampaignUtil.MESSAGE_UID)String parentMessageUid)  throws URISyntaxException{
-        Campaign campaign = campaignBroker.getCampaignDetailsByCode(campaignCode);
+        Campaign campaign = campaignBroker.getCampaignDetailsByCode(campaignCode, null, false);
         CampaignMessage message = CampaignUtil.getNextCampaignMessageByActionTypeAndLocale(campaign,CampaignActionType.SIGN_PETITION,parentMessageUid, new Locale(languageCode));
         //TO do. integrate to petition API
         return menuBuilder(buildCampaignUSSDMenu(message,languageCode, campaignCode));
@@ -105,7 +105,7 @@ public class USSDCampaignController extends USSDBaseController {
     public Request processMoreInfoRequest(@RequestParam(value = USSDCampaignUtil.CODE_PARAMETER) String campaignCode,
                                           @RequestParam (value = USSDCampaignUtil.LANGUAGE_PARAMETER) String languageCode,
                                           @RequestParam (value = USSDCampaignUtil.MESSAGE_UID)String parentMessageUid)  throws URISyntaxException{
-        Campaign campaign = campaignBroker.getCampaignDetailsByCode(campaignCode);
+        Campaign campaign = campaignBroker.getCampaignDetailsByCode(campaignCode, null, false);
         CampaignMessage message = CampaignUtil.getNextCampaignMessageByActionTypeAndLocale(campaign,CampaignActionType.MORE_INFO,parentMessageUid, new Locale(languageCode));
         return menuBuilder(buildCampaignUSSDMenu(message,languageCode, campaignCode));
     }
@@ -115,7 +115,7 @@ public class USSDCampaignController extends USSDBaseController {
     public Request processExitRequest(@RequestParam (value = USSDCampaignUtil.CODE_PARAMETER) String campaignCode,
                                      @RequestParam (value = USSDCampaignUtil.LANGUAGE_PARAMETER) String languageCode,
                                      @RequestParam (value = USSDCampaignUtil.MESSAGE_UID)String parentMessageUid )  throws URISyntaxException{
-        Campaign campaign = campaignBroker.getCampaignDetailsByCode(campaignCode);
+        Campaign campaign = campaignBroker.getCampaignDetailsByCode(campaignCode, null, false);
         CampaignMessage message = CampaignUtil.getNextCampaignMessageByActionTypeAndLocale(campaign,CampaignActionType.EXIT,parentMessageUid, new Locale(languageCode));
         return menuBuilder(buildCampaignUSSDMenu(message,languageCode, campaignCode));
     }

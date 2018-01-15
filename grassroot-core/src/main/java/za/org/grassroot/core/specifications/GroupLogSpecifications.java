@@ -5,6 +5,7 @@ import org.springframework.data.jpa.domain.Specifications;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.GroupLog;
 import za.org.grassroot.core.domain.GroupLog_;
+import za.org.grassroot.core.domain.Group_;
 import za.org.grassroot.core.enums.GroupLogType;
 
 import java.time.Instant;
@@ -18,6 +19,10 @@ public class GroupLogSpecifications {
         return (root, query, cb) -> cb.equal(root.get(GroupLog_.group), group);
     }
 
+    private static Specification<GroupLog> forGroup(String groupUid) {
+        return (root, query, cb) -> cb.equal(root.get(GroupLog_.group).get(Group_.uid), groupUid);
+    }
+
     private static Specification<GroupLog> ofTypes(Collection<GroupLogType> groupLogTypes) {
         return (root, query, cb) -> root.get(GroupLog_.groupLogType).in(groupLogTypes);
     }
@@ -26,10 +31,21 @@ public class GroupLogSpecifications {
         return (root, query, cb) -> cb.greaterThan(root.get(GroupLog_.createdDateTime), startDate);
     }
 
+
+    private static Specification<GroupLog> between(Instant startDateTime, Instant endDateTime) {
+        return (root, query, cb) -> cb.between(root.get(GroupLog_.createdDateTime), startDateTime, endDateTime);
+    }
+
     public static Specifications<GroupLog> memberChangeRecords(Group group, Instant startDate) {
         return Specifications.where(forGroup(group))
                 .and(ofTypes(GroupLogType.targetUserChangeTypes))
                 .and(afterDate(startDate));
+    }
+
+    public static Specifications<GroupLog> memberCountChanges(String groupUid, Instant startDate, Instant endDate) {
+        return Specifications.where(forGroup(groupUid))
+                .and(ofTypes(GroupLogType.targetUserAddedOrRemovedTypes))
+                .and(between(startDate, endDate));
     }
 
 }

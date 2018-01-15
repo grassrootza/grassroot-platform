@@ -106,6 +106,7 @@ public class USSDEmulatorController extends BaseController {
             MySimpleClientHttpRequestFactory requestFactory = new MySimpleClientHttpRequestFactory(verifier);
             RestTemplate template = new RestTemplate();
             template.setRequestFactory(requestFactory);
+            logger.info("url: {}", url);
 		    returnedObject = template.getForObject(url, Request.class);
 	    } catch (RestClientException e) {
 		    returnedObject = null;

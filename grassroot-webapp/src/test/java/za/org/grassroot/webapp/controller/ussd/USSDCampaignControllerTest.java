@@ -23,8 +23,7 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.*;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -68,7 +67,7 @@ public class USSDCampaignControllerTest extends USSDAbstractUnitTest {
 
     @Test
     public void testProcessMoreInfoRequest() throws Exception {
-        when(campaignBroker.getCampaignDetailsByCode(anyString())).thenReturn(testCampaign);
+        when(campaignBroker.getCampaignDetailsByCode(anyString(), eq(null), eq(false))).thenReturn(testCampaign);
         ResultActions response = mockMvc.perform(get(path + USSDCampaignUtil.MORE_INFO_URL).params(params));
         Assert.assertNotNull(response);
         response.andExpect(status().isOk());
@@ -80,7 +79,7 @@ public class USSDCampaignControllerTest extends USSDAbstractUnitTest {
 
     @Test
     public void testSignPetitionRequest() throws Exception {
-        when(campaignBroker.getCampaignDetailsByCode(anyString())).thenReturn(testCampaign);
+        when(campaignBroker.getCampaignDetailsByCode(anyString(), eq(null), eq(false))).thenReturn(testCampaign);
         ResultActions response = mockMvc.perform(get(path + USSDCampaignUtil.SIGN_PETITION_URL).params(params)).andExpect(status().isOk());
         response.andExpect(status().isOk());
         response.andExpect(content().contentType(MediaType.APPLICATION_XML));
@@ -89,7 +88,7 @@ public class USSDCampaignControllerTest extends USSDAbstractUnitTest {
 
     @Test
     public void testProcessExitRequest() throws Exception {
-        when(campaignBroker.getCampaignDetailsByCode(anyString())).thenReturn(testCampaign);
+        when(campaignBroker.getCampaignDetailsByCode(anyString(), eq(null), eq(false))).thenReturn(testCampaign);
         ResultActions response = mockMvc.perform(get(path + USSDCampaignUtil.EXIT_URL).params(params)).andExpect(status().isOk());
         response.andExpect(status().isOk());
         response.andExpect(content().contentType(MediaType.APPLICATION_XML));
@@ -108,7 +107,7 @@ public class USSDCampaignControllerTest extends USSDAbstractUnitTest {
     @Test
     public void testProcessTagMeRequest() throws Exception {
         when(userManagementServiceMock.loadOrCreateUser(anyString())).thenReturn(testUser);
-        when(campaignBroker.getCampaignDetailsByCode(anyString())).thenReturn(testCampaign);
+        when(campaignBroker.getCampaignDetailsByCode(anyString(), anyString(), eq(true))).thenReturn(testCampaign);
         when(userManagementServiceMock.createUserProfile(any(User.class))).thenReturn(testUser);
         ResultActions response = mockMvc.perform(get(path + USSDCampaignUtil.TAG_ME_URL).params(params)).andExpect(status().isOk());
         response.andExpect(status().isOk());
@@ -119,7 +118,7 @@ public class USSDCampaignControllerTest extends USSDAbstractUnitTest {
     @Test
     public void testUserSetLanguageForCampaign() throws Exception {
         when(userManagementServiceMock.findByInputNumber(anyString())).thenReturn(testUser);
-        when(campaignBroker.getCampaignDetailsByCode(anyString())).thenReturn(testCampaign);
+        when(campaignBroker.getCampaignDetailsByCode(anyString(), anyString(), eq(true))).thenReturn(testCampaign);
         ResultActions response = mockMvc.perform(get(path + USSDCampaignUtil.SET_LANGUAGE_URL).params(params)).andExpect(status().isOk());
         response.andExpect(status().isOk());
         response.andExpect(content().contentType(MediaType.APPLICATION_XML));

@@ -57,6 +57,15 @@ public enum GroupLogType {
             GroupLogType.GROUP_MEMBER_ROLE_CHANGED
     );
 
+    public static List<GroupLogType> targetUserAddedOrRemovedTypes = Arrays.asList(
+            GroupLogType.GROUP_MEMBER_ADDED,
+            GroupLogType.GROUP_MEMBER_ADDED_AT_CREATION,
+            GroupLogType.GROUP_MEMBER_ADDED_VIA_CAMPAIGN,
+            GroupLogType.GROUP_MEMBER_ADDED_VIA_JOIN_CODE,
+            GroupLogType.GROUP_MEMBER_REMOVED
+    );
+
+
     public static List<GroupLogType> targetGroupTypes = Arrays.asList(
             SUBGROUP_ADDED, SUBGROUP_REMOVED
     );

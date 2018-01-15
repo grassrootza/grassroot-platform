@@ -22,7 +22,13 @@ public class PermissionDTO implements Comparable<PermissionDTO> {
 			.put(Permission.GROUP_PERMISSION_CREATE_LOGBOOK_ENTRY, 4)
 			.put(Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER, 5)
 			.put(Permission.GROUP_PERMISSION_DELETE_GROUP_MEMBER, 6)
-			.put(Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS, 7).build();
+			.put(Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS, 7)
+			.put(Permission.GROUP_PERMISSION_CHANGE_PERMISSION_TEMPLATE, 8)
+			.put(Permission.GROUP_PERMISSION_CLOSE_OPEN_LOGBOOK, 9)
+			.put(Permission.GROUP_PERMISSION_VIEW_MEETING_RSVPS, 10)
+			.put(Permission.GROUP_PERMISSION_READ_UPCOMING_EVENTS, 11)
+			.build();
+
 
 	private String groupUid;
 	private String forRole;

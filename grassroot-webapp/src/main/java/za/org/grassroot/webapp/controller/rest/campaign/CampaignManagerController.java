@@ -69,11 +69,12 @@ public class CampaignManagerController extends BaseRestController {
 
     @RequestMapping(value = "/create" , method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "create campaign", notes = "create a campaign using given values")
-    public ResponseEntity<ResponseWrapper> createCampaign(@Valid @RequestBody CreateCampaignRequest createCampaignRequest, BindingResult bindingResult){
+    public ResponseEntity<ResponseWrapper> createCampaign(@Valid @RequestBody CreateCampaignRequest createCampaignRequest, BindingResult bindingResult, HttpServletRequest request){
+        String userUid = getUserIdFromRequest(request);
         if (bindingResult.hasErrors()) {
             return RestUtil.errorResponseWithData(RestMessage.CAMPAIGN_CREATION_INVALID_INPUT, getFieldValidationErrors(bindingResult.getFieldErrors()));
         }
-        if(campaignBroker.getCampaignDetailsByCode(createCampaignRequest.getCode().trim()) != null){
+        if(campaignBroker.getCampaignDetailsByCode(createCampaignRequest.getCode().trim(), userUid, false) != null){
             return RestUtil.errorResponse(RestMessage.CAMPAIGN_WITH_SAME_CODE_EXIST);
         }
         List<String> tagList = null;
@@ -162,10 +163,10 @@ public class CampaignManagerController extends BaseRestController {
             return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.INVALID_INPUT);
         }
         if(!StringUtils.isEmpty(code)){
-            campaign =  campaignBroker.getCampaignDetailsByCode(code);
+            campaign =  campaignBroker.getCampaignDetailsByCode(code, null, false);
         }
         if(campaign == null && !StringUtils.isEmpty(name)){
-            campaign = campaignBroker.getCampaignDetailsByName(name);
+            campaign = campaignBroker.getCampaignDetailsByName(name, null, false);
         }
         if(campaign != null){
             return RestUtil.okayResponseWithData(RestMessage.CAMPAIGN_FOUND,CampaignWebUtil.createCampaignViewDTO(campaign));
