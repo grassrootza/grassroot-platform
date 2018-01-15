@@ -143,10 +143,6 @@ public class GroupSearchController extends BaseController {
 
 				log.info("Received this list of related terms from learning service: {}", relatedTerms);
 
-				// testing line (remove once related terms operational)
-				// relatedTerms = Arrays.asList("Water", "Taps", "Pipes");
-
-
 				model.addAttribute("groupCandidates", publicGroups);
 				model.addAttribute("relatedTerms", relatedTerms);
 
@@ -163,15 +159,13 @@ public class GroupSearchController extends BaseController {
 					model.addAttribute("publicMeetingsUserIsNotPartOf",meetings);
 				}
 
-				if(latitude == 0.0 && longitude == 0.0){
-					location = null;
-				}else{
+				if (latitude != null && longitude != null) {
 					location = new GeoLocation(latitude,longitude);
+					List<ObjectLocation> publicMeetings = objectLocationBroker.fetchMeetingLocationsNearUser(user, location, searchRadius, GeographicSearchType.PUBLIC, null);
+					model.addAttribute("publicMeetingsNearUser",publicMeetings);
+					log.info("Object Locations = {}" ,publicMeetings.size());
 				}
 
-				List<ObjectLocation> publicMeetings = objectLocationBroker.fetchMeetingLocationsNearUser(user, location, searchRadius, GeographicSearchType.PUBLIC, null);
-				model.addAttribute("publicMeetingsNearUser",publicMeetings);
-				log.info("Object Locations = {}" ,publicMeetings.size());
 			}
 		}
 		model.addAttribute("resultFound", resultFound);

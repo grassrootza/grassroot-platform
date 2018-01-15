@@ -1,5 +1,6 @@
 package za.org.grassroot.webapp.controller.android1;
 
+import io.swagger.annotations.Api;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +38,7 @@ import java.util.Locale;
  * Created by paballo.
  */
 @RestController
+@Api("/api/user")
 @RequestMapping(value = "/api/user")
 public class UserRestController {
 

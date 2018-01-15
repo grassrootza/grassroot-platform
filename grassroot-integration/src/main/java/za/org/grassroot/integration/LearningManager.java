@@ -1,7 +1,5 @@
 package za.org.grassroot.integration;
 
-import com.google.cloud.speech.v1.*;
-import com.google.protobuf.ByteString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,19 +7,17 @@ import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import za.org.grassroot.integration.exception.SeloApiCallFailure;
 import za.org.grassroot.integration.exception.SeloParseDateTimeFailure;
 
 import javax.annotation.PostConstruct;
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * Created by shakka on 8/15/16.
@@ -110,12 +106,14 @@ public class LearningManager implements LearningService {
 
             log.info("Calling learning service, with URL: {}", url);
 
-            // todo: get this to work
             @SuppressWarnings("unchecked")
             Map<String, Double> returnedTerms = restTemplate.getForObject(url, HashMap.class);
             return returnedTerms;
         } catch (ResourceAccessException|HttpStatusCodeException e) {
             log.warn("Error calling learning service! Error: " + e.toString());
+            return new HashMap<>();
+        } catch (RestClientException e) {
+            log.error("Need to fix up the content headers", e);
             return new HashMap<>();
         }
     }
