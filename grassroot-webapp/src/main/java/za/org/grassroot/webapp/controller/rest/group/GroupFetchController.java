@@ -25,6 +25,7 @@ import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.MembershipFullDTO;
 import za.org.grassroot.core.dto.group.*;
+import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.PdfGeneratingService;
 import za.org.grassroot.integration.UrlShortener;
 import za.org.grassroot.integration.messaging.JwtService;
@@ -39,6 +40,7 @@ import za.org.grassroot.webapp.controller.rest.exception.FileCreationException;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.PermissionDTO;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
+import za.org.grassroot.webapp.model.web.AutoCompleteResponse;
 import za.org.grassroot.webapp.util.RestUtil;
 
 import javax.servlet.http.HttpServletRequest;
@@ -64,6 +66,7 @@ public class GroupFetchController extends BaseRestController {
     private final MemberDataExportBroker memberDataExportBroker;
     private final MessageSourceAccessor messageSourceAccessor;
     private final GroupBroker groupBroker;
+    private final UserManagementService userManagementService;
 
 
     private final UrlShortener urlShortener;
@@ -94,6 +97,7 @@ public class GroupFetchController extends BaseRestController {
         this.urlShortener = urlShortener;
         this.messageSourceAccessor = messageSourceAccessor;
         this.groupBroker = groupBroker;
+        this.userManagementService = userManagementService;
     }
 
     @RequestMapping(value = "/list")
@@ -268,6 +272,16 @@ public class GroupFetchController extends BaseRestController {
         } else
             return new ResponseEntity<>(permissions, HttpStatus.UNAUTHORIZED);
 
+    }
+
+    @RequestMapping(value = "/user/names", method = RequestMethod.GET)
+    public @ResponseBody List<AutoCompleteResponse> retrieveUserGraphNames(@RequestParam String fragment,
+                                                                           HttpServletRequest request) {
+        User user = getUserFromRequest(request);
+        return userManagementService.findOthersInGraph(user, fragment)
+                .stream()
+                .map(s -> new AutoCompleteResponse(PhoneNumberUtil.invertPhoneNumber(s[1]), s[0])) // phoneNumber as value, name as label
+                .collect(Collectors.toList());
     }
 
     private FileSystemResource generateFlyer(String groupUid, boolean color, Locale language, String typeOfFile) {
