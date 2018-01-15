@@ -1,5 +1,6 @@
 package za.org.grassroot.webapp.controller.rest.group;
 
+import com.google.common.collect.ImmutableMap;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.slf4j.Logger;
@@ -13,6 +14,7 @@ import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.dto.group.GroupFullDTO;
 import za.org.grassroot.core.dto.group.GroupRefDTO;
 import za.org.grassroot.core.dto.group.JoinWordDTO;
+import za.org.grassroot.core.enums.GroupDefaultImage;
 import za.org.grassroot.core.enums.GroupViewPriority;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.integration.messaging.JwtService;
@@ -25,13 +27,12 @@ import za.org.grassroot.services.group.GroupPermissionTemplate;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 import za.org.grassroot.webapp.enums.RestMessage;
+import za.org.grassroot.webapp.model.rest.PermissionDTO;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController @Grassroot2RestController
@@ -223,10 +224,70 @@ public class GroupModifyController extends GroupBaseController {
         }
     }
 
+    @RequestMapping(value = "/settings/{groupUid}", method = RequestMethod.POST)
+    @ApiOperation(value= "Modify setting for a group")
+    public ResponseEntity<ResponseWrapper> combinedEdits(@PathVariable String groupUid,
+                                                         @RequestParam(value = "name", required = false) String name,
+                                                         @RequestParam(value = "description", required = false) String description,
+                                                         @RequestParam(value = "resetImage", required = false) boolean resetToDefaultImage,
+                                                         @RequestParam(value = "dfltImageName", required = false) GroupDefaultImage defaultImage,
+                                                         @RequestParam(value = "isPublic", required = false) boolean isPublic,
+                                                         @RequestParam(value = "reminderMinutes", required = false) int reminderMinutes,
+                                                         @RequestParam(value = "closeJoinCode", required = false) boolean closeJoinCode,
+                                                         @RequestParam(value = "membersToRemove", required = false) Set<String> membersToRemove,
+                                                         @RequestParam(value = "organizersToAdd", required = false) Set<String> organizersToAdd,
+                                                         HttpServletRequest request) {
+
+        User user = getUserFromRequest(request);
+        try {
+            groupBroker.combinedEdits(user.getUid(), groupUid, name, description, resetToDefaultImage, defaultImage, isPublic,
+                    closeJoinCode, membersToRemove, organizersToAdd, reminderMinutes);
+            return RestUtil.messageOkayResponse(RestMessage.GROUP_SETTINGS_CHANGED);
+        } catch (AccessDeniedException e) {
+            return RestUtil.errorResponse(HttpStatus.FORBIDDEN, RestMessage.PERMISSION_DENIED);
+        }
+    }
+
+
+    @RequestMapping(value = "/permissions/update/{groupUid}", method = RequestMethod.POST)
+    @ApiOperation(value = "Update group permissions")
+    public ResponseEntity<ResponseWrapper> updatePermissions(@PathVariable String groupUid,
+                                                             @RequestBody HashMap<String, List<PermissionDTO>> updatedPermissionsByRole,
+                                                             HttpServletRequest request) {
+        User user = getUserFromRequest(request);
+        Group group = groupBroker.load(groupUid);
+        ResponseEntity<ResponseWrapper> response;
+
+        try {
+            for (String roleName : updatedPermissionsByRole.keySet()) {
+                Map<String, Set<Permission>> analyzedPerms = processUpdatedPermissions(group, roleName, updatedPermissionsByRole.get(roleName));
+                groupBroker.updateGroupPermissionsForRole(user.getUid(), groupUid, roleName, analyzedPerms.get("ADDED"), analyzedPerms.get("REMOVED"));
+            }
+            response = RestUtil.messageOkayResponse(RestMessage.PERMISSIONS_UPDATED);
+        } catch (AccessDeniedException e) {
+            response = RestUtil.accessDeniedResponse();
+        }
+        return response;
+    }
+
     private List<String> findInvalidNumbers(Set<MembershipInfo> members) {
         return members.stream().filter(m -> !m.hasValidPhoneNumber())
                 .map(MembershipInfo::getPhoneNumber)
                 .collect(Collectors.toList());
+    }
+
+    private Map<String, Set<Permission>> processUpdatedPermissions(Group group, String roleName, List<PermissionDTO> permissionDTOs) {
+        Set<Permission> currentPermissions = group.getRole(roleName).getPermissions();
+        Set<Permission> permissionsAdded = new HashSet<>();
+        Set<Permission> permissionsRemoved = new HashSet<>();
+        for (PermissionDTO p : permissionDTOs) {
+            if (currentPermissions.contains(p.getPermission()) && !p.isPermissionEnabled()) {
+                permissionsRemoved.add(p.getPermission());
+            } else if (!currentPermissions.contains(p.getPermission()) && p.isPermissionEnabled()) {
+                permissionsAdded.add(p.getPermission());
+            }
+        }
+        return ImmutableMap.of("ADDED", permissionsAdded, "REMOVED", permissionsRemoved);
     }
 
     @ExceptionHandler(NoMembershipInfoException.class)
