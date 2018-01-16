@@ -264,7 +264,6 @@ public class GroupStatsBrokerImpl implements GroupStatsBroker {
     @Override
     public Map<String, Integer> getMemberDetailsStats(String groupUid) {
 
-
         Cache cache = cacheManager.getCache("group_stats_member-details");
         String cacheKey = groupUid;
         Element element = cache.get(cacheKey);
@@ -272,7 +271,6 @@ public class GroupStatsBrokerImpl implements GroupStatsBroker {
 
         if (resultFromCache != null)
             return resultFromCache;
-
 
         List<Membership> memberships = membershipRepository.findAll(MembershipSpecifications.forGroup(groupUid));
 
@@ -306,7 +304,40 @@ public class GroupStatsBrokerImpl implements GroupStatsBroker {
         cache.put(new Element(cacheKey, results));
 
         return results;
+    }
 
+    @Override
+    public Map<String, Integer> getTopicInterestStats(String groupUid) {
+
+        Cache cache = cacheManager.getCache("group_stats_topic_interests");
+        String cacheKey = groupUid;
+        Element element = cache.get(cacheKey);
+        Map<String, Integer> resultFromCache = element != null ? (Map<String, Integer>) element.getObjectValue() : null;
+
+        if (resultFromCache != null)
+            return resultFromCache;
+
+        List<Membership> memberships = membershipRepository.findAll(MembershipSpecifications.forGroup(groupUid));
+
+        Map<String, Integer> topicInterests = new HashMap<>();
+
+        for (Membership membership : memberships) {
+            for (String topic : membership.getTopics()) {
+                int count = (topicInterests.containsKey(topic) ? topicInterests.get(topic) : 0) + 1;
+                topicInterests.put(topic, count);
+            }
+        }
+
+        double membersCount = memberships.size();
+        topicInterests.entrySet().forEach(entry -> {
+            if (membersCount > 0)
+                entry.setValue((int) (100 * entry.getValue() / membersCount));
+            else entry.setValue(0);
+        });
+
+        cache.put(new Element(cacheKey, topicInterests));
+
+        return topicInterests;
     }
 }
 
