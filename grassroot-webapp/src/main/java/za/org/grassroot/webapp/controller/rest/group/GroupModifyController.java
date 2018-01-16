@@ -177,7 +177,7 @@ public class GroupModifyController extends GroupBaseController {
         return ResponseEntity.ok().build();
     }
 
-    @RequestMapping(value = "members/modify/role/{groupUid}", method = RequestMethod.POST)
+    @RequestMapping(value = "/members/modify/role/{groupUid}", method = RequestMethod.POST)
     @ApiOperation(value = "Modify the role of a member in the group", notes = "Requires GROUP_PERMISSION_UPDATE_GROUP_DETAILS")
     public ResponseEntity<MembershipFullDTO> changeMemberRole(HttpServletRequest request, @PathVariable String groupUid,
                                                               @RequestParam String memberUid, @RequestParam String roleName) {
@@ -190,7 +190,7 @@ public class GroupModifyController extends GroupBaseController {
         }
     }
 
-    @RequestMapping(value = "members/modify/details/{groupUid}", method = RequestMethod.POST)
+    @RequestMapping(value = "/members/modify/details/{groupUid}", method = RequestMethod.POST)
     @ApiOperation(value = "Modify name, phone or email of a member", notes = "Request update details permission, and that member" +
             " being modified has not already set values themselves")
     public ResponseEntity changeMemberDetails(HttpServletRequest request, @PathVariable String groupUid,
