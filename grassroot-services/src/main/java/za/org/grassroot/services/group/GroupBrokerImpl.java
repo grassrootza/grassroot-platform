@@ -566,7 +566,19 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
             Membership membership = group.addMember(user, roleName, joinMethod, joinMethodDescriptor);
 
+            if (user.getProvince() == null && membershipInfo.getProvince() != null) {
+                user.setProvince(membershipInfo.getProvince());
+            }
+
             if (membership != null) {
+                if (membershipInfo.getTopics() != null) {
+                    membership.setTopics(new HashSet<>(membershipInfo.getTopics()));
+                }
+
+                if (membershipInfo.getAffiliations() != null) {
+                    membership.addAffiliations(new HashSet<>(membershipInfo.getAffiliations()));
+                }
+
                 memberships.add(membership);
             }
         }

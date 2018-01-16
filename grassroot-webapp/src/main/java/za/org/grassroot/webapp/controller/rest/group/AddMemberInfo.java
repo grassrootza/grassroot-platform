@@ -9,6 +9,7 @@ import lombok.Setter;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.dto.MembershipInfo;
+import za.org.grassroot.core.enums.Province;
 
 import java.util.List;
 
@@ -32,20 +33,27 @@ public class AddMemberInfo {
     private String emailAddress;
 
     @ApiModelProperty(notes = "Can be empty")
-    private String province;
+    private Province province;
 
     @ApiModelProperty(notes = "Can be empty")
-    private String topic;
+    private List<String> topics;
 
     @ApiModelProperty(notes = "Can be empty")
-    private String taskTeam;
+    private List<String> taskTeams;
 
     @ApiModelProperty(notes = "Can be empty")
-    private String affiliation;
+    private List<String> affiliations;
 
     protected MembershipInfo convertToMembershipInfo() {
-        return new MembershipInfo(memberMsisdn, StringUtils.isEmpty(roleName) ? BaseRoles.ROLE_ORDINARY_MEMBER : roleName,
-                displayName);
+        MembershipInfo info = new MembershipInfo();
+        info.setDisplayName(displayName);
+        info.setPhoneNumber(memberMsisdn);
+        info.setMemberEmail(emailAddress);
+        info.setRoleName(StringUtils.isEmpty(roleName) ? BaseRoles.ROLE_ORDINARY_MEMBER : roleName);
+        info.setProvince(province);
+        info.setTopics(topics != null && !topics.isEmpty() ? topics : null);
+        info.setAffiliations(affiliations != null && !affiliations.isEmpty() ? affiliations : null);
+        return info;
     }
 
     public AddMemberInfo(MembershipInfo membershipInfo) {

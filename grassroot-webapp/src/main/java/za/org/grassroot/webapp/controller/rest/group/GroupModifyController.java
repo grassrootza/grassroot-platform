@@ -119,8 +119,8 @@ public class GroupModifyController extends GroupBaseController {
     @ApiOperation(value = "Add members to a group", notes = "Adds members to the group, takes a set (can be a singleton) " +
             "of MembershipInfo, which requires a name, a phone number, and, optionally a role (can be ROLE_ORDINARY_MEMBER)")
     public ResponseEntity<GroupModifiedResponse> addMembersToGroup(HttpServletRequest request,
-                                                          @PathVariable String groupUid,
-                                                          @RequestBody Set<AddMemberInfo> membersToAdd) {
+                                                                   @PathVariable String groupUid,
+                                                                   @RequestBody Set<AddMemberInfo> membersToAdd) {
         logger.info("membersReceived = {}", membersToAdd != null ? membersToAdd.toString() : "null");
         if (membersToAdd == null) {
             throw new NoMembershipInfoException();

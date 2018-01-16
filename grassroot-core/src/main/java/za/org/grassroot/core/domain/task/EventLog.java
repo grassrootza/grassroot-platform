@@ -109,6 +109,10 @@ public class EventLog implements TaskLog, LocationHolder {
         return createdDateTime;
     }
 
+    public Instant getCreationTime() {
+        return createdDateTime;
+    }
+
     public User getUser() {
         return user;
     }

@@ -21,6 +21,7 @@ import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.specifications.GroupLogSpecifications;
 import za.org.grassroot.core.specifications.GroupSpecifications;
 import za.org.grassroot.core.specifications.MembershipSpecifications;
+import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
 
@@ -254,6 +255,24 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
         } else {
             return new PageImpl<>(new ArrayList<>());
         }
+    }
+
+    @Override
+    public List<ActionLog> fetchUserActivityDetails(String queryingUserUid, String groupUid, String memberUid) {
+        Group group = groupRepository.findOneByUid(groupUid);
+        User qUser = userRepository.findOneByUid(queryingUserUid);
+
+        permissionBroker.validateGroupPermission(qUser, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
+
+        User tUser = userRepository.findOneByUid(memberUid);
+
+        List<GroupLog> groupLogs = groupLogRepository.findAll(
+                GroupLogSpecifications.memberChangeRecords(group, DateTimeUtil.getEarliestInstant())
+                        .and(GroupLogSpecifications.containingUser(tUser)));
+
+        // and add a bunch more too ...
+
+        return groupLogs.stream().map(gl -> (ActionLog) gl).collect(Collectors.toList());
     }
 
     private List<GroupRefDTO> getSubgroups(Group group) {

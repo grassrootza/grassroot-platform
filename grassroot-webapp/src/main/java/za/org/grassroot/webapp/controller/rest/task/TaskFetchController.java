@@ -78,17 +78,13 @@ public class TaskFetchController extends BaseRestController {
     }
 
     @Timed
-    @RequestMapping(value = "/specified/{userUid}", method = RequestMethod.POST)
+    @RequestMapping(value = "/specified", method = RequestMethod.POST)
     @ApiOperation(value = "Full details on specified task", notes = "Fetches full details on tasks specified in the " +
             "map of tasks and their type")
-    public ResponseEntity<List<TaskFullDTO>> fetchSpecificTasks(@PathVariable String userUid,
-                                                                @RequestBody Map<String, TaskType> taskUidsAndTypes,
+    public ResponseEntity<List<TaskFullDTO>> fetchSpecificTasks(@RequestBody Map<String, TaskType> taskUidsAndTypes,
                                                                 HttpServletRequest request) {
-        String loggedInUserUid = getUserIdFromRequest(request);
-        if (userUid.equals(loggedInUserUid))
-            return ResponseEntity.ok(taskBroker.fetchSpecifiedTasks(userUid, taskUidsAndTypes, TaskSortType.TIME_CREATED));
-        else
-            return new ResponseEntity<>(Collections.emptyList(), HttpStatus.FORBIDDEN);
+        String userUid = getUserIdFromRequest(request);
+        return ResponseEntity.ok(taskBroker.fetchSpecifiedTasks(userUid, taskUidsAndTypes, TaskSortType.TIME_CREATED));
     }
 
     @Timed

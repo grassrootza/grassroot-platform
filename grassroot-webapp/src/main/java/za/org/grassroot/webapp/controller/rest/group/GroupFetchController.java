@@ -2,8 +2,6 @@ package za.org.grassroot.webapp.controller.rest.group;
 
 import com.codahale.metrics.annotation.Timed;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +18,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
+import za.org.grassroot.core.domain.ActionLog;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
@@ -38,6 +37,7 @@ import za.org.grassroot.webapp.controller.rest.BaseRestController;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 import za.org.grassroot.webapp.controller.rest.exception.FileCreationException;
 import za.org.grassroot.webapp.enums.RestMessage;
+import za.org.grassroot.webapp.model.rest.MemberActivityDTO;
 import za.org.grassroot.webapp.model.rest.PermissionDTO;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.model.web.AutoCompleteResponse;
@@ -67,7 +67,6 @@ public class GroupFetchController extends BaseRestController {
     private final MessageSourceAccessor messageSourceAccessor;
     private final GroupBroker groupBroker;
     private final UserManagementService userManagementService;
-
 
     private final UrlShortener urlShortener;
 
@@ -185,6 +184,19 @@ public class GroupFetchController extends BaseRestController {
             return ResponseEntity.ok(page);
         } else
             return new ResponseEntity<>((Page<MembershipFullDTO>) null, HttpStatus.FORBIDDEN);
+    }
+
+    @RequestMapping(value = "/members/activity/{groupUid}", method = RequestMethod.GET)
+    @ApiOperation(value = "Returns a detailed activity list for a member")
+    public List<MemberActivityDTO> getMemberActivty(@PathVariable String groupUid, @RequestParam String memberUid, HttpServletRequest request) {
+        String userUid = getUserIdFromRequest(request);
+        try {
+            List<ActionLog> actionLogs = groupFetchBroker.fetchUserActivityDetails(userUid, groupUid, memberUid);
+            return actionLogs.stream().map(al -> new MemberActivityDTO(memberUid, groupUid, al))
+                    .collect(Collectors.toList());
+        } catch (AccessDeniedException e) {
+            throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
+        }
     }
 
     @RequestMapping(value = "/export/{groupUid}", method = RequestMethod.GET)

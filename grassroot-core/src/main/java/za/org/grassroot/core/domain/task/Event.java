@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.Group;
+import za.org.grassroot.core.domain.TagHolder;
 import za.org.grassroot.core.domain.UidIdentifiable;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventType;
@@ -26,7 +27,7 @@ import java.util.Set;
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "type", discriminatorType = DiscriminatorType.STRING)
 public abstract class Event<P extends UidIdentifiable> extends AbstractEventEntity
-		implements TodoContainer, Task<P>, Serializable {
+		implements TodoContainer, Task<P>, Serializable, TagHolder {
 
 	private static final Logger logger = LoggerFactory.getLogger(Event.class);
 

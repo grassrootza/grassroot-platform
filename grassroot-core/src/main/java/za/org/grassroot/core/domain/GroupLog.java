@@ -78,6 +78,10 @@ public class GroupLog implements Serializable, ActionLog {
         this.description = description;
     }
 
+    public Instant getCreationTime() {
+        return createdDateTime;
+    }
+
     private void validateLogTypeNullTargets(GroupLogType type, User targetUser, Group targetSubGroup,
                                             Account targetAccount) {
         if (GroupLogType.targetUserChangeTypes.contains(type)) {
