@@ -31,6 +31,18 @@ public class AddMemberInfo {
     @ApiModelProperty(notes = "Can be null, but should only be one")
     private String emailAddress;
 
+    @ApiModelProperty(notes = "Can be empty")
+    private String province;
+
+    @ApiModelProperty(notes = "Can be empty")
+    private String topic;
+
+    @ApiModelProperty(notes = "Can be empty")
+    private String taskTeam;
+
+    @ApiModelProperty(notes = "Can be empty")
+    private String affiliation;
+
     protected MembershipInfo convertToMembershipInfo() {
         return new MembershipInfo(memberMsisdn, StringUtils.isEmpty(roleName) ? BaseRoles.ROLE_ORDINARY_MEMBER : roleName,
                 displayName);
