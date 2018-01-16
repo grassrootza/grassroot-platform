@@ -754,6 +754,57 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
     @Override
     @Transactional
+    public void updateMembershipDetails(String userUid, String groupUid, String memberUid, String name, String phone, String email, Province province) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(groupUid);
+        Objects.requireNonNull(memberUid);
+
+        User member = userRepository.findOneByUid(memberUid);
+        if (member.hasPassword() || member.isHasSetOwnName()) {
+            throw new IllegalArgumentException("Error - member has already set their own details");
+        }
+
+        User changingUser = userRepository.findOneByUid(userUid);
+        Group group = groupRepository.findOneByUid(groupUid);
+
+        try {
+            permissionBroker.validateGroupPermission(changingUser, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+        } catch (AccessDeniedException e) {
+            throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+        }
+
+        List<String> detailsChanged = new ArrayList<>();
+        if (province != null) {
+            member.setProvince(province);
+            detailsChanged.add("province: " + province);
+        }
+
+        if (!StringUtils.isEmpty(name)) {
+            member.setDisplayName(name);
+            detailsChanged.add("name: " + name);
+        }
+
+        if (!StringUtils.isEmpty(phone)) {
+            member.setPhoneNumber(PhoneNumberUtil.convertPhoneNumber(phone));
+            detailsChanged.add("phone: " + phone);
+        }
+
+        if (!StringUtils.isEmpty(email)) {
+            member.setEmailAddress(email);
+            detailsChanged.add("email: " + email);
+        }
+
+        if (!detailsChanged.isEmpty()) {
+            UserLog userLog = new UserLog(member.getUid(), UserLogType.DETAILS_CHANGED_BY_GROUP,
+                    changingUser.getUid() + " : " + String.join(", ", detailsChanged),
+                    UserInterfaceType.UNKNOWN);
+            logActionLogsAfterCommit(Collections.singleton(userLog));
+        }
+
+    }
+
+    @Override
+    @Transactional
     public void assignMembershipTopics(String userUid, String groupUid, String memberUid, Set<String> topics) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(groupUid);

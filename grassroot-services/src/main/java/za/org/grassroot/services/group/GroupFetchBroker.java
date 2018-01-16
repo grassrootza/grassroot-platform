@@ -32,6 +32,8 @@ public interface GroupFetchBroker {
 
     Page<MembershipFullDTO> fetchGroupMembers(User user, String groupUid, Pageable pageable);
 
+    MembershipFullDTO fetchGroupMember(String userUid, String groupUid, String memberUid);
+
     Page<Membership> fetchUserGroupsNewMembers(User user, Instant from, Pageable pageable);
 
     List<ActionLog> fetchUserActivityDetails(String queryingUserUid, String groupUid, String memberUid);

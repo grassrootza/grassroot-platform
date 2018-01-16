@@ -17,6 +17,7 @@ public class MembershipFullDTO {
     private final GroupJoinMethod joinMethod;
     private final String joinMethodDescriptor;
     private final List<String> affiliations;
+    private final boolean canEditDetails;
 
     public MembershipFullDTO(Membership membership) {
         this.user = new UserFullDTO(membership.getUser());
@@ -26,5 +27,6 @@ public class MembershipFullDTO {
         this.joinMethod = membership.getJoinMethod();
         this.joinMethodDescriptor = membership.getJoinMethodDescriptor().orElse("");
         this.affiliations = membership.getAffiliations();
+        this.canEditDetails = !(membership.getUser().hasPassword() || membership.getUser().isHasSetOwnName());
     }
 }

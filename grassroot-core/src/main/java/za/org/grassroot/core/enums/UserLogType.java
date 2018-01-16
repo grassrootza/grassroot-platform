@@ -18,6 +18,7 @@ public enum UserLogType {
     USER_PHONE_CHANGED("User changed their phone number"),
     USER_DETAILS_CHANGED("User changed non-sensitive details"),
     DETAILS_CHANGED_ON_JOIN("User changed some details while joining a group"),
+    DETAILS_CHANGED_BY_GROUP("Group organizer changed user details"),
 
     CHANGED_LANGUAGE("user changed their language"),
     ADDED_ADDRESS("user added address"),

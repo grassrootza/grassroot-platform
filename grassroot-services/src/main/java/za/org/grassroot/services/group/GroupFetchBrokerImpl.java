@@ -234,7 +234,6 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
 
     @Override
     public Page<MembershipFullDTO> fetchGroupMembers(User user, String groupUid, Pageable pageable) {
-
         Objects.requireNonNull(groupUid);
         Group group = groupRepository.findOneByUid(groupUid);
         try {
@@ -244,6 +243,21 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
         }
         Page<Membership> members = membershipRepository.findByGroupUid(group.getUid(), pageable);
         return members.map(MembershipFullDTO::new);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public MembershipFullDTO fetchGroupMember(String userUid, String groupUid, String memberUid) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(groupUid);
+        User user = userRepository.findOneByUid(userUid);
+        Group group = groupRepository.findOneByUid(groupUid);
+        try {
+            permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
+        } catch (AccessDeniedException e) {
+            throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
+        }
+        return new MembershipFullDTO(membershipRepository.findByGroupUidAndUserUid(groupUid, memberUid));
     }
 
     @Override
