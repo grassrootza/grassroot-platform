@@ -286,14 +286,16 @@ public class GroupFetchController extends BaseRestController {
 
     }
 
-    @RequestMapping(value = "/user/names", method = RequestMethod.GET)
-    public @ResponseBody List<AutoCompleteResponse> retrieveUserGraphNames(@RequestParam String fragment,
-                                                                           HttpServletRequest request) {
-        User user = getUserFromRequest(request);
-        return userManagementService.findOthersInGraph(user, fragment)
-                .stream()
-                .map(s -> new AutoCompleteResponse(PhoneNumberUtil.invertPhoneNumber(s[1]), s[0])) // phoneNumber as value, name as label
-                .collect(Collectors.toList());
+    @RequestMapping(value = "member/{groupUid}", method = RequestMethod.GET)
+    @ApiOperation(value = "Fetch group member by memberUid", notes = "Requires GROUP_PERMISSION_SEE_MEMBER_DETAILS")
+    public ResponseEntity<MembershipFullDTO> fetchMemberByMemberUid(HttpServletRequest request, @PathVariable String groupUid,
+                                                                    @RequestParam String memberUid) {
+        try {
+            String userId = getUserIdFromRequest(request);
+            return ResponseEntity.ok(groupFetchBroker.fetchGroupMember(userId, groupUid, memberUid));
+        } catch (AccessDeniedException e) {
+            throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+        }
     }
 
     private FileSystemResource generateFlyer(String groupUid, boolean color, Locale language, String typeOfFile) {
