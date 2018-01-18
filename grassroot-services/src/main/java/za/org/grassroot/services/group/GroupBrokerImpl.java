@@ -356,7 +356,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
                                        String email, Province province, List<String> topics, UserInterfaceType interfaceType) {
         Objects.requireNonNull(groupUid);
         Objects.requireNonNull(code);
-        if (userUid == null && phone == null && email == null) {
+        if (StringUtils.isEmpty(userUid) && StringUtils.isEmpty(phone) && StringUtils.isEmpty(email)) {
             throw new IllegalArgumentException("Error! At least one out of user Id, phone or email must be non-empty");
         }
 
@@ -378,7 +378,8 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
             userExists = joiningUser != null;
             if (!userExists) {
-                joiningUser = new User(msisdn, name, email);
+                // have to do these as otherwise an empty string might trigger uniqueness constraint
+                joiningUser = new User(StringUtils.isEmpty(msisdn) ? null : msisdn, name, StringUtils.isEmpty(email) ? null : email);
                 userRepository.saveAndFlush(joiningUser);
             }
         }
@@ -408,7 +409,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
     private void selfJoinViaCode(User user, Group group, GroupJoinMethod joinMethod, String code, List<String> topics, Set<UserLog> userLogs) {
         logger.info("Adding a member via token code: code={}, group={}, user={}", code, group, user);
-        Membership membership = group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.SELF_JOINED, code);
+        Membership membership = group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, joinMethod, code);
         if (topics != null) {
             membership.setTopics(new HashSet<>(topics));
         }
@@ -433,6 +434,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
     }
 
     private GroupJoinMethod getJoinMethodFromInterface(UserInterfaceType interfaceType) {
+        logger.info("returning join method from interface: {}", interfaceType);
         switch (interfaceType) {
             case UNKNOWN:
                 return GroupJoinMethod.JOIN_CODE_OTHER;
