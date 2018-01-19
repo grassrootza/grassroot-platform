@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.MembershipFullDTO;
 import za.org.grassroot.core.dto.group.*;
+import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.repository.GroupLogRepository;
 import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.MembershipRepository;
@@ -246,6 +247,29 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
     }
 
     @Override
+    public List<MembershipFullDTO> filterGroupMembers(User user, String groupUid, Collection<Province> provinces, Collection<String> taskTeams, Collection<String> topics) {
+        Objects.requireNonNull(groupUid);
+        Group group = groupRepository.findOneByUid(groupUid);
+
+        Set<Group> groupTaskTeams = new HashSet<>();
+        if(taskTeams != null && taskTeams.size() > 0){
+            groupTaskTeams = groupRepository.findByUidIn((Set<String>) taskTeams);
+        }
+        try{
+            permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
+        }catch (AccessDeniedException e) {
+            throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
+        }
+        List<Membership> members = membershipRepository.findAll(MembershipSpecifications.filterGroupMembership(group, provinces, groupTaskTeams, topics));
+        if(topics != null && topics.size() > 0){
+            members = members.stream()
+            .filter(m -> m.getTopics().containsAll(topics))
+            .collect(Collectors.toList());
+        }
+        return members.stream().map(MembershipFullDTO::new).collect(Collectors.toList());
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public MembershipFullDTO fetchGroupMember(String userUid, String groupUid, String memberUid) {
         Objects.requireNonNull(userUid);
@@ -269,6 +293,11 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
         } else {
             return new PageImpl<>(new ArrayList<>());
         }
+    }
+
+    @Override
+    public Group fetchGroupByGroupUid(String groupUid) {
+       return groupRepository.findOneByUid(groupUid);
     }
 
     @Override

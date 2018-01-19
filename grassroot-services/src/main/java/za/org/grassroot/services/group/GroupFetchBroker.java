@@ -4,12 +4,15 @@ package za.org.grassroot.services.group;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import za.org.grassroot.core.domain.ActionLog;
+import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Membership;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.MembershipFullDTO;
 import za.org.grassroot.core.dto.group.*;
+import za.org.grassroot.core.enums.Province;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -36,6 +39,10 @@ public interface GroupFetchBroker {
 
     Page<Membership> fetchUserGroupsNewMembers(User user, Instant from, Pageable pageable);
 
+    Group fetchGroupByGroupUid(String groupUid);
+
     List<ActionLog> fetchUserActivityDetails(String queryingUserUid, String groupUid, String memberUid);
+
+    List<MembershipFullDTO> filterGroupMembers(User user, String groupUid, Collection<Province> provinces, Collection<String> taskTeams, Collection<String> topics);
 
 }

@@ -167,6 +167,28 @@ public class GroupModifyController extends GroupBaseController {
         }
     }
 
+    @RequestMapping(value = "/create/taskteam/{parentUid}", method = RequestMethod.POST)
+    @ApiOperation(value = "Create a task team / subgroup (of the 'parent' group) and add members to it",
+            notes = "Returns the modified task team / subgroup in full")
+    public ResponseEntity<GroupFullDTO> createTaskTeam(HttpServletRequest request,
+                                                       @PathVariable String parentUid,
+                                                       @RequestParam String taskTeamName,
+                                                       @RequestParam Set<String> memberUids) {
+        try {
+            Group parentGroup = groupFetchBroker.fetchGroupByGroupUid(parentUid);
+            Set<Membership> groupMemberships = parentGroup.getMemberships()
+                    .stream()
+                    .filter(membership -> memberUids.contains(membership.getUser().getUid())).collect(Collectors.toSet());
+
+            Set<MembershipInfo> membershipInfos = MembershipInfo.createFromMembers(groupMemberships);
+            groupBroker.create(getUserIdFromRequest(request), taskTeamName, parentUid, membershipInfos,
+                    GroupPermissionTemplate.DEFAULT_GROUP, null, null, false);
+            return ResponseEntity.ok().build();
+        } catch (AccessDeniedException e) {
+            throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+        }
+    }
+
     @RequestMapping(value = "members/add/topics/{groupUid}", method = RequestMethod.POST)
     @ApiOperation(value = "Assign topic(s) - special tags - to a member")
     public ResponseEntity<GroupFullDTO> assignTopicsToMember(HttpServletRequest request, @PathVariable String groupUid,

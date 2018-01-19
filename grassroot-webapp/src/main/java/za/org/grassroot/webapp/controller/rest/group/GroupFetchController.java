@@ -24,6 +24,7 @@ import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.MembershipFullDTO;
 import za.org.grassroot.core.dto.group.*;
+import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.util.PhoneNumberUtil;
 import za.org.grassroot.integration.PdfGeneratingService;
 import za.org.grassroot.integration.UrlShortener;
@@ -169,6 +170,17 @@ public class GroupFetchController extends BaseRestController {
     public Page<MembershipFullDTO> fetchGroupMembers(@RequestParam String groupUid, Pageable pageable, HttpServletRequest request) {
         User user = getUserFromRequest(request);
         return groupFetchBroker.fetchGroupMembers(user, groupUid, pageable);
+    }
+
+    @RequestMapping(value = "/members/filter", method = RequestMethod.GET)
+    public List<MembershipFullDTO> filterGroupMembers(@RequestParam String groupUid,
+                                                      @RequestParam (required = false) Collection<Province> provinces,
+                                                      @RequestParam (required = false) Collection<String> taskTeams,
+                                                      @RequestParam (required = false) Collection<String> topics,
+                                                      HttpServletRequest request) {
+        User user = getUserFromRequest(request);
+        List<MembershipFullDTO> members = groupFetchBroker.filterGroupMembers(user, groupUid,provinces, taskTeams, topics);
+        return members;
     }
 
     @RequestMapping(value = "/members/new", method = RequestMethod.GET)
