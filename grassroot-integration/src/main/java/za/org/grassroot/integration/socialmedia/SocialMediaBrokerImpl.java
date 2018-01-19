@@ -72,7 +72,7 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
             ResponseEntity<ManagedPagesResponse> response = restTemplate.exchange(uri, HttpMethod.GET, new HttpEntity<>(jwtHeaders()), ManagedPagesResponse.class);
             return handleResponse(response, providerId);
         } catch (RestClientException e) {
-            log.error("Error calling social media service! Exception looks like: {}", e);
+            log.error("Error calling social media service! Exception header: {}", e.getMessage());
             return new ManagedPagesResponse();
         }
     }
