@@ -168,6 +168,14 @@ public class NotificationDTO {
         return createdDatetime;
     }
 
+    public void setCreatedDatetime(String createdDatetime) {
+        this.createdDatetime = createdDatetime;
+    }
+
+    public void setDeadlineDateTime(String deadlineDateTime) {
+        this.deadlineDateTime = deadlineDateTime;
+    }
+
     public String getNotificationType() {
         return notificationType;
     }

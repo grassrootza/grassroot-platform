@@ -21,6 +21,8 @@ public interface CampaignRepository extends JpaRepository<Campaign, Long>, JpaSp
 
     List<Campaign> findByCreatedByUser(User createdByUser, Sort sort);
 
+    List<Campaign> findByMasterGroupUid(String groupUid, Sort sort);
+
     @Query(value = "select * from campaign where ?1 = ANY(tags) and end_date_time::date > now()", nativeQuery = true)
     Campaign findActiveCampaignByTag(String tag);
 

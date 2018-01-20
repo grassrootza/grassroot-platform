@@ -18,6 +18,8 @@ public interface CampaignBroker {
 
     List<Campaign> getCampaignsCreatedByUser(String userUid);
 
+    List<Campaign> getCampaignsCreatedLinkedToGroup(String groupUid);
+
     Campaign getCampaignDetailsByCode(String campaignCode, String userUid, boolean storeLog);
     Campaign getCampaignDetailsByName(String campaignName, String userUid, boolean storeLog);
 

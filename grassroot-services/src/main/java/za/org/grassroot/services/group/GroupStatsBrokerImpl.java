@@ -23,7 +23,10 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 
@@ -208,7 +211,6 @@ public class GroupStatsBrokerImpl implements GroupStatsBroker {
     @Override
     public Map<String, Long> getSourcesStats(String groupUid) {
 
-
         Cache cache = cacheManager.getCache("group_stats_sources");
         String cacheKey = groupUid;
         Element element = cache.get(cacheKey);
@@ -252,7 +254,7 @@ public class GroupStatsBrokerImpl implements GroupStatsBroker {
 
         List<Membership> memberships = membershipRepository.findAll(MembershipSpecifications.forGroup(groupUid));
         //todo implement logic here
-        Map<String, Long> data = new HashMap<>();
+        Map<String, Long> data = new LinkedHashMap<>();
         data.put("Other", (long) memberships.size());
 
         cache.put(new Element(cacheKey, data));
@@ -292,7 +294,7 @@ public class GroupStatsBrokerImpl implements GroupStatsBroker {
             hasTwitter += currentIntegrations.containsKey("twitter") ? 1 : 0;
         }
 
-        Map<String, Integer> results = new HashMap<>();
+        Map<String, Integer> results = new LinkedHashMap<>();
 
         results.put("EMAIL", memberships.size() > 0 ? (int) ((hasEmail / memberships.size()) * 100) : 0);
         results.put("PHONE", memberships.size() > 0 ? (int) ((hasPhoneNumber / memberships.size()) * 100) : 0);
@@ -319,7 +321,7 @@ public class GroupStatsBrokerImpl implements GroupStatsBroker {
 
         List<Membership> memberships = membershipRepository.findAll(MembershipSpecifications.forGroup(groupUid));
 
-        Map<String, Integer> topicInterests = new HashMap<>();
+        Map<String, Integer> topicInterests = new LinkedHashMap<>();
 
         for (Membership membership : memberships) {
             for (String topic : membership.getTopics()) {

@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.stereotype.Service;
@@ -92,4 +93,8 @@ public class NotificationManager implements NotificationService{
         return notificationRepository.findAll(specs);
     }
 
+    @Override
+    public List<Notification> fetchUnreadUserNotifications(User target, Sort sort) {
+        return notificationRepository.findAll(NotificationSpecifications.unReadUserNotifications(target), sort);
+    }
 }

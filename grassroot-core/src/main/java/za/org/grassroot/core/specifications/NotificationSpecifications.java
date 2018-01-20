@@ -7,10 +7,6 @@ import za.org.grassroot.core.domain.account.Account;
 import za.org.grassroot.core.domain.account.AccountLog;
 import za.org.grassroot.core.domain.account.AccountLog_;
 import za.org.grassroot.core.domain.task.*;
-import za.org.grassroot.core.domain.task.EventLog_;
-import za.org.grassroot.core.domain.task.Event_;
-import za.org.grassroot.core.domain.task.TodoLog_;
-import za.org.grassroot.core.domain.task.Todo_;
 import za.org.grassroot.core.enums.AccountLogType;
 import za.org.grassroot.core.enums.DeliveryRoute;
 
@@ -91,6 +87,24 @@ public final class NotificationSpecifications {
 
     public static Specification<Notification> forDeliveryChannel(DeliveryRoute deliveryChannel) {
         return (root, query, cb) -> cb.equal(root.get(Notification_.deliveryChannel), deliveryChannel);
+    }
+
+
+    public static Specifications<Notification> unReadUserNotifications(User target) {
+        return Specifications.where(unReadNotifications()).and(toUser(target));
+    }
+
+
+    public static Specification<Notification> unReadNotifications() {
+
+        List<NotificationStatus> unreadStatuses = Arrays.asList(
+                NotificationStatus.READY_FOR_SENDING,
+                NotificationStatus.SENDING,
+                NotificationStatus.SENT,
+                NotificationStatus.DELIVERY_FAILED,
+                NotificationStatus.UNDELIVERABLE);
+
+        return (root, query, cb) -> root.get(Notification_.status).in(unreadStatuses);
     }
 
 }
