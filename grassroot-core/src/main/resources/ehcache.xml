@@ -67,5 +67,22 @@
            timeToIdleSeconds="900">
     </cache>
 
+    <cache name="group_stats_member-details"
+           maxEntriesLocalHeap="2000"
+           eternal="false"
+           timeToIdleSeconds="900">
+    </cache>
+
+    <cache name="group_stats_topic_interests"
+           maxEntriesLocalHeap="2000"
+           eternal="false"
+           timeToIdleSeconds="900">
+    </cache>
+
+    <cache name="user_notifications"
+           maxEntriesLocalHeap="2000"
+           eternal="false"
+           timeToIdleSeconds="10">
+    </cache>
 
 </ehcache>

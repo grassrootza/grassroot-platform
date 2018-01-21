@@ -102,4 +102,6 @@ public interface UserManagementService {
 
     List<String[]> findOthersInGraph(User user, String nameFragment);
 
+    List<User> findRelatedUsers(User user, String nameFragment);
+
 }

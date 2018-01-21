@@ -6,7 +6,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -24,6 +23,8 @@ import za.org.grassroot.core.repository.GroupRepository;
 import za.org.grassroot.core.repository.RoleRepository;
 import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.core.repository.UserRequestRepository;
+import za.org.grassroot.core.specifications.GroupSpecifications;
+import za.org.grassroot.core.specifications.UserSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.core.util.PhoneNumberUtil;
@@ -42,9 +43,6 @@ import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
-
-import static za.org.grassroot.core.specifications.UserSpecifications.inGroups;
-import static za.org.grassroot.core.specifications.UserSpecifications.nameContains;
 
 /**
  * @author Lesetse Kimwaga
@@ -605,15 +603,18 @@ public class UserManager implements UserManagementService, UserDetailsService {
     @Override
     @Transactional(readOnly = true)
     public List<String[]> findOthersInGraph(User user, String nameFragment) {
-        // todo : fix this causing errors when groups is empty (and also profile that collection call on getGroups)
-        // note : there is probably a way to avoid the getGroups and use criteria builder on a join
-        List<User> records = userRepository.findAll(Specifications.where(
-                nameContains(nameFragment)).and(
-                inGroups(user.getGroups())));
+        List<Group> groups = groupRepository.findAll(GroupSpecifications.userIsMemberAndCanSeeMembers(user));
+        List<User> records = userRepository.findAll(UserSpecifications.withNameInGroups(nameFragment, groups));
 
         return records.stream()
                 .map(u -> new String[] { u.getDisplayName(), u.getPhoneNumber() })
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<User> findRelatedUsers(User user, String nameFragment) {
+        List<Group> groups = groupRepository.findAll(GroupSpecifications.userIsMemberAndCanSeeMembers(user));
+        return userRepository.findAll(UserSpecifications.withNameInGroups(nameFragment, groups));
     }
 
     @Override

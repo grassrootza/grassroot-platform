@@ -6,7 +6,6 @@ import za.org.grassroot.core.domain.Membership;
 import za.org.grassroot.core.dto.group.GroupMinimalDTO;
 
 import java.util.List;
-import java.util.Optional;
 
 @Getter
 public class MembershipFullDTO {
@@ -17,6 +16,8 @@ public class MembershipFullDTO {
     private final List<String> topics;
     private final GroupJoinMethod joinMethod;
     private final String joinMethodDescriptor;
+    private final List<String> affiliations;
+    private final boolean canEditDetails;
 
     public MembershipFullDTO(Membership membership) {
         this.user = new UserFullDTO(membership.getUser());
@@ -24,7 +25,8 @@ public class MembershipFullDTO {
         this.roleName = membership.getRole().getName();
         this.topics = membership.getTopics();
         this.joinMethod = membership.getJoinMethod();
-        this.joinMethodDescriptor = membership.getTagList().stream()
-                .filter(s -> s.startsWith(Membership.JOIN_METHOD_DESCRIPTOR_TAG)).findFirst().orElse(null);
+        this.joinMethodDescriptor = membership.getJoinMethodDescriptor().orElse("");
+        this.affiliations = membership.getAffiliations();
+        this.canEditDetails = !(membership.getUser().hasPassword() || membership.getUser().isHasSetOwnName());
     }
 }

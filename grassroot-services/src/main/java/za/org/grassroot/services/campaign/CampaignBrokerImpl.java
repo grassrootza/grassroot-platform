@@ -66,6 +66,11 @@ public class CampaignBrokerImpl implements CampaignBroker {
     }
 
     @Override
+    public List<Campaign> getCampaignsCreatedLinkedToGroup(String groupUid) {
+        return campaignRepository.findByMasterGroupUid(groupUid, new Sort("createdDateTime"));
+    }
+
+    @Override
     @Transactional
     public Campaign getCampaignDetailsByCode(String campaignCode, String userUid, boolean storeLog){
         Objects.requireNonNull(campaignCode);

@@ -13,4 +13,9 @@ public interface GroupStatsBroker {
     Map<String, Long> getSourcesStats(String groupUid);
 
     Map<String, Long> getOrganisationsStats(String groupUid);
+
+    Map<String, Integer> getMemberDetailsStats(String groupUid);
+
+    Map<String, Integer> getTopicInterestStats(String groupUid);
+
 }

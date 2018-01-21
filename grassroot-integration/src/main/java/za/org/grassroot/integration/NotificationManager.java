@@ -1,9 +1,13 @@
 package za.org.grassroot.integration;
 
 import lombok.extern.slf4j.Slf4j;
+import net.sf.ehcache.Cache;
+import net.sf.ehcache.CacheManager;
+import net.sf.ehcache.Element;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.stereotype.Service;
@@ -34,11 +38,15 @@ public class NotificationManager implements NotificationService{
 
     private final UserRepository userRepository;
     private final NotificationRepository notificationRepository;
+    private final CacheManager cacheManager;
 
     @Autowired
-    public NotificationManager(UserRepository userRepository, NotificationRepository notificationRepository) {
+    public NotificationManager(UserRepository userRepository,
+                               NotificationRepository notificationRepository,
+                               CacheManager cacheManager) {
         this.userRepository = userRepository;
         this.notificationRepository = notificationRepository;
+        this.cacheManager = cacheManager;
     }
 
     @Override
@@ -92,4 +100,18 @@ public class NotificationManager implements NotificationService{
         return notificationRepository.findAll(specs);
     }
 
+    @Override
+    public List<Notification> fetchUnreadUserNotifications(User target, Sort sort) {
+
+        // cache is here just to ensure that DB will not be queried more then once in 10 second even if someone try that from client side
+        Cache cache = cacheManager.getCache("user_notifications");
+        String cacheKey = target.getUid();
+        Element element = cache.get(cacheKey);
+        List<Notification> resultFromCache = element != null ? (List<Notification>) element.getObjectValue() : null;
+
+        if (resultFromCache != null)
+            return resultFromCache;
+
+        return notificationRepository.findAll(NotificationSpecifications.unReadUserNotifications(target), sort);
+    }
 }

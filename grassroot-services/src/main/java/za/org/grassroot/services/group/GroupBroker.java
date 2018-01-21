@@ -68,6 +68,9 @@ public interface GroupBroker {
 
     void updateMembershipRole(String userUid, String groupUid, String memberUid, String roleName);
 
+    void updateMembershipDetails(String userUid, String groupUid, String memberUid, String name, String phone, String email,
+                                 Province province);
+
     // note: only accepts topics that are from the group itself
     void assignMembershipTopics(String userUid, String groupUid, String memberUid, Set<String> topics);
 

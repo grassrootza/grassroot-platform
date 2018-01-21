@@ -2,8 +2,6 @@ package za.org.grassroot.webapp.controller.rest.group;
 
 import com.codahale.metrics.annotation.Timed;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
@@ -20,13 +18,14 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
+import za.org.grassroot.core.domain.ActionLog;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.MembershipFullDTO;
 import za.org.grassroot.core.dto.group.*;
+import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.integration.PdfGeneratingService;
-import za.org.grassroot.integration.UrlShortener;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
 import za.org.grassroot.services.group.GroupBroker;
@@ -37,6 +36,7 @@ import za.org.grassroot.webapp.controller.rest.BaseRestController;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 import za.org.grassroot.webapp.controller.rest.exception.FileCreationException;
 import za.org.grassroot.webapp.enums.RestMessage;
+import za.org.grassroot.webapp.model.rest.MemberActivityDTO;
 import za.org.grassroot.webapp.model.rest.PermissionDTO;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
@@ -65,9 +65,6 @@ public class GroupFetchController extends BaseRestController {
     private final MessageSourceAccessor messageSourceAccessor;
     private final GroupBroker groupBroker;
 
-
-    private final UrlShortener urlShortener;
-
     private final static ImmutableMap<Permission, Integer> permissionsDisplayed = ImmutableMap.<Permission, Integer>builder()
             .put(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS, 1)
             .put(Permission.GROUP_PERMISSION_CREATE_GROUP_MEETING, 2)
@@ -85,13 +82,12 @@ public class GroupFetchController extends BaseRestController {
 
     public GroupFetchController(GroupFetchBroker groupFetchBroker, JwtService jwtService,
                                 UserManagementService userManagementService, PdfGeneratingService generatingService,
-                                MemberDataExportBroker memberDataExportBroker, UrlShortener urlShortener,
-                                MessageSourceAccessor messageSourceAccessor, GroupBroker groupBroker) {
+                                MemberDataExportBroker memberDataExportBroker, MessageSourceAccessor messageSourceAccessor,
+                                GroupBroker groupBroker) {
         super(jwtService, userManagementService);
         this.groupFetchBroker = groupFetchBroker;
         this.generatingService = generatingService;
         this.memberDataExportBroker = memberDataExportBroker;
-        this.urlShortener = urlShortener;
         this.messageSourceAccessor = messageSourceAccessor;
         this.groupBroker = groupBroker;
     }
@@ -168,6 +164,17 @@ public class GroupFetchController extends BaseRestController {
         return groupFetchBroker.fetchGroupMembers(user, groupUid, pageable);
     }
 
+    @RequestMapping(value = "/members/filter", method = RequestMethod.GET)
+    public List<MembershipFullDTO> filterGroupMembers(@RequestParam String groupUid,
+                                                      @RequestParam (required = false) Collection<Province> provinces,
+                                                      @RequestParam (required = false) Collection<String> taskTeams,
+                                                      @RequestParam (required = false) Collection<String> topics,
+                                                      HttpServletRequest request) {
+        User user = getUserFromRequest(request);
+        List<MembershipFullDTO> members = groupFetchBroker.filterGroupMembers(user, groupUid,provinces, taskTeams, topics);
+        return members;
+    }
+
     @RequestMapping(value = "/members/new", method = RequestMethod.GET)
     @ApiOperation(value = "Returns members joined recently to groups where logged in user has permission to see member details")
     public ResponseEntity<Page<MembershipFullDTO>> getRecentlyJoinedUsers(@RequestParam(required = false) Integer howRecentInDays, HttpServletRequest request, Pageable pageable) {
@@ -181,6 +188,19 @@ public class GroupFetchController extends BaseRestController {
             return ResponseEntity.ok(page);
         } else
             return new ResponseEntity<>((Page<MembershipFullDTO>) null, HttpStatus.FORBIDDEN);
+    }
+
+    @RequestMapping(value = "/members/activity/{groupUid}", method = RequestMethod.GET)
+    @ApiOperation(value = "Returns a detailed activity list for a member")
+    public List<MemberActivityDTO> getMemberActivty(@PathVariable String groupUid, @RequestParam String memberUid, HttpServletRequest request) {
+        String userUid = getUserIdFromRequest(request);
+        try {
+            List<ActionLog> actionLogs = groupFetchBroker.fetchUserActivityDetails(userUid, groupUid, memberUid);
+            return actionLogs.stream().map(al -> new MemberActivityDTO(memberUid, groupUid, al))
+                    .collect(Collectors.toList());
+        } catch (AccessDeniedException e) {
+            throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
+        }
     }
 
     @RequestMapping(value = "/export/{groupUid}", method = RequestMethod.GET)
@@ -268,6 +288,18 @@ public class GroupFetchController extends BaseRestController {
         } else
             return new ResponseEntity<>(permissions, HttpStatus.UNAUTHORIZED);
 
+    }
+
+    @RequestMapping(value = "member/{groupUid}", method = RequestMethod.GET)
+    @ApiOperation(value = "Fetch group member by memberUid", notes = "Requires GROUP_PERMISSION_SEE_MEMBER_DETAILS")
+    public ResponseEntity<MembershipFullDTO> fetchMemberByMemberUid(HttpServletRequest request, @PathVariable String groupUid,
+                                                                    @RequestParam String memberUid) {
+        try {
+            String userId = getUserIdFromRequest(request);
+            return ResponseEntity.ok(groupFetchBroker.fetchGroupMember(userId, groupUid, memberUid));
+        } catch (AccessDeniedException e) {
+            throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+        }
     }
 
     private FileSystemResource generateFlyer(String groupUid, boolean color, Locale language, String typeOfFile) {

@@ -2,6 +2,7 @@ package za.org.grassroot.webapp.model.rest;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.google.common.collect.Sets;
+import lombok.extern.slf4j.Slf4j;
 import za.org.grassroot.core.domain.Notification;
 import za.org.grassroot.core.domain.notification.EventNotification;
 import za.org.grassroot.core.domain.notification.TodoNotification;
@@ -23,10 +24,9 @@ import java.util.regex.Pattern;
 /**
  * Created by paballo on 2016/04/13.
  */
+@Slf4j
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class NotificationDTO {
-
-    // private static final Logger logger = LoggerFactory.getLogger(NotificationDTO.class);
 
     private final String uid; // i.e., uid of the notification itself
     private final String notificationType;
@@ -48,7 +48,7 @@ public class NotificationDTO {
     private String changeType;
 
     // should start including join request notifications & rsvp totals at some point
-    public static final Set<NotificationDetailedType> notificationsForAndroidList =
+    private static final Set<NotificationDetailedType> notificationsForAndroidList =
             Collections.unmodifiableSet(Sets.newHashSet(
                     NotificationDetailedType.TODO_INFO,
                     NotificationDetailedType.TODO_REMINDER,
@@ -91,7 +91,7 @@ public class NotificationDTO {
         this.defaultImage = task.getAncestorGroup().getDefaultImage().toString();
     }
 
-    public NotificationDTO(Notification notification, Event event) {
+    private NotificationDTO(Notification notification, Event event) {
         this(notification, (Task) event);
 
         this.entityUid = event.getUid();
@@ -104,7 +104,7 @@ public class NotificationDTO {
                 notification.getEventLog().getEventLogType().toString();
     }
 
-    public NotificationDTO(Notification notification, Todo todo){
+    private NotificationDTO(Notification notification, Todo todo){
         this(notification, (Task) todo);
 
         this.entityUid = todo.getUid();
@@ -166,6 +166,14 @@ public class NotificationDTO {
 
     public String getCreatedDatetime() {
         return createdDatetime;
+    }
+
+    public void setCreatedDatetime(String createdDatetime) {
+        this.createdDatetime = createdDatetime;
+    }
+
+    public void setDeadlineDateTime(String deadlineDateTime) {
+        this.deadlineDateTime = deadlineDateTime;
     }
 
     public String getNotificationType() {

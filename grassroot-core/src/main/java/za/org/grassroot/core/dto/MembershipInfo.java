@@ -22,7 +22,7 @@ import java.util.*;
  * Only phone number is required.
  */
 @ApiModel(value = "MembershipInfo", description = "Set of information, principally name, phone number and/or email")
-@Getter @Setter // need to add setters so that Thymeleaf can fill the entities
+@Getter @Setter
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class MembershipInfo implements Comparable<MembershipInfo> {
 
@@ -40,6 +40,7 @@ public class MembershipInfo implements Comparable<MembershipInfo> {
     protected Province province;
 
     protected List<String> topics;
+    protected List<String> affiliations;
 
     public MembershipInfo() {
         // need empty constructor for Spring MVC form submission, and for the Excel parsing
