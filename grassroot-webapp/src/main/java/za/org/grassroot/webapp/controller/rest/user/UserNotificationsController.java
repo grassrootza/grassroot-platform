@@ -47,7 +47,10 @@ public class UserNotificationsController extends BaseRestController {
             return new ResponseEntity<>((List<NotificationDTO>) null, HttpStatus.UNAUTHORIZED);
 
         List<Notification> notifications = notificationService.fetchUnreadUserNotifications(loggedInUser, new Sort(Sort.Direction.DESC, "createdDateTime"));
-        List<NotificationDTO> dtos = notifications.stream().map(NotificationDTO::convertToDto).collect(Collectors.toList());
+        List<NotificationDTO> dtos = notifications.stream()
+                .filter(NotificationDTO::isNotificationOfTypeForDTO) // may want to loosen this in future
+                .map(NotificationDTO::convertToDto)
+                .collect(Collectors.toList());
         //have to trim dates in order to be recognized by javascript
         dtos.forEach(dto -> {
             dto.setCreatedDatetime(dto.getCreatedDatetime().substring(0, 19));

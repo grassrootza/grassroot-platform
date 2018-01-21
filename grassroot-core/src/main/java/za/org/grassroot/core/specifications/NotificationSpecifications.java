@@ -13,6 +13,7 @@ import za.org.grassroot.core.enums.DeliveryRoute;
 import javax.persistence.criteria.Join;
 import javax.persistence.criteria.JoinType;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
 
@@ -91,7 +92,9 @@ public final class NotificationSpecifications {
 
 
     public static Specifications<Notification> unReadUserNotifications(User target) {
-        return Specifications.where(toUser(target)).and(Specifications.not(wasDelivered()));
+        return Specifications.where(toUser(target))
+                .and(createdTimeBetween(Instant.now().minus(3, ChronoUnit.DAYS), Instant.now()))
+                .and(Specifications.not(wasDelivered()));
     }
 
 
