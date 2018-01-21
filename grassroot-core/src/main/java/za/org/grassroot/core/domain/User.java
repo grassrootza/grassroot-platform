@@ -206,6 +206,8 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
         return !StringUtils.isEmpty(emailAddress);
     }
 
+    public boolean hasPassword() { return !StringUtils.isEmpty(password); }
+
     public boolean isUsernameEmailAddress() {
         // since we are guaranteed that no phone number will ever validate as an email
         return EmailValidator.getInstance().isValid(username);

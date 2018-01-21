@@ -84,6 +84,10 @@ public class TodoLog implements TaskLog {
 		return createdDateTime;
 	}
 
+	public Instant getCreationTime() {
+		return createdDateTime;
+	}
+
 	public Todo getTodo() {
 		return todo;
 	}

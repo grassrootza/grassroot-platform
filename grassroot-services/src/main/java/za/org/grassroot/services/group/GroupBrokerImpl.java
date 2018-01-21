@@ -176,9 +176,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
             bundle.addLog(joinTokenOpeningResult.getGroupLog());
         }
 
-        logsAndNotificationsBroker.asyncStoreBundle(bundle);
-        // note: would be very difficult to have coherent user flow for messages on group create (e.g., would need to
-        // have user define the welcome messages immediately, etc., etc.,) - so, am leaving out
+        storeBundleAfterCommit(bundle);
 
         return group;
     }
@@ -356,7 +354,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
                                        String email, Province province, List<String> topics, UserInterfaceType interfaceType) {
         Objects.requireNonNull(groupUid);
         Objects.requireNonNull(code);
-        if (userUid == null && phone == null && email == null) {
+        if (StringUtils.isEmpty(userUid) && StringUtils.isEmpty(phone) && StringUtils.isEmpty(email)) {
             throw new IllegalArgumentException("Error! At least one out of user Id, phone or email must be non-empty");
         }
 
@@ -378,7 +376,8 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
             userExists = joiningUser != null;
             if (!userExists) {
-                joiningUser = new User(msisdn, name, email);
+                // have to do these as otherwise an empty string might trigger uniqueness constraint
+                joiningUser = new User(StringUtils.isEmpty(msisdn) ? null : msisdn, name, StringUtils.isEmpty(email) ? null : email);
                 userRepository.saveAndFlush(joiningUser);
             }
         }
@@ -408,7 +407,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
     private void selfJoinViaCode(User user, Group group, GroupJoinMethod joinMethod, String code, List<String> topics, Set<UserLog> userLogs) {
         logger.info("Adding a member via token code: code={}, group={}, user={}", code, group, user);
-        Membership membership = group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.SELF_JOINED, code);
+        Membership membership = group.addMember(user, BaseRoles.ROLE_ORDINARY_MEMBER, joinMethod, code);
         if (topics != null) {
             membership.setTopics(new HashSet<>(topics));
         }
@@ -433,6 +432,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
     }
 
     private GroupJoinMethod getJoinMethodFromInterface(UserInterfaceType interfaceType) {
+        logger.info("returning join method from interface: {}", interfaceType);
         switch (interfaceType) {
             case UNKNOWN:
                 return GroupJoinMethod.JOIN_CODE_OTHER;
@@ -566,7 +566,19 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
             Membership membership = group.addMember(user, roleName, joinMethod, joinMethodDescriptor);
 
+            if (user.getProvince() == null && membershipInfo.getProvince() != null) {
+                user.setProvince(membershipInfo.getProvince());
+            }
+
             if (membership != null) {
+                if (membershipInfo.getTopics() != null) {
+                    membership.setTopics(new HashSet<>(membershipInfo.getTopics()));
+                }
+
+                if (membershipInfo.getAffiliations() != null) {
+                    membership.addAffiliations(new HashSet<>(membershipInfo.getAffiliations()));
+                }
+
                 memberships.add(membership);
             }
         }
@@ -738,6 +750,57 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
         Set<ActionLog> actionLogs = changeMembersToRole(user, group, Collections.singleton(memberUid), group.getRole(roleName));
         logActionLogsAfterCommit(actionLogs);
+    }
+
+    @Override
+    @Transactional
+    public void updateMembershipDetails(String userUid, String groupUid, String memberUid, String name, String phone, String email, Province province) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(groupUid);
+        Objects.requireNonNull(memberUid);
+
+        User member = userRepository.findOneByUid(memberUid);
+        if (member.hasPassword() || member.isHasSetOwnName()) {
+            throw new IllegalArgumentException("Error - member has already set their own details");
+        }
+
+        User changingUser = userRepository.findOneByUid(userUid);
+        Group group = groupRepository.findOneByUid(groupUid);
+
+        try {
+            permissionBroker.validateGroupPermission(changingUser, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+        } catch (AccessDeniedException e) {
+            throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+        }
+
+        List<String> detailsChanged = new ArrayList<>();
+        if (province != null) {
+            member.setProvince(province);
+            detailsChanged.add("province: " + province);
+        }
+
+        if (!StringUtils.isEmpty(name)) {
+            member.setDisplayName(name);
+            detailsChanged.add("name: " + name);
+        }
+
+        if (!StringUtils.isEmpty(phone)) {
+            member.setPhoneNumber(PhoneNumberUtil.convertPhoneNumber(phone));
+            detailsChanged.add("phone: " + phone);
+        }
+
+        if (!StringUtils.isEmpty(email)) {
+            member.setEmailAddress(email);
+            detailsChanged.add("email: " + email);
+        }
+
+        if (!detailsChanged.isEmpty()) {
+            UserLog userLog = new UserLog(member.getUid(), UserLogType.DETAILS_CHANGED_BY_GROUP,
+                    changingUser.getUid() + " : " + String.join(", ", detailsChanged),
+                    UserInterfaceType.UNKNOWN);
+            logActionLogsAfterCommit(Collections.singleton(userLog));
+        }
+
     }
 
     @Override

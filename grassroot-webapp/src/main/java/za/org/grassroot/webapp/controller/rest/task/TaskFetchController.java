@@ -49,18 +49,12 @@ public class TaskFetchController extends BaseRestController {
     }
 
     @Timed
-    @RequestMapping(value = "/updated/{userUid}", method = RequestMethod.POST)
+    @RequestMapping(value = "/updated", method = RequestMethod.POST)
     @ApiOperation(value = "All updated tasks", notes = "Fetches all the tasks updated since the timestamps in the map " +
             "(sends TaskMinimalDTO class, which is not appearing)")
-    public ResponseEntity<List<TaskMinimalDTO>> fetchUpdatedTasks(@PathVariable String userUid,
-                                                                  @RequestBody Map<String, Long> knownTasks,
+    public ResponseEntity<List<TaskMinimalDTO>> fetchUpdatedTasks(@RequestBody Map<String, Long> knownTasks,
                                                                   HttpServletRequest request) {
-
-        String loggedInUserUid = getUserIdFromRequest(request);
-        if (userUid.equals(loggedInUserUid))
-            return ResponseEntity.ok(taskBroker.findNewlyChangedTasks(userUid, knownTasks));
-        else
-            return new ResponseEntity<>(Collections.emptyList(), HttpStatus.FORBIDDEN);
+        return ResponseEntity.ok(taskBroker.findNewlyChangedTasks(getUserIdFromRequest(request), knownTasks));
     }
 
     @RequestMapping(value = "/updated/group/{userUid}/{groupUid}", method = RequestMethod.POST)
@@ -78,17 +72,13 @@ public class TaskFetchController extends BaseRestController {
     }
 
     @Timed
-    @RequestMapping(value = "/specified/{userUid}", method = RequestMethod.POST)
+    @RequestMapping(value = "/specified", method = RequestMethod.POST)
     @ApiOperation(value = "Full details on specified task", notes = "Fetches full details on tasks specified in the " +
             "map of tasks and their type")
-    public ResponseEntity<List<TaskFullDTO>> fetchSpecificTasks(@PathVariable String userUid,
-                                                                @RequestBody Map<String, TaskType> taskUidsAndTypes,
+    public ResponseEntity<List<TaskFullDTO>> fetchSpecificTasks(@RequestBody Map<String, TaskType> taskUidsAndTypes,
                                                                 HttpServletRequest request) {
-        String loggedInUserUid = getUserIdFromRequest(request);
-        if (userUid.equals(loggedInUserUid))
-            return ResponseEntity.ok(taskBroker.fetchSpecifiedTasks(userUid, taskUidsAndTypes, TaskSortType.TIME_CREATED));
-        else
-            return new ResponseEntity<>(Collections.emptyList(), HttpStatus.FORBIDDEN);
+        String userUid = getUserIdFromRequest(request);
+        return ResponseEntity.ok(taskBroker.fetchSpecifiedTasks(userUid, taskUidsAndTypes, TaskSortType.TIME_CREATED));
     }
 
     @Timed
@@ -127,12 +117,12 @@ public class TaskFetchController extends BaseRestController {
     @ApiOperation(value = "All tasks for a group", notes = "Fetch tasks for a group", response = ChangedSinceData.class)
     public ResponseEntity<ChangedSinceData<TaskDTO>> fetchUserGroupTasks(@PathVariable String userUid,
                                                                          @PathVariable String groupUid,
-                                                                         @RequestParam(required = false) long changedSinceMillis,
+                                                                         @RequestParam(required = false) Long changedSinceMillis,
                                                                          HttpServletRequest request) {
         String loggedInUserUid = getUserIdFromRequest(request);
         if (userUid.equals(loggedInUserUid)) {
             return ResponseEntity.ok(taskBroker.fetchGroupTasks(userUid, groupUid,
-                    changedSinceMillis == 0 ? null : Instant.ofEpochMilli(changedSinceMillis)));
+                    changedSinceMillis == null || changedSinceMillis == 0 ? null : Instant.ofEpochMilli(changedSinceMillis)));
         } else
             return new ResponseEntity<>((ChangedSinceData<TaskDTO>) null, HttpStatus.FORBIDDEN);
     }

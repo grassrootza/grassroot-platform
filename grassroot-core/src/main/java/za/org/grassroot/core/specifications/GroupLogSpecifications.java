@@ -2,10 +2,9 @@ package za.org.grassroot.core.specifications;
 
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.domain.Specifications;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.GroupLog;
-import za.org.grassroot.core.domain.GroupLog_;
-import za.org.grassroot.core.domain.Group_;
+
+import za.org.grassroot.core.domain.*;
+
 import za.org.grassroot.core.enums.GroupLogType;
 
 import java.time.Instant;
@@ -40,6 +39,11 @@ public class GroupLogSpecifications {
         return Specifications.where(forGroup(group))
                 .and(ofTypes(GroupLogType.targetUserChangeTypes))
                 .and(afterDate(startDate));
+    }
+
+    public static Specification<GroupLog> containingUser(User user) {
+        return (root, query, cb) -> cb.or(cb.equal(root.get(GroupLog_.user), user),
+                cb.equal(root.get(GroupLog_.targetUser), user));
     }
 
     public static Specifications<GroupLog> memberCountChanges(String groupUid, Instant startDate, Instant endDate) {

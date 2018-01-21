@@ -60,10 +60,6 @@ public class TokenValidationInterceptor extends HandlerInterceptorAdapter {
 
         boolean isTokenExpired = false;
 
-        if (environment.acceptsProfiles("localpg")) {
-            return true;
-        }
-
         if (authorizationHeader.hasBearerToken()
                 && jwtService.isJwtTokenValid(authorizationHeader.getBearerToken())) {
             return true;

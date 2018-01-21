@@ -1,12 +1,13 @@
 package za.org.grassroot.core.specifications;
 
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.domain.Specifications;
 import za.org.grassroot.core.domain.*;
 
 import javax.persistence.criteria.Join;
 import java.time.Instant;
 import java.util.Collection;
-import java.util.Set;
+import java.util.List;
 
 /**
  * Created by luke on 2016/10/21.
@@ -37,7 +38,7 @@ public final class UserSpecifications {
         return (root, query, cb) -> cb.like(root.get(User_.phoneNumber), "27" + phoneNumber);
     }
 
-    public static Specification<User> inGroups(Set<Group> groups) {
+    public static Specification<User> inGroups(Collection<Group> groups) {
         return (root, query, cb) -> {
             query.distinct(true);
             Join<User, Membership> userMembershipJoin = root.join(User_.memberships);
@@ -47,6 +48,10 @@ public final class UserSpecifications {
 
     public static Specification<User> nameContains(String nameFragment) {
         return (root, query, cb) -> cb.like(cb.lower(root.get(User_.displayName)), "%" + nameFragment.toLowerCase() + "%");
+    }
+
+    public static Specifications<User> withNameInGroups(String nameFragment, List<Group> groups) {
+        return Specifications.where(inGroups(groups)).and(nameContains(nameFragment));
     }
 
     public static Specification<User> uidIn(Collection<String> uids) {

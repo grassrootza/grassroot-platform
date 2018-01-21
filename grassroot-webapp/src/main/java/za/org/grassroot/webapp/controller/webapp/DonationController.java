@@ -38,7 +38,7 @@ public class DonationController extends BaseController {
 
     private static final Pattern SUCCESS_MATCHER = Pattern.compile("^(000\\.000\\.|000\\.100\\.1|000\\.[36])");
 
-    @Value("${grassroot.payments.url}")
+    @Value("${grassroot.payments.url:http://paymentsurl.com}")
     private String paymentUrl;
 
     private String paymentUserId;

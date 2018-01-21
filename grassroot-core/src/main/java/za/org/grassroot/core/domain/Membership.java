@@ -10,7 +10,11 @@ import za.org.grassroot.core.enums.GroupViewPriority;
 import javax.persistence.*;
 import java.io.Serializable;
 import java.time.Instant;
+import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Getter
 @Entity
@@ -19,6 +23,7 @@ import java.util.Objects;
 public class Membership implements Serializable, TagHolder {
 
     public static final String JOIN_METHOD_DESCRIPTOR_TAG = "JOINDESC:";
+    public static final String AFFILITATION_TAG ="AFFILIATION:";
 
     @Setter(AccessLevel.PRIVATE)
     @Id
@@ -64,7 +69,8 @@ public class Membership implements Serializable, TagHolder {
         // for JPA
     }
 
-    public Membership(Group group, User user, Role role, Instant joinTime, GroupJoinMethod joinMethod, String joinMethodDescriptor) {
+    public Membership(Group group, User user, Role role, Instant joinTime, GroupJoinMethod joinMethod,
+                      String joinMethodDescriptor) {
         this.group = Objects.requireNonNull(group);
         this.user = Objects.requireNonNull(user);
         this.role = Objects.requireNonNull(role);
@@ -75,6 +81,22 @@ public class Membership implements Serializable, TagHolder {
         if (!StringUtils.isEmpty(joinMethodDescriptor)) {
             this.addTag(JOIN_METHOD_DESCRIPTOR_TAG + joinMethodDescriptor);
         }
+    }
+
+    public Optional<String> getJoinMethodDescriptor() {
+        return this.getTagList().stream().filter(s -> s.startsWith(JOIN_METHOD_DESCRIPTOR_TAG))
+                .map(s -> s.substring(JOIN_METHOD_DESCRIPTOR_TAG.length())).findFirst();
+    }
+
+    public void addAffiliations(Set<String> affiliations) {
+        if (affiliations != null && !affiliations.isEmpty()) {
+            this.addTags(affiliations.stream().map(s -> AFFILITATION_TAG + s).collect(Collectors.toList()));
+        }
+    }
+
+    public List<String> getAffiliations() {
+        return this.getTagList().stream().filter(s -> s.startsWith(AFFILITATION_TAG))
+                .map(s -> s.substring(AFFILITATION_TAG.length())).collect(Collectors.toList());
     }
 
     public void setRole(Role role) {

@@ -5,11 +5,12 @@ import org.springframework.data.jpa.domain.Specifications;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.Province;
 
-import javax.persistence.criteria.Join;
-import javax.persistence.criteria.JoinType;
+import javax.persistence.criteria.*;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class MembershipSpecifications {
 
@@ -45,6 +46,37 @@ public class MembershipSpecifications {
                                                                                 Instant joinedDate) {
         return Specifications.where(forGroup(group)).and(memberJoinedAfter(joinedDate))
                 .and(memberInProvinces(provinces));
+    }
+
+    public static Specification<Membership> filterGroupMembership(Group group, Collection<Province> provinces, Collection<Group> taskTeams,
+                                                                   Collection<String> topics){
+
+        return (root, query, cb) -> {
+
+            List<Predicate> restrictions = new ArrayList<>();
+
+
+            if(provinces != null && provinces.size() > 0){
+                Join<Membership, User> userJoin = root.join(Membership_.user, JoinType.INNER);
+                restrictions.add(userJoin.get(User_.province).in(provinces));
+            }
+
+            if(taskTeams != null && taskTeams.size() > 0){
+                restrictions.add(root.get(Membership_.group).get(Group_.uid).in(taskTeams.stream().map(Group::getUid).collect(Collectors.toList())));
+            }else{
+                restrictions.add(cb.equal(root.get(Membership_.group), group));
+            }
+
+//            if(topics != null && topics.size() > 0){
+//
+//            }
+
+
+            return cb.and(restrictions.toArray(new Predicate[0]));
+
+
+        };
+
     }
 
     private static Specification<Membership> hasRole(String roleName) {
