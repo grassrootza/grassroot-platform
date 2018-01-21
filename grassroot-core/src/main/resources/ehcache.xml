@@ -79,5 +79,11 @@
            timeToIdleSeconds="900">
     </cache>
 
+    <cache name="user_notifications"
+           maxEntriesLocalHeap="2000"
+           eternal="false"
+           timeToIdleSeconds="10">
+    </cache>
+
 
 </ehcache>

@@ -91,20 +91,8 @@ public final class NotificationSpecifications {
 
 
     public static Specifications<Notification> unReadUserNotifications(User target) {
-        return Specifications.where(unReadNotifications()).and(toUser(target));
+        return Specifications.where(toUser(target)).and(Specifications.not(wasDelivered()));
     }
 
-
-    public static Specification<Notification> unReadNotifications() {
-
-        List<NotificationStatus> unreadStatuses = Arrays.asList(
-                NotificationStatus.READY_FOR_SENDING,
-                NotificationStatus.SENDING,
-                NotificationStatus.SENT,
-                NotificationStatus.DELIVERY_FAILED,
-                NotificationStatus.UNDELIVERABLE);
-
-        return (root, query, cb) -> root.get(Notification_.status).in(unreadStatuses);
-    }
 
 }
