@@ -44,6 +44,7 @@ public class IncomingGroupJoinController extends BaseRestController {
                 .groupName(group.getName())
                 .groupUid(group.getUid())
                 .groupDescription(group.getDescription())
+                .groupImageUrl(group.getImageUrl())
                 .groupTopics(group.getTopics());
 
         String userUid = getUserIdFromRequest(request);

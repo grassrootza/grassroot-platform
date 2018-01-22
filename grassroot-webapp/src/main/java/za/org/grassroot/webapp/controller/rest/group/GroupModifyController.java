@@ -3,12 +3,14 @@ package za.org.grassroot.webapp.controller.rest.group;
 import com.google.common.collect.ImmutableMap;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.MembershipFullDTO;
 import za.org.grassroot.core.dto.MembershipInfo;
@@ -26,20 +28,23 @@ import za.org.grassroot.services.exception.JoinWordsExceededException;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
 import za.org.grassroot.services.exception.SoleOrganizerUnsubscribeException;
 import za.org.grassroot.services.group.GroupFetchBroker;
+import za.org.grassroot.services.group.GroupImageBroker;
 import za.org.grassroot.services.group.GroupPermissionTemplate;
 import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.rest.Grassroot2RestController;
 import za.org.grassroot.webapp.enums.RestMessage;
 import za.org.grassroot.webapp.model.rest.PermissionDTO;
 import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
+import za.org.grassroot.webapp.util.ImageUtil;
 import za.org.grassroot.webapp.util.RestUtil;
 
 import javax.servlet.http.HttpServletRequest;
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController @Grassroot2RestController
-@Api("/api/group/modify")
+@Api("/api/group/modify") @Slf4j
 @RequestMapping(value = "/api/group/modify")
 public class GroupModifyController extends GroupBaseController {
 
@@ -47,11 +52,13 @@ public class GroupModifyController extends GroupBaseController {
 
     private final PermissionBroker permissionBroker;
     private final GroupFetchBroker groupFetchBroker;
+    private final GroupImageBroker groupImageBroker;
 
-    public GroupModifyController(JwtService jwtService, UserManagementService userManagementService, PermissionBroker permissionBroker, GroupFetchBroker groupFetchBroker) {
+    public GroupModifyController(JwtService jwtService, UserManagementService userManagementService, PermissionBroker permissionBroker, GroupFetchBroker groupFetchBroker, GroupImageBroker groupImageBroker) {
         super(jwtService, userManagementService);
         this.permissionBroker = permissionBroker;
         this.groupFetchBroker = groupFetchBroker;
+        this.groupImageBroker = groupImageBroker;
     }
 
     @RequestMapping(value = "/create", method = RequestMethod.POST)
@@ -242,6 +249,28 @@ public class GroupModifyController extends GroupBaseController {
             return RestUtil.errorResponse(RestMessage.GROUP_DESCRIPTION_CHANGED);
         } catch (AccessDeniedException e) {
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+        }
+    }
+
+    @RequestMapping(value = "/image/upload/{groupUid}", method = RequestMethod.POST)
+    public ResponseEntity uploadImage(HttpServletRequest request, @PathVariable String groupUid,
+                                      @RequestBody MultipartFile image) {
+        final String userUid = getUserIdFromRequest(request);
+        if (image != null) {
+            try {
+                byte[] imageBytes = image.getBytes();
+                String imageUrl = ImageUtil.generateFileName(image,request);
+                groupImageBroker.saveGroupImage(userUid, groupUid, imageUrl, imageBytes);
+                log.info("image uploaded, returning URL: {}", imageUrl);
+                return ResponseEntity.ok(imageUrl);
+            } catch (IOException | IllegalArgumentException e) {
+                log.error("error uploading image", e);
+                return RestUtil.errorResponse(RestMessage.BAD_PICTURE_FORMAT);
+            } catch (AccessDeniedException e) {
+                throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+            }
+        } else {
+            return RestUtil.errorResponse(RestMessage.PICTURE_NOT_RECEIVED);
         }
     }
 

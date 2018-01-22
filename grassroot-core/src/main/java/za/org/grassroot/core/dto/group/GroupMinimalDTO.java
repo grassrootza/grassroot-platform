@@ -32,6 +32,8 @@ public class GroupMinimalDTO extends GroupTimeChangedDTO {
     private boolean discoverable;
     private boolean hidden;
 
+    private String profileImageUrl;
+
     @JsonSerialize(using = InstantToMilliSerializer.class)
     private Instant lastTaskOrChangeTime;
 
@@ -44,6 +46,7 @@ public class GroupMinimalDTO extends GroupTimeChangedDTO {
         this.pinned = GroupViewPriority.PINNED.equals(membership.getViewPriority());
         this.discoverable = group.isDiscoverable();
         this.hidden = GroupViewPriority.HIDDEN.equals(membership.getViewPriority());
+        this.profileImageUrl = group.getImageUrl();
 
         List<Event> events = new ArrayList<>(group.getDescendantEvents());
         Collections.sort(events, (o1, o2) -> (int) (o2.getDeadlineTime().toEpochMilli() - o1.getDeadlineTime().toEpochMilli()));
