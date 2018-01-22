@@ -51,6 +51,9 @@ public class GroupImageBrokerImpl implements GroupImageBroker {
 
         User user = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
+
+        permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+
         group.setImage(image);
         group.setImageUrl(imageUrl);
 
