@@ -19,6 +19,7 @@ public class JoinInfoExternal {
     private String groupUid;
     private String groupName;
     private String groupDescription;
+    private String groupImageUrl;
 
     private List<String> groupTopics;
 
