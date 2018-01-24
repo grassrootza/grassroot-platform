@@ -33,12 +33,7 @@ import za.org.grassroot.webapp.util.RestUtil;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 
 @RestController @Grassroot2RestController
 @Api("/api/campaign/manage") @Slf4j
@@ -69,7 +64,7 @@ public class CampaignManagerController extends BaseRestController {
 
     @RequestMapping(value = "/create" , method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "create campaign", notes = "create a campaign using given values")
-    public ResponseEntity<ResponseWrapper> createCampaign(@Valid @RequestBody CreateCampaignRequest createCampaignRequest, BindingResult bindingResult, HttpServletRequest request){
+    public ResponseEntity createCampaign(@Valid @RequestBody CreateCampaignRequest createCampaignRequest, BindingResult bindingResult, HttpServletRequest request){
         String userUid = getUserIdFromRequest(request);
         if (bindingResult.hasErrors()) {
             return RestUtil.errorResponseWithData(RestMessage.CAMPAIGN_CREATION_INVALID_INPUT, getFieldValidationErrors(bindingResult.getFieldErrors()));
@@ -81,27 +76,33 @@ public class CampaignManagerController extends BaseRestController {
         if(createCampaignRequest.getTags() != null && !createCampaignRequest.getTags().isEmpty()){
             tagList = Collections.list(Collections.enumeration(createCampaignRequest.getTags()));
         }
-        log.info("finished processing tags, value = ");
-        LocalDate firstDate = LocalDate.parse(createCampaignRequest.getStartDate());
-        Instant campaignStartDate = firstDate.atStartOfDay(ZoneId.of(SA_TIME_ZONE)).toInstant();
+        log.info("finished processing tags, value = {}", tagList);
 
-        LocalDate secondDate = LocalDate.parse(createCampaignRequest.getEndDate());
-        Instant campaignEndDate = secondDate.atStartOfDay(ZoneId.of(SA_TIME_ZONE)).toInstant();
+        Instant campaignStartDate = Instant.ofEpochMilli(createCampaignRequest.getStartDateEpochMillis());
+        Instant campaignEndDate = Instant.ofEpochMilli(createCampaignRequest.getEndDateEpochMillis());
 
-        Campaign campaign = campaignBroker.createCampaign(createCampaignRequest.getName(), createCampaignRequest.getCode(),
+        Campaign campaign = campaignBroker.createCampaign(createCampaignRequest.getName(),
+                createCampaignRequest.getCode(),
                 createCampaignRequest.getDescription(),
-                createCampaignRequest.getUserUid(),
+                userUid,
                 campaignStartDate,
                 campaignEndDate,
                 tagList,
-                createCampaignRequest.getType(), createCampaignRequest.getUrl());
+                createCampaignRequest.getType(),
+                createCampaignRequest.getUrl());
+
         if(!StringUtils.isEmpty(createCampaignRequest.getGroupUid())){
-            campaign = campaignBroker.linkCampaignToMasterGroup(campaign.getCampaignCode(), createCampaignRequest.getGroupUid(), createCampaignRequest.getUserUid());
+            campaign = campaignBroker.linkCampaignToMasterGroup(campaign.getCampaignCode(), createCampaignRequest.getGroupUid(), userUid);
+        } else if(!StringUtils.isEmpty(createCampaignRequest.getGroupName())){
+            campaign = campaignBroker.createMasterGroupForCampaignAndLinkCampaign(campaign.getCampaignCode(), createCampaignRequest.getGroupName(), userUid);
         }
-        else if(!StringUtils.isEmpty(createCampaignRequest.getGroupName())){
-            campaign = campaignBroker.createMasterGroupForCampaignAndLinkCampaign(campaign.getCampaignCode(), createCampaignRequest.getGroupName(), createCampaignRequest.getUserUid());
-        }
-        return RestUtil.okayResponseWithData(RestMessage.CAMPAIGN_CREATED,CampaignWebUtil.createCampaignViewDTO(campaign));
+        return ResponseEntity.ok(CampaignWebUtil.createCampaignViewDTO(campaign));
+    }
+
+    @RequestMapping(value = "/codes/list/active", method = RequestMethod.GET)
+    @ApiOperation(value = "List all the active campaign codes (to prevent duplicates")
+    public ResponseEntity<Set<String>> listJoinCodes() {
+        return ResponseEntity.ok(campaignBroker.getActiveCampaignCodes());
     }
 
     @RequestMapping(value ="/add/tag", method = RequestMethod.GET)

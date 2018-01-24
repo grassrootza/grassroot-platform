@@ -10,7 +10,7 @@ public enum Province {
     ZA_LP,
     ZA_NW,
     ZA_FS,
-    ZA_MP;
-
+    ZA_MP,
+    INTL;
 
 }

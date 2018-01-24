@@ -133,7 +133,7 @@ public class USSDCampaignControllerTest extends USSDAbstractUnitTest {
         campaign.setDescription("Test Campaign");
         campaign.setStartDateTime(Instant.now());
         campaign.setEndDateTime(Instant.now());
-        campaign.setCampaignType(CampaignType.Information);
+        campaign.setCampaignType(CampaignType.INFORMATION);
         campaign.setMasterGroup(testGroup);
         campaign.setCreatedByUser(testUser);
         CampaignMessage englishMessage = new CampaignMessage("First Test English Message",testUser, MessageVariationAssignment.EXPERIMENT, Locale.ENGLISH, UserInterfaceType.USSD, campaign);

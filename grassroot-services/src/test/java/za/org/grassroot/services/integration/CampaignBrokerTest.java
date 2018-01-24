@@ -59,7 +59,7 @@ public class CampaignBrokerTest {
 
     @Test
     public void testCreateAndUpdateCampaign(){
-       Campaign campaign = campaignBroker.createCampaign("national campaign","234","our national campaign",testUser.getUid(), Instant.now(), java.time.Instant.MAX, null, CampaignType.Information,null);
+       Campaign campaign = campaignBroker.createCampaign("national campaign","234","our national campaign",testUser.getUid(), Instant.now(), java.time.Instant.MAX, null, CampaignType.INFORMATION,null);
         Assert.assertNotNull(campaign);
         Assert.assertNotNull(campaign.getCreatedByUser().getPhoneNumber(), "0605550000");
         Assert.assertNotNull(campaign.getCampaignCode(), "234");

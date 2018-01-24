@@ -99,6 +99,12 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
     @Override
     @Transactional(readOnly = true)
+    public Set<String> getActiveCampaignCodes() {
+        return campaignRepository.fetchAllActiveCampaignCodes();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Set<String> getCampaignTags() {
         return campaignRepository.fetchAllActiveCampaignTags();
     }
