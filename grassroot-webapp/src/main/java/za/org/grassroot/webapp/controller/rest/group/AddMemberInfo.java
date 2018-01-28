@@ -61,6 +61,9 @@ public class AddMemberInfo {
         this.displayName = membershipInfo.getDisplayName();
         this.roleName = membershipInfo.getRoleName();
         this.emailAddress = membershipInfo.getMemberEmail();
+        this.province = membershipInfo.getProvince();
+        this.topics = membershipInfo.getTopics();
+        this.affiliations = membershipInfo.getAffiliations();
     }
 
 }

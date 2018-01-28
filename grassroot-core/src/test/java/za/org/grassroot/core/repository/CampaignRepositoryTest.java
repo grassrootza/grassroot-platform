@@ -13,6 +13,7 @@ import za.org.grassroot.TestContextConfiguration;
 import za.org.grassroot.core.GrassrootApplicationProfiles;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.campaign.Campaign;
+import za.org.grassroot.core.domain.campaign.CampaignActionType;
 import za.org.grassroot.core.domain.campaign.CampaignMessage;
 import za.org.grassroot.core.domain.campaign.CampaignType;
 import za.org.grassroot.core.enums.MessageVariationAssignment;
@@ -53,7 +54,7 @@ public class CampaignRepositoryTest {
         User user = userRepository.save(new User("3456", null, null));
         Campaign campaign =  new Campaign("Test","234","Durban campaign",user, Instant.now(), Instant.now(), CampaignType.ACQUISITION, null);
         Set<CampaignMessage> messageSet = new HashSet<>();
-        CampaignMessage campaignMessage = new CampaignMessage("Please join Campaign", user, MessageVariationAssignment.CONTROL, Locale.forLanguageTag("en-US"), UserInterfaceType.USSD, campaign);
+        CampaignMessage campaignMessage = new CampaignMessage(user, campaign, Locale.forLanguageTag("en-US"), "Please join Campaign", UserInterfaceType.USSD, MessageVariationAssignment.CONTROL, CampaignActionType.OPENING);
         messageSet.add(campaignMessage);
         campaign.setCampaignMessages(messageSet);
         Campaign persistedCampaign = campaignRepository.saveAndFlush(campaign);
@@ -70,7 +71,7 @@ public class CampaignRepositoryTest {
         User user = userRepository.save(new User("3456", null, null));
         Campaign campaign =  new Campaign("Test","234","Durban campaign",user, Instant.now(), Instant.MAX, CampaignType.INFORMATION, null);
         Set<CampaignMessage> messageSet = new HashSet<>();
-        CampaignMessage campaignMessage = new CampaignMessage("Please join Campaign", user, MessageVariationAssignment.CONTROL,Locale.forLanguageTag("en-US"),UserInterfaceType.USSD, campaign);
+        CampaignMessage campaignMessage = new CampaignMessage(user, campaign, Locale.forLanguageTag("en-US"), "Please join Campaign", UserInterfaceType.USSD, MessageVariationAssignment.CONTROL, CampaignActionType.OPENING);
         messageSet.add(campaignMessage);
         campaign.setCampaignMessages(messageSet);
         campaign.setTags(tags);

@@ -29,7 +29,7 @@ public class USSDCampaignUtil {
         urls.put(CampaignActionType.JOIN_MASTER_GROUP, JOIN_MASTER_GROUP_URL);
         urls.put(CampaignActionType.SIGN_PETITION, SIGN_PETITION_URL);
         urls.put(CampaignActionType.MORE_INFO,MORE_INFO_URL);
-        urls.put(CampaignActionType.EXIT, EXIT_URL);
+        urls.put(CampaignActionType.EXIT_NEGATIVE, EXIT_URL);
         campaignUrlMap = Collections.unmodifiableMap(urls);
     }
 

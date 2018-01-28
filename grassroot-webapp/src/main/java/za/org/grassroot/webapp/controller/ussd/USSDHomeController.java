@@ -15,8 +15,8 @@ import za.org.grassroot.core.domain.EntityForUserResponse;
 import za.org.grassroot.core.domain.SafetyEvent;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.campaign.Campaign;
+import za.org.grassroot.core.domain.campaign.CampaignActionType;
 import za.org.grassroot.core.domain.campaign.CampaignMessage;
-import za.org.grassroot.core.domain.campaign.CampaignMessageAction;
 import za.org.grassroot.core.enums.MessageVariationAssignment;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.services.UserResponseBroker;
@@ -193,6 +193,7 @@ public class USSDHomeController extends USSDBaseController {
         } else {
             returnMenu = groupController.lookForJoinCode(user, trailingDigits);
             if (returnMenu == null) {
+                log.info("checking if campaign: {}", trailingDigits);
                 returnMenu = getActiveCampaignForTrailingCode(trailingDigits, user);
             }
         }
@@ -206,7 +207,9 @@ public class USSDHomeController extends USSDBaseController {
 
     private USSDMenu getActiveCampaignForTrailingCode(String trailingDigits, User user){
         Campaign campaign = campaignBroker.getCampaignDetailsByCode(trailingDigits, user.getUid(), true);
-        return (campaign != null) ? assembleCampaignMessageResponse(campaign,user): null;
+        log.info("found a campaign? : {}", campaign);
+        return (campaign != null) ? assembleCampaignMessageResponse(campaign,user):
+                welcomeMenu(getMessage(HOME, startMenu, promptKey + ".unknown.request", user), user);
     }
 
     private USSDMenu defaultStartMenu(User sessionUser) throws URISyntaxException {
@@ -256,21 +259,21 @@ public class USSDHomeController extends USSDBaseController {
     }
 
     private USSDMenu assembleCampaignResponse(Campaign campaign,Locale userLocale){
-        CampaignMessage campaignMessage = CampaignUtil.getCampaignMessageByAssignmentVariationAndUserInterfaceTypeAndLocale(campaign,
-                MessageVariationAssignment.CONTROL, UserInterfaceType.USSD, userLocale);
+        CampaignMessage campaignMessage = CampaignUtil.getCampaignOpeningMessage(campaign,
+                MessageVariationAssignment.DEFAULT, UserInterfaceType.USSD, userLocale);
         String promptMessage = campaignMessage.getMessage();
         Map<String, String> linksMap = new HashMap<>();
-        if(campaignMessage.getCampaignMessageActionSet() != null && !campaignMessage.getCampaignMessageActionSet().isEmpty()){
-            for(CampaignMessageAction action : campaignMessage.getCampaignMessageActionSet()){
-                String optionKey = USSDCampaignUtil.CAMPAIGN_PREFIX + action.getActionType().name().toLowerCase();
-                String option  = getMessage(optionKey,userLocale.getLanguage());
+        if (campaignMessage.getNextMessages() != null && !campaignMessage.getNextMessages().isEmpty()){
+            for(Map.Entry<String, CampaignActionType> action : campaignMessage.getNextMessages().entrySet()){
+                String optionKey = USSDCampaignUtil.CAMPAIGN_PREFIX + action.getValue().name().toLowerCase();
+                String option = getMessage(optionKey, userLocale.getLanguage());
                 StringBuilder url = new StringBuilder();
-                url.append(USSDCampaignUtil.getCampaignUrlPrefixs().get(action.getActionType()));
-                url.append(USSDCampaignUtil.CODE_PARAMETER);
-                url.append(campaign.getCampaignCode());
-                url.append(USSDCampaignUtil.LANGUAGE_PARAMETER);
-                url.append(userLocale.getLanguage());
-                linksMap.put(option,url.toString());
+                url.append(USSDCampaignUtil.getCampaignUrlPrefixs().get(action.getValue()));
+                url.append(USSDCampaignUtil.CODE_PARAMETER).append(campaign.getCampaignCode());
+                url.append(USSDCampaignUtil.LANGUAGE_PARAMETER).append(userLocale.getLanguage());
+                url.append("&msgUid=").append(action.getKey());
+                log.info("adding url: {}", url.toString());
+                linksMap.put(url.toString(), option);
             }
         }
         return new USSDMenu(promptMessage,linksMap);

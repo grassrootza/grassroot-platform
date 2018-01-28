@@ -4,6 +4,7 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Setter;
 import org.hibernate.validator.constraints.NotBlank;
+import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.campaign.CampaignType;
 
 import javax.validation.constraints.NotNull;
@@ -30,9 +31,9 @@ public class CreateCampaignRequest implements Serializable {
     private CampaignType type;
     @ApiModelProperty(value = "url of campaign", required = true)
     private String url;
-    @ApiModelProperty(value = "uid of campaign master group if group exist", required = true)
+    @ApiModelProperty(value = "uid of campaign master group if group exist")
     private String groupUid;
-    @ApiModelProperty(value = "name of campaign master group for new group", required = false)
+    @ApiModelProperty(value = "name of campaign master group for new group")
     private String groupName;
     @ApiModelProperty(value = "tags for campaign", required = false)
     private Set<String> tags;
@@ -80,6 +81,10 @@ public class CreateCampaignRequest implements Serializable {
 
     public String getGroupName() {
         return groupName;
+    }
+
+    public boolean hasNoGroup() {
+        return StringUtils.isEmpty(groupName) && StringUtils.isEmpty(groupUid);
     }
 
 }

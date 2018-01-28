@@ -24,6 +24,7 @@ import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.campaign.CampaignBroker;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Locale;
 import java.util.Set;
 
@@ -59,13 +60,15 @@ public class CampaignBrokerTest {
 
     @Test
     public void testCreateAndUpdateCampaign(){
-       Campaign campaign = campaignBroker.createCampaign("national campaign","234","our national campaign",testUser.getUid(), Instant.now(), java.time.Instant.MAX, null, CampaignType.INFORMATION,null);
+        Campaign campaign = campaignBroker.create("national campaign","234","our national campaign",testUser.getUid(),
+                testGroup.getUid(), Instant.now(), java.time.Instant.MAX, null, CampaignType.INFORMATION,null);
         Assert.assertNotNull(campaign);
         Assert.assertNotNull(campaign.getCreatedByUser().getPhoneNumber(), "0605550000");
         Assert.assertNotNull(campaign.getCampaignCode(), "234");
         Assert.assertNotNull(campaign.getName(), "national campaign");
 
-        Campaign updatedCampaign = campaignBroker.addCampaignMessage("234","Test message", Locale.ENGLISH, MessageVariationAssignment.CONTROL, UserInterfaceType.USSD, testUser, null);
+        Campaign updatedCampaign = campaignBroker
+                .addCampaignMessage(campaign.getUid(),"Test message", Locale.ENGLISH, MessageVariationAssignment.CONTROL, UserInterfaceType.USSD, testUser, null);
         Assert.assertNotNull(updatedCampaign);
         Assert.assertEquals(updatedCampaign.getName(), "national campaign");
         Assert.assertEquals(updatedCampaign.getCampaignMessages().size(), 1);
@@ -73,7 +76,7 @@ public class CampaignBrokerTest {
         Assert.assertEquals(updatedCampaign.getCampaignMessages().iterator().next().getChannel(), UserInterfaceType.USSD);
         Assert.assertEquals(updatedCampaign.getCampaignMessages().iterator().next().getLocale(), Locale.ENGLISH);
 
-        Campaign reUpdatedCampaign = campaignBroker.addActionToCampaignMessage("234", updatedCampaign.getCampaignMessages().iterator().next().getUid(), CampaignActionType.JOIN_MASTER_GROUP,"test action message",Locale.ENGLISH,MessageVariationAssignment.CONTROL,UserInterfaceType.USSD, testUser,null);
+        Campaign reUpdatedCampaign = campaignBroker.addActionToCampaignMessage(campaign.getUid(), updatedCampaign.getCampaignMessages().iterator().next().getUid(), CampaignActionType.JOIN_MASTER_GROUP,"test action message",Locale.ENGLISH,MessageVariationAssignment.CONTROL,UserInterfaceType.USSD, testUser,null);
         Assert.assertNotNull(reUpdatedCampaign);
         Assert.assertNotNull(reUpdatedCampaign.getCampaignMessages().iterator().next().getCampaignMessageActionSet());
         Assert.assertEquals(reUpdatedCampaign.getCampaignMessages().iterator().next().getCampaignMessageActionSet().size(), 1);
@@ -94,7 +97,7 @@ public class CampaignBrokerTest {
         Assert.assertNotNull(campaignMessageSet1);
         Assert.assertEquals(campaignMessageSet1.size(), 1);
 
-        Campaign linkedCampaign = campaignBroker.linkCampaignToMasterGroup("234",testGroup.getUid(),testUser.getUid());
+        Campaign linkedCampaign = campaignBroker.updateMasterGroup("234",testGroup.getUid(),testUser.getUid());
         Assert.assertNotNull(linkedCampaign);
         Assert.assertNotNull(linkedCampaign.getMasterGroup());
         Assert.assertEquals(linkedCampaign.getMasterGroup().getId(),testGroup.getId());

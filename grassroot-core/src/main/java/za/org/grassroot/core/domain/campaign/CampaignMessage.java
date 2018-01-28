@@ -1,36 +1,23 @@
 package za.org.grassroot.core.domain.campaign;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.Type;
 import za.org.grassroot.core.domain.TagHolder;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.MessageVariationAssignment;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.util.LocaleConverter;
+import za.org.grassroot.core.util.StringArrayUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.Convert;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
-import javax.persistence.OneToOne;
-import javax.persistence.Table;
-import javax.persistence.Version;
+import javax.persistence.*;
 import java.io.Serializable;
 import java.time.Instant;
-import java.util.HashSet;
-import java.util.Locale;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
-@Entity
+@Entity @Getter @Setter
 @Table(name = "campaign_message")
 public class CampaignMessage implements Serializable, Comparable<CampaignMessage>, TagHolder {
 
@@ -55,6 +42,17 @@ public class CampaignMessage implements Serializable, Comparable<CampaignMessage
     @ManyToOne()
     @JoinColumn(name = "created_by_user", nullable = false, updatable = false)
     private User createdByUser;
+
+    @Basic
+    @Column(name = "active")
+    private boolean active;
+
+    @Column(name = "deactive_time")
+    private Instant deactivatedTime;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "action_type", nullable = false)
+    private CampaignActionType actionType;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "channel",nullable = false)
@@ -82,19 +80,39 @@ public class CampaignMessage implements Serializable, Comparable<CampaignMessage
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "parentCampaignMessage", orphanRemoval = true)
     private Set<CampaignMessageAction> campaignMessageActionSet = new HashSet<>();
 
-    public CampaignMessage(){}
+    @Column(name = "next_actions")
+    @Type(type = "za.org.grassroot.core.util.StringArrayUserType")
+    private String[] nextActions;
 
-    public CampaignMessage(String message, User createdByUser, MessageVariationAssignment variation, Locale locale, UserInterfaceType channel, Campaign campaign){
+    private CampaignMessage(){
+        // for JPA
+    }
+
+    public CampaignMessage(User createdByUser, Campaign campaign, Locale locale, String message, UserInterfaceType channel, MessageVariationAssignment variation, CampaignActionType actionType){
         this.uid = UIDGenerator.generateId();
         this.createdDateTime = Instant.now();
-        this.variation = Objects.requireNonNull(variation);
+        this.variation = variation == null ? MessageVariationAssignment.DEFAULT : variation;
         this.message = Objects.requireNonNull(message);
         this.createdByUser = Objects.requireNonNull(createdByUser);
         this.locale = Objects.requireNonNull(locale);
-        this.channel = Objects.requireNonNull(channel);
+        this.channel = channel == null ? UserInterfaceType.USSD : channel;
         this.campaign = Objects.requireNonNull(campaign);
+        this.active = true;
+        this.actionType = actionType;
     }
 
+    public void addNextMessage(String nextMsgUid, CampaignActionType actionType) {
+        List<String> actions = StringArrayUtil.arrayToList(this.nextActions);
+        actions.add(nextMsgUid + ":" + actionType.name());
+        this.nextActions = StringArrayUtil.listToArray(actions);
+    }
+
+    public Map<String, CampaignActionType> getNextMessages() {
+        List<String> actions = StringArrayUtil.arrayToList(nextActions);
+        return actions.stream().collect(Collectors.toMap(
+                s -> s.substring(0, s.indexOf(":")),
+                s -> CampaignActionType.valueOf(s.substring(s.indexOf(":") + 1))));
+    }
 
     @Override
     public String[]getTags(){
@@ -104,6 +122,10 @@ public class CampaignMessage implements Serializable, Comparable<CampaignMessage
     @Override
     public void setTags(String[] tags) {
         this.tags = tags;
+    }
+
+    public boolean matchesMessageAndLocale(Campaign campaign, final String message, Locale locale) {
+        return this.campaign.equals(campaign) && this.message.equals(message.trim()) && this.locale.equals(locale);
     }
 
     @Override
@@ -151,86 +173,6 @@ public class CampaignMessage implements Serializable, Comparable<CampaignMessage
         return sb.toString();
     }
 
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getUid() {
-        return uid;
-    }
-
-    public void setUid(String uid) {
-        this.uid = uid;
-    }
-
-    public String getMessage() {
-        return message;
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
-    }
-
-    public Instant getCreatedDateTime() {
-        return createdDateTime;
-    }
-
-    public void setCreatedDateTime(Instant createdDateTime) {
-        this.createdDateTime = createdDateTime;
-    }
-
-    public Campaign getCampaign() {
-        return campaign;
-    }
-
-    public void setCampaign(Campaign campaign) {
-        this.campaign = campaign;
-    }
-
-    public User getCreatedByUser() {
-        return createdByUser;
-    }
-
-    public void setCreatedByUser(User createdByUser) {
-        this.createdByUser = createdByUser;
-    }
-
-    public Integer getVersion() {
-        return version;
-    }
-
-    public void setVersion(Integer version) {
-        this.version = version;
-    }
-
-    public MessageVariationAssignment getVariation() {
-        return variation;
-    }
-
-    public void setVariation(MessageVariationAssignment variation) {
-        this.variation = variation;
-    }
-
-    public Locale getLocale() {
-        return locale;
-    }
-
-    public void setLocale(Locale locale) {
-        this.locale = locale;
-    }
-
-    public UserInterfaceType getChannel() {
-        return channel;
-    }
-
-    public void setChannel(UserInterfaceType channel) {
-        this.channel = channel;
-    }
-
     public Set<CampaignMessageAction> getCampaignMessageActionSet() {
         if(campaignMessageActionSet == null){
             campaignMessageActionSet = new HashSet<>();
@@ -242,11 +184,4 @@ public class CampaignMessage implements Serializable, Comparable<CampaignMessage
         this.campaignMessageActionSet = campaignMessageActionSet;
     }
 
-    public CampaignMessageAction getParentAction() {
-        return parentAction;
-    }
-
-    public void setParentAction(CampaignMessageAction parentAction) {
-        this.parentAction = parentAction;
-    }
 }

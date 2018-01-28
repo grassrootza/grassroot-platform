@@ -116,7 +116,7 @@ public class USSDCampaignController extends USSDBaseController {
                                      @RequestParam (value = USSDCampaignUtil.LANGUAGE_PARAMETER) String languageCode,
                                      @RequestParam (value = USSDCampaignUtil.MESSAGE_UID)String parentMessageUid )  throws URISyntaxException{
         Campaign campaign = campaignBroker.getCampaignDetailsByCode(campaignCode, null, false);
-        CampaignMessage message = CampaignUtil.getNextCampaignMessageByActionTypeAndLocale(campaign,CampaignActionType.EXIT,parentMessageUid, new Locale(languageCode));
+        CampaignMessage message = CampaignUtil.getNextCampaignMessageByActionTypeAndLocale(campaign,CampaignActionType.EXIT_NEGATIVE,parentMessageUid, new Locale(languageCode));
         return menuBuilder(buildCampaignUSSDMenu(message,languageCode, campaignCode));
     }
 

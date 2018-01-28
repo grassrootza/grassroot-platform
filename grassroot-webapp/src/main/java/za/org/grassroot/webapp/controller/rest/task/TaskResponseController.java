@@ -9,6 +9,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import za.org.grassroot.core.dto.task.TaskFullDTO;
 import za.org.grassroot.core.enums.EventRSVPResponse;
 import za.org.grassroot.core.enums.TaskType;
 import za.org.grassroot.integration.messaging.JwtService;
@@ -24,6 +25,7 @@ import za.org.grassroot.webapp.model.rest.wrappers.ResponseWrapper;
 import za.org.grassroot.webapp.util.RestUtil;
 
 import javax.servlet.http.HttpServletRequest;
+import java.time.Instant;
 
 @Slf4j
 @RestController @Grassroot2RestController
@@ -63,7 +65,8 @@ public class TaskResponseController extends BaseRestController {
                                         @RequestParam String vote) {
         try {
             voteBroker.recordUserVote(getUserIdFromRequest(request), taskUid, vote.trim());
-            return ResponseEntity.ok(voteBroker.load(taskUid)); // so it goes back with latest results
+            TaskFullDTO taskDto = new TaskFullDTO(voteBroker.load(taskUid), getUserFromRequest(request), Instant.now(), vote);
+            return ResponseEntity.ok(taskDto); // so it goes back with latest results
         } catch (IllegalArgumentException e) {
             return RestUtil.errorResponse(RestMessage.USER_NOT_PART_OF_VOTE);
         } catch (TaskFinishedException e) {

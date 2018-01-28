@@ -44,10 +44,13 @@ public class CampaignUtil {
     }
 
 
-    public static CampaignMessage getCampaignMessageByAssignmentVariationAndUserInterfaceTypeAndLocale(Campaign campaign, MessageVariationAssignment variationAssignment, UserInterfaceType channel, Locale locale){
+    public static CampaignMessage getCampaignOpeningMessage(Campaign campaign, MessageVariationAssignment variationAssignment, UserInterfaceType channel, Locale locale){
         if(campaign != null && campaign.getCampaignMessages() != null && !campaign.getCampaignMessages().isEmpty()){
             for(CampaignMessage message: campaign.getCampaignMessages()){
-                if(message.getVariation().equals(variationAssignment) && message.getChannel().equals(channel) && message.getLocale().equals(locale)){
+                if(message.getActionType().equals(CampaignActionType.OPENING) &&
+                        message.getVariation().equals(variationAssignment)
+                        && message.getChannel().equals(channel)
+                        && message.getLocale().equals(locale)){
                     return message;
                 }
             }
@@ -58,11 +61,9 @@ public class CampaignUtil {
     public static CampaignMessage getNextCampaignMessageByActionTypeAndLocale(Campaign campaign, CampaignActionType action, String messageUid, Locale locale){
         CampaignMessage message = CampaignUtil.findCampaignMessageFromCampaignByMessageUid(campaign,messageUid);
         if(message != null && message.getCampaignMessageActionSet() != null && !message.getCampaignMessageActionSet().isEmpty()){
-            for(CampaignMessageAction campaignMessageAction: message.getCampaignMessageActionSet()){
-                if(campaignMessageAction.getActionType().equals(action)){
-                    return  campaignMessageAction.getActionMessage();
-                }
-            }
+            return message.getCampaignMessageActionSet().stream()
+                    .filter(act -> action.equals(act.getActionType()))
+                    .map(CampaignMessageAction::getActionMessage).findFirst().orElse(null);
         }
         return null;
     }

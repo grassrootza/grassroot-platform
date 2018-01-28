@@ -26,6 +26,8 @@ import za.org.grassroot.webapp.model.rest.wrappers.CreateCampaignMessageRequest;
 import za.org.grassroot.webapp.model.rest.wrappers.CreateCampaignRequest;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -83,9 +85,9 @@ public class CampaignManagerControllerTest extends RestAbstractUnitTest{
     @Test
     public void testCreateCampaign() throws Exception{
         when(campaignBroker.getCampaignDetailsByCode(anyString(), eq(null), eq(false))).thenReturn(null);
-        when(campaignBroker.createCampaign(anyString(),anyString(),anyString(),anyString(),any(Instant.class),any(Instant.class), anyList(),any(CampaignType.class),anyString())).thenReturn(testCampaign);
-        when(campaignBroker.linkCampaignToMasterGroup(anyString(),anyString(),anyString())).thenReturn(testCampaign);
-        when(campaignBroker.createMasterGroupForCampaignAndLinkCampaign(anyString(),anyString(),anyString())).thenReturn(testCampaign);
+        when(campaignBroker.create(anyString(), anyString(),anyString(),anyString(), anyString(), any(Instant.class), any(Instant.class), anyList(),any(CampaignType.class),anyString())).thenReturn(testCampaign);
+        when(campaignBroker.updateMasterGroup(anyString(),anyString(),anyString())).thenReturn(testCampaign);
+
         ObjectMapper mapper = new ObjectMapper();
         mapper.configure(SerializationFeature.WRAP_ROOT_VALUE, false);
         String requestJson = mapper.writeValueAsString(createCampaignRequest);
@@ -113,7 +115,8 @@ public class CampaignManagerControllerTest extends RestAbstractUnitTest{
         ObjectMapper mapper = new ObjectMapper();
         mapper.configure(SerializationFeature.WRAP_ROOT_VALUE, false);
         String requestJson = mapper.writeValueAsString(createCampaignMessageRequest);
-        ResultActions response = mockMvc.perform(post("/api/campaign/manage/add/message").contentType(MediaType.APPLICATION_JSON_UTF8).content(requestJson));
+        ResultActions response = mockMvc.perform(post("/api/campaign/manage/messages/add/" + testCampaign.getUid())
+                .contentType(MediaType.APPLICATION_JSON_UTF8).content(requestJson));
         response.andExpect(status().isOk());
         Assert.assertNotNull(response);
     }
@@ -125,7 +128,8 @@ public class CampaignManagerControllerTest extends RestAbstractUnitTest{
         ObjectMapper mapper = new ObjectMapper();
         mapper.configure(SerializationFeature.WRAP_ROOT_VALUE, false);
         String requestJson = mapper.writeValueAsString(createCampaignMessageActionRequest);
-        ResultActions response = mockMvc.perform(post("/api/campaign/manage/add/message/action").contentType(MediaType.APPLICATION_JSON_UTF8).content(requestJson));
+        ResultActions response = mockMvc.perform(post("/api/campaign/manage/messages/action/add/" + testCampaign.getUid())
+                .contentType(MediaType.APPLICATION_JSON_UTF8).content(requestJson));
         response.andExpect(status().isOk());
         Assert.assertNotNull(response);
     }
@@ -135,11 +139,10 @@ public class CampaignManagerControllerTest extends RestAbstractUnitTest{
         CreateCampaignRequest wrapper = new CreateCampaignRequest();
         wrapper.setName("Test campaign");
         wrapper.setUrl("www.grassroot.co.za/123");
-        wrapper.setStartDate("2017-01-01");
-        wrapper.setEndDate("2017-06-01");
+        wrapper.setStartDateEpochMillis(LocalDate.parse("2017-01-01").atStartOfDay().toInstant(ZoneOffset.UTC).toEpochMilli());
+        wrapper.setEndDateEpochMillis(LocalDate.parse("2017-06-01").atStartOfDay().toInstant(ZoneOffset.UTC).toEpochMilli());
         wrapper.setCode("1236");
         wrapper.setDescription("My test campaign");
-        wrapper.setUserUid("1234-5678-76");
         return wrapper;
     }
 
@@ -158,8 +161,7 @@ public class CampaignManagerControllerTest extends RestAbstractUnitTest{
         messageWrapper.setCampaignCode("123");
         messageWrapper.setAssignmentType(MessageVariationAssignment.CONTROL);
         messageWrapper.setChannelType(UserInterfaceType.USSD);
-        messageWrapper.setUserUid("1234");
-        messageWrapper.setLanguageCode(Locale.ENGLISH.getLanguage());
+        messageWrapper.setLanguage(Locale.ENGLISH);
         messageWrapper.setMessage("test message");
         return messageWrapper;
     }

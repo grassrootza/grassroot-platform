@@ -16,6 +16,8 @@ import java.util.Set;
 
 public interface CampaignBroker {
 
+    Campaign load(String userUid, String campaignUid);
+
     List<Campaign> getCampaignsCreatedByUser(String userUid);
     List<Campaign> getCampaignsCreatedLinkedToGroup(String groupUid);
 
@@ -44,23 +46,20 @@ public interface CampaignBroker {
      */
     Set<CampaignMessage> getCampaignMessagesByCampaignNameAndLocale(String campaignCode, MessageVariationAssignment assignment, Locale locale, UserInterfaceType type);
 
-    Set<CampaignMessage> getCampaignMessagesByCampaignCodeAndMessageTag(String campaignCode, MessageVariationAssignment assignment, String messageTag, UserInterfaceType type, Locale locale);
+    Campaign create(String campaignName, String campaignCode, String description, String userUid, String masterGroupUid, Instant startDate,
+                    Instant endDate, List<String> campaignTags, CampaignType campaignType, String url);
 
-    Set<CampaignMessage> getCampaignMessagesByCampaignNameAndMessageTag(String campaignName, MessageVariationAssignment assignment, String messageTag, UserInterfaceType type,Locale locale);
+    Campaign addCampaignMessage(String campaignUid, String campaignMessage, Locale messageLocale, MessageVariationAssignment assignment, UserInterfaceType interfaceType, User createUser, List<String> messageTags);
 
-    Campaign createCampaign(String campaignName, String campaignCode, String description, String userUid, Instant startDate, Instant endDate, List<String> campaignTags, CampaignType campaignType,String url);
+    Campaign setCampaignMessages(String userUid, String campaignUid, Set<CampaignMessageDTO> campaignMessages);
 
-    Campaign createCampaign(String campaignName, String campaignCode, String description, User createUser, Long groupId, Instant startDate, Instant endDate, List<String> campaignTags, CampaignType campaignType);
-
-    Campaign addCampaignMessage(String campaignCode, String campaignMessage, Locale messageLocale, MessageVariationAssignment assignment, UserInterfaceType interfaceType, User createUser, List<String> messageTags);
     Campaign addCampaignTags(String campaignCode, List<String> tags);
 
-    Campaign getCampaignByTag(String tag);
+    Campaign updateMasterGroup(String campaignCode, String groupUid, String userUid);
 
-    Campaign linkCampaignToMasterGroup(String campaignCode, String groupUid, String userUid);
-    Campaign createMasterGroupForCampaignAndLinkCampaign(String campaignCode, String groupName, String userUid);
     CampaignMessage getCampaignMessageByCampaignCodeAndActionType(String campaignCode, MessageVariationAssignment assignment,UserInterfaceType channel, CampaignActionType actionType, String inputNumber, Locale locale);
 
     Campaign addUserToCampaignMasterGroup(String campaignCode,String phoneNumber);
-    Campaign addActionToCampaignMessage(String campaignCode, String parentMessageUid,CampaignActionType actionType, String actionMessage, Locale actionMessageLocale, MessageVariationAssignment actionMessageAssignment, UserInterfaceType interfaceType, User createUser, Set<String> actionMessageTags);
+
+    Campaign addActionToCampaignMessage(String campaignUid, String parentMessageUid,CampaignActionType actionType, String actionMessage, Locale actionMessageLocale, MessageVariationAssignment actionMessageAssignment, UserInterfaceType interfaceType, User createUser, Set<String> actionMessageTags);
 }
