@@ -243,7 +243,7 @@ public class USSDMeetingController extends USSDBaseController {
           return  menuBuilder(groupUtil.invalidGroupNamePrompt(user, userResponse, thisSection, groupName));
         } else {
             Set<MembershipInfo> members = Sets.newHashSet(new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName()));
-            Group group = groupBroker.create(user.getUid(), userResponse, null, members, GroupPermissionTemplate.DEFAULT_GROUP, null, null, true);
+            Group group = groupBroker.create(user.getUid(), userResponse, null, members, GroupPermissionTemplate.DEFAULT_GROUP, null, null, true, false);
             return menuBuilder(groupUtil.addNumbersToGroupPrompt(user, group, thisSection, groupHandlingMenu));
     }
     }

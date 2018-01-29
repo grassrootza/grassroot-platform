@@ -353,7 +353,7 @@ public class USSDSafetyGroupController extends USSDBaseController {
             String groupUid;
             if (!interrupted) {
                 Set<MembershipInfo> members = Sets.newHashSet(new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName()));
-                Group group = groupBroker.create(user.getUid(), groupName, null, members, GroupPermissionTemplate.DEFAULT_GROUP, null, null, false);
+                Group group = groupBroker.create(user.getUid(), groupName, null, members, GroupPermissionTemplate.DEFAULT_GROUP, null, null, false, false);
                 groupUid = group.getUid();
                 safetyEventBroker.setSafetyGroup(user.getUid(), groupUid);
             } else {

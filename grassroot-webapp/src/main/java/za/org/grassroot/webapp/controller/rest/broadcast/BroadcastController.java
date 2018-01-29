@@ -3,14 +3,18 @@ package za.org.grassroot.webapp.controller.rest.broadcast;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import za.org.grassroot.core.domain.BroadcastSchedule;
+import za.org.grassroot.core.domain.media.MediaFunction;
 import za.org.grassroot.core.dto.BroadcastDTO;
 import za.org.grassroot.core.enums.DeliveryRoute;
+import za.org.grassroot.integration.MediaFileBroker;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.integration.socialmedia.FBPostBuilder;
 import za.org.grassroot.integration.socialmedia.TwitterPostBuilder;
@@ -32,10 +36,13 @@ import java.util.List;
 public class BroadcastController extends BaseRestController {
 
     private final BroadcastBroker broadcastBroker;
+    private final MediaFileBroker mediaFileBroker;
 
-    public BroadcastController(JwtService jwtService, UserManagementService userManagementService, BroadcastBroker broadcastBroker) {
+    @Autowired
+    public BroadcastController(JwtService jwtService, UserManagementService userManagementService, BroadcastBroker broadcastBroker, MediaFileBroker mediaFileBroker) {
         super(jwtService, userManagementService);
         this.broadcastBroker = broadcastBroker;
+        this.mediaFileBroker = mediaFileBroker;
     }
 
     @RequestMapping(value = "/fetch/group/{groupUid}", method = RequestMethod.GET)
@@ -115,6 +122,15 @@ public class BroadcastController extends BaseRestController {
         String broadcastUid = broadcastBroker.sendGroupBroadcast(bc);
 
         return ResponseEntity.ok(broadcastBroker.fetchBroadcast(broadcastUid));
+    }
+
+    @RequestMapping(value = "/create/image/upload", method = RequestMethod.POST)
+    @ApiOperation(value = "Upload an image for a broadcast", notes = "Will pass back an image key")
+    public ResponseEntity uploadImage(HttpServletRequest request, @RequestBody MultipartFile image) {
+        // todo : rate limiting?
+        log.info("do we have a file? : ", image);
+        String imageKey = mediaFileBroker.storeFile(image, MediaFunction.BROADCAST_IMAGE, image.getContentType(), null);
+        return ResponseEntity.ok(imageKey);
     }
 
     private void fillInContent(BroadcastCreateRequest createRequest, BroadcastComponents bc) {
