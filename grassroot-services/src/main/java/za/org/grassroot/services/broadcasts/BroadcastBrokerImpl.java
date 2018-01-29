@@ -74,7 +74,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         Account account = user.getPrimaryAccount();
 
         BroadcastInfo.BroadcastInfoBuilder builder = BroadcastInfo.builder();
-        if (account.getFreeFormCost() > 0) {
+        if (account !=null && account.getFreeFormCost() > 0) {
             builder.isSmsAllowed(true).smsCostCents(account.getFreeFormCost());
         } else {
             builder.isSmsAllowed(false);

@@ -55,11 +55,13 @@ public class MediaFileBrokerImpl implements MediaFileBroker {
     @Override
     @Transactional
     public String storeFile(MultipartFile file, MediaFunction function, String mimeType, String imageKey) {
+        logger.info("storing a file, with content type: {}, passed mime type: {}, original name: {}",
+                file.getContentType(), mimeType, file.getOriginalFilename());
 
         String bucket = getBucketForFunction(function);
         MediaFileRecord record = recordRepository.findByBucketAndKey(bucket, imageKey);
         if (record == null)
-            record = new MediaFileRecord(bucket, imageKey);
+            record = new MediaFileRecord(bucket, mimeType, imageKey);
 
         logger.info("created media record ...");
 
@@ -81,6 +83,8 @@ public class MediaFileBrokerImpl implements MediaFileBroker {
             case LIVEWIRE_MEDIA:
                 return liveWireMediaBucket;
             case USER_PROFILE_IMAGE:
+                return defaultMediaBucket;
+            case BROADCAST_IMAGE:
                 return defaultMediaBucket;
             default:
                 return defaultMediaBucket;

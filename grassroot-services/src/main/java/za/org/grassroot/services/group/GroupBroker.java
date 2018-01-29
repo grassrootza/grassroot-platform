@@ -23,7 +23,8 @@ public interface GroupBroker {
     /** METHODS FOR CREATING AND EDITING GROUPS **/
 
     Group create(String userUid, String name, String parentGroupUid, Set<MembershipInfo> membershipInfos,
-                 GroupPermissionTemplate groupPermissionTemplate, String description, Integer reminderMinutes, boolean openJoinToken);
+                 GroupPermissionTemplate groupPermissionTemplate, String description, Integer reminderMinutes,
+                 boolean openJoinToken, boolean discoverable);
 
     void deactivate(String userUid, String groupUid, boolean checkIfWithinTimeWindow);
 

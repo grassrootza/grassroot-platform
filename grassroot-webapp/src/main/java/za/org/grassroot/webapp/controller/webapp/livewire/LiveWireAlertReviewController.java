@@ -106,7 +106,7 @@ public class LiveWireAlertReviewController extends BaseController {
                 alert.isSent() ? "Sent" : "Blocked");
 
         boolean canRelease = liveWireAlertBroker.canUserRelease(getUserProfile().getUid());
-        model.addAttribute("canRelease", canRelease);
+        model.addAttribute("canRelease", canRelease && !alert.isSent());
         if (canRelease) {
             model.addAttribute("publicLists", dataSubscriberBroker.listPublicSubscribers());
         }

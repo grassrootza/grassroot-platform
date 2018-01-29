@@ -86,7 +86,7 @@ public class GroupCreateController extends BaseController {
 
 		Group groupCreated = groupBroker.create(user.getUid(), groupCreator.getGroupName(), parentUid,
 				new HashSet<>(groupCreator.getAddedMembers()), groupCreator.getPermissionTemplate(), groupCreator.getGroupDescription(),
-				groupCreator.getReminderMinutes(), true);
+				groupCreator.getReminderMinutes(), true, false);
 		timeEnd = System.currentTimeMillis();
 
 		logger.info("User load & group creation: {} msecs", timeEnd - timeStart);

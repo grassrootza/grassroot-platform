@@ -135,7 +135,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
     @Override
     @Transactional
     public Group create(String userUid, String name, String parentGroupUid, Set<MembershipInfo> membershipInfos,
-                        GroupPermissionTemplate groupPermissionTemplate, String description, Integer reminderMinutes, boolean openJoinToken) {
+                        GroupPermissionTemplate groupPermissionTemplate, String description, Integer reminderMinutes, boolean openJoinToken, boolean discoverable) {
 
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(name);
@@ -157,6 +157,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         group.setDescription((description == null) ? "" : description);
         group.setReminderMinutes((reminderMinutes == null) ? (24 * 60) : reminderMinutes);
         group.setParent(parent);
+        group.setDiscoverable(discoverable);
 
         LogsAndNotificationsBundle bundle = addMemberships(user, group, membershipInfos,
                 GroupJoinMethod.ADDED_AT_CREATION, user.getName(), true, true);
@@ -982,7 +983,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         if (createNew) {
             Set<MembershipInfo> membershipInfos = MembershipInfo.createFromMembers(groupInto.getMemberships());
             membershipInfos.addAll(MembershipInfo.createFromMembers(groupFrom.getMemberships()));
-            resultGroup = create(user.getUid(), newGroupName, null, membershipInfos, GroupPermissionTemplate.DEFAULT_GROUP, null, null, false);
+            resultGroup = create(user.getUid(), newGroupName, null, membershipInfos, GroupPermissionTemplate.DEFAULT_GROUP, null, null, false, false);
             if (!leaveActive) {
                 deactivate(user.getUid(), groupInto.getUid(), false);
                 deactivate(user.getUid(), groupFrom.getUid(), false);

@@ -18,6 +18,8 @@ public interface AccountGroupBroker {
 
     boolean isGroupOnAccount(String groupUid);
 
+    void addGroupToUserAccount(String groupUid, String userUid);
+
     Account findAccountForGroup(String groupUid);
 
     void validateUserAccountAdminForGroup(String userUid, String groupUid);

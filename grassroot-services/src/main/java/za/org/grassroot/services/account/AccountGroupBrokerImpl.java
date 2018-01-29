@@ -136,6 +136,16 @@ public class AccountGroupBrokerImpl extends AccountBrokerBaseImpl implements Acc
 
     @Override
     @Transactional
+    public void addGroupToUserAccount(String groupUid, String userUid) {
+        try {
+            addGroupToAccount(null, groupUid, userUid);
+        } catch(GroupAlreadyPaidForException|IllegalArgumentException|AccountExpiredException|AccountLimitExceededException|GroupNotFoundException e) {
+            logger.error("could not add group to account", e);
+        }
+    }
+
+    @Override
+    @Transactional
     public void addGroupToAccount(String accountUid, String groupUid, String addingUserUid) throws GroupAlreadyPaidForException {
         Objects.requireNonNull(groupUid);
         Objects.requireNonNull(addingUserUid);

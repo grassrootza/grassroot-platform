@@ -517,7 +517,7 @@ public class GroupController extends BaseController {
                 MembershipInfo thisMember = new MembershipInfo(getUserProfile().getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER,
                         getUserProfile().getDisplayName());
                 Group group = groupBroker.create(getUserProfile().getUid(), groupName, null, Collections.singleton(thisMember),
-                        GroupPermissionTemplate.DEFAULT_GROUP, null, null, true);
+                        GroupPermissionTemplate.DEFAULT_GROUP, null, null, true, false);
                 groupBroker.copyMembersIntoGroup(getUserProfile().getUid(), group.getUid(), memberUids);
                 addMessage(attributes, MessageType.SUCCESS, "group.transfer." + (removeMembers ? "move" : "copy") + ".new", request);
                 redirectUid = group.getUid();

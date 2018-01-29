@@ -14,4 +14,5 @@ public interface MediaFileBroker {
 
     String storeFile(MultipartFile file, MediaFunction function, String mimeType, String imageKey);
 
+
 }
