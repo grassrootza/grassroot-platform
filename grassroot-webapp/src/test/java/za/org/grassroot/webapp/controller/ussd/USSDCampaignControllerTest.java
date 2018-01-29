@@ -58,29 +58,39 @@ public class USSDCampaignControllerTest extends USSDAbstractUnitTest {
         testGroup = new Group("test group", testUser);
         testCampaign = createTestCampaign();
         params = new LinkedMultiValueMap<>();
-        params.add(USSDCampaignUtil.CODE_PARAMETER,testCode);
+        params.add(USSDCampaignUtil.CAMPAIGN_ID_PARAMETER,testCode);
         params.add(USSDCampaignUtil.LANGUAGE_PARAMETER,testLanguage);
-        params.add(USSDCampaignUtil.MESSAGE_UID,testMessageUid);
         params.add(USSDUrlUtil.phoneNumber,testUserPhone);
+    }
 
+    private MultiValueMap<String, String> getParams(String testMessageUid) {
+        MultiValueMap<String, String> newParams = new LinkedMultiValueMap<>(params);
+        newParams.add("messageUid", testMessageUid);
+        return newParams;
     }
 
     @Test
     public void testProcessMoreInfoRequest() throws Exception {
-        when(campaignBroker.getCampaignDetailsByCode(anyString(), eq(null), eq(false))).thenReturn(testCampaign);
-        ResultActions response = mockMvc.perform(get(path + USSDCampaignUtil.MORE_INFO_URL).params(params));
+        CampaignMessage testMsg = new CampaignMessage(testUser, testCampaign, Locale.ENGLISH, "English more info message",
+                UserInterfaceType.USSD, null, CampaignActionType.MORE_INFO);
+        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
+        when(campaignBroker.loadCampaignMessage(testMsg.getUid(), testUser.getUid())).thenReturn(testMsg);
+        ResultActions response = mockMvc.perform(get(path + USSDCampaignUtil.MORE_INFO_URL)
+                .params(getParams(testMsg.getUid())));
         Assert.assertNotNull(response);
         response.andExpect(status().isOk());
         response.andExpect(content().contentType(MediaType.APPLICATION_XML));
-        response.andExpect(xpath("/request/headertext").string("English More info Message"));
-        response.andExpect(xpath("/request/options/option").string("Sign petition"));
-
+        response.andExpect(xpath("/request/headertext").string("English more info message"));
     }
 
     @Test
     public void testSignPetitionRequest() throws Exception {
-        when(campaignBroker.getCampaignDetailsByCode(anyString(), eq(null), eq(false))).thenReturn(testCampaign);
-        ResultActions response = mockMvc.perform(get(path + USSDCampaignUtil.SIGN_PETITION_URL).params(params)).andExpect(status().isOk());
+        CampaignMessage testMsg = new CampaignMessage(testUser, testCampaign, Locale.ENGLISH, "English Sign petition Message",
+                UserInterfaceType.USSD, null, CampaignActionType.MORE_INFO);
+        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
+        when(campaignBroker.loadCampaignMessage(testMsg.getUid(), testUser.getUid())).thenReturn(testMsg);
+        ResultActions response = mockMvc.perform(get(path + USSDCampaignUtil.SIGN_PETITION_URL)
+                .params(getParams(testMsg.getUid()))).andExpect(status().isOk());
         response.andExpect(status().isOk());
         response.andExpect(content().contentType(MediaType.APPLICATION_XML));
         response.andExpect(xpath("/request/headertext").string("English Sign petition Message"));
@@ -88,8 +98,11 @@ public class USSDCampaignControllerTest extends USSDAbstractUnitTest {
 
     @Test
     public void testProcessExitRequest() throws Exception {
-        when(campaignBroker.getCampaignDetailsByCode(anyString(), eq(null), eq(false))).thenReturn(testCampaign);
-        ResultActions response = mockMvc.perform(get(path + USSDCampaignUtil.EXIT_URL).params(params)).andExpect(status().isOk());
+        CampaignMessage testMsg = new CampaignMessage(testUser, testCampaign, Locale.ENGLISH, "English Exit Message",
+                UserInterfaceType.USSD, null, CampaignActionType.EXIT_NEGATIVE);
+        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
+        when(campaignBroker.loadCampaignMessage(testMsg.getUid(), testUser.getUid())).thenReturn(testMsg);
+        ResultActions response = mockMvc.perform(get(path + USSDCampaignUtil.EXIT_URL).params(getParams(testMsg.getUid()))).andExpect(status().isOk());
         response.andExpect(status().isOk());
         response.andExpect(content().contentType(MediaType.APPLICATION_XML));
         response.andExpect(xpath("/request/headertext").string("English Exit Message"));
@@ -97,8 +110,12 @@ public class USSDCampaignControllerTest extends USSDAbstractUnitTest {
 
     @Test
     public void testProcessJoinMasterGroupRequest() throws Exception {
-        when(campaignBroker.addUserToCampaignMasterGroup(anyString(),anyString())).thenReturn(testCampaign);
-        ResultActions response = mockMvc.perform(get(path + USSDCampaignUtil.JOIN_MASTER_GROUP_URL).params(params)).andExpect(status().isOk());
+        CampaignMessage testMsg = new CampaignMessage(testUser, testCampaign, Locale.ENGLISH, "English Join Master group Message",
+                UserInterfaceType.USSD, null, CampaignActionType.JOIN_MASTER_GROUP);
+        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
+        when(campaignBroker.loadCampaignMessage(testMsg.getUid(), testUser.getUid())).thenReturn(testMsg);
+        ResultActions response = mockMvc.perform(get(path + USSDCampaignUtil.JOIN_MASTER_GROUP_URL)
+                .params(getParams(testMsg.getUid()))).andExpect(status().isOk());
         response.andExpect(status().isOk());
         response.andExpect(content().contentType(MediaType.APPLICATION_XML));
         response.andExpect(xpath("/request/headertext").string("English Join Master group Message"));
@@ -106,10 +123,14 @@ public class USSDCampaignControllerTest extends USSDAbstractUnitTest {
 
     @Test
     public void testProcessTagMeRequest() throws Exception {
-        when(userManagementServiceMock.loadOrCreateUser(anyString())).thenReturn(testUser);
-        when(campaignBroker.getCampaignDetailsByCode(anyString(), anyString(), eq(true))).thenReturn(testCampaign);
-        when(userManagementServiceMock.createUserProfile(any(User.class))).thenReturn(testUser);
-        ResultActions response = mockMvc.perform(get(path + USSDCampaignUtil.TAG_ME_URL).params(params)).andExpect(status().isOk());
+        CampaignMessage testMsg = new CampaignMessage(testUser, testCampaign, Locale.ENGLISH, "English Tag me Message",
+                UserInterfaceType.USSD, null, CampaignActionType.JOIN_MASTER_GROUP);
+        when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
+        when(campaignBroker.loadCampaignMessage(testMsg.getUid(), testUser.getUid())).thenReturn(testMsg);
+        MultiValueMap<String, String> params = getParams(testMsg.getUid());
+        params.add("parentMsgUid", testMsg.getUid());
+        ResultActions response = mockMvc.perform(get(path + USSDCampaignUtil.TAG_ME_URL)
+                .params(params)).andExpect(status().isOk());
         response.andExpect(status().isOk());
         response.andExpect(content().contentType(MediaType.APPLICATION_XML));
         response.andExpect(xpath("/request/headertext").string("English Tag me Message"));
@@ -117,9 +138,15 @@ public class USSDCampaignControllerTest extends USSDAbstractUnitTest {
 
     @Test
     public void testUserSetLanguageForCampaign() throws Exception {
+        CampaignMessage testMsg = new CampaignMessage(testUser, testCampaign, Locale.ENGLISH, "First Test English Message",
+                UserInterfaceType.USSD, null, CampaignActionType.OPENING);
         when(userManagementServiceMock.findByInputNumber(anyString())).thenReturn(testUser);
-        when(campaignBroker.getCampaignDetailsByCode(anyString(), anyString(), eq(true))).thenReturn(testCampaign);
-        ResultActions response = mockMvc.perform(get(path + USSDCampaignUtil.SET_LANGUAGE_URL).params(params)).andExpect(status().isOk());
+        when(campaignBroker.getOpeningMessage(testCampaign.getUid(), new Locale(testLanguage),
+                UserInterfaceType.USSD, null)).thenReturn(testMsg);
+        MultiValueMap<String, String> params = getParams("");
+        params.add("campaignUid", testCampaign.getUid());
+        ResultActions response = mockMvc.perform(get(path + USSDCampaignUtil.SET_LANGUAGE_URL)
+                .params(params)).andExpect(status().isOk());
         response.andExpect(status().isOk());
         response.andExpect(content().contentType(MediaType.APPLICATION_XML));
         response.andExpect(xpath("/request/headertext").string("First Test English Message"));

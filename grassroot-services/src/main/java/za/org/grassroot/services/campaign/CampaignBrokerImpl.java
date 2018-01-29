@@ -15,10 +15,11 @@ import za.org.grassroot.core.domain.campaign.*;
 import za.org.grassroot.core.enums.CampaignLogType;
 import za.org.grassroot.core.enums.MessageVariationAssignment;
 import za.org.grassroot.core.enums.UserInterfaceType;
+import za.org.grassroot.core.repository.CampaignMessageRepository;
 import za.org.grassroot.core.repository.CampaignRepository;
+import za.org.grassroot.core.specifications.CampaignMessageSpecifications;
 import za.org.grassroot.core.util.AfterTxCommitTask;
 import za.org.grassroot.services.PermissionBroker;
-import za.org.grassroot.services.campaign.util.CampaignUtil;
 import za.org.grassroot.services.exception.CampaignCodeTakenException;
 import za.org.grassroot.services.exception.CampaignMessageNotFoundException;
 import za.org.grassroot.services.exception.CampaignNotFoundException;
@@ -43,6 +44,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
     private static final String CAMPAIGN_MESSAGE_NOT_FOUND_CODE = "campaign.message.not.found.error";
 
     private final CampaignRepository campaignRepository;
+    private final CampaignMessageRepository campaignMessageRepository;
 
     private final GroupBroker groupBroker;
     private final UserManagementService userManager;
@@ -51,9 +53,10 @@ public class CampaignBrokerImpl implements CampaignBroker {
     private final ApplicationEventPublisher eventPublisher;
 
     @Autowired
-    public CampaignBrokerImpl(CampaignRepository campaignRepository, GroupBroker groupBroker, UserManagementService userManagementService,
+    public CampaignBrokerImpl(CampaignRepository campaignRepository, CampaignMessageRepository campaignMessageRepository, GroupBroker groupBroker, UserManagementService userManagementService,
                               LogsAndNotificationsBroker logsAndNotificationsBroker, PermissionBroker permissionBroker, ApplicationEventPublisher eventPublisher){
         this.campaignRepository = campaignRepository;
+        this.campaignMessageRepository = campaignMessageRepository;
         this.groupBroker = groupBroker;
         this.userManager = userManagementService;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
@@ -76,6 +79,42 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
         return campaign;
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Set<Locale> getCampaignLanguages(String campaignUid) {
+        Campaign campaign = campaignRepository.findOneByUid(campaignUid);
+        return new HashSet<>(campaignMessageRepository.selectLocalesForCampaign(campaign));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public CampaignMessage getOpeningMessage(String campaignUid, Locale locale, UserInterfaceType channel, MessageVariationAssignment variation) {
+        Campaign campaign = campaignRepository.findOneByUid(campaignUid);
+        Locale safeLocale = locale == null ? Locale.ENGLISH : locale;
+        UserInterfaceType safeChannel = channel == null ? UserInterfaceType.USSD : channel;
+        MessageVariationAssignment safeVariation = variation == null ? MessageVariationAssignment.DEFAULT: variation;
+        List<CampaignMessage> messages = campaignMessageRepository.findAll(
+                CampaignMessageSpecifications.ofTypeForCampaign(campaign, CampaignActionType.OPENING, safeLocale, safeChannel, safeVariation));
+        if (messages.isEmpty()) {
+            log.error("Error! Cannot find opening message for campaign");
+            return null;
+        } else if (messages.size() > 1) {
+            log.error("Error! More than one opening message active for campaign");
+            return messages.get(0);
+        } else {
+            return messages.get(0);
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public CampaignMessage loadCampaignMessage(String messageUid, String userUid) {
+        Objects.requireNonNull(messageUid);
+        Objects.requireNonNull(userUid); // todo: add in logging here
+        return campaignMessageRepository.findOneByUid(messageUid);
+    }
+
 
     @Override
     @Transactional(readOnly = true)
@@ -105,19 +144,6 @@ public class CampaignBrokerImpl implements CampaignBroker {
     }
 
     @Override
-    @Transactional
-    public Campaign getCampaignDetailsByName(String campaignName, String userUid, boolean storeLog){
-        Campaign campaign = getCampaignByCampaignName(campaignName);
-        if (storeLog) {
-            Objects.requireNonNull(userUid);
-            User user = userManager.load(userUid);
-            CampaignLogType campaignLogType = (campaign != null) ? CampaignLogType.CAMPAIGN_FOUND : CampaignLogType.CAMPAIGN_NOT_FOUND;
-            persistCampaignLog(new CampaignLog(null, campaignLogType, campaign, campaignName));
-        }
-        return campaign;
-    }
-
-    @Override
     @Transactional(readOnly = true)
     public Set<String> getActiveCampaignCodes() {
         Set<String> campaignCodes = campaignRepository.fetchAllActiveCampaignCodes();
@@ -129,62 +155,6 @@ public class CampaignBrokerImpl implements CampaignBroker {
     @Transactional(readOnly = true)
     public Set<String> getCampaignTags() {
         return campaignRepository.fetchAllActiveCampaignTags();
-    }
-
-    @Override
-    @Transactional
-    public CampaignMessage getCampaignMessageByCampaignCodeAndActionType(String campaignCode, MessageVariationAssignment assignment,UserInterfaceType channel, CampaignActionType actionType, String phoneNumber, Locale locale){
-        Set<CampaignMessage> messageSet = findMessagesByCampaignCodeAndVariationAndUserInterfaceType(campaignCode,assignment, channel, locale);
-        String searchValue = createSearchValue(campaignCode,assignment,null,null);
-        User user = userManager.findByInputNumber(phoneNumber);
-        if(messageSet != null && !messageSet.isEmpty()){
-            for(CampaignMessage message: messageSet){
-                if(message.getCampaignMessageActionSet() != null && !message.getCampaignMessageActionSet().isEmpty()){
-                    for(CampaignMessageAction messageAction: message.getCampaignMessageActionSet()){
-                        if(messageAction.getActionType().equals(actionType)){
-                            persistCampaignLog(new CampaignLog(user, CampaignLogType.CAMPAIGN_MESSAGE_FOUND , searchValue));
-                            return  messageAction.getActionMessage();
-                        }
-                    }
-                }
-            }
-        }
-        persistCampaignLog(new CampaignLog(user, CampaignLogType.CAMPAIGN_MESSAGE_NOT_FOUND, searchValue));
-        return null;
-    }
-
-    @Override
-    @Transactional
-    public Set<CampaignMessage> getCampaignMessagesByCampaignName(String campaignName, MessageVariationAssignment assignment, UserInterfaceType type, Locale locale){
-        Objects.requireNonNull(campaignName);
-        Objects.requireNonNull(assignment);
-        Set<CampaignMessage> messageSet = findMessagesByCampaignNameAndVariationAndUserInterfaceType(campaignName,assignment, type, locale);
-        String searchValue = createSearchValue(campaignName,assignment,null,null);
-        CampaignLogType campaignLogType = (messageSet != null && !messageSet.isEmpty()) ? CampaignLogType.CAMPAIGN_MESSAGE_FOUND : CampaignLogType.CAMPAIGN_MESSAGE_NOT_FOUND;
-        persistCampaignLog(new CampaignLog(null, campaignLogType, searchValue));
-        return messageSet;
-    }
-
-    @Override
-    @Transactional
-    public Set<CampaignMessage> getCampaignMessagesByCampaignCodeAndLocale(String campaignCode, MessageVariationAssignment assignment, Locale locale, UserInterfaceType type){
-        Objects.requireNonNull(locale);
-        Set<CampaignMessage> messageSet = findMessagesByCampaignCodeAndVariationAndUserInterfaceType(campaignCode,assignment, type, locale);
-        String searchValue = createSearchValue(campaignCode,assignment,locale,null);
-        CampaignLogType campaignLogType = (messageSet != null && !messageSet.isEmpty()) ? CampaignLogType.CAMPAIGN_MESSAGE_FOUND : CampaignLogType.CAMPAIGN_MESSAGE_NOT_FOUND;
-        persistCampaignLog(new CampaignLog(null, campaignLogType, searchValue));
-        return  messageSet;
-    }
-
-    @Override
-    @Transactional
-    public Set<CampaignMessage> getCampaignMessagesByCampaignNameAndLocale(String campaignName, MessageVariationAssignment assignment, Locale locale, UserInterfaceType type){
-        Objects.requireNonNull(locale);
-        Set<CampaignMessage>messageSet = findMessagesByCampaignNameAndVariationAndUserInterfaceType(campaignName,assignment, type, locale);
-        String searchValue = createSearchValue(campaignName,assignment,locale,null);
-        CampaignLogType campaignLogType = (messageSet != null && !messageSet.isEmpty()) ? CampaignLogType.CAMPAIGN_MESSAGE_FOUND : CampaignLogType.CAMPAIGN_MESSAGE_NOT_FOUND;
-        persistCampaignLog(new CampaignLog(null, campaignLogType, searchValue));
-        return messageSet;
     }
 
     @Override
@@ -291,13 +261,6 @@ public class CampaignBrokerImpl implements CampaignBroker {
         return updatedCampaign;
     }
 
-    private Set<CampaignMessage> transformFromDTO(CampaignMessageDTO messageDTO, Campaign campaign, User user) {
-        return messageDTO.getMessages().stream().map(msg ->
-            new CampaignMessage(user, campaign, msg.getLanguage(), msg.getMessage(), messageDTO.getChannel(), messageDTO.getVariation(),
-                    messageDTO.getLinkedActionType())
-        ).collect(Collectors.toSet());
-    }
-
     @Override
     @Transactional
     public Campaign addCampaignTags(String campaignCode, List<String> tags){
@@ -339,11 +302,11 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
     @Override
     @Transactional
-    public Campaign addUserToCampaignMasterGroup(String campaignCode,String phoneNumber){
-        Objects.requireNonNull(campaignCode);
-        Objects.requireNonNull(phoneNumber);
-        User user = userManager.loadOrCreateUser(phoneNumber);
-        Campaign campaign = getCampaignDetailsByCode(campaignCode, user.getUid(), false);
+    public Campaign addUserToCampaignMasterGroup(String campaignUid, String userUid){
+        Objects.requireNonNull(campaignUid);
+        Objects.requireNonNull(userUid);
+        User user = userManager.load(userUid);
+        Campaign campaign = campaignRepository.findOneByUid(campaignUid);
         groupBroker.addMemberViaCampaign(user.getUid(),campaign.getMasterGroup().getUid(),campaign.getCampaignCode());
         CampaignLog campaignLog = new CampaignLog(campaign.getCreatedByUser(), CampaignLogType.CAMPAIGN_USER_ADDED_TO_MASTER_GROUP,campaign);
         persistCampaignLog(campaignLog);
@@ -396,25 +359,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
         return campaignRepository.findByCampaignCodeAndEndDateTimeAfter(campaignCode, Instant.now());
     }
 
-    private Campaign getCampaignByCampaignName(String campaignName){
-        Objects.requireNonNull(campaignName);
-        return campaignRepository.findByNameAndEndDateTimeAfter(campaignName, Instant.now());
-    }
-
-    private Set<CampaignMessage> findMessagesByCampaignCodeAndVariationAndUserInterfaceType(String campaignCode, MessageVariationAssignment assignment, UserInterfaceType channel, Locale locale){
-        Objects.requireNonNull(assignment);
-        Objects.requireNonNull(campaignCode);
-        Objects.requireNonNull(channel);
-        Campaign campaign = getCampaignByCampaignCode(campaignCode);
-        return CampaignUtil.processCampaignMessageByAssignmentVariationAndUserInterfaceTypeAndLocale(campaign,assignment, channel, locale);
-    }
-
-    private Set<CampaignMessage> findMessagesByCampaignNameAndVariationAndUserInterfaceType(String campaignName, MessageVariationAssignment assignment, UserInterfaceType type, Locale locale){
-        Objects.requireNonNull(assignment);
-        Campaign campaign = getCampaignByCampaignName(campaignName);
-        return CampaignUtil.processCampaignMessageByAssignmentVariationAndUserInterfaceTypeAndLocale(campaign, assignment,type, locale);
-    }
-
+    // leave this here for a while as may come in handy in future, although not quite yet
     private String createSearchValue(String value, MessageVariationAssignment assignment, Locale locale, String tag){
         String AND = " and ";
         StringBuilder stringBuilder = new StringBuilder();

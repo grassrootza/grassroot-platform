@@ -204,26 +204,6 @@ public class CampaignManagerController extends BaseRestController {
         return RestUtil.messageOkayResponse(RestMessage.CAMPAIGN_NOT_FOUND);
     }
 
-    @RequestMapping(value="/view", method = RequestMethod.GET)
-    @ApiOperation(value = "view campaign details", notes = "view campaign details")
-    public ResponseEntity<ResponseWrapper> viewCampaign(@RequestParam(value = "code",required = false)String code,
-                                                        @RequestParam(value = "name",required = false)String name){
-        Campaign campaign = null;
-        if(StringUtils.isEmpty(code) && StringUtils.isEmpty(name)){
-            return RestUtil.errorResponse(HttpStatus.BAD_REQUEST, RestMessage.INVALID_INPUT);
-        }
-        if(!StringUtils.isEmpty(code)){
-            campaign =  campaignBroker.getCampaignDetailsByCode(code, null, false);
-        }
-        if(campaign == null && !StringUtils.isEmpty(name)){
-            campaign = campaignBroker.getCampaignDetailsByName(name, null, false);
-        }
-        if(campaign != null){
-            return RestUtil.okayResponseWithData(RestMessage.CAMPAIGN_FOUND,CampaignWebUtil.createCampaignViewDTO(campaign));
-        }
-        return RestUtil.messageOkayResponse(RestMessage.CAMPAIGN_NOT_FOUND);
-    }
-
     private List<RestValidationMessage> getFieldValidationErrors(List<FieldError> errors) {
         List<RestValidationMessage> fieldValidationErrorList = new ArrayList<>();
         for (FieldError field : errors) {

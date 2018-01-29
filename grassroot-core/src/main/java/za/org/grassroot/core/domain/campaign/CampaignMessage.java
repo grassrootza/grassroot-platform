@@ -2,6 +2,7 @@ package za.org.grassroot.core.domain.campaign;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.Type;
 import za.org.grassroot.core.domain.TagHolder;
 import za.org.grassroot.core.domain.User;
@@ -17,7 +18,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Entity @Getter @Setter
+@Entity @Getter @Setter @Slf4j
 @Table(name = "campaign_message")
 public class CampaignMessage implements Serializable, Comparable<CampaignMessage>, TagHolder {
 
@@ -109,9 +110,12 @@ public class CampaignMessage implements Serializable, Comparable<CampaignMessage
 
     public Map<String, CampaignActionType> getNextMessages() {
         List<String> actions = StringArrayUtil.arrayToList(nextActions);
-        return actions.stream().collect(Collectors.toMap(
+        Map<String, CampaignActionType> unsortedMap = actions.stream().collect(Collectors.toMap(
                 s -> s.substring(0, s.indexOf(":")),
                 s -> CampaignActionType.valueOf(s.substring(s.indexOf(":") + 1))));
+        return unsortedMap.entrySet().stream()
+                .sorted(Map.Entry.comparingByValue())
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (ov, nv) -> ov, LinkedHashMap::new));
     }
 
     @Override
@@ -150,9 +154,11 @@ public class CampaignMessage implements Serializable, Comparable<CampaignMessage
     public int compareTo(CampaignMessage message) {
         if (uid.equals(message.getUid())) {
             return 0;
-        } else {
+        } else if (actionType.equals(message.getActionType())) {
             Instant otherCreatedDateTime = message.getCreatedDateTime();
             return createdDateTime.compareTo(otherCreatedDateTime);
+        } else {
+            return actionType.compareTo(message.getActionType());
         }
     }
 

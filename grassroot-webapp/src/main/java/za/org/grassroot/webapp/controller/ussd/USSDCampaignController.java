@@ -1,6 +1,7 @@
 package za.org.grassroot.webapp.controller.ussd;
 
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.util.StringUtils;
@@ -8,160 +9,140 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
-import za.org.grassroot.core.domain.BaseRoles;
-import za.org.grassroot.core.domain.GroupJoinMethod;
-import za.org.grassroot.core.domain.Membership;
-import za.org.grassroot.core.domain.Role;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.campaign.Campaign;
-import za.org.grassroot.core.domain.campaign.CampaignActionType;
 import za.org.grassroot.core.domain.campaign.CampaignMessage;
-import za.org.grassroot.core.domain.campaign.CampaignMessageAction;
+import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.services.campaign.CampaignBroker;
-import za.org.grassroot.services.campaign.util.CampaignUtil;
-import za.org.grassroot.services.user.UserManagementService;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 import za.org.grassroot.webapp.util.USSDCampaignUtil;
 
 import java.net.URISyntaxException;
 import java.time.Instant;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 
+@RestController @Slf4j
 @RequestMapping(method = GET, produces = MediaType.APPLICATION_XML_VALUE)
-@RestController
 public class USSDCampaignController extends USSDBaseController {
 
     private static final String campaignMenus = "campaign/";
     private static final String campaignUrl = homePath + campaignMenus;
+
     private final CampaignBroker campaignBroker;
-    private final UserManagementService userManagementService;
+
+    @Autowired
+    public USSDCampaignController(CampaignBroker campaignBroker) {
+        this.campaignBroker = campaignBroker;
+    }
 
     @RequestMapping(value = campaignUrl + USSDCampaignUtil.TAG_ME_URL)
     @ResponseBody
     public Request processTagMeRequest(@RequestParam(value = phoneNumber) String inputNumber,
-                                      @RequestParam (value = USSDCampaignUtil.CODE_PARAMETER) String campaignCode,
-                                      @RequestParam (value = USSDCampaignUtil.LANGUAGE_PARAMETER) String languageCode,
-                                      @RequestParam (value = USSDCampaignUtil.MESSAGE_UID)String parentMessageUid
-                                      )  throws URISyntaxException{
-
-        User user = userManagementService.loadOrCreateUser(inputNumber);
-        Campaign campaign = campaignBroker.getCampaignDetailsByCode(campaignCode, user.getUid(), true);
-        updateMembership(user,campaign,parentMessageUid);
-        CampaignMessage message =  CampaignUtil.getNextCampaignMessageByActionTypeAndLocale(campaign,CampaignActionType.TAG_ME,parentMessageUid, new Locale(languageCode));
-        return menuBuilder(buildCampaignUSSDMenu(message,languageCode, campaignCode));
-
+                                      @RequestParam String messageUid,
+                                      @RequestParam String parentMsgUid)  throws URISyntaxException{
+        User user = userManager.findByInputNumber(inputNumber);
+        CampaignMessage message = campaignBroker.loadCampaignMessage(messageUid, user.getUid());
+        updateMembership(user, message, campaignBroker.loadCampaignMessage(parentMsgUid, user.getUid()));
+        return menuBuilder(buildCampaignUSSDMenu(message));
     }
 
     @RequestMapping(value = campaignUrl + USSDCampaignUtil.JOIN_MASTER_GROUP_URL)
     @ResponseBody
     public Request processJoinMasterGroupRequest(@RequestParam(value = phoneNumber) String inputNumber,
-                                                @RequestParam (value = USSDCampaignUtil.CODE_PARAMETER) String campaignCode,
-                                                @RequestParam (value = USSDCampaignUtil.LANGUAGE_PARAMETER) String languageCode,
-                                                @RequestParam (value = USSDCampaignUtil.MESSAGE_UID)String parentMessageUid)  throws URISyntaxException{
-        CampaignMessage message = addUserToMasterGroup(campaignCode,inputNumber,CampaignActionType.JOIN_MASTER_GROUP, parentMessageUid, new Locale(languageCode));
-        return menuBuilder(buildCampaignUSSDMenu(message,languageCode, campaignCode));
-    }
-
-    @Autowired
-    public USSDCampaignController(CampaignBroker campaignBroker, UserManagementService userManagementService ){
-        this.campaignBroker = campaignBroker;
-        this.userManagementService = userManagementService;
+                                                 @RequestParam String messageUid)  throws URISyntaxException{
+        User user = userManager.findByInputNumber(inputNumber);
+        CampaignMessage message = campaignBroker.loadCampaignMessage(messageUid, user.getUid());
+        campaignBroker.addUserToCampaignMasterGroup(message.getCampaign().getUid(), user.getUid());
+        return menuBuilder(buildCampaignUSSDMenu(message));
     }
 
     @RequestMapping(value = campaignUrl + USSDCampaignUtil.SET_LANGUAGE_URL)
     @ResponseBody
-    public Request userSetLanguageForCampaign(@RequestParam(value= phoneNumber, required=true) String inputNumber,
-                                      @RequestParam (value = USSDCampaignUtil.CODE_PARAMETER) String campaignCode,
+    public Request userSetLanguageForCampaign(@RequestParam(value= phoneNumber) String inputNumber,
+                                      @RequestParam String campaignUid,
                                       @RequestParam (value = USSDCampaignUtil.LANGUAGE_PARAMETER) String languageCode) throws URISyntaxException {
 
         User user = userManager.findByInputNumber(inputNumber);
         if(StringUtils.isEmpty(user.getLanguageCode())) {
             userManager.updateUserLanguage(user.getUid(), new Locale(languageCode));
         }
-        Campaign campaign =  campaignBroker.getCampaignDetailsByCode(campaignCode, user.getUid(), true);
-        CampaignMessage campaignMessage = CampaignUtil.getFirstCampaignMessageByLocale(campaign,languageCode);
-        return  menuBuilder(buildCampaignUSSDMenu(campaignMessage, languageCode,campaignCode));
+        CampaignMessage campaignMessage = campaignBroker.getOpeningMessage(campaignUid, new Locale(languageCode), UserInterfaceType.USSD, null);
+        return  menuBuilder(buildCampaignUSSDMenu(campaignMessage));
     }
 
     @RequestMapping(value = campaignUrl + USSDCampaignUtil.SIGN_PETITION_URL)
     @ResponseBody
-    public Request processSignPetitionRequest(@RequestParam (value = USSDCampaignUtil.CODE_PARAMETER) String campaignCode,
-                                             @RequestParam (value = USSDCampaignUtil.LANGUAGE_PARAMETER) String languageCode,
-                                             @RequestParam (value = USSDCampaignUtil.MESSAGE_UID)String parentMessageUid)  throws URISyntaxException{
-        Campaign campaign = campaignBroker.getCampaignDetailsByCode(campaignCode, null, false);
-        CampaignMessage message = CampaignUtil.getNextCampaignMessageByActionTypeAndLocale(campaign,CampaignActionType.SIGN_PETITION,parentMessageUid, new Locale(languageCode));
-        //TO do. integrate to petition API
-        return menuBuilder(buildCampaignUSSDMenu(message,languageCode, campaignCode));
+    public Request processSignPetitionRequest(@RequestParam(value = phoneNumber) String inputNumber,
+                                              @RequestParam String messageUid) throws URISyntaxException{
+        User user = userManager.findByInputNumber(inputNumber);
+        CampaignMessage message = campaignBroker.loadCampaignMessage(messageUid, user.getUid());
+        // todo : actually sign the petition
+
+        return menuBuilder(buildCampaignUSSDMenu(message));
     }
 
     @RequestMapping(value = campaignUrl + USSDCampaignUtil.MORE_INFO_URL)
     @ResponseBody
-    public Request processMoreInfoRequest(@RequestParam(value = USSDCampaignUtil.CODE_PARAMETER) String campaignCode,
-                                          @RequestParam (value = USSDCampaignUtil.LANGUAGE_PARAMETER) String languageCode,
-                                          @RequestParam (value = USSDCampaignUtil.MESSAGE_UID)String parentMessageUid)  throws URISyntaxException{
-        Campaign campaign = campaignBroker.getCampaignDetailsByCode(campaignCode, null, false);
-        CampaignMessage message = CampaignUtil.getNextCampaignMessageByActionTypeAndLocale(campaign,CampaignActionType.MORE_INFO,parentMessageUid, new Locale(languageCode));
-        return menuBuilder(buildCampaignUSSDMenu(message,languageCode, campaignCode));
+    public Request processMoreInfoRequest(@RequestParam(value = phoneNumber) String inputNumber,
+                                          @RequestParam String messageUid)  throws URISyntaxException {
+        User user = userManager.findByInputNumber(inputNumber);
+        CampaignMessage message = campaignBroker.loadCampaignMessage(messageUid, user.getUid());
+        return menuBuilder(buildCampaignUSSDMenu(message));
     }
 
     @RequestMapping(value = campaignUrl + USSDCampaignUtil.EXIT_URL)
     @ResponseBody
-    public Request processExitRequest(@RequestParam (value = USSDCampaignUtil.CODE_PARAMETER) String campaignCode,
-                                     @RequestParam (value = USSDCampaignUtil.LANGUAGE_PARAMETER) String languageCode,
-                                     @RequestParam (value = USSDCampaignUtil.MESSAGE_UID)String parentMessageUid )  throws URISyntaxException{
-        Campaign campaign = campaignBroker.getCampaignDetailsByCode(campaignCode, null, false);
-        CampaignMessage message = CampaignUtil.getNextCampaignMessageByActionTypeAndLocale(campaign,CampaignActionType.EXIT_NEGATIVE,parentMessageUid, new Locale(languageCode));
-        return menuBuilder(buildCampaignUSSDMenu(message,languageCode, campaignCode));
+    public Request processExitRequest(@RequestParam(value = phoneNumber) String inputNumber,
+                                      @RequestParam String messageUid)  throws URISyntaxException{
+        User user = userManager.findByInputNumber(inputNumber);
+        CampaignMessage message = campaignBroker.loadCampaignMessage(messageUid, user.getUid());
+        return menuBuilder(buildCampaignUSSDMenu(message));
     }
 
-    private USSDMenu buildCampaignUSSDMenu(CampaignMessage campaignMessage, String languageCode, String campaignCode){
+    @RequestMapping(value = campaignUrl + USSDCampaignUtil.SHARE_URL)
+    @ResponseBody
+    public Request sharePrompt(@RequestParam(value = phoneNumber) String inputNumber,
+                               @RequestParam String messageUid) throws URISyntaxException {
+        User user = userManager.findByInputNumber(inputNumber);
+        CampaignMessage message = campaignBroker.loadCampaignMessage(messageUid, user.getUid());
+        return menuBuilder(buildCampaignUSSDMenu(message));
+    }
+
+    // todo : then, the actual share screen
+
+    private USSDMenu buildCampaignUSSDMenu(CampaignMessage campaignMessage){
         String promptMessage = campaignMessage.getMessage();
-        Map<String, String> linksMap = new HashMap<>();
-        if(campaignMessage.getCampaignMessageActionSet() != null && !campaignMessage.getCampaignMessageActionSet().isEmpty()){
-            for(CampaignMessageAction action : campaignMessage.getCampaignMessageActionSet()){
-                String optionKey = USSDCampaignUtil.CAMPAIGN_PREFIX + action.getActionType().name().toLowerCase();
-                String option  = getMessage(optionKey,languageCode);
-                StringBuilder embeddedUrl = new StringBuilder();
-                embeddedUrl.append(campaignMenus);
-                embeddedUrl.append(USSDCampaignUtil.getCampaignUrlPrefixs().get(action.getActionType()));
-                embeddedUrl.append(USSDCampaignUtil.CODE_PARAMETER);
-                embeddedUrl.append(campaignCode);
-                embeddedUrl.append(USSDCampaignUtil.LANGUAGE_PARAMETER);
-                embeddedUrl.append(languageCode);
-                embeddedUrl.append(USSDCampaignUtil.MESSAGE_UID_PARAMETER);
-                embeddedUrl.append(campaignMessage.getUid());
-                linksMap.put(embeddedUrl.toString(),option);
-            }
-        }
+        Map<String, String> linksMap = new LinkedHashMap<>();
+        campaignMessage.getNextMessages().forEach((msgUid, actionType) -> {
+            String optionKey = USSDCampaignUtil.CAMPAIGN_PREFIX + actionType.name().toLowerCase();
+            String option = getMessage(optionKey, campaignMessage.getLocale().getLanguage());
+            String embeddedUrl = campaignMenus +
+                    USSDCampaignUtil.getCampaignUrlPrefixs().get(actionType) + "?" +
+                    USSDCampaignUtil.MESSAGE_UID_PARAMETER + msgUid;
+            linksMap.put(embeddedUrl, option);
+        });
         return new USSDMenu(promptMessage,linksMap);
     }
 
-    private CampaignMessage addUserToMasterGroup(String campaignCode, String phoneNumber, CampaignActionType type, String parentMessageUid, Locale locale) {
-        Campaign campaign = campaignBroker.addUserToCampaignMasterGroup(campaignCode,phoneNumber);
-        return CampaignUtil.getNextCampaignMessageByActionTypeAndLocale(campaign, type, parentMessageUid, locale);
-    }
-
-    private void updateMembership(User user, Campaign campaign, String messageUid){
-        CampaignMessage message = CampaignUtil.findCampaignMessageFromCampaignByMessageUid(campaign,messageUid);
-        if(message != null && message.getTagList() != null && message.getTagList().isEmpty()){
-            if(user.getMemberships() != null && !user.getMemberships().isEmpty()){
-                for(Membership membership: user.getMemberships()){
-                    if(membership.getGroup().getUid().equalsIgnoreCase(campaign.getMasterGroup().getUid())){
-                        addTagsOnMembership(membership, message.getTagList());
-                    }
-                }
-            }else {
-                Membership membership = new Membership(campaign.getMasterGroup(), user, new Role(BaseRoles.ROLE_ORDINARY_MEMBER, null),
+    private void updateMembership(User user, CampaignMessage thisMessage, CampaignMessage parentMessage) {
+        Campaign campaign = thisMessage.getCampaign();
+        Group masterGroup = campaign.getMasterGroup();
+        if (parentMessage != null && parentMessage.getTagList() != null && parentMessage.getTagList().isEmpty()){
+            Membership membership = user.getGroupMembership(masterGroup.getUid());
+            if(membership != null) {
+                addTagsOnMembership(membership, parentMessage.getTagList());
+            } else {
+                membership = new Membership(campaign.getMasterGroup(), user, new Role(BaseRoles.ROLE_ORDINARY_MEMBER, null),
                         Instant.now(), GroupJoinMethod.SELF_JOINED, null);
-                addTagsOnMembership(membership, message.getTagList());
+                addTagsOnMembership(membership, parentMessage.getTagList());
                 user.getMemberships().add(membership);
-                userManagementService.createUserProfile(user);
+                userManager.createUserProfile(user);
             }
         }
     }
