@@ -107,19 +107,20 @@ public class DataImportBrokerImpl implements DataImportBroker {
             throw new IllegalArgumentException("Error! One of email or phone number columns must be present");
         }
 
+        logger.debug("emailCol : {}, provinceCol: {}", emailCol, provinceCol);
         MembershipInfo info = new MembershipInfo();
-        info.setDisplayName(dataFormatter.formatCellValue(row.getCell(nameCol), formulaEvaluator));
+        info.setDisplayName(dataFormatter.formatCellValue(row.getCell(nameCol), formulaEvaluator).trim());
 
         if (phoneCol != null) {
-            info.setPhoneNumber(dataFormatter.formatCellValue(row.getCell(phoneCol), formulaEvaluator));
+            info.setPhoneNumber(dataFormatter.formatCellValue(row.getCell(phoneCol), formulaEvaluator).trim());
         }
 
         if (emailCol != null) {
-            info.setMemberEmail(dataFormatter.formatCellValue(row.getCell(emailCol), formulaEvaluator));
+            info.setMemberEmail(dataFormatter.formatCellValue(row.getCell(emailCol), formulaEvaluator).trim());
         }
 
         if (provinceCol != null) {
-            info.setProvince(convertProvince(dataFormatter.formatCellValue(row.getCell(provinceCol), formulaEvaluator)));
+            info.setProvince(convertProvince(dataFormatter.formatCellValue(row.getCell(provinceCol), formulaEvaluator).trim()));
         }
 
         if (roleCol != null) {
@@ -128,15 +129,22 @@ public class DataImportBrokerImpl implements DataImportBroker {
             info.setRoleName(BaseRoles.ROLE_ORDINARY_MEMBER);
         }
 
+        logger.info("returning member info: {}", info);
+
         return info;
     }
 
-    // todo : use a more sophisticated form of parsing for both of these (bring in NLU?)
     private Province convertProvince(final String cellValue) {
-        try {
-            return Province.valueOf(cellValue);
-        } catch (Exception e) {
-            return null;
+        logger.debug("here's the province: {}", cellValue);
+        if (Province.EN_PROVINCE_NAMES.containsKey(cellValue.toLowerCase().trim())) {
+            logger.debug("okay, province: {}", cellValue);
+            return Province.EN_PROVINCE_NAMES.get(cellValue.toLowerCase().trim());
+        } else {
+            try {
+                return Province.valueOf("ZA_" + cellValue.toUpperCase().trim());
+            } catch (Exception e) {
+                return null;
+            }
         }
     }
 

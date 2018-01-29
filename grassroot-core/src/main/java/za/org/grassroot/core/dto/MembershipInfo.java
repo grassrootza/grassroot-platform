@@ -7,6 +7,7 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.Membership;
 import za.org.grassroot.core.domain.Role;
@@ -104,13 +105,29 @@ public class MembershipInfo implements Comparable<MembershipInfo> {
         }
     }
 
+    public boolean hasPhoneNumber() {
+        return !StringUtils.isEmpty(phoneNumber);
+    }
+
     public boolean hasValidPhoneNumber() {
+        if (StringUtils.isEmpty(phoneNumber)) {
+            return false;
+        }
+
         try {
             PhoneNumberUtil.convertPhoneNumber(phoneNumber);
             return true;
         } catch (InvalidPhoneNumberException e) {
             return false;
         }
+    }
+
+    public boolean hasValidEmail() {
+        return !StringUtils.isEmpty(memberEmail) && EmailValidator.getInstance().isValid(memberEmail);
+    }
+
+    public boolean hasValidPhoneOrEmail() {
+        return hasValidPhoneNumber() || hasValidEmail();
     }
 
     @Override
@@ -136,7 +153,8 @@ public class MembershipInfo implements Comparable<MembershipInfo> {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("MembershipInfo{");
-        sb.append("phoneNumber='").append(phoneNumber).append('\'');
+        sb.append("province=").append(province);
+        sb.append(", phoneNumber='").append(phoneNumber).append('\'');
         sb.append(", roleName=").append(roleName);
         sb.append(", displayName='").append(displayName).append('\'');
         sb.append('}');

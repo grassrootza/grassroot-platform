@@ -87,7 +87,7 @@ public class GroupRestController extends GroupAbstractRestController {
                     MembershipInfo creator = new MembershipInfo(user.getPhoneNumber(), BaseRoles.ROLE_GROUP_ORGANIZER, user.getDisplayName());
                     membersToAdd.add(creator);
                     Group created = groupBroker.create(user.getUid(), groupName, null, membersToAdd, GroupPermissionTemplate.DEFAULT_GROUP,
-                            description, null, true);
+                            description, null, true, false);
                     restMessage = RestMessage.GROUP_CREATED;
                     GroupResponseWrapper wrapper = createGroupWrapper(created, user);
                     wrapper.setInvalidNumbers(invalidNumbers);

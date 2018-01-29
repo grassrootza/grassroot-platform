@@ -29,4 +29,7 @@ public interface CampaignRepository extends JpaRepository<Campaign, Long>, JpaSp
     @Query(value = "select distinct unnest(tags) from campaign " +
             "where end_date_time > current_timestamp", nativeQuery = true)
     Set<String> fetchAllActiveCampaignTags();
+
+    @Query(value = "select c.campaignCode from Campaign c where c.endDateTime > current_timestamp")
+    Set<String> fetchAllActiveCampaignCodes();
 }

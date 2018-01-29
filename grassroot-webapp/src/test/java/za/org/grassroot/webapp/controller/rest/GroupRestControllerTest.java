@@ -63,7 +63,7 @@ public class GroupRestControllerTest extends RestAbstractUnitTest {
 
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(sessionTestUser);
         when(groupBrokerMock.create(sessionTestUser.getUid(), testGroupName, null, membersToAdd,
-                                    GroupPermissionTemplate.DEFAULT_GROUP, testEventDescription, null, true)).thenReturn(testGroup);
+                                    GroupPermissionTemplate.DEFAULT_GROUP, testEventDescription, null, true, false)).thenReturn(testGroup);
         when(groupQueryBrokerMock.getMostRecentLog(testGroup)).thenReturn(groupLog);
 
         log.info("Mock set up for : userUid={}, name={}, members={}, desc={}", sessionTestUser.getUid(), testGroupName,
@@ -78,7 +78,7 @@ public class GroupRestControllerTest extends RestAbstractUnitTest {
                 .andExpect(status().isOk());
 
         verify(userManagementServiceMock).findByInputNumber(testUserPhone);
-        verify(groupBrokerMock).create(sessionTestUser.getUid(), testGroupName, null, membersToAdd, GroupPermissionTemplate.DEFAULT_GROUP, meetingEvent.getDescription(), null, true);
+        verify(groupBrokerMock).create(sessionTestUser.getUid(), testGroupName, null, membersToAdd, GroupPermissionTemplate.DEFAULT_GROUP, meetingEvent.getDescription(), null, true, false);
         verify(groupQueryBrokerMock, times(1)).getMostRecentLog(testGroup);
         verify(groupBrokerMock, times(1)).checkForDuplicate(sessionTestUser.getUid(), testGroupName);
         verifyNoMoreInteractions(groupBrokerMock);

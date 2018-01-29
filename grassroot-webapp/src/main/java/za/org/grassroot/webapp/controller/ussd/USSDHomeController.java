@@ -15,13 +15,11 @@ import za.org.grassroot.core.domain.EntityForUserResponse;
 import za.org.grassroot.core.domain.SafetyEvent;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.campaign.Campaign;
+import za.org.grassroot.core.domain.campaign.CampaignActionType;
 import za.org.grassroot.core.domain.campaign.CampaignMessage;
-import za.org.grassroot.core.domain.campaign.CampaignMessageAction;
-import za.org.grassroot.core.enums.MessageVariationAssignment;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.services.UserResponseBroker;
 import za.org.grassroot.services.campaign.CampaignBroker;
-import za.org.grassroot.services.campaign.util.CampaignUtil;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDResponseTypes;
 import za.org.grassroot.webapp.enums.USSDSection;
@@ -193,6 +191,7 @@ public class USSDHomeController extends USSDBaseController {
         } else {
             returnMenu = groupController.lookForJoinCode(user, trailingDigits);
             if (returnMenu == null) {
+                log.info("checking if campaign: {}", trailingDigits);
                 returnMenu = getActiveCampaignForTrailingCode(trailingDigits, user);
             }
         }
@@ -206,7 +205,9 @@ public class USSDHomeController extends USSDBaseController {
 
     private USSDMenu getActiveCampaignForTrailingCode(String trailingDigits, User user){
         Campaign campaign = campaignBroker.getCampaignDetailsByCode(trailingDigits, user.getUid(), true);
-        return (campaign != null) ? assembleCampaignMessageResponse(campaign,user): null;
+        log.info("found a campaign? : {}", campaign);
+        return (campaign != null) ? assembleCampaignMessageResponse(campaign,user):
+                welcomeMenu(getMessage(HOME, startMenu, promptKey + ".unknown.request", user), user);
     }
 
     private USSDMenu defaultStartMenu(User sessionUser) throws URISyntaxException {
@@ -244,33 +245,30 @@ public class USSDHomeController extends USSDBaseController {
         return new USSDMenu(message, optionsHomeExit(user, false));
     }
 
-    private USSDMenu assembleCampaignMessageResponse(Campaign campaign, User user){
-        Set<Locale> supportedCampaignLanguages = CampaignUtil.getCampaignSupportedLanguages(campaign);
-        if(supportedCampaignLanguages.size() == 1){
-            return assembleCampaignResponse(campaign,supportedCampaignLanguages.iterator().next());
+    private USSDMenu assembleCampaignMessageResponse(Campaign campaign, User user) {
+        Set<Locale> supportedCampaignLanguages = campaignBroker.getCampaignLanguages(campaign.getUid());
+        if(supportedCampaignLanguages.size() == 1) {
+            return assembleCampaignResponse(campaign, supportedCampaignLanguages.iterator().next());
+        } else if(!StringUtils.isEmpty(user.getLanguageCode()) && supportedCampaignLanguages.contains(new Locale(user.getLanguageCode()))){
+            return assembleCampaignResponse(campaign, new Locale(user.getLanguageCode()));
+        } else {
+            return assembleCampaignResponseForSupportedLanguage(campaign, user);
         }
-        if(!StringUtils.isEmpty(user.getLanguageCode()) && supportedCampaignLanguages.contains(new Locale(user.getLanguageCode()))){
-            return assembleCampaignResponse(campaign,new Locale(user.getLanguageCode()));
-        }
-        return assembleCampaignResponseForSupportedLanguage(campaign,user);
     }
 
-    private USSDMenu assembleCampaignResponse(Campaign campaign,Locale userLocale){
-        CampaignMessage campaignMessage = CampaignUtil.getCampaignMessageByAssignmentVariationAndUserInterfaceTypeAndLocale(campaign,
-                MessageVariationAssignment.CONTROL, UserInterfaceType.USSD, userLocale);
+    private USSDMenu assembleCampaignResponse(Campaign campaign,Locale userLocale) {
+        CampaignMessage campaignMessage = campaignBroker.getOpeningMessage(campaign.getUid(), userLocale, UserInterfaceType.USSD, null);
         String promptMessage = campaignMessage.getMessage();
         Map<String, String> linksMap = new HashMap<>();
-        if(campaignMessage.getCampaignMessageActionSet() != null && !campaignMessage.getCampaignMessageActionSet().isEmpty()){
-            for(CampaignMessageAction action : campaignMessage.getCampaignMessageActionSet()){
-                String optionKey = USSDCampaignUtil.CAMPAIGN_PREFIX + action.getActionType().name().toLowerCase();
-                String option  = getMessage(optionKey,userLocale.getLanguage());
-                StringBuilder url = new StringBuilder();
-                url.append(USSDCampaignUtil.getCampaignUrlPrefixs().get(action.getActionType()));
-                url.append(USSDCampaignUtil.CODE_PARAMETER);
-                url.append(campaign.getCampaignCode());
-                url.append(USSDCampaignUtil.LANGUAGE_PARAMETER);
-                url.append(userLocale.getLanguage());
-                linksMap.put(option,url.toString());
+        if (campaignMessage.getNextMessages() != null && !campaignMessage.getNextMessages().isEmpty()){
+            for(Map.Entry<String, CampaignActionType> action : campaignMessage.getNextMessages().entrySet()){
+                String optionKey = USSDCampaignUtil.CAMPAIGN_PREFIX + action.getValue().name().toLowerCase();
+                String option = getMessage(optionKey, userLocale.getLanguage());
+                StringBuilder url = new StringBuilder("campaign/");
+                url.append(USSDCampaignUtil.getCampaignUrlPrefixs().get(action.getValue())).append("?");
+                url.append(USSDCampaignUtil.MESSAGE_UID_PARAMETER).append(action.getKey());
+                log.info("adding url: {}", url.toString());
+                linksMap.put(url.toString(), option);
             }
         }
         return new USSDMenu(promptMessage,linksMap);
@@ -281,16 +279,15 @@ public class USSDHomeController extends USSDBaseController {
         String optionKey = USSDCampaignUtil.CAMPAIGN_PREFIX + USSDCampaignUtil.SET_LANGUAGE_URL;
         String promptMessage = getMessage(optionKey,userLocale.getLanguage());
         Map<String, String> linksMap = new HashMap<>();
-        Set<Locale> localeSet = CampaignUtil.getCampaignSupportedLanguages(campaign);
-        for(Locale locale : localeSet){
+        Set<Locale> localeSet = campaignBroker.getCampaignLanguages(campaign.getUid());
+        for(Locale locale : localeSet) {
             String option = locale.getLanguage();
-            StringBuilder url = new StringBuilder();
-            url.append(USSDCampaignUtil.SET_LANGUAGE_URL);
-            url.append(USSDCampaignUtil.CODE_PARAMETER);
-            url.append(campaign.getCampaignCode());
-            url.append(USSDCampaignUtil.LANGUAGE_PARAMETER);
-            url.append(locale.getLanguage());
-            linksMap.put(option,url.toString());
+            String url = USSDCampaignUtil.SET_LANGUAGE_URL +
+                    USSDCampaignUtil.CAMPAIGN_ID_PARAMETER +
+                    campaign.getCampaignCode() +
+                    USSDCampaignUtil.LANGUAGE_PARAMETER +
+                    locale.getLanguage();
+            linksMap.put(option, url);
         }
         return new USSDMenu(promptMessage,linksMap);
     }

@@ -23,6 +23,7 @@ import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.services.PermissionBroker;
+import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.services.exception.GroupSizeLimitExceededException;
 import za.org.grassroot.services.exception.JoinWordsExceededException;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
@@ -53,12 +54,14 @@ public class GroupModifyController extends GroupBaseController {
     private final PermissionBroker permissionBroker;
     private final GroupFetchBroker groupFetchBroker;
     private final GroupImageBroker groupImageBroker;
+    private final AccountGroupBroker accountGroupBroker;
 
-    public GroupModifyController(JwtService jwtService, UserManagementService userManagementService, PermissionBroker permissionBroker, GroupFetchBroker groupFetchBroker, GroupImageBroker groupImageBroker) {
+    public GroupModifyController(JwtService jwtService, UserManagementService userManagementService, PermissionBroker permissionBroker, GroupFetchBroker groupFetchBroker, GroupImageBroker groupImageBroker, AccountGroupBroker accountGroupBroker) {
         super(jwtService, userManagementService);
         this.permissionBroker = permissionBroker;
         this.groupFetchBroker = groupFetchBroker;
         this.groupImageBroker = groupImageBroker;
+        this.accountGroupBroker = accountGroupBroker;
     }
 
     @RequestMapping(value = "/create", method = RequestMethod.POST)
@@ -68,14 +71,17 @@ public class GroupModifyController extends GroupBaseController {
                                                    @RequestParam GroupPermissionTemplate permissionTemplate,
                                                    @RequestParam int reminderMinutes,
                                                    @RequestParam boolean discoverable,
+                                                   @RequestParam boolean defaultAddToAccount,
                                                    HttpServletRequest request) {
         User user = getUserFromRequest(request);
         if (user != null) {
             HashSet<MembershipInfo> membershipInfos = new HashSet<>();
             membershipInfos.add(new MembershipInfo(user, user.getDisplayName(), BaseRoles.ROLE_GROUP_ORGANIZER, null));
-            Group group = groupBroker.create(user.getUid(), name, null, membershipInfos, permissionTemplate, description, reminderMinutes, true);
+            Group group = groupBroker.create(user.getUid(), name, null, membershipInfos, permissionTemplate, description, reminderMinutes, true, discoverable);
 
-            groupBroker.updateDiscoverable(user.getUid(), group.getUid(), discoverable, null);
+            if (defaultAddToAccount && user.getPrimaryAccount() != null) {
+                accountGroupBroker.addGroupToUserAccount(group.getUid(), user.getUid());
+            }
 
             return new ResponseEntity<>(new GroupRefDTO(group.getUid(), group.getGroupName(), group.getMemberships().size()), HttpStatus.OK);
         } else
@@ -142,6 +148,7 @@ public class GroupModifyController extends GroupBaseController {
                 .map(AddMemberInfo::convertToMembershipInfo)
                 .collect(Collectors.toSet());
         List<String> invalidNumbers = findInvalidNumbers(memberInfos);
+
         try {
             groupBroker.addMembers(getUserIdFromRequest(request), groupUid, memberInfos,
                     GroupJoinMethod.ADDED_BY_OTHER_MEMBER, false);
@@ -189,7 +196,7 @@ public class GroupModifyController extends GroupBaseController {
 
             Set<MembershipInfo> membershipInfos = MembershipInfo.createFromMembers(groupMemberships);
             groupBroker.create(getUserIdFromRequest(request), taskTeamName, parentUid, membershipInfos,
-                    GroupPermissionTemplate.DEFAULT_GROUP, null, null, false);
+                    GroupPermissionTemplate.DEFAULT_GROUP, null, null, false, false);
             return ResponseEntity.ok().build();
         } catch (AccessDeniedException e) {
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
@@ -360,7 +367,7 @@ public class GroupModifyController extends GroupBaseController {
     }
 
     private List<String> findInvalidNumbers(Set<MembershipInfo> members) {
-        return members.stream().filter(m -> !m.hasValidPhoneNumber())
+        return members.stream().filter(m -> m.hasPhoneNumber() && !m.hasValidPhoneNumber())
                 .map(MembershipInfo::getPhoneNumber)
                 .collect(Collectors.toList());
     }

@@ -57,7 +57,7 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
     @JoinColumn(name = "ancestor_group_id", nullable = true)
     private Group masterGroup ;
 
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "campaign", orphanRemoval = true)
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "campaign")
     private Set<CampaignMessage> campaignMessages = new HashSet<>();
 
     @Column(name = "tags")

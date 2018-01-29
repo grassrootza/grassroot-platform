@@ -35,6 +35,7 @@ public class CampaignWebUtil {
                 campaign.getCampaignType(),
                 campaign.getCreatedByUser().getUid(),
                 campaign.getCreatedByUser().getName(),
+                campaign.getCreatedDateTime(),
                 campaign.getStartDateTime(),
                 campaign.getEndDateTime(),
                 campaign.getUrl(), campaign.getCampaignCode(), campaign.getTagList());

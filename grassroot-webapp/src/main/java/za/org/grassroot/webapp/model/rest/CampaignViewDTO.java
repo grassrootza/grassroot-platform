@@ -16,8 +16,9 @@ public class CampaignViewDTO implements Serializable{
     private String campaignUid;
     private String name;
     private String description;
-    private String createUserName;
-    private String createUserUid;
+    private String creatingUserName;
+    private String creatingUserUid;
+    private Instant createdDate;
     private String campaignCode;
     private Instant campaignStartDate;
     private Instant campaignEndDate;
@@ -30,14 +31,16 @@ public class CampaignViewDTO implements Serializable{
     private List<String> campaignTags;
     private List<CampaignMessageViewDTO> campaignMessages;
 
-    public CampaignViewDTO(String campaignUid, String campaignName, String campaignDescription, CampaignType campaignType, String createUserUid, String createUserName, Instant campaignStartDate, Instant campaignEndDate, String campaignUrl, String campaignCode,
-                           List<String> campaignTags){
+    public CampaignViewDTO(String campaignUid, String campaignName, String campaignDescription, CampaignType campaignType,
+                           String createUserUid, String createUserName, Instant createdDateTime,
+                           Instant campaignStartDate, Instant campaignEndDate, String campaignUrl, String campaignCode, List<String> campaignTags){
         this.campaignCode = campaignCode;
         this.name = campaignName;
         this.description = campaignDescription;
         this.campaignType = campaignType;
-        this.createUserName = createUserName;
-        this.createUserUid = createUserUid;
+        this.creatingUserName = createUserName;
+        this.creatingUserUid = createUserUid;
+        this.createdDate = createdDateTime;
         this.campaignStartDate = campaignStartDate;
         this.campaignEndDate = campaignEndDate;
         this.campaignUid = campaignUid;

@@ -135,7 +135,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
     @Override
     @Transactional
     public Group create(String userUid, String name, String parentGroupUid, Set<MembershipInfo> membershipInfos,
-                        GroupPermissionTemplate groupPermissionTemplate, String description, Integer reminderMinutes, boolean openJoinToken) {
+                        GroupPermissionTemplate groupPermissionTemplate, String description, Integer reminderMinutes, boolean openJoinToken, boolean discoverable) {
 
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(name);
@@ -157,6 +157,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         group.setDescription((description == null) ? "" : description);
         group.setReminderMinutes((reminderMinutes == null) ? (24 * 60) : reminderMinutes);
         group.setParent(parent);
+        group.setDiscoverable(discoverable);
 
         LogsAndNotificationsBundle bundle = addMemberships(user, group, membershipInfos,
                 GroupJoinMethod.ADDED_AT_CREATION, user.getName(), true, true);
@@ -525,40 +526,64 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
                                                       boolean duringGroupCreation, boolean createWelcomeNotifications) {
         // note: User objects should only ever store phone numbers in the msisdn format (i.e, with country code at front, no '+')
 
-
         Comparator<MembershipInfo> byPhoneNumber =
                 (MembershipInfo m1, MembershipInfo m2) -> (m1.getPhoneNumberWithCCode().compareTo(m2.getPhoneNumberWithCCode()));
 
         Set<MembershipInfo> validNumberMembers = membershipInfos.stream()
-                .filter(MembershipInfo::hasValidPhoneNumber)
+                .filter(MembershipInfo::hasValidPhoneOrEmail)
                 .collect(collectingAndThen(toCollection(() -> new TreeSet<>(byPhoneNumber)), HashSet::new));
         logger.debug("number of members: {}", validNumberMembers.size());
 
         Set<String> memberPhoneNumbers = validNumberMembers.stream()
                 .map(MembershipInfo::getPhoneNumberWithCCode)
                 .collect(Collectors.toSet());
+        Set<String> emailAddresses = validNumberMembers.stream()
+                .filter(MembershipInfo::hasValidEmail)
+                .map(MembershipInfo::getMemberEmail).collect(Collectors.toSet());
 
         logger.debug("phoneNumbers returned: ...." + memberPhoneNumbers);
 
         Set<User> existingUsers = new HashSet<>(userRepository.findByPhoneNumberIn(memberPhoneNumbers));
-        Map<String, User> existingUserMap = existingUsers.stream().collect(Collectors.toMap(User::getPhoneNumber, user -> user));
+        existingUsers.addAll(userRepository.findByEmailAddressIn(emailAddresses));
 
-        logger.info("Number of existing users ... " + existingUsers.size());
+        Map<String, User> existingUserPhoneMap = existingUsers.stream()
+                .filter(User::hasPhoneNumber)
+                .collect(Collectors.toMap(User::getPhoneNumber, user -> user));
+        Map<String, User> existingUserEmailMap = existingUsers.stream()
+                .filter(User::hasEmailAddress)
+                .collect(Collectors.toMap(User::getEmailAddress, user -> user));
+
+        logger.info("Number of existing users ... {}", existingUsers.size() + existingUserEmailMap.size());
 
         Set<User> createdUsers = new HashSet<>();
         Set<Membership> memberships = new HashSet<>();
 
+        Set<String> existingEmails = userRepository.fetchUsedEmailAddresses();
+        Set<String> existingPhoneNumbers = userRepository.fetchUserPhoneNumbers();
+
         for (MembershipInfo membershipInfo : validNumberMembers) {
             // note: splitting this instead of getOrDefault, since that method calls default method even if it finds something, hence spurious user creation
-            String phoneNumberWithCCode = membershipInfo.getPhoneNumberWithCCode();
-            User user = existingUserMap.get(phoneNumberWithCCode);
+            String msidn = membershipInfo.getPhoneNumberWithCCode();
+            String emailAddress = membershipInfo.getMemberEmail();
+
+            User user = existingUserPhoneMap.containsKey(msidn) ? existingUserPhoneMap.get(msidn) :
+                    existingUserEmailMap.get(emailAddress);
+
             if (user == null) {
-                logger.debug("Adding a new user, via group creation, with phone number ... " + phoneNumberWithCCode);
-                user = new User(phoneNumberWithCCode, membershipInfo.getDisplayName(), null);
+                logger.debug("Adding a new user, via group creation, with phone number ... " + msidn);
+                user = new User(msidn, membershipInfo.getDisplayName(), emailAddress);
                 createdUsers.add(user);
+            } else if (!user.isHasInitiatedSession()) {
+                if (!user.hasEmailAddress() && !StringUtils.isEmpty(emailAddress) && !existingEmails.contains(emailAddress)) {
+                    user.setEmailAddress(emailAddress);
+                }
+                if (!user.hasPhoneNumber() && !StringUtils.isEmpty(msidn) && !existingPhoneNumbers.contains(msidn)) {
+                    user.setPhoneNumber(msidn);
+                }
             }
 
             String roleName = membershipInfo.getRoleName();
+
             if (roleName == null)
                 roleName = BaseRoles.ROLE_ORDINARY_MEMBER;
             if (joinMethod == null)
@@ -958,7 +983,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         if (createNew) {
             Set<MembershipInfo> membershipInfos = MembershipInfo.createFromMembers(groupInto.getMemberships());
             membershipInfos.addAll(MembershipInfo.createFromMembers(groupFrom.getMemberships()));
-            resultGroup = create(user.getUid(), newGroupName, null, membershipInfos, GroupPermissionTemplate.DEFAULT_GROUP, null, null, false);
+            resultGroup = create(user.getUid(), newGroupName, null, membershipInfos, GroupPermissionTemplate.DEFAULT_GROUP, null, null, false, false);
             if (!leaveActive) {
                 deactivate(user.getUid(), groupInto.getUid(), false);
                 deactivate(user.getUid(), groupFrom.getUid(), false);

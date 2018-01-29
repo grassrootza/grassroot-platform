@@ -60,13 +60,14 @@ public class MediaFileRecord {
         // for JPA
     }
 
-    public MediaFileRecord(String bucket, String key) {
+    public MediaFileRecord(String bucket, String contentType, String key) {
         Objects.requireNonNull(bucket);
         this.uid = UIDGenerator.generateId();
         this.bucket = bucket;
         this.key = key == null ? uid : key;
         this.creationTime = Instant.now();
         this.readRequests = 0;
+        this.mimeType = contentType;
     }
 
     public String getUid() {
