@@ -142,6 +142,7 @@ public class GroupModifyController extends GroupBaseController {
                 .map(AddMemberInfo::convertToMembershipInfo)
                 .collect(Collectors.toSet());
         List<String> invalidNumbers = findInvalidNumbers(memberInfos);
+
         try {
             groupBroker.addMembers(getUserIdFromRequest(request), groupUid, memberInfos,
                     GroupJoinMethod.ADDED_BY_OTHER_MEMBER, false);
@@ -360,7 +361,7 @@ public class GroupModifyController extends GroupBaseController {
     }
 
     private List<String> findInvalidNumbers(Set<MembershipInfo> members) {
-        return members.stream().filter(m -> !m.hasValidPhoneNumber())
+        return members.stream().filter(m -> m.hasPhoneNumber() && !m.hasValidPhoneNumber())
                 .map(MembershipInfo::getPhoneNumber)
                 .collect(Collectors.toList());
     }

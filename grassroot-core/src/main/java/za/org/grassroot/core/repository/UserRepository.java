@@ -84,5 +84,12 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
     List<User> findNotificationTargetsForEvent(Event event, Class<? extends EventNotification> notificationClass);
 
     List<User> findByPhoneNumberIn(Collection<String> phoneNumbers);
+    List<User> findByEmailAddressIn(Collection<String> emailAddresses);
+
+    @Query("select lower(u.emailAddress) from User u where u.enabled = true")
+    Set<String> fetchUsedEmailAddresses();
+
+    @Query("select u.phoneNumber from User u where u.enabled = true")
+    Set<String> fetchUserPhoneNumbers();
 
 }

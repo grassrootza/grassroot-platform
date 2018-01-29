@@ -4,6 +4,7 @@ package za.org.grassroot.core.enums;
 public enum CampaignLogType {
 
     CREATED_IN_DB("campaign created"),
+    CAMPAIGN_MESSAGES_SET("campaign messages set"),
     CAMPAIGN_MESSAGE_ADDED("campaign message added"),
     CAMPAIGN_TAG_ADDED("campaign tag added"),
     CAMPAIGN_MESSAGE_ACTION_ADDED("campaign message action added"),

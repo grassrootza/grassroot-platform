@@ -112,7 +112,7 @@ public class USSDGroupController extends USSDBaseController {
                     getMessage(HOME, startMenu, promptKey + ".group.token.unnamed", user);
             return welcomeMenu(prompt, user);
         } else {
-            return welcomeMenu(getMessage(HOME, startMenu, promptKey + ".unknown.request", user), user);
+            return null;
         }
     }
 
