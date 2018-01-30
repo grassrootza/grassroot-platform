@@ -48,33 +48,35 @@ public class MembershipSpecifications {
                 .and(memberInProvinces(provinces));
     }
 
-    public static Specification<Membership> filterGroupMembership(Group group, Collection<Province> provinces, Collection<Group> taskTeams,
-                                                                   Collection<String> topics){
+
+
+
+    public static Specification<Membership> filterGroupMembership(Group group,
+                                                                  Collection<Province> provinces,
+                                                                  Collection<String> taskTeamsUids,
+                                                                  Collection<GroupJoinMethod> joinMethods,
+                                                                  Collection<String> joinedViaCampaignUids ){
 
         return (root, query, cb) -> {
 
             List<Predicate> restrictions = new ArrayList<>();
 
 
-            if(provinces != null && provinces.size() > 0){
-                Join<Membership, User> userJoin = root.join(Membership_.user, JoinType.INNER);
-                restrictions.add(userJoin.get(User_.province).in(provinces));
+            if (provinces != null && provinces.size() > 0) {
+                restrictions.add(root.get(Membership_.user).get(User_.province).in(provinces));
             }
 
-            if(taskTeams != null && taskTeams.size() > 0){
-                restrictions.add(root.get(Membership_.group).get(Group_.uid).in(taskTeams.stream().map(Group::getUid).collect(Collectors.toList())));
-            }else{
+            if (taskTeamsUids != null && taskTeamsUids.size() > 0) {
+                restrictions.add(root.get(Membership_.group).get(Group_.uid).in(taskTeamsUids));
+            } else {
                 restrictions.add(cb.equal(root.get(Membership_.group), group));
             }
 
-//            if(topics != null && topics.size() > 0){
-//
-//            }
-
+            if (joinMethods != null) {
+                restrictions.add(root.get(Membership_.joinMethod).in(joinMethods));
+            }
 
             return cb.and(restrictions.toArray(new Predicate[0]));
-
-
         };
 
     }

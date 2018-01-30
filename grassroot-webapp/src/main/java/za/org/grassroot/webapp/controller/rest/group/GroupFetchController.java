@@ -18,10 +18,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
-import za.org.grassroot.core.domain.ActionLog;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.Permission;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.MembershipFullDTO;
 import za.org.grassroot.core.dto.group.*;
 import za.org.grassroot.core.enums.Province;
@@ -169,9 +166,11 @@ public class GroupFetchController extends BaseRestController {
                                                       @RequestParam (required = false) Collection<Province> provinces,
                                                       @RequestParam (required = false) Collection<String> taskTeams,
                                                       @RequestParam (required = false) Collection<String> topics,
+                                                      @RequestParam (required = false) Collection<GroupJoinMethod> joinMethods,
+                                                      @RequestParam (required = false) Collection<String> joinedViaCampaignUids,
                                                       HttpServletRequest request) {
         User user = getUserFromRequest(request);
-        List<MembershipFullDTO> members = groupFetchBroker.filterGroupMembers(user, groupUid,provinces, taskTeams, topics);
+        List<MembershipFullDTO> members = groupFetchBroker.filterGroupMembers(user, groupUid,provinces, taskTeams, topics, joinMethods, joinedViaCampaignUids);
         return members;
     }
 

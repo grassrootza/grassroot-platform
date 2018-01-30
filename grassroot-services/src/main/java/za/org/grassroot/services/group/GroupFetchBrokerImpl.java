@@ -247,20 +247,27 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
     }
 
     @Override
-    public List<MembershipFullDTO> filterGroupMembers(User user, String groupUid, Collection<Province> provinces, Collection<String> taskTeams, Collection<String> topics) {
+    public List<MembershipFullDTO> filterGroupMembers(User user, String groupUid,
+                                                      Collection<Province> provinces,
+                                                      Collection<String> taskTeamsUids,
+                                                      Collection<String> topics,
+                                                      Collection<GroupJoinMethod> joinMethods,
+                                                      Collection<String> joinedCampaignsUids
+    ) {
         Objects.requireNonNull(groupUid);
         Group group = groupRepository.findOneByUid(groupUid);
 
-        Set<Group> groupTaskTeams = new HashSet<>();
-        if(taskTeams != null && taskTeams.size() > 0){
-            groupTaskTeams = groupRepository.findByUidIn((Set<String>) taskTeams);
-        }
+
         try{
             permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
         }catch (AccessDeniedException e) {
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
         }
-        List<Membership> members = membershipRepository.findAll(MembershipSpecifications.filterGroupMembership(group, provinces, groupTaskTeams, topics));
+
+        List<Membership> members = membershipRepository.findAll(
+                MembershipSpecifications.filterGroupMembership(group, provinces, taskTeamsUids, joinMethods, joinedCampaignsUids)
+        );
+
         if(topics != null && topics.size() > 0){
             members = members.stream()
             .filter(m -> m.getTopics().containsAll(topics))
