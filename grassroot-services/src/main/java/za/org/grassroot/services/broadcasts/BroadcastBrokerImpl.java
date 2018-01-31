@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,9 +45,11 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
 
     private final BroadcastRepository broadcastRepository;
     private final UserRepository userRepository;
+
     private final GroupRepository groupRepository;
     private final CampaignRepository campaignRepository;
     private final MembershipRepository membershipRepository;
+    private final GroupJoinCodeRepository groupJoinCodeRepository;
 
     private final MessagingServiceBroker messagingServiceBroker;
     private final SocialMediaBroker socialMediaBroker;
@@ -55,12 +58,13 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
     private final AccountLogRepository accountLogRepository;
 
     @Autowired
-    public BroadcastBrokerImpl(BroadcastRepository broadcastRepository, UserRepository userRepository, GroupRepository groupRepository, CampaignRepository campaignRepository, MembershipRepository membershipRepository, MessagingServiceBroker messagingServiceBroker, SocialMediaBroker socialMediaBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, AccountLogRepository accountLogRepository) {
+    public BroadcastBrokerImpl(BroadcastRepository broadcastRepository, UserRepository userRepository, GroupRepository groupRepository, CampaignRepository campaignRepository, MembershipRepository membershipRepository, GroupJoinCodeRepository groupJoinCodeRepository, MessagingServiceBroker messagingServiceBroker, SocialMediaBroker socialMediaBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, AccountLogRepository accountLogRepository) {
         this.broadcastRepository = broadcastRepository;
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
         this.campaignRepository = campaignRepository;
         this.membershipRepository = membershipRepository;
+        this.groupJoinCodeRepository = groupJoinCodeRepository;
         this.messagingServiceBroker = messagingServiceBroker;
         this.socialMediaBroker = socialMediaBroker;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
@@ -80,6 +84,9 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
             builder.isSmsAllowed(false);
         }
 
+        builder.joinLinks(groupJoinCodeRepository.findByGroupUidAndActiveTrue(groupUid).stream()
+                .map(GroupJoinCode::getShortUrl).collect(Collectors.toList()));
+
         if (mockSocialMediaBroadcasts) {
             builder.isFbConnected(true).facebookPages(mockFbPages());
             builder.isTwitterConnected(true).twitterAccount(mockTwitterAccount());
@@ -92,6 +99,9 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
             builder.isTwitterConnected(twitterAccount != null)
                     .twitterAccount(twitterAccount);
         }
+
+        builder.campaignLinks(campaignRepository.findByMasterGroupUid(groupUid, new Sort("createdDateTime"))
+                .stream().filter(Campaign::isActive).map(Campaign::getUrl).collect(Collectors.toList()));
 
         // or for campaign, extract somehow
         Group group = groupRepository.findOneByUid(groupUid);

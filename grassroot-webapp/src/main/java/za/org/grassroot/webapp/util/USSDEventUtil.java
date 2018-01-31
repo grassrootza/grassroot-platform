@@ -5,17 +5,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.EventRequest;
-import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.integration.LearningService;
 import za.org.grassroot.integration.exception.SeloParseDateTimeFailure;
 import za.org.grassroot.services.async.AsyncUserLogger;
-import za.org.grassroot.services.task.enums.EventListTimeType;
 import za.org.grassroot.services.task.EventBroker;
 import za.org.grassroot.services.task.EventRequestBroker;
+import za.org.grassroot.services.task.enums.EventListTimeType;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.enums.USSDSection;
 
@@ -194,13 +194,15 @@ public class USSDEventUtil extends USSDUtil {
      */
     public LocalDateTime parseDateTime(String passedValue) throws SeloParseDateTimeFailure {
 
-        LocalDateTime parsedDateTime;
+        LocalDateTime parsedDateTime = DateTimeUtil.tryParseString(passedValue);
 
-        try {
-            parsedDateTime = learningService.parse(passedValue);
-            log.info("Date time processed: " + parsedDateTime.toString());
-        } catch (Exception e) {
-            throw new SeloParseDateTimeFailure();
+        if (parsedDateTime == null) {
+            try {
+                parsedDateTime = learningService.parse(passedValue);
+                log.info("Date time processed: " + parsedDateTime.toString());
+            } catch (Exception e) {
+                throw new SeloParseDateTimeFailure();
+            }
         }
 
         return parsedDateTime;

@@ -134,11 +134,10 @@ public class CampaignBrokerImpl implements CampaignBroker {
     public Campaign getCampaignDetailsByCode(String campaignCode, String userUid, boolean storeLog){
         Objects.requireNonNull(campaignCode);
         Campaign campaign = getCampaignByCampaignCode(campaignCode);
-        if (storeLog) {
+        if (campaign != null && storeLog) {
             Objects.requireNonNull(userUid);
             User user = userManager.load(userUid);
-            CampaignLogType campaignLogType = (campaign != null) ? CampaignLogType.CAMPAIGN_FOUND : CampaignLogType.CAMPAIGN_NOT_FOUND;
-            persistCampaignLog(new CampaignLog(user, campaignLogType,campaign, campaignCode));
+            persistCampaignLog(new CampaignLog(user, CampaignLogType.CAMPAIGN_FOUND, campaign, campaignCode));
         }
         return campaign;
     }

@@ -23,6 +23,9 @@ public class BroadcastInfo {
     boolean isTwitterConnected;
     ManagedPage twitterAccount;
 
+    List<String> joinLinks;
+    List<String> campaignLinks;
+
     // we will use these for constructing the various counts (once also have various counting infra set up)
     long allMemberCount;
 
