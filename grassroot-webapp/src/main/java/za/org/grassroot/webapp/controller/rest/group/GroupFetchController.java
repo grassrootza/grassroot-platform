@@ -167,10 +167,10 @@ public class GroupFetchController extends BaseRestController {
                                                       @RequestParam (required = false) Collection<String> taskTeams,
                                                       @RequestParam (required = false) Collection<String> topics,
                                                       @RequestParam (required = false) Collection<GroupJoinMethod> joinMethods,
-                                                      @RequestParam (required = false) Collection<String> joinedViaCampaignUids,
+                                                      @RequestParam (required = false) Collection<String> joinedCampaignsUids,
                                                       HttpServletRequest request) {
         User user = getUserFromRequest(request);
-        List<MembershipFullDTO> members = groupFetchBroker.filterGroupMembers(user, groupUid,provinces, taskTeams, topics, joinMethods, joinedViaCampaignUids);
+        List<MembershipFullDTO> members = groupFetchBroker.filterGroupMembers(user, groupUid,provinces, taskTeams, topics, joinMethods, joinedCampaignsUids);
         return members;
     }
 

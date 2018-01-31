@@ -5,12 +5,13 @@ import org.springframework.data.jpa.domain.Specifications;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.Province;
 
-import javax.persistence.criteria.*;
+import javax.persistence.criteria.Join;
+import javax.persistence.criteria.JoinType;
+import javax.persistence.criteria.Predicate;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class MembershipSpecifications {
 
@@ -54,8 +55,8 @@ public class MembershipSpecifications {
     public static Specification<Membership> filterGroupMembership(Group group,
                                                                   Collection<Province> provinces,
                                                                   Collection<String> taskTeamsUids,
-                                                                  Collection<GroupJoinMethod> joinMethods,
-                                                                  Collection<String> joinedViaCampaignUids ){
+                                                                  Collection<GroupJoinMethod> joinMethods
+                                                                  ){
 
         return (root, query, cb) -> {
 
@@ -75,6 +76,7 @@ public class MembershipSpecifications {
             if (joinMethods != null) {
                 restrictions.add(root.get(Membership_.joinMethod).in(joinMethods));
             }
+
 
             return cb.and(restrictions.toArray(new Predicate[0]));
         };

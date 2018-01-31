@@ -12,13 +12,12 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.campaign.CampaignLog;
 import za.org.grassroot.core.dto.MembershipFullDTO;
 import za.org.grassroot.core.dto.group.*;
+import za.org.grassroot.core.enums.CampaignLogType;
 import za.org.grassroot.core.enums.Province;
-import za.org.grassroot.core.repository.GroupLogRepository;
-import za.org.grassroot.core.repository.GroupRepository;
-import za.org.grassroot.core.repository.MembershipRepository;
-import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.GroupLogSpecifications;
 import za.org.grassroot.core.specifications.GroupSpecifications;
 import za.org.grassroot.core.specifications.MembershipSpecifications;
@@ -47,15 +46,20 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
     private final GroupRepository groupRepository;
     private final GroupLogRepository groupLogRepository;
     private final MembershipRepository membershipRepository;
+    private final CampaignLogRepository campaignLogRepository;
     private final PermissionBroker permissionBroker;
     private final EntityManager entityManager;
 
     @Autowired
-    public GroupFetchBrokerImpl(UserRepository userRepository, GroupRepository groupRepository, GroupLogRepository groupLogRepository, MembershipRepository membershipRepository, PermissionBroker permissionBroker, EntityManager entityManager) {
+    public GroupFetchBrokerImpl(UserRepository userRepository, GroupRepository groupRepository,
+                                GroupLogRepository groupLogRepository, MembershipRepository membershipRepository,
+                                CampaignLogRepository campaignLogRepository,
+                                PermissionBroker permissionBroker, EntityManager entityManager) {
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
         this.groupLogRepository = groupLogRepository;
         this.membershipRepository = membershipRepository;
+        this.campaignLogRepository = campaignLogRepository;
         this.permissionBroker = permissionBroker;
         this.entityManager = entityManager;
     }
@@ -265,7 +269,7 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
         }
 
         List<Membership> members = membershipRepository.findAll(
-                MembershipSpecifications.filterGroupMembership(group, provinces, taskTeamsUids, joinMethods, joinedCampaignsUids)
+                MembershipSpecifications.filterGroupMembership(group, provinces, taskTeamsUids, joinMethods)
         );
 
         if(topics != null && topics.size() > 0){
@@ -273,6 +277,15 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
             .filter(m -> m.getTopics().containsAll(topics))
             .collect(Collectors.toList());
         }
+
+        //this is an alternative to very complicated query
+        if (joinedCampaignsUids != null && joinedCampaignsUids.size() > 0) {
+            List<CampaignLog> campLogs = campaignLogRepository.findByCampaignLogTypeAndCampaignMasterGroupUid(CampaignLogType.CAMPAIGN_USER_ADDED_TO_MASTER_GROUP, groupUid);
+            campLogs = campLogs.stream().filter(cl -> joinedCampaignsUids.contains(cl.getCampaign().getUid())).collect(Collectors.toList());
+            List<User> usersAddedByCampaigns = campLogs.stream().map(cl -> cl.getUser()).collect(Collectors.toList());
+            members = members.stream().filter( m -> usersAddedByCampaigns.contains(m.getUser())).collect(Collectors.toList());
+        }
+
         return members.stream().map(MembershipFullDTO::new).collect(Collectors.toList());
     }
 
