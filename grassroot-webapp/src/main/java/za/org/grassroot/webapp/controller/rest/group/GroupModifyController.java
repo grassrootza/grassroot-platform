@@ -236,12 +236,15 @@ public class GroupModifyController extends GroupBaseController {
                                                  @RequestParam(required = false) String phone,
                                                  @RequestParam(required = false) Province province) {
         try {
+            log.info("modifying member details in group, = {}", name);
             String userId = getUserIdFromRequest(request);
             groupBroker.updateMembershipDetails(userId, groupUid, memberUid, name, phone, email, province);
             return ResponseEntity.ok(groupFetchBroker.fetchGroupMember(userId, groupUid, memberUid));
         } catch (IllegalArgumentException e) {
+            log.info("illegal argument in member modify", e);
             return RestUtil.errorResponse(RestMessage.MEMBER_ALREADY_SET);
         } catch (InvalidPhoneNumberException e) {
+            log.info("invalid phone number in member modify", e);
             return RestUtil.errorResponse(RestMessage.INVALID_MSISDN);
         }
     }
