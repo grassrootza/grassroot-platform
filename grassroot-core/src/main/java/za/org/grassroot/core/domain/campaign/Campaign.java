@@ -92,6 +92,10 @@ public class Campaign implements Serializable, Comparable<Campaign>, TagHolder {
         this.url = campaignUrl;
     }
 
+    public boolean isActive() {
+        return Instant.now().isBefore(endDateTime);
+    }
+
     @Override
     public String[] getTags(){
         return tags;

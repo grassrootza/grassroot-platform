@@ -3,10 +3,7 @@ package za.org.grassroot.services.group;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import za.org.grassroot.core.domain.ActionLog;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.Membership;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.MembershipFullDTO;
 import za.org.grassroot.core.dto.group.*;
 import za.org.grassroot.core.enums.Province;
@@ -43,6 +40,11 @@ public interface GroupFetchBroker {
 
     List<ActionLog> fetchUserActivityDetails(String queryingUserUid, String groupUid, String memberUid);
 
-    List<MembershipFullDTO> filterGroupMembers(User user, String groupUid, Collection<Province> provinces, Collection<String> taskTeams, Collection<String> topics);
+    List<MembershipFullDTO> filterGroupMembers(User user, String groupUid,
+                                               Collection<Province> provinces,
+                                               Collection<String> taskTeams,
+                                               Collection<String> topics,
+                                               Collection<GroupJoinMethod> joinMethods,
+                                               Collection<String> joinedCampaignsUids);
 
 }

@@ -6,10 +6,12 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.StringUtils;
 
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Matcher;
@@ -125,6 +127,31 @@ public class DateTimeUtil {
     /*
     SECTION : regex for handling preformatted date time (may be able to remove given introduction of Selo & SUTime)
      */
+    public static LocalDateTime tryParseString(String userResponse) {
+        List<String> strings = Arrays.asList(userResponse.split(" "));
+        String timeString = null;
+        String dateString = null;
+
+        log.info("will be trying to parse: {}", strings);
+        for (String str : strings) {
+            log.info("testing: {}", str);
+            if (!reformatTimeInput(str).equalsIgnoreCase(str.trim())) {
+                timeString = reformatTimeInput(str);
+                log.info("got a time string! : {}", timeString);
+            }
+            if (!reformatDateInput(str).equalsIgnoreCase(str.trim())) {
+                dateString = reformatDateInput(str);
+                log.info("got a date string: {}", dateString);
+            }
+        }
+
+        if (!StringUtils.isEmpty(timeString) && !StringUtils.isEmpty(dateString)) {
+            return preferredDateTimeFormat.parse(dateString + " " + timeString, LocalDateTime::from);
+        } else {
+            return null;
+        }
+    }
+
 
     /**
      * Helper method to deal with messy user input of a time string, more strict but also more likely to be accurate than
@@ -135,7 +162,6 @@ public class DateTimeUtil {
      * @param userResponse The string that the user has entered
      * @return The string reformated as mm:HH, if it matched any of the known patterns, else the string as-is
      */
-
     public static String reformatTimeInput(String userResponse) {
 
         String reformattedTime;
