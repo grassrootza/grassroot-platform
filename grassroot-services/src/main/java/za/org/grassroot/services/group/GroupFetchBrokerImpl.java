@@ -21,16 +21,14 @@ import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.GroupLogSpecifications;
 import za.org.grassroot.core.specifications.GroupSpecifications;
 import za.org.grassroot.core.specifications.MembershipSpecifications;
-import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
-import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
-import java.lang.reflect.Member;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.function.Function;
@@ -262,7 +260,10 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
                                                       Collection<String> taskTeamsUids,
                                                       Collection<String> topics,
                                                       Collection<GroupJoinMethod> joinMethods,
-                                                      Collection<String> joinedCampaignsUids
+                                                      Collection<String> joinedCampaignsUids,
+                                                      Integer joinDaysAgo,
+                                                      LocalDate joinDate,
+                                                      JoinDateCondition joinDateCondition
     ) {
         Objects.requireNonNull(groupUid);
         Group group = groupRepository.findOneByUid(groupUid);
@@ -275,7 +276,7 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
         }
 
         List<Membership> members = membershipRepository.findAll(
-                MembershipSpecifications.filterGroupMembership(group, provinces, taskTeamsUids, joinMethods)
+                MembershipSpecifications.filterGroupMembership(group, provinces, taskTeamsUids, joinMethods, joinDaysAgo, joinDate, joinDateCondition)
         );
 
         if(topics != null && topics.size() > 0){

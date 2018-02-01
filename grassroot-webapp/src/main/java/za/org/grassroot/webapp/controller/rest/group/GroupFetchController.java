@@ -12,6 +12,7 @@ import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -43,6 +44,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -168,9 +170,17 @@ public class GroupFetchController extends BaseRestController {
                                                       @RequestParam (required = false) Collection<String> topics,
                                                       @RequestParam (required = false) Collection<GroupJoinMethod> joinMethods,
                                                       @RequestParam (required = false) Collection<String> joinedCampaignsUids,
+                                                      @RequestParam (required = false) Integer joinDaysAgo,
+                                                      @RequestParam (required = false)  @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)  LocalDate joinDate,
+                                                      @RequestParam (required = false) JoinDateCondition joinDaysAgoCondition,
                                                       HttpServletRequest request) {
         User user = getUserFromRequest(request);
-        List<MembershipFullDTO> members = groupFetchBroker.filterGroupMembers(user, groupUid,provinces, taskTeams, topics, joinMethods, joinedCampaignsUids);
+
+        List<MembershipFullDTO> members =
+                groupFetchBroker
+                .filterGroupMembers(
+                        user, groupUid,provinces, taskTeams, topics, joinMethods, joinedCampaignsUids, joinDaysAgo, joinDate, joinDaysAgoCondition);
+
         return members;
     }
 

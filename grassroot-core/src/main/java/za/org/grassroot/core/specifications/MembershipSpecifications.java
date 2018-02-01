@@ -9,6 +9,9 @@ import javax.persistence.criteria.Join;
 import javax.persistence.criteria.JoinType;
 import javax.persistence.criteria.Predicate;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -55,7 +58,10 @@ public class MembershipSpecifications {
     public static Specification<Membership> filterGroupMembership(Group group,
                                                                   Collection<Province> provinces,
                                                                   Collection<String> taskTeamsUids,
-                                                                  Collection<GroupJoinMethod> joinMethods
+                                                                  Collection<GroupJoinMethod> joinMethods,
+                                                                  Integer joinDaysAgo,
+                                                                  LocalDate joinDate,
+                                                                  JoinDateCondition joinDaysAgoCondition
                                                                   ){
 
         return (root, query, cb) -> {
@@ -75,6 +81,28 @@ public class MembershipSpecifications {
 
             if (joinMethods != null) {
                 restrictions.add(root.get(Membership_.joinMethod).in(joinMethods));
+            }
+
+            LocalDate queriedJoinDate = joinDate;
+            if(joinDate == null && joinDaysAgo != null){
+                queriedJoinDate = LocalDate.now().minusDays(joinDaysAgo);
+            }
+
+            if (queriedJoinDate != null) {
+
+                Instant joinDateInstant = queriedJoinDate.atStartOfDay().toInstant(ZoneOffset.UTC);
+                switch (joinDaysAgoCondition){
+                    case EXACT :
+                        restrictions.add( cb.between(root.get(Membership_.joinTime), joinDateInstant, joinDateInstant.plus(1, ChronoUnit.DAYS)));
+                        break;
+                    case BEFORE:
+                        restrictions.add( cb.lessThanOrEqualTo(root.get(Membership_.joinTime), joinDateInstant.plus(1, ChronoUnit.DAYS)));
+                        break;
+                    case AFTER:
+                        restrictions.add( cb.greaterThanOrEqualTo(root.get(Membership_.joinTime), joinDateInstant));
+                        break;
+                }
+
             }
 
 
