@@ -23,10 +23,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -281,16 +278,22 @@ public class GroupStatsBrokerImpl implements GroupStatsBroker {
         double hasFacebook = 0;
         double hasTwitter = 0;
 
-        for (Membership membership : memberships) {
+        Set<String> memberUids = memberships.stream().map(m -> m.getUser().getUid()).collect(Collectors.toSet());
 
+        for (Membership membership : memberships) {
             hasEmail += membership.getUser().hasEmailAddress() ? 1 : 0;
             hasPhoneNumber += membership.getUser().hasPhoneNumber() ? 1 : 0;
             hasProvince += membership.getUser().getProvince() != null ? 1 : 0;
             hasOrganisation += Arrays.stream(membership.getTags()).anyMatch(tag -> tag.startsWith(ORGANISATION_TAG_PREFIX)) ? 1 : 0;
-            Map<String, ManagedPagesResponse> currentIntegrations = socialMediaBroker.getCurrentIntegrations(membership.getUser().getUid()).getCurrentIntegrations();
-            hasFacebook += currentIntegrations.containsKey("facebook") ? 1 : 0;
-            hasTwitter += currentIntegrations.containsKey("twitter") ? 1 : 0;
+            // since, by definition, user cannot have soc media integrations if haven't set up and registered (i.e., if a USSD only
+            // user, this is a quick way to filter out the unneeded calls)
+            if (membership.getUser().isHasWebProfile()) {
+                Map<String, ManagedPagesResponse> currentIntegrations = socialMediaBroker.getCurrentIntegrations(membership.getUser().getUid()).getCurrentIntegrations();
+                hasFacebook += currentIntegrations.containsKey("facebook") ? 1 : 0;
+                hasTwitter += currentIntegrations.containsKey("twitter") ? 1 : 0;
+            }
         }
+
 
         Map<String, Integer> results = new LinkedHashMap<>();
 

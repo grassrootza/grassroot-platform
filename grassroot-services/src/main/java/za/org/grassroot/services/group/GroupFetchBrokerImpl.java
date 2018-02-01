@@ -25,9 +25,12 @@ import za.org.grassroot.core.specifications.MembershipSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
+import za.org.grassroot.services.util.LogsAndNotificationsBroker;
+import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
+import java.lang.reflect.Member;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -47,16 +50,20 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
     private final GroupRepository groupRepository;
     private final GroupLogRepository groupLogRepository;
     private final MembershipRepository membershipRepository;
+
     private final PermissionBroker permissionBroker;
+    private final LogsAndNotificationsBroker logsBroker;
+
     private final EntityManager entityManager;
 
     @Autowired
-    public GroupFetchBrokerImpl(UserRepository userRepository, GroupRepository groupRepository, GroupLogRepository groupLogRepository, MembershipRepository membershipRepository, PermissionBroker permissionBroker, EntityManager entityManager) {
+    public GroupFetchBrokerImpl(UserRepository userRepository, GroupRepository groupRepository, GroupLogRepository groupLogRepository, MembershipRepository membershipRepository, PermissionBroker permissionBroker, LogsAndNotificationsBroker logsBroker, EntityManager entityManager) {
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
         this.groupLogRepository = groupLogRepository;
         this.membershipRepository = membershipRepository;
         this.permissionBroker = permissionBroker;
+        this.logsBroker = logsBroker;
         this.entityManager = entityManager;
     }
 
@@ -314,15 +321,10 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
 
         permissionBroker.validateGroupPermission(qUser, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
 
-        User tUser = userRepository.findOneByUid(memberUid);
-
-        List<GroupLog> groupLogs = groupLogRepository.findAll(
-                GroupLogSpecifications.memberChangeRecords(group, DateTimeUtil.getEarliestInstant())
-                        .and(GroupLogSpecifications.containingUser(tUser)));
+        Membership membership = membershipRepository.findByGroupUidAndUserUid(groupUid, memberUid);
 
         // and add a bunch more too ...
-
-        return groupLogs.stream().map(gl -> (ActionLog) gl).collect(Collectors.toList());
+        return logsBroker.fetchMembershipLogs(membership);
     }
 
     private List<GroupRefDTO> getSubgroups(Group group) {

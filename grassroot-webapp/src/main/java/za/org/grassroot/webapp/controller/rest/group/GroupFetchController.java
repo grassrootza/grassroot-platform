@@ -289,7 +289,7 @@ public class GroupFetchController extends BaseRestController {
 
     }
 
-    @RequestMapping(value = "member/{groupUid}", method = RequestMethod.GET)
+    @RequestMapping(value = "/member/{groupUid}", method = RequestMethod.GET)
     @ApiOperation(value = "Fetch group member by memberUid", notes = "Requires GROUP_PERMISSION_SEE_MEMBER_DETAILS")
     public ResponseEntity<MembershipFullDTO> fetchMemberByMemberUid(HttpServletRequest request, @PathVariable String groupUid,
                                                                     @RequestParam String memberUid) {

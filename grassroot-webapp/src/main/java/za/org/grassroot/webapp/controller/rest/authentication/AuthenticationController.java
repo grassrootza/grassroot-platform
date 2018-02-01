@@ -22,6 +22,7 @@ import za.org.grassroot.integration.messaging.CreateJwtTokenRequest;
 import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.integration.messaging.JwtType;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
+import za.org.grassroot.services.async.AsyncUserLogger;
 import za.org.grassroot.services.exception.InvalidOtpException;
 import za.org.grassroot.services.exception.NoSuchUserException;
 import za.org.grassroot.services.exception.UserExistsException;
@@ -52,16 +53,18 @@ public class AuthenticationController {
     private final PasswordTokenService passwordTokenService;
     private final UserManagementService userService;
     private final MessagingServiceBroker messagingServiceBroker;
+    private final AsyncUserLogger userLogger;
     private final Environment environment;
 
     @Autowired
     public AuthenticationController(JwtService jwtService, PasswordTokenService passwordTokenService,
                                     UserManagementService userService, MessagingServiceBroker messagingServiceBroker,
-                                    Environment environment) {
+                                    AsyncUserLogger userLogger, Environment environment) {
         this.jwtService = jwtService;
         this.passwordTokenService = passwordTokenService;
         this.userService = userService;
         this.messagingServiceBroker = messagingServiceBroker;
+        this.userLogger = userLogger;
         this.environment = environment;
     }
 
@@ -252,6 +255,9 @@ public class AuthenticationController {
             // Assemble response entity
             AuthorizedUserDTO response = new AuthorizedUserDTO(user, token);
 
+            // log that user was active
+            userLogger.logUserLogin(user.getUid(), interfaceType);
+
             // Return the token on the response
             return RestUtil.okayResponseWithData(RestMessage.LOGIN_SUCCESS, response);
         } catch (InvalidOtpException e) {
@@ -281,6 +287,9 @@ public class AuthenticationController {
 
             // Assemble response entity
             AuthorizedUserDTO response = new AuthorizedUserDTO(user, token);
+
+            // log that user was active
+            userLogger.logUserLogin(user.getUid(), interfaceType);
 
             // Return the token on the response
             return new AuthorizationResponseDTO(response);

@@ -1,15 +1,16 @@
 package za.org.grassroot.services.async;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.UserLog;
 import za.org.grassroot.core.enums.UserInterfaceType;
 import za.org.grassroot.core.enums.UserLogType;
 import za.org.grassroot.core.repository.UserLogRepository;
+import za.org.grassroot.core.repository.UserRepository;
 import za.org.grassroot.services.util.CacheUtilService;
 
 import java.time.Instant;
@@ -25,16 +26,33 @@ import static za.org.grassroot.core.specifications.UserLogSpecifications.*;
 /**
  * Created by luke on 2016/02/22.
  */
-@Service
+@Service @Slf4j
 public class AsyncUserLoggerImpl implements AsyncUserLogger {
 
-    private static final Logger log = LoggerFactory.getLogger(AsyncUserLoggerImpl.class);
+    @Autowired
+    private UserRepository userRepository;
 
     @Autowired
     private UserLogRepository userLogRepository;
 
     @Autowired
     private CacheUtilService cacheUtilService;
+
+    @Async
+    @Override
+    @Transactional
+    public void logUserLogin(String userUid, UserInterfaceType channel) {
+        Objects.requireNonNull(userUid);
+        Objects.requireNonNull(channel);
+        UserLog userLog = new UserLog(userUid, UserLogType.USER_SESSION, "", channel);
+        User user = userRepository.findOneByUid(userUid);
+        if (UserInterfaceType.WEB.equals(channel) || UserInterfaceType.WEB_2.equals(channel)) {
+            user.setHasWebProfile(true);
+        } else if (UserInterfaceType.ANDROID.equals(channel) || UserInterfaceType.ANDROID_2.equals(channel)) {
+            user.setHasAndroidProfile(true);
+        }
+        user.setHasInitiatedSession(true);
+    }
 
     @Async
     @Override

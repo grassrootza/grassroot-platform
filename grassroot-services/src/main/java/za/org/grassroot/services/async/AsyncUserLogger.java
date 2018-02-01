@@ -12,6 +12,8 @@ import java.util.Set;
  */
 public interface AsyncUserLogger {
 
+    void logUserLogin(String userUid, UserInterfaceType channel);
+
     /**
      * Generic method to record a user event, typically user creation, language change, etc.
      * @param userUid The uid of the User entity to save
