@@ -50,6 +50,7 @@ public interface GroupFetchBroker {
                                                Collection<String> joinedCampaignsUids,
                                                Integer joinDaysAgo,
                                                LocalDate joinDate,
-                                               JoinDateCondition joinDaysAgoCondition);
+                                               JoinDateCondition joinDaysAgoCondition,
+                                               String namePhoneOrEmail);
 
 }

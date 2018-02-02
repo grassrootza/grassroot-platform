@@ -174,10 +174,14 @@ public class GroupFetchController extends BaseRestController {
                                                       @RequestParam (required = false) Integer joinDaysAgo,
                                                       @RequestParam (required = false)  @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)  LocalDate joinDate,
                                                       @RequestParam (required = false) JoinDateCondition joinDaysAgoCondition,
+                                                      @RequestParam (required = false) String namePhoneOrEmail,
                                                       HttpServletRequest request) {
+
+
         log.info("looking for affiliations: {}", affiliations);
+
         return groupFetchBroker.filterGroupMembers(getUserFromRequest(request), groupUid,
-                        provinces, taskTeams, topics, affiliations, joinMethods, joinedCampaignsUids, joinDaysAgo, joinDate, joinDaysAgoCondition);
+                        provinces, taskTeams, topics, affiliations, joinMethods, joinedCampaignsUids, joinDaysAgo, joinDate, joinDaysAgoCondition, namePhoneOrEmail);
     }
 
     @RequestMapping(value = "/members/new", method = RequestMethod.GET)

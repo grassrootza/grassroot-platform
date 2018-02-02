@@ -57,7 +57,9 @@ public class MembershipSpecifications {
                                                                   Collection<GroupJoinMethod> joinMethods,
                                                                   Integer joinDaysAgo,
                                                                   LocalDate joinDate,
-                                                                  JoinDateCondition joinDaysAgoCondition){
+                                                                  JoinDateCondition joinDaysAgoCondition,
+                                                                  String namePhoneOrEmail
+                                                                  ){
 
         return (root, query, cb) -> {
 
@@ -98,6 +100,15 @@ public class MembershipSpecifications {
                 }
 
             }
+
+            if (namePhoneOrEmail != null) {
+                Predicate byName = cb.like(root.get(Membership_.user).get(User_.displayName), "%" + namePhoneOrEmail + "%");
+                Predicate byPhone = cb.like(root.get(Membership_.user).get(User_.phoneNumber), "%" + namePhoneOrEmail + "%");
+                Predicate byEmail = cb.like(root.get(Membership_.user).get(User_.emailAddress), "%" + namePhoneOrEmail + "%");
+                Predicate byNamePhoneOrEmail = cb.or(byName, byEmail, byPhone);
+                restrictions.add(byNamePhoneOrEmail);
+            }
+
 
             return cb.and(restrictions.toArray(new Predicate[0]));
         };

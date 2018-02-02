@@ -269,7 +269,10 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
                                                       Collection<String> joinedCampaignsUids,
                                                       Integer joinDaysAgo,
                                                       LocalDate joinDate,
-                                                      JoinDateCondition joinDateCondition) {
+                                                      JoinDateCondition joinDateCondition,
+                                                      String namePhoneOrEmail
+    ) {
+
         Objects.requireNonNull(groupUid);
         Group group = groupRepository.findOneByUid(groupUid);
 
@@ -280,7 +283,7 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
         }
 
         List<Membership> members = membershipRepository.findAll(
-                MembershipSpecifications.filterGroupMembership(group, provinces, taskTeamsUids, joinMethods, joinDaysAgo, joinDate, joinDateCondition)
+                MembershipSpecifications.filterGroupMembership(group, provinces, taskTeamsUids, joinMethods, joinDaysAgo, joinDate, joinDateCondition, namePhoneOrEmail)
         );
 
         if(topics != null && topics.size() > 0){
