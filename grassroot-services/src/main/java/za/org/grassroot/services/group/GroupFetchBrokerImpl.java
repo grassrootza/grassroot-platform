@@ -187,9 +187,10 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
                 .setParameter("userUid", userUid)
                 .getSingleResult();
 
-
         GroupFullDTO dto = new GroupFullDTO(group, group.getMembership(userUid));
-        dto.setSubGroups(getSubgroups(group));
+        dto.setSubGroups(groupRepository.findAll(Specifications.where(hasParent(group)).and(isActive()))
+                .stream().map(GroupMembersDTO::new).collect(Collectors.toList()));
+
         return dto;
     }
 
@@ -246,7 +247,11 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
         Objects.requireNonNull(groupUid);
         Group group = groupRepository.findOneByUid(groupUid);
         try {
-            permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
+            if (group.hasParent() && !group.hasMember(user)) {
+                permissionBroker.validateGroupPermission(user, group.getParent(), Permission.GROUP_PERMISSION_CREATE_SUBGROUP);
+            } else {
+                permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
+            }
         } catch (AccessDeniedException e) {
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
         }
@@ -259,19 +264,18 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
                                                       Collection<Province> provinces,
                                                       Collection<String> taskTeamsUids,
                                                       Collection<String> topics,
+                                                      Collection<String> affiliations,
                                                       Collection<GroupJoinMethod> joinMethods,
                                                       Collection<String> joinedCampaignsUids,
                                                       Integer joinDaysAgo,
                                                       LocalDate joinDate,
-                                                      JoinDateCondition joinDateCondition
-    ) {
+                                                      JoinDateCondition joinDateCondition) {
         Objects.requireNonNull(groupUid);
         Group group = groupRepository.findOneByUid(groupUid);
 
-
         try{
             permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
-        }catch (AccessDeniedException e) {
+        } catch (AccessDeniedException e) {
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
         }
 
@@ -280,9 +284,18 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
         );
 
         if(topics != null && topics.size() > 0){
+            // this is an "and" filter, at present
             members = members.stream()
             .filter(m -> m.getTopics().containsAll(topics))
             .collect(Collectors.toList());
+        }
+
+        if (affiliations != null && !affiliations.isEmpty()) {
+            // i.e., this is an "or" filtering
+            Set<String> affils = new HashSet<>(affiliations);
+            log.info("filtering {} members, looking for affiliations {}", members.size(), affils.toString());
+            members = members.stream().filter(m -> m.getTopics().stream().anyMatch(affils::contains))
+                    .collect(Collectors.toList());
         }
 
         //this is an alternative to very complicated query

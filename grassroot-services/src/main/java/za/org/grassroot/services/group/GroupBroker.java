@@ -49,6 +49,8 @@ public interface GroupBroker {
     void addMembers(String userUid, String groupUid, Set<MembershipInfo> membershipInfos,
                     GroupJoinMethod joinMethod, boolean adminUserCalling);
 
+    void addMembersToSubgroup(String userUid, String groupUid, String subGroupUid, Set<String> memberUids);
+
     void copyMembersIntoGroup(String userUid, String groupUid, Set<String> memberUids);
 
     void addMemberViaJoinCode(String userUidToAdd, String groupUid, String tokenPassed, UserInterfaceType interfaceType);
@@ -65,6 +67,8 @@ public interface GroupBroker {
 
     void removeMembers(String userUid, String groupUid, Set<String> memberUids);
 
+    void removeMembersFromSubgroup(String userUid, String parentUid, String childUid, Set<String> memberUids);
+
     void unsubscribeMember(String userUid, String groupUid);
 
     void updateMembershipRole(String userUid, String groupUid, String memberUid, String roleName);
@@ -74,6 +78,8 @@ public interface GroupBroker {
 
     // note: only accepts topics that are from the group itself
     void assignMembershipTopics(String userUid, String groupUid, String memberUid, Set<String> topics);
+
+    void alterMemberTopicsTeamsOrgs(String userUid, String groupUid, String memberUid, Set<String> affiliations, Set<String> taskTeams, Set<String> topics);
 
     @Transactional
     boolean setGroupPinnedForUser(String userUid, String groupUid, boolean pinned);

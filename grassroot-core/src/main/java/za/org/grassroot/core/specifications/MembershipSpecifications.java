@@ -19,18 +19,17 @@ import java.util.List;
 public class MembershipSpecifications {
 
 
-    public static Specification<Membership> membershipsCreatedAfter(Instant joinAfter) {
+    private static Specification<Membership> membershipsCreatedAfter(Instant joinAfter) {
         return (root, query, cb) -> cb.greaterThan(root.get(Membership_.joinTime), joinAfter);
     }
 
-    public static Specification<Membership> membershipsOfGroupsCreatedAfter(Instant groupCreatedAfter) {
+    private static Specification<Membership> membershipsOfGroupsCreatedAfter(Instant groupCreatedAfter) {
         return (root, query, cb) -> cb.greaterThan(root.get(Membership_.group).get(Group_.createdDateTime), groupCreatedAfter);
     }
 
-    public static Specification<Membership> membershipsOfGroupsCreatedBy(User groupCreator) {
+    private static Specification<Membership> membershipsOfGroupsCreatedBy(User groupCreator) {
         return (root, query, cb) -> cb.equal(root.get(Membership_.group).get(Group_.createdByUser), groupCreator);
     }
-
 
     public static Specifications<Membership> membershipsInGroups(User groupCreator, Instant groupCreatedAfter, Instant membershipCreatedAfter) {
         Specification<Membership> groupCreatedByUserSpec = MembershipSpecifications.membershipsOfGroupsCreatedBy(groupCreator);
@@ -52,17 +51,13 @@ public class MembershipSpecifications {
                 .and(memberInProvinces(provinces));
     }
 
-
-
-
     public static Specification<Membership> filterGroupMembership(Group group,
                                                                   Collection<Province> provinces,
                                                                   Collection<String> taskTeamsUids,
                                                                   Collection<GroupJoinMethod> joinMethods,
                                                                   Integer joinDaysAgo,
                                                                   LocalDate joinDate,
-                                                                  JoinDateCondition joinDaysAgoCondition
-                                                                  ){
+                                                                  JoinDateCondition joinDaysAgoCondition){
 
         return (root, query, cb) -> {
 
@@ -89,7 +84,6 @@ public class MembershipSpecifications {
             }
 
             if (queriedJoinDate != null) {
-
                 Instant joinDateInstant = queriedJoinDate.atStartOfDay().toInstant(ZoneOffset.UTC);
                 switch (joinDaysAgoCondition){
                     case EXACT :
@@ -104,7 +98,6 @@ public class MembershipSpecifications {
                 }
 
             }
-
 
             return cb.and(restrictions.toArray(new Predicate[0]));
         };
@@ -146,5 +139,19 @@ public class MembershipSpecifications {
         return (root, query, cb) -> cb.lessThan(root.get(Membership_.joinTime), time);
     }
 
+    public static Specification<Membership> inSubgroupOf(Group group) {
+        return (root, query, cb) -> {
+            Join<Membership, Group> join = root.join(Membership_.group, JoinType.INNER);
+            return cb.equal(join.get(Group_.parent), group);
+        };
+    }
+
+    public static Specification<Membership> hasUser(User user) {
+        return (root, query, cb) -> cb.equal(root.get(Membership_.user), user);
+    }
+
+    public static Specifications<Membership> memberTaskTeams(Group group, User user) {
+        return Specifications.where(inSubgroupOf(group)).and(hasUser(user));
+    }
 
 }

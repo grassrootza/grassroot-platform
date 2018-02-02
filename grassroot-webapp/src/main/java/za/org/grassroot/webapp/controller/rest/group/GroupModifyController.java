@@ -168,17 +168,12 @@ public class GroupModifyController extends GroupBaseController {
 
     @RequestMapping(value = "/members/add/taskteam/{parentUid}", method = RequestMethod.POST)
     @ApiOperation(value = "Add member(s) to a task team / subgroup (of the 'parent' group)", notes = "Returns the modified task team / subgroup in full")
-    public ResponseEntity<GroupFullDTO> addMembersToSubgroup(HttpServletRequest request, @PathVariable String parentUid,
-                                                             @RequestParam String childGroupUid, @RequestParam Set<String> memberUids) {
-        try {
-            // todo make this atomic by moving permission validation into dedicated add to subgroup method
-            permissionBroker.validateGroupPermission(getUserFromRequest(request), groupBroker.load(parentUid),
-                    Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
-            groupBroker.copyMembersIntoGroup(getUserIdFromRequest(request), childGroupUid, memberUids);
-            return ResponseEntity.ok().build();
-        } catch (AccessDeniedException e) {
-            throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
-        }
+    public ResponseEntity<GroupFullDTO> addMembersToSubgroup(HttpServletRequest request,
+                                                             @PathVariable String parentUid,
+                                                             @RequestParam String childGroupUid,
+                                                             @RequestParam Set<String> memberUids) {
+        groupBroker.addMembersToSubgroup(getUserIdFromRequest(request), parentUid, childGroupUid, memberUids);
+        return ResponseEntity.ok(groupFetchBroker.fetchGroupFullInfo(getUserIdFromRequest(request), parentUid));
     }
 
     @RequestMapping(value = "/create/taskteam/{parentUid}", method = RequestMethod.POST)
@@ -249,13 +244,28 @@ public class GroupModifyController extends GroupBaseController {
         }
     }
 
-    @RequestMapping(value = "/description/modify/{userUid}/{groupUid}", method = RequestMethod.POST)
+    @RequestMapping(value = "/members/modify/assignments/{groupUid}", method = RequestMethod.POST)
+    @ApiOperation(value = "Modify assignments of user, i.e., task teams, topics, affiliations", notes =
+            "If calling this, pass back original values (not empty sets) if nothing has changed, else values will be cleared")
+    public ResponseEntity changeMemberAssignments(HttpServletRequest request, @PathVariable String groupUid,
+                                                  @RequestParam String memberUid,
+                                                  @RequestParam Set<String> taskTeams,
+                                                  @RequestParam Set<String> affiliations,
+                                                  @RequestParam Set<String> topics) {
+        log.info("altering user assignments, etc., task teams = {}, affiliations = {}, topics = {}",
+                taskTeams, affiliations, topics);
+        groupBroker.alterMemberTopicsTeamsOrgs(getUserIdFromRequest(request), groupUid, memberUid,
+                affiliations, taskTeams, topics);
+        return ResponseEntity.ok(true);
+    }
+
+    @RequestMapping(value = "/description/modify/{groupUid}", method = RequestMethod.POST)
     @ApiOperation(value = "Change the description of a group", notes = "Only group organizer, with UPDATE_DETAILS permission, can call")
-    public ResponseEntity<ResponseWrapper> changeGroupDescription(@PathVariable String userUid,
+    public ResponseEntity<ResponseWrapper> changeGroupDescription(HttpServletRequest request,
                                                                   @PathVariable String groupUid,
                                                                   @RequestParam String description) {
         try {
-            groupBroker.updateDescription(userUid, groupUid, description);
+            groupBroker.updateDescription(getUserIdFromRequest(request), groupUid, description);
             return RestUtil.errorResponse(RestMessage.GROUP_DESCRIPTION_CHANGED);
         } catch (AccessDeniedException e) {
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);

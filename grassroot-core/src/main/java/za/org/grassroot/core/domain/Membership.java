@@ -94,6 +94,15 @@ public class Membership implements Serializable, TagHolder {
         }
     }
 
+    public void setAffiliations(Set<String> affiliations) {
+        // first get all the non-affiliation tags
+        List<String> tags = getTagList().stream()
+                .filter(s -> !s.startsWith(AFFILITATION_TAG)).collect(Collectors.toList());
+        // then add the topics
+        tags.addAll(affiliations.stream().map(s -> AFFILITATION_TAG + s).collect(Collectors.toSet()));
+        setTags(tags);
+    }
+
     public List<String> getAffiliations() {
         return this.getTagList().stream().filter(s -> s.startsWith(AFFILITATION_TAG))
                 .map(s -> s.substring(AFFILITATION_TAG.length())).collect(Collectors.toList());

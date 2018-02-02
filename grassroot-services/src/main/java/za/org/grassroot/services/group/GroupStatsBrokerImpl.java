@@ -214,7 +214,6 @@ public class GroupStatsBrokerImpl implements GroupStatsBroker {
         if (resultFromCache != null)
             return resultFromCache;
 
-
         List<Membership> memberships = membershipRepository.findAll(MembershipSpecifications.forGroup(groupUid));
 
         Map<String, Long> data = memberships.stream()
@@ -248,9 +247,14 @@ public class GroupStatsBrokerImpl implements GroupStatsBroker {
             return resultFromCache;
 
         List<Membership> memberships = membershipRepository.findAll(MembershipSpecifications.forGroup(groupUid));
-        //todo implement logic here
-        Map<String, Long> data = new LinkedHashMap<>();
-        data.put("Other", (long) memberships.size());
+        Map<String, Long> data = memberships.stream()
+                .filter(m -> !m.getAffiliations().isEmpty())
+                .flatMap(m -> m.getAffiliations().stream())
+                .collect(Collectors.groupingBy(
+                        s -> s,
+                        Collectors.counting()
+                ));
+        data.put("Unknown", (long) memberships.size());
 
         cache.put(new Element(cacheKey, data));
 

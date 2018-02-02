@@ -298,6 +298,32 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
     @Override
     @Transactional
+    public void addMembersToSubgroup(String userUid, String groupUid, String subGroupUid, Set<String> memberUids) {
+        User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
+        Group parent = groupRepository.findOneByUid(Objects.requireNonNull(groupUid));
+        Group subgroup = groupRepository.findOneByUid(Objects.requireNonNull(subGroupUid));
+
+        if (!parent.equals(subgroup.getParent())) {
+            throw new IllegalArgumentException("Error! Subgroup is not child of passed parent");
+        }
+
+        // must have subgroup create permission on parent group to do this
+        try {
+            permissionBroker.validateGroupPermission(user, parent, Permission.GROUP_PERMISSION_CREATE_SUBGROUP);
+        } catch (AccessDeniedException e) {
+            throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_CREATE_SUBGROUP);
+        }
+
+        List<User> members = userRepository.findByUidIn(memberUids);
+        subgroup.addMembers(members, BaseRoles.ROLE_ORDINARY_MEMBER, GroupJoinMethod.ADDED_SUBGROUP, user.getName());
+
+        LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
+        createSubGroupAddedLogs(parent, subgroup, user, members, bundle);
+        storeBundleAfterCommit(bundle);
+    }
+
+    @Override
+    @Transactional
     public void copyMembersIntoGroup(String userUid, String groupUid, Set<String> memberUids) {
         User user = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
@@ -726,6 +752,30 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
     }
 
     @Override
+    public void removeMembersFromSubgroup(String userUid, String parentUid, String childUid, Set<String> memberUids) {
+        User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
+        Group parent = groupRepository.findOneByUid(Objects.requireNonNull(parentUid));
+        Group child = groupRepository.findOneByUid(Objects.requireNonNull(childUid));
+        Objects.requireNonNull(memberUids);
+
+        if (!parent.equals(child.getParent())) {
+            throw new IllegalArgumentException("Child is not attached to supposed parent");
+        }
+
+        if (memberUids.size() > 1 || !memberUids.iterator().next().equals(userUid)) {
+            permissionBroker.validateGroupPermission(user, parent, Permission.GROUP_PERMISSION_CREATE_SUBGROUP);
+        }
+
+        logger.info("Removing from subgroup {}, members {}", child.getName(), memberUids);
+
+        Set<Membership> memberships = userRepository.findByUidIn(memberUids)
+                .stream().map(child::getMembership).collect(Collectors.toSet());
+
+        Set<ActionLog> actionLogs = removeMemberships(user, child, memberships);
+        logActionLogsAfterCommit(actionLogs);
+    }
+
+    @Override
     @Transactional
     public void unsubscribeMember(String userUid, String groupUid) {
         Objects.requireNonNull(userUid);
@@ -855,6 +905,38 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         }
 
         member.setTopics(topics);
+    }
+
+    @Override
+    @Transactional
+    public void alterMemberTopicsTeamsOrgs(String userUid, String groupUid, String memberUid, Set<String> affiliations, Set<String> taskTeams, Set<String> topics) {
+        Group group = groupRepository.findOneByUid(Objects.requireNonNull(groupUid));
+        User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
+        User member = userRepository.findOneByUid(Objects.requireNonNull(memberUid));
+
+        Objects.requireNonNull(affiliations);
+        Objects.requireNonNull(taskTeams);
+        Objects.requireNonNull(topics);
+
+        if (!user.equals(member)) {
+            permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
+        }
+
+        Membership membership = group.getMembership(member);
+        membership.setAffiliations(affiliations);
+        membership.setTopics(topics);
+
+        Set<String> currentTeams = membershipRepository.findAll(MembershipSpecifications.memberTaskTeams(group, member))
+                .stream().map(m -> m.getGroup().getUid()).collect(Collectors.toSet());
+
+        logger.info("user current teams: {}, passed teams: {}", currentTeams, taskTeams);
+        if (!currentTeams.equals(taskTeams)) {
+            // this is not very efficient, but we expect this very rarely, so prioritizing readability and simplicity
+            currentTeams.stream().filter(s -> !taskTeams.contains(s))
+                    .forEach(s -> removeMembersFromSubgroup(userUid, group.getUid(), s, Collections.singleton(memberUid)));
+            taskTeams.stream().filter(s -> !currentTeams.contains(s))
+                    .forEach(s -> addMembersToSubgroup(userUid, group.getUid(), s, Collections.singleton(memberUid)));
+        }
     }
 
     @Override

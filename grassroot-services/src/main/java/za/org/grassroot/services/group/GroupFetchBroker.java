@@ -45,6 +45,7 @@ public interface GroupFetchBroker {
                                                Collection<Province> provinces,
                                                Collection<String> taskTeams,
                                                Collection<String> topics,
+                                               Collection<String> affiliations,
                                                Collection<GroupJoinMethod> joinMethods,
                                                Collection<String> joinedCampaignsUids,
                                                Integer joinDaysAgo,
