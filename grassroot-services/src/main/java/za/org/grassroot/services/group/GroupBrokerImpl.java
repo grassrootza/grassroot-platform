@@ -322,6 +322,23 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         storeBundleAfterCommit(bundle);
     }
 
+    @Async
+    @Override
+    @Transactional
+    public void asyncMemberToSubgroupAdd(String userUid, String groupUid, Set<MembershipInfo> membershipInfos) {
+        logger.info("now wiring up sub group addition, should be off main thread");
+        Map<String, Set<String>> subgroupMap = new HashMap<>();
+        // probably a more elegant way to do this using flatmaps etc., but this will do for now
+        membershipInfos.stream().filter(MembershipInfo::hasTaskTeams).forEach(m -> {
+            m.getTaskTeams().forEach(suid -> {
+                subgroupMap.computeIfAbsent(suid, k -> new HashSet<>());
+                subgroupMap.get(suid).add(m.getUserUid());
+            });
+        });
+        logger.info("okay, wiring up task teams: {}", subgroupMap);
+        subgroupMap.forEach((suid, members) -> addMembersToSubgroup(userUid, groupUid, suid, members));
+    }
+
     @Override
     @Transactional
     public void copyMembersIntoGroup(String userUid, String groupUid, Set<String> memberUids) {
@@ -583,14 +600,15 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
         Set<User> createdUsers = new HashSet<>();
         Set<Membership> memberships = new HashSet<>();
+        Set<MembershipInfo> taskTeamMembers = new HashSet<>();
 
         Set<String> existingEmails = userRepository.fetchUsedEmailAddresses();
         Set<String> existingPhoneNumbers = userRepository.fetchUserPhoneNumbers();
 
         for (MembershipInfo membershipInfo : validNumberMembers) {
             // note: splitting this instead of getOrDefault, since that method calls default method even if it finds something, hence spurious user creation
-            String msidn = membershipInfo.getPhoneNumberWithCCode();
-            String emailAddress = membershipInfo.getMemberEmail();
+            String msidn = StringUtils.isEmpty(membershipInfo.getPhoneNumberWithCCode()) ? null : membershipInfo.getPhoneNumberWithCCode();
+            String emailAddress = StringUtils.isEmpty(membershipInfo.getMemberEmail())  ? null : membershipInfo.getMemberEmail();
 
             User user = existingUserPhoneMap.containsKey(msidn) ? existingUserPhoneMap.get(msidn) :
                     existingUserEmailMap.get(emailAddress);
@@ -598,6 +616,8 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
             if (user == null) {
                 logger.debug("Adding a new user, via group creation, with phone number ... " + msidn);
                 user = new User(msidn, membershipInfo.getDisplayName(), emailAddress);
+                user.setFirstName(membershipInfo.getFirstName());
+                user.setLastName(membershipInfo.getSurname());
                 createdUsers.add(user);
             } else if (!user.isHasInitiatedSession()) {
                 if (!user.hasEmailAddress() && !StringUtils.isEmpty(emailAddress) && !existingEmails.contains(emailAddress)) {
@@ -621,6 +641,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
                 user.setProvince(membershipInfo.getProvince());
             }
 
+
             if (membership != null) {
                 if (membershipInfo.getTopics() != null) {
                     membership.setTopics(new HashSet<>(membershipInfo.getTopics()));
@@ -628,6 +649,11 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
                 if (membershipInfo.getAffiliations() != null) {
                     membership.addAffiliations(new HashSet<>(membershipInfo.getAffiliations()));
+                }
+
+                if (membershipInfo.hasTaskTeams()) {
+                    membershipInfo.setUserUid(user.getUid());
+                    taskTeamMembers.add(membershipInfo);
                 }
 
                 memberships.add(membership);
@@ -666,6 +692,10 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
             triggerAddMembersToParentGroup(initiator, group.getParent(), membershipInfos, joinMethod);
         }
 
+        if (!taskTeamMembers.isEmpty()) {
+            addMembersToSubgroupsAfterCommit(initiator.getUid(), group.getUid(), taskTeamMembers);
+        }
+
         return bundle;
     }
 
@@ -684,6 +714,13 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
                 logger.info("Group is on account, generate some welcome notifications, for uids: {}", addedUserUids);
                 accountGroupBroker.generateGroupWelcomeNotifications(addingUserUid, groupUid, addedUserUids);
             }
+        };
+        applicationEventPublisher.publishEvent(afterTxCommitTask);
+    }
+
+    private void addMembersToSubgroupsAfterCommit(String userUid, String parentGroupUid, Set<MembershipInfo> members) {
+        AfterTxCommitTask afterTxCommitTask = () -> {
+            applicationContext.getBean(GroupBroker.class).asyncMemberToSubgroupAdd(userUid, parentGroupUid, members);
         };
         applicationEventPublisher.publishEvent(afterTxCommitTask);
     }

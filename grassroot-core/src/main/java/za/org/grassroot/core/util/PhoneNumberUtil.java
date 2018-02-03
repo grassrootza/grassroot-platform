@@ -50,7 +50,11 @@ public class PhoneNumberUtil {
     }
 
     public static String invertPhoneNumber(String storedNumber) {
-        return invertPhoneNumber(storedNumber, "");
+        if (storedNumber != null) {
+            return invertPhoneNumber(storedNumber, "");
+        } else {
+            return null;
+        }
     }
 
     public static String formattedNumber(String storedNumber) {
@@ -59,7 +63,7 @@ public class PhoneNumberUtil {
                 Phonenumber.PhoneNumber zaNumber = util.parse(storedNumber, "ZA");
                 return util.format(zaNumber, com.google.i18n.phonenumbers.PhoneNumberUtil.PhoneNumberFormat.NATIONAL);
         } catch (NumberParseException e) {
-                log.info("Error parsing stored number! Returning the number given to us");
+                log.info("Error parsing stored number {}! Returning the number given to us", storedNumber);
                 return storedNumber;
         }
     }

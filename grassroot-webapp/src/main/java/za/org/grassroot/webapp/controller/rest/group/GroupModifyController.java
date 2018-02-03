@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import za.org.grassroot.core.domain.*;
@@ -138,21 +139,17 @@ public class GroupModifyController extends GroupBaseController {
             "of MembershipInfo, which requires a name, a phone number, and, optionally a role (can be ROLE_ORDINARY_MEMBER)")
     public ResponseEntity<GroupModifiedResponse> addMembersToGroup(HttpServletRequest request,
                                                                    @PathVariable String groupUid,
-                                                                   @RequestBody Set<AddMemberInfo> membersToAdd) {
+                                                                   @RequestBody Set<MembershipInfo> membersToAdd) {
         logger.info("membersReceived = {}", membersToAdd != null ? membersToAdd.toString() : "null");
         if (membersToAdd == null) {
             throw new NoMembershipInfoException();
         }
-        // workaround for the moment, need to fix and improve later
-        Set<MembershipInfo> memberInfos = membersToAdd.stream()
-                .map(AddMemberInfo::convertToMembershipInfo)
-                .collect(Collectors.toSet());
-        List<String> invalidNumbers = findInvalidNumbers(memberInfos);
 
+        List<MembershipInfo> invalidMembers = findInvalidMembers(membersToAdd);
         try {
-            groupBroker.addMembers(getUserIdFromRequest(request), groupUid, memberInfos,
+            groupBroker.addMembers(getUserIdFromRequest(request), groupUid, membersToAdd,
                     GroupJoinMethod.ADDED_BY_OTHER_MEMBER, false);
-            return ResponseEntity.ok(new GroupModifiedResponse(membersToAdd.size() - invalidNumbers.size(), invalidNumbers));
+            return ResponseEntity.ok(new GroupModifiedResponse(membersToAdd.size() - invalidMembers.size(), invalidMembers));
         } catch (AccessDeniedException e) {
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER);
         }
@@ -379,9 +376,9 @@ public class GroupModifyController extends GroupBaseController {
         return response;
     }
 
-    private List<String> findInvalidNumbers(Set<MembershipInfo> members) {
-        return members.stream().filter(m -> m.hasPhoneNumber() && !m.hasValidPhoneNumber())
-                .map(MembershipInfo::getPhoneNumber)
+    private List<MembershipInfo> findInvalidMembers(Set<MembershipInfo> members) {
+        return members.stream()
+                .filter(m -> !m.hasValidPhoneOrEmail() || StringUtils.isEmpty(m.getDisplayName()))
                 .collect(Collectors.toList());
     }
 

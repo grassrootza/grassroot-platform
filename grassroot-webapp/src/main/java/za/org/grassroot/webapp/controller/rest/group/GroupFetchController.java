@@ -176,10 +176,6 @@ public class GroupFetchController extends BaseRestController {
                                                       @RequestParam (required = false) JoinDateCondition joinDaysAgoCondition,
                                                       @RequestParam (required = false) String namePhoneOrEmail,
                                                       HttpServletRequest request) {
-
-
-        log.info("looking for affiliations: {}", affiliations);
-
         return groupFetchBroker.filterGroupMembers(getUserFromRequest(request), groupUid,
                         provinces, taskTeams, topics, affiliations, joinMethods, joinedCampaignsUids, joinDaysAgo, joinDate, joinDaysAgoCondition, namePhoneOrEmail);
     }

@@ -20,6 +20,7 @@ public class AddMemberInfo {
 
     @ApiModelProperty(notes = "Must be in the 'msisdn' format, i.e., 2761....")
     private String memberMsisdn;
+
     private String displayName;
 
     @ApiModelProperty(notes = "Can be empty, in which case defaults to ROLE_ORDINARY_MEMBER, for list of possible roles" +
@@ -44,6 +45,12 @@ public class AddMemberInfo {
     @ApiModelProperty(notes = "Can be empty")
     private List<String> affiliations;
 
+    @ApiModelProperty(notes = "Can be empty")
+    private String firstName;
+
+    @ApiModelProperty(notes = "Can be empty")
+    private String surname;
+
     protected MembershipInfo convertToMembershipInfo() {
         MembershipInfo info = new MembershipInfo();
         info.setDisplayName(displayName);
@@ -53,6 +60,8 @@ public class AddMemberInfo {
         info.setProvince(province);
         info.setTopics(topics != null && !topics.isEmpty() ? topics : null);
         info.setAffiliations(affiliations != null && !affiliations.isEmpty() ? affiliations : null);
+        info.setFirstName(firstName);
+        info.setSurname(surname);
         return info;
     }
 
@@ -64,6 +73,8 @@ public class AddMemberInfo {
         this.province = membershipInfo.getProvince();
         this.topics = membershipInfo.getTopics();
         this.affiliations = membershipInfo.getAffiliations();
+        this.firstName = membershipInfo.getFirstName();
+        this.surname = membershipInfo.getSurname();
     }
 
 }
