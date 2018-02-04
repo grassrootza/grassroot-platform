@@ -149,7 +149,8 @@ public class GroupModifyController extends GroupBaseController {
         try {
             groupBroker.addMembers(getUserIdFromRequest(request), groupUid, membersToAdd,
                     GroupJoinMethod.ADDED_BY_OTHER_MEMBER, false);
-            return ResponseEntity.ok(new GroupModifiedResponse(membersToAdd.size() - invalidMembers.size(), invalidMembers));
+            return ResponseEntity.ok(new GroupModifiedResponse(groupBroker.load(groupUid).getName(),
+                    membersToAdd.size() - invalidMembers.size(), invalidMembers));
         } catch (AccessDeniedException e) {
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER);
         }

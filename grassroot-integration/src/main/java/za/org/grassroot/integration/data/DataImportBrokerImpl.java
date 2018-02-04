@@ -1,5 +1,6 @@
 package za.org.grassroot.integration.data;
 
+import org.apache.commons.validator.routines.EmailValidator;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFCellStyle;
@@ -13,6 +14,8 @@ import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.BaseRoles;
 import za.org.grassroot.core.dto.MembershipInfo;
 import za.org.grassroot.core.enums.Province;
+import za.org.grassroot.core.util.InvalidPhoneNumberException;
+import za.org.grassroot.core.util.PhoneNumberUtil;
 
 import javax.annotation.PostConstruct;
 import java.io.File;
@@ -124,7 +127,7 @@ public class DataImportBrokerImpl implements DataImportBroker {
         int headerOffset = headerRow != null ? 1 : 0;
         if (headerRow != null) {
             Row newHeaderRow = sheet.createRow(0);
-            copyRow(workbook, headerRow, newHeaderRow);
+            valueStore.add(copyRow(workbook, headerRow, newHeaderRow));
         }
 
         for (int rowIndex  = 0; rowIndex < errorRows.size(); rowIndex++) {
@@ -225,8 +228,18 @@ public class DataImportBrokerImpl implements DataImportBroker {
         info.setFirstName(firstNameCol != null ? getValue(row, firstNameCol) : null);
         info.setSurname(surNameCol != null ? getValue(row, surNameCol) : null);
 
-        info.setPhoneNumber(phoneCol != null ? getValue(row, phoneCol) : null);
-        info.setMemberEmail(emailCol != null ? getValue(row, emailCol) : null);
+        final String phone = phoneCol != null ? getValue(row, phoneCol) : null;
+        if (!StringUtils.isEmpty(phone) && !PhoneNumberUtil.testInputNumber(phone)) {
+            throw new InvalidPhoneNumberException("Bad phone number passed for phone");
+        }
+        info.setPhoneNumber(phoneCol != null ? phone : null);
+
+        final String email = emailCol != null ? getValue(row, emailCol) : null;
+        if (!StringUtils.isEmpty(email) && !EmailValidator.getInstance().isValid(email)) {
+            throw new IllegalArgumentException("Bad email passed");
+        }
+        info.setMemberEmail(emailCol != null ? email : null);
+
         info.setRoleName(roleCol != null ? convertRoleName(getValue(row, roleCol)) : BaseRoles.ROLE_ORDINARY_MEMBER);
 
         if (!info.hasValidPhoneOrEmail()) {
