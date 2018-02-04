@@ -35,6 +35,8 @@ public class MembershipInfo implements Comparable<MembershipInfo> {
     protected String roleName; // optional
 
     protected String displayName; // optional
+    protected String firstName;
+    protected String surname;
     protected boolean userSetName;
 
     protected String memberEmail;
@@ -42,6 +44,7 @@ public class MembershipInfo implements Comparable<MembershipInfo> {
 
     protected List<String> topics;
     protected List<String> affiliations;
+    protected List<String> taskTeams;
 
     public MembershipInfo() {
         // need empty constructor for Spring MVC form submission, and for the Excel parsing
@@ -98,10 +101,14 @@ public class MembershipInfo implements Comparable<MembershipInfo> {
     }
 
     public String getNationalFormattedNumber() {
-        try {
-            return PhoneNumberUtil.formattedNumber(phoneNumber);
-        } catch (Exception e) {
-            return phoneNumber;
+        if (phoneNumber != null) {
+            try {
+                return PhoneNumberUtil.formattedNumber(phoneNumber);
+            } catch (Exception e) {
+                return phoneNumber;
+            }
+        } else {
+            return null;
         }
     }
 
@@ -130,24 +137,23 @@ public class MembershipInfo implements Comparable<MembershipInfo> {
         return hasValidPhoneNumber() || hasValidEmail();
     }
 
+    public boolean hasTaskTeams() {
+        return taskTeams != null && !taskTeams.isEmpty();
+    }
+
     @Override
     public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
         MembershipInfo that = (MembershipInfo) o;
-
-        return phoneNumber.equals(that.phoneNumber);
-
+        return Objects.equals(userUid, that.userUid) &&
+                Objects.equals(phoneNumber, that.phoneNumber) &&
+                Objects.equals(memberEmail, that.memberEmail);
     }
 
     @Override
     public int hashCode() {
-        return phoneNumber == null ? 0 : phoneNumber.hashCode();
+        return Objects.hash(userUid, phoneNumber, memberEmail);
     }
 
     @Override

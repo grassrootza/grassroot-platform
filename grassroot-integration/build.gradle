@@ -15,8 +15,8 @@ dependencies {
         exclude(module: 'commons-logging')
     }
 
-    compile group: 'org.apache.poi', name: 'poi', version: '3.15'
-    compile group: 'org.apache.poi', name: 'poi-ooxml', version: '3.15'
+    compile group: 'org.apache.poi', name: 'poi', version: '3.17'
+    compile group: 'org.apache.poi', name: 'poi-ooxml', version: '3.17'
     compile group: 'com.itextpdf', name: 'itext7-core', version: '7.0.2'
 
     compile group: 'com.amazonaws', name: 'aws-java-sdk-s3', version: '1.11.240'

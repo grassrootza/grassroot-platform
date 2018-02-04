@@ -14,7 +14,7 @@ import za.org.grassroot.core.domain.GroupJoinMethod;
 import za.org.grassroot.core.domain.Permission;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.MembershipInfo;
-import za.org.grassroot.integration.DataImportBroker;
+import za.org.grassroot.integration.data.DataImportBroker;
 import za.org.grassroot.services.exception.GroupSizeLimitExceededException;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.webapp.controller.BaseController;
@@ -85,7 +85,7 @@ public class GroupAdvImportController extends BaseController {
         logger.info("phoneCol = {}, nameCol = {}, header = {}, loaded temp file, path = {}", phoneColumn, nameColumn, header, tmpFile.getAbsolutePath());
 
         List<MembershipInfo> members = dataImportBroker.processMembers(tmpFile, header, phoneColumn, nameColumn,
-                roleColumn == -1 ? null : roleColumn, null, null);
+                roleColumn == -1 ? null : roleColumn, null, null, null, null, null).getProcessedMembers();
         model.addAttribute("members", members);
         model.addAttribute("groupUid", groupUid);
 

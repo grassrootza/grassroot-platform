@@ -26,8 +26,9 @@ public class GroupFullDTO extends GroupHeavyDTO {
     private final boolean paidFor;
     private final Set<MembershipDTO> members;
     @Setter private List<MembershipRecordDTO> memberHistory;
-    @Setter private List<GroupRefDTO> subGroups = new ArrayList<>();
+    @Setter private List<GroupMembersDTO> subGroups = new ArrayList<>();
     @Setter private List<String> topics = new ArrayList<>();
+    @Setter private List<String> affiliations = new ArrayList<>();
     @Setter private List<JoinWordDTO> joinWords = new ArrayList<>();
     @Setter private int joinWordsLeft;
     private final Integer reminderMinutes;
@@ -45,6 +46,8 @@ public class GroupFullDTO extends GroupHeavyDTO {
                 .collect(Collectors.toList()));
 
         this.joinWordsLeft = MAX_JOIN_WORDS - this.joinWords.size();
+        this.affiliations = group.getMemberships().stream().flatMap(m -> m.getAffiliations().stream())
+                .distinct().collect(Collectors.toList());
 
         if (membership.getRole().getPermissions().contains(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS)) {
             this.members = group.getMemberships().stream()

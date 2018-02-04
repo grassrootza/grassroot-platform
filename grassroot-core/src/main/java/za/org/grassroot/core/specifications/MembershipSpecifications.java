@@ -5,28 +5,31 @@ import org.springframework.data.jpa.domain.Specifications;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.Province;
 
-import javax.persistence.criteria.*;
+import javax.persistence.criteria.Join;
+import javax.persistence.criteria.JoinType;
+import javax.persistence.criteria.Predicate;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class MembershipSpecifications {
 
 
-    public static Specification<Membership> membershipsCreatedAfter(Instant joinAfter) {
+    private static Specification<Membership> membershipsCreatedAfter(Instant joinAfter) {
         return (root, query, cb) -> cb.greaterThan(root.get(Membership_.joinTime), joinAfter);
     }
 
-    public static Specification<Membership> membershipsOfGroupsCreatedAfter(Instant groupCreatedAfter) {
+    private static Specification<Membership> membershipsOfGroupsCreatedAfter(Instant groupCreatedAfter) {
         return (root, query, cb) -> cb.greaterThan(root.get(Membership_.group).get(Group_.createdDateTime), groupCreatedAfter);
     }
 
-    public static Specification<Membership> membershipsOfGroupsCreatedBy(User groupCreator) {
+    private static Specification<Membership> membershipsOfGroupsCreatedBy(User groupCreator) {
         return (root, query, cb) -> cb.equal(root.get(Membership_.group).get(Group_.createdByUser), groupCreator);
     }
-
 
     public static Specifications<Membership> membershipsInGroups(User groupCreator, Instant groupCreatedAfter, Instant membershipCreatedAfter) {
         Specification<Membership> groupCreatedByUserSpec = MembershipSpecifications.membershipsOfGroupsCreatedBy(groupCreator);
@@ -35,10 +38,14 @@ public class MembershipSpecifications {
         return Specifications.where(groupCreatedByUserSpec).and(groupCreatedAfterSpec).and(membershipCreatedAfterSpec);
     }
 
-    public static Specifications<Membership> recentMembershipsInGroups(List<Group> groups, Instant membershipCreatedAfter) {
+    public static Specifications<Membership> recentMembershipsInGroups(List<Group> groups, Instant membershipCreatedAfter, User callingUser) {
         Specification<Membership> inGroups = MembershipSpecifications.forGroups(groups);
         Specification<Membership> membershipCreatedAfterSpec = MembershipSpecifications.membershipsCreatedAfter(membershipCreatedAfter);
-        return Specifications.where(inGroups).and(membershipCreatedAfterSpec).and(membershipCreatedAfterSpec);
+        Specification<Membership> notSubGroup = (root, query, cb) -> cb.notEqual(root.get(Membership_.joinMethod),
+                GroupJoinMethod.ADDED_SUBGROUP);
+        Specification<Membership> notUser = (root, query, cb) -> cb.notEqual(root.get(Membership_.user), callingUser);
+        return Specifications.where(inGroups).and(membershipCreatedAfterSpec).and(membershipCreatedAfterSpec)
+                .and(notSubGroup).and(notUser);
     }
 
     public static Specifications<Membership> groupMembersInProvincesJoinedAfter(Group group,
@@ -48,14 +55,15 @@ public class MembershipSpecifications {
                 .and(memberInProvinces(provinces));
     }
 
-
-
-
     public static Specification<Membership> filterGroupMembership(Group group,
                                                                   Collection<Province> provinces,
                                                                   Collection<String> taskTeamsUids,
                                                                   Collection<GroupJoinMethod> joinMethods,
-                                                                  Collection<String> joinedViaCampaignUids ){
+                                                                  Integer joinDaysAgo,
+                                                                  LocalDate joinDate,
+                                                                  JoinDateCondition joinDaysAgoCondition,
+                                                                  String namePhoneOrEmail
+                                                                  ){
 
         return (root, query, cb) -> {
 
@@ -75,6 +83,36 @@ public class MembershipSpecifications {
             if (joinMethods != null) {
                 restrictions.add(root.get(Membership_.joinMethod).in(joinMethods));
             }
+
+            LocalDate queriedJoinDate = joinDate;
+            if(joinDate == null && joinDaysAgo != null){
+                queriedJoinDate = LocalDate.now().minusDays(joinDaysAgo);
+            }
+
+            if (queriedJoinDate != null) {
+                Instant joinDateInstant = queriedJoinDate.atStartOfDay().toInstant(ZoneOffset.UTC);
+                switch (joinDaysAgoCondition){
+                    case EXACT :
+                        restrictions.add( cb.between(root.get(Membership_.joinTime), joinDateInstant, joinDateInstant.plus(1, ChronoUnit.DAYS)));
+                        break;
+                    case BEFORE:
+                        restrictions.add( cb.lessThanOrEqualTo(root.get(Membership_.joinTime), joinDateInstant.plus(1, ChronoUnit.DAYS)));
+                        break;
+                    case AFTER:
+                        restrictions.add( cb.greaterThanOrEqualTo(root.get(Membership_.joinTime), joinDateInstant));
+                        break;
+                }
+
+            }
+
+            if (namePhoneOrEmail != null) {
+                Predicate byName = cb.like(root.get(Membership_.user).get(User_.displayName), "%" + namePhoneOrEmail + "%");
+                Predicate byPhone = cb.like(root.get(Membership_.user).get(User_.phoneNumber), "%" + namePhoneOrEmail + "%");
+                Predicate byEmail = cb.like(root.get(Membership_.user).get(User_.emailAddress), "%" + namePhoneOrEmail + "%");
+                Predicate byNamePhoneOrEmail = cb.or(byName, byEmail, byPhone);
+                restrictions.add(byNamePhoneOrEmail);
+            }
+
 
             return cb.and(restrictions.toArray(new Predicate[0]));
         };
@@ -116,5 +154,19 @@ public class MembershipSpecifications {
         return (root, query, cb) -> cb.lessThan(root.get(Membership_.joinTime), time);
     }
 
+    public static Specification<Membership> inSubgroupOf(Group group) {
+        return (root, query, cb) -> {
+            Join<Membership, Group> join = root.join(Membership_.group, JoinType.INNER);
+            return cb.equal(join.get(Group_.parent), group);
+        };
+    }
+
+    public static Specification<Membership> hasUser(User user) {
+        return (root, query, cb) -> cb.equal(root.get(Membership_.user), user);
+    }
+
+    public static Specifications<Membership> memberTaskTeams(Group group, User user) {
+        return Specifications.where(inSubgroupOf(group)).and(hasUser(user));
+    }
 
 }

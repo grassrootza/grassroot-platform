@@ -10,6 +10,10 @@ import za.org.grassroot.core.enums.CampaignLogType;
 import java.util.List;
 
 public interface CampaignLogRepository extends JpaRepository<CampaignLog, Long>, JpaSpecificationExecutor<CampaignLog> {
+
     List<CampaignLog> findByCampaign(Campaign campaign);
+
     List<CampaignLog> findByCampaignLogType(CampaignLogType campaignLogType);
+
+    List<CampaignLog> findByCampaignLogTypeAndCampaignMasterGroupUid(CampaignLogType campaignLogType, String masterGroupUid);
 }

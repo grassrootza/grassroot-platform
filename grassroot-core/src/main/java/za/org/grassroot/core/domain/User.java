@@ -137,8 +137,9 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
             throw new IllegalArgumentException("Email address, if provided, must be valid");
         }
         this.uid = UIDGenerator.generateId();
-        this.phoneNumber = phoneNumber;
-        this.emailAddress = emailAddress;
+        // next two lines prevent duplicates being thrown on empty string
+        this.phoneNumber = StringUtils.isEmpty(phoneNumber) ? null : phoneNumber;
+        this.emailAddress = StringUtils.isEmpty(emailAddress) ? null : emailAddress;
         this.username = StringUtils.isEmpty(phoneNumber) ? emailAddress : phoneNumber;
         this.displayName = removeUnwantedCharacters(displayName);
         this.languageCode = "en";

@@ -17,6 +17,8 @@ import za.org.grassroot.integration.messaging.JwtService;
 import za.org.grassroot.integration.messaging.JwtType;
 
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service @Slf4j
 public class SocialMediaBrokerImpl implements SocialMediaBroker {
@@ -131,17 +133,20 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
     }
 
     @Override
-    public GenericPostResponse postToFacebook(FBPostBuilder post) {
-        log.info("posting to facebook, here is the post: {}", post);
-        final URI uri = baseUri(post.getPostingUserUid()).path("/grassroot/post/facebook").build().toUri();
-        HttpEntity<GenericPostRequest> entity = new HttpEntity<>(new GenericPostRequest(post, imageBaseUri), jwtHeaders());
-        try {
-            ResponseEntity<GenericPostResponse> response = restTemplate.exchange(uri, HttpMethod.POST, entity, GenericPostResponse.class);
-            return handleResponse(response, "FB");
-        } catch (RestClientException e) {
-            log.error("Error calling FB post!", e);
-            return null;
+    public List<GenericPostResponse> postToFacebook(List<FBPostBuilder> posts) {
+        log.info("posting to facebook, here is the post: {}", posts);
+        List<GenericPostResponse> responses = new ArrayList<>();
+        for (FBPostBuilder post : posts) {
+            final URI uri = baseUri(post.getPostingUserUid()).path("/grassroot/post/facebook").build().toUri();
+            HttpEntity<GenericPostRequest> entity = new HttpEntity<>(new GenericPostRequest(post, imageBaseUri), jwtHeaders());
+            try {
+                ResponseEntity<GenericPostResponse> response = restTemplate.exchange(uri, HttpMethod.POST, entity, GenericPostResponse.class);
+                responses.add(handleResponse(response, "FB"));
+            } catch (RestClientException e) {
+                log.error("Error calling FB post!", e);
+            }
         }
+        return responses;
     }
 
     @Override

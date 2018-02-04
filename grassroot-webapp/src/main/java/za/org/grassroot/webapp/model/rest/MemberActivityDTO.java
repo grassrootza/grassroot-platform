@@ -11,6 +11,7 @@ import za.org.grassroot.core.domain.task.TodoLog;
 import za.org.grassroot.core.enums.ActionLogType;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.enums.EventType;
+import za.org.grassroot.core.enums.TaskType;
 
 import java.time.Instant;
 import java.util.List;
@@ -18,19 +19,20 @@ import java.util.List;
 @Getter @Slf4j
 public class MemberActivityDTO {
 
-    String groupUid;
-    String memberUid;
+    private String groupUid;
+    private String memberUid;
 
-    ActionLogType actionLogType;
-    public String logSubType;
+    private ActionLogType actionLogType;
+    private TaskType taskType;
+    private String logSubType;
 
-    public String nameOfRelatedEntity;
-    public String auxField;
+    private String nameOfRelatedEntity;
+    private String auxField;
 
-    public Instant dateOfLog;
-    public long dateOfLogEpochMillis;
+    private Instant dateOfLog;
+    private long dateOfLogEpochMillis;
 
-    public List<String> topics;
+    private List<String> topics;
 
     public MemberActivityDTO(String memberUid, String groupUid, ActionLog actionLog) {
         this.groupUid = groupUid;
@@ -57,6 +59,7 @@ public class MemberActivityDTO {
 
     private void setForEvent(EventLog eventLog) {
         this.actionLogType = ActionLogType.EVENT_LOG;
+        this.taskType = eventLog.getEvent().getTaskType();
         this.logSubType = eventLog.getEvent().getEventType() + "_" + eventLog.getEventLogType().name();
         this.nameOfRelatedEntity = eventLog.getEvent().getName();
         if (eventLog.getEvent().getEventType().equals(EventType.MEETING) && eventLog.getEventLogType().equals(EventLogType.RSVP)) {
@@ -77,15 +80,14 @@ public class MemberActivityDTO {
     private void setForGroup(GroupLog groupLog) {
         this.actionLogType = ActionLogType.GROUP_LOG;
         this.logSubType = groupLog.getGroupLogType().name();
-        this.nameOfRelatedEntity = groupLog.getTarget().getName();
-        // todo : add in aux field, based on type of log
+        this.nameOfRelatedEntity = groupLog.getTarget() != null ? groupLog.getTarget().getName() : "";
     }
 
     private void setForTodo(TodoLog todoLog) {
         this.actionLogType = ActionLogType.TODO_LOG;
+        this.taskType = TaskType.TODO;
         this.logSubType = todoLog.getType().name();
         this.nameOfRelatedEntity = todoLog.getTodo().getName();
-        // todo : add in an aux field if appropriate
     }
 
     private void setForLiveWire(LiveWireLog liveWireLog) {

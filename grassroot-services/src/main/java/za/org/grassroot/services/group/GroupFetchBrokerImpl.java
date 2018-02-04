@@ -12,23 +12,23 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
+import za.org.grassroot.core.domain.campaign.CampaignLog;
 import za.org.grassroot.core.dto.MembershipFullDTO;
 import za.org.grassroot.core.dto.group.*;
+import za.org.grassroot.core.enums.CampaignLogType;
 import za.org.grassroot.core.enums.Province;
-import za.org.grassroot.core.repository.GroupLogRepository;
-import za.org.grassroot.core.repository.GroupRepository;
-import za.org.grassroot.core.repository.MembershipRepository;
-import za.org.grassroot.core.repository.UserRepository;
+import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.GroupLogSpecifications;
 import za.org.grassroot.core.specifications.GroupSpecifications;
 import za.org.grassroot.core.specifications.MembershipSpecifications;
-import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.exception.MemberLacksPermissionException;
+import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.function.Function;
@@ -47,16 +47,24 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
     private final GroupRepository groupRepository;
     private final GroupLogRepository groupLogRepository;
     private final MembershipRepository membershipRepository;
+    private final CampaignLogRepository campaignLogRepository;
     private final PermissionBroker permissionBroker;
+    private final LogsAndNotificationsBroker logsBroker;
+
     private final EntityManager entityManager;
 
     @Autowired
-    public GroupFetchBrokerImpl(UserRepository userRepository, GroupRepository groupRepository, GroupLogRepository groupLogRepository, MembershipRepository membershipRepository, PermissionBroker permissionBroker, EntityManager entityManager) {
+    public GroupFetchBrokerImpl(UserRepository userRepository, GroupRepository groupRepository,
+                                GroupLogRepository groupLogRepository, MembershipRepository membershipRepository,
+                                CampaignLogRepository campaignLogRepository, LogsAndNotificationsBroker logsBroker,
+                                PermissionBroker permissionBroker, EntityManager entityManager) {
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
         this.groupLogRepository = groupLogRepository;
         this.membershipRepository = membershipRepository;
+        this.campaignLogRepository = campaignLogRepository;
         this.permissionBroker = permissionBroker;
+        this.logsBroker = logsBroker;
         this.entityManager = entityManager;
     }
 
@@ -179,9 +187,10 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
                 .setParameter("userUid", userUid)
                 .getSingleResult();
 
-
         GroupFullDTO dto = new GroupFullDTO(group, group.getMembership(userUid));
-        dto.setSubGroups(getSubgroups(group));
+        dto.setSubGroups(groupRepository.findAll(Specifications.where(hasParent(group)).and(isActive()))
+                .stream().map(GroupMembersDTO::new).collect(Collectors.toList()));
+
         return dto;
     }
 
@@ -238,7 +247,11 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
         Objects.requireNonNull(groupUid);
         Group group = groupRepository.findOneByUid(groupUid);
         try {
-            permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
+            if (group.hasParent() && !group.hasMember(user)) {
+                permissionBroker.validateGroupPermission(user, group.getParent(), Permission.GROUP_PERMISSION_CREATE_SUBGROUP);
+            } else {
+                permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
+            }
         } catch (AccessDeniedException e) {
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
         }
@@ -251,28 +264,51 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
                                                       Collection<Province> provinces,
                                                       Collection<String> taskTeamsUids,
                                                       Collection<String> topics,
+                                                      Collection<String> affiliations,
                                                       Collection<GroupJoinMethod> joinMethods,
-                                                      Collection<String> joinedCampaignsUids
+                                                      Collection<String> joinedCampaignsUids,
+                                                      Integer joinDaysAgo,
+                                                      LocalDate joinDate,
+                                                      JoinDateCondition joinDateCondition,
+                                                      String namePhoneOrEmail
     ) {
+
         Objects.requireNonNull(groupUid);
         Group group = groupRepository.findOneByUid(groupUid);
 
-
         try{
             permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
-        }catch (AccessDeniedException e) {
+        } catch (AccessDeniedException e) {
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
         }
 
         List<Membership> members = membershipRepository.findAll(
-                MembershipSpecifications.filterGroupMembership(group, provinces, taskTeamsUids, joinMethods, joinedCampaignsUids)
+                MembershipSpecifications.filterGroupMembership(group, provinces, taskTeamsUids, joinMethods, joinDaysAgo, joinDate, joinDateCondition, namePhoneOrEmail)
         );
 
         if(topics != null && topics.size() > 0){
+            // this is an "and" filter, at present
             members = members.stream()
             .filter(m -> m.getTopics().containsAll(topics))
             .collect(Collectors.toList());
         }
+
+        if (affiliations != null && !affiliations.isEmpty()) {
+            // i.e., this is an "or" filtering
+            Set<String> affils = new HashSet<>(affiliations);
+            log.info("filtering {} members, looking for affiliations {}", members.size(), affils.toString());
+            members = members.stream().filter(m -> m.getTopics().stream().anyMatch(affils::contains))
+                    .collect(Collectors.toList());
+        }
+
+        //this is an alternative to very complicated query
+        if (joinedCampaignsUids != null && joinedCampaignsUids.size() > 0) {
+            List<CampaignLog> campLogs = campaignLogRepository.findByCampaignLogTypeAndCampaignMasterGroupUid(CampaignLogType.CAMPAIGN_USER_ADDED_TO_MASTER_GROUP, groupUid);
+            campLogs = campLogs.stream().filter(cl -> joinedCampaignsUids.contains(cl.getCampaign().getUid())).collect(Collectors.toList());
+            List<User> usersAddedByCampaigns = campLogs.stream().map(cl -> cl.getUser()).collect(Collectors.toList());
+            members = members.stream().filter( m -> usersAddedByCampaigns.contains(m.getUser())).collect(Collectors.toList());
+        }
+
         return members.stream().map(MembershipFullDTO::new).collect(Collectors.toList());
     }
 
@@ -295,7 +331,8 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
     public Page<Membership> fetchUserGroupsNewMembers(User user, Instant from, Pageable pageable) {
         List<Group> groupsWhereUserCanSeeMemberDetails = groupRepository.findAll(GroupSpecifications.userIsMemberAndCanSeeMembers(user));
         if (groupsWhereUserCanSeeMemberDetails != null && !groupsWhereUserCanSeeMemberDetails.isEmpty()) {
-            Specifications<Membership> spec = MembershipSpecifications.recentMembershipsInGroups(groupsWhereUserCanSeeMemberDetails, from);
+            Specifications<Membership> spec = MembershipSpecifications
+                    .recentMembershipsInGroups(groupsWhereUserCanSeeMemberDetails, from, user);
             return membershipRepository.findAll(spec, pageable);
         } else {
             return new PageImpl<>(new ArrayList<>());
@@ -314,15 +351,10 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
 
         permissionBroker.validateGroupPermission(qUser, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
 
-        User tUser = userRepository.findOneByUid(memberUid);
-
-        List<GroupLog> groupLogs = groupLogRepository.findAll(
-                GroupLogSpecifications.memberChangeRecords(group, DateTimeUtil.getEarliestInstant())
-                        .and(GroupLogSpecifications.containingUser(tUser)));
+        Membership membership = membershipRepository.findByGroupUidAndUserUid(groupUid, memberUid);
 
         // and add a bunch more too ...
-
-        return groupLogs.stream().map(gl -> (ActionLog) gl).collect(Collectors.toList());
+        return logsBroker.fetchMembershipLogs(membership);
     }
 
     private List<GroupRefDTO> getSubgroups(Group group) {

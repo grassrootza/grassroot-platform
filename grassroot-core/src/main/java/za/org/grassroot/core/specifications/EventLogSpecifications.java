@@ -1,12 +1,16 @@
 package za.org.grassroot.core.specifications;
 
 import org.springframework.data.jpa.domain.Specification;
-import za.org.grassroot.core.domain.task.EventLog_;
+import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Event;
+import za.org.grassroot.core.domain.task.Event_;
 import za.org.grassroot.core.domain.task.EventLog;
+import za.org.grassroot.core.domain.task.EventLog_;
 import za.org.grassroot.core.domain.task.Vote;
 import za.org.grassroot.core.enums.EventLogType;
+
+import javax.persistence.criteria.Join;
 
 /**
  * Created by luke on 2017/02/25.
@@ -19,6 +23,13 @@ public final class EventLogSpecifications {
 
     public static Specification<EventLog> forUser(User u) {
         return (root, query, cb) -> cb.equal(root.get(EventLog_.user), u);
+    }
+
+    public static Specification<EventLog> forGroup(Group group) {
+        return (root, query, cb) -> {
+            Join<EventLog, Event> join = root.join(EventLog_.event);
+            return cb.equal(join.get(Event_.ancestorGroup), group);
+        };
     }
 
     public static Specification<EventLog> ofType(EventLogType type) {
