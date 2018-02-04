@@ -46,7 +46,6 @@ public class Membership implements Serializable, TagHolder {
     @Column(name = "join_time", nullable = false)
     private Instant joinTime;
 
-
     @Column(name = "user_join_method")
     @Enumerated(EnumType.STRING)
     private GroupJoinMethod joinMethod;

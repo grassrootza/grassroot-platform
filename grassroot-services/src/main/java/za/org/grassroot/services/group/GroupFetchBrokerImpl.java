@@ -331,7 +331,8 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
     public Page<Membership> fetchUserGroupsNewMembers(User user, Instant from, Pageable pageable) {
         List<Group> groupsWhereUserCanSeeMemberDetails = groupRepository.findAll(GroupSpecifications.userIsMemberAndCanSeeMembers(user));
         if (groupsWhereUserCanSeeMemberDetails != null && !groupsWhereUserCanSeeMemberDetails.isEmpty()) {
-            Specifications<Membership> spec = MembershipSpecifications.recentMembershipsInGroups(groupsWhereUserCanSeeMemberDetails, from);
+            Specifications<Membership> spec = MembershipSpecifications
+                    .recentMembershipsInGroups(groupsWhereUserCanSeeMemberDetails, from, user);
             return membershipRepository.findAll(spec, pageable);
         } else {
             return new PageImpl<>(new ArrayList<>());

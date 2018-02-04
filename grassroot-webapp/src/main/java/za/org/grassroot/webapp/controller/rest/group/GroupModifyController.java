@@ -73,6 +73,7 @@ public class GroupModifyController extends GroupBaseController {
                                                    @RequestParam int reminderMinutes,
                                                    @RequestParam boolean discoverable,
                                                    @RequestParam boolean defaultAddToAccount,
+                                                   @RequestParam boolean pinGroup,
                                                    HttpServletRequest request) {
         User user = getUserFromRequest(request);
         if (user != null) {
@@ -82,6 +83,10 @@ public class GroupModifyController extends GroupBaseController {
 
             if (defaultAddToAccount && user.getPrimaryAccount() != null) {
                 accountGroupBroker.addGroupToUserAccount(group.getUid(), user.getUid());
+            }
+
+            if (pinGroup) {
+                groupBroker.updateViewPriority(user.getUid(), group.getUid(), GroupViewPriority.PINNED);
             }
 
             return new ResponseEntity<>(new GroupRefDTO(group.getUid(), group.getGroupName(), group.getMemberships().size()), HttpStatus.OK);
@@ -139,6 +144,7 @@ public class GroupModifyController extends GroupBaseController {
             "of MembershipInfo, which requires a name, a phone number, and, optionally a role (can be ROLE_ORDINARY_MEMBER)")
     public ResponseEntity<GroupModifiedResponse> addMembersToGroup(HttpServletRequest request,
                                                                    @PathVariable String groupUid,
+                                                                   @RequestParam(required = false) GroupJoinMethod joinMethod,
                                                                    @RequestBody Set<MembershipInfo> membersToAdd) {
         logger.info("membersReceived = {}", membersToAdd != null ? membersToAdd.toString() : "null");
         if (membersToAdd == null) {
@@ -147,8 +153,9 @@ public class GroupModifyController extends GroupBaseController {
 
         List<MembershipInfo> invalidMembers = findInvalidMembers(membersToAdd);
         try {
-            groupBroker.addMembers(getUserIdFromRequest(request), groupUid, membersToAdd,
-                    GroupJoinMethod.ADDED_BY_OTHER_MEMBER, false);
+            GroupJoinMethod method = joinMethod == null ? GroupJoinMethod.ADDED_BY_OTHER_MEMBER : joinMethod;
+            log.info("adding members via join method, as received: {}, passing: {}", joinMethod, method);
+            groupBroker.addMembers(getUserIdFromRequest(request), groupUid, membersToAdd, method, false);
             return ResponseEntity.ok(new GroupModifiedResponse(groupBroker.load(groupUid).getName(),
                     membersToAdd.size() - invalidMembers.size(), invalidMembers));
         } catch (AccessDeniedException e) {

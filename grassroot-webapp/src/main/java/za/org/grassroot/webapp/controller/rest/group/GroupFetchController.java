@@ -187,9 +187,11 @@ public class GroupFetchController extends BaseRestController {
         howRecentInDays = howRecentInDays != null ? howRecentInDays : 7;
         User loggedInUser = getUserFromRequest(request);
         if (loggedInUser != null) {
+            log.info("fetching users with pageable: {}", pageable);
             Page<MembershipFullDTO> page = groupFetchBroker
                     .fetchUserGroupsNewMembers(loggedInUser, Instant.now().minus(howRecentInDays, ChronoUnit.DAYS), pageable)
                     .map(MembershipFullDTO::new);
+            log.info("number users back: {}", page.getSize());
             return ResponseEntity.ok(page);
         } else
             return new ResponseEntity<>((Page<MembershipFullDTO>) null, HttpStatus.FORBIDDEN);

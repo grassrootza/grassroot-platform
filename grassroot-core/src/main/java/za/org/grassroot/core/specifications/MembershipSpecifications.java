@@ -38,10 +38,14 @@ public class MembershipSpecifications {
         return Specifications.where(groupCreatedByUserSpec).and(groupCreatedAfterSpec).and(membershipCreatedAfterSpec);
     }
 
-    public static Specifications<Membership> recentMembershipsInGroups(List<Group> groups, Instant membershipCreatedAfter) {
+    public static Specifications<Membership> recentMembershipsInGroups(List<Group> groups, Instant membershipCreatedAfter, User callingUser) {
         Specification<Membership> inGroups = MembershipSpecifications.forGroups(groups);
         Specification<Membership> membershipCreatedAfterSpec = MembershipSpecifications.membershipsCreatedAfter(membershipCreatedAfter);
-        return Specifications.where(inGroups).and(membershipCreatedAfterSpec).and(membershipCreatedAfterSpec);
+        Specification<Membership> notSubGroup = (root, query, cb) -> cb.notEqual(root.get(Membership_.joinMethod),
+                GroupJoinMethod.ADDED_SUBGROUP);
+        Specification<Membership> notUser = (root, query, cb) -> cb.notEqual(root.get(Membership_.user), callingUser);
+        return Specifications.where(inGroups).and(membershipCreatedAfterSpec).and(membershipCreatedAfterSpec)
+                .and(notSubGroup).and(notUser);
     }
 
     public static Specifications<Membership> groupMembersInProvincesJoinedAfter(Group group,

@@ -169,13 +169,11 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         recordShortMessageContent(bc, broadcast);
         recordEmailContent(bc.getEmail(), broadcast);
 
-        if (bc.getFacebookPost() != null) {
-            log.info("sending an FB post, from builder: {}", bc.getFacebookPost());
-            recordFbPost(bc.getFacebookPost(), broadcast);
-            GenericPostResponse fbResponse = socialMediaBroker.postToFacebook(bc.getFacebookPost());
-            if ((fbResponse != null && fbResponse.isPostSuccessful()) || mockSocialMediaBroadcasts) {
-                broadcast.setFbPostSucceeded(true);
-            }
+        if (bc.getFacebookPosts() != null) {
+            log.info("sending an FB post, from builder: {}", bc.getFacebookPosts());
+            recordFbPosts(bc.getFacebookPosts(), broadcast);
+            List<GenericPostResponse> fbResponses = socialMediaBroker.postToFacebook(bc.getFacebookPosts());
+            broadcast.setFbPostSucceeded(mockSocialMediaBroadcasts || fbResponses.stream().anyMatch(GenericPostResponse::isPostSuccessful));
         }
 
         if (bc.getTwitterPostBuilder() != null) {
@@ -196,7 +194,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
     private LogsAndNotificationsBundle storeScheduledBroadcast(BroadcastComponents bc, Broadcast broadcast) {
         recordShortMessageContent(bc, broadcast);
         recordEmailContent(bc.getEmail(), broadcast);
-        recordFbPost(bc.getFacebookPost(), broadcast);
+        recordFbPosts(bc.getFacebookPosts(), broadcast);
         recordTwitterPost(bc.getTwitterPostBuilder(), broadcast);
 
         LogsAndNotificationsBundle bundle = new LogsAndNotificationsBundle();
@@ -212,17 +210,13 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
 
     private LogsAndNotificationsBundle sendScheduledBroadcast(Broadcast bc) {
         if (bc.hasFbPost()) {
-            GenericPostResponse fbResponse = socialMediaBroker.postToFacebook(extractFbFromBroadcast(bc));
-            if (fbResponse.isPostSuccessful()) {
-                bc.setFbPostSucceeded(true);
-            }
+            List<GenericPostResponse> fbResponse = socialMediaBroker.postToFacebook(extractFbFromBroadcast(bc));
+            bc.setFbPostSucceeded(fbResponse.stream().anyMatch(GenericPostResponse::isPostSuccessful));
         }
 
         if (bc.hasTwitterPost()) {
             GenericPostResponse twResponse = socialMediaBroker.postToTwitter(extractTweetFromBroadcast(bc));
-            if (twResponse.isPostSuccessful()) {
-                bc.setTwitterSucceeded(true);
-            }
+            bc.setTwitterSucceeded(twResponse.isPostSuccessful());
         }
 
         return bc.getCampaign() == null ? generateGroupBroadcastBundle(bc) : generateCampaignBroadcastBundle(bc);
@@ -296,9 +290,11 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         bundle.addNotifications(emailNotifications);
     }
 
-    private void recordFbPost(FBPostBuilder post, Broadcast broadcast) {
-        if (post != null) {
-            broadcast.setFacebookPageId(post.getFacebookPageId());
+    private void recordFbPosts(List<FBPostBuilder> posts, Broadcast broadcast) {
+        if (posts != null && !posts.isEmpty()) {
+            FBPostBuilder post = posts.iterator().next();
+            String fbIds = posts.stream().map(FBPostBuilder::getFacebookPageId).collect(Collectors.joining(","));
+            broadcast.setFacebookPageId(fbIds);
             broadcast.setFacebookPost(post.getMessage());
             broadcast.setFacebookImageCaption(post.getImageCaption());
             broadcast.setFacebookImageKey(post.getImageKey());
@@ -307,16 +303,17 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         }
     }
 
-    private FBPostBuilder extractFbFromBroadcast(Broadcast broadcast) {
-        return FBPostBuilder.builder()
+    private List<FBPostBuilder> extractFbFromBroadcast(Broadcast broadcast) {
+        List<String> fbIds = Arrays.asList(broadcast.getFacebookPageId().split(","));
+        return fbIds.stream().map(fbId -> FBPostBuilder.builder()
                 .postingUserUid(broadcast.getCreatedByUser().getUid())
-                .facebookPageId(broadcast.getFacebookPageId())
+                .facebookPageId(fbId)
                 .message(broadcast.getFacebookPost())
                 .linkUrl(broadcast.getFacebookLinkUrl())
                 .linkName(broadcast.getFacebookLinkName())
                 .imageKey(broadcast.getFacebookImageKey())
                 .imageCaption(broadcast.getFacebookImageCaption())
-                .build();
+                .build()).collect(Collectors.toList());
     }
 
     private void recordTwitterPost(TwitterPostBuilder post, Broadcast bc) {
