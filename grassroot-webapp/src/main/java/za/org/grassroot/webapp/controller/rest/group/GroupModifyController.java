@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import za.org.grassroot.core.domain.*;
@@ -72,6 +73,7 @@ public class GroupModifyController extends GroupBaseController {
                                                    @RequestParam int reminderMinutes,
                                                    @RequestParam boolean discoverable,
                                                    @RequestParam boolean defaultAddToAccount,
+                                                   @RequestParam boolean pinGroup,
                                                    HttpServletRequest request) {
         User user = getUserFromRequest(request);
         if (user != null) {
@@ -81,6 +83,10 @@ public class GroupModifyController extends GroupBaseController {
 
             if (defaultAddToAccount && user.getPrimaryAccount() != null) {
                 accountGroupBroker.addGroupToUserAccount(group.getUid(), user.getUid());
+            }
+
+            if (pinGroup) {
+                groupBroker.updateViewPriority(user.getUid(), group.getUid(), GroupViewPriority.PINNED);
             }
 
             return new ResponseEntity<>(new GroupRefDTO(group.getUid(), group.getGroupName(), group.getMemberships().size()), HttpStatus.OK);
@@ -138,21 +144,20 @@ public class GroupModifyController extends GroupBaseController {
             "of MembershipInfo, which requires a name, a phone number, and, optionally a role (can be ROLE_ORDINARY_MEMBER)")
     public ResponseEntity<GroupModifiedResponse> addMembersToGroup(HttpServletRequest request,
                                                                    @PathVariable String groupUid,
-                                                                   @RequestBody Set<AddMemberInfo> membersToAdd) {
+                                                                   @RequestParam(required = false) GroupJoinMethod joinMethod,
+                                                                   @RequestBody Set<MembershipInfo> membersToAdd) {
         logger.info("membersReceived = {}", membersToAdd != null ? membersToAdd.toString() : "null");
         if (membersToAdd == null) {
             throw new NoMembershipInfoException();
         }
-        // workaround for the moment, need to fix and improve later
-        Set<MembershipInfo> memberInfos = membersToAdd.stream()
-                .map(AddMemberInfo::convertToMembershipInfo)
-                .collect(Collectors.toSet());
-        List<String> invalidNumbers = findInvalidNumbers(memberInfos);
 
+        List<MembershipInfo> invalidMembers = findInvalidMembers(membersToAdd);
         try {
-            groupBroker.addMembers(getUserIdFromRequest(request), groupUid, memberInfos,
-                    GroupJoinMethod.ADDED_BY_OTHER_MEMBER, false);
-            return ResponseEntity.ok(new GroupModifiedResponse(membersToAdd.size() - invalidNumbers.size(), invalidNumbers));
+            GroupJoinMethod method = joinMethod == null ? GroupJoinMethod.ADDED_BY_OTHER_MEMBER : joinMethod;
+            log.info("adding members via join method, as received: {}, passing: {}", joinMethod, method);
+            groupBroker.addMembers(getUserIdFromRequest(request), groupUid, membersToAdd, method, false);
+            return ResponseEntity.ok(new GroupModifiedResponse(groupBroker.load(groupUid).getName(),
+                    membersToAdd.size() - invalidMembers.size(), invalidMembers));
         } catch (AccessDeniedException e) {
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_ADD_GROUP_MEMBER);
         }
@@ -168,17 +173,12 @@ public class GroupModifyController extends GroupBaseController {
 
     @RequestMapping(value = "/members/add/taskteam/{parentUid}", method = RequestMethod.POST)
     @ApiOperation(value = "Add member(s) to a task team / subgroup (of the 'parent' group)", notes = "Returns the modified task team / subgroup in full")
-    public ResponseEntity<GroupFullDTO> addMembersToSubgroup(HttpServletRequest request, @PathVariable String parentUid,
-                                                             @RequestParam String childGroupUid, @RequestParam Set<String> memberUids) {
-        try {
-            // todo make this atomic by moving permission validation into dedicated add to subgroup method
-            permissionBroker.validateGroupPermission(getUserFromRequest(request), groupBroker.load(parentUid),
-                    Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
-            groupBroker.copyMembersIntoGroup(getUserIdFromRequest(request), childGroupUid, memberUids);
-            return ResponseEntity.ok().build();
-        } catch (AccessDeniedException e) {
-            throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
-        }
+    public ResponseEntity<GroupFullDTO> addMembersToSubgroup(HttpServletRequest request,
+                                                             @PathVariable String parentUid,
+                                                             @RequestParam String childGroupUid,
+                                                             @RequestParam Set<String> memberUids) {
+        groupBroker.addMembersToSubgroup(getUserIdFromRequest(request), parentUid, childGroupUid, memberUids);
+        return ResponseEntity.ok(groupFetchBroker.fetchGroupFullInfo(getUserIdFromRequest(request), parentUid));
     }
 
     @RequestMapping(value = "/create/taskteam/{parentUid}", method = RequestMethod.POST)
@@ -236,23 +236,41 @@ public class GroupModifyController extends GroupBaseController {
                                                  @RequestParam(required = false) String phone,
                                                  @RequestParam(required = false) Province province) {
         try {
+            log.info("modifying member details in group, = {}", name);
             String userId = getUserIdFromRequest(request);
             groupBroker.updateMembershipDetails(userId, groupUid, memberUid, name, phone, email, province);
             return ResponseEntity.ok(groupFetchBroker.fetchGroupMember(userId, groupUid, memberUid));
         } catch (IllegalArgumentException e) {
+            log.info("illegal argument in member modify", e);
             return RestUtil.errorResponse(RestMessage.MEMBER_ALREADY_SET);
         } catch (InvalidPhoneNumberException e) {
+            log.info("invalid phone number in member modify", e);
             return RestUtil.errorResponse(RestMessage.INVALID_MSISDN);
         }
     }
 
-    @RequestMapping(value = "/description/modify/{userUid}/{groupUid}", method = RequestMethod.POST)
+    @RequestMapping(value = "/members/modify/assignments/{groupUid}", method = RequestMethod.POST)
+    @ApiOperation(value = "Modify assignments of user, i.e., task teams, topics, affiliations", notes =
+            "If calling this, pass back original values (not empty sets) if nothing has changed, else values will be cleared")
+    public ResponseEntity changeMemberAssignments(HttpServletRequest request, @PathVariable String groupUid,
+                                                  @RequestParam String memberUid,
+                                                  @RequestParam Set<String> taskTeams,
+                                                  @RequestParam Set<String> affiliations,
+                                                  @RequestParam Set<String> topics) {
+        log.info("altering user assignments, etc., task teams = {}, affiliations = {}, topics = {}",
+                taskTeams, affiliations, topics);
+        groupBroker.alterMemberTopicsTeamsOrgs(getUserIdFromRequest(request), groupUid, memberUid,
+                affiliations, taskTeams, topics);
+        return ResponseEntity.ok(true);
+    }
+
+    @RequestMapping(value = "/description/modify/{groupUid}", method = RequestMethod.POST)
     @ApiOperation(value = "Change the description of a group", notes = "Only group organizer, with UPDATE_DETAILS permission, can call")
-    public ResponseEntity<ResponseWrapper> changeGroupDescription(@PathVariable String userUid,
+    public ResponseEntity<ResponseWrapper> changeGroupDescription(HttpServletRequest request,
                                                                   @PathVariable String groupUid,
                                                                   @RequestParam String description) {
         try {
-            groupBroker.updateDescription(userUid, groupUid, description);
+            groupBroker.updateDescription(getUserIdFromRequest(request), groupUid, description);
             return RestUtil.errorResponse(RestMessage.GROUP_DESCRIPTION_CHANGED);
         } catch (AccessDeniedException e) {
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
@@ -366,9 +384,9 @@ public class GroupModifyController extends GroupBaseController {
         return response;
     }
 
-    private List<String> findInvalidNumbers(Set<MembershipInfo> members) {
-        return members.stream().filter(m -> m.hasPhoneNumber() && !m.hasValidPhoneNumber())
-                .map(MembershipInfo::getPhoneNumber)
+    private List<MembershipInfo> findInvalidMembers(Set<MembershipInfo> members) {
+        return members.stream()
+                .filter(m -> !m.hasValidPhoneOrEmail() || StringUtils.isEmpty(m.getDisplayName()))
                 .collect(Collectors.toList());
     }
 

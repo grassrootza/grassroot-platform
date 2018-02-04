@@ -22,7 +22,7 @@ public class BroadcastCreateRequest {
     private String emailContent;
 
     private boolean postToFacebook;
-    private String facebookPage;
+    private List<String> facebookPages;
     private String facebookContent;
     private String facebookLink; // will need to think through media
 

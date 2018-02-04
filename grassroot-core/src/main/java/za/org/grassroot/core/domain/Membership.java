@@ -46,7 +46,6 @@ public class Membership implements Serializable, TagHolder {
     @Column(name = "join_time", nullable = false)
     private Instant joinTime;
 
-
     @Column(name = "user_join_method")
     @Enumerated(EnumType.STRING)
     private GroupJoinMethod joinMethod;
@@ -92,6 +91,15 @@ public class Membership implements Serializable, TagHolder {
         if (affiliations != null && !affiliations.isEmpty()) {
             this.addTags(affiliations.stream().map(s -> AFFILITATION_TAG + s).collect(Collectors.toList()));
         }
+    }
+
+    public void setAffiliations(Set<String> affiliations) {
+        // first get all the non-affiliation tags
+        List<String> tags = getTagList().stream()
+                .filter(s -> !s.startsWith(AFFILITATION_TAG)).collect(Collectors.toList());
+        // then add the topics
+        tags.addAll(affiliations.stream().map(s -> AFFILITATION_TAG + s).collect(Collectors.toSet()));
+        setTags(tags);
     }
 
     public List<String> getAffiliations() {

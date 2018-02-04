@@ -391,6 +391,8 @@ public class Group implements TodoContainer, VoteContainer, MeetingContainer, Se
         this.parent = parent;
     }
 
+    public boolean hasParent() { return parent != null; }
+
     public boolean isPaidFor() {
         return paidFor;
     }

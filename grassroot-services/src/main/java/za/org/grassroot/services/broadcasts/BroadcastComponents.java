@@ -31,7 +31,7 @@ public class BroadcastComponents {
     @Setter private boolean useOnlyFreeChannels;
     @Setter private boolean skipSmsIfEmail;
 
-    @Setter private FBPostBuilder facebookPost;
+    @Setter private List<FBPostBuilder> facebookPosts;
     @Setter private TwitterPostBuilder twitterPostBuilder;
 
     private List<String> topics;

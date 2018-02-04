@@ -20,7 +20,7 @@ import za.org.grassroot.core.domain.livewire.DataSubscriber;
 import za.org.grassroot.core.enums.DataSubscriberType;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.core.util.PhoneNumberUtil;
-import za.org.grassroot.integration.DataImportBroker;
+import za.org.grassroot.integration.data.DataImportBroker;
 import za.org.grassroot.services.exception.NoSuchUserException;
 import za.org.grassroot.services.livewire.DataSubscriberBroker;
 import za.org.grassroot.services.user.PasswordTokenService;

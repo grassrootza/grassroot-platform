@@ -70,6 +70,15 @@ public class CampaignManagerController extends BaseRestController {
                         userUid == null ? getUserIdFromRequest(request) : userUid)));
     }
 
+    @RequestMapping(value = "/list/group", method = RequestMethod.GET)
+    @ApiOperation(value = "List  campaigns linked to group", notes = "Lists the campaigns linked to specific group")
+    public ResponseEntity<List<CampaignViewDTO>> fetchCampaignsForGroup(String groupUid) {
+
+        return ResponseEntity.ok(CampaignWebUtil.createCampaignViewDtoList(
+                campaignBroker.getCampaignsCreatedLinkedToGroup(groupUid)
+        ));
+    }
+
     @RequestMapping(value = "/fetch/{campaignUid}", method = RequestMethod.GET)
     @ApiOperation(value = "Fetch a specific campaign", notes = "Fetches a campaign with basic info")
     public ResponseEntity fetchCampaign(HttpServletRequest request, @PathVariable String campaignUid) {

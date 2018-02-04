@@ -12,16 +12,14 @@ import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
-import za.org.grassroot.core.domain.ActionLog;
-import za.org.grassroot.core.domain.Group;
-import za.org.grassroot.core.domain.Permission;
-import za.org.grassroot.core.domain.User;
+import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.dto.MembershipFullDTO;
 import za.org.grassroot.core.dto.group.*;
 import za.org.grassroot.core.enums.Province;
@@ -46,6 +44,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -169,10 +168,16 @@ public class GroupFetchController extends BaseRestController {
                                                       @RequestParam (required = false) Collection<Province> provinces,
                                                       @RequestParam (required = false) Collection<String> taskTeams,
                                                       @RequestParam (required = false) Collection<String> topics,
+                                                      @RequestParam (required = false) Collection<String> affiliations,
+                                                      @RequestParam (required = false) Collection<GroupJoinMethod> joinMethods,
+                                                      @RequestParam (required = false) Collection<String> joinedCampaignsUids,
+                                                      @RequestParam (required = false) Integer joinDaysAgo,
+                                                      @RequestParam (required = false)  @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)  LocalDate joinDate,
+                                                      @RequestParam (required = false) JoinDateCondition joinDaysAgoCondition,
+                                                      @RequestParam (required = false) String namePhoneOrEmail,
                                                       HttpServletRequest request) {
-        User user = getUserFromRequest(request);
-        List<MembershipFullDTO> members = groupFetchBroker.filterGroupMembers(user, groupUid,provinces, taskTeams, topics);
-        return members;
+        return groupFetchBroker.filterGroupMembers(getUserFromRequest(request), groupUid,
+                        provinces, taskTeams, topics, affiliations, joinMethods, joinedCampaignsUids, joinDaysAgo, joinDate, joinDaysAgoCondition, namePhoneOrEmail);
     }
 
     @RequestMapping(value = "/members/new", method = RequestMethod.GET)
@@ -182,9 +187,11 @@ public class GroupFetchController extends BaseRestController {
         howRecentInDays = howRecentInDays != null ? howRecentInDays : 7;
         User loggedInUser = getUserFromRequest(request);
         if (loggedInUser != null) {
+            log.info("fetching users with pageable: {}", pageable);
             Page<MembershipFullDTO> page = groupFetchBroker
                     .fetchUserGroupsNewMembers(loggedInUser, Instant.now().minus(howRecentInDays, ChronoUnit.DAYS), pageable)
                     .map(MembershipFullDTO::new);
+            log.info("number users back: {}", page.getSize());
             return ResponseEntity.ok(page);
         } else
             return new ResponseEntity<>((Page<MembershipFullDTO>) null, HttpStatus.FORBIDDEN);
@@ -290,7 +297,7 @@ public class GroupFetchController extends BaseRestController {
 
     }
 
-    @RequestMapping(value = "member/{groupUid}", method = RequestMethod.GET)
+    @RequestMapping(value = "/member/{groupUid}", method = RequestMethod.GET)
     @ApiOperation(value = "Fetch group member by memberUid", notes = "Requires GROUP_PERMISSION_SEE_MEMBER_DETAILS")
     public ResponseEntity<MembershipFullDTO> fetchMemberByMemberUid(HttpServletRequest request, @PathVariable String groupUid,
                                                                     @RequestParam String memberUid) {

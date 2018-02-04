@@ -20,6 +20,7 @@ public enum LiveWireLogType {
     ALERT_BLOCKED,
     ALERT_SENT,
     ALERT_TAGS_ADDED,
-    ALERT_TAGS_REMOVED
+    ALERT_TAGS_REMOVED,
+    ALERT_CREATED
 
 }
