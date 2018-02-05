@@ -167,7 +167,6 @@ public class Broadcast implements GrassrootEntity, TagHolder {
     @Type(type = "za.org.grassroot.core.util.StringArrayUserType")
     @Setter private String[] tags;
 
-
     @Tolerate
     private Broadcast() {
         // for JPA
@@ -179,7 +178,6 @@ public class Broadcast implements GrassrootEntity, TagHolder {
     }
 
     // using this to preserve builder pattern (note: deviates from prior style of setting these in constructor,
-    // todo is consider reconciling to old way by more sophisticated use of Builder pattern
     @PrePersist
     private void setDefaults() {
         if (uid == null) {

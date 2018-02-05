@@ -394,7 +394,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
     @Override
     @Transactional
-    public String addMemberViaJoinPage(String groupUid, String code, String userUid, String name, String phone,
+    public String addMemberViaJoinPage(String groupUid, String code, String broadcastId, String userUid, String name, String phone,
                                        String email, Province province, List<String> topics, UserInterfaceType interfaceType) {
         Objects.requireNonNull(groupUid);
         Objects.requireNonNull(code);
@@ -403,6 +403,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         }
 
         Group group = groupRepository.findOneByUid(groupUid);
+        // todo : direct between broadcast and code
         validateJoinCode(group, code); // don't record use, as already done elsewhere
 
         User joiningUser = null;
@@ -1266,11 +1267,16 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
 
     @Override
     @Transactional
-    public Group loadAndRecordUse(String groupUid, String code) {
+    public Group loadAndRecordUse(String groupUid, String code, String broadcastId) {
         Group group = load(groupUid);
-        validateJoinCode(group, code);
-        recordJoinCodeInbound(group, code);
-        // in fugure may add some sophistication here, e.g., deciding what to send back, etc
+        logger.info("code =? {}, and b id = {}", code, broadcastId);
+        if (!StringUtils.isEmpty(code)) {
+            validateJoinCode(group, code);
+            recordJoinCodeInbound(group, code);
+        }
+        if (!StringUtils.isEmpty(broadcastId)) {
+            logger.info("we had an inbound on broadcast ID! record it");
+        }
         return group;
     }
 
@@ -1280,7 +1286,6 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
     public void updateGroupDefaultReminderSetting(String userUid, String groupUid, int reminderMinutes) {
         Objects.requireNonNull(userUid);
         Objects.requireNonNull(groupUid);
-        Objects.requireNonNull(reminderMinutes);
 
         Group group = load(groupUid);
         User user = userRepository.findOneByUid(userUid);

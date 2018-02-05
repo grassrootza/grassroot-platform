@@ -57,7 +57,7 @@ public interface GroupBroker {
 
     void addMemberViaJoinCode(String userUidToAdd, String groupUid, String tokenPassed, UserInterfaceType interfaceType);
 
-    String addMemberViaJoinPage(String groupUid, String code, String userUid, String name, String phone, String email,
+    String addMemberViaJoinPage(String groupUid, String code, String broadcastId, String userUid, String name, String phone, String email,
                                 Province province, List<String> topics, UserInterfaceType interfaceType);
 
     void notifyOrganizersOfJoinCodeUse(Instant periodStart, Instant periodEnd);
@@ -65,7 +65,6 @@ public interface GroupBroker {
     void asyncAddMemberships(String initiatorUid, String groupUid, Set<MembershipInfo> membershipInfos,
                              GroupJoinMethod joinMethod, String joinMethodDescriptor,
                              boolean duringGroupCreation, boolean createWelcomeNotifications);
-
 
     void removeMembers(String userUid, String groupUid, Set<String> memberUids);
 
@@ -106,7 +105,7 @@ public interface GroupBroker {
 
     /** METHODS FOR DEALING WITH JOIN TOKENS, PUBLIC SETTINGS, AND SEARCHING **/
 
-    Group loadAndRecordUse(String groupUid, String code);
+    Group loadAndRecordUse(String groupUid, String code, String broadcastId);
 
     String openJoinToken(String userUid, String groupUid, LocalDateTime expiryDateTime);
 

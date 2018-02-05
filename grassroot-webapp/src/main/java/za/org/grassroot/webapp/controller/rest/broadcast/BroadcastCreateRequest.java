@@ -13,6 +13,7 @@ import java.util.List;
 @NoArgsConstructor @Getter @Setter @ToString
 public class BroadcastCreateRequest {
 
+    private String broadcastId;
     private String title;
 
     private boolean sendShortMessages; // SMS / GCM / WhatsApp, in time
@@ -25,10 +26,12 @@ public class BroadcastCreateRequest {
     private List<String> facebookPages;
     private String facebookContent;
     private String facebookLink; // will need to think through media
+    private String facebookLinkCaption;
 
     private boolean postToTwitter;
     private String twitterContent; // as above, need to think through media more
     private String twitterLink;
+    private String twitterLinkCaption;
 
     private BroadcastSchedule sendType;
     private Long sendDateTimeMills;
