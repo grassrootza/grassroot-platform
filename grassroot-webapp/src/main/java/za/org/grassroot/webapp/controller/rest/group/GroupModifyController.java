@@ -52,14 +52,12 @@ public class GroupModifyController extends GroupBaseController {
 
     private static final Logger logger = LoggerFactory.getLogger(GroupModifyController.class);
 
-    private final PermissionBroker permissionBroker;
     private final GroupFetchBroker groupFetchBroker;
     private final GroupImageBroker groupImageBroker;
     private final AccountGroupBroker accountGroupBroker;
 
-    public GroupModifyController(JwtService jwtService, UserManagementService userManagementService, PermissionBroker permissionBroker, GroupFetchBroker groupFetchBroker, GroupImageBroker groupImageBroker, AccountGroupBroker accountGroupBroker) {
+    public GroupModifyController(JwtService jwtService, UserManagementService userManagementService, GroupFetchBroker groupFetchBroker, GroupImageBroker groupImageBroker, AccountGroupBroker accountGroupBroker) {
         super(jwtService, userManagementService);
-        this.permissionBroker = permissionBroker;
         this.groupFetchBroker = groupFetchBroker;
         this.groupImageBroker = groupImageBroker;
         this.accountGroupBroker = accountGroupBroker;

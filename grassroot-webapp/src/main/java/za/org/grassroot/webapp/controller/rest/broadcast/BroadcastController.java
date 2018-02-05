@@ -86,6 +86,7 @@ public class BroadcastController extends BaseRestController {
         String userUid = getUserIdFromRequest(request);
 
         BroadcastComponents bc = BroadcastComponents.builder()
+                .broadcastId(createRequest.getBroadcastId())
                 .title(createRequest.getTitle())
                 .userUid(userUid)
                 .groupUid(groupUid)
@@ -169,6 +170,7 @@ public class BroadcastController extends BaseRestController {
                     .facebookPageId(fbp)
                     .message(request.getFacebookContent())
                     .linkUrl(request.getFacebookLink())
+                    .linkName(request.getFacebookLinkCaption())
                     .build()
         ).collect(Collectors.toList());
     }

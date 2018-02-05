@@ -24,6 +24,7 @@ import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.MembershipSpecifications;
 import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.core.util.UIDGenerator;
 import za.org.grassroot.integration.messaging.GrassrootEmail;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.integration.socialmedia.*;
@@ -78,14 +79,13 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         Account account = user.getPrimaryAccount();
 
         BroadcastInfo.BroadcastInfoBuilder builder = BroadcastInfo.builder();
+        builder.broadcastId(UIDGenerator.generateId());
+
         if (account !=null && account.getFreeFormCost() > 0) {
             builder.isSmsAllowed(true).smsCostCents(account.getFreeFormCost());
         } else {
             builder.isSmsAllowed(false);
         }
-
-        builder.joinLinks(groupJoinCodeRepository.findByGroupUidAndActiveTrue(groupUid).stream()
-                .map(GroupJoinCode::getShortUrl).collect(Collectors.toList()));
 
         if (mockSocialMediaBroadcasts) {
             builder.isFbConnected(true).facebookPages(mockFbPages());
@@ -100,8 +100,8 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
                     .twitterAccount(twitterAccount);
         }
 
-        builder.campaignLinks(campaignRepository.findByMasterGroupUid(groupUid, new Sort("createdDateTime"))
-                .stream().filter(Campaign::isActive).map(Campaign::getUrl).collect(Collectors.toList()));
+        builder.campaignNamesUrls(campaignRepository.findByMasterGroupUid(groupUid, new Sort("createdDateTime"))
+                .stream().filter(Campaign::isActive).collect(Collectors.toMap(Campaign::getName, Campaign::getUrl)));
 
         // or for campaign, extract somehow
         Group group = groupRepository.findOneByUid(groupUid);
@@ -138,7 +138,9 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
             throw new NoPaidAccountException();
         }
 
+        log.info("creating broadcast with Id: ", bc.getBroadcastId());
         Broadcast broadcast = Broadcast.builder()
+                .uid(bc.getBroadcastId())
                 .createdByUser(user)
                 .account(account)
                 .title(bc.getTitle())

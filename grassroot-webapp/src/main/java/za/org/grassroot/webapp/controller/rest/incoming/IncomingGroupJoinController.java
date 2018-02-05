@@ -38,8 +38,9 @@ public class IncomingGroupJoinController extends BaseRestController {
     @ApiOperation(value = "Initiate use of a join code (word, or URL)")
     public ResponseEntity<JoinInfoExternal> initiateUseOfJoinWord(HttpServletRequest request,
                                                                   @PathVariable String groupUid,
-                                                                  @RequestParam String code) {
-        Group group = groupBroker.loadAndRecordUse(groupUid, code);
+                                                                  @RequestParam(required = false) String code,
+                                                                  @RequestParam(required = false) String broadcastId) {
+        Group group = groupBroker.loadAndRecordUse(groupUid, code, broadcastId);
         JoinInfoExternal.JoinInfoExternalBuilder builder = JoinInfoExternal.builder()
                 .groupName(group.getName())
                 .groupUid(group.getUid())
@@ -65,9 +66,10 @@ public class IncomingGroupJoinController extends BaseRestController {
             "they have an active web profile or not")
     public ResponseEntity<UserProfileStatus> completeUseOfJoinWord(HttpServletRequest request,
                                                                    @PathVariable String groupUid,
-                                                                   @RequestParam String code,
+                                                                   @RequestParam(required = false) String code,
+                                                                   @RequestParam(required = false) String broadcastId,
                                                                    @RequestBody JoinSubmitInfo joinSubmitInfo) {
-        String joinedUserUid = groupBroker.addMemberViaJoinPage(groupUid, code, getUserIdFromRequest(request),
+        String joinedUserUid = groupBroker.addMemberViaJoinPage(groupUid, code, null, getUserIdFromRequest(request),
                 joinSubmitInfo.getName(), joinSubmitInfo.getPhone(), joinSubmitInfo.getEmail(),
                 joinSubmitInfo.safeProvince(), joinSubmitInfo.getTopics(), UserInterfaceType.WEB_2);
         return ResponseEntity.ok(userManager.fetchUserProfileStatus(joinedUserUid));

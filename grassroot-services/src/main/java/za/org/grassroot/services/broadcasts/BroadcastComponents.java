@@ -14,6 +14,8 @@ import java.util.List;
 @Getter @Builder
 public class BroadcastComponents {
 
+    private String broadcastId;
+
     private boolean campaignBroadcast;
 
     private BroadcastSchedule broadcastSchedule;
