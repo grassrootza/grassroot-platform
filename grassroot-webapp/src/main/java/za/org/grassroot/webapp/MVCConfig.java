@@ -65,15 +65,15 @@ public class MVCConfig extends WebMvcConfigurerAdapter {
     public SimpleLoggingInterceptor loggingInterceptor(){return  new SimpleLoggingInterceptor();}
 
 
-    @Bean
-    public WebMvcConfigurer corsConfigurer() {
-        return new WebMvcConfigurerAdapter() {
-            @Override
-            public void addCorsMappings(CorsRegistry registry) {
-                registry.addMapping("/**").allowedOrigins("*").allowedMethods("*");
-            }
-        };
-    }
+//    @Bean
+//    public WebMvcConfigurer corsConfigurer() {
+//        return new WebMvcConfigurerAdapter() {
+//            @Override
+//            public void addCorsMappings(CorsRegistry registry) {
+//                registry.addMapping("/**").allowedOrigins("*").allowedMethods("*");
+//            }
+//        };
+//    }
 
 
     @Override
