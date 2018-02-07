@@ -89,7 +89,7 @@ public class DataImportBrokerImpl implements DataImportBroker {
                     importedMembers.add(member);
                     logger.debug("Read in member: {}", member);
                 } catch (Exception e) {
-                    logger.info("failed to parse row, adding to error sheet");
+                    logger.info("failed to parse row, adding to error sheet, error headline: {}", e.getMessage());
                     failedRows.add(row);
                 }
             }
@@ -213,9 +213,11 @@ public class DataImportBrokerImpl implements DataImportBroker {
     private MembershipInfo memberFromRow(Row row, Integer nameCol, Integer phoneCol, Integer emailCol, Integer provinceCol,
                                          Integer roleCol, Integer firstNameCol, Integer surNameCol, Integer affilCol) {
         if (phoneCol == null && emailCol == null) {
+            logger.info("no phone or email col, exiting with error");
             throw new IllegalArgumentException("Error! One of email or phone number columns must be present");
         }
         if (nameCol == null && firstNameCol == null && surNameCol == null) {
+            logger.info("no name columns, exiting with error");
             throw new IllegalArgumentException("Error! At least one of the name values must be set");
         }
 
@@ -230,6 +232,7 @@ public class DataImportBrokerImpl implements DataImportBroker {
 
         final String phone = phoneCol != null ? getValue(row, phoneCol) : null;
         if (!StringUtils.isEmpty(phone) && !PhoneNumberUtil.testInputNumber(phone)) {
+            logger.info("failed phone parsing, exiting, now");
             throw new InvalidPhoneNumberException("Bad phone number passed for phone");
         }
         info.setPhoneNumber(phoneCol != null ? phone : null);
@@ -243,6 +246,7 @@ public class DataImportBrokerImpl implements DataImportBroker {
         info.setRoleName(roleCol != null ? convertRoleName(getValue(row, roleCol)) : BaseRoles.ROLE_ORDINARY_MEMBER);
 
         if (!info.hasValidPhoneOrEmail()) {
+            logger.info("don't have a valid phone or email, exiting");
             throw new IllegalArgumentException("Must have at least one of phone or email");
         }
 

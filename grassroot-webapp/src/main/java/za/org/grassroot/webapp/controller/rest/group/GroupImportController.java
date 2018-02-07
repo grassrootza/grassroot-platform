@@ -56,6 +56,7 @@ public class GroupImportController extends GroupBaseController {
         File tmpFile = new File(tempPath);
         log.info("phoneCol = {}, nameCol = {}, header = {}, loaded temp file, path = {}", phoneColumn, nameColumn, header, tmpFile.getAbsolutePath());
 
+        Integer nameC = nameColumn == -1 ? null : nameColumn;
         Integer phoneC = phoneColumn == -1 ? null : phoneColumn;
         Integer emailC = emailColumn == -1 ? null : emailColumn;
         Integer provinceC = provinceColumn == -1 ? null : provinceColumn;
@@ -65,7 +66,7 @@ public class GroupImportController extends GroupBaseController {
         Integer affilC = affiliationColumn == -1 ? null : affiliationColumn;
 
         return ResponseEntity.ok(dataBroker.processMembers(tmpFile,
-                header, phoneC, nameColumn, roleC, emailC, provinceC, firstC, surnameC, affilC));
+                header, phoneC, nameC, roleC, emailC, provinceC, firstC, surnameC, affilC));
     }
 
     @RequestMapping(value = "/errors/xls")

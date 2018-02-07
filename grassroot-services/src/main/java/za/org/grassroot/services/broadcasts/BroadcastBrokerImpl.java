@@ -33,6 +33,7 @@ import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -40,6 +41,10 @@ import static za.org.grassroot.core.specifications.NotificationSpecifications.*;
 
 @Service @Slf4j
 public class BroadcastBrokerImpl implements BroadcastBroker {
+
+    // note, make configurable, possibly, and/or use i18n
+    private static final DateTimeFormatter SDF = DateTimeFormatter.ofPattern("EEE d MMM");
+    private static final String NO_PROVINCE = "your province";
 
     @Value("${grassroot.broadcast.mocksm.enabled:false}")
     private boolean mockSocialMediaBroadcasts;
@@ -50,7 +55,6 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
     private final GroupRepository groupRepository;
     private final CampaignRepository campaignRepository;
     private final MembershipRepository membershipRepository;
-    private final GroupJoinCodeRepository groupJoinCodeRepository;
 
     private final MessagingServiceBroker messagingServiceBroker;
     private final SocialMediaBroker socialMediaBroker;
@@ -59,13 +63,12 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
     private final AccountLogRepository accountLogRepository;
 
     @Autowired
-    public BroadcastBrokerImpl(BroadcastRepository broadcastRepository, UserRepository userRepository, GroupRepository groupRepository, CampaignRepository campaignRepository, MembershipRepository membershipRepository, GroupJoinCodeRepository groupJoinCodeRepository, MessagingServiceBroker messagingServiceBroker, SocialMediaBroker socialMediaBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, AccountLogRepository accountLogRepository) {
+    public BroadcastBrokerImpl(BroadcastRepository broadcastRepository, UserRepository userRepository, GroupRepository groupRepository, CampaignRepository campaignRepository, MembershipRepository membershipRepository, MessagingServiceBroker messagingServiceBroker, SocialMediaBroker socialMediaBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, AccountLogRepository accountLogRepository) {
         this.broadcastRepository = broadcastRepository;
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
         this.campaignRepository = campaignRepository;
         this.membershipRepository = membershipRepository;
-        this.groupJoinCodeRepository = groupJoinCodeRepository;
         this.messagingServiceBroker = messagingServiceBroker;
         this.socialMediaBroker = socialMediaBroker;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
@@ -80,6 +83,9 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
 
         BroadcastInfo.BroadcastInfoBuilder builder = BroadcastInfo.builder();
         builder.broadcastId(UIDGenerator.generateId());
+
+        builder.mergeFields(Arrays.asList(Broadcast.NAME_FIELD_TEMPLATE, Broadcast.CONTACT_FIELD_TEMPALTE,
+                Broadcast.PROVINCE_FIELD_TEMPLATE, Broadcast.DATE_FIELD_TEMPLATE));
 
         if (account !=null && account.getFreeFormCost() > 0) {
             builder.isSmsAllowed(true).smsCostCents(account.getFreeFormCost());
@@ -248,10 +254,10 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         }
     }
 
-    private EmailBroadcast extractEmailFromBroadcast(Broadcast broadcast) {
+    private EmailBroadcast extractEmailFromBroadcast(Broadcast broadcast, User recipient) {
         return EmailBroadcast.builder()
                 .subject(broadcast.getTitle())
-                .content(broadcast.getEmailContent())
+                .content(broadcast.getEmailIncludingMerge(recipient, SDF, NO_PROVINCE, Province.CANONICAL_NAMES_ZA))
                 .deliveryRoute(broadcast.getEmailDeliveryRoute())
                 .imageUid(broadcast.getEmailImageKey())
                 .build();
@@ -259,35 +265,43 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
 
     private void handleBroadcastEmails(Broadcast broadcast, ActionLog actionLog, Set<User> recipients,
                                        LogsAndNotificationsBundle bundle) {
-        EmailBroadcast emailBroadcast = extractEmailFromBroadcast(broadcast);
         Set<Notification> emailNotifications = new HashSet<>();
 
-        recipients.forEach(u -> {
+        recipients.stream().filter(User::hasEmailAddress).forEach(u -> {
+            EmailBroadcast emailBroadcast = extractEmailFromBroadcast(broadcast, u);
+
             if (broadcast.getCampaign() == null) {
-                emailNotifications.add(new GroupBroadcastNotification(u, broadcast.getEmailContent(),
+                emailNotifications.add(new GroupBroadcastNotification(u, emailBroadcast.getContent(),
                         broadcast.getEmailDeliveryRoute(), (GroupLog) actionLog));
             } else {
-                emailNotifications.add(new CampaignBroadcastNotification(u, broadcast.getEmailContent(),
+                emailNotifications.add(new CampaignBroadcastNotification(u, emailBroadcast.getContent(),
                         broadcast.getEmailDeliveryRoute(), (CampaignLog) actionLog));
             }
-        });
 
-        log.info("handling delivery, route = {}", emailBroadcast.getDeliveryRoute());
-        if (!DeliveryRoute.EMAIL_GRASSROOT.equals(emailBroadcast.getDeliveryRoute())) {
-            emailBroadcast.setFromFieldsIfEmpty(broadcast.getCreatedByUser());
-            GrassrootEmail email = emailBroadcast.toGrassrootEmail();
-            List<String> addresses = recipients.stream().filter(User::hasEmailAddress)
-                    .map(User::getEmailAddress).collect(Collectors.toList());
-            // note: for now we are going to use this method to do a rest call to cut
-            // what will probably be heavy load on persistence layer (and these getting in way of short messages etc)
-            // but re-evaluate in the future). also, storing notifications for counts, status update, etc.
-            // in future we will scan for bounced emails etc to flag some as non-delivered
-            messagingServiceBroker.sendEmail(addresses, email);
-            emailNotifications.forEach(n -> {
-                n.setSendAttempts(1);
-                n.setStatus(NotificationStatus.SENT);
-            });
-        }
+
+            log.info("handling delivery, route = {}", emailBroadcast.getDeliveryRoute());
+            if (!DeliveryRoute.EMAIL_GRASSROOT.equals(emailBroadcast.getDeliveryRoute())) {
+
+                emailBroadcast.setFromFieldsIfEmpty(broadcast.getCreatedByUser());
+                GrassrootEmail email = emailBroadcast.toGrassrootEmail();
+                // note: for now we are going to use this method to do a rest call to cut
+                // what will probably be heavy load on persistence layer (and these getting in way of short messages etc)
+                // but re-evaluate in the future). also, storing notifications for counts, status update, etc.
+                // in future we will scan for bounced emails etc to flag some as non-delivered
+                messagingServiceBroker.sendEmail(Collections.singletonList(u.getEmailAddress()), email);
+                emailNotifications.forEach(n -> {
+                    n.setSendAttempts(1);
+                    n.setStatus(NotificationStatus.SENT);
+                });
+
+                try {
+                    Thread.sleep(100); // adding some friction so we don't overload messaging (or here)
+                } catch (InterruptedException e) {
+                    log.info("strange, thread exception in email sending");
+                }
+            }
+
+        });
 
         bundle.addNotifications(emailNotifications);
     }
@@ -384,7 +398,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
             Set<Notification> shortMessageNotifications = new HashSet<>();
             shortMessageUsers.forEach(u -> {
                 GroupBroadcastNotification notification = new GroupBroadcastNotification(u,
-                        bc.getSmsTemplate1(), u.getMessagingPreference(), groupLog);
+                        bc.getShortMsgIncludingMerge(u, SDF, NO_PROVINCE, Province.CANONICAL_NAMES_ZA), u.getMessagingPreference(), groupLog);
                 notification.setUseOnlyFreeChannels(bc.isOnlyUseFreeChannels());
                 shortMessageNotifications.add(notification);
             });
