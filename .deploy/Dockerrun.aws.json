@@ -23,5 +23,5 @@
       "ContainerDirectory": "/usr/src/grassroot/templates"
     }
   ],
-  "Logging": "/var/log/nginx"
+  "Logging": "/var/app/current/log/nginx"
 }
