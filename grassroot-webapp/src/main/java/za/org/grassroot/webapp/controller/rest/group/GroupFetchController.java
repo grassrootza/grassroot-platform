@@ -177,7 +177,8 @@ public class GroupFetchController extends BaseRestController {
                                                       @RequestParam (required = false) String namePhoneOrEmail,
                                                       HttpServletRequest request) {
         return groupFetchBroker.filterGroupMembers(getUserFromRequest(request), groupUid,
-                        provinces, taskTeams, topics, affiliations, joinMethods, joinedCampaignsUids, joinDaysAgo, joinDate, joinDaysAgoCondition, namePhoneOrEmail);
+                provinces, taskTeams, topics, affiliations, joinMethods, joinedCampaignsUids,
+                joinDaysAgo, joinDate, joinDaysAgoCondition, namePhoneOrEmail).stream().map(MembershipFullDTO::new).collect(Collectors.toList());
     }
 
     @RequestMapping(value = "/members/new", method = RequestMethod.GET)

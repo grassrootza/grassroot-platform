@@ -41,16 +41,16 @@ public interface GroupFetchBroker {
 
     List<ActionLog> fetchUserActivityDetails(String queryingUserUid, String groupUid, String memberUid);
 
-    List<MembershipFullDTO> filterGroupMembers(User user, String groupUid,
-                                               Collection<Province> provinces,
-                                               Collection<String> taskTeams,
-                                               Collection<String> topics,
-                                               Collection<String> affiliations,
-                                               Collection<GroupJoinMethod> joinMethods,
-                                               Collection<String> joinedCampaignsUids,
-                                               Integer joinDaysAgo,
-                                               LocalDate joinDate,
-                                               JoinDateCondition joinDaysAgoCondition,
-                                               String namePhoneOrEmail);
+    List<Membership> filterGroupMembers(User user, String groupUid,
+                                        Collection<Province> provinces,
+                                        Collection<String> taskTeams,
+                                        Collection<String> topics,
+                                        Collection<String> affiliations,
+                                        Collection<GroupJoinMethod> joinMethods,
+                                        Collection<String> joinedCampaignsUids,
+                                        Integer joinDaysAgo,
+                                        LocalDate joinDate,
+                                        JoinDateCondition joinDaysAgoCondition,
+                                        String namePhoneOrEmail);
 
 }

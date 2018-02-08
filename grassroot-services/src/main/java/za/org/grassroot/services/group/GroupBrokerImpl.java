@@ -570,13 +570,19 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
                                                       boolean duringGroupCreation, boolean createWelcomeNotifications) {
         // note: User objects should only ever store phone numbers in the msisdn format (i.e, with country code at front, no '+')
 
-        Comparator<MembershipInfo> byPhoneNumber =
-                (MembershipInfo m1, MembershipInfo m2) -> (m1.getPhoneNumberWithCCode().compareTo(m2.getPhoneNumberWithCCode()));
+        Comparator<MembershipInfo> byPhoneNumber = (MembershipInfo m1, MembershipInfo m2) -> {
+            if (m1.hasPhoneNumber() && m2.hasPhoneNumber())
+                return m1.getPhoneNumberWithCCode().compareTo(m2.getPhoneNumberWithCCode());
+            else if (m1.hasValidEmail() && m2.hasValidEmail())
+                return m1.getMemberEmail().compareTo(m2.getMemberEmail());
+            else
+                return 1; // since by definition they have no basis for comparison, so point is just they're different
+        };
 
         Set<MembershipInfo> validNumberMembers = membershipInfos.stream()
                 .filter(MembershipInfo::hasValidPhoneOrEmail)
                 .collect(collectingAndThen(toCollection(() -> new TreeSet<>(byPhoneNumber)), HashSet::new));
-        logger.debug("number of members: {}", validNumberMembers.size());
+        logger.info("number of valid members in import: {}", validNumberMembers.size());
 
         Set<String> memberPhoneNumbers = validNumberMembers.stream()
                 .map(MembershipInfo::getPhoneNumberWithCCode)

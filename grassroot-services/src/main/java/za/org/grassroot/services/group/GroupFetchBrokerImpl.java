@@ -260,7 +260,7 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
     }
 
     @Override
-    public List<MembershipFullDTO> filterGroupMembers(User user, String groupUid,
+    public List<Membership> filterGroupMembers(User user, String groupUid,
                                                       Collection<Province> provinces,
                                                       Collection<String> taskTeamsUids,
                                                       Collection<String> topics,
@@ -270,8 +270,7 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
                                                       Integer joinDaysAgo,
                                                       LocalDate joinDate,
                                                       JoinDateCondition joinDateCondition,
-                                                      String namePhoneOrEmail
-    ) {
+                                                      String namePhoneOrEmail) {
 
         Objects.requireNonNull(groupUid);
         Group group = groupRepository.findOneByUid(groupUid);
@@ -309,7 +308,7 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
             members = members.stream().filter( m -> usersAddedByCampaigns.contains(m.getUser())).collect(Collectors.toList());
         }
 
-        return members.stream().map(MembershipFullDTO::new).collect(Collectors.toList());
+        return members;
     }
 
     @Override

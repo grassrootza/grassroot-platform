@@ -161,6 +161,7 @@ public class MembershipInfo implements Comparable<MembershipInfo> {
         final StringBuilder sb = new StringBuilder("MembershipInfo{");
         sb.append("province=").append(province);
         sb.append(", phoneNumber='").append(phoneNumber).append('\'');
+        sb.append(", email='").append(memberEmail).append('\'');
         sb.append(", roleName=").append(roleName);
         sb.append(", displayName='").append(displayName).append('\'');
         sb.append('}');
