@@ -14,8 +14,11 @@ import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -30,6 +33,11 @@ public class Broadcast implements GrassrootEntity, TagHolder {
     public static final int MAX_MESSAGES = 3;
 
     private static final String PROVINCE_PREFIX = "PROVINCE:";
+
+    public static String NAME_FIELD_TEMPLATE = "{__name__}";
+    public static String CONTACT_FIELD_TEMPALTE = "{__contact__}";
+    public static String DATE_FIELD_TEMPLATE = "{__date__}";
+    public static String PROVINCE_FIELD_TEMPLATE = "{__province__}";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -175,6 +183,35 @@ public class Broadcast implements GrassrootEntity, TagHolder {
     @Override
     public String getName() {
         return title;
+    }
+
+    public String getEmailIncludingMerge(User destination, DateTimeFormatter dtf, String noProvince,
+                                         Map<Province, String> provinceNames) {
+        if (StringUtils.isEmpty(emailContent)) {
+            return "";
+        }
+
+        return mergeTemplate(destination, emailContent, dtf, noProvince, provinceNames);
+    }
+
+    public String getShortMsgIncludingMerge(User dest, DateTimeFormatter dtf, String noProvince, Map<Province, String> provinceNames) {
+        if (StringUtils.isEmpty(smsTemplate1)) {
+            return "";
+        }
+
+        return mergeTemplate(dest, smsTemplate1, dtf, noProvince, provinceNames);
+    }
+
+    private String mergeTemplate(User destination, String template, DateTimeFormatter dtf, String noProvince, Map<Province, String> provinceNames) {
+        final String formatString = template
+                .replace(NAME_FIELD_TEMPLATE, "%1$s")
+                .replace(CONTACT_FIELD_TEMPALTE, "%2$s")
+                .replace(DATE_FIELD_TEMPLATE, "%3$s")
+                .replace(PROVINCE_FIELD_TEMPLATE, "%4$s");
+
+        return String.format(formatString, destination.getName(), destination.getUsername(), dtf.format(LocalDateTime.now()),
+                destination.getProvince() == null ? noProvince : provinceNames.getOrDefault(destination.getProvince(), noProvince))
+                .trim().replaceAll(" +", " ");
     }
 
     // using this to preserve builder pattern (note: deviates from prior style of setting these in constructor,

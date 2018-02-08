@@ -37,4 +37,15 @@ public enum Province {
             new AbstractMap.SimpleEntry<>("overseas", INTL)
     ).collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue)));
 
+    public static final Map<Province, String> CANONICAL_NAMES_ZA = Collections.unmodifiableMap(Stream.of(
+            new AbstractMap.SimpleEntry<>(ZA_GP, "Gauteng"),
+            new AbstractMap.SimpleEntry<>(ZA_WC, "Western Cape"),
+            new AbstractMap.SimpleEntry<>(ZA_EC, "Eastern Cape"),
+            new AbstractMap.SimpleEntry<>(ZA_NC, "Northern Cape"),
+            new AbstractMap.SimpleEntry<>(ZA_KZN, "KwaZulu Natal"),
+            new AbstractMap.SimpleEntry<>(ZA_LP, "Limpopo"),
+            new AbstractMap.SimpleEntry<>(ZA_NW, "North West"),
+            new AbstractMap.SimpleEntry<>(ZA_FS, "Free State")
+    ).collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue)));
+
 }

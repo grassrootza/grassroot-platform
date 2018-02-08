@@ -25,6 +25,8 @@ public class BroadcastInfo {
 
     Map<String, String> campaignNamesUrls;
 
+    List<String> mergeFields;
+
     // we will use these for constructing the various counts (once also have various counting infra set up)
     long allMemberCount;
 
