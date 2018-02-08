@@ -22,17 +22,17 @@ import za.org.grassroot.core.enums.DeliveryRoute;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.repository.*;
-import za.org.grassroot.core.specifications.MembershipSpecifications;
-import za.org.grassroot.core.util.DateTimeUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 import za.org.grassroot.integration.messaging.GrassrootEmail;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
 import za.org.grassroot.integration.socialmedia.*;
 import za.org.grassroot.services.exception.NoPaidAccountException;
+import za.org.grassroot.services.group.GroupFetchBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBroker;
 import za.org.grassroot.services.util.LogsAndNotificationsBundle;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -56,6 +56,9 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
     private final CampaignRepository campaignRepository;
     private final MembershipRepository membershipRepository;
 
+    // for heavy lifting on filtering
+    private final GroupFetchBroker groupFetchBroker;
+
     private final MessagingServiceBroker messagingServiceBroker;
     private final SocialMediaBroker socialMediaBroker;
 
@@ -63,12 +66,13 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
     private final AccountLogRepository accountLogRepository;
 
     @Autowired
-    public BroadcastBrokerImpl(BroadcastRepository broadcastRepository, UserRepository userRepository, GroupRepository groupRepository, CampaignRepository campaignRepository, MembershipRepository membershipRepository, MessagingServiceBroker messagingServiceBroker, SocialMediaBroker socialMediaBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, AccountLogRepository accountLogRepository) {
+    public BroadcastBrokerImpl(BroadcastRepository broadcastRepository, UserRepository userRepository, GroupRepository groupRepository, CampaignRepository campaignRepository, MembershipRepository membershipRepository, GroupFetchBroker groupFetchBroker, MessagingServiceBroker messagingServiceBroker, SocialMediaBroker socialMediaBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, AccountLogRepository accountLogRepository) {
         this.broadcastRepository = broadcastRepository;
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
         this.campaignRepository = campaignRepository;
         this.membershipRepository = membershipRepository;
+        this.groupFetchBroker = groupFetchBroker;
         this.messagingServiceBroker = messagingServiceBroker;
         this.socialMediaBroker = socialMediaBroker;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
@@ -360,26 +364,16 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
 
         List<String> topicRestrictions = bc.getTopics();
         List<Province> provinceResrictions = bc.getProvinces();
+        List<String> taskTeamUids = bc.getTaskTeams();
+        List<String> affiliations = bc.getAffiliations();
+        JoinDateCondition joinDateCondition = bc.getJoinDateCondition().orElse(null);
+        LocalDate joinDate = bc.getJoinDate().orElse(null);
 
-        // todo : just get the users via a join, the stream & map below will kill us on big groups
-        List<Membership> membersToReceive;
-        if (!topicRestrictions.isEmpty() && !provinceResrictions.isEmpty()) {
-            membersToReceive = membershipRepository.findByGroupProvinceTopicsAndJoinedDate(
-                    group.getId(), provinceResrictions, TagHolder.convertTopicsToTags(topicRestrictions),
-                    DateTimeUtil.getEarliestInstant());
-        } else if (!topicRestrictions.isEmpty()) {
-            // no province restrictions, so just get by topics
-            membersToReceive = membershipRepository.findByGroupTagsAndJoinedDateAfter(group.getId(),
-                    TagHolder.convertTopicsToTags(topicRestrictions), DateTimeUtil.getEarliestInstant());
-        } else if (!provinceResrictions.isEmpty()) {
-            // reverse of the above
-            membersToReceive = membershipRepository.findAll(MembershipSpecifications.groupMembersInProvincesJoinedAfter(
-                    group, provinceResrictions, DateTimeUtil.getEarliestInstant()));
-        } else {
-            // get everyone, since we have no restrictions
-            membersToReceive = membershipRepository.findAll(MembershipSpecifications.forGroup(group));
-        }
-        log.info("finished fetching members by topic and province, found {} members", membersToReceive.size());
+        List<Membership> membersToReceive = groupFetchBroker.filterGroupMembers(bc.getCreatedByUser(), group.getUid(),
+                provinceResrictions, taskTeamUids, topicRestrictions, affiliations, bc.getJoinMethods(), null, null,
+                joinDate, joinDateCondition, null);
+
+        log.info("finished fetching members by topic, province, etc., found {} members", membersToReceive.size());
 
         if (bc.hasEmail()) {
             Set<User> emailUsers = membersToReceive.stream().map(Membership::getUser)
