@@ -275,12 +275,13 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
         Objects.requireNonNull(groupUid);
         Group group = groupRepository.findOneByUid(groupUid);
 
-        try{
+        try {
             permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
         } catch (AccessDeniedException e) {
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
         }
 
+        log.info("filtering on, provinces: {}, taskTeams: {}", provinces, taskTeamsUids);
         List<Membership> members = membershipRepository.findAll(
                 MembershipSpecifications.filterGroupMembership(group, provinces, taskTeamsUids, joinMethods, joinDaysAgo, joinDate, joinDateCondition, namePhoneOrEmail)
         );

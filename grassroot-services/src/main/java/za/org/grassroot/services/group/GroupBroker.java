@@ -51,6 +51,8 @@ public interface GroupBroker {
 
     void addMembersToSubgroup(String userUid, String groupUid, String subGroupUid, Set<String> memberUids);
 
+    void deactivateSubGroup(String userUid, String parentUid, String subGroupUid);
+
     void asyncMemberToSubgroupAdd(String userUid, String groupUid, Set<MembershipInfo> membershipInfos);
 
     void copyMembersIntoGroup(String userUid, String groupUid, Set<String> memberUids);

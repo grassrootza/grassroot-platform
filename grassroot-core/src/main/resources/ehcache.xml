@@ -34,14 +34,6 @@
            timeToIdleSeconds="3600">
     </cache>
 
-    <cache name="groupChatSettings"
-           maxEntriesLocalHeap="10000"
-           eternal="false"
-           timeToIdleSeconds="300" timeToLiveSeconds="600"
-           memoryStoreEvictionPolicy="LFU"
-           transactionalMode="off">
-    </cache>
-
     <cache name="group_stats_member_count"
            maxEntriesLocalHeap="2000"
            eternal="false"
@@ -83,6 +75,12 @@
            maxEntriesLocalHeap="2000"
            eternal="false"
            timeToIdleSeconds="10">
+    </cache>
+
+    <cache name="social_media_managed_pages"
+           maxEntriesLocalHeap="2000"
+           eternal="false"
+           timeToIdleSeconds="60">
     </cache>
 
 </ehcache>

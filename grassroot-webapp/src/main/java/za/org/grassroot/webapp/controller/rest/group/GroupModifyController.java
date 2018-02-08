@@ -23,7 +23,6 @@ import za.org.grassroot.core.enums.GroupViewPriority;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.integration.messaging.JwtService;
-import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.services.exception.GroupSizeLimitExceededException;
 import za.org.grassroot.services.exception.JoinWordsExceededException;
@@ -199,6 +198,14 @@ public class GroupModifyController extends GroupBaseController {
         } catch (AccessDeniedException e) {
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
         }
+    }
+
+    @RequestMapping(value = "/deactivate/taskteam/{parentUid}", method = RequestMethod.POST)
+    public ResponseEntity<GroupFullDTO> deactivateTaskTeam(HttpServletRequest request,
+                                                           @PathVariable String parentUid,
+                                                           @RequestParam String taskTeamUid) {
+        groupBroker.deactivateSubGroup(getUserIdFromRequest(request), parentUid, taskTeamUid);
+        return ResponseEntity.ok(groupFetchBroker.fetchGroupFullDetails(getUserIdFromRequest(request), parentUid));
     }
 
     @RequestMapping(value = "members/add/topics/{groupUid}", method = RequestMethod.POST)

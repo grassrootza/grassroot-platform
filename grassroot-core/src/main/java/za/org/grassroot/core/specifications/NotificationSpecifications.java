@@ -15,6 +15,7 @@ import javax.persistence.criteria.JoinType;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -71,7 +72,7 @@ public final class NotificationSpecifications {
 
     public static Specification<Notification> forGroupBroadcast(Broadcast broadcast) {
         return (root, query, cb) -> {
-          Join<Notification, GroupLog> groupLogJoin = root.join(Notification_.groupLog, JoinType.LEFT);
+          Join<Notification, GroupLog> groupLogJoin = root.join(Notification_.groupLog);
           return cb.equal(groupLogJoin.get(GroupLog_.broadcast), broadcast);
         };
     }
@@ -90,6 +91,9 @@ public final class NotificationSpecifications {
         return (root, query, cb) -> cb.equal(root.get(Notification_.deliveryChannel), deliveryChannel);
     }
 
+    public static Specification<Notification> forDeliveryChannels(Collection<DeliveryRoute> deliveryChannels) {
+        return (root, query, cb) -> root.get(Notification_.deliveryChannel).in(deliveryChannels);
+    }
 
     public static Specifications<Notification> unReadUserNotifications(User target) {
         return Specifications.where(toUser(target))

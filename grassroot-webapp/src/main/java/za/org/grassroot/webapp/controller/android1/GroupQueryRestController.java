@@ -112,11 +112,10 @@ public class GroupQueryRestController extends GroupAbstractRestController {
         permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
 
         List<MembershipResponseWrapper> members = new ArrayList<>();
-        // todo : watch this for n + 1 hibernate query performance ...
         group.getMemberships()
                 .forEach(m -> members.add(new MembershipResponseWrapper(group, m.getUser(), m.getRole(), false)));
 
-        log.info("From memberships : {}, created wrappers: {}", group.getMemberships(), members);
+        log.debug("From memberships : {}, created wrappers: {}", group.getMemberships(), members);
 
         return RestUtil.okayResponseWithData(RestMessage.GROUP_MEMBERS, members);
     }

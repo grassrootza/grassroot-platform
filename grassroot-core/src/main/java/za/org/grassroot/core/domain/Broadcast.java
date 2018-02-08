@@ -245,6 +245,11 @@ public class Broadcast implements GrassrootEntity, TagHolder {
         return !StringUtils.isEmpty(twitterPost);
     }
 
+    public boolean hasFilter() {
+        return !getTaskTeams().isEmpty() || !getProvinces().isEmpty() || !getTaskTeams().isEmpty()
+                || !getTopics().isEmpty() || !getAffiliations().isEmpty() || !getJoinMethods().isEmpty() || getJoinDateCondition().isPresent();
+    }
+
     public List<Province> getProvinces() {
         return getFilterEntitiesFromTag(PROVINCE_PREFIX)
                 .map(Province::valueOf)

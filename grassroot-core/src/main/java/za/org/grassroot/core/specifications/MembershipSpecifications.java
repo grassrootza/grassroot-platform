@@ -1,7 +1,9 @@
 package za.org.grassroot.core.specifications;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.domain.Specifications;
+import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.Province;
 
@@ -16,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+@Slf4j
 public class MembershipSpecifications {
 
 
@@ -69,7 +72,6 @@ public class MembershipSpecifications {
 
             List<Predicate> restrictions = new ArrayList<>();
 
-
             if (provinces != null && provinces.size() > 0) {
                 restrictions.add(root.get(Membership_.user).get(User_.province).in(provinces));
             }
@@ -80,7 +82,7 @@ public class MembershipSpecifications {
                 restrictions.add(cb.equal(root.get(Membership_.group), group));
             }
 
-            if (joinMethods != null) {
+            if (joinMethods != null && !joinMethods.isEmpty()) {
                 restrictions.add(root.get(Membership_.joinMethod).in(joinMethods));
             }
 
@@ -105,7 +107,7 @@ public class MembershipSpecifications {
 
             }
 
-            if (namePhoneOrEmail != null) {
+            if (!StringUtils.isEmpty(namePhoneOrEmail)) {
                 Predicate byName = cb.like(root.get(Membership_.user).get(User_.displayName), "%" + namePhoneOrEmail + "%");
                 Predicate byPhone = cb.like(root.get(Membership_.user).get(User_.phoneNumber), "%" + namePhoneOrEmail + "%");
                 Predicate byEmail = cb.like(root.get(Membership_.user).get(User_.emailAddress), "%" + namePhoneOrEmail + "%");
@@ -113,7 +115,7 @@ public class MembershipSpecifications {
                 restrictions.add(byNamePhoneOrEmail);
             }
 
-
+            log.info("predicates: {}", restrictions);
             return cb.and(restrictions.toArray(new Predicate[0]));
         };
 
