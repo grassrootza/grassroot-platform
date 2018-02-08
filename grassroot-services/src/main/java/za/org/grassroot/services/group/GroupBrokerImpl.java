@@ -322,6 +322,32 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         storeBundleAfterCommit(bundle);
     }
 
+    @Override
+    @Transactional
+    public void deactivateSubGroup(String userUid, String parentUid, String subGroupUid) {
+        User user = userRepository.findOneByUid(Objects.requireNonNull(userUid));
+        Group parent = groupRepository.findOneByUid(Objects.requireNonNull(parentUid));
+        Group subgroup = groupRepository.findOneByUid(Objects.requireNonNull(subGroupUid));
+
+        if (!parent.equals(subgroup.getParent())) {
+            throw new IllegalArgumentException("Subgroup is not related to parent");
+        }
+
+        try {
+            permissionBroker.validateGroupPermission(user, parent, Permission.GROUP_PERMISSION_DELINK_SUBGROUP);
+        } catch (AccessDeniedException e) {
+            throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_DELINK_SUBGROUP);
+        }
+
+        subgroup.setActive(false);
+
+        Set<ActionLog> actionLogs = new HashSet<>();
+        actionLogs.add(new GroupLog(subgroup, user, GroupLogType.GROUP_REMOVED, null));
+        actionLogs.add(new GroupLog(parent, user, GroupLogType.SUBGROUP_REMOVED, null, subgroup, null, null));
+
+        logActionLogsAfterCommit(actionLogs);
+    }
+
     @Async
     @Override
     @Transactional
@@ -903,13 +929,19 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
             detailsChanged.add("name: " + name);
         }
 
-        if (!StringUtils.isEmpty(phone)) {
-            member.setPhoneNumber(PhoneNumberUtil.convertPhoneNumber(phone));
+        if (phone != null && email != null && phone.isEmpty() && email.isEmpty()) {
+            throw new IllegalArgumentException("Cannot set both phone and email to null");
+        }
+
+        // if phone is null, assume we haven't been passed it. If it's empty, only set to blank if email is not empty
+        if (phone != null && (!phone.isEmpty() || member.hasEmailAddress() || !StringUtils.isEmpty(email))) {
+            member.setPhoneNumber(phone.trim().isEmpty() ? null : PhoneNumberUtil.convertPhoneNumber(phone));
             detailsChanged.add("phone: " + phone);
         }
 
-        if (!StringUtils.isEmpty(email)) {
-            member.setEmailAddress(email);
+        // as above, same logic for email
+        if (email != null && (!email.isEmpty() || member.hasPhoneNumber()) || !StringUtils.isEmpty(phone)) {
+            member.setEmailAddress(email.trim().isEmpty() ? null : email);
             detailsChanged.add("email: " + email);
         }
 

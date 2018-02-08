@@ -8,6 +8,8 @@ public interface SocialMediaBroker {
 
     IntegrationListResponse getCurrentIntegrations(String userUid);
 
+    ManagedPagesResponse getManagedPages(String userUid, String providerId);
+
     ManagedPagesResponse getManagedFacebookPages(String userUid);
 
     String initiateFacebookConnection(String userUid);

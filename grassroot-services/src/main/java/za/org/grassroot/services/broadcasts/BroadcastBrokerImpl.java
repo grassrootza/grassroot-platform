@@ -3,6 +3,7 @@ package za.org.grassroot.services.broadcasts;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -42,12 +43,12 @@ import static za.org.grassroot.core.specifications.NotificationSpecifications.*;
 @Service @Slf4j
 public class BroadcastBrokerImpl implements BroadcastBroker {
 
+    @Value("${grassroot.broadcast.mocksm.enabled:false}")
+    private boolean mockSocialMediaBroadcasts;
+
     // note, make configurable, possibly, and/or use i18n
     private static final DateTimeFormatter SDF = DateTimeFormatter.ofPattern("EEE d MMM");
     private static final String NO_PROVINCE = "your province";
-
-    @Value("${grassroot.broadcast.mocksm.enabled:false}")
-    private boolean mockSocialMediaBroadcasts;
 
     private final BroadcastRepository broadcastRepository;
     private final UserRepository userRepository;
@@ -65,8 +66,10 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
     private final LogsAndNotificationsBroker logsAndNotificationsBroker;
     private final AccountLogRepository accountLogRepository;
 
+    private final Environment environment;
+
     @Autowired
-    public BroadcastBrokerImpl(BroadcastRepository broadcastRepository, UserRepository userRepository, GroupRepository groupRepository, CampaignRepository campaignRepository, MembershipRepository membershipRepository, GroupFetchBroker groupFetchBroker, MessagingServiceBroker messagingServiceBroker, SocialMediaBroker socialMediaBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, AccountLogRepository accountLogRepository) {
+    public BroadcastBrokerImpl(BroadcastRepository broadcastRepository, UserRepository userRepository, GroupRepository groupRepository, CampaignRepository campaignRepository, MembershipRepository membershipRepository, GroupFetchBroker groupFetchBroker, MessagingServiceBroker messagingServiceBroker, SocialMediaBroker socialMediaBroker, LogsAndNotificationsBroker logsAndNotificationsBroker, AccountLogRepository accountLogRepository, Environment environment) {
         this.broadcastRepository = broadcastRepository;
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
@@ -77,6 +80,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         this.socialMediaBroker = socialMediaBroker;
         this.logsAndNotificationsBroker = logsAndNotificationsBroker;
         this.accountLogRepository = accountLogRepository;
+        this.environment = environment;
     }
 
     @Override
@@ -97,18 +101,13 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
             builder.isSmsAllowed(false);
         }
 
-        if (mockSocialMediaBroadcasts) {
-            builder.isFbConnected(true).facebookPages(mockFbPages());
-            builder.isTwitterConnected(true).twitterAccount(mockTwitterAccount());
-        } else {
-            ManagedPagesResponse fbStatus = socialMediaBroker.getManagedFacebookPages(userUid);
-            builder.isFbConnected(fbStatus.isUserConnectionValid())
-                    .facebookPages(fbStatus.getManagedPages());
+        ManagedPagesResponse fbStatus = socialMediaBroker.getManagedFacebookPages(userUid);
+        builder.isFbConnected(fbStatus.isUserConnectionValid())
+                .facebookPages(fbStatus.getManagedPages());
 
-            ManagedPage twitterAccount = socialMediaBroker.isTwitterAccountConnected(userUid);
-            builder.isTwitterConnected(twitterAccount != null)
-                    .twitterAccount(twitterAccount);
-        }
+        ManagedPage twitterAccount = socialMediaBroker.isTwitterAccountConnected(userUid);
+        builder.isTwitterConnected(twitterAccount != null)
+                .twitterAccount(twitterAccount);
 
         builder.campaignNamesUrls(campaignRepository.findByMasterGroupUid(groupUid, new Sort("createdDateTime"))
                 .stream().filter(Campaign::isActive).collect(Collectors.toMap(Campaign::getName, Campaign::getUrl)));
@@ -118,24 +117,6 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         builder.allMemberCount(membershipRepository.count((root, query, cb) -> cb.equal(root.get("group"), (group))));
 
         return builder.build();
-    }
-
-    // using this while we are still in alpha - as else a time drag to boot integration service locally etc - remove when done
-    private List<ManagedPage> mockFbPages() {
-        ManagedPage mockPage = new ManagedPage();
-        mockPage.setDisplayName("User FB page");
-        mockPage.setProviderUserId("user");
-        ManagedPage mockPage2 = new ManagedPage();
-        mockPage2.setDisplayName("Org FB page");
-        mockPage2.setProviderUserId("org");
-        return Arrays.asList(mockPage, mockPage2);
-    }
-
-    private ManagedPage mockTwitterAccount() {
-        ManagedPage mockAccount = new ManagedPage();
-        mockAccount.setDisplayName("@testing");
-        mockAccount.setProviderUserId("testing");
-        return mockAccount;
     }
 
     @Override
@@ -148,7 +129,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
             throw new NoPaidAccountException();
         }
 
-        log.info("creating broadcast with Id: ", bc.getBroadcastId());
+        log.info("creating broadcast with Id: {}", bc.getBroadcastId());
         Broadcast broadcast = Broadcast.builder()
                 .uid(bc.getBroadcastId())
                 .createdByUser(user)
@@ -158,13 +139,14 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
                 .scheduledSendTime(bc.getScheduledSendTime())
                 .build();
 
+
         if (bc.isCampaignBroadcast()) {
             broadcast.setCampaign(campaignRepository.findOneByUid(bc.getCampaignUid()));
         } else {
             broadcast.setGroup(groupRepository.findOneByUid(bc.getGroupUid()));
         }
 
-        recordProvincesAndTopics(bc, broadcast);
+        wireUpFilters(bc, broadcast);
 
         LogsAndNotificationsBundle bundle = bc.isImmediateBroadcast() ?
                 sendImmediateBroadcast(bc, broadcast) :
@@ -175,6 +157,28 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         logsAndNotificationsBroker.storeBundle(bundle);
 
         return broadcast.getUid();
+    }
+
+    private void wireUpFilters(BroadcastComponents bc, Broadcast broadcast) {
+        if (bc.getProvinces() != null && !bc.getProvinces().isEmpty())
+            broadcast.setProvinces(bc.getProvinces());
+
+        if (bc.getTopics() != null && !bc.getTopics().isEmpty())
+            broadcast.setTopics(new HashSet<>(bc.getTopics()));
+
+        if (bc.getTaskTeams() != null && !bc.getTaskTeams().isEmpty())
+            broadcast.setTaskTeams(bc.getTaskTeams());
+
+        if (bc.getAffiliations() != null && !bc.getAffiliations().isEmpty())
+            broadcast.setAffiliations(bc.getAffiliations());
+
+        if (bc.getJoinMethods() != null && !bc.getJoinMethods().isEmpty())
+            broadcast.setJoinMethods(bc.getJoinMethods());
+
+        if (bc.getJoinDateCondition() != null) {
+            broadcast.setJoinDateCondition(bc.getJoinDateCondition());
+            broadcast.setJoinDateValue(bc.getJoinDate());
+        }
     }
 
     private LogsAndNotificationsBundle sendImmediateBroadcast(BroadcastComponents bc, Broadcast broadcast) {
@@ -234,15 +238,6 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         return bc.getCampaign() == null ? generateGroupBroadcastBundle(bc) : generateCampaignBroadcastBundle(bc);
     }
 
-    private void recordProvincesAndTopics(BroadcastComponents bc, Broadcast broadcast) {
-        if (bc.getTopics() != null && !bc.getTopics().isEmpty()) {
-            broadcast.setTopics(new HashSet<>(bc.getTopics()));
-        }
-        if (bc.getProvinces() != null && !bc.getProvinces().isEmpty()) {
-            broadcast.setProvinces(new HashSet<>(bc.getProvinces()));
-        }
-    }
-
     private void recordShortMessageContent(BroadcastComponents bc, Broadcast broadcast) {
         broadcast.setSmsTemplate1(bc.getShortMessage());
         broadcast.setOnlyUseFreeChannels(bc.isUseOnlyFreeChannels());
@@ -295,7 +290,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
                 messagingServiceBroker.sendEmail(Collections.singletonList(u.getEmailAddress()), email);
                 emailNotifications.forEach(n -> {
                     n.setSendAttempts(1);
-                    n.setStatus(NotificationStatus.SENT);
+                    n.setStatus(NotificationStatus.DELIVERED);
                 });
 
                 try {
@@ -369,9 +364,12 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         JoinDateCondition joinDateCondition = bc.getJoinDateCondition().orElse(null);
         LocalDate joinDate = bc.getJoinDate().orElse(null);
 
-        List<Membership> membersToReceive = groupFetchBroker.filterGroupMembers(bc.getCreatedByUser(), group.getUid(),
+        boolean filtersPresent = !bc.getTaskTeams().isEmpty() || !bc.getProvinces().isEmpty() || !bc.getTaskTeams().isEmpty()
+                || !bc.getTopics().isEmpty() || !bc.getAffiliations().isEmpty() || !bc.getJoinMethods().isEmpty() || joinDate != null;
+        log.info("do we have filters? : {}, taskTeamUids = {}, all tags: {}", filtersPresent, taskTeamUids, bc.getTagList());
+        List<Membership> membersToReceive = filtersPresent ? groupFetchBroker.filterGroupMembers(bc.getCreatedByUser(), group.getUid(),
                 provinceResrictions, taskTeamUids, topicRestrictions, affiliations, bc.getJoinMethods(), null, null,
-                joinDate, joinDateCondition, null);
+                joinDate, joinDateCondition, null) : new ArrayList<>(group.getMemberships());
 
         log.info("finished fetching members by topic, province, etc., found {} members", membersToReceive.size());
 
@@ -392,7 +390,8 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
             Set<Notification> shortMessageNotifications = new HashSet<>();
             shortMessageUsers.forEach(u -> {
                 GroupBroadcastNotification notification = new GroupBroadcastNotification(u,
-                        bc.getShortMsgIncludingMerge(u, SDF, NO_PROVINCE, Province.CANONICAL_NAMES_ZA), u.getMessagingPreference(), groupLog);
+                        bc.getShortMsgIncludingMerge(u, SDF, NO_PROVINCE, Province.CANONICAL_NAMES_ZA),
+                        u.getMessagingPreference(), groupLog);
                 notification.setUseOnlyFreeChannels(bc.isOnlyUseFreeChannels());
                 shortMessageNotifications.add(notification);
             });
@@ -428,6 +427,7 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         Objects.requireNonNull(groupUid);
         Group group = groupRepository.findOneByUid(groupUid);
         Page<Broadcast> broadcasts = broadcastRepository.findByGroupUidAndSentTimeNotNull(group.getUid(), pageable);
+        log.info("fetched these broadcasts: {}", broadcasts);
         return broadcasts.map(this::assembleDto);
     }
 
@@ -449,14 +449,18 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
     }
 
     private BroadcastDTO assembleDto(Broadcast broadcast) {
-        // todo: clean this up and speed it up. currently ~5 queries per broadcast, not good when broadcasts start to multiply
-        Specifications<Notification> smsSpecs = Specifications.where(wasDelivered())
-                .and(forDeliveryChannel(DeliveryRoute.SMS))
+        Specifications<Notification> smsSpecs = Specifications
+                .where(forDeliveryChannels(Arrays.asList(DeliveryRoute.SMS, DeliveryRoute.SHORT_MESSAGE, DeliveryRoute.ANDROID_APP, DeliveryRoute.WHATSAPP)))
                 .and(forGroupBroadcast(broadcast));
 
-        Specifications<Notification> emailSpecs = Specifications.where(wasDelivered())
-                .and(forDeliveryChannel(DeliveryRoute.EMAIL_GRASSROOT))
+        Specifications<Notification> emailSpecs = Specifications
+                .where(forDeliveryChannels(Arrays.asList(DeliveryRoute.EMAIL_GRASSROOT, DeliveryRoute.EMAIL_3RDPARTY, DeliveryRoute.EMAIL_USERACCOUNT)))
                 .and(forGroupBroadcast(broadcast));
+
+        if (environment.acceptsProfiles("production")) {
+            smsSpecs = smsSpecs.and(wasDelivered());
+            emailSpecs = emailSpecs.and(wasDelivered());
+        }
 
         long smsCount = logsAndNotificationsBroker.countNotifications(smsSpecs);
         long emailCount = logsAndNotificationsBroker.countNotifications(emailSpecs);
@@ -465,7 +469,21 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
                 .findByBroadcastAndAccountLogType(broadcast, AccountLogType.BROADCAST_MESSAGE_SENT)
                 .stream().mapToLong(AccountLog::getAmountBilledOrPaid).sum();
 
-        return new BroadcastDTO(broadcast, smsCount, emailCount, (float) totalCost / 100);
+        List<String> fbPages = null;
+        if (broadcast.hasFbPost()) {
+            ManagedPagesResponse pages = socialMediaBroker.getManagedFacebookPages(broadcast.getCreatedByUser().getUid());
+            fbPages = Arrays.stream(broadcast.getFacebookPageId().split(", "))
+                    .filter(pageId -> pages.getPageNameForId(pageId).isPresent())
+                    .map(pageId -> pages.getPageNameForId(pageId).orElse(null)).collect(Collectors.toList());
+        }
+
+        String twitterAccount = null;
+        if (broadcast.hasTwitterPost()) {
+            ManagedPagesResponse pages = socialMediaBroker.getManagedPages(broadcast.getCreatedByUser().getUid(), "twitter");
+            twitterAccount = pages.getPageNameForId(broadcast.getTwitterImageKey()).orElse(null);
+        }
+
+        return new BroadcastDTO(broadcast, smsCount, emailCount, (float) totalCost / 100, fbPages, twitterAccount);
     }
 
 
