@@ -221,7 +221,7 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
                 .collect(Collectors.toMap(m -> m.getUser().getId(), Function.identity()));
 
         return groupLogs.stream()
-                .filter(log -> log.getUser() != null)
+                .filter(log -> log.getUser() != null && log.getTargetUser() != null)
                 .map(log -> new MembershipRecordDTO(membershipMap.get(log.getTargetUser().getId()), log))
                 .sorted(Comparator.comparing(MembershipRecordDTO::getChangeDateTimeMillis, Comparator.reverseOrder()))
                 .collect(Collectors.toList());
@@ -281,10 +281,11 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
         }
 
-        log.info("filtering on, provinces: {}, taskTeams: {}", provinces, taskTeamsUids);
         List<Membership> members = membershipRepository.findAll(
                 MembershipSpecifications.filterGroupMembership(group, provinces, taskTeamsUids, joinMethods, joinDaysAgo, joinDate, joinDateCondition, namePhoneOrEmail)
         );
+
+        log.info("post-filtering, have {} members", members.size());
 
         if(topics != null && topics.size() > 0){
             // this is an "and" filter, at present
@@ -297,7 +298,7 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
             // i.e., this is an "or" filtering
             Set<String> affils = new HashSet<>(affiliations);
             log.info("filtering {} members, looking for affiliations {}", members.size(), affils.toString());
-            members = members.stream().filter(m -> m.getTopics().stream().anyMatch(affils::contains))
+            members = members.stream().filter(m -> m.getAffiliations().stream().anyMatch(affils::contains))
                     .collect(Collectors.toList());
         }
 

@@ -611,6 +611,7 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         logger.info("number of valid members in import: {}", validNumberMembers.size());
 
         Set<String> memberPhoneNumbers = validNumberMembers.stream()
+                .filter(MembershipInfo::hasValidPhoneNumber)
                 .map(MembershipInfo::getPhoneNumberWithCCode)
                 .collect(Collectors.toSet());
         Set<String> emailAddresses = validNumberMembers.stream()
@@ -962,6 +963,8 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         Objects.requireNonNull(memberUid);
         Objects.requireNonNull(topics);
 
+        logger.info("updating user topics to: {}", topics);
+
         User assigningUser = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
         User alteredUser = userRepository.findOneByUid(memberUid);
@@ -976,8 +979,9 @@ public class GroupBrokerImpl implements GroupBroker, ApplicationContextAware {
         }
 
         List<String> groupTopics = group.getTopics();
-        if (topics.stream().anyMatch(s -> !groupTopics.contains(s))) {
-            throw new GroupTopicMismatchException();
+        Set<String> newGroupTopics = topics.stream().filter(topic -> !groupTopics.contains(topic)).collect(Collectors.toSet());
+        if (!newGroupTopics.isEmpty()) {
+            group.addTopics(newGroupTopics);
         }
 
         member.setTopics(topics);

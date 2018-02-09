@@ -62,6 +62,11 @@ public interface TagHolder {
         setTags(tags);
     }
 
+    default void addTopics(Set<String> topics) {
+        List<String> newTopics = topics.stream().map(topic -> TOPIC_PREFIX + topic).collect(Collectors.toList());
+        addTags(newTopics);
+    }
+
     static String[] convertTopicsToTags(List<String> topics) {
         return StringArrayUtil.listToArrayRemoveDuplicates(
                 topics.stream().map(s -> TOPIC_PREFIX + s).collect(Collectors.toList()));
