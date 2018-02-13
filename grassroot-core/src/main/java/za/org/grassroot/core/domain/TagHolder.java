@@ -2,10 +2,7 @@ package za.org.grassroot.core.domain;
 
 import za.org.grassroot.core.util.StringArrayUtil;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public interface TagHolder {
@@ -65,6 +62,10 @@ public interface TagHolder {
     default void addTopics(Set<String> topics) {
         List<String> newTopics = topics.stream().map(topic -> TOPIC_PREFIX + topic).collect(Collectors.toList());
         addTags(newTopics);
+    }
+
+    default void removeTopics(Collection<String> topics) {
+        topics.forEach(topic -> removeTag(TOPIC_PREFIX + topic));
     }
 
     static String[] convertTopicsToTags(List<String> topics) {

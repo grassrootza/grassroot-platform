@@ -15,6 +15,7 @@ public enum GroupLogType {
     GROUP_MEMBER_ROLE_CHANGED("group member role changed"),
     SUBGROUP_ADDED("sub-group added"),
     SUBGROUP_REMOVED("sub-group removed"),
+    SUBGROUP_RENAMED("sub-group renamed"),
     PERMISSIONS_CHANGED("permissions changed"),
     REMINDER_DEFAULT_CHANGED("reminder default changed"),
     DESCRIPTION_CHANGED("description changed"),

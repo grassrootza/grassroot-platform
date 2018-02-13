@@ -190,8 +190,37 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
         GroupFullDTO dto = new GroupFullDTO(group, group.getMembership(userUid));
         dto.setSubGroups(groupRepository.findAll(Specifications.where(hasParent(group)).and(isActive()))
                 .stream().map(GroupMembersDTO::new).collect(Collectors.toList()));
-
         return dto;
+    }
+
+    @Override
+    public GroupFullDTO fetchSubGroupDetails(String userUid, String parentUid, String taskTeamUid) {
+        Group parent = entityManager.createQuery("" +
+                "select g " +
+                "from Group g inner join g.memberships m " +
+                "where g.uid = :groupUid and m.user.uid = :userUid", Group.class)
+                .setParameter("groupUid", parentUid)
+                .setParameter("userUid", userUid)
+                .getSingleResult();
+
+        User user = userRepository.findOneByUid(userUid);
+        Group child = groupRepository.findOneByUid(taskTeamUid);
+
+        if (!parent.equals(child.getParent())) {
+            throw new IllegalArgumentException("Error! Parent/child mismatch");
+        }
+
+        if (!permissionBroker.isGroupPermissionAvailable(user, parent, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS) &&
+                !permissionBroker.isGroupPermissionAvailable(user, child, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS)) {
+            throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
+        }
+
+        Membership membership = membershipRepository.findByGroupUidAndUserUid(taskTeamUid, userUid);
+        if (membership == null) {
+            membership = membershipRepository.findByGroupUidAndUserUid(parentUid, userUid);
+        }
+
+        return new GroupFullDTO(child, membership);
     }
 
     @Override
@@ -321,9 +350,8 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
         Objects.requireNonNull(groupUid);
         User user = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
-        try {
-            permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
-        } catch (AccessDeniedException e) {
+        if (!permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS) &&
+                !(group.hasParent() && permissionBroker.isGroupPermissionAvailable(user, group.getParent(), Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS))) {
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
         }
         return new MembershipFullDTO(membershipRepository.findByGroupUidAndUserUid(groupUid, memberUid));

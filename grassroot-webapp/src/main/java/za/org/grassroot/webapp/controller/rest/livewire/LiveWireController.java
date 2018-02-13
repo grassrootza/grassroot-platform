@@ -65,7 +65,9 @@ public class LiveWireController {
                                                                @RequestParam(required = false) Double longitude,
                                                                @RequestParam(required = false) LiveWireAlertDestType destType,
                                                                @RequestParam(required = false) String destUid,
-                                                               @RequestParam(required = false) Set<String> mediaFileKeys) {
+                                                               @RequestParam(required = false) Set<String> mediaFileKeys,
+                                                               @RequestParam(required = false) String contactName,
+                                                               @RequestParam(required = false) String contactNumber) {
         User creatingUser = userManagementService.load(userUid);
         LiveWireAlert.Builder builder = LiveWireAlert.newBuilder();
 
@@ -73,6 +75,8 @@ public class LiveWireController {
                 .contactUser(creatingUser)
                 .headline(headline)
                 .description(description)
+                .contactName(contactName)
+                .contactNumber(contactNumber)
                 .type(type);
 
         logger.info("do we have mediaFiles? {}", mediaFileKeys);
