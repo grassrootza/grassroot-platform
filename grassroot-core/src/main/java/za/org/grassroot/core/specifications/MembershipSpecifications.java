@@ -82,7 +82,6 @@ public class MembershipSpecifications {
             }
 
             if (joinMethods != null && !joinMethods.isEmpty()) {
-                log.info("checking for join method in: {}", joinMethods);
                 restrictions.add(root.get(Membership_.joinMethod).in(joinMethods));
             }
 

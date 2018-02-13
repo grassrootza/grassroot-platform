@@ -1,5 +1,6 @@
 package za.org.grassroot.integration;
 
+import com.amazonaws.SdkClientException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -55,15 +56,23 @@ public class MediaFileBrokerImpl implements MediaFileBroker {
     @Override
     @Transactional
     public String storeFile(MultipartFile file, MediaFunction function, String mimeType, String imageKey) {
+        logger.info("Media function:{}",function);
         logger.info("storing a file, with content type: {}, passed mime type: {}, original name: {}",
                 file.getContentType(), mimeType, file.getOriginalFilename());
 
         String bucket = getBucketForFunction(function);
+        logger.info("Bucket.....{}",bucket);
         MediaFileRecord record = recordRepository.findByBucketAndKey(bucket, imageKey);
         if (record == null)
             record = new MediaFileRecord(bucket, mimeType, imageKey);
 
         logger.info("created media record ...");
+
+        try{
+            storageBroker.storeMedia(record, file);
+        }catch (SdkClientException e){
+            logger.info("SDK exception ...",e.getMessage());
+        }
 
         if (storageBroker.storeMedia(record, file)) {
             record.setMimeType(mimeType);
