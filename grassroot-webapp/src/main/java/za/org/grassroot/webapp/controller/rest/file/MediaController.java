@@ -5,6 +5,7 @@ import io.swagger.annotations.ApiOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -44,6 +45,18 @@ public class MediaController {
                 mediaFileBroker.load(mediaFunction, imageKey).getUid() :
                 mediaFileBroker.storeFile(file, mediaFunction, null, imageKey);
         return RestUtil.okayResponseWithData(duplicate ? RestMessage.ALREADY_EXISTS : RestMessage.UPLOADED, storedFileUid);
+    }
+
+    @ApiOperation(value = "Store a media file, and get the server key back",
+            notes = "The obove method 'storeMedia'could not work on web," +
+                    "@RequestParam MultipartFile is required as RequestBody for web,hense duplicating")
+    @RequestMapping(value = "/storeImage/{mediaFunction}", method = RequestMethod.POST)
+    public ResponseEntity<ResponseWrapper> storeMediaFileWeb(@PathVariable MediaFunction mediaFunction,
+                                                             @RequestBody MultipartFile file){
+        logger.info("Media function: {}, File: {}", mediaFunction, file);
+        String fileUid = mediaFileBroker.storeFile(file, mediaFunction,null,null);
+        logger.info("Uploaded file Uid: {}",fileUid);
+        return RestUtil.okayResponseWithData(RestMessage.UPLOADED,fileUid);
     }
 
 }
