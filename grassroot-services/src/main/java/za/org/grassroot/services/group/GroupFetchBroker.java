@@ -27,6 +27,8 @@ public interface GroupFetchBroker {
 
     GroupFullDTO fetchGroupFullDetails(String userUid, String groupUid);
 
+    GroupFullDTO fetchSubGroupDetails(String userUid, String parentUid, String taskTeamUid);
+
     List<MembershipRecordDTO> fetchRecentMembershipChanges(String userUid, String groupUid, Instant fromDate);
 
     List<GroupWebDTO> fetchGroupWebInfo(String userUid);
