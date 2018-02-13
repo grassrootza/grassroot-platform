@@ -20,4 +20,4 @@ remote_syslog -p 38961 -d logs6.papertrailapp.com --pid-file=/var/run/remote_sys
 cd /usr/src/grassroot/
 
 #./scripts/startmqtt.sh
-java -Djava.security.egd=file:/dev/urandom -Dspring.profiles.active=$PROFILE,fast -jar -Xmx1024m grassroot-webapp/build/libs/grassroot-webapp-1.1.1.6.jar > log/grassroot-app.log 2>&1 &
+java -Djava.security.egd=file:/dev/urandom -Dspring.profiles.active=$PROFILE,fast -jar -Xmx1024m grassroot-webapp/build/libs/grassroot-webapp-1.1.1.7.jar > log/grassroot-app.log 2>&1 &
