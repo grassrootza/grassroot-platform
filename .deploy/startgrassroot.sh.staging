@@ -11,15 +11,15 @@ INSTANCE_ID=$(./ec2-metadata -i | cut -b 14-)
 HOSTNAME=gr-test-$INSTANCE_ID-<BUILDID>
 echo $HOSTNAME > /etc/hostname
 
-# EDIT DOCKERRUN TO TAG THE ENVIRONMENT JUST PUSHED TO DOCKER HUB
-cp /usr/src/grassroot/log_files.yml /etc/log_files.yml
-PAPETRAILCONFIGPATH=/etc/log_files.yml
-sed -i "s/<TAG>/$HOSTNAME/" $PAPETRAILCONFIGPATH
-
 # SETUP PAPERTRAIL
 wget -qO - --header="X-Papertrail-Token: vKq7LsMYOJAo9lPBCfY" https://papertrailapp.com/destinations/6213432/setup.sh | bash
 wget https://github.com/papertrail/remote_syslog2/releases/download/v0.19/remote-syslog2_0.19_amd64.deb
 dpkg -i remote-syslog2_0.19_amd64.deb
+
+# EDIT PAPERTRAIL LOG FILES, COPYING TO CORRECT LOCATION AND EDITING THE HOSTNAME
+cp /usr/src/grassroot/log_files.yml /etc/log_files.yml
+PAPETRAILCONFIGPATH=/etc/log_files.yml
+sed -i "s/<TAG>/$HOSTNAME/" $PAPETRAILCONFIGPATH
 #remote_syslog -p 38961 -d logs6.papertrailapp.com --pid-file=/var/run/remote_syslog.pid  /usr/src/grassroot/log/grassroot-app.log --hostname $HOSTNAME
 remote_syslog
 
