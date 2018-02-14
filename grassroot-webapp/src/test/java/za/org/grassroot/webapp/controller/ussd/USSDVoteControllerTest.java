@@ -11,10 +11,8 @@ import za.org.grassroot.core.domain.GroupJoinMethod;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.domain.task.Vote;
 import za.org.grassroot.core.domain.task.VoteRequest;
-import za.org.grassroot.core.enums.EventType;
 import za.org.grassroot.services.UserResponseBroker;
 import za.org.grassroot.services.task.VoteBroker;
-import za.org.grassroot.services.task.enums.EventListTimeType;
 import za.org.grassroot.webapp.util.USSDEventUtil;
 
 import java.time.*;
@@ -135,7 +133,6 @@ public class USSDVoteControllerTest extends USSDAbstractUnitTest {
     @Test
     public void voteStartIfNoGroupsShouldDisplay() throws Exception {
         when(userManagementServiceMock.findByInputNumber(testUserPhone)).thenReturn(testUser);
-        when(eventBrokerMock.userHasEventsToView(testUser, EventType.VOTE)).thenReturn(EventListTimeType.NONE);
         when(permissionBrokerMock.countActiveGroupsWithPermission(testUser, GROUP_PERMISSION_CREATE_GROUP_VOTE)).thenReturn(0);
 
         mockMvc.perform(get(path + "start")
