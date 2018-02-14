@@ -121,8 +121,10 @@ public class TaskFetchController extends BaseRestController {
                                                                          HttpServletRequest request) {
         String loggedInUserUid = getUserIdFromRequest(request);
         if (userUid.equals(loggedInUserUid)) {
-            return ResponseEntity.ok(taskBroker.fetchGroupTasks(userUid, groupUid,
-                    changedSinceMillis == null || changedSinceMillis == 0 ? null : Instant.ofEpochMilli(changedSinceMillis)));
+            ChangedSinceData<TaskDTO> tasks = taskBroker.fetchGroupTasks(userUid, groupUid,
+                    changedSinceMillis == null || changedSinceMillis == 0 ? null : Instant.ofEpochMilli(changedSinceMillis));
+            logger.info("returning tasks: {}", tasks);
+            return ResponseEntity.ok(tasks);
         } else
             return new ResponseEntity<>((ChangedSinceData<TaskDTO>) null, HttpStatus.FORBIDDEN);
     }

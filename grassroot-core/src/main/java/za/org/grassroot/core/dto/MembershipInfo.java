@@ -53,7 +53,7 @@ public class MembershipInfo implements Comparable<MembershipInfo> {
     @JsonCreator
     public MembershipInfo(@JsonProperty("phoneNumber") String phoneNumber, @JsonProperty("roleName") String roleName,
                           @JsonProperty("displayName") String displayName) {
-        this.phoneNumber = Objects.requireNonNull(phoneNumber);
+        this.phoneNumber = phoneNumber;
         this.roleName = roleName;
         this.displayName = displayName;
         this.userSetName = false; // since only true if user themselves set the name recorded in the info entity

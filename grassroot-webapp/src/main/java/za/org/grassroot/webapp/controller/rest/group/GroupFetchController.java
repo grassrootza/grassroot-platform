@@ -113,6 +113,18 @@ public class GroupFetchController extends BaseRestController {
         } else return new ResponseEntity<>((GroupFullDTO) null, HttpStatus.UNAUTHORIZED);
     }
 
+    @RequestMapping(value = "/details/taskteam/{parentUid}", method = RequestMethod.GET)
+    @ApiOperation(value = "Get full details about a task team, including members (if permission to see details on parent or child) and description")
+    public ResponseEntity<GroupFullDTO> loadFullGroupInfo(@PathVariable String parentUid,
+                                                          @RequestParam String taskTeamUid,
+                                                          HttpServletRequest request) {
+        String userUid = getUserIdFromRequest(request);
+        if (userUid != null) {
+            GroupFullDTO dto = groupFetchBroker.fetchSubGroupDetails(userUid, parentUid, taskTeamUid);
+            return ResponseEntity.ok(dto);
+        } else return new ResponseEntity<>((GroupFullDTO) null, HttpStatus.UNAUTHORIZED);
+    }
+
     /**
      * Tells the client which, if any, of the groups have had a structural change since the last time the client knew about
      * Note: does not include / check for a more recent task time (on grounds if client wants to / needs to know that, there
