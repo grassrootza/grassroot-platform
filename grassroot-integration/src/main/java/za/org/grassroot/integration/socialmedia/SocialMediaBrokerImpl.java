@@ -1,6 +1,9 @@
 package za.org.grassroot.integration.socialmedia;
 
 import lombok.extern.slf4j.Slf4j;
+import net.sf.ehcache.Cache;
+import net.sf.ehcache.CacheManager;
+import net.sf.ehcache.Element;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -18,6 +21,8 @@ import za.org.grassroot.integration.messaging.JwtType;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 @Service @Slf4j
@@ -35,15 +40,19 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
     @Value("${grassroot.integration.image.baseurl:http://localhost/images/")
     private String imageBaseUri;
 
+    @Value("${grassroot.broadcast.mocksm.enabled:false}")
+    private boolean mockSocialMediaBroadcasts;
 
     // note: to replace with single WebClient when up to Spring 5 (and in meantime fine tune this rest template given
     // heavy use!)
     private final RestTemplate restTemplate;
     private final JwtService jwtService;
+    private final CacheManager cacheManager;
 
-    public SocialMediaBrokerImpl(RestTemplate restTemplate, JwtService jwtService) {
+    public SocialMediaBrokerImpl(RestTemplate restTemplate, JwtService jwtService, CacheManager cacheManager) {
         this.restTemplate = restTemplate;
         this.jwtService = jwtService;
+        this.cacheManager = cacheManager;
     }
 
     private UriComponentsBuilder baseUri(String userUid) {
@@ -67,15 +76,38 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
         return response;
     }
 
-    private ManagedPagesResponse getManagedPages(String userUid, String providerId) {
-        final URI uri = baseUri(userUid).path("/connect/status/pages/" + providerId).build().toUri();
-        log.debug("getting user's managed pages, URI = {}", uri.toString());
-        try {
-            ResponseEntity<ManagedPagesResponse> response = restTemplate.exchange(uri, HttpMethod.GET, new HttpEntity<>(jwtHeaders()), ManagedPagesResponse.class);
-            return handleResponse(response, providerId);
-        } catch (RestClientException e) {
-            log.error("Error calling social media service! Exception header: {}", e.getMessage());
-            return new ManagedPagesResponse();
+    @Override
+    public ManagedPagesResponse getManagedPages(String userUid, String providerId) {
+        ManagedPagesResponse response = searchCache(userUid, providerId);
+        return response == null ? askService(userUid, providerId) : response;
+    }
+
+    private ManagedPagesResponse searchCache(String userUid, String providerId) {
+        Cache cache = cacheManager.getCache("social_media_managed_pages");
+        String cacheKey = providerId + "-" + userUid;
+        Element element = cache.get(cacheKey);
+        ManagedPagesResponse resultFromCache = element != null ? (ManagedPagesResponse) element.getObjectValue() : null;
+        log.info("got anything from cache? key = {}, result = {}", cacheKey, resultFromCache);
+        return resultFromCache;
+    }
+
+    private ManagedPagesResponse askService(String userUid, String providerId) {
+        if (mockSocialMediaBroadcasts) {
+            switch (providerId) {
+                case "facebook": return mockFbPages();
+                case "twitter": return mockTwitterAccount();
+                default: return null;
+            }
+        } else {
+            try {
+                final URI uri = baseUri(userUid).path("/connect/status/pages/" + providerId).build().toUri();
+                log.debug("getting user's managed pages, URI = {}", uri.toString());
+                ResponseEntity<ManagedPagesResponse> response = restTemplate.exchange(uri, HttpMethod.GET, new HttpEntity<>(jwtHeaders()), ManagedPagesResponse.class);
+                return handleResponse(response, providerId);
+            } catch (RestClientException e) {
+                log.error("Error calling social media service! Exception header: {}", e.getMessage());
+                return new ManagedPagesResponse();
+            }
         }
     }
 
@@ -195,4 +227,23 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
             return null;
         }
     }
+
+    // using this while we are still in alpha - as else a time drag to boot integration service locally etc - remove when done
+    private ManagedPagesResponse mockFbPages() {
+        ManagedPage mockPage = new ManagedPage();
+        mockPage.setDisplayName("User FB page");
+        mockPage.setProviderUserId("user");
+        ManagedPage mockPage2 = new ManagedPage();
+        mockPage2.setDisplayName("Org FB page");
+        mockPage2.setProviderUserId("org");
+        return new ManagedPagesResponse(true, Arrays.asList(mockPage, mockPage2));
+    }
+
+    private ManagedPagesResponse mockTwitterAccount() {
+        ManagedPage mockAccount = new ManagedPage();
+        mockAccount.setDisplayName("@testing");
+        mockAccount.setProviderUserId("testing");
+        return new ManagedPagesResponse(true, Collections.singletonList(mockAccount));
+    }
+
 }

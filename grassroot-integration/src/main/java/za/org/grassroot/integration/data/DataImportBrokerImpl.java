@@ -83,14 +83,16 @@ public class DataImportBrokerImpl implements DataImportBroker {
 
             for (int i = headerRow ? 1 : 0; i <  sheet.getPhysicalNumberOfRows(); i++) {
                 Row row = sheet.getRow(i);
-                try {
-                    MembershipInfo member = memberFromRow(row, nameColumn, phoneColumn, emailCol, provinceCol, roleColumn,
-                            firstNameCol, surnameCol, afiilCol);
-                    importedMembers.add(member);
-                    logger.debug("Read in member: {}", member);
-                } catch (Exception e) {
-                    logger.info("failed to parse row, adding to error sheet, error headline: {}", e.getMessage());
-                    failedRows.add(row);
+                if (!checkRowEmpty(row)) {
+                    try {
+                        MembershipInfo member = memberFromRow(row, nameColumn, phoneColumn, emailCol, provinceCol, roleColumn,
+                                firstNameCol, surnameCol, afiilCol);
+                        importedMembers.add(member);
+                        logger.debug("Read in member: {}", member);
+                    } catch (Exception e) {
+                        logger.info("failed to parse row, adding to error sheet, error headline: {}", e.getMessage());
+                        failedRows.add(row);
+                    }
                 }
             }
 
@@ -256,6 +258,15 @@ public class DataImportBrokerImpl implements DataImportBroker {
         logger.info("returning member info: {}", info);
 
         return info;
+    }
+
+    private boolean checkRowEmpty(Row row) {
+        for (int c = row.getFirstCellNum(); c < row.getLastCellNum(); c++) {
+            Cell cell = row.getCell(c);
+            if (cell != null && !CellType.BLANK.equals(cell.getCellTypeEnum()))
+                return false;
+        }
+        return true;
     }
 
     private String getValue(Row row, Integer column) {

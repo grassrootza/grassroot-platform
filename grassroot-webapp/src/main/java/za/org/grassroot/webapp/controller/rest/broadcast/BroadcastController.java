@@ -54,7 +54,7 @@ public class BroadcastController extends BaseRestController {
         Page<BroadcastDTO> broadcastDTOPage = new PageImpl<>(new ArrayList<>());
         if(broadcastSchedule.equals(BroadcastSchedule.IMMEDIATE)){
             broadcastDTOPage = broadcastBroker.fetchSentGroupBroadcasts(groupUid, pageable);
-        }else if(broadcastSchedule.equals(BroadcastSchedule.FUTURE))
+        } else if(broadcastSchedule.equals(BroadcastSchedule.FUTURE))
             broadcastDTOPage = broadcastBroker.fetchScheduledGroupBroadcasts(groupUid, pageable);
 
         return ResponseEntity.ok(broadcastDTOPage);
@@ -95,6 +95,11 @@ public class BroadcastController extends BaseRestController {
                 .scheduledSendTime(createRequest.getSendDateTime())
                 .provinces(createRequest.getProvinces())
                 .topics(createRequest.getTopics())
+                .taskTeams(createRequest.getTaskTeams())
+                .affiliations(createRequest.getAffiliations())
+                .joinMethods(createRequest.getJoinMethods())
+                .joinDateCondition(createRequest.getJoinDateCondition())
+                .joinDate(createRequest.getJoinDate())
                 .build();
 
         fillInContent(createRequest, bc);

@@ -190,8 +190,37 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
         GroupFullDTO dto = new GroupFullDTO(group, group.getMembership(userUid));
         dto.setSubGroups(groupRepository.findAll(Specifications.where(hasParent(group)).and(isActive()))
                 .stream().map(GroupMembersDTO::new).collect(Collectors.toList()));
-
         return dto;
+    }
+
+    @Override
+    public GroupFullDTO fetchSubGroupDetails(String userUid, String parentUid, String taskTeamUid) {
+        Group parent = entityManager.createQuery("" +
+                "select g " +
+                "from Group g inner join g.memberships m " +
+                "where g.uid = :groupUid and m.user.uid = :userUid", Group.class)
+                .setParameter("groupUid", parentUid)
+                .setParameter("userUid", userUid)
+                .getSingleResult();
+
+        User user = userRepository.findOneByUid(userUid);
+        Group child = groupRepository.findOneByUid(taskTeamUid);
+
+        if (!parent.equals(child.getParent())) {
+            throw new IllegalArgumentException("Error! Parent/child mismatch");
+        }
+
+        if (!permissionBroker.isGroupPermissionAvailable(user, parent, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS) &&
+                !permissionBroker.isGroupPermissionAvailable(user, child, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS)) {
+            throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
+        }
+
+        Membership membership = membershipRepository.findByGroupUidAndUserUid(taskTeamUid, userUid);
+        if (membership == null) {
+            membership = membershipRepository.findByGroupUidAndUserUid(parentUid, userUid);
+        }
+
+        return new GroupFullDTO(child, membership);
     }
 
     @Override
@@ -221,7 +250,7 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
                 .collect(Collectors.toMap(m -> m.getUser().getId(), Function.identity()));
 
         return groupLogs.stream()
-                .filter(log -> log.getUser() != null)
+                .filter(log -> log.getUser() != null && log.getTargetUser() != null)
                 .map(log -> new MembershipRecordDTO(membershipMap.get(log.getTargetUser().getId()), log))
                 .sorted(Comparator.comparing(MembershipRecordDTO::getChangeDateTimeMillis, Comparator.reverseOrder()))
                 .collect(Collectors.toList());
@@ -260,7 +289,7 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
     }
 
     @Override
-    public List<MembershipFullDTO> filterGroupMembers(User user, String groupUid,
+    public List<Membership> filterGroupMembers(User user, String groupUid,
                                                       Collection<Province> provinces,
                                                       Collection<String> taskTeamsUids,
                                                       Collection<String> topics,
@@ -270,21 +299,23 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
                                                       Integer joinDaysAgo,
                                                       LocalDate joinDate,
                                                       JoinDateCondition joinDateCondition,
-                                                      String namePhoneOrEmail
-    ) {
+                                                      String namePhoneOrEmail) {
 
         Objects.requireNonNull(groupUid);
         Group group = groupRepository.findOneByUid(groupUid);
 
-        try{
+        try {
             permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
         } catch (AccessDeniedException e) {
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
         }
 
+        log.info("filtering on, provinces: {}, taskTeams: {}", provinces, taskTeamsUids);
         List<Membership> members = membershipRepository.findAll(
                 MembershipSpecifications.filterGroupMembership(group, provinces, taskTeamsUids, joinMethods, joinDaysAgo, joinDate, joinDateCondition, namePhoneOrEmail)
         );
+
+        log.info("post-filtering, have {} members", members.size());
 
         if(topics != null && topics.size() > 0){
             // this is an "and" filter, at present
@@ -297,7 +328,7 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
             // i.e., this is an "or" filtering
             Set<String> affils = new HashSet<>(affiliations);
             log.info("filtering {} members, looking for affiliations {}", members.size(), affils.toString());
-            members = members.stream().filter(m -> m.getTopics().stream().anyMatch(affils::contains))
+            members = members.stream().filter(m -> m.getAffiliations().stream().anyMatch(affils::contains))
                     .collect(Collectors.toList());
         }
 
@@ -309,7 +340,7 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
             members = members.stream().filter( m -> usersAddedByCampaigns.contains(m.getUser())).collect(Collectors.toList());
         }
 
-        return members.stream().map(MembershipFullDTO::new).collect(Collectors.toList());
+        return members;
     }
 
     @Override
@@ -319,9 +350,8 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
         Objects.requireNonNull(groupUid);
         User user = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
-        try {
-            permissionBroker.validateGroupPermission(user, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
-        } catch (AccessDeniedException e) {
+        if (!permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS) &&
+                !(group.hasParent() && permissionBroker.isGroupPermissionAvailable(user, group.getParent(), Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS))) {
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
         }
         return new MembershipFullDTO(membershipRepository.findByGroupUidAndUserUid(groupUid, memberUid));

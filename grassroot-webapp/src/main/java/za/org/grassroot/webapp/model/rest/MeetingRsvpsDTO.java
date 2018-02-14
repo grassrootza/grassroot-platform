@@ -64,7 +64,7 @@ public class MeetingRsvpsDTO {
                 .sorted(byRsvpResponse.thenComparing(byUserName))
                 .forEach(entry -> result.put(entry.getKey().nameToDisplay(), entry.getValue().toString()));
 
-	    logger.info("Sorted entry set : " + result.toString());
+	    logger.debug("Sorted entry set : " + result.toString());
 
         return result;
     }

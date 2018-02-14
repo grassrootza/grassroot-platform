@@ -23,7 +23,6 @@ import za.org.grassroot.core.enums.GroupViewPriority;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.util.InvalidPhoneNumberException;
 import za.org.grassroot.integration.messaging.JwtService;
-import za.org.grassroot.services.PermissionBroker;
 import za.org.grassroot.services.account.AccountGroupBroker;
 import za.org.grassroot.services.exception.GroupSizeLimitExceededException;
 import za.org.grassroot.services.exception.JoinWordsExceededException;
@@ -179,6 +178,16 @@ public class GroupModifyController extends GroupBaseController {
         return ResponseEntity.ok(groupFetchBroker.fetchGroupFullInfo(getUserIdFromRequest(request), parentUid));
     }
 
+    @RequestMapping(value = "/members/remove/taskteam/{parentUid}", method = RequestMethod.POST)
+    @ApiOperation(value = "Add member(s) to a task team / subgroup (of the 'parent' group)", notes = "Returns the modified task team / subgroup in full")
+    public ResponseEntity<GroupFullDTO> removeMembersFromSubgroup(HttpServletRequest request,
+                                                                  @PathVariable String parentUid,
+                                                                  @RequestParam String childGroupUid,
+                                                                  @RequestParam Set<String> memberUids) {
+        groupBroker.removeMembersFromSubgroup(getUserIdFromRequest(request), parentUid, childGroupUid, memberUids);
+        return ResponseEntity.ok(groupFetchBroker.fetchGroupFullInfo(getUserIdFromRequest(request), parentUid));
+    }
+
     @RequestMapping(value = "/create/taskteam/{parentUid}", method = RequestMethod.POST)
     @ApiOperation(value = "Create a task team / subgroup (of the 'parent' group) and add members to it",
             notes = "Returns the modified task team / subgroup in full")
@@ -194,20 +203,49 @@ public class GroupModifyController extends GroupBaseController {
 
             Set<MembershipInfo> membershipInfos = MembershipInfo.createFromMembers(groupMemberships);
             groupBroker.create(getUserIdFromRequest(request), taskTeamName, parentUid, membershipInfos,
-                    GroupPermissionTemplate.DEFAULT_GROUP, null, null, false, false);
+                    GroupPermissionTemplate.CLOSED_GROUP, null, null, false, false);
             return ResponseEntity.ok().build();
         } catch (AccessDeniedException e) {
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_UPDATE_GROUP_DETAILS);
         }
     }
 
+    @RequestMapping(value = "/deactivate/taskteam/{parentUid}", method = RequestMethod.POST)
+    public ResponseEntity<GroupFullDTO> deactivateTaskTeam(HttpServletRequest request,
+                                                           @PathVariable String parentUid,
+                                                           @RequestParam String taskTeamUid) {
+        groupBroker.deactivateSubGroup(getUserIdFromRequest(request), parentUid, taskTeamUid);
+        return ResponseEntity.ok(groupFetchBroker.fetchGroupFullDetails(getUserIdFromRequest(request), parentUid));
+    }
+
+    @RequestMapping(value = "/rename/taskteam/{parentUid}", method = RequestMethod.POST)
+    public ResponseEntity renameTaskTeam(HttpServletRequest request,
+                                         @PathVariable String parentUid,
+                                         @RequestParam String taskTeamUid,
+                                         @RequestParam String newName) {
+        groupBroker.renameSubGroup(getUserIdFromRequest(request), parentUid, taskTeamUid, newName);
+        return ResponseEntity.ok().build();
+    }
+
     @RequestMapping(value = "members/add/topics/{groupUid}", method = RequestMethod.POST)
     @ApiOperation(value = "Assign topic(s) - special tags - to a member")
-    public ResponseEntity<GroupFullDTO> assignTopicsToMember(HttpServletRequest request, @PathVariable String groupUid,
-                                                             @RequestParam List<String> memberUids, @RequestParam List<String> topics) {
+    public ResponseEntity<GroupFullDTO> assignTopicsToMembers(HttpServletRequest request, @PathVariable String groupUid,
+                                                              @RequestParam List<String> memberUids,
+                                                              @RequestParam List<String> topics,
+                                                              @RequestParam(required = false) Boolean onlyAdd) {
         for (String memberUid : memberUids) {
-            groupBroker.assignMembershipTopics(getUserIdFromRequest(request), groupUid, memberUid, new HashSet<>(topics));
+            groupBroker.assignMembershipTopics(getUserIdFromRequest(request), groupUid, memberUid, new HashSet<>(topics),
+                    onlyAdd != null && onlyAdd);
         }
+        return ResponseEntity.ok().build();
+    }
+
+    @RequestMapping(value = "members/remove/topics/{groupUid}", method = RequestMethod.POST)
+    @ApiOperation(value = "Remove topic(s) - special tags - from members")
+    public ResponseEntity<GroupFullDTO> removeTopicsFromMembers(HttpServletRequest request, @PathVariable String groupUid,
+                                                              @RequestParam List<String> memberUids,
+                                                              @RequestParam List<String> topics) {
+        groupBroker.removeTopicFromMembers(getUserIdFromRequest(request), groupUid, topics, new HashSet<>(memberUids));
         return ResponseEntity.ok().build();
     }
 

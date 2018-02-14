@@ -498,8 +498,7 @@ public class UserManager implements UserManagementService, UserDetailsService {
     public void sendAndroidLinkSms(String userUid) {
         User user = userRepository.findOneByUid(userUid);
         String message = messageAssemblingService.createAndroidLinkSms(user);
-        messagingServiceBroker.sendSMS(message, user.getPhoneNumber(), true);
-
+        messagingServiceBroker.sendSMS(message, user.getUid(), true);
     }
 
     @Override

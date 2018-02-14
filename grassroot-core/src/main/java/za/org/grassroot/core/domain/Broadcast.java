@@ -14,13 +14,12 @@ import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Class to hold a broadcast, which we are going to use quite a lot
@@ -33,6 +32,11 @@ public class Broadcast implements GrassrootEntity, TagHolder {
     public static final int MAX_MESSAGES = 3;
 
     private static final String PROVINCE_PREFIX = "PROVINCE:";
+    private static final String TASK_TEAM_PREFIX = "TASK_TEAM:";
+    private static final String AFFIL_PREFIX = "AFFILIATION:";
+    private static final String JOIN_METHOD_PREFIX = "JOIN_METHOD:";
+    private static final String JOIN_DATE_CONDITION_PREFIX = "JOIN_DATE_CONDITION:";
+    private static final String JOIN_DATE_PREFIX = "JOIN_DATE_VALUE:";
 
     public static String NAME_FIELD_TEMPLATE = "{__name__}";
     public static String CONTACT_FIELD_TEMPALTE = "{__contact__}";
@@ -241,19 +245,70 @@ public class Broadcast implements GrassrootEntity, TagHolder {
         return !StringUtils.isEmpty(twitterPost);
     }
 
+    public boolean hasFilter() {
+        return !getTaskTeams().isEmpty() || !getProvinces().isEmpty() || !getTaskTeams().isEmpty()
+                || !getTopics().isEmpty() || !getAffiliations().isEmpty() || !getJoinMethods().isEmpty() || getJoinDateCondition().isPresent();
+    }
+
     public List<Province> getProvinces() {
-        return getTagList().stream()
-                .filter(s -> s.startsWith(PROVINCE_PREFIX))
-                .map(s -> s.substring(PROVINCE_PREFIX.length()))
+        return getFilterEntitiesFromTag(PROVINCE_PREFIX)
                 .map(Province::valueOf)
                 .collect(Collectors.toList());
     }
 
-    public void setProvinces(Set<Province> provinces) {
-        List<String> tags = getTagList().stream()
-                .filter(s -> !s.startsWith(PROVINCE_PREFIX)).collect(Collectors.toList());
-        tags.addAll(provinces.stream().map(s -> PROVINCE_PREFIX + s.name()).collect(Collectors.toSet()));
-        setTags(tags);
+    public List<String> getTaskTeams() {
+        return getFilterEntitiesFromTag(TASK_TEAM_PREFIX).collect(Collectors.toList());
+    }
+
+    public List<GroupJoinMethod> getJoinMethods() {
+        return getFilterEntitiesFromTag(JOIN_METHOD_PREFIX).map(GroupJoinMethod::valueOf).collect(Collectors.toList());
+    }
+
+    public List<String> getAffiliations() {
+        return getFilterEntitiesFromTag(AFFIL_PREFIX).collect(Collectors.toList());
+    }
+
+    public Optional<JoinDateCondition> getJoinDateCondition() {
+        return getFilterEntitiesFromTag(JOIN_DATE_CONDITION_PREFIX).findFirst().map(JoinDateCondition::valueOf);
+    }
+
+    public Optional<LocalDate> getJoinDate() {
+        return getFilterEntitiesFromTag(JOIN_DATE_PREFIX).findFirst().map(s -> LocalDate.parse(s, DateTimeFormatter.ISO_DATE));
+    }
+
+    private Stream<String> getFilterEntitiesFromTag(String prefix) {
+        return getTagList().stream().filter(s -> s.startsWith(prefix)).map(s -> s.substring(prefix.length()));
+    }
+
+    public void setProvinces(Collection<Province> provinces) {
+        setFilterEntities(PROVINCE_PREFIX, provinces.stream().map(Enum::name));
+    }
+
+    public void setTaskTeams(Collection<String> taskTeamUids) {
+        setFilterEntities(TASK_TEAM_PREFIX, taskTeamUids.stream());
+    }
+
+    public void setJoinMethods(Collection<GroupJoinMethod> joinMethods) {
+        setFilterEntities(JOIN_METHOD_PREFIX, joinMethods.stream().map(Enum::name));
+    }
+
+    public void setAffiliations(Collection<String> affiliations) {
+        setFilterEntities(AFFIL_PREFIX, affiliations.stream());
+    }
+
+    public void setJoinDateCondition(JoinDateCondition condition) {
+        setFilterEntities(JOIN_DATE_CONDITION_PREFIX, Stream.of(condition.name()));
+    }
+
+    public void setJoinDateValue(LocalDate joinDateValue) {
+        setFilterEntities(JOIN_DATE_PREFIX, Stream.of(String.valueOf(joinDateValue.format(DateTimeFormatter.ISO_DATE))));
+    }
+
+    private void setFilterEntities(String prefix, Stream<String> entities) {
+        List<String> nonPrefixTags = getTagList().stream()
+                .filter(s -> !s.startsWith(prefix)).collect(Collectors.toList());
+        nonPrefixTags.addAll(entities.map(s -> prefix + s).collect(Collectors.toList()));
+        setTags(nonPrefixTags);
     }
 
     // used in thymeleaf hence preserved here

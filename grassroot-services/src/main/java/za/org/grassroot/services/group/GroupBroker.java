@@ -10,6 +10,7 @@ import za.org.grassroot.core.enums.UserInterfaceType;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -51,6 +52,10 @@ public interface GroupBroker {
 
     void addMembersToSubgroup(String userUid, String groupUid, String subGroupUid, Set<String> memberUids);
 
+    void deactivateSubGroup(String userUid, String parentUid, String subGroupUid);
+
+    void renameSubGroup(String userUid, String parentUid, String subGroupUid, String newName);
+
     void asyncMemberToSubgroupAdd(String userUid, String groupUid, Set<MembershipInfo> membershipInfos);
 
     void copyMembersIntoGroup(String userUid, String groupUid, Set<String> memberUids);
@@ -78,7 +83,9 @@ public interface GroupBroker {
                                  Province province);
 
     // note: only accepts topics that are from the group itself
-    void assignMembershipTopics(String userUid, String groupUid, String memberUid, Set<String> topics);
+    void assignMembershipTopics(String userUid, String groupUid, String memberUid, Set<String> topics, boolean preservePrior);
+
+    void removeTopicFromMembers(String userUid, String groupUid, Collection<String> topic, Set<String> memberUids);
 
     void alterMemberTopicsTeamsOrgs(String userUid, String groupUid, String memberUid, Set<String> affiliations, Set<String> taskTeams, Set<String> topics);
 

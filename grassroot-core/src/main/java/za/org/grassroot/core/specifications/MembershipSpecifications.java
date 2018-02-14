@@ -1,21 +1,24 @@
 package za.org.grassroot.core.specifications;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.domain.Specifications;
+import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.enums.Province;
 
-import javax.persistence.criteria.Join;
-import javax.persistence.criteria.JoinType;
-import javax.persistence.criteria.Predicate;
+import javax.persistence.criteria.*;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
+@Slf4j
 public class MembershipSpecifications {
 
 
@@ -62,13 +65,11 @@ public class MembershipSpecifications {
                                                                   Integer joinDaysAgo,
                                                                   LocalDate joinDate,
                                                                   JoinDateCondition joinDaysAgoCondition,
-                                                                  String namePhoneOrEmail
-                                                                  ){
+                                                                  String namePhoneOrEmail){
 
-        return (root, query, cb) -> {
+        return (Root<Membership> root, CriteriaQuery<?> query, CriteriaBuilder cb) -> {
 
             List<Predicate> restrictions = new ArrayList<>();
-
 
             if (provinces != null && provinces.size() > 0) {
                 restrictions.add(root.get(Membership_.user).get(User_.province).in(provinces));
@@ -80,7 +81,7 @@ public class MembershipSpecifications {
                 restrictions.add(cb.equal(root.get(Membership_.group), group));
             }
 
-            if (joinMethods != null) {
+            if (joinMethods != null && !joinMethods.isEmpty()) {
                 restrictions.add(root.get(Membership_.joinMethod).in(joinMethods));
             }
 
@@ -105,15 +106,19 @@ public class MembershipSpecifications {
 
             }
 
-            if (namePhoneOrEmail != null) {
-                Predicate byName = cb.like(root.get(Membership_.user).get(User_.displayName), "%" + namePhoneOrEmail + "%");
-                Predicate byPhone = cb.like(root.get(Membership_.user).get(User_.phoneNumber), "%" + namePhoneOrEmail + "%");
-                Predicate byEmail = cb.like(root.get(Membership_.user).get(User_.emailAddress), "%" + namePhoneOrEmail + "%");
-                Predicate byNamePhoneOrEmail = cb.or(byName, byEmail, byPhone);
-                restrictions.add(byNamePhoneOrEmail);
+            if (!StringUtils.isEmpty(namePhoneOrEmail)) {
+                List<String> splitSearchTerms = Arrays.stream(namePhoneOrEmail.split(",")).map(String::trim).collect(Collectors.toList());
+                List<Predicate> nameSearchPredicates = new ArrayList<>();
+                for (String term: splitSearchTerms) {
+                    Predicate byName = cb.like(root.get(Membership_.user).get(User_.displayName), "%" + term + "%");
+                    Predicate byPhone = cb.like(root.get(Membership_.user).get(User_.phoneNumber), "%" + term + "%");
+                    Predicate byEmail = cb.like(root.get(Membership_.user).get(User_.emailAddress), "%" + term + "%");
+                    nameSearchPredicates.add(cb.or(byName, byEmail, byPhone));
+                }
+                restrictions.add(cb.or(nameSearchPredicates.toArray(new Predicate[0])));
             }
 
-
+            log.debug("predicates: {}", restrictions);
             return cb.and(restrictions.toArray(new Predicate[0]));
         };
 
