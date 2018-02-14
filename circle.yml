@@ -60,7 +60,7 @@ deployment:
 
 
   staging:
-    branch: nginx-logs
+    branch: preprod
     commands:
       # define environment
       - echo 'export ENVIRONMENT=staging' >> ~/.circlerc
