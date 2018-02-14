@@ -8,7 +8,7 @@ wget http://s3.amazonaws.com/ec2metadata/ec2-metadata
 chmod 777 ec2-metadata
 INSTANCE_ID=$(./ec2-metadata -i | cut -b 14-)
 #HOSTNAME=$PROFILE-$INSTANCE_ID-<BUILDID>
-HOSTNAME=gr-test-$INSTANCE_ID-<BUILDID>
+HOSTNAME=gr-$PROFILE-$INSTANCE_ID-<BUILDID>
 echo $HOSTNAME > /etc/hostname
 
 # SETUP PAPERTRAIL
