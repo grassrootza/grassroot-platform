@@ -100,6 +100,7 @@ public class BroadcastController extends BaseRestController {
                 .joinMethods(createRequest.getJoinMethods())
                 .joinDateCondition(createRequest.getJoinDateCondition())
                 .joinDate(createRequest.getJoinDate())
+                .skipSmsIfEmail(createRequest.isSkipSmsIfEmail())
                 .build();
 
         fillInContent(createRequest, bc);
@@ -133,7 +134,7 @@ public class BroadcastController extends BaseRestController {
 
     @RequestMapping(value = "/create/image/upload", method = RequestMethod.POST)
     @ApiOperation(value = "Upload an image for a broadcast", notes = "Will pass back an image key")
-    public ResponseEntity uploadImage(HttpServletRequest request, @RequestBody MultipartFile image) {
+    public ResponseEntity uploadImage(@RequestBody MultipartFile image) {
         // todo : rate limiting?
         log.info("do we have a file? : ", image);
         String imageKey = mediaFileBroker.storeFile(image, MediaFunction.BROADCAST_IMAGE, image.getContentType(), null);
