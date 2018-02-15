@@ -5,6 +5,7 @@ import org.springframework.util.StringUtils;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.core.util.FormatUtil;
 import za.org.grassroot.core.util.StringArrayUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 
@@ -106,7 +107,7 @@ public abstract class AbstractEventEntity {
 		this.uid = UIDGenerator.generateId();
 		this.createdDateTime = Instant.now();
 
-		this.name = Objects.requireNonNull(name);
+		this.name = FormatUtil.removeUnwantedCharacters(Objects.requireNonNull(name));
 		this.eventStartDateTime = Objects.requireNonNull(eventStartDateTime);
 		this.createdByUser = Objects.requireNonNull(createdByUser);
 		this.includeSubGroups = includeSubGroups;
@@ -140,7 +141,7 @@ public abstract class AbstractEventEntity {
 	}
 
 	public void setName(String name) {
-		this.name = name;
+		this.name = FormatUtil.removeUnwantedCharacters(Objects.requireNonNull(name));
 	}
 
 	public Instant getEventStartDateTime() {

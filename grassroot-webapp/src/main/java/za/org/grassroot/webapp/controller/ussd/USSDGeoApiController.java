@@ -9,8 +9,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import za.org.grassroot.core.domain.User;
-import za.org.grassroot.integration.location.LocationInfoBroker;
 import za.org.grassroot.core.enums.Province;
+import za.org.grassroot.integration.location.LocationInfoBroker;
 import za.org.grassroot.webapp.controller.ussd.menus.USSDMenu;
 import za.org.grassroot.webapp.model.ussd.AAT.Request;
 
@@ -25,7 +25,7 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
 @ConditionalOnProperty(name = "grassroot.geo.apis.enabled", matchIfMissing = false)
 public class USSDGeoApiController extends USSDBaseController {
 
-    private static final String REL_PATH = "/geo";
+    private static final String REL_PATH = "geo";
 
     private final LocationInfoBroker locationInfoBroker;
     private final USSDMessageAssembler messageAssembler;
@@ -44,7 +44,7 @@ public class USSDGeoApiController extends USSDBaseController {
                 + (skippedLanguage ? ".open" : ""), user));
         List<Province> provinces = locationInfoBroker.getAvailableProvincesForDataSet(dataSetLabel);
         provinces.forEach(p -> menu.addMenuOption(REL_PATH + subsequentUrl + p.name(),
-                messageAssembler.getMessage("province." + p.name(), user)));
+                messageAssembler.getMessage("province." + p.name().substring("ZA_".length()), user)));
         return menu;
     }
 
@@ -78,9 +78,11 @@ public class USSDGeoApiController extends USSDBaseController {
                                   @RequestParam(required = false) Locale language,
                                   @RequestParam(required = false) Boolean interrupted) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber, saveUrl("/province", dataSet));
-        if (interrupted != null && !interrupted) {
+        log.info("locale: {}, interrupted: {}", language, interrupted);
+        if (interrupted == null || !interrupted) {
             userManager.updateUserLanguage(user.getUid(), language);
             user.setLanguageCode(language.getLanguage()); // to avoid a reload (even if H caches)
+            log.info("set user language to: ", user.getLanguageCode());
         }
         return menuBuilder(provinceMenu(dataSet, "/info/select?dataSet=" + dataSet + "&province=", false, user));
     }
