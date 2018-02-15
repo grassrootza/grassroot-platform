@@ -85,12 +85,12 @@ public class USSDTodoController extends USSDBaseController {
             case VOLUNTEERS_NEEDED:
                 final String volunteerPrompt = messageAssembler.getMessage("todo.volunteer.prompt",
                         new String[] { todo.getCreatorAlias(), todo.getMessage() }, user);
-                return new USSDMenu(volunteerPrompt, optionsYesNo(user, REL_PATH + "/respond/volunteer?todoUid=" + todo.getUid()));
+                return new USSDMenu(volunteerPrompt, optionsYesNo(user, "todo/respond/volunteer?todoUid=" + todo.getUid()));
             case VALIDATION_REQUIRED:
                 final String confirmationPrompt = messageAssembler.getMessage("todo.validate.prompt",
                         new String[] { todo.getCreatorAlias(), todo.getMessage() }, user);
                 USSDMenu menu = new USSDMenu(confirmationPrompt);
-                menu.addMenuOptions(optionsYesNo(user, REL_PATH + "/respond/validate?todoUid=" + todo.getUid()));
+                menu.addMenuOptions(optionsYesNo(user, "todo/respond/validate?todoUid=" + todo.getUid()));
                 menu.addMenuOption(REL_PATH + "/respond/validate?todoUid=" + todo.getUid() + " &" + yesOrNoParam + "=unsure",
                         messageAssembler.getMessage("todo.validate.option.unsure", user));
                 return menu;
@@ -578,7 +578,7 @@ public class USSDTodoController extends USSDBaseController {
         User user = userManager.findByInputNumber(msisdn, saveModifyUrl("/cancel", todoUid, null));
         Todo todo = todoBroker.load(todoUid);
         USSDMenu menu = new USSDMenu(messageAssembler.getMessage("todo.cancel.prompt", new String[] { todo.getName() }, user));
-        menu.addMenuOptions(optionsYesNo(user, REL_PATH + "/modify/cancel/confirm?todoUid=" + todoUid));
+        menu.addMenuOptions(optionsYesNo(user, "todo/modify/cancel/confirm?todoUid=" + todoUid));
         log.info("Options={}",menu.getMenuOptions());
         return menuBuilder(menu);
     }
