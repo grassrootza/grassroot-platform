@@ -70,7 +70,7 @@ public class GroupQueryRestController extends GroupAbstractRestController {
                 .sorted(Collections.reverseOrder())
                 .collect(Collectors.toList());
 
-        log.info("responding ... group with removed UIDs = " + changedSinceData.getRemovedUids());
+        log.info("responding ... {} groups, with removed UIDs = {}", changedSinceData.getAddedAndUpdated().size(), changedSinceData.getRemovedUids());
 
         ChangedSinceData<GroupResponseWrapper> response = new ChangedSinceData<>(groupWrappers, changedSinceData.getRemovedUids());
         return new ResponseEntity<>(response, HttpStatus.OK);

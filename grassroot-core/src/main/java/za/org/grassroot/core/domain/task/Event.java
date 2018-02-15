@@ -4,6 +4,7 @@ package za.org.grassroot.core.domain.task;
  * Created by luke on 2015/07/16.
  */
 
+import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
@@ -33,6 +34,10 @@ public abstract class Event<P extends UidIdentifiable> extends AbstractEventEnti
 
 	@Column(name = "canceled")
 	private boolean canceled;
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "type", insertable = false, updatable = false)
+	@Getter private EventType type;
 
     /*
 	Version used by hibernate to resolve conflicting updates. Do not update set it, it is for Hibernate only
@@ -67,6 +72,9 @@ public abstract class Event<P extends UidIdentifiable> extends AbstractEventEnti
 
 	@OneToMany(mappedBy = "parentEvent")
 	private Set<Todo> todos = new HashSet<>();
+
+	@OneToMany(mappedBy = "event")
+	private Set<EventLog> eventLogs = new HashSet<>();
 
 	@ManyToOne
 	@JoinColumn(name = "ancestor_group_id", nullable = false)
@@ -213,6 +221,14 @@ public abstract class Event<P extends UidIdentifiable> extends AbstractEventEnti
 		}
 		return todos;
 	}
+
+	public Set<EventLog> getEventLogs() {
+		if (eventLogs == null) {
+			eventLogs = new HashSet<>();
+		}
+		return eventLogs;
+	}
+
 
 	// STRANGE: dunno why this <User> generics is not recognized by rest of code!?
 	public Set<User> getAllMembers() {

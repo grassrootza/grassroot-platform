@@ -5,6 +5,7 @@ import lombok.Setter;
 import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.util.DateTimeUtil;
+import za.org.grassroot.core.util.FormatUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 
 import javax.persistence.*;
@@ -70,7 +71,7 @@ public abstract class AbstractTodoEntity {
 	@Setter protected Instant actionByDate;
 
 	@Column(name = "message")
-	@Setter protected String message;
+	protected String message;
 
 	@Column(name = "description", length = 512)
 	@Setter protected String description;
@@ -97,12 +98,16 @@ public abstract class AbstractTodoEntity {
 		this.type = type;
 		setParent(parent);
 
-		this.message = Objects.requireNonNull(explanation);
+		this.message = FormatUtil.removeUnwantedCharacters(Objects.requireNonNull(explanation));
 		this.actionByDate = Objects.requireNonNull(actionByDate);
 		this.createdDateTime = Instant.now();
 
 		this.reminderMinutes = reminderMinutes;
 		this.reminderActive = reminderActive;
+	}
+
+	public void setMessage(String message) {
+		this.message = FormatUtil.removeUnwantedCharacters(Objects.requireNonNull(message));
 	}
 
 	public LocalDateTime getActionByDateAtSAST() { return actionByDate.atZone(DateTimeUtil.getSAST()).toLocalDateTime(); }

@@ -99,6 +99,7 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
                     .map(Province::valueOf).collect(Collectors.toList());
         } else {
             provinceList = getFromDynamo(dataSetLabel, "provinces", true).stream()
+                    .map(s -> s.startsWith("ZA_") ? s : "ZA_" + s)
                     .map(Province::valueOf).collect(Collectors.toList());
         }
         return provinceList;
