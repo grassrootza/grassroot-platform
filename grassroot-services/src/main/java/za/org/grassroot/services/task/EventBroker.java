@@ -85,10 +85,6 @@ public interface EventBroker {
 
 	List<Event> getOutstandingResponseForUser(User user, EventType eventType);
 
-	boolean userHasResponsesOutstanding(User user, EventType eventType);
-
-	EventListTimeType userHasEventsToView(User user, EventType type);
-
 	boolean userHasEventsToView(User user, EventType type, EventListTimeType timeType);
 
 	Map<User, EventRSVPResponse> getRSVPResponses(Event event);
@@ -96,7 +92,7 @@ public interface EventBroker {
 	Page<Event> getEventsUserCanView(User user, EventType eventType, EventListTimeType timeType, int pageNumber, int pageSize);
 
 	// pass null to eventType to get all events, and null to either of the timestamps to leave unlimited (i.e., all the way to future, or all the way to past
-	List<Event> retrieveGroupEvents(Group group, EventType eventType, Instant periodStart, Instant periodEnd);
+	List<Event> retrieveGroupEvents(Group group, User user, Instant periodStart, Instant periodEnd);
 
 	Event getMostRecentEvent(String groupUid);
 

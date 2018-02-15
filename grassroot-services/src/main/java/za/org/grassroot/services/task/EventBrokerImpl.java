@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -43,7 +44,6 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static za.org.grassroot.core.domain.task.EventReminderType.CUSTOM;
@@ -824,7 +824,6 @@ public class EventBrokerImpl implements EventBroker {
 
 	/*
 	SECTION starts here for reading & retrieving user events
-	major todo : switch this to using a JPA specification model & quick findOne / count call, as in newly designed todo broker
 	 */
 
 	@Override
@@ -837,49 +836,31 @@ public class EventBrokerImpl implements EventBroker {
 		} else {
 			Map<Long, Long> eventMap = new HashMap<>();
 			final List<Event> outstandingRSVPs = new ArrayList<>();
-			Predicate<Event> filter = event ->
-					event.isRsvpRequired()
-							&& event.getEventType() == eventType
-							&& ((eventType == EventType.MEETING && event.getCreatedByUser().getId() != user.getId())
-							|| eventType != EventType.MEETING);
-			// todo: well, fix this (consolidate into one criteria query)
-			groupRepository.findByMembershipsUserAndActiveTrueAndParentIsNull(user)
-					.forEach(g -> g.getUpcomingEventsIncludingParents(filter)
-							.stream()
-							.filter(e -> eventType == EventType.MEETING || checkUserJoinedBeforeVote(user, e, g))
-							.filter(e -> !eventLogBroker.hasUserRespondedToEvent(e, user) && eventMap.get(e.getId()) == null)
-							.forEach(e -> {
-								outstandingRSVPs.add(e);
-								eventMap.put(e.getId(), e.getId());
-							}));
+
+			Specifications<Event> specs = EventSpecifications.upcomingEventsForUser(user)
+					.and((root, query, cb) -> cb.equal(root.get("type"), eventType));
+
+			Specification<Event> notCreatedByUser = (root, query, cb) -> cb.notEqual(root.get("createdByUser"), user);
+
+			if (EventType.MEETING.equals(eventType)) {
+				specs = specs.and(notCreatedByUser);
+			}
+
+			// simplest means of pulling the event log into the predicate failed - come back one day if strictly needed
+			eventRepository.findAll(specs).stream()
+					.filter(e -> !eventLogBroker.hasUserRespondedToEvent(e, user) && eventMap.get(e.getId()) == null)
+					.forEach(e -> {
+						outstandingRSVPs.add(e);
+						eventMap.put(e.getId(), e.getId());
+					});
+			logger.info("number of events returned: {}", eventMap.size());
+
             cacheUtilService.putOutstandingResponseForUser(user, eventType, outstandingRSVPs);
 			logger.info("time to check for responses: {} msecs", System.currentTimeMillis() - startTime);
 			return outstandingRSVPs;
 		}
 	}
 
-	//N.B. remove this if statement if you want to allow votes for people that joined the group late
-	private boolean checkUserJoinedBeforeVote(User user, Event event, Group group) {
-		Membership membership = group.getMembership(user);
-		return membership != null && membership.getJoinTime().isBefore(event.getCreatedDateTime());
-	}
-
-	@Override
-	public boolean userHasResponsesOutstanding(User user, EventType eventType) {
-		return !getOutstandingResponseForUser(user, eventType).isEmpty();
-	}
-
-
-	@Override
-	@Transactional(readOnly = true)
-	public EventListTimeType userHasEventsToView(User user, EventType type) {
-		boolean pastEvents = userHasEventsToView(user, type, EventListTimeType.PAST);
-		boolean futureEvents = userHasEventsToView(user, type, EventListTimeType.FUTURE);
-		return (pastEvents && futureEvents) ? EventListTimeType.BOTH
-				: pastEvents ? EventListTimeType.PAST
-				: futureEvents ? EventListTimeType.FUTURE
-				: EventListTimeType.NONE;
-	}
 
 	@Override
 	@Transactional(readOnly = true)
@@ -946,18 +927,17 @@ public class EventBrokerImpl implements EventBroker {
 	@Override
 	@Transactional(readOnly = true)
 	@SuppressWarnings("unchecked")
-	public List<Event> retrieveGroupEvents(Group group, EventType eventType, Instant periodStart, Instant periodEnd) {
+	public List<Event> retrieveGroupEvents(Group group, User user, Instant periodStart, Instant periodEnd) {
 		Sort sort = new Sort(Sort.Direction.DESC, "eventStartDateTime");
 		Instant beginning = (periodStart == null) ? group.getCreatedDateTime() : periodStart;
 		Instant end = (periodEnd == null) ? DateTimeUtil.getVeryLongAwayInstant() : periodEnd;
 
 		Specifications<Event> specifications = Specifications.where(EventSpecifications.notCancelled())
 				.and(EventSpecifications.hasGroupAsParent(group))
-				.and(EventSpecifications.startDateTimeBetween(beginning, end));
+				.and(EventSpecifications.startDateTimeBetween(beginning, end))
+				.and(EventSpecifications.hasAllUsersAssignedOrIsAssigned(user));
 
-		return (eventType == null) ? eventRepository.findAll(specifications, sort) :
-				(List) (eventType.equals(EventType.MEETING) ? meetingRepository.findAll(specifications, sort) :
-					voteRepository.findAll(specifications, sort));
+		return eventRepository.findAll(specifications, sort);
 	}
 
 

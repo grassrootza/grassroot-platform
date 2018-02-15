@@ -139,7 +139,7 @@ public class TaskBrokerImpl implements TaskBroker {
 
         Set<TaskDTO> taskDtos = new HashSet<>();
 
-        eventBroker.retrieveGroupEvents(group, null, Instant.now(), null).stream()
+        eventBroker.retrieveGroupEvents(group, user, Instant.now(), null).stream()
                 .filter(event -> event.getEventType().equals(EventType.MEETING) || partOfGroupBeforeVoteCalled(event, user))
                 .forEach(e -> taskDtos.add(new TaskDTO(e, user, eventLogRepository)));
 
@@ -171,7 +171,7 @@ public class TaskBrokerImpl implements TaskBroker {
 
         Set<TaskDTO> taskDtos = new HashSet<>();
 
-        eventBroker.retrieveGroupEvents(group, null, start, end)
+        eventBroker.retrieveGroupEvents(group, user, start, end)
                 .forEach(e -> taskDtos.add(new TaskDTO(e, user, eventLogRepository)));
 
         todoBroker.fetchTodosForGroup(userUid, groupUid, false, false, start, end, null)
@@ -222,17 +222,7 @@ public class TaskBrokerImpl implements TaskBroker {
         User user = userRepository.findOneByUid(userUid);
         Instant now = Instant.now();
 
-        // todo : switch most of these to using assignment instead of just group
-        List<Event> events = eventRepository.findAll(Specifications
-                .where(EventSpecifications.userPartOfGroup(user))
-                .and(EventSpecifications.notCancelled())
-                .and(EventSpecifications.startDateTimeAfter(now)));
-
-        if (events != null) {
-            events = events.stream()
-                    .filter(event -> event.getEventType().equals(EventType.MEETING) || partOfGroupBeforeVoteCalled(event, user))
-                    .collect(Collectors.toList());
-        }
+        List<Event> events = eventRepository.findAll(EventSpecifications.upcomingEventsForUser(user));
 
         Set<TaskDTO> taskDtos = resolveEventTaskDtos(events, user, null);
 
@@ -256,21 +246,10 @@ public class TaskBrokerImpl implements TaskBroker {
         User user = userRepository.findOneByUid(userUid);
         Instant now = Instant.now();
 
-        // todo : switch most of these to using assignment instead of just group
-        List<Event> events = eventRepository.findAll(Specifications
-                .where(EventSpecifications.userPartOfGroup(user))
-                .and(EventSpecifications.notCancelled())
-                .and(EventSpecifications.startDateTimeAfter(now)));
-
-        if (events != null) {
-            events = events.stream()
-                    .filter(event -> event.getEventType().equals(EventType.MEETING) || partOfGroupBeforeVoteCalled(event, user))
-                    .collect(Collectors.toList());
-        }
+        List<Event> events = eventRepository.findAll(EventSpecifications.upcomingEventsForUser(user));
 
         Set<TaskFullDTO> taskDtos = new HashSet<>();
-        events.stream().filter(event -> event.getEventType().equals(EventType.MEETING) || partOfGroupBeforeVoteCalled(event, user))
-                .forEach(e -> taskDtos.add(new TaskFullDTO(e, user, e.getCreatedDateTime(), getUserResponse(e, user))));
+        events.forEach(e -> taskDtos.add(new TaskFullDTO(e, user, e.getCreatedDateTime(), getUserResponse(e, user))));
 
         Instant todoStart = Instant.now().minus(DAYS_PAST_FOR_TODO_CHECKING, ChronoUnit.DAYS);
         Instant todoEnd = DateTimeUtil.getVeryLongAwayInstant();
@@ -481,7 +460,7 @@ public class TaskBrokerImpl implements TaskBroker {
 
         Set<TaskFullDTO> taskDtos = new HashSet<>();
 
-        eventBroker.retrieveGroupEvents(group, null, Instant.now(), null).stream()
+        eventBroker.retrieveGroupEvents(group, user, Instant.now(), null).stream()
                 .filter(event -> event.getEventType().equals(EventType.MEETING) || partOfGroupBeforeVoteCalled(event, user))
                 .forEach(e -> taskDtos.add(new TaskFullDTO(e, user, e.getCreatedDateTime(), getUserResponse(e, user))));
 
