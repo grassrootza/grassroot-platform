@@ -6,6 +6,7 @@ import za.org.grassroot.core.domain.Group;
 import za.org.grassroot.core.domain.GroupLog;
 import za.org.grassroot.core.domain.User;
 import za.org.grassroot.core.dto.MembershipDTO;
+import za.org.grassroot.core.dto.group.GroupRefDTO;
 import za.org.grassroot.services.ChangedSinceData;
 
 import java.time.Instant;
@@ -74,4 +75,5 @@ public interface GroupQueryBroker {
 
     Page<MembershipDTO> getMembershipsInGroups(User groupCreator, Instant groupCreatedAfter, Instant userJoinedAfter, Pageable pageable);
 
+    List<GroupRefDTO> getSubgroups(Group group);
 }

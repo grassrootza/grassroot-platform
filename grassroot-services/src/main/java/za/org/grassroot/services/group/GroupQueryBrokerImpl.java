@@ -18,6 +18,7 @@ import za.org.grassroot.core.domain.geo.PreviousPeriodUserLocation;
 import za.org.grassroot.core.domain.task.Event;
 import za.org.grassroot.core.domain.task.EventLog;
 import za.org.grassroot.core.dto.MembershipDTO;
+import za.org.grassroot.core.dto.group.GroupRefDTO;
 import za.org.grassroot.core.enums.EventLogType;
 import za.org.grassroot.core.repository.*;
 import za.org.grassroot.core.specifications.GroupSpecifications;
@@ -409,6 +410,12 @@ public class GroupQueryBrokerImpl implements GroupQueryBroker {
         Page<Membership> page = membershipRepository.findAll(MembershipSpecifications.membershipsInGroups(groupCreator, groupCreatedAfter, userJoinedAfter), pageable);
         return page.map(MembershipDTO::new);
 
+    }
+
+    public List<GroupRefDTO> getSubgroups(Group group) {
+        return groupRepository.findAll(Specifications.where(hasParent(group)).and(isActive()))
+                .stream().map(gr -> new GroupRefDTO(gr.getUid(), gr.getGroupName(), gr.getMemberships().size()))
+                .collect(Collectors.toList());
     }
 
 
