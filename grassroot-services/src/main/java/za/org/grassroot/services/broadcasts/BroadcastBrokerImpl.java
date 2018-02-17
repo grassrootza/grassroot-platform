@@ -7,7 +7,9 @@ import org.springframework.core.env.Environment;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.domain.Specifications;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
@@ -23,6 +25,7 @@ import za.org.grassroot.core.enums.DeliveryRoute;
 import za.org.grassroot.core.enums.GroupLogType;
 import za.org.grassroot.core.enums.Province;
 import za.org.grassroot.core.repository.*;
+import za.org.grassroot.core.util.DebugUtil;
 import za.org.grassroot.core.util.UIDGenerator;
 import za.org.grassroot.integration.messaging.GrassrootEmail;
 import za.org.grassroot.integration.messaging.MessagingServiceBroker;
@@ -208,6 +211,9 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
     }
 
     private LogsAndNotificationsBundle storeScheduledBroadcast(BroadcastComponents bc, Broadcast broadcast) {
+        log.info("storing a broadcast, scheduled for: {}, time: {}", broadcast.getBroadcastSchedule(),
+                broadcast.getScheduledSendTime());
+
         recordShortMessageContent(bc, broadcast);
         recordEmailContent(bc.getEmail(), broadcast);
         recordFbPosts(bc.getFacebookPosts(), broadcast);
@@ -224,18 +230,27 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         return bundle;
     }
 
-    private LogsAndNotificationsBundle sendScheduledBroadcast(Broadcast bc) {
-        if (bc.hasFbPost()) {
+    private void sendScheduledBroadcast(Broadcast bc) {
+
+        if (bc.hasFbPost() && !bc.getFbPostSucceeded()) {
             List<GenericPostResponse> fbResponse = socialMediaBroker.postToFacebook(extractFbFromBroadcast(bc));
             bc.setFbPostSucceeded(fbResponse.stream().anyMatch(GenericPostResponse::isPostSuccessful));
         }
 
-        if (bc.hasTwitterPost()) {
+        if (bc.hasTwitterPost() && !bc.getTwitterSucceeded()) {
             GenericPostResponse twResponse = socialMediaBroker.postToTwitter(extractTweetFromBroadcast(bc));
             bc.setTwitterSucceeded(twResponse.isPostSuccessful());
         }
 
-        return bc.getCampaign() == null ? generateGroupBroadcastBundle(bc) : generateCampaignBroadcastBundle(bc);
+        try {
+            LogsAndNotificationsBundle bundle = bc.getCampaign() == null ? generateGroupBroadcastBundle(bc) : generateCampaignBroadcastBundle(bc);
+            logsAndNotificationsBroker.storeBundle(bundle);
+        } catch (Exception e) {
+            // todo : mail broadcast creator?
+            log.error("Exception in storing scheduled broadcast notifications!", e);
+        }
+
+        bc.setSentTime(Instant.now());
     }
 
     private void recordShortMessageContent(BroadcastComponents bc, Broadcast broadcast) {
@@ -367,9 +382,10 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         boolean filtersPresent = !bc.getTaskTeams().isEmpty() || !bc.getProvinces().isEmpty() || !bc.getTaskTeams().isEmpty()
                 || !bc.getTopics().isEmpty() || !bc.getAffiliations().isEmpty() || !bc.getJoinMethods().isEmpty() || joinDate != null;
         log.info("do we have filters? : {}, taskTeamUids = {}, all tags: {}", filtersPresent, taskTeamUids, bc.getTagList());
-        List<Membership> membersToReceive = filtersPresent ? groupFetchBroker.filterGroupMembers(bc.getCreatedByUser(), group.getUid(),
-                provinceResrictions, taskTeamUids, topicRestrictions, affiliations, bc.getJoinMethods(), null, null,
-                joinDate, joinDateCondition, null) : new ArrayList<>(group.getMemberships());
+        List<Membership> membersToReceive = !filtersPresent ?
+                membershipRepository.findByGroupUid(group.getUid()) :
+                groupFetchBroker.filterGroupMembers(bc.getCreatedByUser(), group.getUid(), provinceResrictions, taskTeamUids,
+                        topicRestrictions, affiliations, bc.getJoinMethods(), null, null, joinDate, joinDateCondition, null);
 
         log.info("finished fetching members by topic, province, etc., found {} members", membersToReceive.size());
 
@@ -446,6 +462,24 @@ public class BroadcastBrokerImpl implements BroadcastBroker {
         Campaign campaign = campaignRepository.findOneByUid(campaignUid);
         return broadcastRepository.findByCampaign(campaign)
                 .stream().map(this::assembleDto).collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    @Scheduled(fixedDelay = 300000)
+    public void sendScheduledBroadcasts() {
+        log.info("finding and fetching scheduled broadcasts");
+        DebugUtil.transactionRequired("Need transaction context in here");
+        Specification<Broadcast> isScheduled = (root, query, cb) -> cb.equal(root.get("broadcastSchedule"), BroadcastSchedule.FUTURE);
+        Specification<Broadcast> scheduledTimePast = (root, query, cb) -> cb.lessThan(root.get("scheduledSendTime"), Instant.now());
+        Specification<Broadcast> notSent = (root, query, cb) -> cb.isNull(root.get("sentTime"));
+        List<Broadcast> scheduledBroadcasts = broadcastRepository.findAll(Specifications.where(isScheduled)
+                .and(scheduledTimePast).and(notSent));
+        log.info("found {} broadcasts to send", scheduledBroadcasts.size());
+        // avoiding send for now, juuuust in case ...
+        if (!scheduledBroadcasts.isEmpty() && !environment.acceptsProfiles("production")) {
+            scheduledBroadcasts.forEach(this::sendScheduledBroadcast);
+        }
     }
 
     private BroadcastDTO assembleDto(Broadcast broadcast) {

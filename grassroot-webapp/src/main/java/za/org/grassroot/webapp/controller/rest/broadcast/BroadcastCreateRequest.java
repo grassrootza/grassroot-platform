@@ -38,7 +38,7 @@ public class BroadcastCreateRequest {
     private String twitterLinkCaption;
 
     private BroadcastSchedule sendType;
-    private Long sendDateTimeMills;
+    private Long sendDateTimeMillis;
 
     private List<Province> provinces;
     private List<String> topics;
@@ -52,7 +52,7 @@ public class BroadcastCreateRequest {
     private @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate joinDate;
 
     public Instant getSendDateTime() {
-        return sendDateTimeMills == null ? null : Instant.ofEpochMilli(sendDateTimeMills);
+        return sendDateTimeMillis == null ? null : Instant.ofEpochMilli(sendDateTimeMillis);
     }
 
 }

@@ -169,14 +169,11 @@ public class IncomingSMSController {
     }
 
     private void handleUnknownResponse(User user, String trimmedMsg) {
-
-        log.info("Handling unexpected user SMS message");
-        notifyUnableToProcessReply(user);
+//        notifyUnableToProcessReply(user);
 
         log.info("Recording  unexpected user SMS message user log.");
         UserLog userLog = new UserLog(user.getUid(), UserLogType.SENT_UNEXPECTED_SMS_MESSAGE,
-                trimmedMsg,
-                UserInterfaceType.INCOMING_SMS);
+                trimmedMsg, UserInterfaceType.INCOMING_SMS);
 
         userLogRepository.save(userLog);
 

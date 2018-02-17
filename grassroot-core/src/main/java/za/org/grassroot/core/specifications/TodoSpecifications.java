@@ -77,6 +77,18 @@ public final class TodoSpecifications {
         return Specifications.where(isOfType).and(isAssigned);
     }
 
+    public static Specification<Todo> todosUserAssigned(User user) {
+        return (root, query, cb) -> {
+            Join<Todo, TodoAssignment> join = root.join(Todo_.assignments);
+            return cb.equal(join.get(TodoAssignment_.user), user);
+        };
+    }
+
+    public static Specification<Todo> todosUserCreated(User user) {
+        return (root, query, cb) -> cb.equal(root.get(Todo_.createdByUser), user);
+    }
+
+
     public static Specifications<Todo> checkForDuplicates(Instant intervalStart, Instant intervalEnd, User creator, Group group,
                                                           String explanation) {
         return Specifications

@@ -21,6 +21,8 @@ public interface MembershipRepository extends JpaRepository<Membership, Long>, J
 
     Page<Membership> findByGroupUid(String groupUid, Pageable pageable);
 
+    List<Membership> findByGroupUid(String groupUid);
+
     // note: because of arrays, can't use specifications.
     @Query(value = "select m.* from group_user_membership m where " +
             "m.group_id = ?1 and m.tags && ?2 and m.join_time > ?3", nativeQuery = true)

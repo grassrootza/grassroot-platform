@@ -115,6 +115,9 @@ public class BroadcastController extends BaseRestController {
     public ResponseEntity<BroadcastDTO> createCampaignBroadcast(HttpServletRequest request, @PathVariable String campaignUid,
                                                                 @RequestBody BroadcastCreateRequest createRequest) {
 
+        log.info("broadcast send time millis = {}", createRequest.getSendDateTimeMillis());
+        log.info("broadcast create request, = {}", createRequest);
+
         BroadcastComponents bc = BroadcastComponents.builder()
                 .title(createRequest.getTitle())
                 .userUid(getUserIdFromRequest(request))
