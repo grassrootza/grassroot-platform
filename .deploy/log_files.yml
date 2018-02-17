@@ -1,0 +1,10 @@
+files:
+  - /usr/src/grassroot/log/grassroot-app.log
+  - /usr/src/grassroot/log/error.log
+  - /usr/src/grassroot/log/access.log
+destination:
+  host: logs6.papertrailapp.com
+  port: 38961
+  protocol: tls
+pid_file: /var/run/remote_syslog.pid
+hostname: <TAG>

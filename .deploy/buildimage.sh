@@ -11,6 +11,7 @@ mv .deploy/Dockerfile Dockerfile
 mv .deploy/startgrassroot.sh.$ENVIRONMENT startgrassroot.sh
 mv .deploy/stopgrassroot.sh stopgrassroot.sh
 mv .deploy/build-jar.sh build-jar.sh
+mv .deploy/log_files.yml log_files.yml
 chmod +x build-jar.sh
 chmod +x startgrassroot.sh
 chmod +x stopgrassroot.sh
