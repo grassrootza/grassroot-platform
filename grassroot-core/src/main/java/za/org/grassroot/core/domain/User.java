@@ -72,6 +72,9 @@ public class User implements GrassrootEntity, UserDetails, Comparable<User> {
     @Column(name = "android")
     private boolean hasAndroidProfile = false;
 
+//    @Column(name = "whatsapp")
+//    @Getter @Setter private boolean whatsAppLinked = false;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "message_preference", nullable = false, length = 50)
     private DeliveryRoute messagingPreference;

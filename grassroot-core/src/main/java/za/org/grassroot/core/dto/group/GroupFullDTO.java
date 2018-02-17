@@ -24,7 +24,7 @@ public class GroupFullDTO extends GroupHeavyDTO {
 
     private final String joinCode;
     private final boolean paidFor;
-    private final Set<MembershipDTO> members;
+    @Setter private Set<MembershipDTO> members;
     @Setter private List<MembershipRecordDTO> memberHistory;
     @Setter private List<GroupMembersDTO> subGroups = new ArrayList<>();
     @Setter private List<String> topics = new ArrayList<>();
@@ -49,12 +49,8 @@ public class GroupFullDTO extends GroupHeavyDTO {
         this.affiliations = group.getMemberships().stream().flatMap(m -> m.getAffiliations().stream())
                 .distinct().collect(Collectors.toList());
 
-        if (membership.getRole().getPermissions().contains(Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS)) {
-            this.members = group.getMemberships().stream()
-                .map(MembershipDTO::new).collect(Collectors.toSet());
-        } else {
-            this.members = new HashSet<>();
-        }
+        this.members = new HashSet<>();
+
     }
 
     /*

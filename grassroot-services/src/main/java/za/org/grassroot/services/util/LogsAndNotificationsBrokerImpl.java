@@ -86,9 +86,7 @@ public class LogsAndNotificationsBrokerImpl implements LogsAndNotificationsBroke
 			logger.info("Storing {} notifications", notifications.size());
 		}
 
-		for (Notification notification : notifications) {
-			notificationRepository.save(notification);
-		}
+		notificationRepository.save(notifications);
 
 		Instant now = Instant.now();
 		groupsToUpdateLogTimestamp.forEach(g -> g.setLastGroupChangeTime(now));

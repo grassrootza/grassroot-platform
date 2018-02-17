@@ -49,7 +49,7 @@ public interface TodoBroker {
     // methods for retrieving to-dos
     List<Todo> fetchTodosForUser(String userUid, boolean forceIncludeCreated, boolean limitToNeedingResponse, Instant intervalStart, Instant intervalEnd, Sort sort);
 
-    Page<Todo> fetchPageOfTodosForUser(String userUid, boolean createdOnly, boolean openOnly, Pageable page);
+    Page<Todo> fetchPageOfTodosForUser(String userUid, boolean createdOnly, Pageable page);
 
     List<Todo> fetchTodosForGroup(String userUid, String groupUid, boolean limitToNeedingResponse, boolean limitToIncomplete,
                                   Instant start, Instant end, Sort sort);

@@ -108,7 +108,8 @@ public class GroupFetchController extends BaseRestController {
         String userUid = getUserIdFromRequest(request);
         if (userUid != null) {
             final String descriptionTemplate = "Group '%1$s', created on %2$s, has %3$d members, with join code %4$s";
-            GroupFullDTO dto = groupFetchBroker.fetchGroupFullDetails(userUid, groupUid).insertDefaultDescriptionIfEmpty(descriptionTemplate);
+            GroupFullDTO dto = groupFetchBroker.fetchGroupFullInfo(userUid, groupUid, true, true, false)
+                    .insertDefaultDescriptionIfEmpty(descriptionTemplate);
             return ResponseEntity.ok(dto);
         } else return new ResponseEntity<>((GroupFullDTO) null, HttpStatus.UNAUTHORIZED);
     }
@@ -157,7 +158,7 @@ public class GroupFetchController extends BaseRestController {
     @ApiOperation(value = "Get full details about a group, including members (if permission to see details) and description")
     public ResponseEntity<GroupFullDTO> fetchFullGroupInfo(HttpServletRequest request, @RequestParam String groupUid) {
         return ResponseEntity.ok(groupFetchBroker.fetchGroupFullInfo(getUserIdFromRequest(request),
-                groupUid));
+                groupUid, false, false, false));
     }
 
     @RequestMapping(value = "/members/history/{groupUid}", method = RequestMethod.GET)

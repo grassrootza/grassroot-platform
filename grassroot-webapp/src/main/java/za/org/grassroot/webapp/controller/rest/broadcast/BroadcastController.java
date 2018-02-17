@@ -100,6 +100,7 @@ public class BroadcastController extends BaseRestController {
                 .joinMethods(createRequest.getJoinMethods())
                 .joinDateCondition(createRequest.getJoinDateCondition())
                 .joinDate(createRequest.getJoinDate())
+                .skipSmsIfEmail(createRequest.isSkipSmsIfEmail())
                 .build();
 
         fillInContent(createRequest, bc);
@@ -113,6 +114,9 @@ public class BroadcastController extends BaseRestController {
     @ApiOperation(value = "Create a broadcast for a campaign", notes = "NB : this will be a heavy operation, so do it async")
     public ResponseEntity<BroadcastDTO> createCampaignBroadcast(HttpServletRequest request, @PathVariable String campaignUid,
                                                                 @RequestBody BroadcastCreateRequest createRequest) {
+
+        log.info("broadcast send time millis = {}", createRequest.getSendDateTimeMillis());
+        log.info("broadcast create request, = {}", createRequest);
 
         BroadcastComponents bc = BroadcastComponents.builder()
                 .title(createRequest.getTitle())
@@ -133,7 +137,7 @@ public class BroadcastController extends BaseRestController {
 
     @RequestMapping(value = "/create/image/upload", method = RequestMethod.POST)
     @ApiOperation(value = "Upload an image for a broadcast", notes = "Will pass back an image key")
-    public ResponseEntity uploadImage(HttpServletRequest request, @RequestBody MultipartFile image) {
+    public ResponseEntity uploadImage(@RequestBody MultipartFile image) {
         // todo : rate limiting?
         log.info("do we have a file? : ", image);
         String imageKey = mediaFileBroker.storeFile(image, MediaFunction.BROADCAST_IMAGE, image.getContentType(), null);
