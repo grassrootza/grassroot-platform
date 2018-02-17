@@ -3,16 +3,14 @@ package za.org.grassroot.services.group;
 import com.codahale.metrics.annotation.Timed;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specifications;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import za.org.grassroot.core.domain.*;
 import za.org.grassroot.core.domain.campaign.CampaignLog;
+import za.org.grassroot.core.dto.MembershipDTO;
 import za.org.grassroot.core.dto.MembershipFullDTO;
 import za.org.grassroot.core.dto.group.*;
 import za.org.grassroot.core.enums.CampaignLogType;
@@ -42,6 +40,9 @@ import static za.org.grassroot.core.specifications.GroupSpecifications.isActive;
  */
 @Service @Slf4j
 public class GroupFetchBrokerImpl implements GroupFetchBroker {
+
+    // todo: make configurable
+    private static final int MAX_DTO_MEMBERS = 1000;
 
     private final UserRepository userRepository;
     private final GroupRepository groupRepository;
@@ -147,7 +148,7 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
     @Timed
     @Override
     @Transactional(readOnly = true)
-    public GroupFullDTO fetchGroupFullInfo(String userUid, String groupUid) {
+    public GroupFullDTO fetchGroupFullInfo(String userUid, String groupUid, boolean includeAllMembers, boolean includeAllSubgroups, boolean includeMemberHistory) {
         long startTime = System.currentTimeMillis();
         User user = userRepository.findOneByUid(userUid);
         Group group = groupRepository.findOneByUid(groupUid);
@@ -165,32 +166,27 @@ public class GroupFetchBrokerImpl implements GroupFetchBroker {
         }
 
         GroupFullDTO groupFullDTO = dtoResults.get(0);
+        boolean hasMemberDetailsPerm = permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS);
 
-        if (permissionBroker.isGroupPermissionAvailable(user, group, Permission.GROUP_PERMISSION_SEE_MEMBER_DETAILS)) {
+        if (includeAllMembers && hasMemberDetailsPerm) {
+            Pageable page = new PageRequest(0, MAX_DTO_MEMBERS, Sort.Direction.DESC, "joinTime");
+            List<Membership> members = membershipRepository.findByGroupUid(group.getUid(), page).getContent();
+            groupFullDTO.setMembers(members.stream().map(MembershipDTO::new).collect(Collectors.toSet()));
+        }
+
+        if (includeMemberHistory && hasMemberDetailsPerm) {
             groupFullDTO.setMemberHistory(fetchRecentMembershipChanges(user.getUid(), group.getUid(),
                     Instant.now().minus(180L, ChronoUnit.DAYS)));
         }
 
-        log.info("heavy group info fetch, took {} msecs", System.currentTimeMillis() - startTime);
+        if (includeAllSubgroups) {
+            groupFullDTO.setSubGroups(groupRepository.findAll(Specifications.where(hasParent(group)).and(isActive()))
+                    .stream().map(GroupMembersDTO::new).collect(Collectors.toList()));
+        }
+
+        log.info("heavy group info fetch, for group {}, members: {}, subgroups: {}, m history: {}, took {} msecs",
+                group.getName(), includeAllMembers, includeAllSubgroups, includeMemberHistory, System.currentTimeMillis() - startTime);
         return groupFullDTO;
-    }
-
-    @Timed
-    @Override
-    @Transactional(readOnly = true)
-    public GroupFullDTO fetchGroupFullDetails(String userUid, String groupUid) {
-        Group group = entityManager.createQuery("" +
-                "select g " +
-                "from Group g inner join g.memberships m " +
-                "where g.uid = :groupUid and m.user.uid = :userUid", Group.class)
-                .setParameter("groupUid", groupUid)
-                .setParameter("userUid", userUid)
-                .getSingleResult();
-
-        GroupFullDTO dto = new GroupFullDTO(group, group.getMembership(userUid));
-        dto.setSubGroups(groupRepository.findAll(Specifications.where(hasParent(group)).and(isActive()))
-                .stream().map(GroupMembersDTO::new).collect(Collectors.toList()));
-        return dto;
     }
 
     @Override

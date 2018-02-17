@@ -456,10 +456,15 @@ public class TodoBrokerImpl implements TodoBroker {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<Todo> fetchPageOfTodosForUser(String userUid, boolean createdOnly, boolean openOnly, Pageable pageRequest) {
+    public Page<Todo> fetchPageOfTodosForUser(String userUid, boolean createdOnly, Pageable pageRequest) {
         Objects.requireNonNull(userUid);
         User user = userRepository.findOneByUid(userUid);
-        return todoRepository.findAll(TodoSpecifications.todosForUserResponse(user), pageRequest);
+        log.info("page request in here: {}", pageRequest.toString());
+        Specifications<Todo> specs = Specifications.where(TodoSpecifications.todosUserCreated(user));
+        if (!createdOnly) {
+            specs = specs.and(TodoSpecifications.todosUserAssigned(user));
+        }
+        return todoRepository.findAll(specs, pageRequest);
     }
 
     @Override
@@ -676,10 +681,8 @@ public class TodoBrokerImpl implements TodoBroker {
     }
 
     private void validateUserCanModify(User user, Todo todo) {
-        if (!todo.getCreatedByUser().equals(user)) {
-            permissionBroker.validateGroupPermission(user, todo.getAncestorGroup(),
-                    Permission.GROUP_PERMISSION_ALTER_TODO);
-        }else{
+        if (!todo.getCreatedByUser().equals(user) &&
+                !permissionBroker.isGroupPermissionAvailable(user, todo.getAncestorGroup(), Permission.GROUP_PERMISSION_ALTER_TODO)) {
             throw new MemberLacksPermissionException(Permission.GROUP_PERMISSION_ALTER_TODO);
         }
     }

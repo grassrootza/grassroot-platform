@@ -126,7 +126,7 @@ public class IncomingSMSControllerTest extends RestAbstractUnitTest {
         verify(userLogRepositoryMock, times(1)).save(any(UserLog.class));
         verify(groupLogRepositoryMock, times(1)).save(any(GroupLog.class));
         verify(notificationServiceMock, times(1)).fetchSentOrBetterSince(anyString(), anyObject(), eq(null));
-        verify(messageAssemblingService, times(1)).createReplyFailureMessage(sessionTestUser);
+//        verify(messageAssemblingService, times(1)).createReplyFailureMessage(sessionTestUser);
         verifyZeroInteractions(eventLogBrokerMock);
     }
 
@@ -239,7 +239,6 @@ public class IncomingSMSControllerTest extends RestAbstractUnitTest {
      * <ul>
      * <li> no meeting rsvp will be recorded</li>
      * <li> no vote response will be recorded </li>
-     * <li> SMS with error report WILL be sent back to user </li>
      * <li> user log WILL be recorded </li>
      * <li> recent notifications will be checked </li>
      * <li> no group log will be recorded </li>
@@ -255,7 +254,7 @@ public class IncomingSMSControllerTest extends RestAbstractUnitTest {
 
         verify(userResponseBrokerMock).checkForEntityForUserResponse(sessionTestUser.getUid(), false);
         verify(userLogRepositoryMock).save(any(UserLog.class));
-        verify(messagingServiceBroker).sendSMS(anyString(), anyString(), anyBoolean());
+//        verify(messagingServiceBroker).sendSMS(anyString(), anyString(), anyBoolean());
         verify(notificationServiceMock).fetchSentOrBetterSince(anyString(), anyObject(), eq(null));
 
         verifyZeroInteractions(eventLogBrokerMock);
@@ -270,7 +269,6 @@ public class IncomingSMSControllerTest extends RestAbstractUnitTest {
      * <ul>
      *  <li> no meeting rsvp will be recorded</li>
      *  <li> no vote response will be recorded </li>
-     *  <li> SMS with error report WILL be sent back to user </li>
      *  <li> user log WILL be recorded </li>
      *  <li> recent notifications will be checked </li>
      *  <li> group log WILL be recorded </li>
@@ -291,7 +289,7 @@ public class IncomingSMSControllerTest extends RestAbstractUnitTest {
                 .andExpect(status().isOk());
 
         verify(userLogRepositoryMock).save(any(UserLog.class));
-        verify(messagingServiceBroker).sendSMS(anyString(), anyString(), anyBoolean());
+//        verify(messagingServiceBroker).sendSMS(anyString(), anyString(), anyBoolean());
         verify(notificationServiceMock).fetchSentOrBetterSince(anyString(), anyObject(), eq(null));
         verify(groupLogRepositoryMock).save(any(GroupLog.class));
 

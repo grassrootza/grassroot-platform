@@ -23,9 +23,10 @@ public interface GroupFetchBroker {
 
     List<GroupMinimalDTO> fetchAllUserGroupsSortByLatestTime(String userUid);
 
-    GroupFullDTO fetchGroupFullInfo(String userUid, String groupUid);
-
-    GroupFullDTO fetchGroupFullDetails(String userUid, String groupUid);
+    GroupFullDTO fetchGroupFullInfo(String userUid, String groupUid,
+                                    boolean includeAllMembers,
+                                    boolean includeAllSubgroups,
+                                    boolean includeMemberHistory);
 
     GroupFullDTO fetchSubGroupDetails(String userUid, String parentUid, String taskTeamUid);
 

@@ -183,13 +183,10 @@ public class SocialMediaBrokerImpl implements SocialMediaBroker {
 
     @Override
     public ManagedPage isTwitterAccountConnected(String userUid) {
-        final URI uri = baseUri(userUid).path("/connect/status/pages/twitter").build().toUri();
         try {
-            ResponseEntity<ManagedPagesResponse> response = restTemplate.exchange(uri, HttpMethod.GET, new HttpEntity<>(jwtHeaders()), ManagedPagesResponse.class);
-            ManagedPagesResponse body = handleResponse(response, "Twitter");
-            return body == null || body.managedPages.isEmpty() ? null : body.managedPages.get(0);
+            return getManagedPages(userUid, "twitter").getManagedPages().get(0);
         } catch (RestClientException e) {
-            log.error("Error trying to check Twitter account", e);
+            log.error("Error trying to check Twitter account: {}", e.getMessage());
             return null;
         }
     }

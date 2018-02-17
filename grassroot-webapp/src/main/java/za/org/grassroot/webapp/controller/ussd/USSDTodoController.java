@@ -46,8 +46,8 @@ import static za.org.grassroot.core.util.DateTimeUtil.*;
 @RequestMapping(method = RequestMethod.GET, produces = MediaType.APPLICATION_XML_VALUE)
 public class USSDTodoController extends USSDBaseController {
 
-    private static final String REL_PATH = "/todo";
-    private static final String FULL_PATH = homePath + "todo/";
+    private static final String REL_PATH = "todo";
+    private static final String FULL_PATH = homePath + REL_PATH;
     private static final int PAGE_SIZE = 3;
 
     private final TodoBroker todoBroker;
@@ -70,6 +70,7 @@ public class USSDTodoController extends USSDBaseController {
 
     @Autowired
     public void setMessageAssembler(USSDMessageAssembler messageAssembler) {
+        log.info("message assembler? : {}", messageAssembler.toString());
         this.messageAssembler = messageAssembler;
         super.setMessageAssembler(messageAssembler); // else get nulls ... need to fix this properly soon
     }
@@ -194,7 +195,7 @@ public class USSDTodoController extends USSDBaseController {
                 todoRequestBroker.create(user.getUid(), type).getUid() : storedUid;
         cacheManager.putUssdMenuForUser("/create", requestUid);
         USSDGroupUtil.GroupMenuBuilder groupMenu = new USSDGroupUtil.GroupMenuBuilder(user, USSDSection.TODO)
-                .messageKey("group").urlForExistingGroup("/create/subject?storedUid=" + requestUid);
+                .messageKey("group").urlForExistingGroup("create/subject?storedUid=" + requestUid);
         return menuBuilder(groupUtil.askForGroup(groupMenu));
     }
 
@@ -346,7 +347,7 @@ public class USSDTodoController extends USSDBaseController {
     }
 
     private USSDMenu listCreatedTodos(User user, PageRequest pageRequest, String backUrl) {
-        Page<Todo> todosCreatedByUser = todoBroker.fetchPageOfTodosForUser(user.getUid(), true, false, pageRequest);
+        Page<Todo> todosCreatedByUser = todoBroker.fetchPageOfTodosForUser(user.getUid(), true, pageRequest);
         if (!todosCreatedByUser.hasContent()) {
             return pageRequest.getPageNumber() == 0 ? listAllUserTodos(user, pageRequest, false, backUrl) :
                     pageEmptyWithSwitchOption(pageRequest.getPageNumber(), true, backUrl, user);
@@ -359,7 +360,7 @@ public class USSDTodoController extends USSDBaseController {
     }
 
     private USSDMenu listAllUserTodos(User user, PageRequest pageRequest, boolean offerCreatedOnly, String backUrl) {
-        Page<Todo> todosForUser = todoBroker.fetchPageOfTodosForUser(user.getUid(), false, false, pageRequest);
+        Page<Todo> todosForUser = todoBroker.fetchPageOfTodosForUser(user.getUid(), false, pageRequest);
         log.info("User todos={}",todosForUser);
         if (!todosForUser.hasContent()) {
             return pageEmptyWithSwitchOption(pageRequest.getPageNumber(), false, backUrl, user);
@@ -420,7 +421,7 @@ public class USSDTodoController extends USSDBaseController {
 
         if (todo.getCreatedByUser().equals(user)) {
             menu.addMenuOption(REL_PATH + "/view/email" + urlSuffix, messageAssembler.getMessage("todo.view.options.email", user));
-            menu.addMenuOption(REL_PATH + "/modify/complete" + urlSuffix, messageAssembler.getMessage("todo.view.options.complete", user));
+            menu.addMenuOption(REL_PATH + "/complete/prompt" + urlSuffix, messageAssembler.getMessage("todo.view.options.complete", user));
             menu.addMenuOption(REL_PATH + "/modify/" + urlSuffix, messageAssembler.getMessage("todo.view.options.modify", user));
         } else if (todoAssignments.stream().anyMatch(ta -> ta.getUser().equals(user))) {
             menu.addMenuOption(REL_PATH + "/respond" + urlSuffix,
@@ -462,8 +463,7 @@ public class USSDTodoController extends USSDBaseController {
         }
     }
 
-
-    @RequestMapping(value = FULL_PATH + "/modify/complete", method = RequestMethod.GET)
+    @RequestMapping(value = FULL_PATH + "/complete/prompt", method = RequestMethod.GET)
     public Request markTodoCompletePrompt(@RequestParam(value = phoneNumber) String inputNumber,
                                           @RequestParam String todoUid) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber);
@@ -473,7 +473,7 @@ public class USSDTodoController extends USSDBaseController {
         return menuBuilder(menu);
     }
 
-    @RequestMapping(value = FULL_PATH + "modify/complete/done", method = RequestMethod.GET)
+    @RequestMapping(value = FULL_PATH + "/complete/done", method = RequestMethod.GET)
     public Request markTodoCompleteDone(@RequestParam(value = phoneNumber) String inputNumber,
                                         @RequestParam String todoUid) throws URISyntaxException {
         User user = userManager.findByInputNumber(inputNumber, null);

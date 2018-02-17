@@ -175,7 +175,7 @@ public class GroupModifyController extends GroupBaseController {
                                                              @RequestParam String childGroupUid,
                                                              @RequestParam Set<String> memberUids) {
         groupBroker.addMembersToSubgroup(getUserIdFromRequest(request), parentUid, childGroupUid, memberUids);
-        return ResponseEntity.ok(groupFetchBroker.fetchGroupFullInfo(getUserIdFromRequest(request), parentUid));
+        return ResponseEntity.ok(groupFetchBroker.fetchGroupFullInfo(getUserIdFromRequest(request), parentUid, false, false, false));
     }
 
     @RequestMapping(value = "/members/remove/taskteam/{parentUid}", method = RequestMethod.POST)
@@ -185,7 +185,7 @@ public class GroupModifyController extends GroupBaseController {
                                                                   @RequestParam String childGroupUid,
                                                                   @RequestParam Set<String> memberUids) {
         groupBroker.removeMembersFromSubgroup(getUserIdFromRequest(request), parentUid, childGroupUid, memberUids);
-        return ResponseEntity.ok(groupFetchBroker.fetchGroupFullInfo(getUserIdFromRequest(request), parentUid));
+        return ResponseEntity.ok(groupFetchBroker.fetchGroupFullInfo(getUserIdFromRequest(request), parentUid, false, false, false));
     }
 
     @RequestMapping(value = "/create/taskteam/{parentUid}", method = RequestMethod.POST)
@@ -215,7 +215,7 @@ public class GroupModifyController extends GroupBaseController {
                                                            @PathVariable String parentUid,
                                                            @RequestParam String taskTeamUid) {
         groupBroker.deactivateSubGroup(getUserIdFromRequest(request), parentUid, taskTeamUid);
-        return ResponseEntity.ok(groupFetchBroker.fetchGroupFullDetails(getUserIdFromRequest(request), parentUid));
+        return ResponseEntity.ok(groupFetchBroker.fetchGroupFullInfo(getUserIdFromRequest(request), parentUid, true, true, false));
     }
 
     @RequestMapping(value = "/rename/taskteam/{parentUid}", method = RequestMethod.POST)
