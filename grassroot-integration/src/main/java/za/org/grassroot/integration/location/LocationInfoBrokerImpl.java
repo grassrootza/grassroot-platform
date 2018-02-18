@@ -140,7 +140,7 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
         if (!useDynamoDirect) {
             URI uriToCall = baseBuilder()
                     .path("/records/{dataset}/{infoSet}")
-                    .queryParam("province", province.toString())
+                    .queryParam("province", province.toString().substring("ZA_".length()))
                     .queryParam("locale", locale.toLanguageTag())
                     .buildAndExpand(dataSetLabel, infoSetTag).toUri();
 
@@ -158,7 +158,7 @@ public class LocationInfoBrokerImpl implements LocationInfoBroker {
             QuerySpec querySpec = new QuerySpec()
                     .withKeyConditionExpression("province = :prv and infoTag = :info")
                     .withValueMap(new ValueMap()
-                            .withString(":prv", province.name())
+                            .withString(":prv", province.name().substring("ZA_".length()))
                             .withString(":info", infoSetTag));
 
             try {
