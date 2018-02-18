@@ -16,8 +16,8 @@ import za.org.grassroot.core.domain.livewire.LiveWireAlert;
 import za.org.grassroot.core.domain.task.Meeting;
 import za.org.grassroot.core.enums.LiveWireAlertType;
 import za.org.grassroot.core.repository.MeetingRepository;
+import za.org.grassroot.services.geo.GeoLocationBroker;
 import za.org.grassroot.services.geo.GeographicSearchType;
-import za.org.grassroot.services.geo.ObjectLocationBroker;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.livewire.LiveWireAlertBroker;
 import za.org.grassroot.services.user.UserManagementService;
@@ -39,15 +39,15 @@ import java.util.stream.Collectors;
 @RequestMapping(value = "/api/location")
 public class AroundMeRestController {
 
-    private final ObjectLocationBroker objectLocationBroker;
+    private final GeoLocationBroker geoLocationBroker;
     private final UserManagementService userManager;
     private final GroupBroker groupBroker;
     private final MeetingRepository meetingRepository;
     private final LiveWireAlertBroker liveWireAlertBroker;
 
     @Autowired
-    public AroundMeRestController(ObjectLocationBroker objectLocationBroker, UserManagementService userManager, GroupBroker groupBroker, MeetingRepository meetingRepository, LiveWireAlertBroker liveWireAlertBroker){
-        this.objectLocationBroker = objectLocationBroker;
+    public AroundMeRestController(GeoLocationBroker geoLocationBroker, UserManagementService userManager, GroupBroker groupBroker, MeetingRepository meetingRepository, LiveWireAlertBroker liveWireAlertBroker){
+        this.geoLocationBroker = geoLocationBroker;
         this.userManager = userManager;
         this.groupBroker = groupBroker;
         this.meetingRepository = meetingRepository;
@@ -77,11 +77,11 @@ public class AroundMeRestController {
 
         GeographicSearchType type = searchType == null ? GeographicSearchType.PUBLIC : searchType;
         if (includeGroups != null && includeGroups) {
-            objectLocationSet.addAll(objectLocationBroker
+            objectLocationSet.addAll(geoLocationBroker
                     .fetchGroupsNearby(userUid, location, radiusMetres, filterTerm, type)
                     .stream().map(gl -> convertGroupLocation(gl, user)).collect(Collectors.toList())); //Adding Groups near user
         }
-        objectLocationSet.addAll(objectLocationBroker
+        objectLocationSet.addAll(geoLocationBroker
                 .fetchMeetingLocationsNearUser(user, location, radiusMetres, type, null)
                 .stream().map(ml -> convertMeetingLocation(ml, user)).collect(Collectors.toList())); // Adding Meetings near user
         objectLocationSet.addAll(liveWireAlertBroker.fetchAlertsNearUser(userUid, location, radiusMetres, type)
@@ -99,7 +99,7 @@ public class AroundMeRestController {
                                                                     @RequestParam int radiusMetres,
                                                                     @RequestParam(required = false) String filterTerm){
         GeoLocation location = new GeoLocation(latitude,longitude);
-        return ResponseEntity.ok(objectLocationBroker.fetchGroupsNearby(userUid,location,radiusMetres,filterTerm,
+        return ResponseEntity.ok(geoLocationBroker.fetchGroupsNearby(userUid,location,radiusMetres,filterTerm,
                 GeographicSearchType.PUBLIC));
     }
 

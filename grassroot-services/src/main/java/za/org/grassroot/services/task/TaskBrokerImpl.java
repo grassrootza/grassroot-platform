@@ -235,7 +235,9 @@ public class TaskBrokerImpl implements TaskBroker {
 
         List<TaskDTO> tasks = new ArrayList<>(taskDtos);
         Collections.sort(tasks);
-        log.info("Retrieved all the user's upcoming tasks, took {} msecs", System.currentTimeMillis() - now.toEpochMilli());
+
+        log.info("Retrieved all the user's upcoming tasks, found {}, took {} msecs", tasks.size(),
+                System.currentTimeMillis() - now.toEpochMilli());
         return tasks;
     }
 
@@ -253,20 +255,18 @@ public class TaskBrokerImpl implements TaskBroker {
 
         Instant todoStart = Instant.now().minus(DAYS_PAST_FOR_TODO_CHECKING, ChronoUnit.DAYS);
         Instant todoEnd = DateTimeUtil.getVeryLongAwayInstant();
+
         List<Todo> todos = todoBroker.fetchTodosForUser(userUid, true, true, todoStart, todoEnd, null);
+        log.info("number of todos fetched for user: {}", todos.size());
 
-
-        for (Todo todo : todos) {
-            taskDtos.add(new TaskFullDTO(todo, user, todo.getCreatedDateTime(), getUserResponse(todo, user)));
-        }
-
+        todos.forEach(todo -> taskDtos.add(new TaskFullDTO(todo, user, todo.getCreatedDateTime(), getUserResponse(todo, user))));
 
         List<TaskFullDTO> tasks = new ArrayList<>(taskDtos);
         Collections.sort(tasks, (o1, o2) -> ComparisonChain.start()
                 .compare(o1.getDeadlineMillis(), o2.getDeadlineMillis())
                 .compareFalseFirst(o1.isHasResponded(), o2.isHasResponded())
                 .result());
-        log.info("Retrieved all the user's upcoming tasks, took {} msecs", System.currentTimeMillis() - now.toEpochMilli());
+        log.info("Retrieved all the user's upcoming tasks, found {}, took {} msecs", tasks.size(), System.currentTimeMillis() - now.toEpochMilli());
         return tasks;
     }
 
@@ -431,20 +431,9 @@ public class TaskBrokerImpl implements TaskBroker {
 
         List<Task> tasks = new ArrayList<>();
 
-        List<Event> outstandingVotes = eventBroker.getOutstandingResponseForUser(user, EventType.VOTE);
-        List<Event> outstandingYesNoVotes = outstandingVotes.stream()
-                .filter(vote -> vote.getTags() == null || vote.getTags().length == 0)
-                .collect(Collectors.toList());
-
-        List<Event> outstandingOptionsVotes = outstandingVotes.stream()
-                .filter(v -> ((Vote) v).hasOption(userResponse.trim()))
-                .collect(Collectors.toList());
-
-        List<Event> outstandingMeetings = eventBroker.getOutstandingResponseForUser(user, EventType.MEETING);
-
-        tasks.addAll(outstandingYesNoVotes);
-        tasks.addAll(outstandingOptionsVotes);
-        tasks.addAll(outstandingMeetings);
+        tasks.addAll(eventBroker.getEventsNeedingResponseFromUser(user));
+        tasks.addAll(todoBroker.fetchTodosForUser(userUid, false, true, Instant.now(), null,
+                new Sort(Sort.Direction.ASC, "createdDateTime")));
 
         return tasks;
     }

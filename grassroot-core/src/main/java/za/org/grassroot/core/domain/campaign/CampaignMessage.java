@@ -34,6 +34,9 @@ public class CampaignMessage implements Serializable, Comparable<CampaignMessage
     @Column(name = "uid", nullable = false, unique = true)
     private String uid;
 
+    @Column(name = "message_group_id", nullable = false)
+    private String messageGroupId;
+
     @Column(name = "message", nullable = false, unique = true)
     private String message;
 
@@ -89,9 +92,10 @@ public class CampaignMessage implements Serializable, Comparable<CampaignMessage
         // for JPA
     }
 
-    public CampaignMessage(User createdByUser, Campaign campaign, Locale locale, String message, UserInterfaceType channel, MessageVariationAssignment variation, CampaignActionType actionType){
+    public CampaignMessage(User createdByUser, Campaign campaign, CampaignActionType actionType, String messageGroupId, Locale locale, String message, UserInterfaceType channel, MessageVariationAssignment variation){
         this.uid = UIDGenerator.generateId();
         this.createdDateTime = Instant.now();
+        this.messageGroupId = messageGroupId;
         this.variation = variation == null ? MessageVariationAssignment.DEFAULT : variation;
         this.message = Objects.requireNonNull(message);
         this.createdByUser = Objects.requireNonNull(createdByUser);

@@ -23,7 +23,6 @@ import za.org.grassroot.integration.exception.LocationNotAvailableException;
 import za.org.grassroot.integration.exception.LocationTrackingImpossibleException;
 import za.org.grassroot.integration.location.UssdLocationServicesBroker;
 import za.org.grassroot.services.SafetyEventBroker;
-import za.org.grassroot.services.geo.ObjectLocationBroker;
 import za.org.grassroot.services.group.GroupBroker;
 import za.org.grassroot.services.group.GroupPermissionTemplate;
 import za.org.grassroot.services.group.GroupQueryBroker;
@@ -101,10 +100,6 @@ public class USSDSafetyGroupController extends USSDBaseController {
     @Autowired(required = false)
     public void setLocationServicesBroker(UssdLocationServicesBroker locationServicesBroker) {
         this.locationServicesBroker = locationServicesBroker;
-    }
-
-    @Autowired(required = false)
-    public void setObjectLocationBroker(ObjectLocationBroker objectLocationBroker) {
     }
 
     @PostConstruct
@@ -320,12 +315,6 @@ public class USSDSafetyGroupController extends USSDBaseController {
     private String getShortDescription(Address address) {
         return address.getStreet() + ", " + address.getNeighbourhood();
     }
-
-    /* @RequestMapping(value = safetyGroupPath + "location/current/response")
-    public Request respondToCurrentLocation(@RequestParam String msisdn,
-                                            @RequestParam String addressUid) {
-
-    }*/
 
     /*
     SECTION: Creating a safety group

@@ -54,7 +54,7 @@ public class CampaignRepositoryTest {
         User user = userRepository.save(new User("3456", null, null));
         Campaign campaign =  new Campaign("Test","234","Durban campaign",user, Instant.now(), Instant.now(), CampaignType.ACQUISITION, null);
         Set<CampaignMessage> messageSet = new HashSet<>();
-        CampaignMessage campaignMessage = new CampaignMessage(user, campaign, Locale.forLanguageTag("en-US"), "Please join Campaign", UserInterfaceType.USSD, MessageVariationAssignment.CONTROL, CampaignActionType.OPENING);
+        CampaignMessage campaignMessage = new CampaignMessage(user, campaign, CampaignActionType.OPENING, "testing_123", Locale.forLanguageTag("en-US"), "Please join Campaign", UserInterfaceType.USSD, MessageVariationAssignment.CONTROL);
         messageSet.add(campaignMessage);
         campaign.setCampaignMessages(messageSet);
         Campaign persistedCampaign = campaignRepository.saveAndFlush(campaign);
@@ -71,7 +71,7 @@ public class CampaignRepositoryTest {
         User user = userRepository.save(new User("3456", null, null));
         Campaign campaign =  new Campaign("Test","234","Durban campaign",user, Instant.now(), Instant.MAX, CampaignType.INFORMATION, null);
         Set<CampaignMessage> messageSet = new HashSet<>();
-        CampaignMessage campaignMessage = new CampaignMessage(user, campaign, Locale.forLanguageTag("en-US"), "Please join Campaign", UserInterfaceType.USSD, MessageVariationAssignment.CONTROL, CampaignActionType.OPENING);
+        CampaignMessage campaignMessage = new CampaignMessage(user, campaign, CampaignActionType.OPENING, "testing_123", Locale.forLanguageTag("en-US"), "Please join Campaign", UserInterfaceType.USSD, MessageVariationAssignment.CONTROL);
         messageSet.add(campaignMessage);
         campaign.setCampaignMessages(messageSet);
         campaign.setTags(tags);

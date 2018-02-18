@@ -3,15 +3,13 @@ package za.org.grassroot.webapp.model.rest;
 import lombok.Getter;
 import lombok.Setter;
 import za.org.grassroot.core.domain.campaign.CampaignType;
+import za.org.grassroot.services.campaign.CampaignMessageDTO;
 
-import java.io.Serializable;
 import java.time.Instant;
 import java.util.List;
 
 @Getter @Setter
-public class CampaignViewDTO implements Serializable{
-
-    private static final long serialVersionUID = -2316086319788909407L;
+public class CampaignViewDTO {
 
     private String campaignUid;
     private String name;
@@ -29,7 +27,7 @@ public class CampaignViewDTO implements Serializable{
     private Integer totalUsers;
     private Integer newUsers;
     private List<String> campaignTags;
-    private List<CampaignMessageViewDTO> campaignMessages;
+    private List<CampaignMessageDTO> campaignMessages;
 
     public CampaignViewDTO(String campaignUid, String campaignName, String campaignDescription, CampaignType campaignType,
                            String createUserUid, String createUserName, Instant createdDateTime,

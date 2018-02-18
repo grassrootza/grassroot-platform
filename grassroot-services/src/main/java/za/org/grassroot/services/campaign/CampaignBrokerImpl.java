@@ -200,7 +200,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
 
         Campaign campaign = campaignRepository.findOneByUid(campaignUid);
 
-        CampaignMessage message = new CampaignMessage(createUser, campaign, messageLocale, campaignMessage, interfaceType, assignment, CampaignActionType.OPENING);
+        CampaignMessage message = new CampaignMessage(createUser, campaign, CampaignActionType.OPENING, "testing_123", messageLocale, campaignMessage, interfaceType, assignment);
         if(messageTags != null) {
             message.addTags(messageTags);
         }
@@ -227,8 +227,8 @@ public class CampaignBrokerImpl implements CampaignBroker {
         Map<String, CampaignMessage> explodedMessages = new LinkedHashMap<>();
         campaignMessages.forEach(cm -> explodedMessages.putAll(cm.getMessages().stream().collect(Collectors.toMap(
                     msg -> cm.getMessageId() + "___" + msg.getLanguage(),
-                    msg -> new CampaignMessage(user, campaign, msg.getLanguage(), msg.getMessage(),
-                            cm.getChannel(), cm.getVariation(), cm.getLinkedActionType())))));
+                    msg -> new CampaignMessage(user, campaign, cm.getLinkedActionType(), cm.getMessageId(), msg.getLanguage(), msg.getMessage(),
+                            cm.getChannel(), cm.getVariation())))));
 
         log.info("exploded message set: ", explodedMessages);
 
@@ -329,7 +329,7 @@ public class CampaignBrokerImpl implements CampaignBroker {
             boolean messageFound = false;
             for(CampaignMessage parentMessage : campaign.getCampaignMessages()) {
                 if (parentMessage.getUid().trim().equalsIgnoreCase(parentMessageUid.trim())) {
-                    CampaignMessage messageForAction = new CampaignMessage(createUser, campaign, actionMessageLocale, actionMessage, interfaceType, actionMessageAssignment, CampaignActionType.OPENING);
+                    CampaignMessage messageForAction = new CampaignMessage(createUser, campaign, CampaignActionType.OPENING, "testing_123", actionMessageLocale, actionMessage, interfaceType, actionMessageAssignment);
                     if (actionMessageTags != null) {
                         messageForAction.setTags(new ArrayList<>(actionMessageTags));
                     }

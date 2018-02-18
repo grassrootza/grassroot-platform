@@ -1,18 +1,20 @@
 package za.org.grassroot.webapp.controller.rest.campaign;
 
-
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import za.org.grassroot.core.domain.campaign.Campaign;
 import za.org.grassroot.core.domain.campaign.CampaignLog;
 import za.org.grassroot.core.domain.campaign.CampaignMessage;
-import za.org.grassroot.core.domain.campaign.CampaignMessageAction;
 import za.org.grassroot.core.enums.CampaignLogType;
-import za.org.grassroot.webapp.model.rest.CampaignActionViewDTO;
-import za.org.grassroot.webapp.model.rest.CampaignMessageViewDTO;
+import za.org.grassroot.services.campaign.CampaignMessageDTO;
+import za.org.grassroot.services.campaign.MessageLanguagePair;
 import za.org.grassroot.webapp.model.rest.CampaignViewDTO;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
+@Slf4j
 public class CampaignWebUtil {
 
     private CampaignWebUtil(){}
@@ -38,40 +40,53 @@ public class CampaignWebUtil {
                 campaign.getCreatedDateTime(),
                 campaign.getStartDateTime(),
                 campaign.getEndDateTime(),
-                campaign.getUrl(), campaign.getCampaignCode(), campaign.getTagList());
+                campaign.getUrl(),
+                campaign.getCampaignCode(),
+                campaign.getTagList());
+
         campaignDto.setMasterGroupName(campaign.getMasterGroup() != null ? campaign.getMasterGroup().getGroupName() : null);
         campaignDto.setMasterGroupUid(campaign.getMasterGroup() != null ? campaign.getMasterGroup().getUid() : null);
         campaignDto.setTotalUsers((campaign.getMasterGroup() != null && campaign.getMasterGroup().getMembers() != null)? campaign.getMasterGroup().getMembers().size() : 0);
         campaignDto.setNewUsers(getMemberJoinedViaCampaign(campaign));
-        if(campaign.getCampaignMessages() != null && !campaign.getCampaignMessages().isEmpty()){
-            List<CampaignMessageViewDTO> messageViewDTOList = new ArrayList<>();
-            for(CampaignMessage message: campaign.getCampaignMessages()){
-                messageViewDTOList.add(createMessageDTO(message));
-            }
-            campaignDto.setCampaignMessages(messageViewDTOList);
+
+        log.info("do we have messages? number: {}, values: {}", campaign.getCampaignMessages().size(), campaign.getCampaignMessages());
+        if(!campaign.getCampaignMessages().isEmpty()){
+            campaignDto.setCampaignMessages(groupCampaignMessages(campaign));
+            log.info("campaign DTO message list: {}", campaign.getCampaignMessages());
         }
+
+        log.info("okay, here's a DTO: {}", campaignDto);
+
         return campaignDto;
     }
 
-    private static CampaignMessageViewDTO createMessageDTO(CampaignMessage message){
-        CampaignMessageViewDTO messageViewDTO = new CampaignMessageViewDTO();
-        messageViewDTO.setUid(message.getUid());
-        messageViewDTO.setAssignment(message.getVariation().name());
-        messageViewDTO.setTags(message.getTagList());
-        messageViewDTO.setCreatedDateTime(message.getCreatedDateTime().toString());
-        messageViewDTO.setMessage(message.getMessage());
-        messageViewDTO.setCreateUser(message.getCreatedByUser()!=null ? message.getCreatedByUser().getUid() : null);
-        messageViewDTO.setLanguage(message.getLocale() != null ? message.getLocale().getLanguage() : null);
-        if(message.getCampaignMessageActionSet() == null || message.getCampaignMessageActionSet().isEmpty()){
-            return  messageViewDTO;
-        }
-        for(CampaignMessageAction action : message.getCampaignMessageActionSet()){
-            CampaignActionViewDTO actionViewDTO = new CampaignActionViewDTO();
-            actionViewDTO.setUid(action.getUid());
-            actionViewDTO.setActionType(action.getActionType().name());
-            actionViewDTO.setActionMessage(createMessageDTO(action.getActionMessage()));
-        }
-        return messageViewDTO;
+    private static List<CampaignMessageDTO> groupCampaignMessages(Campaign campaign) {
+        List<String> messageGroupIds = campaign.getCampaignMessages().stream().map(CampaignMessage::getMessageGroupId)
+                .distinct().collect(Collectors.toList());
+        MultiValueMap<String, Locale> msgLocales = new LinkedMultiValueMap<>();
+        Map<String, CampaignMessage> mappedMsgs = new HashMap<>();
+
+        campaign.getCampaignMessages().forEach(cm -> {
+            msgLocales.add(cm.getMessageGroupId(), cm.getLocale());
+            mappedMsgs.put(cm.getMessageGroupId() + "__" + cm.getLocale(), cm);
+        });
+
+        return messageGroupIds.stream().filter(msgLocales::containsKey).map(msgId -> {
+            CampaignMessageDTO cmDto = new CampaignMessageDTO();
+            cmDto.setMessageId(msgId);
+            Locale refLocale = msgLocales.get(msgId).get(0);
+            CampaignMessage refMsg = mappedMsgs.get(msgId + "__" + refLocale);
+
+            cmDto.setLinkedActionType(refMsg.getActionType());
+            cmDto.setChannel(refMsg.getChannel());
+            cmDto.setTags(refMsg.getTagList());
+            cmDto.setVariation(refMsg.getVariation());
+
+            cmDto.setMessages(msgLocales.get(msgId).stream().map(locale -> new MessageLanguagePair(locale, mappedMsgs.get(msgId + "__" + locale).getMessage()))
+                    .collect(Collectors.toList()));
+
+            return cmDto;
+        }).collect(Collectors.toList());
     }
 
     private static Integer getMemberJoinedViaCampaign(Campaign campaign){

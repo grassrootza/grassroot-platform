@@ -9,7 +9,6 @@ import za.org.grassroot.core.enums.MessageVariationAssignment;
 import za.org.grassroot.core.enums.UserInterfaceType;
 
 import javax.validation.constraints.NotNull;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
@@ -25,7 +24,6 @@ public class CampaignMessageDTO {
     @NotNull(message = "campaign.messages.required")
     private List<MessageLanguagePair> messages;
 
-    // declaring using type instead of interface, because need to keep the ordering
     private List<String> nextMsgIds;
 
     private List<String> tags;

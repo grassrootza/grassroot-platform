@@ -84,6 +84,7 @@ public class CampaignManagerController extends BaseRestController {
     public ResponseEntity fetchCampaign(HttpServletRequest request, @PathVariable String campaignUid) {
         try {
             Campaign campaign = campaignBroker.load(getUserIdFromRequest(request), campaignUid);
+            log.info("fetched a campaign: {}", campaign);
             return ResponseEntity.ok(CampaignWebUtil.createCampaignViewDTO(campaign));
         } catch (AccessDeniedException e) {
             return RestUtil.errorResponse(RestMessage.USER_NOT_CAMPAIGN_MANAGER);
@@ -162,7 +163,8 @@ public class CampaignManagerController extends BaseRestController {
     @RequestMapping(value = "/messages/set/{campaignUid}", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "add a set of messages to a campaign")
     public ResponseEntity addCampaignMessages(HttpServletRequest request, @PathVariable String campaignUid,
-                                              @Valid @RequestBody Set<CampaignMessageDTO> campaignMessages, BindingResult bindingResult) {
+                                              @Valid @RequestBody Set<CampaignMessageDTO> campaignMessages,
+                                              BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
             return RestUtil.errorResponseWithData(RestMessage.CAMPAIGN_MESSAGE_CREATION_INVALID_INPUT, getFieldValidationErrors(bindingResult.getFieldErrors()));
         }
